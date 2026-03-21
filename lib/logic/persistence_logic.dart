@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -440,6 +441,10 @@ class PersistenceLogic {
         affectedIds.add(linkedId);
       }
 
+      if (saved) {
+        affectedIds.addAll(_projectAgentTokensForCreatedEntity(withContext));
+      }
+
       _updateNotifications.notify({...affectedIds, labelUsageNotification});
 
       await getIt<NotificationService>().updateBadge();
@@ -691,6 +696,9 @@ class PersistenceLogic {
     bool overrideComparison = false,
   }) async {
     try {
+      final previousEntity = await _journalDb.journalEntityById(
+        journalEntity.id,
+      );
       final updateResult = await _journalDb.updateJournalEntity(
         journalEntity,
         overrideComparison: overrideComparison,
@@ -703,12 +711,23 @@ class PersistenceLogic {
           .parentLinkedEntityIds(journalEntity.id)
           .get();
 
-      _updateNotifications.notify({
+      final notificationIds = <String>{
         ...journalEntity.affectedIds,
         ?linkedId,
         ...parentIds,
         labelUsageNotification,
-      });
+      };
+
+      if (applied) {
+        notificationIds.addAll(
+          await _projectAgentTokensForUpdatedEntity(
+            previousEntity: previousEntity,
+            updatedEntity: journalEntity,
+          ),
+        );
+      }
+
+      _updateNotifications.notify(notificationIds);
 
       await getIt<Fts5Db>().insertText(
         journalEntity,
@@ -743,6 +762,65 @@ class PersistenceLogic {
       );
     }
     return null;
+  }
+
+  Set<String> _projectAgentTokensForCreatedEntity(JournalEntity entity) {
+    final tokens = <String>{};
+
+    if (entity is ProjectEntry) {
+      tokens.add(projectAgentProjectChangedToken(entity.meta.id));
+    }
+
+    if (entity is DayPlanEntry && _isAgreedDayPlanStatus(entity.data.status)) {
+      tokens.addAll(_dayPlanAgreementTokens(entity));
+    }
+
+    return tokens;
+  }
+
+  Future<Set<String>> _projectAgentTokensForUpdatedEntity({
+    required JournalEntity? previousEntity,
+    required JournalEntity updatedEntity,
+  }) async {
+    final tokens = <String>{};
+
+    if (updatedEntity is ProjectEntry) {
+      tokens.add(projectAgentProjectChangedToken(updatedEntity.meta.id));
+    }
+
+    final taskStatusChanged =
+        previousEntity is Task &&
+        updatedEntity is Task &&
+        previousEntity.data.status != updatedEntity.data.status;
+    if (taskStatusChanged) {
+      final project = await _journalDb.getProjectForTask(updatedEntity.meta.id);
+      if (project != null) {
+        tokens.add(projectAgentTaskStatusChangedToken(project.meta.id));
+      }
+    }
+
+    final dayPlanAgreed =
+        previousEntity is DayPlanEntry &&
+        updatedEntity is DayPlanEntry &&
+        !_isAgreedDayPlanStatus(previousEntity.data.status) &&
+        _isAgreedDayPlanStatus(updatedEntity.data.status);
+    if (dayPlanAgreed) {
+      tokens.addAll(_dayPlanAgreementTokens(updatedEntity));
+    }
+
+    return tokens;
+  }
+
+  bool _isAgreedDayPlanStatus(DayPlanStatus status) =>
+      status is DayPlanStatusAgreed;
+
+  Set<String> _dayPlanAgreementTokens(DayPlanEntry entity) {
+    final categoryIds = <String>{
+      ...entity.data.plannedBlocks.map((block) => block.categoryId),
+      ...entity.data.pinnedTasks.map((task) => task.categoryId),
+    }..removeWhere((id) => id.trim().isEmpty);
+
+    return categoryIds.map(projectAgentDayPlanAgreedToken).toSet();
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {

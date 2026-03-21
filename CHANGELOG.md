@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   added a disabled state to split buttons, and now enforce the same
   visible-label-or-semantics contract across chips, tabs, dropdowns, and split
   buttons.
+- Project agents: narrowed automatic wake triggers to direct project changes,
+  linked-task status transitions, and day-plan agreement events instead of
+  reacting to all linked-task edits.
+- Project agents: accepted `recommend_next_steps` proposals now persist as
+  dedicated project recommendation records after confirmation, and the project
+  detail view reads those records directly instead of reconstructing accepted
+  steps from change-decision history.
 
 ## [0.9.928] - 2026-03-17
 ### Added

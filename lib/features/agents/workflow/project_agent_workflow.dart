@@ -306,13 +306,23 @@ class ProjectAgentWorkflow {
           humanSummary: _buildHumanSummary(toolName, args),
         );
       }
-      // Recompute due-ness right before persisting so a manual wake that
+      final wakeReason = await _tryGetWakeReason(runKey);
+      final isScheduledWake = wakeReason == WakeReason.scheduled.name;
+
+      // Recompute cadence due-ness right before persisting so a wake that
       // started before the schedule hour but finished after it still advances
-      // the schedule correctly.
+      // the relevant schedule correctly.
       final persistNow = clock.now();
-      final scheduledWakeWasDue =
-          state.scheduledWakeAt != null &&
-          !state.scheduledWakeAt!.isAfter(persistNow);
+      final dailyDigestWasDue =
+          isScheduledWake &&
+          !_nextDailyDigestAt(
+            state.slots.lastDailyWakeAt ?? agentIdentity.createdAt,
+          ).isAfter(persistNow);
+      final weeklyReviewWasDue =
+          isScheduledWake &&
+          !_nextWeeklyReviewAt(
+            state.slots.lastWeeklyReviewAt ?? agentIdentity.createdAt,
+          ).isAfter(persistNow);
       final shouldInitializeSchedule = state.scheduledWakeAt == null;
 
       await syncService.runInTransaction(() async {
@@ -415,16 +425,25 @@ class ProjectAgentWorkflow {
         );
 
         // Update state.
-        final nextScheduledWakeAt =
-            scheduledWakeWasDue || shouldInitializeSchedule
-            ? nextLocalDayAtTime(
-                persistNow,
-                hour: AgentSchedules.projectDailyDigestHour,
+        final nextSlots = state.slots.copyWith(
+          lastDailyWakeAt: dailyDigestWasDue
+              ? persistNow
+              : state.slots.lastDailyWakeAt,
+          lastWeeklyReviewAt: weeklyReviewWasDue
+              ? persistNow
+              : state.slots.lastWeeklyReviewAt,
+          weeklyReviewCount: weeklyReviewWasDue
+              ? (state.slots.weeklyReviewCount ?? 0) + 1
+              : state.slots.weeklyReviewCount,
+        );
+        final nextScheduledWakeAt = isScheduledWake || shouldInitializeSchedule
+            ? _nextScheduledWakeAt(
+                dailyAnchor:
+                    nextSlots.lastDailyWakeAt ?? agentIdentity.createdAt,
+                weeklyAnchor:
+                    nextSlots.lastWeeklyReviewAt ?? agentIdentity.createdAt,
               )
             : state.scheduledWakeAt;
-        final nextSlots = scheduledWakeWasDue
-            ? state.slots.copyWith(lastDailyWakeAt: persistNow)
-            : state.slots;
         await syncService.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
@@ -898,6 +917,14 @@ immediately.''';
     );
   }
 
+  Future<String?> _tryGetWakeReason(String runKey) async {
+    try {
+      return (await agentRepository.getWakeRun(runKey))?.reason;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── Observation payload resolution ────────────────────────────────────────
 
   /// Batch-resolves all observation payloads into a map keyed by payload ID.
@@ -984,6 +1011,30 @@ immediately.''';
       TaskDone() => 5,
       TaskRejected() => 6,
     };
+  }
+
+  static DateTime _nextDailyDigestAt(DateTime anchor) {
+    return nextLocalDayAtTime(
+      anchor,
+      hour: AgentSchedules.projectDailyDigestHour,
+    );
+  }
+
+  static DateTime _nextWeeklyReviewAt(DateTime anchor) {
+    return nextLocalWeekdayAtTime(
+      anchor,
+      weekday: AgentSchedules.projectWeeklyReviewWeekday,
+      hour: AgentSchedules.projectWeeklyReviewHour,
+    );
+  }
+
+  static DateTime _nextScheduledWakeAt({
+    required DateTime dailyAnchor,
+    required DateTime weeklyAnchor,
+  }) {
+    final nextDaily = _nextDailyDigestAt(dailyAnchor);
+    final nextWeekly = _nextWeeklyReviewAt(weeklyAnchor);
+    return nextDaily.isBefore(nextWeekly) ? nextDaily : nextWeekly;
   }
 
   static String _truncateForPrompt(

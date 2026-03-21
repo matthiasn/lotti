@@ -28,6 +28,7 @@ abstract final class AgentEntityTypes {
   static const agentTemplate = 'agentTemplate';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';
+  static const projectRecommendation = 'projectRecommendation';
   static const wakeTokenUsage = 'wakeTokenUsage';
 }
 
@@ -40,7 +41,9 @@ abstract final class AgentAuthors {
 }
 
 abstract final class AgentSchedules {
-  static const projectDailyDigestHour = 6;
+  static const int projectDailyDigestHour = 6;
+  static const int projectWeeklyReviewWeekday = DateTime.monday;
+  static const int projectWeeklyReviewHour = 10;
 }
 
 /// Format a [DateTime] as YYYY-MM-DD. Returns `null` for a `null` input.

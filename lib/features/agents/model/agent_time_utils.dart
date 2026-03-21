@@ -12,6 +12,33 @@ DateTime nextLocalDayAtTime(
   int minute = 0,
 }) => DateTime(dt.year, dt.month, dt.day + 1, hour, minute);
 
+/// Returns the next local occurrence of [weekday] at the given [hour] and
+/// [minute], strictly after [dt].
+///
+/// Example: from a Saturday timestamp, requesting Monday at 10:00 returns the
+/// upcoming Monday at 10:00. If [dt] is already Monday after 10:00, returns
+/// the following Monday.
+DateTime nextLocalWeekdayAtTime(
+  DateTime dt, {
+  required int weekday,
+  required int hour,
+  int minute = 0,
+}) {
+  final daysUntilWeekday =
+      (weekday - dt.weekday + DateTime.daysPerWeek) % DateTime.daysPerWeek;
+  var candidate = DateTime(
+    dt.year,
+    dt.month,
+    dt.day + daysUntilWeekday,
+    hour,
+    minute,
+  );
+  if (!candidate.isAfter(dt)) {
+    candidate = candidate.add(const Duration(days: DateTime.daysPerWeek));
+  }
+  return candidate;
+}
+
 /// Accumulates success/failure/duration stats from a list of wake runs.
 ///
 /// Returns a record with the computed statistics. The [statusAccessor] and

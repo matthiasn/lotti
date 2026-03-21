@@ -84,3 +84,12 @@ const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+
+String projectAgentProjectChangedToken(String projectId) =>
+    'PROJECT_AGENT_PROJECT_CHANGED:$projectId';
+
+String projectAgentTaskStatusChangedToken(String projectId) =>
+    'PROJECT_AGENT_TASK_STATUS_CHANGED:$projectId';
+
+String projectAgentDayPlanAgreedToken(String categoryId) =>
+    'PROJECT_AGENT_DAY_PLAN_AGREED:$categoryId';

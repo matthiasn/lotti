@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -73,14 +74,8 @@ class ProjectToolDispatcher {
       );
     }
 
-    // Filter to steps that have a non-empty string title — matching the
-    // acceptance criteria used by _extractAcceptedRecommendations.
-    final validCount = steps.whereType<Map<String, dynamic>>().where((s) {
-      final title = s['title'];
-      return title is String && title.trim().isNotEmpty;
-    }).length;
-
-    if (validCount == 0) {
+    final recommendations = parseProjectAcceptedRecommendations(steps);
+    if (recommendations.isEmpty) {
       return const ToolExecutionResult(
         success: false,
         output: 'Error: no valid recommended steps with a non-empty title',
@@ -90,7 +85,7 @@ class ProjectToolDispatcher {
 
     return ToolExecutionResult(
       success: true,
-      output: 'Accepted $validCount recommended next step(s)',
+      output: 'Accepted ${recommendations.length} recommended next step(s)',
     );
   }
 

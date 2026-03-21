@@ -288,6 +288,7 @@ void main() {
           'project-001',
           'task-001',
           projectNotification,
+          projectAgentProjectChangedToken('project-001'),
         }),
       ).called(1);
 
@@ -469,6 +470,8 @@ void main() {
             'task-001',
             'project-001',
             projectNotification,
+            projectAgentProjectChangedToken('project-old'),
+            projectAgentProjectChangedToken('project-001'),
           }),
         ).called(1);
       },

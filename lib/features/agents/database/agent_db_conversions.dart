@@ -33,6 +33,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.deletedAt,
       changeSet: (e) => e.deletedAt,
       changeDecision: (e) => e.deletedAt,
+      projectRecommendation: (ProjectRecommendationEntity e) => e.deletedAt,
       wakeTokenUsage: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
@@ -135,6 +136,7 @@ class AgentDbConversions {
       evolutionNote: (_) => 'evolutionNote',
       changeSet: (_) => 'changeSet',
       changeDecision: (_) => 'changeDecision',
+      projectRecommendation: (_) => AgentEntityTypes.projectRecommendation,
       wakeTokenUsage: (_) => 'wakeTokenUsage',
       unknown: (_) => 'unknown',
     );
@@ -156,6 +158,7 @@ class AgentDbConversions {
       evolutionNote: (n) => n.kind.name,
       changeSet: (c) => c.status.name,
       changeDecision: (d) => d.verdict.name,
+      projectRecommendation: (ProjectRecommendationEntity r) => r.projectId,
     );
   }
 
@@ -179,6 +182,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.createdAt,
       changeSet: (e) => e.createdAt,
       changeDecision: (e) => e.createdAt,
+      projectRecommendation: (ProjectRecommendationEntity e) => e.createdAt,
       wakeTokenUsage: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
@@ -204,6 +208,7 @@ class AgentDbConversions {
       evolutionNote: (e) => e.createdAt,
       changeSet: (e) => e.resolvedAt ?? e.createdAt,
       changeDecision: (e) => e.createdAt,
+      projectRecommendation: (ProjectRecommendationEntity e) => e.createdAt,
       wakeTokenUsage: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );

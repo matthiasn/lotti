@@ -24,9 +24,20 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 - **dateFrom** / **dateTo**: time range.
 
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
-Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
-forward to 06:00 local time on the next day after creation or after a due
-digest completes.
+Project agents maintain two time-based cadences through `scheduledWakeAt`:
+- a daily digest at 06:00 local
+- a weekly review checkpoint on Monday at 10:00 local
+
+`scheduledWakeAt` always points at whichever of those two cadences is due
+next. Successful scheduled wakes update `lastDailyWakeAt`, and Monday review
+wakes also update `lastWeeklyReviewAt` plus `weeklyReviewCount`.
+Automatic project-agent wakes now use dedicated agent-only tokens for:
+- direct project changes and task link/unlink operations
+- linked task status transitions
+- day-plan agreement events for the project's category
+
+This avoids waking project agents on every linked-task text or checklist edit
+while preserving the broader `projectId` notifications used by the UI.
 
 ## Module Structure
 
@@ -98,12 +109,15 @@ Form page with the current project-management surface:
 - **Category detail page**: `CategoryProjectsSection` shows projects and a "New Project" button (gated by `enableProjects` flag).
 - **Task header**: `TaskProjectWrapper` adds a project chip to the task metadata row (gated by `enableProjects` flag).
 - **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
-- **Agent system**: Project agents are managed through `ProjectAgentService` and the agent workflow system, including the daily scheduled digest cadence.
+- **Agent system**: Project agents are managed through `ProjectAgentService`
+  and the agent workflow system, including the daily/weekly scheduled cadence,
+  linked-task status-transition wakes, and category day-plan agreement wakes.
 - **Deferred agent proposals**: Project detail pages now surface project-agent
   change sets so users can confirm or reject proposed status changes, task
   creation, and other reviewed actions in place.
 - **Agent reporting**: Project detail pages now render the latest project-agent
-  report alongside accepted `recommend_next_steps` recommendations.
+  report alongside accepted `recommend_next_steps` recommendations, which are
+  persisted as dedicated project recommendation records once confirmed.
 
 ## Task-Project Linking
 

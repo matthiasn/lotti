@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -50,7 +51,8 @@ class ProjectAgentService {
   /// 2. Update the agent's state with `activeProjectId = projectId`.
   /// 3. Create an [AgentProjectLink] from agentId → projectId.
   /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Register a wake subscription for the project's entity ID.
+  /// 5. Register a wake subscription for the project's dedicated
+  ///    project-agent tokens.
   /// 6. Enqueue a creation wake.
   ///
   /// Returns the created [AgentIdentityEntity].
@@ -106,9 +108,9 @@ class ProjectAgentService {
       final now = clock.now();
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(activeProjectId: projectId),
-        scheduledWakeAt: nextLocalDayAtTime(
-          now,
-          hour: AgentSchedules.projectDailyDigestHour,
+        scheduledWakeAt: _nextScheduledWakeAt(
+          dailyAnchor: now,
+          weeklyAnchor: now,
         ),
         updatedAt: now,
       );
@@ -144,7 +146,11 @@ class ProjectAgentService {
     });
 
     // Register subscription for changes to this project.
-    _registerProjectSubscription(identity.agentId, projectId);
+    _registerProjectSubscription(
+      identity.agentId,
+      projectId,
+      allowedCategoryIds: allowedCategoryIds,
+    );
 
     // Enqueue the creation wake.
     orchestrator.enqueueManualWake(
@@ -195,17 +201,53 @@ class ProjectAgentService {
 
   /// Register a wake subscription for a project agent.
   ///
-  /// The subscription matches on the [projectId] entity ID, so the agent
-  /// wakes whenever the project (or its linked entries) receives a
-  /// notification.
-  void _registerProjectSubscription(String agentId, String projectId) {
+  /// Project agents intentionally avoid the raw [projectId] token because
+  /// linked child edits bubble that token up for UI refreshes. Instead they
+  /// subscribe to narrower agent-only tokens for direct project changes,
+  /// linked task status transitions, and day-plan agreement events for the
+  /// project's category.
+  void _registerProjectSubscription(
+    String agentId,
+    String projectId, {
+    required Set<String> allowedCategoryIds,
+  }) {
     orchestrator.addSubscription(
       AgentSubscription(
         id: '${agentId}_project_$projectId',
         agentId: agentId,
-        matchEntityIds: {projectId},
+        matchEntityIds: _subscriptionTokens(
+          projectId,
+          allowedCategoryIds: allowedCategoryIds,
+        ),
       ),
     );
+  }
+
+  Set<String> _subscriptionTokens(
+    String projectId, {
+    required Set<String> allowedCategoryIds,
+  }) {
+    return {
+      projectAgentProjectChangedToken(projectId),
+      projectAgentTaskStatusChangedToken(projectId),
+      ...allowedCategoryIds.map(projectAgentDayPlanAgreedToken),
+    };
+  }
+
+  static DateTime _nextScheduledWakeAt({
+    required DateTime dailyAnchor,
+    required DateTime weeklyAnchor,
+  }) {
+    final nextDaily = nextLocalDayAtTime(
+      dailyAnchor,
+      hour: AgentSchedules.projectDailyDigestHour,
+    );
+    final nextWeekly = nextLocalWeekdayAtTime(
+      weeklyAnchor,
+      weekday: AgentSchedules.projectWeeklyReviewWeekday,
+      hour: AgentSchedules.projectWeeklyReviewHour,
+    );
+    return nextDaily.isBefore(nextWeekly) ? nextDaily : nextWeekly;
   }
 
   /// Re-register wake subscriptions for all active project agents.
@@ -236,7 +278,11 @@ class ProjectAgentService {
 
         if (links.isNotEmpty) {
           final link = _selectPrimaryProjectLink(links);
-          _registerProjectSubscription(agent.agentId, link.toId);
+          _registerProjectSubscription(
+            agent.agentId,
+            link.toId,
+            allowedCategoryIds: agent.allowedCategoryIds,
+          );
           count++;
         }
 

@@ -273,6 +273,22 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 
+  /// Persisted accepted project recommendation from a confirmed project-agent
+  /// `recommend_next_steps` proposal.
+  const factory AgentDomainEntity.projectRecommendation({
+    required String id,
+    required String agentId,
+    required String projectId,
+    required String changeSetId,
+    required String decisionId,
+    required String title,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? rationale,
+    String? priority,
+    DateTime? deletedAt,
+  }) = ProjectRecommendationEntity;
+
   /// Token usage record for a single wake cycle.
   ///
   /// Immutable, append-only. Synced via Matrix so usage is visible across

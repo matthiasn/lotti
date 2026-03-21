@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +29,7 @@ void main() {
     String kind = 'project_agent',
     String displayName = 'Project Agent',
     AgentLifecycle lifecycle = AgentLifecycle.active,
+    Set<String> allowedCategoryIds = const {},
   }) {
     return makeTestIdentity(
       id: agentId,
@@ -35,6 +37,7 @@ void main() {
       kind: kind,
       displayName: displayName,
       lifecycle: lifecycle,
+      allowedCategoryIds: allowedCategoryIds,
       currentStateId: 'state-$agentId',
     );
   }
@@ -145,7 +148,14 @@ void main() {
         ).captured;
         final sub = subCalls.first as AgentSubscription;
         expect(sub.agentId, 'agent-1');
-        expect(sub.matchEntityIds, contains('project-1'));
+        expect(
+          sub.matchEntityIds,
+          equals({
+            projectAgentProjectChangedToken('project-1'),
+            projectAgentTaskStatusChangedToken('project-1'),
+            projectAgentDayPlanAgreedToken('cat-1'),
+          }),
+        );
         expect(sub.id, 'agent-1_project_project-1');
 
         // Verify creation wake was enqueued.
@@ -210,6 +220,61 @@ void main() {
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        },
+      );
+
+      test(
+        'initializes the weekly review when it is sooner than the next daily digest',
+        () async {
+          final identity = makeIdentity();
+          final template = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final testDate = DateTime(2026, 3, 23, 8);
+
+          when(
+            () => mockRepository.getLinksTo(
+              'project-weekly',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn(null);
+
+          await withClock(Clock.fixed(testDate), () async {
+            await service.createProjectAgent(
+              projectId: 'project-weekly',
+              templateId: kTestTemplateId,
+              displayName: 'Weekly Review Agent',
+              allowedCategoryIds: const {},
+            );
+          });
+
+          final stateCalls = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = stateCalls.first as AgentStateEntity;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 23, 10));
         },
       );
 
@@ -552,7 +617,10 @@ void main() {
 
     group('restoreSubscriptions', () {
       test('registers subscriptions for active project agents', () async {
-        final projectAgent = makeIdentity(agentId: 'pa-1');
+        final projectAgent = makeIdentity(
+          agentId: 'pa-1',
+          allowedCategoryIds: {'cat-1'},
+        );
         final otherAgent = makeIdentity(
           agentId: 'other-1',
           kind: 'task_agent',
@@ -592,7 +660,14 @@ void main() {
 
         expect(captured, hasLength(1));
         expect(captured.first.agentId, 'pa-1');
-        expect(captured.first.matchEntityIds, contains('project-10'));
+        expect(
+          captured.first.matchEntityIds,
+          equals({
+            projectAgentProjectChangedToken('project-10'),
+            projectAgentTaskStatusChangedToken('project-10'),
+            projectAgentDayPlanAgreedToken('cat-1'),
+          }),
+        );
         expect(captured.first.id, 'pa-1_project_project-10');
 
         // Verify getLinksFrom was NOT called for the non-project agent.
@@ -754,7 +829,10 @@ void main() {
 
         // Only the primary (newest) link should be registered.
         expect(captured, hasLength(1));
-        expect(captured.first.matchEntityIds, contains('project-new'));
+        expect(
+          captured.first.matchEntityIds,
+          contains(projectAgentProjectChangedToken('project-new')),
+        );
       });
 
       test('handles empty agent list gracefully', () async {

@@ -133,7 +133,12 @@ class ProjectRepository {
 
     final res = await _journalDb.upsertEntryLink(link);
     if (res != 0) {
-      _updateNotifications.notify({projectId, taskId, projectNotification});
+      _updateNotifications.notify({
+        projectId,
+        taskId,
+        projectNotification,
+        projectAgentProjectChangedToken(projectId),
+      });
       await _enqueueLinkSync(link, SyncEntryStatus.initial);
     }
     return res != 0;
@@ -193,6 +198,8 @@ class ProjectRepository {
       projectId,
       taskId,
       projectNotification,
+      projectAgentProjectChangedToken(oldLink.fromId),
+      projectAgentProjectChangedToken(projectId),
     });
     await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
     await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
@@ -204,7 +211,12 @@ class ProjectRepository {
     final deleted = await _prepareDeletedLink(link, now);
     final res = await _journalDb.upsertEntryLink(deleted);
     if (res == 0) return false;
-    _updateNotifications.notify({link.fromId, link.toId, projectNotification});
+    _updateNotifications.notify({
+      link.fromId,
+      link.toId,
+      projectNotification,
+      projectAgentProjectChangedToken(link.fromId),
+    });
     await _enqueueLinkSync(deleted, SyncEntryStatus.update);
     return true;
   }

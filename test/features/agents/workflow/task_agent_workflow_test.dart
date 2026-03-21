@@ -1159,6 +1159,7 @@ void main() {
                 evolutionNote: (_) => false,
                 changeSet: (_) => false,
                 changeDecision: (_) => false,
+                projectRecommendation: (_) => false,
                 wakeTokenUsage: (_) => false,
                 unknown: (_) => false,
               ),

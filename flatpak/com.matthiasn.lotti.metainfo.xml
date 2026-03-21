@@ -37,6 +37,8 @@
           <p>Design system Calendar picker: added a Widgetbook-first calendar picker with month rail navigation, token-driven monthly range cells and weekly date cards, plus focused widget/widgetbook coverage.</p>
           <p>Design system Progress bar: added a Widgetbook-first determinate progress bar with default and chunky variants, optional header content, token-driven fill and track treatments, and focused widget/widgetbook coverage.</p>
           <p>Design system controls: tightened accessibility for unlabeled controls, added real tooltip behavior and better truncation to toggles, reset transient interaction states on disable, added a disabled state to split buttons, and now enforce the same visible-label-or-semantics contract across chips, tabs, dropdowns, and split buttons.</p>
+          <p>Project agents: narrowed automatic wake triggers to direct project changes, linked-task status transitions, and day-plan agreement events instead of reacting to all linked-task edits.</p>
+          <p>Project agents: accepted <code>recommend_next_steps</code> proposals now persist as dedicated project recommendation records after confirmation, and the project detail view reads those records directly instead of rebuilding them from decision history.</p>
       </description>
     </release>
     <release version="0.9.928" date="2026-03-19">

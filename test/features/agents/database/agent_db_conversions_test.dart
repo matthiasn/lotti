@@ -608,6 +608,67 @@ void main() {
     });
   });
 
+  group('AgentDbConversions — projectRecommendation entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.projectRecommendation(
+        id: 'recommendation-001',
+        agentId: agentId,
+        projectId: 'project-001',
+        changeSetId: 'change-set-001',
+        decisionId: 'decision-001',
+        title: 'Unblock QA',
+        rationale: 'Staging data is missing',
+        priority: 'HIGH',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('recommendation-001'));
+      expect(companion.agentId, const Value(agentId));
+      expect(companion.type, const Value('projectRecommendation'));
+      expect(companion.subtype, const Value('project-001'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('fromEntityRow roundtrips projectRecommendation variant', () {
+      final entity = AgentDomainEntity.projectRecommendation(
+        id: 'recommendation-002',
+        agentId: agentId,
+        projectId: 'project-001',
+        changeSetId: 'change-set-002',
+        decisionId: 'decision-002',
+        title: 'Write launch checklist',
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'recommendation-002',
+        agentId: agentId,
+        type: 'projectRecommendation',
+        subtype: 'project-001',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<ProjectRecommendationEntity>());
+      final recommendation = result as ProjectRecommendationEntity;
+      expect(recommendation.projectId, 'project-001');
+      expect(recommendation.changeSetId, 'change-set-002');
+      expect(recommendation.decisionId, 'decision-002');
+      expect(recommendation.title, 'Write launch checklist');
+      expect(recommendation.rationale, equals(null));
+      expect(recommendation.priority, equals(null));
+    });
+  });
+
   group('AgentDbConversions.toEntityCompanion — thread_id population', () {
     test('populates threadId for agentMessage entities', () {
       final message = AgentDomainEntity.agentMessage(

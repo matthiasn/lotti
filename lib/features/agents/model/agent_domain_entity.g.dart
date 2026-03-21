@@ -582,6 +582,44 @@ const _$ChangeDecisionVerdictEnumMap = {
   ChangeDecisionVerdict.deferred: 'deferred',
 };
 
+ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
+  Map<String, dynamic> json,
+) => ProjectRecommendationEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  projectId: json['projectId'] as String,
+  changeSetId: json['changeSetId'] as String,
+  decisionId: json['decisionId'] as String,
+  title: json['title'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  rationale: json['rationale'] as String?,
+  priority: json['priority'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$ProjectRecommendationEntityToJson(
+  ProjectRecommendationEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'projectId': instance.projectId,
+  'changeSetId': instance.changeSetId,
+  'decisionId': instance.decisionId,
+  'title': instance.title,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'rationale': instance.rationale,
+  'priority': instance.priority,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 WakeTokenUsageEntity _$WakeTokenUsageEntityFromJson(
   Map<String, dynamic> json,
 ) => WakeTokenUsageEntity(

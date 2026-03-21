@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -426,140 +425,78 @@ void main() {
 
       expect(result, isEmpty);
       verifyNever(
-        () => mockRepository.getRecentDecisions(
+        () => mockRepository.getEntitiesByAgentId(
           any(),
-          taskId: any(named: 'taskId'),
+          type: any(named: 'type'),
           limit: any(named: 'limit'),
         ),
       );
     });
 
     test(
-      'maps confirmed recommendation decisions into accepted steps',
+      'maps persisted recommendation entities into accepted steps',
       () async {
         final agent = makeTestIdentity();
         final updateController = StreamController<Set<String>>.broadcast();
         addTearDown(updateController.close);
 
-        final validDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-accepted',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 0,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Recommend next steps',
-                  args: const {
-                    'steps': [
-                      {
-                        'title': 'Unblock QA',
-                        'rationale': 'Staging data is missing',
-                        'priority': 'high',
-                      },
-                      {
-                        'title': 'Write launch checklist',
-                      },
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final rejectedDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-rejected',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 1,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.rejected,
-                  taskId: 'project-001',
-                  humanSummary: 'Rejected steps',
-                  args: const {
-                    'steps': [
-                      {'title': 'Should not render'},
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final duplicateValidDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-accepted-duplicate',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-002',
-                  itemIndex: 0,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Recommend next steps again',
-                  args: const {
-                    'steps': [
-                      {
-                        'title': 'Unblock QA',
-                        'rationale': 'Staging data is missing',
-                        'priority': 'high',
-                      },
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 17),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final otherToolDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-other-tool',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 2,
-                  toolName: ProjectAgentToolNames.updateProjectStatus,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Other tool',
-                  args: const {
-                    'status': 'active',
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final malformedDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-malformed',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 3,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Malformed steps',
-                  args: const {
-                    'steps': [
-                      {'title': '  '},
-                      {'rationale': 'Missing title'},
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
+        final firstRecommendation = AgentDomainEntity.projectRecommendation(
+          id: 'recommendation-001',
+          agentId: agent.agentId,
+          projectId: 'project-001',
+          changeSetId: 'change-set-001',
+          decisionId: 'decision-001',
+          title: 'Unblock QA',
+          rationale: 'Staging data is missing',
+          priority: 'HIGH',
+          createdAt: DateTime(2024, 3, 17),
+          vectorClock: null,
+        );
+        final duplicateRecommendation = AgentDomainEntity.projectRecommendation(
+          id: 'recommendation-002',
+          agentId: agent.agentId,
+          projectId: 'project-001',
+          changeSetId: 'change-set-002',
+          decisionId: 'decision-002',
+          title: 'Unblock QA',
+          rationale: 'Staging data is missing',
+          priority: 'HIGH',
+          createdAt: DateTime(2024, 3, 16),
+          vectorClock: null,
+        );
+        final secondRecommendation = AgentDomainEntity.projectRecommendation(
+          id: 'recommendation-003',
+          agentId: agent.agentId,
+          projectId: 'project-001',
+          changeSetId: 'change-set-001',
+          decisionId: 'decision-001',
+          title: 'Write launch checklist',
+          createdAt: DateTime(2024, 3, 17),
+          vectorClock: null,
+        );
+        final otherProjectRecommendation =
+            AgentDomainEntity.projectRecommendation(
+              id: 'recommendation-004',
+              agentId: agent.agentId,
+              projectId: 'project-999',
+              changeSetId: 'change-set-003',
+              decisionId: 'decision-003',
+              title: 'Should not render',
+              createdAt: DateTime(2024, 3, 18),
+              vectorClock: null,
+            );
 
         when(
-          () => mockRepository.getRecentDecisions(
+          () => mockRepository.getEntitiesByAgentId(
             agent.agentId,
-            taskId: 'project-001',
-            limit: -1,
+            type: AgentEntityTypes.projectRecommendation,
           ),
         ).thenAnswer(
           (_) async => [
-            validDecision,
-            duplicateValidDecision,
-            rejectedDecision,
-            otherToolDecision,
-            malformedDecision,
+            firstRecommendation,
+            duplicateRecommendation,
+            secondRecommendation,
+            otherProjectRecommendation,
           ],
         );
 
@@ -595,10 +532,9 @@ void main() {
         expect(result[1].priority, isNull);
 
         verify(
-          () => mockRepository.getRecentDecisions(
+          () => mockRepository.getEntitiesByAgentId(
             agent.agentId,
-            taskId: 'project-001',
-            limit: -1,
+            type: AgentEntityTypes.projectRecommendation,
           ),
         ).called(1);
       },

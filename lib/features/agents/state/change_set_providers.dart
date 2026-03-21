@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/features/agents/service/change_set_confirmation_service.da
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -126,66 +126,40 @@ projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
       final repo = ref.watch(agentRepositoryProvider);
-      // Change decisions share the same historical `taskId` storage field for
-      // both task and project targets.
-      final decisions = await repo.getRecentDecisions(
+      final entities = await repo.getEntitiesByAgentId(
         identity.agentId,
-        taskId: projectId,
-        limit: -1,
+        type: AgentEntityTypes.projectRecommendation,
       );
 
-      return _extractAcceptedRecommendations(decisions);
+      return _extractAcceptedRecommendations(entities, projectId: projectId);
     });
 
 List<ProjectAcceptedRecommendation> _extractAcceptedRecommendations(
-  Iterable<ChangeDecisionEntity> decisions,
-) {
+  Iterable<AgentDomainEntity> entities, {
+  required String projectId,
+}) {
   final recommendations = <ProjectAcceptedRecommendation>[];
   final seenKeys = <String>{};
 
-  for (final decision in decisions) {
-    if (decision.verdict != ChangeDecisionVerdict.confirmed ||
-        decision.toolName != ProjectAgentToolNames.recommendNextSteps) {
+  for (final entity in entities) {
+    final recommendationEntity = entity.mapOrNull(
+      projectRecommendation: (recommendation) => recommendation,
+    );
+    if (recommendationEntity == null ||
+        recommendationEntity.projectId != projectId) {
       continue;
     }
 
-    final rawSteps = decision.args?['steps'];
-    if (rawSteps is! List) continue;
-
-    for (final rawStep in rawSteps) {
-      if (rawStep is! Map) continue;
-
-      final title = rawStep['title'];
-      if (title is! String || title.trim().isEmpty) continue;
-
-      final rationale = rawStep['rationale'];
-      final priority = rawStep['priority'];
-
-      final normalizedTitle = title.trim();
-      final normalizedRationale =
-          rationale is String && rationale.trim().isNotEmpty
-          ? rationale.trim()
-          : null;
-      final normalizedPriority =
-          priority is String && priority.trim().isNotEmpty
-          ? priority.trim().toUpperCase()
-          : null;
-      final dedupKey =
-          '${normalizedTitle.toLowerCase()}|'
-          '${normalizedRationale?.toLowerCase() ?? ''}|'
-          '${normalizedPriority ?? ''}';
-      if (!seenKeys.add(dedupKey)) {
-        continue;
-      }
-
-      recommendations.add(
-        ProjectAcceptedRecommendation(
-          title: normalizedTitle,
-          rationale: normalizedRationale,
-          priority: normalizedPriority,
-        ),
-      );
+    final recommendation = ProjectAcceptedRecommendation(
+      title: recommendationEntity.title,
+      rationale: recommendationEntity.rationale,
+      priority: recommendationEntity.priority,
+    );
+    if (!seenKeys.add(recommendation.dedupKey)) {
+      continue;
     }
+
+    recommendations.add(recommendation);
   }
 
   return recommendations;

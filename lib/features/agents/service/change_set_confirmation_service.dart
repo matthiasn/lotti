@@ -2,10 +2,12 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -111,7 +113,7 @@ class ChangeSetConfirmationService {
     //    dispatching the tool. This ensures that if the process dies after
     //    a successful dispatch but before persistence, the item will not
     //    remain pending and be re-executed on retry.
-    await _persistDecision(
+    final decision = await _persistDecision(
       changeSet: current,
       itemIndex: itemIndex,
       toolName: item.toolName,
@@ -153,6 +155,11 @@ class ChangeSetConfirmationService {
     //    into sibling migration items so a service restart doesn't lose it.
     _captureResolvedId(item, result);
     await _persistResolvedIdToSiblings(item, result, current);
+    await _persistAcceptedArtifacts(
+      changeSet: current,
+      item: item,
+      decision: decision,
+    );
 
     return result;
   }
@@ -435,7 +442,37 @@ class ChangeSetConfirmationService {
     return latest is ChangeSetEntity ? latest : fallback;
   }
 
-  Future<void> _persistDecision({
+  Future<void> _persistAcceptedArtifacts({
+    required ChangeSetEntity changeSet,
+    required ChangeItem item,
+    required ChangeDecisionEntity decision,
+  }) async {
+    if (item.toolName != ProjectAgentToolNames.recommendNextSteps) {
+      return;
+    }
+
+    final recommendations = parseProjectAcceptedRecommendations(
+      item.args['steps'],
+    );
+    for (final recommendation in recommendations) {
+      await _syncService.upsertEntity(
+        AgentDomainEntity.projectRecommendation(
+          id: _uuid.v4(),
+          agentId: changeSet.agentId,
+          projectId: changeSet.taskId,
+          changeSetId: changeSet.id,
+          decisionId: decision.id,
+          title: recommendation.title,
+          rationale: recommendation.rationale,
+          priority: recommendation.priority,
+          createdAt: decision.createdAt,
+          vectorClock: const VectorClock({}),
+        ),
+      );
+    }
+  }
+
+  Future<ChangeDecisionEntity> _persistDecision({
     required ChangeSetEntity changeSet,
     required int itemIndex,
     required String toolName,
@@ -444,22 +481,25 @@ class ChangeSetConfirmationService {
     String? humanSummary,
     Map<String, dynamic>? args,
   }) async {
-    final decision = AgentDomainEntity.changeDecision(
-      id: _uuid.v4(),
-      agentId: changeSet.agentId,
-      changeSetId: changeSet.id,
-      itemIndex: itemIndex,
-      toolName: toolName,
-      verdict: verdict,
-      taskId: changeSet.taskId,
-      rejectionReason: rejectionReason,
-      humanSummary: humanSummary,
-      args: args,
-      createdAt: clock.now(),
-      vectorClock: const VectorClock({}),
-    );
+    final decision =
+        AgentDomainEntity.changeDecision(
+              id: _uuid.v4(),
+              agentId: changeSet.agentId,
+              changeSetId: changeSet.id,
+              itemIndex: itemIndex,
+              toolName: toolName,
+              verdict: verdict,
+              taskId: changeSet.taskId,
+              rejectionReason: rejectionReason,
+              humanSummary: humanSummary,
+              args: args,
+              createdAt: clock.now(),
+              vectorClock: const VectorClock({}),
+            )
+            as ChangeDecisionEntity;
 
     await _syncService.upsertEntity(decision);
+    return decision;
   }
 
   Future<void> _updateChangeSetItemStatus(

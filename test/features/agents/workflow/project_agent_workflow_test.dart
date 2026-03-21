@@ -182,6 +182,9 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(
+      () => mockAgentRepository.getWakeRun(any()),
+    ).thenAnswer((_) async => null);
+    when(
       () => mockAgentRepository.updateWakeRunTemplate(
         any(),
         any(),
@@ -435,6 +438,13 @@ void main() {
           when(
             () => mockAgentRepository.getAgentState(agentId),
           ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getWakeRun(runKey),
+          ).thenAnswer(
+            (_) async => makeTestWakeRun(
+              reason: WakeReason.scheduled.name,
+            ),
+          );
 
           await withClock(Clock.fixed(testDate), () async {
             await workflow.execute(
@@ -451,6 +461,101 @@ void main() {
           final updatedState = captured.whereType<AgentStateEntity>().last;
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, testDate);
+        },
+      );
+
+      test(
+        'schedules the same-day Monday weekly review after the Monday daily digest',
+        () async {
+          final agentIdentity = makeTestIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(profileId: 'profile-001'),
+            createdAt: DateTime(2026, 3, 21, 12),
+          );
+          final testDate = DateTime(2026, 3, 23, 6, 30);
+          final dueState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 23, 6),
+          );
+
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getWakeRun(runKey),
+          ).thenAnswer(
+            (_) async => makeTestWakeRun(
+              reason: WakeReason.scheduled.name,
+            ),
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: agentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.slots.lastDailyWakeAt, testDate);
+          expect(updatedState.slots.lastWeeklyReviewAt, isNull);
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 23, 10));
+        },
+      );
+
+      test(
+        'records weekly review bookkeeping on the Monday review wake',
+        () async {
+          final agentIdentity = makeTestIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(profileId: 'profile-001'),
+            createdAt: DateTime(2026, 3, 21, 12),
+          );
+          final testDate = DateTime(2026, 3, 23, 10, 30);
+          final scheduledState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              lastDailyWakeAt: DateTime(2026, 3, 23, 6, 30),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 23, 10),
+          );
+
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => scheduledState);
+          when(
+            () => mockAgentRepository.getWakeRun(runKey),
+          ).thenAnswer(
+            (_) async => makeTestWakeRun(
+              reason: WakeReason.scheduled.name,
+            ),
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: agentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(
+            updatedState.slots.lastDailyWakeAt,
+            DateTime(2026, 3, 23, 6, 30),
+          );
+          expect(updatedState.slots.lastWeeklyReviewAt, testDate);
+          expect(updatedState.slots.weeklyReviewCount, 1);
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 24, 6));
         },
       );
 
@@ -873,7 +978,6 @@ void main() {
         'does not create a duplicate project change set for an already pending proposal',
         () async {
           final existingChangeSet = makeTestChangeSet(
-            agentId: agentId,
             taskId: projectId,
             items: const [
               ChangeItem(
@@ -967,7 +1071,6 @@ void main() {
           ).thenAnswer(
             (_) async => [
               makeTestChangeDecision(
-                agentId: agentId,
                 taskId: projectId,
                 toolName: ProjectAgentToolNames.createTask,
                 verdict: ChangeDecisionVerdict.rejected,

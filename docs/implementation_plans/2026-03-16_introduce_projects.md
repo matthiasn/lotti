@@ -1,11 +1,11 @@
 # Implementation Plan: Introduce Projects Layer
 
 **Date:** 2026-03-16
-**Status:** In Progress — implementation snapshot updated 2026-03-20
+**Status:** In Progress — implementation snapshot updated 2026-03-21
 
 ---
 
-## 0. Current Status Snapshot (2026-03-20)
+## 0. Current Status Snapshot (2026-03-21)
 
 This document started as a proposal. The repository now contains a substantial
 partial implementation, so the plan needs to distinguish between what has
@@ -30,9 +30,15 @@ already landed and what is still missing.
   `ProjectAgentStrategy`, and project tool definitions are implemented.
 - **Auto-provisioning is present.** Creating a project attempts to provision a
   project agent from a category-scoped or global `projectAgent` template.
-- **Daily digest scheduling now exists.** New project agents schedule their
-  next daily digest for 06:00 local on the next day, and due digests roll
-  forward automatically after a successful wake.
+- **Scheduled cadence bookkeeping now exists.** Project agents now schedule
+  whichever comes next between the daily digest (06:00 local) and the Monday
+  weekly review checkpoint (10:00 local). Successful scheduled wakes update
+  `lastDailyWakeAt`, and Monday review wakes also update
+  `lastWeeklyReviewAt` plus `weeklyReviewCount`.
+- **Project-agent wake triggers are now narrowed.** Project agents no longer
+  subscribe to the raw project ID token that receives every linked-child edit.
+  They now wake on direct project changes, linked-task status transitions, and
+  day-plan agreement events for their allowed category IDs.
 - **Project-scoped change-set review is now wired in.** Project detail pages
   surface pending project-agent change sets, and confirmations can now apply
   project status changes or create linked tasks directly from the project UI.
@@ -53,25 +59,13 @@ already landed and what is still missing.
   `defaultProjectTemplateId` to `CategoryDefinition`; project creation looks up
   a category-scoped template first and then falls back to a global
   `projectAgent` template.
-- **Project agent wake subscriptions are broader than planned.** Today, linked
-  task edits bubble up to the project via parent-link notifications, so project
-  agents can wake on general linked task changes, not only on filtered
-  status-transition events.
-- **Accepted next-step recommendations are acknowledgement-only.** Confirming
-  `recommend_next_steps` resolves the proposal and records the decision, but it
-  does not yet persist a separate project recommendation artifact beyond the
-  normal change-decision history.
+- **Accepted next-step recommendations use a dedicated record type.**
+  Confirming `recommend_next_steps` now persists first-class
+  `projectRecommendation` agent entities, so the project detail UI no longer
+  has to reconstruct accepted steps from change-decision history.
 
 ### Remaining Work
 
-- **Finish the remaining runtime cadence.** Daily digest scheduling is now in
-  place, but weekly review scheduling/bookkeeping (`lastWeeklyReviewAt`,
-  `weeklyReviewCount`) is still missing.
-- **Tighten wake triggers.** Replace the current broad linked-task wake
-  behavior with the planned status-transition/day-plan-driven triggering.
-- **Deepen deferred project actions.** The project-scoped review/apply path is
-  now present, but accepted `recommend_next_steps` still only acknowledge the
-  proposal instead of writing a richer project recommendation record.
 - **Implement Phase 4.** Weekly review GenUI, inline directive evolution,
   weekly review history, seeded project templates, and improver-agent wiring
   are still outstanding.
@@ -517,7 +511,7 @@ sequenceDiagram
 
     alt recommend_next_steps
         PAS->>Tools: execute(recommend_next_steps, args)
-        Tools->>ADB: Persist recommendations as observations
+        Tools->>ADB: Persist accepted recommendations as project recommendation records
     end
 
     PAW->>ADB: Persist messages, state, set next scheduledWakeAt

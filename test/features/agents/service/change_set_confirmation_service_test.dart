@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -159,6 +160,144 @@ void main() {
           );
         });
       });
+
+      test(
+        'persists accepted project recommendations only after successful dispatch',
+        () async {
+          final changeSet = makeTestChangeSet(
+            taskId: 'project-001',
+            items: const [
+              ChangeItem(
+                toolName: ProjectAgentToolNames.recommendNextSteps,
+                args: {
+                  'steps': [
+                    {
+                      'title': 'Unblock QA',
+                      'rationale': 'Staging data is missing',
+                      'priority': 'high',
+                    },
+                    {
+                      'title': 'Unblock QA',
+                      'rationale': 'Staging data is missing',
+                      'priority': 'high',
+                    },
+                    {
+                      'title': 'Write launch checklist',
+                    },
+                    {
+                      'rationale': 'Missing title',
+                    },
+                  ],
+                },
+                humanSummary: 'Recommend next steps',
+              ),
+            ],
+          );
+          final events = <String>[];
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer((_) async {
+            events.add('dispatch');
+            return const ToolExecutionResult(
+              success: true,
+              output: 'Accepted 2 recommended next step(s)',
+            );
+          });
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((invocation) async {
+            final entity = invocation.positionalArguments.first;
+            events.add(
+              switch (entity) {
+                ChangeDecisionEntity _ => 'decision',
+                ChangeSetEntity _ => 'changeSet',
+                ProjectRecommendationEntity _ => 'projectRecommendation',
+                _ => 'other',
+              },
+            );
+          });
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isTrue);
+            expect(
+              events,
+              [
+                'decision',
+                'changeSet',
+                'dispatch',
+                'projectRecommendation',
+                'projectRecommendation',
+              ],
+            );
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            final decision = captured[0] as ChangeDecisionEntity;
+            final recommendations = captured
+                .whereType<ProjectRecommendationEntity>()
+                .toList();
+
+            expect(recommendations, hasLength(2));
+            expect(recommendations[0].projectId, 'project-001');
+            expect(recommendations[0].decisionId, decision.id);
+            expect(recommendations[0].title, 'Unblock QA');
+            expect(recommendations[0].rationale, 'Staging data is missing');
+            expect(recommendations[0].priority, 'HIGH');
+            expect(recommendations[1].title, 'Write launch checklist');
+            expect(recommendations[1].priority, isNull);
+          });
+        },
+      );
+
+      test(
+        'does not persist project recommendations when dispatch fails',
+        () async {
+          final changeSet = makeTestChangeSet(
+            taskId: 'project-001',
+            items: const [
+              ChangeItem(
+                toolName: ProjectAgentToolNames.recommendNextSteps,
+                args: {
+                  'steps': [
+                    {'title': 'Unblock QA'},
+                  ],
+                },
+                humanSummary: 'Recommend next steps',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Validation failed',
+              errorMessage: 'Validation failed',
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured.whereType<ProjectRecommendationEntity>(), isEmpty);
+          });
+        },
+      );
 
       test('reverts item to pending when tool dispatch fails', () async {
         final changeSet = makeChangeSetWith();
