@@ -4293,7 +4293,6 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
-
   /// No description provided for @designSystemDropdownComboboxTitle.
   ///
   /// In en, this message translates to:

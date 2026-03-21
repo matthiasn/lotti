@@ -58,6 +58,15 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
   late final ScrollController _scrollController = ScrollController();
 
   @override
+  void didUpdateWidget(covariant DesignSystemDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled && _expanded) {
+      _expanded = false;
+      widget.onExpandedChanged?.call(false);
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
@@ -96,10 +105,10 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
               for (final item in selectedItems)
                 DesignSystemChip(
                   label: item.resolvedChipLabel,
-                  showRemove: true,
-                  onPressed: widget.onChipRemoved == null
-                      ? null
-                      : () => widget.onChipRemoved!(item),
+                  showRemove: widget.enabled && widget.onChipRemoved != null,
+                  onPressed: widget.enabled && widget.onChipRemoved != null
+                      ? () => widget.onChipRemoved!(item)
+                      : null,
                 ),
             ],
           ),
@@ -136,6 +145,9 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
 
   void _handleItemPressed(DesignSystemDropdownItem item) {
     widget.onItemPressed?.call(item);
+    if (!mounted) {
+      return;
+    }
 
     if (widget.type == DesignSystemDropdownType.dropdownList && _expanded) {
       setState(() => _expanded = false);
@@ -334,7 +346,7 @@ class _DropdownMenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasCheckbox = type == DesignSystemDropdownType.multiselect;
 
-    return Material(
+    final row = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -371,6 +383,8 @@ class _DropdownMenuRow extends StatelessWidget {
         ),
       ),
     );
+
+    return hasCheckbox ? Semantics(selected: item.selected, child: row) : row;
   }
 }
 

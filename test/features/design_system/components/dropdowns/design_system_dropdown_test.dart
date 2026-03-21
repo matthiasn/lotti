@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
@@ -163,6 +165,46 @@ void main() {
       expect(find.text('Alpha'), findsNothing);
     });
 
+    testWidgets('collapses when disabled while expanded', (tester) async {
+      var enabled = true;
+      final expansionStates = <bool>[];
+
+      await _pumpDropdown(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) {
+            return SizedBox(
+              width: 320,
+              child: Column(
+                children: [
+                  TextButton(
+                    onPressed: () => setState(() => enabled = false),
+                    child: const Text('Disable'),
+                  ),
+                  DesignSystemDropdown(
+                    label: 'Label',
+                    inputLabel: 'Input',
+                    enabled: enabled,
+                    initiallyExpanded: true,
+                    items: _items(['Alpha']),
+                    onExpandedChanged: expansionStates.add,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+
+      expect(find.text('Alpha'), findsOneWidget);
+
+      await tester.tap(find.text('Disable'));
+      await tester.pump();
+
+      expect(expansionStates, [false]);
+      expect(find.text('Alpha'), findsNothing);
+    });
+
     testWidgets('calls onChipRemoved when a chip is tapped', (tester) async {
       final removedItems = <DesignSystemDropdownItem>[];
 
@@ -238,6 +280,77 @@ void main() {
         expect(find.text('Other'), findsOneWidget);
       },
     );
+
+    testWidgets('hides chip remove icon when onChipRemoved is null', (
+      tester,
+    ) async {
+      await _pumpDropdown(
+        tester,
+        const SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: 'Label',
+            inputLabel: 'Input',
+            type: DesignSystemDropdownType.multiselect,
+            items: [
+              DesignSystemDropdownItem(
+                id: 'a',
+                label: 'Alpha',
+                selected: true,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+    });
+
+    testWidgets('exposes selected semantics on multiselect rows', (
+      tester,
+    ) async {
+      await _pumpDropdown(
+        tester,
+        const SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: 'Label',
+            inputLabel: 'Input',
+            type: DesignSystemDropdownType.multiselect,
+            initiallyExpanded: true,
+            items: [
+              DesignSystemDropdownItem(
+                id: 'a',
+                label: 'Selected row',
+                chipLabel: 'Sel chip',
+                selected: true,
+              ),
+              DesignSystemDropdownItem(
+                id: 'b',
+                label: 'Unselected row',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final selectedSemantics = tester.getSemantics(
+        find.text('Selected row'),
+      );
+      final unselectedSemantics = tester.getSemantics(
+        find.text('Unselected row'),
+      );
+
+      expect(
+        selectedSemantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isTrue,
+      );
+      expect(
+        unselectedSemantics.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isFalse,
+      );
+    });
 
     testWidgets('uses the active dark theme tokens', (tester) async {
       await _pumpDropdown(
