@@ -1,3 +1,4 @@
+export 'components/avatars/design_system_avatar.dart';
 export 'components/badges/design_system_badge.dart';
 export 'components/breadcrumbs/design_system_breadcrumbs.dart';
 export 'components/buttons/design_system_button.dart';

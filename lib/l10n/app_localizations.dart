@@ -4293,6 +4293,42 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
+  /// No description provided for @designSystemAvatarAwayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Away'**
+  String get designSystemAvatarAwayLabel;
+
+  /// No description provided for @designSystemAvatarBusyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get designSystemAvatarBusyLabel;
+
+  /// No description provided for @designSystemAvatarConnectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get designSystemAvatarConnectedLabel;
+
+  /// No description provided for @designSystemAvatarEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get designSystemAvatarEnabledLabel;
+
+  /// No description provided for @designSystemAvatarSizeMatrixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Size Matrix'**
+  String get designSystemAvatarSizeMatrixTitle;
+
+  /// No description provided for @designSystemAvatarStatusMatrixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Matrix'**
+  String get designSystemAvatarStatusMatrixTitle;
+
   /// No description provided for @designSystemBreadcrumbCurrentLabel.
   ///
   /// In en, this message translates to:

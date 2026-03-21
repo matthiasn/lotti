@@ -2406,6 +2406,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activ';
 
   @override
+  String get designSystemAvatarAwayLabel => 'Absent';
+
+  @override
+  String get designSystemAvatarBusyLabel => 'Ocupat';
+
+  @override
+  String get designSystemAvatarConnectedLabel => 'Conectat';
+
+  @override
+  String get designSystemAvatarEnabledLabel => 'Activat';
+
+  @override
+  String get designSystemAvatarSizeMatrixTitle => 'Matricea dimensiunilor';
+
+  @override
+  String get designSystemAvatarStatusMatrixTitle => 'Matricea stărilor';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override

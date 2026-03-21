@@ -2438,6 +2438,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemActivatedLabel => 'Actif';
 
   @override
+  String get designSystemAvatarAwayLabel => 'Absent';
+
+  @override
+  String get designSystemAvatarBusyLabel => 'Occupé';
+
+  @override
+  String get designSystemAvatarConnectedLabel => 'Connecté';
+
+  @override
+  String get designSystemAvatarEnabledLabel => 'Activé';
+
+  @override
+  String get designSystemAvatarSizeMatrixTitle => 'Matrice des tailles';
+
+  @override
+  String get designSystemAvatarStatusMatrixTitle => 'Matrice des statuts';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Fil d\'Ariane';
 
   @override

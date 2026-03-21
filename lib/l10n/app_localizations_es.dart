@@ -2442,6 +2442,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activa';
 
   @override
+  String get designSystemAvatarAwayLabel => 'Ausente';
+
+  @override
+  String get designSystemAvatarBusyLabel => 'Ocupado';
+
+  @override
+  String get designSystemAvatarConnectedLabel => 'Conectado';
+
+  @override
+  String get designSystemAvatarEnabledLabel => 'Habilitado';
+
+  @override
+  String get designSystemAvatarSizeMatrixTitle => 'Matriz de tamaños';
+
+  @override
+  String get designSystemAvatarStatusMatrixTitle => 'Matriz de estados';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override
