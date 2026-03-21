@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_calendar_p
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_progress_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
@@ -32,6 +33,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       buildDesignSystemSplitButtonWidgetbookComponent(),
       buildDesignSystemTabWidgetbookComponent(),
       buildDesignSystemCalendarPickerWidgetbookComponent(),
+      buildDesignSystemProgressBarWidgetbookComponent(),
       buildDesignSystemToggleWidgetbookComponent(),
       buildDesignSystemRadioButtonWidgetbookComponent(),
       buildDesignSystemCheckboxWidgetbookComponent(),

@@ -2496,6 +2496,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemPressedLabel => 'Pulsada';
 
   @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentada';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Etiqueta + porcentaje';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Solo etiqueta';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Apagada';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Porcentaje';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Barra de misión';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Etiqueta de mega premio';
+
+  @override
+  String get designSystemProgressBarSampleLabel =>
+      'Etiqueta de barra de progreso';
+
+  @override
   String get designSystemCheckboxLabel => 'Casilla de verificación';
 
   @override

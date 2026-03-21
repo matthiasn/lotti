@@ -2460,6 +2460,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemPressedLabel => 'Apăsat';
 
   @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentat';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Etichetă + procent';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Doar etichetă';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Oprit';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Procent';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Bară de quest';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Etichetă mega premiu';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Etichetă bară de progres';
+
+  @override
   String get designSystemCheckboxLabel => 'Casetă de selectare';
 
   @override

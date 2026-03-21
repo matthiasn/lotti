@@ -29,6 +29,7 @@ This feature contains the standalone Widgetbook-first design system work.
 - Split buttons
 - Tabs
 - Calendar picker
+- Progress bar
 - Toggles
 - Radio buttons
 - Checkboxes
