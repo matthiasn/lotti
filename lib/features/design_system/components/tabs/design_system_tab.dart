@@ -77,7 +77,7 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
       visualState: visualState,
     );
 
-    return Material(
+    final tab = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: widget.onPressed,
@@ -147,6 +147,15 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
           ),
         ),
       ),
+    );
+
+    if (enabled) {
+      return tab;
+    }
+
+    return Opacity(
+      opacity: tokens.colors.text.lowEmphasis.a,
+      child: tab,
     );
   }
 
@@ -301,6 +310,11 @@ class _TabSizeSpec {
   ) {
     final selectorHeight = tokens.spacing.step2 - (tokens.spacing.step1 / 2);
     final dividerHeight = tokens.spacing.step1 / 2;
+    final iconSize = tokens.typography.size.subtitle2;
+    final primaryContentGap = tokens.spacing.step2;
+    final secondaryContentGap = tokens.spacing.step6;
+    final labelStyle = tokens.typography.styles.subtitle.subtitle2;
+    final cornerRadius = tokens.radii.m;
 
     return switch (size) {
       DesignSystemTabSize.small => _TabSizeSpec(
@@ -311,13 +325,13 @@ class _TabSizeSpec {
         selectedBottomPadding:
             tokens.spacing.step3 - (tokens.spacing.step1 / 2),
         iconSlotSize: tokens.typography.lineHeight.subtitle2,
-        iconSize: tokens.typography.size.subtitle2,
-        primaryContentGap: tokens.spacing.step2,
-        secondaryContentGap: tokens.spacing.step6,
-        labelStyle: tokens.typography.styles.subtitle.subtitle2,
+        iconSize: iconSize,
+        primaryContentGap: primaryContentGap,
+        secondaryContentGap: secondaryContentGap,
+        labelStyle: labelStyle,
         selectorHeight: selectorHeight,
         dividerHeight: dividerHeight,
-        cornerRadius: tokens.radii.m,
+        cornerRadius: cornerRadius,
       ),
       DesignSystemTabSize.defaultSize => _TabSizeSpec(
         height: tokens.spacing.step9 + (tokens.spacing.step1 / 2),
@@ -326,13 +340,13 @@ class _TabSizeSpec {
         bottomPadding: tokens.spacing.step4,
         selectedBottomPadding: tokens.spacing.step4 - selectorHeight,
         iconSlotSize: tokens.typography.lineHeight.subtitle1,
-        iconSize: tokens.typography.size.subtitle2,
-        primaryContentGap: tokens.spacing.step2,
-        secondaryContentGap: tokens.spacing.step6,
-        labelStyle: tokens.typography.styles.subtitle.subtitle2,
+        iconSize: iconSize,
+        primaryContentGap: primaryContentGap,
+        secondaryContentGap: secondaryContentGap,
+        labelStyle: labelStyle,
         selectorHeight: selectorHeight,
         dividerHeight: dividerHeight,
-        cornerRadius: tokens.radii.m,
+        cornerRadius: cornerRadius,
       ),
     };
   }

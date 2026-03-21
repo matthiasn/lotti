@@ -250,6 +250,13 @@ void main() {
       expect(leadingIcon.color, dsTokensLight.colors.text.lowEmphasis);
       expect(trailingIcon.color, dsTokensLight.colors.text.lowEmphasis);
       expect(inkWell.onTap, isNull);
+      final opacity = tester.widget<Opacity>(
+        find.descendant(
+          of: find.byKey(tabKey),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
       expect(
         find.descendant(
           of: find.byKey(tabKey),
