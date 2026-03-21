@@ -6,6 +6,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/services/dev_logger.dart';
 
 JournalDbEntity toDbEntity(JournalEntity entity) {
   final createdAt = entity.meta.createdAt;
@@ -256,18 +257,76 @@ EntryLink entryLinkFromLinkedDbEntry(LinkedDbEntry dbEntity) {
   );
 }
 
+/// Known DashboardItem runtimeType discriminator values.
+/// Used to filter out removed/unknown types during JSON deserialization
+/// so that legacy data in the database does not crash the app.
+const _knownDashboardItemTypes = {
+  'measurement',
+  'healthChart',
+  'workoutChart',
+  'habitChart',
+  'surveyChart',
+};
+
+/// Filters out DashboardItem entries with unknown runtimeType values
+/// from the dashboard JSON before deserialization.
+/// Returns the sanitized JSON and whether any items were removed.
+(Map<String, dynamic>, bool) _sanitizeDashboardJson(
+  Map<String, dynamic> dashboardJson,
+) {
+  final items = dashboardJson['items'];
+  if (items is! List) return (dashboardJson, false);
+
+  final original = List<dynamic>.from(items);
+  final filtered = original.where((item) {
+    if (item is Map<String, dynamic>) {
+      final runtimeType = item['runtimeType'];
+      return runtimeType is String &&
+          _knownDashboardItemTypes.contains(runtimeType);
+    }
+    return false;
+  }).toList();
+
+  if (filtered.length == original.length) return (dashboardJson, false);
+
+  final removedTypes = original
+      .where((item) => !filtered.contains(item))
+      .map((item) => (item as Map<String, dynamic>)['runtimeType'])
+      .toList();
+
+  DevLogger.log(
+    name: 'conversions',
+    message:
+        'Removed ${removedTypes.length} unknown dashboard item(s) '
+        'with types: $removedTypes',
+  );
+
+  return ({...dashboardJson, 'items': filtered}, true);
+}
+
 DashboardDefinition fromDashboardDbEntity(
   DashboardDefinitionDbEntity dbEntity,
 ) {
-  return DashboardDefinition.fromJson(
-    json.decode(dbEntity.serialized) as Map<String, dynamic>,
-  );
+  final rawJson = json.decode(dbEntity.serialized) as Map<String, dynamic>;
+  final (sanitizedJson, _) = _sanitizeDashboardJson(rawJson);
+  return DashboardDefinition.fromJson(sanitizedJson);
 }
 
 List<DashboardDefinition> dashboardStreamMapper(
   List<DashboardDefinitionDbEntity> dbEntities,
 ) {
-  return dbEntities.map(fromDashboardDbEntity).toList();
+  final results = <DashboardDefinition>[];
+  for (final dbEntity in dbEntities) {
+    try {
+      results.add(fromDashboardDbEntity(dbEntity));
+    } on Object catch (e) {
+      DevLogger.log(
+        name: 'conversions',
+        message: 'Failed to parse dashboard ${dbEntity.id}: $e — skipping',
+      );
+    }
+  }
+  return results;
 }
 
 HabitDefinition fromHabitDefinitionDbEntity(HabitDefinitionDbEntity dbEntity) {

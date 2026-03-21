@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
 
 class EntitiesCacheService {
   EntitiesCacheService({
@@ -164,6 +165,11 @@ class EntitiesCacheService {
       for (final item in items) {
         dashboardsById[item.id] = item;
       }
+    } on Object catch (e, stackTrace) {
+      DevLogger.log(
+        name: 'EntitiesCacheService',
+        message: 'Failed to load dashboards: $e\n$stackTrace',
+      );
     } finally {
       _dashboardsLoading = false;
       if (_dashboardsPending) {

@@ -1,5 +1,7 @@
 // ignore_for_file: cascade_invocations
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
@@ -436,5 +439,197 @@ void main() {
     expect(dbEntry.fromId, 'from');
     expect(dbEntry.toId, 'to');
     expect(dbEntry.serialized, isNotEmpty);
+  });
+
+  group('fromDashboardDbEntity sanitizes unknown item types', () {
+    Map<String, dynamic> makeDashboardJson({
+      required List<Map<String, dynamic>> items,
+    }) {
+      return {
+        'id': 'dash-1',
+        'createdAt': _baseTime.toIso8601String(),
+        'updatedAt': _baseTime.toIso8601String(),
+        'lastReviewed': _baseTime.toIso8601String(),
+        'name': 'Test Dashboard',
+        'description': 'desc',
+        'items': items,
+        'version': '1',
+        'vectorClock': null,
+        'active': true,
+        'private': false,
+        'days': 30,
+        'runtimeType': 'dashboard',
+      };
+    }
+
+    DashboardDefinitionDbEntity makeDbEntity(Map<String, dynamic> jsonMap) {
+      return DashboardDefinitionDbEntity(
+        id: 'dash-1',
+        createdAt: _baseTime,
+        updatedAt: _baseTime,
+        lastReviewed: _baseTime,
+        serialized: json.encode(jsonMap),
+        private: false,
+        deleted: false,
+        active: true,
+        name: 'dash-1',
+      );
+    }
+
+    test('filters out removed storyTimeChart items', () {
+      final dashJson = makeDashboardJson(
+        items: [
+          {
+            'runtimeType': 'measurement',
+            'id': 'measurable-1',
+            'aggregationType': 'dailySum',
+          },
+          {
+            'runtimeType': 'storyTimeChart',
+            'storyTagId': 'some-tag',
+            'color': '#FF0000',
+          },
+          {
+            'runtimeType': 'healthChart',
+            'color': '#00FF00',
+            'healthType': 'HEART_RATE',
+          },
+        ],
+      );
+
+      final dashboard = fromDashboardDbEntity(makeDbEntity(dashJson));
+      expect(dashboard.items, hasLength(2));
+      expect(dashboard.items[0], isA<DashboardMeasurementItem>());
+      expect(dashboard.items[1], isA<DashboardHealthItem>());
+    });
+
+    test('filters out removed wildcardStoryTimeChart items', () {
+      final dashJson = makeDashboardJson(
+        items: [
+          {
+            'runtimeType': 'habitChart',
+            'habitId': 'habit-1',
+          },
+          {
+            'runtimeType': 'wildcardStoryTimeChart',
+            'storySubstring': 'some-substring',
+            'color': '#FF0000',
+          },
+        ],
+      );
+
+      final dashboard = fromDashboardDbEntity(makeDbEntity(dashJson));
+      expect(dashboard.items, hasLength(1));
+      expect(dashboard.items[0], isA<DashboardHabitItem>());
+    });
+
+    test('preserves all valid item types unchanged', () {
+      final dashJson = makeDashboardJson(
+        items: [
+          {
+            'runtimeType': 'measurement',
+            'id': 'measurable-1',
+          },
+          {
+            'runtimeType': 'healthChart',
+            'color': '#00FF00',
+            'healthType': 'HEART_RATE',
+          },
+          {
+            'runtimeType': 'workoutChart',
+            'workoutType': 'running',
+            'displayName': 'Running',
+            'color': '#0000FF',
+            'valueType': 'energy',
+          },
+          {
+            'runtimeType': 'habitChart',
+            'habitId': 'habit-1',
+          },
+          {
+            'runtimeType': 'surveyChart',
+            'colorsByScoreKey': <String, String>{},
+            'surveyType': 'panas',
+            'surveyName': 'PANAS',
+          },
+        ],
+      );
+
+      final dashboard = fromDashboardDbEntity(makeDbEntity(dashJson));
+      expect(dashboard.items, hasLength(5));
+    });
+
+    test('handles dashboard with no items gracefully', () {
+      final dashJson = makeDashboardJson(items: []);
+      final dashboard = fromDashboardDbEntity(makeDbEntity(dashJson));
+      expect(dashboard.items, isEmpty);
+    });
+
+    test('filters out completely unknown runtimeType values', () {
+      final dashJson = makeDashboardJson(
+        items: [
+          {
+            'runtimeType': 'nonExistentType',
+            'someField': 'value',
+          },
+          {
+            'runtimeType': 'measurement',
+            'id': 'measurable-1',
+          },
+        ],
+      );
+
+      final dashboard = fromDashboardDbEntity(makeDbEntity(dashJson));
+      expect(dashboard.items, hasLength(1));
+      expect(dashboard.items[0], isA<DashboardMeasurementItem>());
+    });
+  });
+
+  group('dashboardStreamMapper handles parse failures gracefully', () {
+    test('skips dashboards that fail to parse entirely', () {
+      final validJson = json.encode({
+        'id': 'dash-valid',
+        'createdAt': _baseTime.toIso8601String(),
+        'updatedAt': _baseTime.toIso8601String(),
+        'lastReviewed': _baseTime.toIso8601String(),
+        'name': 'Valid Dashboard',
+        'description': 'desc',
+        'items': <Map<String, dynamic>>[],
+        'version': '1',
+        'vectorClock': null,
+        'active': true,
+        'private': false,
+        'days': 30,
+        'runtimeType': 'dashboard',
+      });
+
+      final results = dashboardStreamMapper([
+        DashboardDefinitionDbEntity(
+          id: 'dash-broken',
+          createdAt: _baseTime,
+          updatedAt: _baseTime,
+          lastReviewed: _baseTime,
+          serialized: '{"invalid json that will break}',
+          private: false,
+          deleted: false,
+          active: true,
+          name: 'dash-broken',
+        ),
+        DashboardDefinitionDbEntity(
+          id: 'dash-valid',
+          createdAt: _baseTime,
+          updatedAt: _baseTime,
+          lastReviewed: _baseTime,
+          serialized: validJson,
+          private: false,
+          deleted: false,
+          active: true,
+          name: 'dash-valid',
+        ),
+      ]);
+
+      expect(results, hasLength(1));
+      expect(results[0].id, 'dash-valid');
+    });
   });
 }
