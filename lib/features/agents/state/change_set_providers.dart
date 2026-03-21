@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -18,7 +20,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'change_set_providers.g.dart';
@@ -92,7 +93,8 @@ List<AgentDomainEntity> _deduplicateChangeSets(
 }
 
 /// Fetches pending (and partially resolved) change sets for a given project.
-final projectPendingChangeSetsProvider = FutureProvider.autoDispose
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+projectPendingChangeSetsProvider = FutureProvider.autoDispose
     .family<List<AgentDomainEntity>, String>((ref, projectId) async {
       final agent = await ref.watch(projectAgentProvider(projectId).future);
       final identity = agent?.mapOrNull(agent: (a) => a);
@@ -111,7 +113,8 @@ final projectPendingChangeSetsProvider = FutureProvider.autoDispose
     });
 
 /// Fetches accepted project recommendations that were explicitly confirmed.
-final projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
+final FutureProviderFamily<List<ProjectAcceptedRecommendation>, String>
+projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
     .family<List<ProjectAcceptedRecommendation>, String>((
       ref,
       projectId,
@@ -128,7 +131,6 @@ final projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
       final decisions = await repo.getRecentDecisions(
         identity.agentId,
         taskId: projectId,
-        limit: 20,
       );
 
       return _extractAcceptedRecommendations(decisions);
@@ -190,7 +192,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       timeService: getIt<TimeService>(),
       domainLogger: logger,
       taskAgentService: ref.watch(taskAgentServiceProvider),
-    ),
+    ).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,
   );
@@ -209,7 +211,7 @@ final projectChangeSetConfirmationServiceProvider =
           entitiesCacheService: getIt<EntitiesCacheService>(),
           domainLogger: logger,
           taskAgentService: ref.watch(taskAgentServiceProvider),
-        ),
+        ).dispatch,
         labelsRepository: labelsRepository,
         domainLogger: logger,
       );

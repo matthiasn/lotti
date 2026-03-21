@@ -59,7 +59,7 @@ void main() {
 
     service = ChangeSetConfirmationService(
       syncService: mockSyncService,
-      toolDispatcher: mockToolDispatcher,
+      toolDispatcher: mockToolDispatcher.dispatch,
       labelsRepository: mockLabelsRepository,
       domainLogger: mockDomainLogger,
     );
@@ -928,7 +928,7 @@ void main() {
           // Fresh service instance — _resolvedIds is empty.
           final freshService = ChangeSetConfirmationService(
             syncService: mockSyncService,
-            toolDispatcher: mockToolDispatcher,
+            toolDispatcher: mockToolDispatcher.dispatch,
             labelsRepository: mockLabelsRepository,
           );
 

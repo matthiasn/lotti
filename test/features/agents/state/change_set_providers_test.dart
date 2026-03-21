@@ -528,7 +528,6 @@ void main() {
           () => mockRepository.getRecentDecisions(
             agent.agentId,
             taskId: 'project-001',
-            limit: 20,
           ),
         ).thenAnswer(
           (_) async => [

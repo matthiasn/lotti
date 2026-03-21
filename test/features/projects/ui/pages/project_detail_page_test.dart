@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -352,7 +351,6 @@ void main() {
             () => mockRepository.getRecentDecisions(
               'agent-001',
               taskId: _projectId,
-              limit: 20,
             ),
           ).thenAnswer((_) async => [decision]);
 

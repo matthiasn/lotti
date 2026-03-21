@@ -15,7 +15,7 @@ import 'package:uuid/uuid.dart';
 /// within a [ChangeSetEntity].
 ///
 /// On confirmation, the corresponding tool call is dispatched via
-/// [AgentToolDispatcher] and a [ChangeDecisionEntity] is persisted.
+/// [AgentToolDispatch] and a [ChangeDecisionEntity] is persisted.
 /// On rejection, only the decision is persisted (no tool dispatch).
 ///
 /// After each item resolution, the change set's status is updated:
@@ -29,7 +29,7 @@ import 'package:uuid/uuid.dart';
 class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required AgentSyncService syncService,
-    required AgentToolDispatcher toolDispatcher,
+    required AgentToolDispatch toolDispatcher,
     required LabelsRepository labelsRepository,
     DomainLogger? domainLogger,
   }) : _syncService = syncService,
@@ -38,7 +38,7 @@ class ChangeSetConfirmationService {
        _domainLogger = domainLogger;
 
   final AgentSyncService _syncService;
-  final AgentToolDispatcher _toolDispatcher;
+  final AgentToolDispatch _toolDispatcher;
   final LabelsRepository _labelsRepository;
   final DomainLogger? _domainLogger;
 
@@ -127,7 +127,7 @@ class ChangeSetConfirmationService {
 
     // 2. Execute the tool call. If dispatch fails, revert the status back
     //    to pending so the user can retry.
-    final result = await _toolDispatcher.dispatch(
+    final result = await _toolDispatcher(
       item.toolName,
       dispatchArgs,
       current.taskId,
