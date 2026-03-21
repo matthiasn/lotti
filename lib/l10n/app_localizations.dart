@@ -4401,6 +4401,54 @@ abstract class AppLocalizations {
   /// **'Pressed'**
   String get designSystemPressedLabel;
 
+  /// No description provided for @designSystemProgressBarChunkyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunky'**
+  String get designSystemProgressBarChunkyLabel;
+
+  /// No description provided for @designSystemProgressBarLabelAndPercentageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label + Percentage'**
+  String get designSystemProgressBarLabelAndPercentageLabel;
+
+  /// No description provided for @designSystemProgressBarLabelOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label only'**
+  String get designSystemProgressBarLabelOnlyLabel;
+
+  /// No description provided for @designSystemProgressBarOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get designSystemProgressBarOffLabel;
+
+  /// No description provided for @designSystemProgressBarPercentageOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage'**
+  String get designSystemProgressBarPercentageOnlyLabel;
+
+  /// No description provided for @designSystemProgressBarQuestBarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quest bar'**
+  String get designSystemProgressBarQuestBarLabel;
+
+  /// No description provided for @designSystemProgressBarQuestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mega prize label'**
+  String get designSystemProgressBarQuestLabel;
+
+  /// No description provided for @designSystemProgressBarSampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress bar label'**
+  String get designSystemProgressBarSampleLabel;
+
   /// No description provided for @designSystemCheckboxLabel.
   ///
   /// In en, this message translates to:

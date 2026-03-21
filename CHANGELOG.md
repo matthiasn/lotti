@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design system Calendar picker: added a Widgetbook-first calendar picker with
   month rail navigation, token-driven monthly range cells and weekly date
   cards, plus focused widget/widgetbook coverage.
+- Design system Progress bar: added a Widgetbook-first determinate progress bar
+  with default and chunky variants, optional header content, token-driven fill
+  and track treatments, and focused widget/widgetbook coverage.
 
 ### Changed
 - Design system controls: tightened accessibility contracts for unlabeled

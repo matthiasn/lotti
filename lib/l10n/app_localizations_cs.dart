@@ -2436,6 +2436,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemPressedLabel => 'Stisknuto';
 
   @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentovaný';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Štítek + procento';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Jen štítek';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Vypnuto';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Procento';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Quest lišta';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Štítek mega odměny';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Štítek ukazatele průběhu';
+
+  @override
   String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
 
   @override

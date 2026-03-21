@@ -40,6 +40,9 @@ void main() {
       final calendarPickerComponent = components.singleWhere(
         (component) => component.name == 'Calendar picker',
       );
+      final progressBarComponent = components.singleWhere(
+        (component) => component.name == 'Progress bar',
+      );
       final toggleComponent = components.singleWhere(
         (component) => component.name == 'Toggle',
       );
@@ -61,6 +64,7 @@ void main() {
         'Split Buttons',
         'Tabs',
         'Calendar picker',
+        'Progress bar',
         'Toggle',
         'Radio buttons',
         'Checkbox',
@@ -72,6 +76,7 @@ void main() {
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
       expect(calendarPickerComponent.useCases.single.name, 'Overview');
+      expect(progressBarComponent.useCases.single.name, 'Overview');
       expect(toggleComponent.useCases.single.name, 'Overview');
       expect(radioButtonComponent.useCases.single.name, 'Overview');
       expect(checkboxComponent.useCases.single.name, 'Overview');
