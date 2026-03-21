@@ -25,7 +25,7 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
 Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
-forward to 09:00 local time on the next day after creation or after a due
+forward to 06:00 local time on the next day after creation or after a due
 digest completes.
 
 ## Module Structure

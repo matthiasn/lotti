@@ -412,10 +412,10 @@ void main() {
       test(
         'rolls forward the daily digest schedule when the scheduled wake is due',
         () async {
-          final testDate = DateTime(2026, 3, 20, 9, 30);
+          final testDate = DateTime(2026, 3, 20, 6, 30);
           final dueState = makeTestState(
             slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 20, 9),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
           );
           when(
             () => mockAgentRepository.getAgentState(agentId),
@@ -434,7 +434,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 9));
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, testDate);
         },
       );
@@ -443,8 +443,8 @@ void main() {
         'keeps the existing future daily digest schedule on non-due wakes',
         () async {
           // Pin clock to a time clearly before the scheduled wake.
-          final testDate = DateTime(2026, 3, 20, 7);
-          final futureSchedule = DateTime(2026, 3, 21, 9);
+          final testDate = DateTime(2026, 3, 20, 5);
+          final futureSchedule = DateTime(2026, 3, 21, 6);
           final scheduledState = makeTestState(
             slots: const AgentSlots(activeProjectId: projectId),
             scheduledWakeAt: futureSchedule,

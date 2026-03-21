@@ -29,7 +29,7 @@ already landed and what is still missing.
 - **Auto-provisioning is present.** Creating a project attempts to provision a
   project agent from a category-scoped or global `projectAgent` template.
 - **Daily digest scheduling now exists.** New project agents schedule their
-  next daily digest for 09:00 local on the next day, and due digests roll
+  next daily digest for 06:00 local on the next day, and due digests roll
   forward automatically after a successful wake.
 - **Project-scoped change-set review is now wired in.** Project detail pages
   surface pending project-agent change sets, and confirmations can now apply
@@ -420,7 +420,7 @@ Project agents use a **fundamentally different wake cadence** than task agents:
 
 | Trigger | Mechanism | Throttle |
 |---------|-----------|----------|
-| **Daily digest** | `scheduledWakeAt` set to next day 09:00 local | 24 hours |
+| **Daily digest** | `scheduledWakeAt` set to next day 06:00 local | 24 hours |
 | **Manual** | User taps "Refresh" in project detail UI | None (bypass) |
 | **Weekly 1-on-1** | `scheduledWakeAt` set to next Monday 10:00 local | 7 days |
 | **Task status change** | Subscription on project's linked task IDs, but only for status transitions (open→done, →blocked) | 4 hours |
@@ -445,7 +445,7 @@ stateDiagram-v2
     state Active {
         [*] --> Idle
 
-        Idle --> DailyDigest: scheduledWakeAt<br/>(daily 09:00)
+        Idle --> DailyDigest: scheduledWakeAt<br/>(daily 06:00)
         Idle --> TaskStatusWake: Task status<br/>transition
         Idle --> DayPlanWake: Day plan<br/>agreed
         Idle --> ManualWake: User triggers<br/>refresh
@@ -492,7 +492,7 @@ sequenceDiagram
     participant JDB as Journal DB
     participant ADB as Agent DB
 
-    Note over Sched: Daily wake trigger (09:00)
+    Note over Sched: Daily wake trigger (06:00)
 
     Sched->>PAW: execute(agentId, runKey, triggers, threadId)
 
