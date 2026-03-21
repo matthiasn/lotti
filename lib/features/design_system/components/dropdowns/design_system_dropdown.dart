@@ -107,7 +107,7 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
                   label: item.resolvedChipLabel,
                   showRemove: true,
                   onPressed: widget.onChipRemoved == null
-                      ? () {}
+                      ? null
                       : () => widget.onChipRemoved!(item),
                 ),
             ],
