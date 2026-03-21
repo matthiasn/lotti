@@ -230,11 +230,15 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
     return DesignSystemCalendarDayCellSelectionPosition.middle;
   }
 
-  List<List<DesignSystemCalendarDayCellData?>> _buildWeeks() {
+  List<List<DesignSystemCalendarDayCellData?>> _buildWeeks(
+    int firstDayOfWeekIndex,
+  ) {
     final year = _visibleMonth.year;
     final month = _visibleMonth.month;
     final daysInMonth = DateTime(year, month + 1, 0).day;
-    final firstWeekday = (DateTime(year, month).weekday - 1) % 7;
+    final firstOfMonth = DateTime(year, month);
+    final firstWeekday =
+        (firstOfMonth.weekday % 7 - firstDayOfWeekIndex + 7) % 7;
 
     final cells = <DesignSystemCalendarDayCellData?>[];
 
@@ -317,6 +321,9 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
   Widget build(BuildContext context) {
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final monthLabel = DateFormat.yMMMM(localeTag).format(_visibleMonth);
+    final firstDayOfWeek = MaterialLocalizations.of(
+      context,
+    ).firstDayOfWeekIndex;
 
     return Wrap(
       spacing: 24,
@@ -328,7 +335,7 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
             monthSections: _buildMonthSections(context),
             visibleMonthLabel: monthLabel,
             weekdayLabels: _pickerWeekdayLabels(context),
-            weeks: _buildWeeks(),
+            weeks: _buildWeeks(firstDayOfWeek),
             todayLabel: context.messages.dailyOsTodayButton,
             onTodayPressed: _onTodayPressed,
           ),
@@ -339,6 +346,7 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
             referenceDate: _rangeStart ?? _today,
             selectedDate: _rangeStart,
             onDayPressed: _onDayPressed,
+            firstDayOfWeekIndex: firstDayOfWeek,
           ),
         ),
       ],
@@ -379,18 +387,19 @@ class _WeeklyCalendarPreview extends StatelessWidget {
     required this.referenceDate,
     required this.selectedDate,
     required this.onDayPressed,
+    required this.firstDayOfWeekIndex,
   });
 
   final DateTime referenceDate;
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDayPressed;
+  final int firstDayOfWeekIndex;
 
   @override
   Widget build(BuildContext context) {
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final monday = referenceDate.subtract(
-      Duration(days: referenceDate.weekday - 1),
-    );
+    final daysBack = (referenceDate.weekday % 7 - firstDayOfWeekIndex + 7) % 7;
+    final weekStart = referenceDate.subtract(Duration(days: daysBack));
 
     return Wrap(
       spacing: 8,
@@ -399,7 +408,7 @@ class _WeeklyCalendarPreview extends StatelessWidget {
         for (var i = 0; i < 7; i++)
           Builder(
             builder: (context) {
-              final date = monday.add(Duration(days: i));
+              final date = weekStart.add(Duration(days: i));
               final label = DateFormat.E(localeTag).format(date);
               final isSelected =
                   selectedDate != null && _isSameDay(date, selectedDate!);
@@ -419,11 +428,13 @@ class _WeeklyCalendarPreview extends StatelessWidget {
 
 List<String> _pickerWeekdayLabels(BuildContext context) {
   final localeTag = Localizations.localeOf(context).toLanguageTag();
-  final monday = DateTime(2026, 1, 5);
+  final firstDayOfWeek = MaterialLocalizations.of(context).firstDayOfWeekIndex;
+  // Jan 4, 2026 is a Sunday (index 0); offset to the locale's first day.
+  final firstDay = DateTime(2026, 1, 4 + firstDayOfWeek);
 
   return List.generate(7, (index) {
     final label = DateFormat.E(localeTag).format(
-      monday.add(Duration(days: index)),
+      firstDay.add(Duration(days: index)),
     );
     return _compactWeekdayLabel(label);
   });
@@ -431,12 +442,14 @@ List<String> _pickerWeekdayLabels(BuildContext context) {
 
 List<String> _weeklyLabels(BuildContext context) {
   final localeTag = Localizations.localeOf(context).toLanguageTag();
-  final sunday = DateTime(2026, 2, 15);
+  final firstDayOfWeek = MaterialLocalizations.of(context).firstDayOfWeekIndex;
+  // Jan 4, 2026 is a Sunday (index 0); offset to the locale's first day.
+  final firstDay = DateTime(2026, 1, 4 + firstDayOfWeek);
 
   return List.generate(
     7,
     (index) => DateFormat.E(localeTag).format(
-      sunday.add(Duration(days: index)),
+      firstDay.add(Duration(days: index)),
     ),
   );
 }
