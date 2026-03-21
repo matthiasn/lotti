@@ -2397,13 +2397,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get defaultLanguage => 'Limbă implicită';
 
   @override
-  String get designSystemDefaultLabel => 'Implicit';
+  String get deleteButton => 'Șterge';
 
   @override
-  String get designSystemDisabledLabel => 'Dezactivat';
+  String get deleteDeviceLabel => 'Șterge dispozitivul';
 
   @override
   String get designSystemActivatedLabel => 'Activ';
+
+  @override
+  String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
+
+  @override
+  String get designSystemBreadcrumbDesignSystemLabel => 'Design System';
+
+  @override
+  String get designSystemBreadcrumbHomeLabel => 'Acasă';
+
+  @override
+  String get designSystemBreadcrumbMobileLabel => 'Mobil';
+
+  @override
+  String get designSystemBreadcrumbProjectsLabel => 'Proiecte';
+
+  @override
+  String get designSystemBreadcrumbSampleLabel => 'Breadcrumb';
+
+  @override
+  String get designSystemBreadcrumbTrailTitle => 'Traseu breadcrumb';
 
   @override
   String get designSystemCalendarPickerLabel => 'Selector calendar';
@@ -2412,7 +2433,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vizualizări calendar';
 
   @override
+  String get designSystemCheckboxLabel => 'Casetă de selectare';
+
+  @override
   String get designSystemDateCardsTitle => 'Carduri de dată';
+
+  @override
+  String get designSystemDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemDisabledLabel => 'Dezactivat';
+
+  @override
+  String get designSystemDividerLabelText => 'Etichetă separator';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
@@ -2454,7 +2487,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemDropdownOptionQa => 'QA';
 
   @override
+  String get designSystemErrorLabel => 'Eroare';
+
+  @override
+  String get designSystemFilledLabel => 'Completat';
+
+  @override
+  String get designSystemHorizontalLabel => 'Orizontal';
+
+  @override
   String get designSystemHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemMediumLabel => 'Mediu';
 
   @override
   String get designSystemPressedLabel => 'Apăsat';
@@ -2485,10 +2530,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemProgressBarSampleLabel => 'Etichetă bară de progres';
 
   @override
-  String get designSystemCheckboxLabel => 'Casetă de selectare';
+  String get designSystemRadioButtonLabel => 'Buton radio';
 
   @override
-  String get designSystemRadioButtonLabel => 'Buton radio';
+  String get designSystemSearchFilledText => 'Căutare Lotti';
+
+  @override
+  String get designSystemSearchHintLabel => 'Introdu utilizatorul';
 
   @override
   String get designSystemSelectedLabel => 'Selectat';
@@ -2501,14 +2549,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Deschideți opțiunile pentru $label';
+    return 'Deschide opțiunile pentru $label';
   }
 
   @override
   String get designSystemStateMatrixTitle => 'Matrice de stări';
 
   @override
+  String get designSystemSuccessLabel => 'Succes';
+
+  @override
   String get designSystemTabPendingLabel => 'În așteptare';
+
+  @override
+  String get designSystemToastDetailsLabel => 'Detalii notificare';
 
   @override
   String get designSystemToggleLabel => 'Etichetă pentru toggle';
@@ -2517,13 +2571,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemVariantMatrixTitle => 'Matrice de variante';
 
   @override
+  String get designSystemVerticalLabel => 'Vertical';
+
+  @override
+  String get designSystemWarningLabel => 'Avertisment';
+
+  @override
   String get designSystemWeeklyCalendarLabel => 'Calendar săptămânal';
 
   @override
-  String get deleteButton => 'Șterge';
-
-  @override
-  String get deleteDeviceLabel => 'Șterge dispozitivul';
+  String get designSystemWithLabelLabel => 'Cu etichetă';
 
   @override
   String deviceDeletedSuccess(String deviceName) {

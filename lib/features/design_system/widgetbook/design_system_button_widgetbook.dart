@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_breadcrumbs_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_calendar_picker_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_divider_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_progress_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_search_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_toast_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -29,6 +33,10 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       ),
       buildDesignSystemBadgeWidgetbookComponent(),
       buildDesignSystemChipWidgetbookComponent(),
+      buildDesignSystemBreadcrumbsWidgetbookComponent(),
+      buildDesignSystemSearchWidgetbookComponent(),
+      buildDesignSystemToastWidgetbookComponent(),
+      buildDesignSystemDividerWidgetbookComponent(),
       buildDesignSystemDropdownWidgetbookComponent(),
       buildDesignSystemSplitButtonWidgetbookComponent(),
       buildDesignSystemTabWidgetbookComponent(),

@@ -21,7 +21,7 @@
 ## Coding Style & Naming Conventions
 - Follow `analysis_options.yaml` (Very Good Analysis). 2‑space indent, prefer `const` and `final`.
 - Files: `lower_snake_case.dart`; types (classes/enums): `PascalCase`; members: `lowerCamelCase`.
-- Format before committing: `dart format .`.
+- Format before committing: `fvm dart format .`.
 - Do not modify generated code (`*.g.dart`, `*.freezed.dart`); regenerate via `make build_runner`.
 
 ## Testing Guidelines
@@ -72,7 +72,7 @@
   - Use `dart-mcp` for analyzer, tests, formatting, fixes, pub, and build tasks.
     - Analyze: `dart-mcp.analyze_files`
     - Tests: `dart-mcp.run_tests` (set platforms as needed)
-    - Format: `dart-mcp.dart_format`
+    - Format: `fvm dart format .`
     - Apply fixes: `dart-mcp.dart_fix`
     - Pub: `dart-mcp.pub` (e.g., `get`, `add`, `upgrade`)
     - Hot reload/runtime hooks: connect to the Dart Tooling Daemon first
@@ -84,7 +84,7 @@
   - Maintain a concise step-by-step plan using `update_plan` for multi-step work.
 - Test-first workflow when adding/fixing tests:
   - Run `dart-mcp.analyze_files` to catch lints quickly.
-  - Run `dart-mcp.dart_format` to normalize diffs.
+  - Run `fvm dart format .` to normalize diffs. Do not use `dart-mcp.dart_format`.
   - Run targeted tests (single file or folder) via `dart-mcp.run_tests` before broad runs.
   - Iterate until the targeted tests pass, then run the full suite as needed.
 - Do not edit generated files (`*.g.dart`, `*.freezed.dart`); run `dart-mcp.pub` + `make build_runner` (or `dart run build_runner`) via MCP when regeneration is required.
@@ -95,7 +95,8 @@
 - Always run `dart-mcp.analyze_files` and address every message:
   - In tests, you may add line ignores for clarity (e.g., `// ignore: avoid_redundant_argument_values`).
   - In production code, fix the root cause rather than ignoring.
-- Run `dart-mcp.dart_format` to normalize formatting prior to final checks.
+- Run `fvm dart format .` to normalize formatting prior to final checks. Do not use
+  `dart-mcp.dart_format`.
 
 ## Misc
 - Maintain feature READMEs and update them alongside code changes.
