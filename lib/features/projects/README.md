@@ -86,10 +86,12 @@ Interactive status selector on the project detail page. Shows the current status
 
 ### ProjectDetailPage
 
-Form page with three sections:
+Form page with the current project-management surface:
 1. **Status** — `ProjectStatusPicker` for changing project status.
 2. **Project Title** — text field and optional target date.
-3. **Linked Tasks** — list of tasks in this project.
+3. **Project Agent** — latest project-agent report, accepted next steps, and the provisioned agent identity.
+4. **Reviewed Changes** — pending project-agent change sets that can be confirmed or rejected in place.
+5. **Linked Tasks** — list of tasks in this project.
 
 ## Integration Points
 
@@ -100,6 +102,8 @@ Form page with three sections:
 - **Deferred agent proposals**: Project detail pages now surface project-agent
   change sets so users can confirm or reject proposed status changes, task
   creation, and other reviewed actions in place.
+- **Agent reporting**: Project detail pages now render the latest project-agent
+  report alongside accepted `recommend_next_steps` recommendations.
 
 ## Task-Project Linking
 

@@ -22,7 +22,9 @@ already landed and what is still missing.
   editing.
 - **Basic UI is present behind the feature flag.** The repo already has
   project creation/detail pages, the category detail projects section, the task
-  project picker chip/modal, and the tasks-page `ProjectHealthHeader`.
+  project picker chip/modal, the tasks-page `ProjectHealthHeader`, and the
+  project detail agent card now renders the latest report plus accepted next
+  steps.
 - **Project agents exist.** `projectAgent` kind, `agent_project` links, project
   agent slots, `ProjectAgentService`, `ProjectAgentWorkflow`,
   `ProjectAgentStrategy`, and project tool definitions are implemented.

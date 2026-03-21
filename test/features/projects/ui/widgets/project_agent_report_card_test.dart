@@ -99,6 +99,18 @@ void main() {
     testWidgets('shows agent display name when data is AgentIdentityEntity', (
       tester,
     ) async {
+      final report =
+          AgentDomainEntity.agentReport(
+                id: 'report-1',
+                agentId: 'agent-1',
+                scope: 'current',
+                createdAt: DateTime(2024, 3, 15),
+                vectorClock: null,
+                content: 'Full project report',
+                tldr: 'Project is on track.',
+              )
+              as AgentReportEntity;
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProjectAgentReportCard(projectId: projectId),
@@ -106,14 +118,41 @@ void main() {
             projectAgentProvider(projectId).overrideWith(
               (ref) async => testAgent,
             ),
+            agentReportProvider('agent-1').overrideWith(
+              (ref) async => report,
+            ),
           ],
         ),
       );
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Agent'), findsOneWidget);
       expect(find.text('My Project Agent'), findsOneWidget);
+      expect(find.text('Project is on track.'), findsOneWidget);
       expect(find.byIcon(Icons.smart_toy_outlined), findsWidgets);
+    });
+
+    testWidgets('hides report section when no latest report exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProjectAgentReportCard(projectId: projectId),
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider('agent-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('My Project Agent'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Project is on track.'), findsNothing);
     });
 
     testWidgets(
@@ -166,6 +205,9 @@ void main() {
             overrides: [
               projectAgentProvider(projectId).overrideWith(
                 (ref) async => testAgent,
+              ),
+              agentReportProvider('agent-1').overrideWith(
+                (ref) async => null,
               ),
               agentRepositoryProvider.overrideWithValue(mockRepository),
               agentUpdateStreamProvider('agent-1').overrideWith(

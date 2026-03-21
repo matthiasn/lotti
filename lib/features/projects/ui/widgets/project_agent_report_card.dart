@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 
 /// Renders project-agent context on the project detail page.
 ///
-/// Shows the provisioned agent's display name and any accepted
-/// `recommend_next_steps` decisions that have been confirmed by the user.
+/// Shows the provisioned agent's display name, latest report, and any
+/// accepted `recommend_next_steps` decisions that have been confirmed by the
+/// user.
 class ProjectAgentReportCard extends ConsumerWidget {
   const ProjectAgentReportCard({
     required this.projectId,
@@ -35,6 +38,10 @@ class ProjectAgentReportCard extends ConsumerWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (agent) {
         if (agent is! AgentIdentityEntity) return const SizedBox.shrink();
+        final report = ref
+            .watch(agentReportProvider(agent.agentId))
+            .value
+            ?.mapOrNull(agentReport: (report) => report);
 
         return LottiFormSection(
           title: context.messages.projectAgentSectionTitle,
@@ -59,6 +66,12 @@ class ProjectAgentReportCard extends ConsumerWidget {
                 ],
               ),
             ),
+            if (report != null &&
+                (report.content.trim().isNotEmpty ||
+                    (report.tldr?.trim().isNotEmpty ?? false))) ...[
+              const SizedBox(height: 4),
+              AgentReportSection(content: report.content, tldr: report.tldr),
+            ],
             if (acceptedRecommendations.isNotEmpty) ...[
               const Divider(height: 24),
               Text(
