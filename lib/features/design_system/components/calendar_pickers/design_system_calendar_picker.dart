@@ -277,14 +277,11 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final totalHeight =
-        2 * tokens.spacing.step5 +
-        _headerHeight +
-        tokens.spacing.step1 +
-        _cellSize +
-        tokens.spacing.step1 +
-        weeks.length * _cellSize +
-        (weeks.length - 1) * tokens.spacing.step1;
+    final gap = tokens.spacing.step1;
+    final verticalPadding = 2 * tokens.spacing.step5;
+    final fixedContentHeight = _headerHeight + gap + _cellSize + gap;
+    final weeksHeight = weeks.length * _cellSize + (weeks.length - 1) * gap;
+    final totalHeight = verticalPadding + fixedContentHeight + weeksHeight;
 
     return SizedBox(
       width: 440,

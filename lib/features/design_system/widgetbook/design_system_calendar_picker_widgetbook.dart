@@ -197,13 +197,19 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
     });
   }
 
+  /// Returns the range endpoints in chronological order.
+  /// Only valid when both `_rangeStart` and `_rangeEnd` are non-null.
+  ({DateTime start, DateTime end}) get _normalizedRange {
+    final a = _rangeStart!;
+    final b = _rangeEnd!;
+    return a.isBefore(b) ? (start: a, end: b) : (start: b, end: a);
+  }
+
   bool _isDateSelected(DateTime date) {
     if (_rangeStart == null) return false;
     if (_rangeEnd == null) return _isSameDay(date, _rangeStart!);
 
-    final start = _rangeStart!.isBefore(_rangeEnd!) ? _rangeStart! : _rangeEnd!;
-    final end = _rangeStart!.isBefore(_rangeEnd!) ? _rangeEnd! : _rangeStart!;
-
+    final (:start, :end) = _normalizedRange;
     return !date.isBefore(start) && !date.isAfter(end);
   }
 
@@ -214,9 +220,7 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
       return DesignSystemCalendarDayCellSelectionPosition.standalone;
     }
 
-    final start = _rangeStart!.isBefore(_rangeEnd!) ? _rangeStart! : _rangeEnd!;
-    final end = _rangeStart!.isBefore(_rangeEnd!) ? _rangeEnd! : _rangeStart!;
-
+    final (:start, :end) = _normalizedRange;
     if (_isSameDay(date, start)) {
       return DesignSystemCalendarDayCellSelectionPosition.start;
     }
@@ -244,11 +248,8 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
       final isSelected = _isDateSelected(date);
 
       final DesignSystemCalendarDayCellType type;
-      var position = DesignSystemCalendarDayCellSelectionPosition.start;
-
       if (isSelected) {
         type = DesignSystemCalendarDayCellType.selected;
-        position = _selectionPosition(date);
       } else if (isToday) {
         type = DesignSystemCalendarDayCellType.today;
       } else {
@@ -259,7 +260,9 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
         DesignSystemCalendarDayCellData(
           label: '$day',
           type: type,
-          selectionPosition: position,
+          selectionPosition: isSelected
+              ? _selectionPosition(date)
+              : DesignSystemCalendarDayCellSelectionPosition.start,
           onPressed: () => _onDayPressed(date),
         ),
       );
