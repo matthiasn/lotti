@@ -119,23 +119,29 @@ void main() {
         tester,
         selectedStartKey,
       );
-      final selectedMiddleDecoration = _firstDecoration(
-        tester,
-        selectedMiddleKey,
+      final selectedMiddleConnection = tester.widget<ColoredBox>(
+        find
+            .descendant(
+              of: find.byKey(selectedMiddleKey),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
       );
       final monthTitle = _findTextNode(tester, pickerKey, 'January 2026');
       final todayButton = _findTextNode(tester, pickerKey, 'Today');
       final activeDay = _findTextNode(tester, activeDayKey, '5');
       final border = tester.widget<DecoratedBox>(
-        find.descendant(
-          of: find.byKey(pickerKey),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is DecoratedBox &&
-                widget.decoration is BoxDecoration &&
-                (widget.decoration as BoxDecoration).border != null,
-          ),
-        ),
+        find
+            .descendant(
+              of: find.byKey(pickerKey),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is DecoratedBox &&
+                    widget.decoration is BoxDecoration &&
+                    (widget.decoration as BoxDecoration).border != null,
+              ),
+            )
+            .first,
       );
 
       expect(tester.getSize(find.byKey(pickerKey)), const Size(440, 320));
@@ -146,7 +152,7 @@ void main() {
         dsTokensLight.colors.interactive.enabled,
       );
       expect(
-        selectedMiddleDecoration.color,
+        selectedMiddleConnection.color,
         dsTokensLight.colors.background.level03,
       );
       expectTextStyle(
@@ -386,6 +392,11 @@ List<List<DesignSystemCalendarDayCellData?>> _pickerWeeks({
 }
 
 BoxDecoration _firstDecoration(WidgetTester tester, Key key) {
+  final keyedWidget = tester.widget(find.byKey(key));
+  if (keyedWidget is DecoratedBox) {
+    return keyedWidget.decoration as BoxDecoration;
+  }
+
   final decoratedBox = tester.widget<DecoratedBox>(
     find
         .descendant(

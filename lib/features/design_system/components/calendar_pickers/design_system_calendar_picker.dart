@@ -224,6 +224,7 @@ enum DesignSystemCalendarDayCellSelectionPosition {
   start,
   middle,
   end,
+  standalone,
 }
 
 enum DesignSystemCalendarDayCellVisualState {
@@ -270,13 +271,24 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   final String todayLabel;
   final VoidCallback? onTodayPressed;
 
+  static const _headerHeight = 36.0;
+  static const _cellSize = 40.0;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final totalHeight =
+        2 * tokens.spacing.step5 +
+        _headerHeight +
+        tokens.spacing.step1 +
+        _cellSize +
+        tokens.spacing.step1 +
+        weeks.length * _cellSize +
+        (weeks.length - 1) * tokens.spacing.step1;
 
     return SizedBox(
       width: 440,
-      height: 320,
+      height: totalHeight,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.background.level01,
@@ -363,8 +375,7 @@ class _CalendarYearDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final dividerColor = tokens.colors.decorative.level02;
-    final spacedLabel = label.split('').join(' ');
+    final labelColor = tokens.colors.decorative.level02;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -374,37 +385,14 @@ class _CalendarYearDivider extends StatelessWidget {
       child: SizedBox(
         width: 96,
         height: 16,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 16,
-              child: Divider(
-                color: dividerColor,
-                height: 1,
-                thickness: 1,
-              ),
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: labelColor,
             ),
-            SizedBox(width: tokens.spacing.step2),
-            SizedBox(
-              width: 56,
-              child: Text(
-                spacedLabel,
-                textAlign: TextAlign.center,
-                style: tokens.typography.styles.others.overline.copyWith(
-                  color: dividerColor,
-                ),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            SizedBox(
-              width: 16,
-              child: Divider(
-                color: dividerColor,
-                height: 1,
-                thickness: 1,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -560,10 +548,14 @@ class _CalendarMonthHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            visibleMonthLabel,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
+          Flexible(
+            child: Text(
+              visibleMonthLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
           _CalendarTodayButton(
@@ -764,18 +756,15 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                     left:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.start
-                        ? 0
-                        : -20,
+                        ? 20
+                        : 0,
                     right:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.end
-                        ? 0
+                        ? 20
                         : -20,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: styleSpec.connectionColor,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                    child: ColoredBox(
+                      color: styleSpec.connectionColor!,
                       child: const SizedBox(height: 40),
                     ),
                   ),
@@ -863,6 +852,10 @@ class _CalendarDayCellStyleSpec {
         );
       }
 
+      final showConnection =
+          data.selectionPosition !=
+          DesignSystemCalendarDayCellSelectionPosition.standalone;
+
       return _CalendarDayCellStyleSpec(
         labelStyle: tokens.typography.styles.subtitle.subtitle2,
         labelColor: tokens.colors.text.onInteractiveAlert,
@@ -870,9 +863,11 @@ class _CalendarDayCellStyleSpec {
             visualState == DesignSystemCalendarDayCellVisualState.hover
             ? tokens.colors.interactive.hover
             : tokens.colors.interactive.enabled,
-        connectionColor: enabled
-            ? tokens.colors.background.level03
-            : tokens.colors.background.level02,
+        connectionColor: showConnection
+            ? (enabled
+                  ? tokens.colors.background.level03
+                  : tokens.colors.background.level02)
+            : null,
       );
     }
 

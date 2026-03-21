@@ -4,20 +4,25 @@ import 'package:lotti/features/design_system/components/calendar_pickers/design_
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
-WidgetbookComponent buildDesignSystemCalendarPickerWidgetbookComponent() {
+WidgetbookComponent buildDesignSystemCalendarPickerWidgetbookComponent({
+  @visibleForTesting DateTime? initialDate,
+}) {
   return WidgetbookComponent(
     name: 'Calendar picker',
     useCases: [
       WidgetbookUseCase(
         name: 'Overview',
-        builder: (context) => const _CalendarPickerOverviewPage(),
+        builder: (context) =>
+            _CalendarPickerOverviewPage(initialDate: initialDate),
       ),
     ],
   );
 }
 
 class _CalendarPickerOverviewPage extends StatelessWidget {
-  const _CalendarPickerOverviewPage();
+  const _CalendarPickerOverviewPage({this.initialDate});
+
+  final DateTime? initialDate;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +37,7 @@ class _CalendarPickerOverviewPage extends StatelessWidget {
           const SizedBox(height: 32),
           _CalendarSection(
             title: context.messages.designSystemCalendarViewsTitle,
-            child: const _CalendarViews(),
+            child: _InteractiveCalendarViews(initialDate: initialDate),
           ),
         ],
       ),
@@ -134,11 +139,182 @@ class _DateCardStateColumn extends StatelessWidget {
   }
 }
 
-class _CalendarViews extends StatelessWidget {
-  const _CalendarViews();
+class _InteractiveCalendarViews extends StatefulWidget {
+  const _InteractiveCalendarViews({this.initialDate});
+
+  final DateTime? initialDate;
+
+  @override
+  State<_InteractiveCalendarViews> createState() =>
+      _InteractiveCalendarViewsState();
+}
+
+class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
+  late final DateTime _today;
+  late DateTime _visibleMonth;
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
+
+  @override
+  void initState() {
+    super.initState();
+    _today = widget.initialDate ?? DateTime.now();
+    _visibleMonth = DateTime(_today.year, _today.month);
+  }
+
+  void _onDayPressed(DateTime date) {
+    setState(() {
+      if (_rangeStart == null) {
+        _rangeStart = date;
+        _rangeEnd = null;
+      } else if (_rangeEnd == null) {
+        if (_isSameDay(date, _rangeStart!)) {
+          _rangeStart = null;
+        } else if (date.isBefore(_rangeStart!)) {
+          _rangeEnd = _rangeStart;
+          _rangeStart = date;
+        } else {
+          _rangeEnd = date;
+        }
+      } else {
+        _rangeStart = date;
+        _rangeEnd = null;
+      }
+    });
+  }
+
+  void _onMonthPressed(int year, int month) {
+    setState(() {
+      _visibleMonth = DateTime(year, month);
+    });
+  }
+
+  void _onTodayPressed() {
+    setState(() {
+      _visibleMonth = DateTime(_today.year, _today.month);
+      _rangeStart = DateTime(_today.year, _today.month, _today.day);
+      _rangeEnd = null;
+    });
+  }
+
+  bool _isDateSelected(DateTime date) {
+    if (_rangeStart == null) return false;
+    if (_rangeEnd == null) return _isSameDay(date, _rangeStart!);
+
+    final start = _rangeStart!.isBefore(_rangeEnd!) ? _rangeStart! : _rangeEnd!;
+    final end = _rangeStart!.isBefore(_rangeEnd!) ? _rangeEnd! : _rangeStart!;
+
+    return !date.isBefore(start) && !date.isAfter(end);
+  }
+
+  DesignSystemCalendarDayCellSelectionPosition _selectionPosition(
+    DateTime date,
+  ) {
+    if (_rangeEnd == null) {
+      return DesignSystemCalendarDayCellSelectionPosition.standalone;
+    }
+
+    final start = _rangeStart!.isBefore(_rangeEnd!) ? _rangeStart! : _rangeEnd!;
+    final end = _rangeStart!.isBefore(_rangeEnd!) ? _rangeEnd! : _rangeStart!;
+
+    if (_isSameDay(date, start)) {
+      return DesignSystemCalendarDayCellSelectionPosition.start;
+    }
+    if (_isSameDay(date, end)) {
+      return DesignSystemCalendarDayCellSelectionPosition.end;
+    }
+    return DesignSystemCalendarDayCellSelectionPosition.middle;
+  }
+
+  List<List<DesignSystemCalendarDayCellData?>> _buildWeeks() {
+    final year = _visibleMonth.year;
+    final month = _visibleMonth.month;
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstWeekday = (DateTime(year, month).weekday - 1) % 7;
+
+    final cells = <DesignSystemCalendarDayCellData?>[];
+
+    for (var i = 0; i < firstWeekday; i++) {
+      cells.add(null);
+    }
+
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      final isToday = _isSameDay(date, _today);
+      final isSelected = _isDateSelected(date);
+
+      final DesignSystemCalendarDayCellType type;
+      var position = DesignSystemCalendarDayCellSelectionPosition.start;
+
+      if (isSelected) {
+        type = DesignSystemCalendarDayCellType.selected;
+        position = _selectionPosition(date);
+      } else if (isToday) {
+        type = DesignSystemCalendarDayCellType.today;
+      } else {
+        type = DesignSystemCalendarDayCellType.activeMonth;
+      }
+
+      cells.add(
+        DesignSystemCalendarDayCellData(
+          label: '$day',
+          type: type,
+          selectionPosition: position,
+          onPressed: () => _onDayPressed(date),
+        ),
+      );
+    }
+
+    final weeks = <List<DesignSystemCalendarDayCellData?>>[];
+    for (var i = 0; i < cells.length; i += 7) {
+      final end = (i + 7 > cells.length) ? cells.length : i + 7;
+      final week = List<DesignSystemCalendarDayCellData?>.from(
+        cells.sublist(i, end),
+      );
+      while (week.length < 7) {
+        week.add(null);
+      }
+      weeks.add(week);
+    }
+
+    return weeks;
+  }
+
+  List<DesignSystemCalendarMonthRailSection> _buildMonthSections(
+    BuildContext context,
+  ) {
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final months = <DateTime>[];
+
+    for (var i = -6; i <= 6; i++) {
+      months.add(DateTime(_today.year, _today.month + i));
+    }
+
+    final grouped = <int, List<DateTime>>{};
+    for (final m in months) {
+      grouped.putIfAbsent(m.year, () => []).add(m);
+    }
+
+    return grouped.entries.map((entry) {
+      return DesignSystemCalendarMonthRailSection(
+        yearLabel: '${entry.key}',
+        items: entry.value.map((m) {
+          return DesignSystemCalendarMonthRailItem(
+            label: DateFormat.MMM(localeTag).format(m),
+            selected:
+                m.year == _visibleMonth.year && m.month == _visibleMonth.month,
+            onPressed: () => _onMonthPressed(m.year, m.month),
+          );
+        }).toList(),
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final monthLabel = DateFormat.yMMMM(localeTag).format(_visibleMonth);
+
     return Wrap(
       spacing: 24,
       runSpacing: 24,
@@ -146,17 +322,21 @@ class _CalendarViews extends StatelessWidget {
         _CalendarPreviewColumn(
           title: context.messages.designSystemCalendarPickerLabel,
           child: DesignSystemCalendarPicker(
-            monthSections: _monthSections(context),
-            visibleMonthLabel: _pickerMonthLabel(context),
+            monthSections: _buildMonthSections(context),
+            visibleMonthLabel: monthLabel,
             weekdayLabels: _pickerWeekdayLabels(context),
-            weeks: _pickerWeeks(),
+            weeks: _buildWeeks(),
             todayLabel: context.messages.dailyOsTodayButton,
-            onTodayPressed: _noop,
+            onTodayPressed: _onTodayPressed,
           ),
         ),
         _CalendarPreviewColumn(
           title: context.messages.designSystemWeeklyCalendarLabel,
-          child: _WeeklyCalendarPreview(labels: _weeklyLabels(context)),
+          child: _WeeklyCalendarPreview(
+            referenceDate: _rangeStart ?? _today,
+            selectedDate: _rangeStart,
+            onDayPressed: _onDayPressed,
+          ),
         ),
       ],
     );
@@ -193,70 +373,45 @@ class _CalendarPreviewColumn extends StatelessWidget {
 
 class _WeeklyCalendarPreview extends StatelessWidget {
   const _WeeklyCalendarPreview({
-    required this.labels,
+    required this.referenceDate,
+    required this.selectedDate,
+    required this.onDayPressed,
   });
 
-  final List<String> labels;
+  final DateTime referenceDate;
+  final DateTime? selectedDate;
+  final ValueChanged<DateTime> onDayPressed;
 
   @override
   Widget build(BuildContext context) {
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final monday = referenceDate.subtract(
+      Duration(days: referenceDate.weekday - 1),
+    );
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        for (var index = 0; index < labels.length; index++)
-          DesignSystemCalendarDateCard(
-            weekdayLabel: labels[index],
-            dayLabel: '${15 + index}',
-            selected: index == 2,
-            onPressed: _noop,
+        for (var i = 0; i < 7; i++)
+          Builder(
+            builder: (context) {
+              final date = monday.add(Duration(days: i));
+              final label = DateFormat.E(localeTag).format(date);
+              final isSelected =
+                  selectedDate != null && _isSameDay(date, selectedDate!);
+
+              return DesignSystemCalendarDateCard(
+                weekdayLabel: label,
+                dayLabel: '${date.day}',
+                selected: isSelected,
+                onPressed: () => onDayPressed(date),
+              );
+            },
           ),
       ],
     );
   }
-}
-
-List<DesignSystemCalendarMonthRailSection> _monthSections(
-  BuildContext context,
-) {
-  final localeTag = Localizations.localeOf(context).toLanguageTag();
-
-  DesignSystemCalendarMonthRailItem item(
-    int year,
-    int month, {
-    bool selected = false,
-  }) {
-    return DesignSystemCalendarMonthRailItem(
-      label: DateFormat.MMM(localeTag).format(DateTime(year, month)),
-      selected: selected,
-      onPressed: _noop,
-    );
-  }
-
-  return [
-    DesignSystemCalendarMonthRailSection(
-      yearLabel: '2025',
-      items: [
-        item(2025, 8),
-        item(2025, 9),
-        item(2025, 10),
-        item(2025, 11),
-        item(2025, 12),
-      ],
-    ),
-    DesignSystemCalendarMonthRailSection(
-      yearLabel: '2026',
-      items: [
-        item(2026, 1, selected: true),
-        item(2026, 2),
-      ],
-    ),
-  ];
-}
-
-String _pickerMonthLabel(BuildContext context) {
-  final localeTag = Localizations.localeOf(context).toLanguageTag();
-  return DateFormat.yMMMM(localeTag).format(DateTime(2026));
 }
 
 List<String> _pickerWeekdayLabels(BuildContext context) {
@@ -291,74 +446,8 @@ String _compactWeekdayLabel(String label) {
   return compactLabel.substring(0, 2);
 }
 
-List<List<DesignSystemCalendarDayCellData?>> _pickerWeeks() {
-  DesignSystemCalendarDayCellData active(String label) {
-    return DesignSystemCalendarDayCellData(
-      label: label,
-      type: DesignSystemCalendarDayCellType.activeMonth,
-      onPressed: _noop,
-    );
-  }
-
-  DesignSystemCalendarDayCellData selected(
-    String label,
-    DesignSystemCalendarDayCellSelectionPosition position,
-  ) {
-    return DesignSystemCalendarDayCellData(
-      label: label,
-      type: DesignSystemCalendarDayCellType.selected,
-      selectionPosition: position,
-      onPressed: _noop,
-    );
-  }
-
-  return [
-    [
-      null,
-      null,
-      null,
-      selected('1', DesignSystemCalendarDayCellSelectionPosition.start),
-      selected('2', DesignSystemCalendarDayCellSelectionPosition.middle),
-      selected('3', DesignSystemCalendarDayCellSelectionPosition.middle),
-      selected('4', DesignSystemCalendarDayCellSelectionPosition.end),
-    ],
-    [
-      active('5'),
-      active('6'),
-      active('7'),
-      active('8'),
-      active('9'),
-      active('10'),
-      active('11'),
-    ],
-    [
-      active('12'),
-      active('13'),
-      active('14'),
-      active('15'),
-      active('16'),
-      active('17'),
-      active('18'),
-    ],
-    [
-      active('19'),
-      active('20'),
-      active('21'),
-      active('22'),
-      active('23'),
-      active('24'),
-      active('25'),
-    ],
-    [
-      active('26'),
-      active('27'),
-      active('28'),
-      active('29'),
-      active('30'),
-      active('31'),
-      null,
-    ],
-  ];
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 void _noop() {}
