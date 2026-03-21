@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design system controls: tightened accessibility contracts for unlabeled
   controls, added real tooltip behavior and resilient label truncation to
   toggles, reset transient interaction states when controls become disabled,
-  and added a disabled state to split buttons.
+  added a disabled state to split buttons, and now enforce the same
+  visible-label-or-semantics contract across chips, tabs, dropdowns, and split
+  buttons.
 
 ## [0.9.928] - 2026-03-17
 ### Added

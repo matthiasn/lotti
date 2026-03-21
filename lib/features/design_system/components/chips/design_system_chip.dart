@@ -21,6 +21,10 @@ class DesignSystemChip extends StatefulWidget {
     this.forcedState,
     super.key,
   }) : assert(
+         label != '' || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       ),
+       assert(
          leadingIcon == null || avatar == null,
          'Use either leadingIcon or avatar, not both.',
        );
@@ -104,7 +108,7 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
                   enabled: enabled,
                   selected:
                       visualState == DesignSystemChipVisualState.activated,
-                  label: widget.semanticsLabel,
+                  label: widget.semanticsLabel ?? widget.label,
                   child: _ChipContent(
                     label: widget.label,
                     leadingIcon: widget.leadingIcon,

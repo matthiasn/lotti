@@ -28,8 +28,8 @@ class DesignSystemTab extends StatefulWidget {
     this.forcedState,
     super.key,
   }) : assert(
-         label != null || semanticsLabel != null,
-         'Provide label or semanticsLabel for accessibility.',
+         (label != null && label != '') || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
        );
 
   final bool selected;

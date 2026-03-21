@@ -13,6 +13,9 @@ This feature contains the standalone Widgetbook-first design system work.
 ## Accessibility Conventions
 
 - Interactive controls require either a visible label or a `semanticsLabel`
+- Split buttons use `mainSemanticsLabel` for the primary action when the
+  visible label is omitted, and the dropdown action derives its fallback label
+  from that same accessible name unless explicitly overridden
 - Decorative trailing info icons must use a real tooltip message
 - Disabled states should block interaction and keep semantics in sync
 

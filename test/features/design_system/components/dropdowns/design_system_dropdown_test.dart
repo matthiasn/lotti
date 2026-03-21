@@ -372,6 +372,47 @@ void main() {
       expect(decoration.color, dsTokensDark.colors.background.level01);
       expect(shape.side.color, dsTokensDark.colors.decorative.level02);
     });
+
+    testWidgets('uses semanticsLabel when the visible label is omitted', (
+      tester,
+    ) async {
+      await _pumpDropdown(
+        tester,
+        SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: '',
+            semanticsLabel: 'Project picker',
+            inputLabel: 'Input',
+            items: _items(['Title']),
+          ),
+        ),
+      );
+
+      final triggerSemantics = tester.widget<Semantics>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == 'Project picker',
+        ),
+      );
+
+      expect(triggerSemantics.properties.label, 'Project picker');
+    });
+
+    test(
+      'asserts when neither a visible label nor semanticsLabel is provided',
+      () {
+        expect(
+          () => DesignSystemDropdown(
+            label: '',
+            inputLabel: 'Input',
+            items: _items(['Title']),
+          ),
+          throwsAssertionError,
+        );
+      },
+    );
   });
 }
 

@@ -287,6 +287,42 @@ void main() {
 
       expect(tapCount, 1);
     });
+
+    testWidgets('uses semanticsLabel when the visible label is omitted', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpTab(
+        tester,
+        const DesignSystemTab(
+          selected: false,
+          label: '',
+          semanticsLabel: 'Pending tab',
+          leadingIcon: Icons.schedule_rounded,
+          onPressed: _noop,
+        ),
+      );
+
+      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
+      expect(find.bySemanticsLabel('Pending tab'), findsOneWidget);
+
+      semantics.dispose();
+    });
+
+    test(
+      'asserts when neither a visible label nor semanticsLabel is provided',
+      () {
+        expect(
+          () => DesignSystemTab(
+            selected: false,
+            label: '',
+            onPressed: _noop,
+          ),
+          throwsAssertionError,
+        );
+      },
+    );
   });
 }
 

@@ -298,6 +298,45 @@ void main() {
 
       semantics.dispose();
     });
+
+    testWidgets(
+      'uses mainSemanticsLabel for the primary and dropdown fallback labels',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+
+        await _pumpSplitButton(
+          tester,
+          const DesignSystemSplitButton(
+            label: '',
+            mainSemanticsLabel: 'Task actions',
+            onPressed: _noop,
+            onDropdownPressed: _noop,
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Task actions'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Open Task actions options'),
+          findsOneWidget,
+        );
+
+        semantics.dispose();
+      },
+    );
+
+    test(
+      'asserts when neither a visible label nor mainSemanticsLabel is provided',
+      () {
+        expect(
+          () => DesignSystemSplitButton(
+            label: '',
+            onPressed: _noop,
+            onDropdownPressed: _noop,
+          ),
+          throwsAssertionError,
+        );
+      },
+    );
   });
 }
 

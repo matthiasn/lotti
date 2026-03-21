@@ -28,8 +28,12 @@ class DesignSystemRadioButton extends StatefulWidget {
          'Provide either a visible label or a semanticsLabel.',
        ),
        assert(
-         label != null || !showTooltipIcon,
-         'A tooltip icon requires a label.',
+         !showTooltipIcon ||
+             (label != null && label != '') ||
+             tooltipMessage != null ||
+             semanticsLabel != null,
+         'A tooltip icon requires a non-empty label, tooltipMessage, '
+         'or semanticsLabel.',
        );
 
   final bool selected;

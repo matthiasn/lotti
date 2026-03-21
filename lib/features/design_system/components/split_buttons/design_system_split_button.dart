@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 enum DesignSystemSplitButtonSize {
@@ -19,7 +20,10 @@ class DesignSystemSplitButton extends StatelessWidget {
     this.mainSemanticsLabel,
     this.dropdownSemanticsLabel,
     super.key,
-  });
+  }) : assert(
+         label != '' || mainSemanticsLabel != null,
+         'Provide either a visible label or a mainSemanticsLabel.',
+       );
 
   final String label;
   final VoidCallback onPressed;
@@ -35,9 +39,12 @@ class DesignSystemSplitButton extends StatelessWidget {
     final tokens = context.designTokens;
     final sizeSpec = _SplitButtonSizeSpec.fromTokens(tokens, size);
     final styleSpec = _SplitButtonStyleSpec.fromTokens(tokens);
+    final resolvedMainSemanticsLabel = mainSemanticsLabel ?? label;
     final resolvedDropdownSemanticsLabel =
         dropdownSemanticsLabel ??
-        context.messages.designSystemSplitButtonDropdownSemantics(label);
+        context.messages.designSystemSplitButtonDropdownSemantics(
+          resolvedMainSemanticsLabel,
+        );
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
     );
@@ -66,7 +73,7 @@ class DesignSystemSplitButton extends StatelessWidget {
                     child: Semantics(
                       button: true,
                       enabled: enabled,
-                      label: mainSemanticsLabel ?? label,
+                      label: resolvedMainSemanticsLabel,
                       child: InkWell(
                         borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(sizeSpec.cornerRadius),
@@ -117,13 +124,9 @@ class DesignSystemSplitButton extends StatelessWidget {
       ),
     );
 
-    if (enabled) {
-      return splitButton;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: splitButton,
+    return splitButton.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 }

@@ -75,8 +75,10 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     );
     final hasLabel = widget.label?.isNotEmpty == true;
     final hasTooltipIcon = widget.tooltipIcon != null;
-    final tooltipMessage =
-        widget.tooltipMessage ?? widget.label ?? widget.semanticsLabel!;
+    final tooltipMessage = widget.tooltipMessage ??
+        (widget.label?.isNotEmpty == true
+            ? widget.label
+            : widget.semanticsLabel)!;
     final control = _ToggleControl(
       sizeSpec: sizeSpec,
       variantSpec: variantSpec,

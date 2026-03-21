@@ -37,7 +37,10 @@ class DesignSystemDropdown extends StatefulWidget {
     this.onItemPressed,
     this.onChipRemoved,
     super.key,
-  });
+  }) : assert(
+         label != '' || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       );
 
   final String label;
   final String inputLabel;
@@ -190,9 +193,11 @@ class _DropdownTrigger extends StatelessWidget {
           ),
         ),
         child: Semantics(
+          container: true,
           button: true,
           enabled: enabled,
           label: semanticsLabel,
+          excludeSemantics: true,
           child: InkWell(
             borderRadius: BorderRadius.circular(sizeSpec.fieldRadius),
             onTap: onTap,
