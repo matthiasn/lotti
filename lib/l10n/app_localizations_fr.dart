@@ -2438,6 +2438,45 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemActivatedLabel => 'Actif';
 
   @override
+  String get designSystemDropdownComboboxTitle => 'Combobox';
+
+  @override
+  String get designSystemDropdownFieldLabel => 'Libellé';
+
+  @override
+  String get designSystemDropdownInputLabel => 'Saisie';
+
+  @override
+  String get designSystemDropdownListTitle => 'Liste déroulante';
+
+  @override
+  String get designSystemDropdownMultiselectInputLabel => 'Choisis des équipes';
+
+  @override
+  String get designSystemDropdownMultiselectTitle => 'Sélection multiple';
+
+  @override
+  String get designSystemDropdownOptionAnalytics => 'Analytics';
+
+  @override
+  String get designSystemDropdownOptionBackend => 'Backend';
+
+  @override
+  String get designSystemDropdownOptionDesign => 'Design';
+
+  @override
+  String get designSystemDropdownOptionFrontend => 'Frontend';
+
+  @override
+  String get designSystemDropdownOptionGrowth => 'Growth';
+
+  @override
+  String get designSystemDropdownOptionMobile => 'Mobile';
+
+  @override
+  String get designSystemDropdownOptionQa => 'QA';
+
+  @override
   String get designSystemHoverLabel => 'Survol';
 
   @override

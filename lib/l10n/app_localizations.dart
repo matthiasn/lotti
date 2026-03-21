@@ -4293,6 +4293,84 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
+  /// No description provided for @designSystemDropdownComboboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Combobox'**
+  String get designSystemDropdownComboboxTitle;
+
+  /// No description provided for @designSystemDropdownFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get designSystemDropdownFieldLabel;
+
+  /// No description provided for @designSystemDropdownInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get designSystemDropdownInputLabel;
+
+  /// No description provided for @designSystemDropdownListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropdown list'**
+  String get designSystemDropdownListTitle;
+
+  /// No description provided for @designSystemDropdownMultiselectInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select teams'**
+  String get designSystemDropdownMultiselectInputLabel;
+
+  /// No description provided for @designSystemDropdownMultiselectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiselect'**
+  String get designSystemDropdownMultiselectTitle;
+
+  /// No description provided for @designSystemDropdownOptionAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get designSystemDropdownOptionAnalytics;
+
+  /// No description provided for @designSystemDropdownOptionBackend.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend'**
+  String get designSystemDropdownOptionBackend;
+
+  /// No description provided for @designSystemDropdownOptionDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get designSystemDropdownOptionDesign;
+
+  /// No description provided for @designSystemDropdownOptionFrontend.
+  ///
+  /// In en, this message translates to:
+  /// **'Frontend'**
+  String get designSystemDropdownOptionFrontend;
+
+  /// No description provided for @designSystemDropdownOptionGrowth.
+  ///
+  /// In en, this message translates to:
+  /// **'Growth'**
+  String get designSystemDropdownOptionGrowth;
+
+  /// No description provided for @designSystemDropdownOptionMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get designSystemDropdownOptionMobile;
+
+  /// No description provided for @designSystemDropdownOptionQa.
+  ///
+  /// In en, this message translates to:
+  /// **'QA'**
+  String get designSystemDropdownOptionQa;
+
   /// No description provided for @designSystemHoverLabel.
   ///
   /// In en, this message translates to:

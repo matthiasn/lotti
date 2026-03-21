@@ -28,6 +28,9 @@ void main() {
       final chipComponent = components.singleWhere(
         (component) => component.name == 'Chips',
       );
+      final dropdownComponent = components.singleWhere(
+        (component) => component.name == 'Dropdowns',
+      );
       final splitButtonComponent = components.singleWhere(
         (component) => component.name == 'Split Buttons',
       );
@@ -51,6 +54,7 @@ void main() {
         'Buttons',
         'Badges',
         'Chips',
+        'Dropdowns',
         'Split Buttons',
         'Tabs',
         'Toggle',
@@ -60,6 +64,7 @@ void main() {
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
+      expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
       expect(toggleComponent.useCases.single.name, 'Overview');
