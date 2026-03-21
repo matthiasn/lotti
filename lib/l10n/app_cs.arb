@@ -1161,7 +1161,9 @@
   "noDefaultLanguage": "Žádný výchozí jazyk",
   "designSystemDefaultLabel": "Výchozí",
   "designSystemDisabledLabel": "Zakázáno",
+  "designSystemActivatedLabel": "Aktivní",
   "designSystemHoverLabel": "Přejetí",
+  "designSystemPressedLabel": "Stisknuto",
   "designSystemRadioButtonLabel": "Radio button",
   "designSystemSizeScaleTitle": "Škála velikostí",
   "designSystemSmallLabel": "Malý",
@@ -1174,6 +1176,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Matice stavů",
+  "designSystemTabPendingLabel": "Čekající",
   "designSystemToggleLabel": "Popisek přepínače",
   "designSystemVariantMatrixTitle": "Matice variant",
   "noPromptsAvailable": "Žádné dostupné výzvy",

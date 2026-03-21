@@ -1374,7 +1374,9 @@
   "noDefaultLanguage": "Aucune langue par défaut",
   "designSystemDefaultLabel": "Par défaut",
   "designSystemDisabledLabel": "Désactivé",
+  "designSystemActivatedLabel": "Actif",
   "designSystemHoverLabel": "Survol",
+  "designSystemPressedLabel": "Appuyé",
   "designSystemRadioButtonLabel": "Bouton radio",
   "designSystemSizeScaleTitle": "Échelle des tailles",
   "designSystemSmallLabel": "Petit",
@@ -1387,6 +1389,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Matrice d'états",
+  "designSystemTabPendingLabel": "En attente",
   "designSystemToggleLabel": "Libellé du toggle",
   "designSystemVariantMatrixTitle": "Matrice des variantes",
   "noPromptsAvailable": "Aucun prompt disponible",

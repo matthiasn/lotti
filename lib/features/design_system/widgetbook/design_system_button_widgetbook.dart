@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_w
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -26,6 +27,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       buildDesignSystemBadgeWidgetbookComponent(),
       buildDesignSystemChipWidgetbookComponent(),
       buildDesignSystemSplitButtonWidgetbookComponent(),
+      buildDesignSystemTabWidgetbookComponent(),
       buildDesignSystemToggleWidgetbookComponent(),
       buildDesignSystemRadioButtonWidgetbookComponent(),
       buildDesignSystemCheckboxWidgetbookComponent(),

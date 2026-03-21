@@ -31,6 +31,9 @@ void main() {
       final splitButtonComponent = components.singleWhere(
         (component) => component.name == 'Split Buttons',
       );
+      final tabsComponent = components.singleWhere(
+        (component) => component.name == 'Tabs',
+      );
       final toggleComponent = components.singleWhere(
         (component) => component.name == 'Toggle',
       );
@@ -49,6 +52,7 @@ void main() {
         'Badges',
         'Chips',
         'Split Buttons',
+        'Tabs',
         'Toggle',
         'Radio buttons',
         'Checkbox',
@@ -57,6 +61,7 @@ void main() {
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
+      expect(tabsComponent.useCases.single.name, 'Overview');
       expect(toggleComponent.useCases.single.name, 'Overview');
       expect(radioButtonComponent.useCases.single.name, 'Overview');
       expect(checkboxComponent.useCases.single.name, 'Overview');

@@ -1374,7 +1374,9 @@
   "noDefaultLanguage": "Fără limbă implicită",
   "designSystemDefaultLabel": "Implicit",
   "designSystemDisabledLabel": "Dezactivat",
+  "designSystemActivatedLabel": "Activ",
   "designSystemHoverLabel": "La survolare",
+  "designSystemPressedLabel": "Apăsat",
   "designSystemRadioButtonLabel": "Buton radio",
   "designSystemSizeScaleTitle": "Scală de dimensiuni",
   "designSystemSmallLabel": "Mic",
@@ -1387,6 +1389,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Matrice de stări",
+  "designSystemTabPendingLabel": "În așteptare",
   "designSystemToggleLabel": "Etichetă pentru toggle",
   "designSystemVariantMatrixTitle": "Matrice de variante",
   "noPromptsAvailable": "Nu există prompturi disponibile",

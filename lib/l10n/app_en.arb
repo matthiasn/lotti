@@ -1206,7 +1206,9 @@
   "defaultLanguage": "Default Language",
   "designSystemDefaultLabel": "Default",
   "designSystemDisabledLabel": "Disabled",
+  "designSystemActivatedLabel": "Activated",
   "designSystemHoverLabel": "Hover",
+  "designSystemPressedLabel": "Pressed",
   "designSystemRadioButtonLabel": "Radio button",
   "designSystemSizeScaleTitle": "Size Scale",
   "designSystemSmallLabel": "Small",
@@ -1219,6 +1221,7 @@
     }
   },
   "designSystemStateMatrixTitle": "State Matrix",
+  "designSystemTabPendingLabel": "Pending",
   "designSystemToggleLabel": "Toggle label",
   "designSystemVariantMatrixTitle": "Variant Matrix",
   "deleteButton": "Delete",
