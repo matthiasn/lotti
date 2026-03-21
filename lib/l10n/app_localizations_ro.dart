@@ -2397,13 +2397,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get defaultLanguage => 'Limbă implicită';
 
   @override
-  String get designSystemDefaultLabel => 'Implicit';
+  String get deleteButton => 'Șterge';
 
   @override
-  String get designSystemDisabledLabel => 'Dezactivat';
+  String get deleteDeviceLabel => 'Șterge dispozitivul';
 
   @override
   String get designSystemActivatedLabel => 'Activ';
+
+  @override
+  String get designSystemButtonDangerLabel => 'Pericol';
+
+  @override
+  String get designSystemButtonDangerSecondaryLabel => 'Pericol secundar';
+
+  @override
+  String get designSystemButtonDangerTertiaryLabel => 'Pericol terțiar';
+
+  @override
+  String get designSystemButtonPrimaryLabel => 'Primar';
+
+  @override
+  String get designSystemButtonSecondaryLabel => 'Secundar';
+
+  @override
+  String get designSystemButtonTertiaryLabel => 'Terțiar';
 
   @override
   String get designSystemCalendarPickerLabel => 'Selector calendar';
@@ -2412,7 +2430,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vizualizări calendar';
 
   @override
+  String get designSystemCheckboxLabel => 'Casetă de selectare';
+
+  @override
   String get designSystemDateCardsTitle => 'Carduri de dată';
+
+  @override
+  String get designSystemDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemDisabledLabel => 'Dezactivat';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
@@ -2457,6 +2484,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHoverLabel => 'La survolare';
 
   @override
+  String get designSystemJumboLabel => 'Jumbo';
+
+  @override
+  String get designSystemLargeLabel => 'Mare';
+
+  @override
+  String get designSystemMediumLabel => 'Mediu';
+
+  @override
   String get designSystemPressedLabel => 'Apăsat';
 
   @override
@@ -2483,9 +2519,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemProgressBarSampleLabel => 'Etichetă bară de progres';
-
-  @override
-  String get designSystemCheckboxLabel => 'Casetă de selectare';
 
   @override
   String get designSystemRadioButtonLabel => 'Buton radio';
@@ -2518,12 +2551,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemWeeklyCalendarLabel => 'Calendar săptămânal';
-
-  @override
-  String get deleteButton => 'Șterge';
-
-  @override
-  String get deleteDeviceLabel => 'Șterge dispozitivul';
 
   @override
   String deviceDeletedSuccess(String deviceName) {

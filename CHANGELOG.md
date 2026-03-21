@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with default and chunky variants, optional header content, token-driven fill
   and track treatments, and focused widget/widgetbook coverage.
 
+- Design system Buttons: localized the button Widgetbook showcase, replacing
+  hardcoded variant, size, and state labels with ARB-driven strings across all
+  six supported languages.
+
 ### Changed
 - Design system controls: tightened accessibility contracts for unlabeled
   controls, added real tooltip behavior and resilient label truncation to

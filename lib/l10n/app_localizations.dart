@@ -4275,23 +4275,59 @@ abstract class AppLocalizations {
   /// **'Default Language'**
   String get defaultLanguage;
 
-  /// No description provided for @designSystemDefaultLabel.
+  /// No description provided for @deleteButton.
   ///
   /// In en, this message translates to:
-  /// **'Default'**
-  String get designSystemDefaultLabel;
+  /// **'Delete'**
+  String get deleteButton;
 
-  /// No description provided for @designSystemDisabledLabel.
+  /// No description provided for @deleteDeviceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Disabled'**
-  String get designSystemDisabledLabel;
+  /// **'Delete device'**
+  String get deleteDeviceLabel;
 
   /// No description provided for @designSystemActivatedLabel.
   ///
   /// In en, this message translates to:
   /// **'Activated'**
   String get designSystemActivatedLabel;
+
+  /// No description provided for @designSystemButtonDangerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger'**
+  String get designSystemButtonDangerLabel;
+
+  /// No description provided for @designSystemButtonDangerSecondaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger secondary'**
+  String get designSystemButtonDangerSecondaryLabel;
+
+  /// No description provided for @designSystemButtonDangerTertiaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger tertiary'**
+  String get designSystemButtonDangerTertiaryLabel;
+
+  /// No description provided for @designSystemButtonPrimaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get designSystemButtonPrimaryLabel;
+
+  /// No description provided for @designSystemButtonSecondaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary'**
+  String get designSystemButtonSecondaryLabel;
+
+  /// No description provided for @designSystemButtonTertiaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tertiary'**
+  String get designSystemButtonTertiaryLabel;
 
   /// No description provided for @designSystemCalendarPickerLabel.
   ///
@@ -4305,11 +4341,29 @@ abstract class AppLocalizations {
   /// **'Calendar Views'**
   String get designSystemCalendarViewsTitle;
 
+  /// No description provided for @designSystemCheckboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkbox'**
+  String get designSystemCheckboxLabel;
+
   /// No description provided for @designSystemDateCardsTitle.
   ///
   /// In en, this message translates to:
   /// **'Date Cards'**
   String get designSystemDateCardsTitle;
+
+  /// No description provided for @designSystemDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get designSystemDefaultLabel;
+
+  /// No description provided for @designSystemDisabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get designSystemDisabledLabel;
 
   /// No description provided for @designSystemDropdownComboboxTitle.
   ///
@@ -4395,6 +4449,24 @@ abstract class AppLocalizations {
   /// **'Hover'**
   String get designSystemHoverLabel;
 
+  /// No description provided for @designSystemJumboLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Jumbo'**
+  String get designSystemJumboLabel;
+
+  /// No description provided for @designSystemLargeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get designSystemLargeLabel;
+
+  /// No description provided for @designSystemMediumLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get designSystemMediumLabel;
+
   /// No description provided for @designSystemPressedLabel.
   ///
   /// In en, this message translates to:
@@ -4448,12 +4520,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Progress bar label'**
   String get designSystemProgressBarSampleLabel;
-
-  /// No description provided for @designSystemCheckboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Checkbox'**
-  String get designSystemCheckboxLabel;
 
   /// No description provided for @designSystemRadioButtonLabel.
   ///
@@ -4514,18 +4580,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weekly Calendar'**
   String get designSystemWeeklyCalendarLabel;
-
-  /// No description provided for @deleteButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get deleteButton;
-
-  /// No description provided for @deleteDeviceLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete device'**
-  String get deleteDeviceLabel;
 
   /// No description provided for @deviceDeletedSuccess.
   ///

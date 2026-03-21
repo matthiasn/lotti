@@ -2395,13 +2395,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get defaultLanguage => 'Standardsprache';
 
   @override
-  String get designSystemDefaultLabel => 'Standard';
+  String get deleteButton => 'Löschen';
 
   @override
-  String get designSystemDisabledLabel => 'Deaktiviert';
+  String get deleteDeviceLabel => 'Gerät löschen';
 
   @override
   String get designSystemActivatedLabel => 'Aktiv';
+
+  @override
+  String get designSystemButtonDangerLabel => 'Gefahr';
+
+  @override
+  String get designSystemButtonDangerSecondaryLabel => 'Gefahr sekundär';
+
+  @override
+  String get designSystemButtonDangerTertiaryLabel => 'Gefahr tertiär';
+
+  @override
+  String get designSystemButtonPrimaryLabel => 'Primär';
+
+  @override
+  String get designSystemButtonSecondaryLabel => 'Sekundär';
+
+  @override
+  String get designSystemButtonTertiaryLabel => 'Tertiär';
 
   @override
   String get designSystemCalendarPickerLabel => 'Kalenderauswahl';
@@ -2410,7 +2428,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Kalenderansichten';
 
   @override
+  String get designSystemCheckboxLabel => 'Checkbox';
+
+  @override
   String get designSystemDateCardsTitle => 'Datumskarten';
+
+  @override
+  String get designSystemDefaultLabel => 'Standard';
+
+  @override
+  String get designSystemDisabledLabel => 'Deaktiviert';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Kombinationsfeld';
@@ -2455,6 +2482,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemJumboLabel => 'Jumbo';
+
+  @override
+  String get designSystemLargeLabel => 'Groß';
+
+  @override
+  String get designSystemMediumLabel => 'Mittel';
+
+  @override
   String get designSystemPressedLabel => 'Gedrückt';
 
   @override
@@ -2481,9 +2517,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemProgressBarSampleLabel => 'Progress-Bar-Label';
-
-  @override
-  String get designSystemCheckboxLabel => 'Checkbox';
 
   @override
   String get designSystemRadioButtonLabel => 'Radio-Button';
@@ -2516,12 +2549,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemWeeklyCalendarLabel => 'Wochenkalender';
-
-  @override
-  String get deleteButton => 'Löschen';
-
-  @override
-  String get deleteDeviceLabel => 'Gerät löschen';
 
   @override
   String deviceDeletedSuccess(String deviceName) {

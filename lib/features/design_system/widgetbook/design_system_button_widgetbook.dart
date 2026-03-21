@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_calendar_picker_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_split_butt
 import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildDesignSystemWidgetbookFolder() {
@@ -49,15 +51,15 @@ class _ButtonOverviewPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: ListView(
-        children: const [
+        children: [
           _ButtonSection(
-            title: 'Size Scale',
-            child: _ButtonSizeScale(),
+            title: context.messages.designSystemSizeScaleTitle,
+            child: const _ButtonSizeScale(),
           ),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
           _ButtonSection(
-            title: 'Variant Matrix',
-            child: _ButtonVariantMatrix(),
+            title: context.messages.designSystemVariantMatrixTitle,
+            child: const _ButtonVariantMatrix(),
           ),
         ],
       ),
@@ -104,7 +106,7 @@ class _ButtonSizeScale extends StatelessWidget {
         children: [
           for (final size in DesignSystemButtonSize.values)
             DesignSystemButton(
-              label: _labelForSize(size),
+              label: _labelForSize(context, size),
               size: size,
               leadingIcon: Icons.add,
               trailingIcon: Icons.keyboard_arrow_down,
@@ -121,10 +123,16 @@ class _ButtonVariantMatrix extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final stateRows = _stateRows(context);
+    final tokens = context.designTokens;
+    final descriptionStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final entry in _stateRows)
+        for (final entry in stateRows)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: Column(
@@ -132,7 +140,7 @@ class _ButtonVariantMatrix extends StatelessWidget {
               children: [
                 Text(
                   entry.label,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: descriptionStyle,
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -141,7 +149,7 @@ class _ButtonVariantMatrix extends StatelessWidget {
                   children: [
                     for (final variant in DesignSystemButtonVariant.values)
                       DesignSystemButton(
-                        label: _labelForVariant(variant),
+                        label: _labelForVariant(context, variant),
                         variant: variant,
                         leadingIcon: Icons.add,
                         trailingIcon: Icons.keyboard_arrow_down,
@@ -170,37 +178,50 @@ class _StateRow {
   final DesignSystemButtonVisualState? state;
 }
 
-const _stateRows = <_StateRow>[
-  _StateRow(label: 'Default', enabled: true),
-  _StateRow(
-    label: 'Hover',
-    enabled: true,
-    state: DesignSystemButtonVisualState.hover,
-  ),
-  _StateRow(
-    label: 'Pressed',
-    enabled: true,
-    state: DesignSystemButtonVisualState.pressed,
-  ),
-  _StateRow(label: 'Disabled', enabled: false),
-];
+List<_StateRow> _stateRows(BuildContext context) {
+  final messages = context.messages;
+  return [
+    _StateRow(label: messages.designSystemDefaultLabel, enabled: true),
+    _StateRow(
+      label: messages.designSystemHoverLabel,
+      enabled: true,
+      state: DesignSystemButtonVisualState.hover,
+    ),
+    _StateRow(
+      label: messages.designSystemPressedLabel,
+      enabled: true,
+      state: DesignSystemButtonVisualState.pressed,
+    ),
+    _StateRow(label: messages.designSystemDisabledLabel, enabled: false),
+  ];
+}
 
-String _labelForVariant(DesignSystemButtonVariant variant) {
+String _labelForVariant(
+  BuildContext context,
+  DesignSystemButtonVariant variant,
+) {
+  final messages = context.messages;
   return switch (variant) {
-    DesignSystemButtonVariant.primary => 'Primary',
-    DesignSystemButtonVariant.secondary => 'Secondary',
-    DesignSystemButtonVariant.tertiary => 'Tertiary',
-    DesignSystemButtonVariant.danger => 'Danger',
-    DesignSystemButtonVariant.dangerSecondary => 'Danger secondary',
-    DesignSystemButtonVariant.dangerTertiary => 'Danger tertiary',
+    DesignSystemButtonVariant.primary =>
+      messages.designSystemButtonPrimaryLabel,
+    DesignSystemButtonVariant.secondary =>
+      messages.designSystemButtonSecondaryLabel,
+    DesignSystemButtonVariant.tertiary =>
+      messages.designSystemButtonTertiaryLabel,
+    DesignSystemButtonVariant.danger => messages.designSystemButtonDangerLabel,
+    DesignSystemButtonVariant.dangerSecondary =>
+      messages.designSystemButtonDangerSecondaryLabel,
+    DesignSystemButtonVariant.dangerTertiary =>
+      messages.designSystemButtonDangerTertiaryLabel,
   };
 }
 
-String _labelForSize(DesignSystemButtonSize size) {
+String _labelForSize(BuildContext context, DesignSystemButtonSize size) {
+  final messages = context.messages;
   return switch (size) {
-    DesignSystemButtonSize.small => 'Small',
-    DesignSystemButtonSize.medium => 'Medium',
-    DesignSystemButtonSize.large => 'Large',
-    DesignSystemButtonSize.jumbo => 'Jumbo',
+    DesignSystemButtonSize.small => messages.designSystemSmallLabel,
+    DesignSystemButtonSize.medium => messages.designSystemMediumLabel,
+    DesignSystemButtonSize.large => messages.designSystemLargeLabel,
+    DesignSystemButtonSize.jumbo => messages.designSystemJumboLabel,
   };
 }
