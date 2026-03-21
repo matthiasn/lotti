@@ -486,6 +486,29 @@ void main() {
                   vectorClock: null,
                 )
                 as ChangeDecisionEntity;
+        final duplicateValidDecision =
+            AgentDomainEntity.changeDecision(
+                  id: 'decision-accepted-duplicate',
+                  agentId: agent.agentId,
+                  changeSetId: 'change-set-002',
+                  itemIndex: 0,
+                  toolName: ProjectAgentToolNames.recommendNextSteps,
+                  verdict: ChangeDecisionVerdict.confirmed,
+                  taskId: 'project-001',
+                  humanSummary: 'Recommend next steps again',
+                  args: const {
+                    'steps': [
+                      {
+                        'title': 'Unblock QA',
+                        'rationale': 'Staging data is missing',
+                        'priority': 'high',
+                      },
+                    ],
+                  },
+                  createdAt: DateTime(2024, 3, 17),
+                  vectorClock: null,
+                )
+                as ChangeDecisionEntity;
         final otherToolDecision =
             AgentDomainEntity.changeDecision(
                   id: 'decision-other-tool',
@@ -528,10 +551,12 @@ void main() {
           () => mockRepository.getRecentDecisions(
             agent.agentId,
             taskId: 'project-001',
+            limit: -1,
           ),
         ).thenAnswer(
           (_) async => [
             validDecision,
+            duplicateValidDecision,
             rejectedDecision,
             otherToolDecision,
             malformedDecision,
@@ -568,6 +593,14 @@ void main() {
         expect(result[1].title, 'Write launch checklist');
         expect(result[1].rationale, isNull);
         expect(result[1].priority, isNull);
+
+        verify(
+          () => mockRepository.getRecentDecisions(
+            agent.agentId,
+            taskId: 'project-001',
+            limit: -1,
+          ),
+        ).called(1);
       },
     );
   });

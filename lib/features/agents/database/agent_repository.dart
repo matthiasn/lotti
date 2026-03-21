@@ -450,7 +450,9 @@ class AgentRepository {
     // When filtering by taskId in Dart, over-fetch from DB to compensate for
     // rows that will be discarded. Without a dedicated taskId column we cannot
     // filter at the SQL level.
-    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final dbLimit = taskId != null && limit >= 0
+        ? limit * _overFetchMultiplier
+        : limit;
     final rows = await _db.getPendingChangeSetsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
@@ -459,7 +461,7 @@ class AgentRepository {
     if (taskId != null) {
       results = results.where((cs) => cs.taskId == taskId).toList();
     }
-    return results.take(limit).toList();
+    return limit < 0 ? results : results.take(limit).toList();
   }
 
   /// Fetch recent change decisions for [agentId], optionally filtered by
@@ -476,7 +478,9 @@ class AgentRepository {
     String? taskId,
     int limit = 20,
   }) async {
-    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final dbLimit = taskId != null && limit >= 0
+        ? limit * _overFetchMultiplier
+        : limit;
     final rows = await _db.getRecentDecisionsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
@@ -485,7 +489,7 @@ class AgentRepository {
     if (taskId != null) {
       results = results.where((d) => d.taskId == taskId).toList();
     }
-    return results.take(limit).toList();
+    return limit < 0 ? results : results.take(limit).toList();
   }
 
   /// Fetch change decisions across all instances of [templateId] created on

@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -58,6 +59,11 @@ class ProjectAgentWorkflow {
   final DomainLogger? domainLogger;
 
   static const _uuid = Uuid();
+  static const _maxProjectDescriptionChars = 2000;
+  static const _maxPreviousReportChars = 4000;
+  static const _maxLinkedTaskReportChars = 1200;
+  static const _maxLinkedTaskTldrChars = 320;
+  static const _maxLinkedTasksInContext = 20;
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
@@ -284,6 +290,22 @@ class ProjectAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
+      final changeSetBuilder = ChangeSetBuilder(
+        agentId: agentId,
+        taskId: projectId,
+        threadId: threadId,
+        runKey: runKey,
+        domainLogger: domainLogger,
+      );
+      for (final item in deferredItems) {
+        final toolName = item['toolName'] as String? ?? '';
+        final args = item['args'] as Map<String, dynamic>? ?? {};
+        await changeSetBuilder.addItem(
+          toolName: toolName,
+          args: args,
+          humanSummary: _buildHumanSummary(toolName, args),
+        );
+      }
       // Recompute due-ness right before persisting so a manual wake that
       // started before the schedule hour but finished after it still advances
       // the schedule correctly.
@@ -387,37 +409,10 @@ class ProjectAgentWorkflow {
           );
         }
 
-        // Persist deferred change set (if any items were accumulated).
-        // TODO(project-agent): The change set confirmation infrastructure
-        // (providers, UI, dispatcher) is currently task-scoped. These change
-        // sets are persisted correctly but have no review/apply path until a
-        // project-scoped `ChangeSetSummaryCard`, `ProjectToolDispatcher`,
-        // and `pendingChangeSetsForProject` provider are implemented.
-        if (deferredItems.isNotEmpty) {
-          final changeItems = deferredItems.map((item) {
-            final toolName = item['toolName'] as String? ?? '';
-            final args = item['args'] as Map<String, dynamic>? ?? {};
-            return ChangeItem(
-              toolName: toolName,
-              args: args,
-              humanSummary: _buildHumanSummary(toolName, args),
-            );
-          }).toList();
-
-          await syncService.upsertEntity(
-            AgentDomainEntity.changeSet(
-              id: _uuid.v4(),
-              agentId: agentId,
-              taskId: projectId,
-              threadId: threadId,
-              runKey: runKey,
-              status: ChangeSetStatus.pending,
-              items: changeItems,
-              createdAt: now,
-              vectorClock: null,
-            ),
-          );
-        }
+        await _persistDeferredChangeSet(
+          changeSetBuilder: changeSetBuilder,
+          projectId: projectId,
+        );
 
         // Update state.
         final nextScheduledWakeAt =
@@ -625,11 +620,23 @@ immediately.''';
     _writeProjectContext(buf, projectEntity);
 
     if (lastReport != null) {
+      final previousReport = _truncateForPrompt(
+        lastReport.content,
+        maxChars: _maxPreviousReportChars,
+      );
       buf
         ..writeln()
         ..writeln('## Previous Report')
-        ..writeln()
-        ..writeln(lastReport.content);
+        ..writeln();
+      final tldr = lastReport.tldr?.trim();
+      if (tldr != null && tldr.isNotEmpty) {
+        buf
+          ..writeln('TLDR: $tldr')
+          ..writeln();
+      }
+      if (previousReport.isNotEmpty) {
+        buf.writeln(previousReport);
+      }
     }
 
     if (linkedTasksContext != '{}') {
@@ -707,7 +714,12 @@ immediately.''';
         ..writeln()
         ..writeln('### Description')
         ..writeln()
-        ..writeln(project.entryText!.plainText);
+        ..writeln(
+          _truncateForPrompt(
+            project.entryText!.plainText,
+            maxChars: _maxProjectDescriptionChars,
+          ),
+        );
     }
   }
 
@@ -746,13 +758,17 @@ immediately.''';
         linkedTo: projectId,
       );
 
-      final taskEntities = linkedEntities.whereType<Task>().toList();
+      final taskEntities = linkedEntities.whereType<Task>().toList()
+        ..sort(_compareTasksForPrompt);
 
       if (taskEntities.isEmpty) return '{}';
 
+      final includedTasks = taskEntities
+          .take(_maxLinkedTasksInContext)
+          .toList();
       final taskRows = <Map<String, dynamic>>[];
 
-      for (final task in taskEntities) {
+      for (final task in includedTasks) {
         final row = <String, dynamic>{
           'id': task.meta.id,
           'title': task.data.title,
@@ -763,7 +779,22 @@ immediately.''';
         final report = await _resolveLatestTaskAgentReport(task.meta.id);
         if (report != null) {
           row['taskAgentId'] = report.agentId;
-          row['latestTaskAgentReport'] = report.content;
+          final tldr = report.tldr;
+          if (tldr != null && tldr.isNotEmpty) {
+            row['latestTaskAgentReportTldr'] = _truncateForPrompt(
+              tldr,
+              maxChars: _maxLinkedTaskTldrChars,
+            );
+          }
+          final reportExcerptSource = report.content.isNotEmpty
+              ? report.content
+              : tldr ?? '';
+          if (reportExcerptSource.isNotEmpty) {
+            row['latestTaskAgentReport'] = _truncateForPrompt(
+              reportExcerptSource,
+              maxChars: _maxLinkedTaskReportChars,
+            );
+          }
           row['latestTaskAgentReportCreatedAt'] = report.createdAt
               .toIso8601String();
         }
@@ -771,7 +802,12 @@ immediately.''';
         taskRows.add(row);
       }
 
+      final omittedTaskCount = taskEntities.length - includedTasks.length;
+
       return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
+        'linked_task_count_total': taskEntities.length,
+        'linked_task_count_included': includedTasks.length,
+        if (omittedTaskCount > 0) 'omitted_task_count': omittedTaskCount,
         'linked_tasks': taskRows,
       });
     } catch (e, stackTrace) {
@@ -808,10 +844,12 @@ immediately.''';
         );
         if (report == null) continue;
         final content = report.content.trim();
-        if (content.isEmpty) continue;
+        final tldr = report.tldr?.trim();
+        if (content.isEmpty && (tldr == null || tldr.isEmpty)) continue;
         return _LinkedTaskAgentReport(
           agentId: link.fromId,
           content: content,
+          tldr: tldr == null || tldr.isEmpty ? null : tldr,
           createdAt: report.createdAt,
         );
       }
@@ -824,6 +862,40 @@ immediately.''';
       );
       return null;
     }
+  }
+
+  Future<void> _persistDeferredChangeSet({
+    required ChangeSetBuilder changeSetBuilder,
+    required String projectId,
+  }) async {
+    if (!changeSetBuilder.hasItems) return;
+
+    final pendingSets = await agentRepository.getPendingChangeSets(
+      changeSetBuilder.agentId,
+      taskId: projectId,
+      limit: -1,
+    );
+    final recentDecisions = await agentRepository.getRecentDecisions(
+      changeSetBuilder.agentId,
+      taskId: projectId,
+      limit: -1,
+    );
+    final rejectedFingerprints = recentDecisions
+        .where((decision) => decision.verdict == ChangeDecisionVerdict.rejected)
+        .where((decision) => decision.args != null)
+        .map(
+          (decision) => ChangeItem.fingerprintFromParts(
+            decision.toolName,
+            decision.args!,
+          ),
+        )
+        .toSet();
+
+    await changeSetBuilder.build(
+      syncService,
+      existingPendingSets: pendingSets,
+      rejectedFingerprints: rejectedFingerprints,
+    );
   }
 
   // ── Observation payload resolution ────────────────────────────────────────
@@ -888,6 +960,44 @@ immediately.''';
     };
   }
 
+  static int _compareTasksForPrompt(Task a, Task b) {
+    final byStatus = _taskStatusPriority(
+      a.data.status,
+    ).compareTo(_taskStatusPriority(b.data.status));
+    if (byStatus != 0) return byStatus;
+
+    final byTitle = a.data.title.toLowerCase().compareTo(
+      b.data.title.toLowerCase(),
+    );
+    if (byTitle != 0) return byTitle;
+
+    return a.meta.id.compareTo(b.meta.id);
+  }
+
+  static int _taskStatusPriority(TaskStatus status) {
+    return switch (status) {
+      TaskBlocked() => 0,
+      TaskInProgress() => 1,
+      TaskOnHold() => 2,
+      TaskOpen() => 3,
+      TaskGroomed() => 4,
+      TaskDone() => 5,
+      TaskRejected() => 6,
+    };
+  }
+
+  static String _truncateForPrompt(
+    String text, {
+    required int maxChars,
+  }) {
+    final trimmed = text.trim();
+    if (trimmed.length <= maxChars) return trimmed;
+
+    final omittedChars = trimmed.length - maxChars;
+    return '${trimmed.substring(0, maxChars).trimRight()}... '
+        '[truncated $omittedChars chars]';
+  }
+
   // ── Deferred item helpers ─────────────────────────────────────────────────
 
   /// Builds a user-readable summary for a deferred tool call.
@@ -924,10 +1034,12 @@ class _LinkedTaskAgentReport {
   const _LinkedTaskAgentReport({
     required this.agentId,
     required this.content,
+    required this.tldr,
     required this.createdAt,
   });
 
   final String agentId;
   final String content;
+  final String? tldr;
   final DateTime createdAt;
 }

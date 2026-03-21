@@ -262,6 +262,24 @@ void main() {
 
       expect(results, hasLength(3));
     });
+
+    test('returns all pending change sets when limit is negative', () async {
+      for (var i = 0; i < 5; i++) {
+        await repo.upsertEntity(
+          makeTestChangeSet(
+            id: 'cs-unbounded-$i',
+            createdAt: kAgentTestDate.add(Duration(hours: i)),
+          ),
+        );
+      }
+
+      final results = await repo.getPendingChangeSets(
+        kTestAgentId,
+        limit: -1,
+      );
+
+      expect(results, hasLength(5));
+    });
   });
 
   group('getRecentDecisions', () {
@@ -324,6 +342,25 @@ void main() {
       );
 
       expect(results, hasLength(5));
+    });
+
+    test('returns all matching decisions when limit is negative', () async {
+      for (var i = 0; i < 10; i++) {
+        await repo.upsertEntity(
+          makeTestChangeDecision(
+            id: 'cd-all-$i',
+            itemIndex: i,
+            createdAt: kAgentTestDate.add(Duration(hours: i)),
+          ),
+        );
+      }
+
+      final results = await repo.getRecentDecisions(
+        kTestAgentId,
+        limit: -1,
+      );
+
+      expect(results, hasLength(10));
     });
   });
 

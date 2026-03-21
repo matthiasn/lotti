@@ -131,6 +131,7 @@ projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
       final decisions = await repo.getRecentDecisions(
         identity.agentId,
         taskId: projectId,
+        limit: -1,
       );
 
       return _extractAcceptedRecommendations(decisions);
@@ -140,6 +141,7 @@ List<ProjectAcceptedRecommendation> _extractAcceptedRecommendations(
   Iterable<ChangeDecisionEntity> decisions,
 ) {
   final recommendations = <ProjectAcceptedRecommendation>[];
+  final seenKeys = <String>{};
 
   for (final decision in decisions) {
     if (decision.verdict != ChangeDecisionVerdict.confirmed ||
@@ -159,15 +161,28 @@ List<ProjectAcceptedRecommendation> _extractAcceptedRecommendations(
       final rationale = rawStep['rationale'];
       final priority = rawStep['priority'];
 
+      final normalizedTitle = title.trim();
+      final normalizedRationale =
+          rationale is String && rationale.trim().isNotEmpty
+          ? rationale.trim()
+          : null;
+      final normalizedPriority =
+          priority is String && priority.trim().isNotEmpty
+          ? priority.trim().toUpperCase()
+          : null;
+      final dedupKey =
+          '${normalizedTitle.toLowerCase()}|'
+          '${normalizedRationale?.toLowerCase() ?? ''}|'
+          '${normalizedPriority ?? ''}';
+      if (!seenKeys.add(dedupKey)) {
+        continue;
+      }
+
       recommendations.add(
         ProjectAcceptedRecommendation(
-          title: title.trim(),
-          rationale: rationale is String && rationale.trim().isNotEmpty
-              ? rationale.trim()
-              : null,
-          priority: priority is String && priority.trim().isNotEmpty
-              ? priority.trim().toUpperCase()
-              : null,
+          title: normalizedTitle,
+          rationale: normalizedRationale,
+          priority: normalizedPriority,
         ),
       );
     }

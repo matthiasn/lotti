@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -370,6 +371,20 @@ void main() {
         when(
           () => mockAgentRepository.getReportHead(agentId, 'current'),
         ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getPendingChangeSets(
+            agentId,
+            taskId: projectId,
+            limit: -1,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getRecentDecisions(
+            agentId,
+            taskId: projectId,
+            limit: -1,
+          ),
+        ).thenAnswer((_) async => []);
         when(
           () => mockJournalRepository.getLinkedToEntities(
             linkedTo: projectId,
@@ -854,6 +869,177 @@ void main() {
         expect(changeSet.items[1].humanSummary, contains('at_risk'));
       });
 
+      test(
+        'does not create a duplicate project change set for an already pending proposal',
+        () async {
+          final existingChangeSet = makeTestChangeSet(
+            agentId: agentId,
+            taskId: projectId,
+            items: const [
+              ChangeItem(
+                toolName: ProjectAgentToolNames.createTask,
+                args: {
+                  'title': 'Add monitoring',
+                  'description': 'Set up alerts',
+                  'priority': 'HIGH',
+                },
+                humanSummary: 'Create task: Add monitoring',
+              ),
+            ],
+          );
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              agentId,
+              taskId: projectId,
+              limit: -1,
+            ),
+          ).thenAnswer((_) async => [existingChangeSet]);
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy != null) {
+                  final toolCalls = [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-dup-1',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: ProjectAgentToolNames.createTask,
+                        arguments: jsonEncode({
+                          'title': 'Add monitoring',
+                          'description': 'Set up alerts',
+                          'priority': 'HIGH',
+                        }),
+                      ),
+                    ),
+                  ];
+
+                  final manager = mockConversationRepository.getConversation(
+                    conversationId,
+                  )!;
+                  when(
+                    () => manager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: any(named: 'response'),
+                    ),
+                  ).thenReturn(null);
+
+                  await strategy.processToolCalls(
+                    toolCalls: toolCalls,
+                    manager: manager,
+                  );
+                }
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final changeSets = captured.whereType<ChangeSetEntity>().toList();
+          expect(changeSets, isEmpty);
+        },
+      );
+
+      test(
+        'does not recreate a previously rejected deferred proposal',
+        () async {
+          when(
+            () => mockAgentRepository.getRecentDecisions(
+              agentId,
+              taskId: projectId,
+              limit: -1,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              makeTestChangeDecision(
+                agentId: agentId,
+                taskId: projectId,
+                toolName: ProjectAgentToolNames.createTask,
+                verdict: ChangeDecisionVerdict.rejected,
+                args: const {
+                  'title': 'Add monitoring',
+                  'description': 'Set up alerts',
+                  'priority': 'HIGH',
+                },
+              ),
+            ],
+          );
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy != null) {
+                  final toolCalls = [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-rejected-1',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: ProjectAgentToolNames.createTask,
+                        arguments: jsonEncode({
+                          'title': 'Add monitoring',
+                          'description': 'Set up alerts',
+                          'priority': 'HIGH',
+                        }),
+                      ),
+                    ),
+                  ];
+
+                  final manager = mockConversationRepository.getConversation(
+                    conversationId,
+                  )!;
+                  when(
+                    () => manager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: any(named: 'response'),
+                    ),
+                  ).thenReturn(null);
+
+                  await strategy.processToolCalls(
+                    toolCalls: toolCalls,
+                    manager: manager,
+                  );
+                }
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final changeSets = captured.whereType<ChangeSetEntity>().toList();
+          expect(changeSets, isEmpty);
+        },
+      );
+
       test('does not create change set when no deferred items', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -907,6 +1093,47 @@ void main() {
         expect(capturedMessage, contains('All systems operational'));
       });
 
+      test(
+        'truncates oversized previous report content in user message',
+        () async {
+          final previousReport = makeTestReport(
+            content: '${'A' * 4050}REPORT-TAIL',
+            tldr: 'Project summary',
+          );
+
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => previousReport);
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedMessage, contains('Project summary'));
+          expect(capturedMessage, contains('[truncated'));
+          expect(capturedMessage, isNot(contains('REPORT-TAIL')));
+        },
+      );
+
       test('handles linked tasks context error gracefully', () async {
         when(
           () => mockJournalRepository.getLinkedToEntities(
@@ -923,6 +1150,91 @@ void main() {
 
         expect(result.success, isTrue);
       });
+
+      test(
+        'caps linked task context and truncates oversized task-agent reports',
+        () async {
+          final linkedTasks = List.generate(
+            25,
+            (index) => _fakeTaskEntity(
+              id: 'task-$index',
+              title: 'Task ${index.toString().padLeft(2, '0')}',
+              status: TaskStatus.open(
+                id: 'status-$index',
+                createdAt: DateTime(2024, 6, 15),
+                utcOffset: 0,
+              ),
+            ),
+          );
+
+          when(
+            () => mockJournalRepository.getLinkedToEntities(
+              linkedTo: projectId,
+            ),
+          ).thenAnswer((_) async => linkedTasks);
+          when(
+            () => mockAgentRepository.getLinksTo(
+              any(),
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((invocation) async {
+            final taskId = invocation.positionalArguments.first as String;
+            return [
+              AgentLink.agentTask(
+                id: 'link-$taskId',
+                fromId: 'agent-$taskId',
+                toId: taskId,
+                createdAt: kAgentTestDate,
+                updatedAt: kAgentTestDate,
+                vectorClock: null,
+              ),
+            ];
+          });
+          when(
+            () => mockAgentRepository.getLatestReport(any(), 'current'),
+          ).thenAnswer((invocation) async {
+            final requestedAgentId =
+                invocation.positionalArguments.first as String;
+            if (requestedAgentId == agentId) {
+              return null;
+            }
+            return makeTestReport(
+              agentId: requestedAgentId,
+              tldr: 'Summary for $requestedAgentId',
+              content: '${'B' * 1300}REPORT-TAIL-$requestedAgentId',
+            );
+          });
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedMessage, contains('"linked_task_count_included": 20'));
+          expect(capturedMessage, contains('"omitted_task_count": 5'));
+          expect(capturedMessage, contains('Summary for agent-task-0'));
+          expect(capturedMessage, contains('[truncated'));
+          expect(capturedMessage, isNot(contains('REPORT-TAIL-agent-task-0')));
+        },
+      );
 
       test('handles observation payload resolution error gracefully', () async {
         final observation = makeTestMessage(
