@@ -1306,6 +1306,7 @@ void main() {
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
     late MockScheduledWakeManager mockScheduledWakeManager;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -1318,6 +1319,7 @@ void main() {
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
       mockScheduledWakeManager = MockScheduledWakeManager();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -1336,6 +1338,8 @@ void main() {
       ).thenAnswer((_) async => 0);
       when(() => mockScheduledWakeManager.start()).thenReturn(null);
       when(() => mockScheduledWakeManager.stop()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       // Profile seeding stubs.
       when(
         () => mockAiConfigRepo.getConfigById(any()),
@@ -1371,6 +1375,9 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           scheduledWakeManagerProvider.overrideWithValue(
             mockScheduledWakeManager,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
@@ -3094,6 +3101,7 @@ void main() {
     late MockProjectAgentService mockProjectAgentService;
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -3104,6 +3112,7 @@ void main() {
       mockProjectAgentService = MockProjectAgentService();
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -3113,6 +3122,8 @@ void main() {
       when(
         () => mockProjectAgentService.restoreSubscriptions(),
       ).thenAnswer((_) async {});
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       // Profile seeding stubs.
       when(
@@ -3141,6 +3152,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           projectAgentServiceProvider.overrideWithValue(
             mockProjectAgentService,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
@@ -3314,6 +3328,7 @@ void main() {
     late MockProjectAgentService mockProjectAgentService;
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -3324,6 +3339,7 @@ void main() {
       mockProjectAgentService = MockProjectAgentService();
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -3333,6 +3349,8 @@ void main() {
       when(
         () => mockProjectAgentService.restoreSubscriptions(),
       ).thenAnswer((_) async {});
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       when(
         () => mockRepository.abandonOrphanedWakeRuns(),
@@ -3367,6 +3385,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           projectAgentServiceProvider.overrideWithValue(
             mockProjectAgentService,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),

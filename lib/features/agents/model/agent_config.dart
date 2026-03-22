@@ -57,6 +57,10 @@ abstract class AgentSlots with _$AgentSlots {
 
     /// Total weekly review sessions completed by this project agent.
     int? weeklyReviewCount,
+
+    /// Most recent project-linked activity that is not reflected in the
+    /// current project report yet. `null` means the summary is up to date.
+    DateTime? pendingProjectActivityAt,
   }) = _AgentSlots;
 
   factory AgentSlots.fromJson(Map<String, dynamic> json) =>

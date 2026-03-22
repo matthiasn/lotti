@@ -39,6 +39,9 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
       ? null
       : DateTime.parse(json['lastWeeklyReviewAt'] as String),
   weeklyReviewCount: (json['weeklyReviewCount'] as num?)?.toInt(),
+  pendingProjectActivityAt: json['pendingProjectActivityAt'] == null
+      ? null
+      : DateTime.parse(json['pendingProjectActivityAt'] as String),
 );
 
 Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
@@ -54,6 +57,8 @@ Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
       'lastDailyWakeAt': instance.lastDailyWakeAt?.toIso8601String(),
       'lastWeeklyReviewAt': instance.lastWeeklyReviewAt?.toIso8601String(),
       'weeklyReviewCount': instance.weeklyReviewCount,
+      'pendingProjectActivityAt': instance.pendingProjectActivityAt
+          ?.toIso8601String(),
     };
 
 _AgentMessageMetadata _$AgentMessageMetadataFromJson(

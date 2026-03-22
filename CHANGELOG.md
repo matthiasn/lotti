@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FTUE setup simplified: provider setup wizards no longer create prompts —
   all AI capabilities are handled by the skill-based automation system via
   inference profiles.
+- Project agents now skip dormant daily digests, track pending project
+  activity in synced agent state, and show stale summaries in the tasks-page
+  project header until the next 06:00 report refresh.
 
 ## [0.9.929] - 2026-03-21
 ### Added

@@ -1334,6 +1334,18 @@
   },
   "projectLinkedTasks": "Propojené úkoly",
   "projectManageTooltip": "Správa projektů",
+  "projectSummaryOutdated": "Shrnutí je zastaralé.",
+  "projectSummaryOutdatedScheduled": "Shrnutí je zastaralé. Další aktualizace {date} v {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Zatím žádné propojené úkoly",
   "projectNoProjects": "Zatím žádné projekty",
   "projectNotFound": "Projekt nenalezen",

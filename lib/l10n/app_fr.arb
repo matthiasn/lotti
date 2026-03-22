@@ -1547,6 +1547,18 @@
   },
   "projectLinkedTasks": "Tâches liées",
   "projectManageTooltip": "Gérer les projets",
+  "projectSummaryOutdated": "Le résumé est obsolète.",
+  "projectSummaryOutdatedScheduled": "Le résumé est obsolète. Prochaine mise à jour le {date} à {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Aucune tâche liée pour le moment",
   "projectNoProjects": "Pas encore de projets",
   "projectNotFound": "Projet introuvable",

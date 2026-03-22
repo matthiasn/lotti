@@ -1547,6 +1547,18 @@
   },
   "projectLinkedTasks": "Tareas vinculadas",
   "projectManageTooltip": "Gestionar proyectos",
+  "projectSummaryOutdated": "El resumen está desactualizado.",
+  "projectSummaryOutdatedScheduled": "El resumen está desactualizado. La próxima actualización será el {date} a las {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Aún no hay tareas vinculadas",
   "projectNoProjects": "Aún no hay proyectos",
   "projectNotFound": "Proyecto no encontrado",

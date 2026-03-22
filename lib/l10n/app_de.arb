@@ -1547,6 +1547,18 @@
   },
   "projectLinkedTasks": "Verknüpfte Aufgaben",
   "projectManageTooltip": "Projekte verwalten",
+  "projectSummaryOutdated": "Zusammenfassung ist veraltet.",
+  "projectSummaryOutdatedScheduled": "Zusammenfassung ist veraltet. Nächstes Update am {date} um {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Noch keine Aufgaben verknüpft",
   "projectNoProjects": "Noch keine Projekte",
   "projectNotFound": "Projekt nicht gefunden",

@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -464,6 +465,9 @@ class MockProjectAgentService extends Mock implements ProjectAgentService {}
 class MockProjectAgentWorkflow extends Mock implements ProjectAgentWorkflow {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
+
+class MockProjectActivityMonitor extends Mock
+    implements ProjectActivityMonitor {}
 
 // --- Additional Fake classes ---
 

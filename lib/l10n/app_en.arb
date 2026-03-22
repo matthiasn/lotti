@@ -1711,6 +1711,18 @@
   },
   "projectLinkedTasks": "Linked Tasks",
   "projectManageTooltip": "Manage projects",
+  "projectSummaryOutdated": "Summary outdated.",
+  "projectSummaryOutdatedScheduled": "Summary outdated. Next update {date} at {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "No tasks linked yet",
   "projectNoProjects": "No projects yet",
   "projectNotFound": "Project not found",

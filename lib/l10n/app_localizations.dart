@@ -6511,6 +6511,18 @@ abstract class AppLocalizations {
   /// **'Manage projects'**
   String get projectManageTooltip;
 
+  /// No description provided for @projectSummaryOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary outdated.'**
+  String get projectSummaryOutdated;
+
+  /// No description provided for @projectSummaryOutdatedScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary outdated. Next update {date} at {time}.'**
+  String projectSummaryOutdatedScheduled(String date, String time);
+
   /// No description provided for @projectNoLinkedTasks.
   ///
   /// In en, this message translates to:

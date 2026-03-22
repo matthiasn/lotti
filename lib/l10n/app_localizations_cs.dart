@@ -3660,6 +3660,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectManageTooltip => 'Správa projektů';
 
   @override
+  String get projectSummaryOutdated => 'Shrnutí je zastaralé.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Shrnutí je zastaralé. Další aktualizace $date v $time.';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Zatím žádné propojené úkoly';
 
   @override

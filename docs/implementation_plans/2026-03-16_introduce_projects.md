@@ -29,8 +29,9 @@ already landed and what is still missing.
 - **Auto-provisioning is present.** Creating a project attempts to provision a
   project agent from a category-scoped or global `projectAgent` template.
 - **Daily digest scheduling now exists.** New project agents schedule their
-  next daily digest for 09:00 local on the next day, and due digests roll
-  forward automatically after a successful wake.
+  next daily digest for 06:00 local on the next day. Due digests now only
+  spend tokens when synced pending activity was recorded; dormant runs fast-skip
+  and roll the schedule forward.
 - **Project-scoped change-set review is now wired in.** Project detail pages
   surface pending project-agent change sets, and confirmations can now apply
   project status changes or create linked tasks directly from the project UI.
@@ -51,10 +52,9 @@ already landed and what is still missing.
   `defaultProjectTemplateId` to `CategoryDefinition`; project creation looks up
   a category-scoped template first and then falls back to a global
   `projectAgent` template.
-- **Project agent wake subscriptions are broader than planned.** Today, linked
-  task edits bubble up to the project via parent-link notifications, so project
-  agents can wake on general linked task changes, not only on filtered
-  status-transition events.
+- **Project activity tracking is broader than planned.** Linked task edits still
+  bubble up to the project via parent-link notifications, but they now mark the
+  project report as stale instead of waking the project agent immediately.
 - **Accepted next-step recommendations are acknowledgement-only.** Confirming
   `recommend_next_steps` resolves the proposal and records the decision, but it
   does not yet persist a separate project recommendation artifact beyond the
@@ -65,8 +65,9 @@ already landed and what is still missing.
 - **Finish the remaining runtime cadence.** Daily digest scheduling is now in
   place, but weekly review scheduling/bookkeeping (`lastWeeklyReviewAt`,
   `weeklyReviewCount`) is still missing.
-- **Tighten wake triggers.** Replace the current broad linked-task wake
-  behavior with the planned status-transition/day-plan-driven triggering.
+- **Tighten activity sources.** Replace the current broad linked-task/project
+  stale-marking behavior with the planned status-transition/day-plan-driven
+  triggering if we want a narrower definition of meaningful project activity.
 - **Deepen deferred project actions.** The project-scoped review/apply path is
   now present, but accepted `recommend_next_steps` still only acknowledge the
   proposal instead of writing a richer project recommendation record.
@@ -420,7 +421,7 @@ Project agents use a **fundamentally different wake cadence** than task agents:
 
 | Trigger | Mechanism | Throttle |
 |---------|-----------|----------|
-| **Daily digest** | `scheduledWakeAt` set to next day 09:00 local | 24 hours |
+| **Daily digest** | `scheduledWakeAt` set to next day 06:00 local | 24 hours |
 | **Manual** | User taps "Refresh" in project detail UI | None (bypass) |
 | **Weekly 1-on-1** | `scheduledWakeAt` set to next Monday 10:00 local | 7 days |
 | **Task status change** | Subscription on project's linked task IDs, but only for status transitions (open→done, →blocked) | 4 hours |
@@ -445,7 +446,7 @@ stateDiagram-v2
     state Active {
         [*] --> Idle
 
-        Idle --> DailyDigest: scheduledWakeAt<br/>(daily 09:00)
+        Idle --> DailyDigest: scheduledWakeAt<br/>(daily 06:00)
         Idle --> TaskStatusWake: Task status<br/>transition
         Idle --> DayPlanWake: Day plan<br/>agreed
         Idle --> ManualWake: User triggers<br/>refresh
@@ -492,7 +493,7 @@ sequenceDiagram
     participant JDB as Journal DB
     participant ADB as Agent DB
 
-    Note over Sched: Daily wake trigger (09:00)
+    Note over Sched: Daily wake trigger (06:00)
 
     Sched->>PAW: execute(agentId, runKey, triggers, threadId)
 

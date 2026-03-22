@@ -50,8 +50,7 @@ class ProjectAgentService {
   /// 2. Update the agent's state with `activeProjectId = projectId`.
   /// 3. Create an [AgentProjectLink] from agentId → projectId.
   /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Register a wake subscription for the project's entity ID.
-  /// 6. Enqueue a creation wake.
+  /// 5. Enqueue a creation wake.
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
@@ -143,9 +142,6 @@ class ProjectAgentService {
       return identity;
     });
 
-    // Register subscription for changes to this project.
-    _registerProjectSubscription(identity.agentId, projectId);
-
     // Enqueue the creation wake.
     orchestrator.enqueueManualWake(
       agentId: identity.agentId,
@@ -193,30 +189,15 @@ class ProjectAgentService {
     );
   }
 
-  /// Register a wake subscription for a project agent.
+  /// Restore project-agent runtime state after app startup.
   ///
-  /// The subscription matches on the [projectId] entity ID, so the agent
-  /// wakes whenever the project (or its linked entries) receives a
-  /// notification.
-  void _registerProjectSubscription(String agentId, String projectId) {
-    orchestrator.addSubscription(
-      AgentSubscription(
-        id: '${agentId}_project_$projectId',
-        agentId: agentId,
-        matchEntityIds: {projectId},
-      ),
-    );
-  }
-
-  /// Re-register wake subscriptions for all active project agents.
-  ///
-  /// Called during app startup to restore orchestrator state from the
-  /// database. Iterates all active agent identities, finds their
-  /// `agent_project` links, and registers wake subscriptions for each.
+  /// Project agents are schedule-driven: local task/project edits only mark
+  /// the summary as stale, and the actual report runs on the next scheduled
+  /// wake. There are therefore no per-project subscriptions to restore here.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
       LogDomains.agentRuntime,
-      'restoring project agent subscriptions...',
+      'restoring project agent runtime state...',
       subDomain: 'restore',
     );
 
@@ -229,23 +210,10 @@ class ProjectAgentService {
       if (agent.kind != _agentKind) continue;
 
       try {
-        final links = await repository.getLinksFrom(
-          agent.agentId,
-          type: AgentLinkTypes.agentProject,
-        );
-
-        if (links.isNotEmpty) {
-          final link = _selectPrimaryProjectLink(links);
-          _registerProjectSubscription(agent.agentId, link.toId);
-          count++;
-        }
-
-        // Hydrate the throttle deadline from persisted state so the
-        // cooldown window survives app restarts and backgrounding.
-        await _hydrateThrottleDeadline(agent.agentId);
+        count++;
       } catch (e, s) {
         final msg =
-            'failed to restore subscriptions '
+            'failed to restore runtime state '
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
         if (domainLogger != null) {
           domainLogger!.error(
@@ -267,19 +235,9 @@ class ProjectAgentService {
 
     domainLogger?.log(
       LogDomains.agentRuntime,
-      'restored $count project agent subscriptions',
+      'restored $count project agent(s)',
       subDomain: 'restore',
     );
-  }
-
-  /// Read the persisted `nextWakeAt` from the agent's state entity and
-  /// restore it into the orchestrator's in-memory throttle cache.
-  Future<void> _hydrateThrottleDeadline(String agentId) async {
-    final state = await repository.getAgentState(agentId);
-    final deadline = state?.nextWakeAt;
-    if (deadline != null) {
-      orchestrator.setThrottleDeadline(agentId, deadline);
-    }
   }
 
   AgentLink _selectPrimaryProjectLink(List<AgentLink> links) {

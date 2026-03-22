@@ -3729,6 +3729,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get projectManageTooltip => 'Gestionar proyectos';
 
   @override
+  String get projectSummaryOutdated => 'El resumen está desactualizado.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'El resumen está desactualizado. La próxima actualización será el $date a las $time.';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Aún no hay tareas vinculadas';
 
   @override

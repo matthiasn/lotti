@@ -1547,6 +1547,18 @@
   },
   "projectLinkedTasks": "Sarcini asociate",
   "projectManageTooltip": "Gestionați proiectele",
+  "projectSummaryOutdated": "Rezumatul este învechit.",
+  "projectSummaryOutdatedScheduled": "Rezumatul este învechit. Următoarea actualizare va fi pe {date} la {time}.",
+  "@projectSummaryOutdatedScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Nicio sarcină asociată încă",
   "projectNoProjects": "Niciun proiect încă",
   "projectNotFound": "Proiectul nu a fost găsit",

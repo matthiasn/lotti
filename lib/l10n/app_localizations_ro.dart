@@ -3680,6 +3680,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectManageTooltip => 'Gestionați proiectele';
 
   @override
+  String get projectSummaryOutdated => 'Rezumatul este învechit.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Rezumatul este învechit. Următoarea actualizare va fi pe $date la $time.';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Nicio sarcină asociată încă';
 
   @override

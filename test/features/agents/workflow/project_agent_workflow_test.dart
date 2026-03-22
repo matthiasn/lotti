@@ -188,6 +188,9 @@ void main() {
         resolvedModelId: any(named: 'resolvedModelId'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => mockAgentRepository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
     when(() => mockConversationManager.messages).thenReturn([]);
 
     workflow = ProjectAgentWorkflow(
@@ -410,16 +413,64 @@ void main() {
       });
 
       test(
-        'rolls forward the daily digest schedule when the scheduled wake is due',
+        'skips due scheduled wake when no pending project activity exists',
         () async {
-          final testDate = DateTime(2026, 3, 20, 9, 30);
+          final testDate = DateTime(2026, 3, 20, 6, 30);
           final dueState = makeTestState(
             slots: const AgentSlots(activeProjectId: projectId),
-            scheduledWakeAt: DateTime(2026, 3, 20, 9),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
           );
           when(
             () => mockAgentRepository.getAgentState(agentId),
           ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.single as AgentStateEntity;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.lastDailyWakeAt, isNull);
+          expect(mockConversationRepository.deletedConversationIds, isEmpty);
+          verifyNever(
+            () => mockAgentRepository.updateWakeRunTemplate(
+              any(),
+              any(),
+              any(),
+              resolvedModelId: any(named: 'resolvedModelId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rolls forward the daily digest schedule when the scheduled wake is due',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final dueState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
 
           await withClock(Clock.fixed(testDate), () async {
             await workflow.execute(
@@ -434,29 +485,39 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 9));
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, testDate);
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
         },
       );
 
       test(
-        'keeps the existing future daily digest schedule on non-due wakes',
+        'keeps the future digest schedule and clears pending activity on non-due wakes',
         () async {
-          final futureSchedule = DateTime(2026, 3, 21, 9);
+          final testDate = DateTime(2026, 3, 20, 9);
+          final futureSchedule = DateTime(2026, 3, 21, 6);
           final scheduledState = makeTestState(
-            slots: const AgentSlots(activeProjectId: projectId),
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 8),
+            ),
             scheduledWakeAt: futureSchedule,
           );
           when(
             () => mockAgentRepository.getAgentState(agentId),
           ).thenAnswer((_) async => scheduledState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
 
-          await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+          });
 
           final captured = verify(
             () => mockSyncService.upsertEntity(captureAny()),
@@ -464,6 +525,7 @@ void main() {
           final updatedState = captured.whereType<AgentStateEntity>().last;
           expect(updatedState.scheduledWakeAt, futureSchedule);
           expect(updatedState.slots.lastDailyWakeAt, isNull);
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
         },
       );
 

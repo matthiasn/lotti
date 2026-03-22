@@ -3731,6 +3731,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectManageTooltip => 'Gérer les projets';
 
   @override
+  String get projectSummaryOutdated => 'Le résumé est obsolète.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Le résumé est obsolète. Prochaine mise à jour le $date à $time.';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Aucune tâche liée pour le moment';
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/get_it.dart';
@@ -263,6 +264,9 @@ class _ProjectRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final countAsync = ref.watch(projectTaskCountProvider(project.meta.id));
+    final summaryAsync = ref.watch(
+      projectAgentSummaryProvider(project.meta.id),
+    );
     final messages = context.messages;
 
     final taskCountText = countAsync.when(
@@ -270,6 +274,7 @@ class _ProjectRow extends ConsumerWidget {
       loading: () => '…',
       error: (_, _) => '—',
     );
+    final summary = summaryAsync.asData?.value;
 
     final targetText = project.data.targetDate != null
         ? ' · ${project.data.targetDate!.ymd}'
@@ -317,6 +322,36 @@ class _ProjectRow extends ConsumerWidget {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (summary != null && summary.isSummaryOutdated)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1, right: 4),
+                              child: Icon(
+                                Icons.schedule_outlined,
+                                size: 14,
+                                color: context.colorScheme.tertiary,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                _outdatedSummaryText(
+                                  context,
+                                  summary.scheduledWakeAt,
+                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: context.colorScheme.tertiary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -338,6 +373,26 @@ class _ProjectRow extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  String _outdatedSummaryText(
+    BuildContext context,
+    DateTime? scheduledWakeAt,
+  ) {
+    if (scheduledWakeAt == null) {
+      return context.messages.projectSummaryOutdated;
+    }
+
+    final timeText = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(scheduledWakeAt),
+      alwaysUse24HourFormat:
+          MediaQuery.maybeOf(context)?.alwaysUse24HourFormat ?? false,
+    );
+
+    return context.messages.projectSummaryOutdatedScheduled(
+      scheduledWakeAt.ymd,
+      timeText,
     );
   }
 }

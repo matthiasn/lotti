@@ -101,11 +101,12 @@ class ProjectAgentWorkflow {
     );
 
     // 1. Load current state.
-    final state = await agentRepository.getAgentState(agentId);
-    if (state == null) {
+    final loadedState = await agentRepository.getAgentState(agentId);
+    if (loadedState == null) {
       _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
+    var state = loadedState;
 
     final projectId = state.slots.activeProjectId;
     if (projectId == null) {
@@ -116,7 +117,46 @@ class ProjectAgentWorkflow {
       );
     }
 
-    // 2. Load project entity and linked task context.
+    final now = clock.now();
+
+    // 2. Load the latest report and decide whether a due scheduled wake can be
+    // skipped cheaply because no new project activity was recorded.
+    final lastReport = await agentRepository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    final initialScheduledWakeWasDue =
+        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+    if (initialScheduledWakeWasDue && lastReport != null) {
+      final latestState = await agentRepository.getAgentState(agentId) ?? state;
+      final latestScheduledWakeWasDue =
+          latestState.scheduledWakeAt != null &&
+          !latestState.scheduledWakeAt!.isAfter(now);
+
+      if (!latestScheduledWakeWasDue) {
+        _log(
+          'scheduled wake already handled elsewhere — skipping duplicate run',
+          subDomain: 'execute',
+        );
+        return const WakeResult(success: true);
+      }
+
+      if (latestState.slots.pendingProjectActivityAt == null) {
+        await _skipDormantScheduledWake(
+          state: latestState,
+          now: now,
+        );
+        return const WakeResult(success: true);
+      }
+
+      state = latestState;
+    }
+
+    final scheduledWakeWasDue =
+        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+    final shouldInitializeSchedule = state.scheduledWakeAt == null;
+
+    // 3. Load project entity and linked task context.
     final projectEntity = await journalRepository.getJournalEntityById(
       projectId,
     );
@@ -131,20 +171,16 @@ class ProjectAgentWorkflow {
       );
     }
 
-    // 3. Load previous report and observations.
-    final lastReport = await agentRepository.getLatestReport(
-      agentId,
-      AgentReportScopes.current,
-    );
+    // 4. Load observations.
     final journalObservations = await agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
     );
 
-    // 4. Resolve template and active version.
+    // 5. Resolve template and active version.
     final templateCtx = await _resolveTemplate(agentId);
 
-    // 5. Resolve inference profile → provider.
+    // 6. Resolve inference profile → provider.
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
     );
@@ -168,15 +204,15 @@ class ProjectAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
-    // 5b. Load observation payloads so we can render actual text.
+    // 6b. Load observation payloads so we can render actual text.
     final observationPayloads = await _resolveObservationPayloads(
       journalObservations,
     );
 
-    // 5c. Load linked tasks and their task-agent reports.
+    // 6c. Load linked tasks and their task-agent reports.
     final linkedTasksContext = await _buildLinkedTasksContext(projectId);
 
-    // 6. Assemble system prompt and user message.
+    // 7. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       projectEntity: projectEntity,
@@ -187,15 +223,13 @@ class ProjectAgentWorkflow {
       triggerTokens: triggerTokens,
     );
 
-    // 7. Create conversation and run with strategy.
+    // 8. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    final now = clock.now();
-
-    // 7a. Persist user message for inspectability.
+    // 8a. Persist user message for inspectability.
     try {
       final userPayloadId = _uuid.v4();
       await syncService.upsertEntity(
@@ -251,7 +285,7 @@ class ProjectAgentWorkflow {
         }
       }
 
-      // 8. Run the conversation.
+      // 9. Run the conversation.
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -284,11 +318,10 @@ class ProjectAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
-      final scheduledWakeWasDue =
-          state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
-      final shouldInitializeSchedule = state.scheduledWakeAt == null;
-
       await syncService.runInTransaction(() async {
+        final latestState =
+            await agentRepository.getAgentState(agentId) ?? state;
+
         // Persist thought.
         final thoughtText = strategy.finalResponse;
         if (thoughtText != null) {
@@ -421,19 +454,28 @@ class ProjectAgentWorkflow {
                 now,
                 hour: AgentSchedules.projectDailyDigestHour,
               )
-            : state.scheduledWakeAt;
+            : latestState.scheduledWakeAt;
+        final latestPendingActivityAt =
+            latestState.slots.pendingProjectActivityAt;
+        final nextPendingActivityAt =
+            latestPendingActivityAt != null &&
+                latestPendingActivityAt.isAfter(now)
+            ? latestPendingActivityAt
+            : null;
         final nextSlots = scheduledWakeWasDue
-            ? state.slots.copyWith(lastDailyWakeAt: now)
-            : state.slots;
+            ? latestState.slots.copyWith(lastDailyWakeAt: now)
+            : latestState.slots;
         await syncService.upsertEntity(
-          state.copyWith(
-            revision: state.revision + 1,
-            slots: nextSlots,
+          latestState.copyWith(
+            revision: latestState.revision + 1,
+            slots: nextSlots.copyWith(
+              pendingProjectActivityAt: nextPendingActivityAt,
+            ),
             lastWakeAt: now,
             scheduledWakeAt: nextScheduledWakeAt,
             updatedAt: now,
             consecutiveFailureCount: 0,
-            wakeCounter: state.wakeCounter + 1,
+            wakeCounter: latestState.wakeCounter + 1,
           ),
         );
       });
@@ -471,6 +513,32 @@ class ProjectAgentWorkflow {
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
+
+  Future<void> _skipDormantScheduledWake({
+    required AgentStateEntity state,
+    required DateTime now,
+  }) async {
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(
+        state.copyWith(
+          revision: state.revision + 1,
+          lastWakeAt: now,
+          scheduledWakeAt: nextLocalDayAtTime(
+            now,
+            hour: AgentSchedules.projectDailyDigestHour,
+          ),
+          updatedAt: now,
+          consecutiveFailureCount: 0,
+          wakeCounter: state.wakeCounter + 1,
+        ),
+      );
+    });
+
+    _log(
+      'scheduled wake skipped: no pending project activity',
+      subDomain: 'execute',
+    );
+  }
 
   Future<void> _persistTokenUsage({
     required InferenceUsage? usage,
