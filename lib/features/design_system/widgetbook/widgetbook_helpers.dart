@@ -103,12 +103,24 @@ class WidgetbookViewport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: width,
-        child: child,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : width;
+
+        return SizedBox(
+          width: maxWidth,
+          child: FittedBox(
+            alignment: Alignment.centerLeft,
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: width,
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

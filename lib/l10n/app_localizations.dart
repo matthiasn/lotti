@@ -4521,11 +4521,23 @@ abstract class AppLocalizations {
   /// **'Back'**
   String get designSystemHeaderBackActionLabel;
 
+  /// No description provided for @designSystemHeaderDesktopSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop'**
+  String get designSystemHeaderDesktopSectionTitle;
+
   /// No description provided for @designSystemHeaderFigmaDefaultLabel.
   ///
   /// In en, this message translates to:
   /// **'Figma default'**
   String get designSystemHeaderFigmaDefaultLabel;
+
+  /// No description provided for @designSystemHeaderMobileSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get designSystemHeaderMobileSectionTitle;
 
   /// No description provided for @designSystemHeaderHelpActionLabel.
   ///

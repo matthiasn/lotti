@@ -2520,7 +2520,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Înapoi';
 
   @override
+  String get designSystemHeaderDesktopSectionTitle => 'Desktop';
+
+  @override
   String get designSystemHeaderFigmaDefaultLabel => 'Implicit Figma';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobil';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Ajutor';

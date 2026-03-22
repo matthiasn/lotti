@@ -2552,7 +2552,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Retour';
 
   @override
+  String get designSystemHeaderDesktopSectionTitle => 'Desktop';
+
+  @override
   String get designSystemHeaderFigmaDefaultLabel => 'Défaut Figma';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobile';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Aide';

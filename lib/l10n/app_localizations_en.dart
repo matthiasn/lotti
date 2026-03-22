@@ -2480,7 +2480,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Back';
 
   @override
+  String get designSystemHeaderDesktopSectionTitle => 'Desktop';
+
+  @override
   String get designSystemHeaderFigmaDefaultLabel => 'Figma default';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobile';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Help';
