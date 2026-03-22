@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.930] - 2026-03-22
+### Added
+- Qwen 3.5 Plus model: added Alibaba Cloud's advanced multimodal reasoning
+  model with text and image understanding for complex analytical tasks.
+- Chinese AI Profile: new default inference profile using Qwen 3.5 Plus for
+  reasoning alongside Qwen VL Flash (vision), Qwen Omni Flash (audio), and
+  Wan 2.6 (image generation).
+- Alibaba FTUE setup dialog: added first-time setup wizard for Alibaba Cloud
+  providers with model and category creation.
+
+### Changed
+- FTUE setup simplified: provider setup wizards no longer create prompts —
+  all AI capabilities are handled by the skill-based automation system via
+  inference profiles.
+
 ## [0.9.929] - 2026-03-21
 ### Added
 - Design system Tabs: added a new Widgetbook-first Tabs component with

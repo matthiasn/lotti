@@ -563,7 +563,7 @@ void main() {
 
     group('Alibaba Models', () {
       test('should have text, vision, audio, and reasoning models', () {
-        expect(alibabaModels.length, equals(6));
+        expect(alibabaModels.length, equals(7));
 
         final textModels = alibabaModels.where(
           (m) =>
@@ -685,7 +685,7 @@ void main() {
           equals(ftueAlibabaFlashModelId),
         );
 
-        // Verify reasoning model (Qwen3 Max)
+        // Verify reasoning model (Qwen 3.5 Plus)
         expect(
           models.reasoning.providerModelId,
           equals(ftueAlibabaReasoningModelId),

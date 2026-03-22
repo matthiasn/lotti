@@ -440,7 +440,6 @@ class _InferenceProviderEditPageState
   ) async {
     if (!mounted) return;
 
-    final setupService = ref.read(providerPromptSetupServiceProvider);
     final ftueTriggerService = ref.read(ftueTriggerServiceProvider.notifier);
 
     // Check if FTUE should be triggered for this provider
@@ -449,15 +448,6 @@ class _InferenceProviderEditPageState
     switch (triggerResult) {
       case FtueTriggerResult.skipNotFirstProvider:
       case FtueTriggerResult.skipUnsupportedProvider:
-        // For unsupported providers, offer standard prompt setup
-        if (triggerResult == FtueTriggerResult.skipUnsupportedProvider &&
-            mounted) {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: config,
-          );
-        }
         return;
 
       case FtueTriggerResult.shouldShowFtue:
@@ -468,10 +458,7 @@ class _InferenceProviderEditPageState
     if (!mounted) return;
 
     // Perform FTUE setup for supported provider types
-    await _performFtueSetupForProvider(
-      config: config,
-      setupService: setupService,
-    );
+    await _performFtueSetupForProvider(config: config);
   }
 
   /// Performs FTUE setup flow for a supported provider.
@@ -480,10 +467,11 @@ class _InferenceProviderEditPageState
   /// the result dialog.
   Future<void> _performFtueSetupForProvider({
     required AiConfigInferenceProvider config,
-    required ProviderPromptSetupService setupService,
   }) async {
     final providerName = config.inferenceProviderType.ftueDisplayName;
     if (providerName == null) return;
+
+    final setupService = ref.read(providerPromptSetupServiceProvider);
 
     await performFtueSetupWorkflow(
       context: context,

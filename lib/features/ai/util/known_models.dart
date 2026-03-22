@@ -93,6 +93,18 @@ const List<KnownModel> alibabaModels = [
         'reasoning, analysis, and generation tasks.',
   ),
   KnownModel(
+    providerModelId: 'qwen3.5-plus',
+    name: 'Qwen 3.5 Plus',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Advanced multimodal reasoning model with text and image '
+        'understanding, strong analytical capabilities, and '
+        'support for complex coding, math, and generation tasks.',
+  ),
+  KnownModel(
     providerModelId: 'qwen-flash',
     name: 'Qwen Flash',
     inputModalities: [Modality.text],
@@ -693,7 +705,7 @@ const ftueMistralColor = Color(0xFFFF7000);
 
 /// Model IDs used for Alibaba FTUE automation
 const ftueAlibabaFlashModelId = 'qwen-flash';
-const ftueAlibabaReasoningModelId = 'qwen3-max';
+const ftueAlibabaReasoningModelId = 'qwen3.5-plus';
 const ftueAlibabaAudioModelId = 'qwen3-omni-flash';
 const ftueAlibabaVisionModelId = 'qwen3-vl-flash';
 const ftueAlibabaImageModelId = 'wan2.6-image';

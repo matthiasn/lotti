@@ -11,16 +11,12 @@ class FtueSetupConfig {
     required this.providerName,
     required this.modelCount,
     required this.modelDescription,
-    required this.promptCount,
-    required this.promptDescription,
     required this.categoryName,
   });
 
   final String providerName;
   final int modelCount;
   final String modelDescription;
-  final int promptCount;
-  final String promptDescription;
   final String categoryName;
 
   /// Default configuration for Gemini FTUE
@@ -28,8 +24,6 @@ class FtueSetupConfig {
     providerName: 'Gemini',
     modelCount: 3,
     modelDescription: 'Flash, Pro, and Nano Banana Pro (image)',
-    promptCount: 9,
-    promptDescription: 'Optimized: Pro for complex tasks, Flash for speed',
     categoryName: ftueGeminiCategoryName,
   );
 
@@ -39,8 +33,6 @@ class FtueSetupConfig {
     modelCount: 4,
     modelDescription:
         'GPT-5.2 (reasoning), GPT-5 Nano (fast), Audio, and Image',
-    promptCount: 9,
-    promptDescription: 'Optimized: GPT-5.2 for reasoning, GPT-5 Nano for speed',
     categoryName: ftueOpenAiCategoryName,
   );
 
@@ -50,11 +42,18 @@ class FtueSetupConfig {
     modelCount: 3,
     modelDescription:
         'Magistral Medium (reasoning), Mistral Small (fast), '
-        'Voxtral Small (audio)',
-    promptCount: 8,
-    promptDescription:
-        'Optimized: Magistral for reasoning, Mistral Small for speed',
+        'Voxtral Mini (audio)',
     categoryName: ftueMistralCategoryName,
+  );
+
+  /// Default configuration for Alibaba FTUE
+  static const alibaba = FtueSetupConfig(
+    providerName: 'Alibaba Cloud (Qwen)',
+    modelCount: 5,
+    modelDescription:
+        'Qwen 3.5 Plus (reasoning), Qwen Flash, VL Flash (vision), '
+        'Omni Flash (audio), Wan 2.6 (image)',
+    categoryName: ftueAlibabaCategoryName,
   );
 
   /// Get the appropriate config for a provider type.
@@ -63,6 +62,7 @@ class FtueSetupConfig {
   /// Falls back to Gemini in release mode for safety.
   static FtueSetupConfig forProviderType(InferenceProviderType type) {
     final config = switch (type) {
+      InferenceProviderType.alibaba => alibaba,
       InferenceProviderType.gemini => gemini,
       InferenceProviderType.openAi => openAi,
       InferenceProviderType.mistral => mistral,
@@ -87,7 +87,6 @@ class FtueSetupConfig {
 ///
 /// Displays a preview of what will be created:
 /// - Models (varies by provider)
-/// - Prompts (optimized assignment based on model capabilities)
 /// - Category with auto-selection configured
 class FtueSetupDialog extends StatelessWidget {
   const FtueSetupDialog({
@@ -106,6 +105,7 @@ class FtueSetupDialog extends StatelessWidget {
     final effectiveConfig =
         config ??
         switch (providerName) {
+          'Alibaba Cloud (Qwen)' => FtueSetupConfig.alibaba,
           'OpenAI' => FtueSetupConfig.openAi,
           'Mistral' => FtueSetupConfig.mistral,
           _ => FtueSetupConfig.gemini,
@@ -203,7 +203,7 @@ class FtueSetupDialog extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "We'll set up models, prompts, and a test category so you can "
+            "We'll set up models and a test category so you can "
             'start using AI features right away.',
             style: context.textTheme.bodySmall?.copyWith(
               color: context.colorScheme.onPrimaryContainer.withValues(
@@ -245,15 +245,6 @@ class FtueSetupDialog extends StatelessWidget {
             icon: Icons.memory,
             title: '${config.modelCount} Models',
             subtitle: config.modelDescription,
-          ),
-          const SizedBox(height: 8),
-
-          // Prompts section
-          _buildPreviewItem(
-            context,
-            icon: Icons.chat_bubble_outline,
-            title: '${config.promptCount} Prompts',
-            subtitle: config.promptDescription,
           ),
           const SizedBox(height: 8),
 
