@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/breadcrumbs/design_syste
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/headers/design_system_header.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -28,74 +29,47 @@ class _HeaderOverviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: SingleChildScrollView(
         child: WidgetbookSection(
-          title: context.messages.designSystemVariantMatrixTitle,
+          title: messages.designSystemVariantMatrixTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _HeaderPreviewCase(
-                label: context.messages.designSystemHeaderFigmaDefaultLabel,
-                child: _HeaderViewport(
+              WidgetbookPreviewCase(
+                label: messages.designSystemHeaderFigmaDefaultLabel,
+                child: WidgetbookViewport(
                   width: 1440,
                   child: DesignSystemHeader(
                     leading: _HeaderIconButton(
                       icon: Icons.settings_outlined,
-                      semanticsLabel: context.messages.navTabTitleSettings,
+                      semanticsLabel: messages.navTabTitleSettings,
                     ),
-                    title: context
-                        .messages
-                        .designSystemHeaderApiConfigurationTitle,
-                    breadcrumbs: DesignSystemBreadcrumbs(
-                      items: [
-                        DesignSystemBreadcrumbItem(
-                          label: context.messages.navTabTitleSettings,
-                          onPressed: widgetbookNoop,
-                        ),
-                        DesignSystemBreadcrumbItem(
-                          label: context
-                              .messages
-                              .designSystemHeaderApiConfigurationTitle,
-                          selected: true,
-                          showChevron: false,
-                        ),
-                      ],
-                    ),
-                    primaryAction: SizedBox(
-                      width: 179,
-                      height: 36,
-                      child: DesignSystemButton(
-                        label: context
-                            .messages
-                            .designSystemHeaderApiDocumentationLabel,
-                        variant: DesignSystemButtonVariant.secondary,
-                        trailingIcon: Icons.open_in_new_rounded,
-                        onPressed: widgetbookNoop,
-                      ),
-                    ),
+                    title: messages.designSystemHeaderApiConfigurationTitle,
+                    breadcrumbs: _buildBreadcrumbs(messages),
+                    primaryAction: _buildPrimaryAction(messages),
                     trailingActions: [
                       _HeaderIconButton(
                         icon: Icons.search_rounded,
-                        semanticsLabel: context
-                            .messages
-                            .designSystemHeaderSearchActionLabel,
+                        semanticsLabel:
+                            messages.designSystemHeaderSearchActionLabel,
                       ),
                       _HeaderIconButton(
                         icon: Icons.notifications_none_rounded,
-                        semanticsLabel: context
-                            .messages
-                            .designSystemHeaderNotificationsActionLabel,
+                        semanticsLabel:
+                            messages.designSystemHeaderNotificationsActionLabel,
                       ),
                       _HeaderIconButton(
                         icon: Icons.help_outline_rounded,
                         semanticsLabel:
-                            context.messages.designSystemHeaderHelpActionLabel,
+                            messages.designSystemHeaderHelpActionLabel,
                       ),
                       _HeaderIconButton(
                         icon: Icons.settings_outlined,
-                        semanticsLabel: context.messages.navTabTitleSettings,
+                        semanticsLabel: messages.navTabTitleSettings,
                       ),
                     ],
                     trailingAvatar: const DesignSystemAvatar(
@@ -106,56 +80,29 @@ class _HeaderOverviewPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _HeaderPreviewCase(
-                label: context.messages.designSystemHeaderLongTitleLabel,
-                child: _HeaderViewport(
+              WidgetbookPreviewCase(
+                label: messages.designSystemHeaderLongTitleLabel,
+                child: WidgetbookViewport(
                   width: 960,
                   child: DesignSystemHeader(
                     leading: _HeaderIconButton(
                       icon: Icons.arrow_back_ios_new_rounded,
                       semanticsLabel:
-                          context.messages.designSystemHeaderBackActionLabel,
+                          messages.designSystemHeaderBackActionLabel,
                     ),
-                    title: context.messages.designSystemHeaderLongTitleExample,
-                    breadcrumbs: DesignSystemBreadcrumbs(
-                      items: [
-                        DesignSystemBreadcrumbItem(
-                          label: context.messages.navTabTitleSettings,
-                          onPressed: widgetbookNoop,
-                        ),
-                        DesignSystemBreadcrumbItem(
-                          label: context
-                              .messages
-                              .designSystemHeaderApiConfigurationTitle,
-                          selected: true,
-                          showChevron: false,
-                        ),
-                      ],
-                    ),
-                    primaryAction: SizedBox(
-                      width: 179,
-                      height: 36,
-                      child: DesignSystemButton(
-                        label: context
-                            .messages
-                            .designSystemHeaderApiDocumentationLabel,
-                        variant: DesignSystemButtonVariant.secondary,
-                        trailingIcon: Icons.open_in_new_rounded,
-                        onPressed: widgetbookNoop,
-                      ),
-                    ),
+                    title: messages.designSystemHeaderLongTitleExample,
+                    breadcrumbs: _buildBreadcrumbs(messages),
+                    primaryAction: _buildPrimaryAction(messages),
                     trailingActions: [
                       _HeaderIconButton(
                         icon: Icons.search_rounded,
-                        semanticsLabel: context
-                            .messages
-                            .designSystemHeaderSearchActionLabel,
+                        semanticsLabel:
+                            messages.designSystemHeaderSearchActionLabel,
                       ),
                       _HeaderIconButton(
                         icon: Icons.notifications_none_rounded,
-                        semanticsLabel: context
-                            .messages
-                            .designSystemHeaderNotificationsActionLabel,
+                        semanticsLabel:
+                            messages.designSystemHeaderNotificationsActionLabel,
                       ),
                     ],
                     trailingAvatar: const DesignSystemAvatar(
@@ -171,49 +118,32 @@ class _HeaderOverviewPage extends StatelessWidget {
       ),
     );
   }
-}
 
-class _HeaderPreviewCase extends StatelessWidget {
-  const _HeaderPreviewCase({
-    required this.label,
-    required this.child,
-  });
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
+  DesignSystemBreadcrumbs _buildBreadcrumbs(AppLocalizations messages) {
+    return DesignSystemBreadcrumbs(
+      items: [
+        DesignSystemBreadcrumbItem(
+          label: messages.navTabTitleSettings,
+          onPressed: widgetbookNoop,
         ),
-        const SizedBox(height: 12),
-        child,
+        DesignSystemBreadcrumbItem(
+          label: messages.designSystemHeaderApiConfigurationTitle,
+          selected: true,
+          showChevron: false,
+        ),
       ],
     );
   }
-}
 
-class _HeaderViewport extends StatelessWidget {
-  const _HeaderViewport({
-    required this.width,
-    required this.child,
-  });
-
-  final double width;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: width,
-        child: child,
+  Widget _buildPrimaryAction(AppLocalizations messages) {
+    return SizedBox(
+      width: 179,
+      height: 36,
+      child: DesignSystemButton(
+        label: messages.designSystemHeaderApiDocumentationLabel,
+        variant: DesignSystemButtonVariant.secondary,
+        trailingIcon: Icons.open_in_new_rounded,
+        onPressed: widgetbookNoop,
       ),
     );
   }

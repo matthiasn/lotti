@@ -55,58 +55,57 @@ class _HorizontalDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
+    if (length != null) {
+      return _buildContent(context, length!);
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final resolvedWidth = _resolveWidth(constraints);
-
-        if (label == null || label == '') {
-          return SizedBox(
-            width: resolvedWidth,
-            height: 1,
-            child: ColoredBox(color: color),
-          );
-        }
-
-        return SizedBox(
-          width: resolvedWidth,
-          height: 16,
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 1,
-                  child: ColoredBox(color: color),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step5),
-              Text(
-                label!,
-                style: tokens.typography.styles.others.overline.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step5),
-              Expanded(
-                child: SizedBox(
-                  height: 1,
-                  child: ColoredBox(color: color),
-                ),
-              ),
-            ],
-          ),
-        );
+        final resolvedWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : 320.0;
+        return _buildContent(context, resolvedWidth);
       },
     );
   }
 
-  double _resolveWidth(BoxConstraints constraints) {
-    if (length != null) {
-      return length!;
+  Widget _buildContent(BuildContext context, double resolvedWidth) {
+    final tokens = context.designTokens;
+
+    if (label == null || label == '') {
+      return SizedBox(
+        width: resolvedWidth,
+        height: 1,
+        child: ColoredBox(color: color),
+      );
     }
-    if (constraints.hasBoundedWidth) {
-      return constraints.maxWidth;
-    }
-    return 320;
+
+    return SizedBox(
+      width: resolvedWidth,
+      height: 16,
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 1,
+              child: ColoredBox(color: color),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step5),
+          Text(
+            label!,
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step5),
+          Expanded(
+            child: SizedBox(
+              height: 1,
+              child: ColoredBox(color: color),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

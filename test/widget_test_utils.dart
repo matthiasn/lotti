@@ -132,12 +132,6 @@ const phoneMediaQueryData = MediaQueryData(
   padding: EdgeInsets.only(top: 47, bottom: 34),
 );
 
-ThemeData _testTheme([ThemeData? baseTheme]) {
-  final theme = baseTheme ?? ThemeData();
-
-  return theme.copyWith(splashFactory: NoSplash.splashFactory);
-}
-
 Widget makeTestableWidget(
   Widget child, {
   MediaQueryData? mediaQueryData,
@@ -150,7 +144,6 @@ Widget makeTestableWidget(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _testTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -174,7 +167,6 @@ Widget makeTestableWidget2(
   return MediaQuery(
     data: mq,
     child: MaterialApp(
-      theme: _testTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         FormBuilderLocalizations.delegate,
@@ -201,7 +193,7 @@ Widget makeTestableWidgetWithScaffold(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _testTheme(theme),
+        theme: theme,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -238,7 +230,6 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _testTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,

@@ -55,31 +55,6 @@ class _NavigationSidebarOverviewPage extends StatelessWidget {
   }
 }
 
-class _PreviewCase extends StatelessWidget {
-  const _PreviewCase({
-    required this.label,
-    required this.child,
-  });
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
-    );
-  }
-}
-
 class _SidebarShowcase extends StatelessWidget {
   const _SidebarShowcase();
 
@@ -91,14 +66,14 @@ class _SidebarShowcase extends StatelessWidget {
       spacing: 24,
       runSpacing: 24,
       children: [
-        _PreviewCase(
+        WidgetbookPreviewCase(
           label: context.messages.designSystemNavigationExpandedLabel,
           child: _SidebarFrame(
             brightness: brightness,
             expanded: true,
           ),
         ),
-        _PreviewCase(
+        WidgetbookPreviewCase(
           label: context.messages.designSystemNavigationCollapsedLabel,
           child: _SidebarFrame(
             brightness: brightness,
@@ -395,11 +370,11 @@ class _DailyFilterShowcase extends StatelessWidget {
       spacing: 24,
       runSpacing: 24,
       children: [
-        _PreviewCase(
+        WidgetbookPreviewCase(
           label: context.messages.designSystemNavigationExpandedLabel,
           child: const _DailyFilterCard(open: true),
         ),
-        _PreviewCase(
+        WidgetbookPreviewCase(
           label: context.messages.designSystemNavigationCollapsedLabel,
           child: const _DailyFilterCard(open: false),
         ),

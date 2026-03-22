@@ -94,7 +94,7 @@ class DesignSystemHeader extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ...?(primaryAction == null ? null : [primaryAction!]),
+                      ?primaryAction,
                       if (hasTrailingCluster)
                         _TrailingCluster(
                           leadingGap: trailingGap,

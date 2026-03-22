@@ -64,3 +64,51 @@ List<WidgetbookNavigationDestination> widgetbookNavigationDestinations(
 }
 
 void widgetbookNoop() {}
+
+class WidgetbookPreviewCase extends StatelessWidget {
+  const WidgetbookPreviewCase({
+    required this.label,
+    required this.child,
+    super.key,
+  });
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
+}
+
+class WidgetbookViewport extends StatelessWidget {
+  const WidgetbookViewport({
+    required this.width,
+    required this.child,
+    super.key,
+  });
+
+  final double width;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: width,
+        child: child,
+      ),
+    );
+  }
+}
