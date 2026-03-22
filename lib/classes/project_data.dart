@@ -83,4 +83,13 @@ extension ProjectStatusExtension on ProjectStatus {
     ProjectCompleted() => 'COMPLETED',
     ProjectArchived() => 'ARCHIVED',
   };
+
+  /// Human-readable label for display and agent output.
+  String get label => switch (this) {
+    ProjectOpen() => 'Open',
+    ProjectActive() => 'Active',
+    ProjectOnHold() => 'On Hold',
+    ProjectCompleted() => 'Completed',
+    ProjectArchived() => 'Archived',
+  };
 }

@@ -70,7 +70,7 @@ class ProjectAgentService {
         type: AgentLinkTypes.agentProject,
       );
       if (linksForProject.isNotEmpty) {
-        final primaryLink = _selectPrimaryProjectLink(linksForProject);
+        final primaryLink = linksForProject.selectPrimary();
         throw StateError(
           'A project agent already exists for project $projectId '
           '(agent ${primaryLink.fromId})',
@@ -172,7 +172,7 @@ class ProjectAgentService {
     );
     if (links.isEmpty) return null;
 
-    final agentId = _selectPrimaryProjectLink(links).fromId;
+    final agentId = links.selectPrimary().fromId;
     return agentService.getAgent(agentId);
   }
 
@@ -238,31 +238,5 @@ class ProjectAgentService {
       'restored $count project agent(s)',
       subDomain: 'restore',
     );
-  }
-
-  AgentLink _selectPrimaryProjectLink(List<AgentLink> links) {
-    if (links.isEmpty) {
-      throw ArgumentError('Cannot select a primary link from an empty list.');
-    }
-
-    final sorted = links.toList()
-      ..sort((a, b) {
-        final createdAtComparison = b.createdAt.compareTo(a.createdAt);
-        if (createdAtComparison != 0) {
-          return createdAtComparison;
-        }
-        return b.id.compareTo(a.id);
-      });
-
-    if (sorted.length > 1) {
-      domainLogger?.log(
-        LogDomains.agentRuntime,
-        'multiple project-agent links found; choosing latest '
-        '${DomainLogger.sanitizeId(sorted.first.id)}',
-        subDomain: 'resolve',
-      );
-    }
-
-    return sorted.first;
   }
 }

@@ -140,6 +140,82 @@ class AgentRepository {
     return entity?.mapOrNull(agentReport: (e) => e);
   }
 
+  /// Batch-fetch the latest report for each agent in [agentIds] under [scope].
+  ///
+  /// Issues two SQL queries (one for heads, one for reports) instead of 2N
+  /// individual lookups. Agents without a report are omitted from the result.
+  Future<Map<String, AgentReportEntity>> getLatestReportsByAgentIds(
+    List<String> agentIds,
+    String scope,
+  ) async {
+    if (agentIds.isEmpty) return {};
+
+    // 1. Batch-fetch report heads.
+    final headPlaceholders = List.filled(agentIds.length, '?').join(', ');
+    final headRows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE agent_id IN ($headPlaceholders) '
+          "AND type = '${AgentEntityTypes.agentReportHead}' "
+          'AND subtype = ? '
+          'AND deleted_at IS NULL',
+          variables: [
+            ...agentIds.map(Variable.withString),
+            Variable.withString(scope),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    // Map agent_id → report head → reportId.
+    final reportIdsByAgentId = <String, String>{};
+    final allReportIds = <String>[];
+    for (final row in headRows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
+      final head = entity.mapOrNull(agentReportHead: (e) => e);
+      if (head != null) {
+        reportIdsByAgentId[head.agentId] = head.reportId;
+        allReportIds.add(head.reportId);
+      }
+    }
+
+    if (allReportIds.isEmpty) return {};
+
+    // 2. Batch-fetch the actual report entities.
+    final reportPlaceholders = List.filled(allReportIds.length, '?').join(', ');
+    final reportRows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE id IN ($reportPlaceholders) AND deleted_at IS NULL',
+          variables: allReportIds.map(Variable.withString).toList(),
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    final reportsById = <String, AgentReportEntity>{};
+    for (final row in reportRows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
+      final report = entity.mapOrNull(agentReport: (e) => e);
+      if (report != null) {
+        reportsById[report.id] = report;
+      }
+    }
+
+    // 3. Assemble agent_id → report map.
+    final result = <String, AgentReportEntity>{};
+    for (final entry in reportIdsByAgentId.entries) {
+      final report = reportsById[entry.value];
+      if (report != null) {
+        result[entry.key] = report;
+      }
+    }
+    return result;
+  }
+
   /// Fetch the [AgentReportHeadEntity] for [agentId] in [scope], or `null` if
   /// none exists.
   Future<AgentReportHeadEntity?> getReportHead(
@@ -568,6 +644,40 @@ class AgentRepository {
       rows = await _db.getAgentLinksByToId(toId).get();
     }
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Batch-fetch non-deleted links pointing to any of [toIds] with a given
+  /// [type], returned as a map from `toId` → links.
+  ///
+  /// Issues a single SQL query with `IN (...)` instead of N separate lookups.
+  /// IDs not present in the result map have no matching links.
+  Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
+    List<String> toIds, {
+    required String type,
+  }) async {
+    if (toIds.isEmpty) return {};
+
+    final placeholders = List.filled(toIds.length, '?').join(', ');
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_links '
+          'WHERE to_id IN ($placeholders) AND type = ? AND deleted_at IS NULL',
+          variables: [
+            ...toIds.map(Variable.withString),
+            Variable.withString(type),
+          ],
+          readsFrom: {_db.agentLinks},
+        )
+        .get();
+
+    final result = <String, List<model.AgentLink>>{};
+    for (final row in rows) {
+      final link = AgentDbConversions.fromLinkRow(
+        await _db.agentLinks.mapFromRow(row),
+      );
+      (result[link.toId] ??= []).add(link);
+    }
+    return result;
   }
 
   /// Fetch agent links (including soft-deleted) whose serialized

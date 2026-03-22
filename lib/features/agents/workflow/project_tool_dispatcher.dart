@@ -121,7 +121,7 @@ class ProjectToolDispatcher {
     if (_isSameSemanticStatus(project.data.status, parsedStatus)) {
       return ToolExecutionResult(
         success: true,
-        output: 'Project already has status ${_statusLabel(parsedStatus)}',
+        output: 'Project already has status ${parsedStatus.label}',
       );
     }
 
@@ -143,7 +143,7 @@ class ProjectToolDispatcher {
 
     return ToolExecutionResult(
       success: true,
-      output: 'Updated project status to ${_statusLabel(parsedStatus)}',
+      output: 'Updated project status to ${parsedStatus.label}',
       mutatedEntityId: projectId,
     );
   }
@@ -378,16 +378,6 @@ class ProjectToolDispatcher {
       (ProjectOnHold(:final reason), ProjectOnHold(reason: final nextReason)) =>
         reason == nextReason,
       _ => false,
-    };
-  }
-
-  static String _statusLabel(ProjectStatus status) {
-    return switch (status) {
-      ProjectOpen() => 'Open',
-      ProjectActive() => 'Active',
-      ProjectOnHold() => 'On Hold',
-      ProjectCompleted() => 'Completed',
-      ProjectArchived() => 'Archived',
     };
   }
 }

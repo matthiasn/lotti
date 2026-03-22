@@ -191,6 +191,15 @@ void main() {
     when(
       () => mockAgentRepository.getLatestReport(any(), any()),
     ).thenAnswer((_) async => null);
+    when(
+      () => mockAgentRepository.getLinksToMultiple(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockAgentRepository.getLatestReportsByAgentIds(any(), any()),
+    ).thenAnswer((_) async => {});
     when(() => mockConversationManager.messages).thenReturn([]);
 
     workflow = ProjectAgentWorkflow(
@@ -627,11 +636,11 @@ void main() {
         ).thenAnswer((_) async => [linkedTask]);
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-001',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-001'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => {});
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -684,11 +693,15 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-002',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-002'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [agentLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-002': [agentLink],
+          },
+        );
 
         final taskReport = makeTestReport(
           agentId: 'task-agent-1',
@@ -696,11 +709,13 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLatestReport(
-            'task-agent-1',
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-1'],
             'current',
           ),
-        ).thenAnswer((_) async => taskReport);
+        ).thenAnswer(
+          (_) async => {'task-agent-1': taskReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1407,14 +1422,12 @@ void main() {
           ),
         ).thenAnswer((_) async => tasks);
 
-        for (final task in tasks) {
-          when(
-            () => mockAgentRepository.getLinksTo(
-              task.meta.id,
-              type: AgentLinkTypes.agentTask,
-            ),
-          ).thenAnswer((_) async => []);
-        }
+        when(
+          () => mockAgentRepository.getLinksToMultiple(
+            tasks.map((t) => t.meta.id).toList(),
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => {});
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1647,8 +1660,8 @@ void main() {
         ).thenAnswer((_) async => [linkedTask]);
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-err',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-err'],
             type: AgentLinkTypes.agentTask,
           ),
         ).thenThrow(Exception('Link lookup failed'));
@@ -1706,11 +1719,15 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-empty-rpt',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-empty-rpt'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [agentLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-empty-rpt': [agentLink],
+          },
+        );
 
         final emptyReport = makeTestReport(
           agentId: 'task-agent-2',
@@ -1718,8 +1735,13 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLatestReport('task-agent-2', 'current'),
-        ).thenAnswer((_) async => emptyReport);
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-2'],
+            'current',
+          ),
+        ).thenAnswer(
+          (_) async => {'task-agent-2': emptyReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1961,11 +1983,15 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-multi-link',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-multi-link'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [olderLink, newerLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-multi-link': [olderLink, newerLink],
+          },
+        );
 
         final newerReport = makeTestReport(
           agentId: 'new-agent',
@@ -1973,8 +1999,13 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLatestReport('new-agent', 'current'),
-        ).thenAnswer((_) async => newerReport);
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['new-agent'],
+            'current',
+          ),
+        ).thenAnswer(
+          (_) async => {'new-agent': newerReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -416,11 +417,6 @@ class ProjectAgentWorkflow {
         }
 
         // Persist deferred change set (if any items were accumulated).
-        // TODO(project-agent): The change set confirmation infrastructure
-        // (providers, UI, dispatcher) is currently task-scoped. These change
-        // sets are persisted correctly but have no review/apply path until a
-        // project-scoped `ChangeSetSummaryCard`, `ProjectToolDispatcher`,
-        // and `pendingChangeSetsForProject` provider are implemented.
         if (deferredItems.isNotEmpty) {
           final changeItems = deferredItems.map((item) {
             final toolName = item['toolName'] as String? ?? '';
@@ -742,7 +738,7 @@ immediately.''';
     final data = project.data;
     buf
       ..writeln('- **Title**: ${data.title}')
-      ..writeln('- **Status**: ${_projectStatusLabel(data.status)}')
+      ..writeln('- **Status**: ${data.status.label}')
       ..writeln(
         '- **Date range**: '
         '${data.dateFrom.toIso8601String().substring(0, 10)} → '
@@ -803,6 +799,9 @@ immediately.''';
   // ── Linked-task context ───────────────────────────────────────────────────
 
   /// Builds a JSON string with linked tasks and their task-agent reports.
+  ///
+  /// Uses batch queries (2 SQL statements total) instead of per-task lookups
+  /// to avoid an N+1 pattern when many tasks are linked to the project.
   Future<String> _buildLinkedTasksContext(String projectId) async {
     try {
       final linkedEntities = await journalRepository.getLinkedToEntities(
@@ -813,8 +812,42 @@ immediately.''';
 
       if (taskEntities.isEmpty) return '{}';
 
-      final taskRows = <Map<String, dynamic>>[];
+      final taskIds = taskEntities.map((t) => t.meta.id).toList();
 
+      // 1. Batch-fetch all agent_task links for the linked tasks (1 query).
+      var linksByTaskId = <String, List<AgentLink>>{};
+      try {
+        linksByTaskId = await agentRepository.getLinksToMultiple(
+          taskIds,
+          type: AgentLinkTypes.agentTask,
+        );
+      } catch (e, s) {
+        _logError('batch link lookup failed', error: e, stackTrace: s);
+      }
+
+      // 2. Determine the primary agent for each task.
+      final agentIdByTaskId = <String, String>{};
+      for (final entry in linksByTaskId.entries) {
+        if (entry.value.isNotEmpty) {
+          agentIdByTaskId[entry.key] = entry.value.selectPrimary().fromId;
+        }
+      }
+
+      // 3. Batch-fetch the latest reports for all resolved agents (2 queries).
+      var reportsByAgentId = <String, AgentReportEntity>{};
+      if (agentIdByTaskId.isNotEmpty) {
+        try {
+          reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
+            agentIdByTaskId.values.toSet().toList(),
+            AgentReportScopes.current,
+          );
+        } catch (e, s) {
+          _logError('batch report lookup failed', error: e, stackTrace: s);
+        }
+      }
+
+      // 4. Assemble rows.
+      final taskRows = <Map<String, dynamic>>[];
       for (final task in taskEntities) {
         final row = <String, dynamic>{
           'id': task.meta.id,
@@ -822,13 +855,18 @@ immediately.''';
           'status': _taskStatusLabel(task.data.status),
         };
 
-        // Resolve task-agent report if available.
-        final report = await _resolveLatestTaskAgentReport(task.meta.id);
-        if (report != null) {
-          row['taskAgentId'] = report.agentId;
-          row['latestTaskAgentReport'] = report.content;
-          row['latestTaskAgentReportCreatedAt'] = report.createdAt
-              .toIso8601String();
+        final agentId = agentIdByTaskId[task.meta.id];
+        if (agentId != null) {
+          final report = reportsByAgentId[agentId];
+          if (report != null) {
+            final content = report.content.trim();
+            if (content.isNotEmpty) {
+              row['taskAgentId'] = agentId;
+              row['latestTaskAgentReport'] = content;
+              row['latestTaskAgentReportCreatedAt'] = report.createdAt
+                  .toIso8601String();
+            }
+          }
         }
 
         taskRows.add(row);
@@ -844,48 +882,6 @@ immediately.''';
         stackTrace: stackTrace,
       );
       return '{}';
-    }
-  }
-
-  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
-    String taskId,
-  ) async {
-    try {
-      final links = await agentRepository.getLinksTo(
-        taskId,
-        type: AgentLinkTypes.agentTask,
-      );
-      if (links.isEmpty) return null;
-
-      final sortedLinks = links.toList()
-        ..sort((a, b) {
-          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-          if (byCreatedAt != 0) return byCreatedAt;
-          return b.id.compareTo(a.id);
-        });
-
-      for (final link in sortedLinks) {
-        final report = await agentRepository.getLatestReport(
-          link.fromId,
-          AgentReportScopes.current,
-        );
-        if (report == null) continue;
-        final content = report.content.trim();
-        if (content.isEmpty) continue;
-        return _LinkedTaskAgentReport(
-          agentId: link.fromId,
-          content: content,
-          createdAt: report.createdAt,
-        );
-      }
-      return null;
-    } catch (e, s) {
-      _logError(
-        'failed to resolve linked task-agent report',
-        error: e,
-        stackTrace: s,
-      );
-      return null;
     }
   }
 
@@ -927,16 +923,6 @@ immediately.''';
     final text = payload.content['text'];
     if (text is String && text.isNotEmpty) return text;
     return '(no content)';
-  }
-
-  static String _projectStatusLabel(ProjectStatus status) {
-    return switch (status) {
-      ProjectOpen() => 'Open',
-      ProjectActive() => 'Active',
-      ProjectOnHold() => 'On Hold',
-      ProjectCompleted() => 'Completed',
-      ProjectArchived() => 'Archived',
-    };
   }
 
   static String _taskStatusLabel(TaskStatus status) {
@@ -981,16 +967,4 @@ class _TemplateContext {
   const _TemplateContext({required this.template, required this.version});
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
-}
-
-class _LinkedTaskAgentReport {
-  const _LinkedTaskAgentReport({
-    required this.agentId,
-    required this.content,
-    required this.createdAt,
-  });
-
-  final String agentId;
-  final String content;
-  final DateTime createdAt;
 }

@@ -94,7 +94,7 @@ class ProjectActivityMonitor {
       );
       if (links.isEmpty) return;
 
-      final agentId = _selectPrimaryProjectLink(links).fromId;
+      final agentId = links.selectPrimary().fromId;
       final state = await _agentRepository.getAgentState(agentId);
       if (state == null || state.deletedAt != null) return;
 
@@ -131,17 +131,5 @@ class ProjectActivityMonitor {
         stackTrace: stackTrace,
       );
     }
-  }
-
-  AgentLink _selectPrimaryProjectLink(List<AgentLink> links) {
-    final sorted = links.toList()
-      ..sort((a, b) {
-        final createdAtComparison = b.createdAt.compareTo(a.createdAt);
-        if (createdAtComparison != 0) {
-          return createdAtComparison;
-        }
-        return b.id.compareTo(a.id);
-      });
-    return sorted.first;
   }
 }
