@@ -268,7 +268,14 @@ class ProjectToolDispatcher {
       );
       final deletedTask = task.copyWith(meta: deletedMeta);
       return (await persistenceLogic.updateDbEntity(deletedTask)) ?? false;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Failed to roll back created task ${task.meta.id}',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: _sub,
+      );
       return false;
     }
   }
