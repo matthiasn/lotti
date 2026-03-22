@@ -3599,6 +3599,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'Încă nu a fost configurat niciun agent de proiect pentru acest proiect.';
+
+  @override
   String get projectAcceptedNextStepsTitle => 'Pașii următori acceptați';
 
   @override

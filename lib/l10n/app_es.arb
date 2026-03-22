@@ -1508,6 +1508,7 @@
   "outboxMonitorVolumeChartTitle": "Volumen de sincronización diario",
   "privateLabel": "Privado",
   "projectAgentSectionTitle": "Agente",
+  "projectAgentNotProvisioned": "Todavía no se ha configurado un agente de proyecto para este proyecto.",
   "projectAcceptedNextStepsTitle": "Siguientes pasos aceptados",
   "projectCountSummary": "{count, plural, one{{count} proyecto} other{{count} proyectos}}",
   "@projectCountSummary": {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -8,16 +9,23 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/ai/model/ai_config.dart'
+    show AiConfig, AiConfigInferenceProfile;
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../agents/test_utils.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
   const projectId = 'proj-agent-1';
+  const projectTitle = 'My Project';
+  const categoryId = 'cat-1';
 
   final testAgent =
       AgentDomainEntity.agent(
@@ -35,6 +43,20 @@ void main() {
             vectorClock: null,
           )
           as AgentIdentityEntity;
+  final testProfile = testInferenceProfile(id: 'profile-1', name: 'Profile 1');
+
+  Widget buildSubject({
+    List<Override> overrides = const [],
+  }) {
+    return makeTestableWidgetWithScaffold(
+      const ProjectAgentReportCard(
+        projectId: projectId,
+        projectTitle: projectTitle,
+        categoryId: categoryId,
+      ),
+      overrides: overrides,
+    );
+  }
 
   setUpAll(registerAllFallbackValues);
 
@@ -46,8 +68,7 @@ void main() {
       final completer = Completer<AgentDomainEntity?>();
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProjectAgentReportCard(projectId: projectId),
+        buildSubject(
           overrides: [
             projectAgentProvider(projectId).overrideWith(
               (ref) => completer.future,
@@ -64,8 +85,7 @@ void main() {
 
     testWidgets('shows nothing when error', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProjectAgentReportCard(projectId: projectId),
+        buildSubject(
           overrides: [
             projectAgentProvider(projectId).overrideWith(
               (ref) => Future<AgentDomainEntity?>.error(
@@ -80,10 +100,11 @@ void main() {
       expect(find.text('Agent'), findsNothing);
     });
 
-    testWidgets('shows nothing when data is null', (tester) async {
+    testWidgets('shows explicit empty state when no project agent exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProjectAgentReportCard(projectId: projectId),
+        buildSubject(
           overrides: [
             projectAgentProvider(projectId).overrideWith(
               (ref) async => null,
@@ -93,15 +114,21 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Agent'), findsNothing);
+      expect(find.text('Agent'), findsOneWidget);
+      expect(
+        find.text(
+          'No project agent has been provisioned for this project yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Create Agent'), findsOneWidget);
     });
 
     testWidgets('shows agent display name when data is AgentIdentityEntity', (
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ProjectAgentReportCard(projectId: projectId),
+        buildSubject(
           overrides: [
             projectAgentProvider(projectId).overrideWith(
               (ref) async => testAgent,
@@ -114,6 +141,148 @@ void main() {
       expect(find.text('Agent'), findsOneWidget);
       expect(find.text('My Project Agent'), findsOneWidget);
       expect(find.byIcon(Icons.smart_toy_outlined), findsWidgets);
+    });
+
+    testWidgets('renders the latest project report', (tester) async {
+      final report = makeTestReport(
+        agentId: 'agent-1',
+        content:
+            '## TLDR\nProject is on track.\n\n'
+            '## Details\n- Milestone review is ready.\n',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith(
+              (ref, agentId) async => agentId == 'agent-1' ? report : null,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Project is on track'), findsOneWidget);
+      expect(find.textContaining('Milestone review is ready'), findsNothing);
+    });
+
+    testWidgets('refresh button triggers project reanalysis', (tester) async {
+      final mockService = MockProjectAgentService();
+      when(() => mockService.triggerReanalysis(any())).thenReturn(null);
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith((ref, agentId) async => null),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            projectAgentServiceProvider.overrideWithValue(mockService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pump();
+
+      verify(() => mockService.triggerReanalysis('agent-1')).called(1);
+    });
+
+    testWidgets('create agent button provisions a missing project agent', (
+      tester,
+    ) async {
+      final mockService = MockProjectAgentService();
+      final mockTemplateService = MockAgentTemplateService();
+      final template = makeTestTemplate(
+        id: 'project-template-1',
+        agentId: 'project-template-1',
+        displayName: 'Project Template',
+        kind: AgentTemplateKind.projectAgent,
+      );
+
+      when(
+        () => mockTemplateService.listTemplatesForCategory(categoryId),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockService.createProjectAgent(
+          projectId: any(named: 'projectId'),
+          templateId: any(named: 'templateId'),
+          displayName: any(named: 'displayName'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+        ),
+      ).thenAnswer((_) async => testAgent);
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith((ref) async => null),
+            projectAgentServiceProvider.overrideWithValue(mockService),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([testProfile]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create Agent'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(testProfile.name));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockService.createProjectAgent(
+          projectId: projectId,
+          templateId: 'project-template-1',
+          displayName: projectTitle,
+          allowedCategoryIds: {categoryId},
+          profileId: testProfile.id,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('create agent button shows snackbar when no templates exist', (
+      tester,
+    ) async {
+      final mockService = MockProjectAgentService();
+      final mockTemplateService = MockAgentTemplateService();
+
+      when(
+        () => mockTemplateService.listTemplatesForCategory(categoryId),
+      ).thenAnswer((_) async => []);
+      when(mockTemplateService.listTemplates).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith((ref) async => null),
+            projectAgentServiceProvider.overrideWithValue(mockService),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ProjectAgentReportCard));
+      await tester.tap(find.text('Create Agent'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentTemplateNoTemplates),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
@@ -160,8 +329,7 @@ void main() {
         ).thenAnswer((_) async => [decision]);
 
         await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const ProjectAgentReportCard(projectId: projectId),
+          buildSubject(
             overrides: [
               projectAgentProvider(projectId).overrideWith(
                 (ref) async => testAgent,
@@ -173,7 +341,7 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.text('Accepted next steps'), findsOneWidget);
         expect(find.text('Unblock QA'), findsOneWidget);
@@ -184,4 +352,13 @@ void main() {
       },
     );
   });
+}
+
+class _FakeInferenceProfileController extends InferenceProfileController {
+  _FakeInferenceProfileController(this._profiles);
+
+  final List<AiConfig> _profiles;
+
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(_profiles);
 }

@@ -3652,6 +3652,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'Aucun agent de projet n\'a encore été configuré pour ce projet.';
+
+  @override
   String get projectAcceptedNextStepsTitle => 'Prochaines étapes acceptées';
 
   @override

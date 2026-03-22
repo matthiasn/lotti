@@ -54,7 +54,7 @@ class CategoryProjectsSection extends ConsumerWidget {
                 ),
                 trailing: ProjectStatusChip(status: project.data.status),
                 onTap: () => getIt<NavService>().beamToNamed(
-                  '/settings/projects/${project.meta.id}',
+                  '/settings/projects/${project.meta.id}?categoryId=$categoryId',
                 ),
               ),
             ),

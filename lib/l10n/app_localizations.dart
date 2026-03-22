@@ -6421,6 +6421,12 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get projectAgentSectionTitle;
 
+  /// No description provided for @projectAgentNotProvisioned.
+  ///
+  /// In en, this message translates to:
+  /// **'No project agent has been provisioned for this project yet.'**
+  String get projectAgentNotProvisioned;
+
   /// No description provided for @projectAcceptedNextStepsTitle.
   ///
   /// In en, this message translates to:

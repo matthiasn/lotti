@@ -3580,6 +3580,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'Pro tento projekt ještě nebyl nastaven žádný projektový agent.';
+
+  @override
   String get projectAcceptedNextStepsTitle => 'Přijaté další kroky';
 
   @override

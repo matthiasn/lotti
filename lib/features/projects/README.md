@@ -75,6 +75,8 @@ lib/features/projects/
 Project routes live under the settings location:
 - `/settings/projects/create?categoryId=X` — create page
 - `/settings/projects/:projectId` — detail page
+- `/settings/projects/:projectId?categoryId=X` — detail page with category
+  return context preserved for back navigation
 
 ## Key Widgets
 
@@ -91,7 +93,10 @@ Interactive status selector on the project detail page. Shows the current status
 Form page with three sections:
 1. **Status** — `ProjectStatusPicker` for changing project status.
 2. **Project Title** — text field and optional target date.
-3. **Linked Tasks** — list of tasks in this project.
+3. **Agent** — current project-agent report, accepted next steps, manual
+   refresh action, and an explicit empty state when no project agent has been
+   provisioned.
+4. **Linked Tasks** — list of tasks in this project.
 
 ## Integration Points
 

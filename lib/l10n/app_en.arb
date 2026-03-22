@@ -1672,6 +1672,7 @@
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
   "privateLabel": "Private",
   "projectAgentSectionTitle": "Agent",
+  "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",
   "projectAcceptedNextStepsTitle": "Accepted next steps",
   "projectCountSummary": "{count, plural, one{{count} project} other{{count} projects}}",
   "@projectCountSummary": {

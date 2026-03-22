@@ -3531,6 +3531,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'No project agent has been provisioned for this project yet.';
+
+  @override
   String get projectAcceptedNextStepsTitle => 'Accepted next steps';
 
   @override

@@ -1,9 +1,15 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -15,26 +21,125 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 class ProjectAgentReportCard extends ConsumerWidget {
   const ProjectAgentReportCard({
     required this.projectId,
+    required this.projectTitle,
+    this.categoryId,
     super.key,
   });
 
   final String projectId;
+  final String projectTitle;
+  final String? categoryId;
+
+  Future<void> _createProjectAgent(BuildContext context, WidgetRef ref) async {
+    try {
+      final service = ref.read(projectAgentServiceProvider);
+      final templateService = ref.read(agentTemplateServiceProvider);
+
+      var templates = categoryId != null
+          ? await templateService.listTemplatesForCategory(categoryId!)
+          : <AgentTemplateEntity>[];
+      if (templates.isEmpty) {
+        templates = await templateService.listTemplates();
+      }
+      templates = templates
+          .where((t) => t.kind == AgentTemplateKind.projectAgent)
+          .toList();
+
+      if (templates.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.messages.agentTemplateNoTemplates),
+          ),
+        );
+        return;
+      }
+
+      if (!context.mounted) return;
+
+      final result = await AgentCreationModal.show(
+        context: context,
+        templates: templates,
+      );
+
+      if (result == null) return;
+
+      await service.createProjectAgent(
+        projectId: projectId,
+        templateId: result.templateId,
+        displayName: projectTitle,
+        allowedCategoryIds: {if (categoryId != null) categoryId!},
+        profileId: result.profileId,
+      );
+
+      ref
+        ..invalidate(projectAgentProvider(projectId))
+        ..invalidate(projectAgentSummaryProvider(projectId));
+    } catch (e, s) {
+      developer.log(
+        'Failed to create project agent',
+        name: 'ProjectAgentReportCard',
+        error: e,
+        stackTrace: s,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.taskAgentCreateError(e.toString())),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final agentAsync = ref.watch(projectAgentProvider(projectId));
-    final acceptedRecommendations =
-        ref
-            .watch(projectAcceptedRecommendationsProvider(projectId))
-            .asData
-            ?.value ??
-        const [];
 
     return agentAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
       data: (agent) {
-        if (agent is! AgentIdentityEntity) return const SizedBox.shrink();
+        if (agent is! AgentIdentityEntity) {
+          return LottiFormSection(
+            title: context.messages.projectAgentSectionTitle,
+            icon: Icons.smart_toy_outlined,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  context.messages.projectAgentNotProvisioned,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ActionChip(
+                  avatar: Icon(
+                    Icons.add,
+                    size: 16,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(context.messages.taskAgentCreateChipLabel),
+                  onPressed: () => _createProjectAgent(context, ref),
+                ),
+              ),
+            ],
+          );
+        }
+
+        final reportAsync = ref.watch(agentReportProvider(agent.agentId));
+        final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
+        final isRunning =
+            ref.watch(agentIsRunningProvider(agent.agentId)).value ?? false;
+        final acceptedRecommendations =
+            ref
+                .watch(projectAcceptedRecommendationsProvider(projectId))
+                .asData
+                ?.value ??
+            const <ProjectAcceptedRecommendation>[];
+        final hasReport = report != null && report.content.trim().isNotEmpty;
 
         return LottiFormSection(
           title: context.messages.projectAgentSectionTitle,
@@ -56,9 +161,76 @@ class ProjectAgentReportCard extends ConsumerWidget {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
+                  if (isRunning)
+                    Tooltip(
+                      message: context.messages.agentRunningIndicator,
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: context.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        size: 20,
+                        color: context.colorScheme.primary,
+                      ),
+                      tooltip: context.messages.taskAgentRunNowTooltip,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(projectAgentServiceProvider)
+                            .triggerReanalysis(agent.agentId);
+                      },
+                    ),
                 ],
               ),
             ),
+            if (reportAsync.isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (hasReport)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: AgentReportSection(
+                  content: report.content,
+                  tldr: report.tldr,
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  context.messages.agentReportNone,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             if (acceptedRecommendations.isNotEmpty) ...[
               const Divider(height: 24),
               Text(

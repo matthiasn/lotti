@@ -19,6 +19,8 @@ import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:mocktail/mocktail.dart';
@@ -106,6 +108,7 @@ void main() {
     WidgetTester tester, {
     required ProjectDetailState controllerState,
     AgentDomainEntity? projectAgent,
+    String? categoryId,
     List<Override> extraOverrides = const [],
   }) async {
     // Use a tall surface so that all sliver children are laid out.
@@ -121,7 +124,10 @@ void main() {
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const ProjectDetailPage(projectId: 'test-project-id'),
+        ProjectDetailPage(
+          projectId: 'test-project-id',
+          categoryId: categoryId,
+        ),
         overrides: [
           projectDetailControllerProvider('test-project-id').overrideWith(
             () => controller,
@@ -641,6 +647,36 @@ void main() {
         expect(find.text('Go'), findsOneWidget);
         expect(find.byType(ProjectDetailPage), findsNothing);
       });
+
+      testWidgets(
+        'back button returns to the originating category when categoryId exists',
+        (tester) async {
+          final mockNavService = MockNavService();
+          when(
+            () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+          ).thenReturn(null);
+          getIt.registerSingleton<NavService>(mockNavService);
+
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            categoryId: 'cat-123',
+          );
+
+          await tester.tap(find.byTooltip('Back'));
+          await tester.pump();
+
+          verify(
+            () => mockNavService.beamToNamed('/settings/categories/cat-123'),
+          ).called(1);
+        },
+      );
     });
 
     group('error display', () {

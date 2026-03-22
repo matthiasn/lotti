@@ -800,11 +800,13 @@ immediately.''';
 
   /// Builds a JSON string with linked tasks and their task-agent reports.
   ///
-  /// Uses batch queries (2 SQL statements total) instead of per-task lookups
-  /// to avoid an N+1 pattern when many tasks are linked to the project.
+  /// Project links are stored as `project -> task`, so this must resolve the
+  /// project's outgoing links. Uses batch queries (2 SQL statements total) for
+  /// the agent-link and report lookups to avoid an N+1 pattern when many tasks
+  /// are linked to the project.
   Future<String> _buildLinkedTasksContext(String projectId) async {
     try {
-      final linkedEntities = await journalRepository.getLinkedToEntities(
+      final linkedEntities = await journalRepository.getLinkedEntities(
         linkedTo: projectId,
       );
 

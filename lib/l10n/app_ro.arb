@@ -1508,6 +1508,7 @@
   "outboxMonitorVolumeChartTitle": "Volum de sincronizare zilnic",
   "privateLabel": "Privat",
   "projectAgentSectionTitle": "Agent",
+  "projectAgentNotProvisioned": "Încă nu a fost configurat niciun agent de proiect pentru acest proiect.",
   "projectAcceptedNextStepsTitle": "Pașii următori acceptați",
   "projectCountSummary": "{count, plural, one{{count} proiect} few{{count} proiecte} other{{count} de proiecte}}",
   "@projectCountSummary": {

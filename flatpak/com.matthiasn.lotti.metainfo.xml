@@ -35,6 +35,7 @@
       <description>
           <p>Chinese AI Profile: added Qwen 3.5 Plus model and Chinese AI inference profile for Alibaba Cloud with multimodal capabilities (text, vision, audio, image generation). Simplified FTUE setup by removing automatic prompt creation — AI capabilities now use skill-based automation via inference profiles.</p>
           <p>Project agents now track pending project activity in synced state, skip dormant daily digests to save tokens, and show stale summaries in the tasks-page project header until the next 06:00 refresh.</p>
+          <p>Project detail pages now show the current project-agent report inline, let you trigger a manual refresh, explain when no project agent exists yet, and return to the originating category instead of the top settings page.</p>
       </description>
     </release>
     <release version="0.9.929" date="2026-03-21">

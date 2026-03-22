@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project agents now skip dormant daily digests, track pending project
   activity in synced agent state, and show stale summaries in the tasks-page
   project header until the next 06:00 report refresh.
+- Project detail pages now render the current project-agent report inline,
+  expose a manual refresh action, show when no project agent exists yet, and
+  return to the originating category instead of dropping back to the top
+  settings page.
 
 ## [0.9.929] - 2026-03-21
 ### Added

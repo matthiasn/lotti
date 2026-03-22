@@ -383,7 +383,7 @@ void main() {
           () => mockAgentRepository.getReportHead(agentId, 'current'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => []);
@@ -630,7 +630,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -678,7 +678,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -982,7 +982,7 @@ void main() {
 
       test('handles linked tasks context error gracefully', () async {
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenThrow(Exception('DB connection lost'));
@@ -1417,7 +1417,7 @@ void main() {
         ];
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => tasks);
@@ -1654,7 +1654,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -1704,7 +1704,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -1777,7 +1777,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -2026,7 +2026,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -2111,7 +2111,7 @@ void main() {
           );
 
           when(
-            () => mockJournalRepository.getLinkedToEntities(
+            () => mockJournalRepository.getLinkedEntities(
               linkedTo: projectId,
             ),
           ).thenAnswer((_) async => [linkedTask]);
