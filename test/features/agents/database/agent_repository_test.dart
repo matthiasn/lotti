@@ -704,6 +704,97 @@ void main() {
         expect(rows.first.subtype, 'daily');
       });
     });
+
+    group('getLatestReportsByAgentIds', () {
+      test('returns the latest report for each agent in scope', () async {
+        final reportA = makeReport(
+          id: 'report-a',
+        );
+        final reportB = makeReport(
+          id: 'report-b',
+          agentId: otherAgentId,
+        );
+        final headA = makeReportHead(
+          id: 'head-a',
+          reportId: 'report-a',
+        );
+        final headB = makeReportHead(
+          id: 'head-b',
+          agentId: otherAgentId,
+          reportId: 'report-b',
+        );
+
+        await repo.upsertEntity(reportA);
+        await repo.upsertEntity(reportB);
+        await repo.upsertEntity(headA);
+        await repo.upsertEntity(headB);
+
+        final result = await repo.getLatestReportsByAgentIds(
+          [testAgentId, otherAgentId],
+          'daily',
+        );
+
+        expect(result[testAgentId]?.id, 'report-a');
+        expect(result[otherAgentId]?.id, 'report-b');
+      });
+
+      test('prefers the newest report head when duplicates exist', () async {
+        final olderReport =
+            AgentDomainEntity.agentReport(
+                  id: 'report-old',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  createdAt: testDate,
+                  vectorClock: null,
+                  content: 'Old report',
+                )
+                as AgentReportEntity;
+        final newerReport =
+            AgentDomainEntity.agentReport(
+                  id: 'report-new',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  createdAt: testDate.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                  content: 'New report',
+                )
+                as AgentReportEntity;
+        final olderHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'head-old',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  reportId: 'report-old',
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+        final newerHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'head-new',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  reportId: 'report-new',
+                  updatedAt: testDate.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+
+        await repo.upsertEntity(olderReport);
+        await repo.upsertEntity(newerReport);
+        await repo.upsertEntity(olderHead);
+        await repo.upsertEntity(newerHead);
+
+        final singleResult = await repo.getReportHead(testAgentId, 'daily');
+        final batchResult = await repo.getLatestReportsByAgentIds(
+          [testAgentId],
+          'daily',
+        );
+
+        expect(singleResult?.reportId, 'report-new');
+        expect(batchResult[testAgentId]?.id, 'report-new');
+      });
+    });
   });
 
   group('getAllAgentIdentities', () {

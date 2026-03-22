@@ -158,7 +158,8 @@ class AgentRepository {
           'WHERE agent_id IN ($headPlaceholders) '
           "AND type = '${AgentEntityTypes.agentReportHead}' "
           'AND subtype = ? '
-          'AND deleted_at IS NULL',
+          'AND deleted_at IS NULL '
+          'ORDER BY created_at DESC',
           variables: [
             ...agentIds.map(Variable.withString),
             Variable.withString(scope),
@@ -169,15 +170,17 @@ class AgentRepository {
 
     // Map agent_id → report head → reportId.
     final reportIdsByAgentId = <String, String>{};
-    final allReportIds = <String>[];
+    final allReportIds = <String>{};
     for (final row in headRows) {
       final entity = AgentDbConversions.fromEntityRow(
         await _db.agentEntities.mapFromRow(row),
       );
       final head = entity.mapOrNull(agentReportHead: (e) => e);
       if (head != null) {
-        reportIdsByAgentId[head.agentId] = head.reportId;
-        allReportIds.add(head.reportId);
+        reportIdsByAgentId.putIfAbsent(head.agentId, () {
+          allReportIds.add(head.reportId);
+          return head.reportId;
+        });
       }
     }
 

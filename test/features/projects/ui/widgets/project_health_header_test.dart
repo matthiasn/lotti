@@ -100,6 +100,56 @@ void main() {
       expect(find.text('Projects'), findsNothing);
     });
 
+    testWidgets('shows nothing when error', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProjectHealthHeader(
+            categoryId: categoryId,
+            selectedProjectIds: const {},
+            onToggleProject: (_) {},
+            onClearStale: (_) {},
+          ),
+          overrides: [
+            projectsForCategoryProvider(categoryId).overrideWith(
+              (ref) => throw Exception('DB error'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Projects'), findsNothing);
+    });
+
+    testWidgets('shows outdated message without scheduled time', (
+      tester,
+    ) async {
+      final project = makeTestProject(
+        id: 'proj-no-wake',
+        title: 'No Wake',
+        categoryId: categoryId,
+      );
+
+      await pumpHeader(
+        tester,
+        projects: [project],
+        taskCounts: {'proj-no-wake': 1},
+        projectSummaries: {
+          'proj-no-wake': ProjectAgentSummaryState(
+            agentId: 'agent-1',
+            hasReport: true,
+            pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
+          ),
+        },
+      );
+
+      await tester.tap(find.text('Projects'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Summary outdated'), findsOneWidget);
+    });
+
     testWidgets('shows nothing when no projects', (tester) async {
       await pumpHeader(tester, projects: []);
       expect(find.text('Projects'), findsNothing);

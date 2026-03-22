@@ -2000,7 +2000,7 @@ void main() {
 
         when(
           () => mockAgentRepository.getLatestReportsByAgentIds(
-            ['new-agent'],
+            any(),
             'current',
           ),
         ).thenAnswer(
@@ -2034,6 +2034,91 @@ void main() {
         expect(capturedMessage, contains('Newer agent report'));
         expect(capturedMessage, contains('new-agent'));
       });
+
+      test(
+        'falls back to an older task-agent report when the newest link has none',
+        () async {
+          final linkedTask = _fakeTaskEntity(
+            id: 'task-fallback-link',
+            title: 'Fallback Task',
+          );
+
+          when(
+            () => mockJournalRepository.getLinkedToEntities(
+              linkedTo: projectId,
+            ),
+          ).thenAnswer((_) async => [linkedTask]);
+
+          final olderLink = AgentLink.agentTask(
+            id: 'link-older',
+            fromId: 'older-agent',
+            toId: 'task-fallback-link',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+          );
+          final newerLink = AgentLink.agentTask(
+            id: 'link-newer',
+            fromId: 'newer-agent',
+            toId: 'task-fallback-link',
+            createdAt: DateTime(2024, 6),
+            updatedAt: DateTime(2024, 6),
+            vectorClock: null,
+          );
+
+          when(
+            () => mockAgentRepository.getLinksToMultiple(
+              ['task-fallback-link'],
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'task-fallback-link': [olderLink, newerLink],
+            },
+          );
+
+          final olderReport = makeTestReport(
+            agentId: 'older-agent',
+            content: 'Older agent still has the useful report.',
+          );
+          when(
+            () => mockAgentRepository.getLatestReportsByAgentIds(
+              any(),
+              'current',
+            ),
+          ).thenAnswer((_) async => {'older-agent': olderReport});
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(
+            capturedMessage,
+            contains('Older agent still has the useful report.'),
+          );
+          expect(capturedMessage, contains('older-agent'));
+          expect(capturedMessage, isNot(contains('newer-agent')));
+        },
+      );
 
       test('skips linked tasks section when no tasks are linked', () async {
         String? capturedMessage;

@@ -825,20 +825,16 @@ immediately.''';
         _logError('batch link lookup failed', error: e, stackTrace: s);
       }
 
-      // 2. Determine the primary agent for each task.
-      final agentIdByTaskId = <String, String>{};
-      for (final entry in linksByTaskId.entries) {
-        if (entry.value.isNotEmpty) {
-          agentIdByTaskId[entry.key] = entry.value.selectPrimary().fromId;
-        }
-      }
-
-      // 3. Batch-fetch the latest reports for all resolved agents (2 queries).
+      // 2. Batch-fetch the latest reports for all linked task agents (1 query).
       var reportsByAgentId = <String, AgentReportEntity>{};
-      if (agentIdByTaskId.isNotEmpty) {
+      final linkedAgentIds = linksByTaskId.values
+          .expand((links) => links.map((link) => link.fromId))
+          .toSet()
+          .toList();
+      if (linkedAgentIds.isNotEmpty) {
         try {
           reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
-            agentIdByTaskId.values.toSet().toList(),
+            linkedAgentIds,
             AgentReportScopes.current,
           );
         } catch (e, s) {
@@ -846,7 +842,8 @@ immediately.''';
         }
       }
 
-      // 4. Assemble rows.
+      // 3. Assemble rows, preserving the prior fallback behavior:
+      // newest link wins only if that agent has a non-empty current report.
       final taskRows = <Map<String, dynamic>>[];
       for (final task in taskEntities) {
         final row = <String, dynamic>{
@@ -855,17 +852,18 @@ immediately.''';
           'status': _taskStatusLabel(task.data.status),
         };
 
-        final agentId = agentIdByTaskId[task.meta.id];
-        if (agentId != null) {
-          final report = reportsByAgentId[agentId];
-          if (report != null) {
+        final taskLinks = linksByTaskId[task.meta.id];
+        if (taskLinks != null) {
+          for (final link in taskLinks.orderedPrimaryFirst()) {
+            final report = reportsByAgentId[link.fromId];
+            if (report == null) continue;
             final content = report.content.trim();
-            if (content.isNotEmpty) {
-              row['taskAgentId'] = agentId;
-              row['latestTaskAgentReport'] = content;
-              row['latestTaskAgentReportCreatedAt'] = report.createdAt
-                  .toIso8601String();
-            }
+            if (content.isEmpty) continue;
+            row['taskAgentId'] = link.fromId;
+            row['latestTaskAgentReport'] = content;
+            row['latestTaskAgentReportCreatedAt'] = report.createdAt
+                .toIso8601String();
+            break;
           }
         }
 
