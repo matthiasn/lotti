@@ -111,6 +111,18 @@ fluttium_docs:
 bundle:
 	$(FLUTTER_CMD) build bundle
 
+.PHONY: widgetbook_macos_build
+widgetbook_macos_build:
+	bash tool/widgetbook/build_macos_bundle.sh
+
+.PHONY: widgetbook_macos_upload
+widgetbook_macos_upload:
+	bash tool/widgetbook/build_macos_bundle.sh --skip-build --upload-release
+
+.PHONY: widgetbook_macos_publish
+widgetbook_macos_publish:
+	bash tool/widgetbook/build_macos_bundle.sh --upload-release
+
 #######################################
 
 .PHONY: ios_build_ipa

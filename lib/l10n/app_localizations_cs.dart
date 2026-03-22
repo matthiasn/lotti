@@ -2550,7 +2550,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemSpinnerPlainLabel => 'Bez pozadí';
 
   @override
-  String get designSystemSpinnerSkeletonLabel => 'Skeleton';
+  String get designSystemSpinnerSkeletonLabel => 'Skelet';
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulz';

@@ -1,0 +1,68 @@
+name: Widgetbook macOS Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: Build and Publish Widgetbook macOS Bundle
+    permissions:
+      contents: write
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Build Widgetbook macOS Bundle
+        run: bash tool/widgetbook/build_macos_bundle.sh
+
+      - name: Move Continuous Release Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -f widgetbook-macos-latest "$GITHUB_SHA"
+          git push origin refs/tags/widgetbook-macos-latest --force
+
+      - name: Ensure Release Exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view widgetbook-macos-latest >/dev/null 2>&1; then
+            gh release edit widgetbook-macos-latest \
+              --title "Widgetbook macOS Latest" \
+              --notes "Latest unsigned Widgetbook macOS app bundle from main at $GITHUB_SHA." \
+              --prerelease
+          else
+            gh release create widgetbook-macos-latest \
+              --target "$GITHUB_SHA" \
+              --title "Widgetbook macOS Latest" \
+              --notes "Latest unsigned Widgetbook macOS app bundle from main at $GITHUB_SHA." \
+              --prerelease
+          fi
+
+      - name: Upload Widgetbook Zip to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload widgetbook-macos-latest "build/widgetbook_macos_export/Lotti_Widgetbook.app.zip" --clobber
