@@ -2496,7 +2496,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Zpět';
 
   @override
+  String get designSystemHeaderDesktopSectionTitle => 'Desktop';
+
+  @override
   String get designSystemHeaderFigmaDefaultLabel => 'Výchozí z Figma';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobil';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Nápověda';

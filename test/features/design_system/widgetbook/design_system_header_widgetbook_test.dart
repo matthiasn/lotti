@@ -23,12 +23,16 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Variant Matrix'), findsOneWidget);
-      expect(find.text('Figma default'), findsOneWidget);
-      expect(find.text('Long title'), findsOneWidget);
-      expect(find.text('API Configuration'), findsNWidgets(3));
-      expect(find.text('API Documentation'), findsNWidgets(2));
-      expect(find.byType(DesignSystemHeader), findsNWidgets(2));
+      expect(find.text('Desktop'), findsOneWidget);
+      expect(find.text('Mobile'), findsOneWidget);
+      expect(find.text('Figma default'), findsNothing);
+      expect(find.text('Long title'), findsNothing);
+      expect(find.text('Projects'), findsNWidgets(2));
+      expect(find.text('API Configuration'), findsNothing);
+      expect(find.text('API Documentation'), findsOneWidget);
+      expect(find.text('Back'), findsNWidgets(2));
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.byType(DesignSystemHeader), findsOneWidget);
 
       expect(tester.takeException(), isNull);
     });

@@ -2556,7 +2556,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemHeaderBackActionLabel => 'Atrás';
 
   @override
+  String get designSystemHeaderDesktopSectionTitle => 'Escritorio';
+
+  @override
   String get designSystemHeaderFigmaDefaultLabel => 'Predeterminado de Figma';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Móvil';
 
   @override
   String get designSystemHeaderHelpActionLabel => 'Ayuda';

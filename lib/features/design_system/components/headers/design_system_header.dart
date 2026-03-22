@@ -55,8 +55,7 @@ class DesignSystemHeader extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            Expanded(
-                              flex: breadcrumbs == null ? 1 : 3,
+                            Flexible(
                               child: Text(
                                 title,
                                 maxLines: 1,
@@ -70,7 +69,6 @@ class DesignSystemHeader extends StatelessWidget {
                             if (breadcrumbs case final breadcrumbs?) ...[
                               SizedBox(width: tokens.spacing.step5),
                               Flexible(
-                                flex: 2,
                                 child: ClipRect(
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
