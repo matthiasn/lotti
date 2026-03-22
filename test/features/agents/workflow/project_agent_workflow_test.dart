@@ -1770,6 +1770,73 @@ void main() {
         expect(capturedMessage, isNot(contains('task-agent-2')));
       });
 
+      test('handles batch report lookup failure gracefully', () async {
+        final linkedTask = _fakeTaskEntity(
+          id: 'task-report-err',
+          title: 'Batch Report Failure Task',
+        );
+
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        final agentLink = AgentLink.agentTask(
+          id: 'link-batch-rpt',
+          fromId: 'task-agent-batch',
+          toId: 'task-report-err',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-report-err'],
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'task-report-err': [agentLink],
+          },
+        );
+
+        when(
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-batch'],
+            'current',
+          ),
+        ).thenThrow(Exception('Batch report lookup failed'));
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        expect(capturedMessage, contains('Batch Report Failure Task'));
+        expect(capturedMessage, isNot(contains('task-agent-batch')));
+      });
+
       test('handles state update failure after main error', () async {
         mockConversationRepository.sendMessageDelegate =
             ({

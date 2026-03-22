@@ -1,5 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+
+import '../test_utils.dart';
 
 void main() {
   group('ProjectAgentSummaryState', () {
@@ -61,6 +66,120 @@ void main() {
       expect(state.hasReport, isTrue);
       expect(state.pendingProjectActivityAt, pending);
       expect(state.scheduledWakeAt, wake);
+    });
+  });
+
+  group('projectAgentSummaryProvider', () {
+    const projectId = 'project-1';
+    const agentId = 'agent-project-1';
+
+    test('returns null when no project agent exists', () async {
+      final container = ProviderContainer(
+        overrides: [
+          projectAgentProvider(projectId).overrideWith((ref) async => null),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        projectAgentSummaryProvider(projectId).future,
+      );
+
+      expect(result, isNull);
+    });
+
+    test(
+      'returns null when projectAgent resolves to a non-agent entity',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            projectAgentProvider(
+              projectId,
+            ).overrideWith((ref) async => makeTestState(agentId: agentId)),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          projectAgentSummaryProvider(projectId).future,
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test('builds summary with stale metadata and non-empty report', () async {
+      final scheduledWakeAt = DateTime(2026, 3, 23, 6);
+      final pendingProjectActivityAt = DateTime(2026, 3, 22, 12);
+      final container = ProviderContainer(
+        overrides: [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentStateProvider(
+            agentId,
+          ).overrideWith(
+            (ref) async => makeTestState(
+              agentId: agentId,
+              slots: AgentSlots(
+                pendingProjectActivityAt: pendingProjectActivityAt,
+              ),
+              scheduledWakeAt: scheduledWakeAt,
+            ),
+          ),
+          agentReportProvider(
+            agentId,
+          ).overrideWith(
+            (ref) async => makeTestReport(
+              agentId: agentId,
+              content: 'Fresh enough to count.',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        projectAgentSummaryProvider(projectId).future,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.agentId, agentId);
+      expect(result.hasReport, isTrue);
+      expect(result.pendingProjectActivityAt, pendingProjectActivityAt);
+      expect(result.scheduledWakeAt, scheduledWakeAt);
+      expect(result.isSummaryOutdated, isTrue);
+    });
+
+    test('treats whitespace-only report content as missing', () async {
+      final container = ProviderContainer(
+        overrides: [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentStateProvider(
+            agentId,
+          ).overrideWith((ref) async => makeTestState(agentId: agentId)),
+          agentReportProvider(
+            agentId,
+          ).overrideWith(
+            (ref) async => makeTestReport(
+              agentId: agentId,
+              content: '   \n  ',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        projectAgentSummaryProvider(projectId).future,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.agentId, agentId);
+      expect(result.hasReport, isFalse);
+      expect(result.isSummaryOutdated, isFalse);
     });
   });
 }

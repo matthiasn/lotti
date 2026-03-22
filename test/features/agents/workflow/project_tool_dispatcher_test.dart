@@ -776,5 +776,96 @@ void main() {
         );
       },
     );
+
+    test(
+      'create_task skips auto-assign when the project has no category',
+      () async {
+        final uncategorizedProject = makeTestProject(
+          id: projectId,
+        );
+        final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+
+        when(
+          () => mockProjectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => uncategorizedProject);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => createdTask);
+        when(
+          () => mockProjectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: taskId,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.createTask,
+          {'title': 'Write docs'},
+          projectId,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.errorMessage, isNull);
+        verify(() => mockEntitiesCacheService.getCategoryById(null)).called(1);
+        verifyNever(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'create_task skips auto-assign when category lookup returns null',
+      () async {
+        final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+
+        when(
+          () => mockProjectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('cat-001'),
+        ).thenReturn(null);
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => createdTask);
+        when(
+          () => mockProjectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: taskId,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.createTask,
+          {'title': 'Write docs'},
+          projectId,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.errorMessage, isNull);
+        verifyNever(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        );
+      },
+    );
   });
 }
