@@ -8,8 +8,6 @@ class FtueResultData {
   const FtueResultData({
     required this.modelsCreated,
     required this.modelsVerified,
-    required this.promptsCreated,
-    required this.promptsSkipped,
     required this.categoryCreated,
     required this.categoryReused,
     this.categoryName,
@@ -21,8 +19,6 @@ class FtueResultData {
       FtueResultData(
         modelsCreated: result.modelsCreated,
         modelsVerified: result.modelsVerified,
-        promptsCreated: result.promptsCreated,
-        promptsSkipped: result.promptsSkipped,
         categoryCreated: result.categoryCreated,
         categoryReused: result.categoryReused,
         categoryName: result.categoryName,
@@ -33,8 +29,6 @@ class FtueResultData {
   factory FtueResultData.fromGemini(GeminiFtueResult result) => FtueResultData(
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
-    promptsCreated: result.promptsCreated,
-    promptsSkipped: result.promptsSkipped,
     categoryCreated: result.categoryCreated,
     categoryReused: result.categoryReused,
     categoryName: result.categoryName,
@@ -45,8 +39,6 @@ class FtueResultData {
   factory FtueResultData.fromOpenAi(OpenAiFtueResult result) => FtueResultData(
     modelsCreated: result.modelsCreated,
     modelsVerified: result.modelsVerified,
-    promptsCreated: result.promptsCreated,
-    promptsSkipped: result.promptsSkipped,
     categoryCreated: result.categoryCreated,
     categoryReused: result.categoryReused,
     categoryName: result.categoryName,
@@ -58,8 +50,6 @@ class FtueResultData {
       FtueResultData(
         modelsCreated: result.modelsCreated,
         modelsVerified: result.modelsVerified,
-        promptsCreated: result.promptsCreated,
-        promptsSkipped: result.promptsSkipped,
         categoryCreated: result.categoryCreated,
         categoryReused: result.categoryReused,
         categoryName: result.categoryName,
@@ -68,8 +58,6 @@ class FtueResultData {
 
   final int modelsCreated;
   final int modelsVerified;
-  final int promptsCreated;
-  final int promptsSkipped;
   final bool categoryCreated;
   final bool categoryReused;
   final String? categoryName;
@@ -80,7 +68,6 @@ class FtueResultData {
 ///
 /// Shows what was created:
 /// - Models created/verified
-/// - Prompts created
 /// - Category created (if applicable)
 /// - Any errors that occurred
 class FtueResultDialog extends StatelessWidget {
@@ -167,13 +154,6 @@ class FtueResultDialog extends StatelessWidget {
               label: 'Models',
               value: _buildModelValue(),
             ),
-            const SizedBox(height: 8),
-            _buildResultItem(
-              context,
-              icon: Icons.chat_bubble_outline,
-              label: 'Prompts',
-              value: _buildPromptValue(),
-            ),
             if (result.categoryCreated || result.categoryReused) ...[
               const SizedBox(height: 8),
               _buildResultItem(
@@ -237,17 +217,6 @@ class FtueResultDialog extends StatelessWidget {
     }
     if (result.modelsVerified > 0) {
       parts.add('${result.modelsVerified} verified');
-    }
-    return parts.isEmpty ? 'None' : parts.join(', ');
-  }
-
-  String _buildPromptValue() {
-    final parts = <String>[];
-    if (result.promptsCreated > 0) {
-      parts.add('${result.promptsCreated} created');
-    }
-    if (result.promptsSkipped > 0) {
-      parts.add('${result.promptsSkipped} skipped');
     }
     return parts.isEmpty ? 'None' : parts.join(', ');
   }

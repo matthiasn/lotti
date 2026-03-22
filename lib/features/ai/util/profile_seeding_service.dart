@@ -69,11 +69,17 @@ class ProfileSeedingService {
       if (existing is AiConfigInferenceProfile &&
           existing.isDefault &&
           _hasProfileDrift(existing, profile)) {
-        // Preserve the user's skill assignments when updating for
-        // model/flag drift.
-        final updated = profile.copyWith(
-          name: existing.name,
-          skillAssignments: existing.skillAssignments,
+        // Start from the existing record to preserve user-editable fields
+        // (name, description, skillAssignments, thinkingHighEndModelId,
+        // timestamps) and only overwrite the specific fields that are
+        // checked by _hasProfileDrift.
+        final updated = existing.copyWith(
+          thinkingModelId: profile.thinkingModelId,
+          imageRecognitionModelId: profile.imageRecognitionModelId,
+          transcriptionModelId: profile.transcriptionModelId,
+          imageGenerationModelId: profile.imageGenerationModelId,
+          isDefault: profile.isDefault,
+          desktopOnly: profile.desktopOnly,
         );
         await _repo.saveConfig(updated);
         updatedCount++;
@@ -215,8 +221,8 @@ class ProfileSeedingService {
     ),
     AiConfigInferenceProfile(
       id: profileAlibabaId,
-      name: 'Alibaba',
-      thinkingModelId: 'qwen3-max',
+      name: 'Chinese AI Profile',
+      thinkingModelId: 'qwen3.5-plus',
       imageRecognitionModelId: 'qwen3-vl-flash',
       transcriptionModelId: 'qwen3-omni-flash',
       imageGenerationModelId: 'wan2.6-image',

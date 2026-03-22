@@ -63,6 +63,7 @@ class CategoryRepository {
     required String name,
     required String color,
     CategoryIcon? icon,
+    String? defaultProfileId,
   }) async {
     final now = DateTime.now();
 
@@ -76,6 +77,7 @@ class CategoryRepository {
       private: false,
       active: true,
       icon: icon,
+      defaultProfileId: defaultProfileId,
     );
 
     await _persistenceLogic.upsertEntityDefinition(category);

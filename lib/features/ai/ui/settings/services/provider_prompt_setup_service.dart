@@ -2,15 +2,11 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -22,517 +18,17 @@ ProviderPromptSetupService providerPromptSetupService(Ref ref) {
   return const ProviderPromptSetupService();
 }
 
-/// Configuration for a prompt to be created, including its template and model.
-class PromptConfig {
-  const PromptConfig({
-    required this.template,
-    required this.model,
-  });
-
-  final PreconfiguredPrompt template;
-  final AiConfigModel model;
-}
-
-/// Preview information for displaying in the setup dialog.
-class PromptPreviewInfo {
-  const PromptPreviewInfo({
-    required this.icon,
-    required this.name,
-    required this.modelName,
-  });
-
-  final IconData icon;
-  final String name;
-  final String modelName;
-}
-
-/// Service that handles automatic prompt setup after creating inference providers.
+/// Service that handles automatic FTUE (First Time User Experience) setup
+/// after creating inference providers.
 ///
-/// This service supports multiple provider types (Gemini, Ollama, etc.) and:
-/// 1. Shows a confirmation dialog asking if they want default prompts
-/// 2. Creates prompts with dynamic naming (e.g., "Task Summary - DeepSeek R1 8B")
-/// 3. Associates prompts with appropriate models based on provider capabilities
-/// 4. Shows a success snackbar with the number of prompts created
+/// The FTUE flow creates:
+/// 1. Models (provider-specific known model configurations)
+/// 2. A test category for quick experimentation
+///
+/// Prompts are no longer created during FTUE — all AI capabilities are
+/// handled by the skill-based automation system via inference profiles.
 class ProviderPromptSetupService {
   const ProviderPromptSetupService();
-
-  /// Provider types that support automatic prompt setup.
-  static const Set<InferenceProviderType> supportedProviders = {
-    InferenceProviderType.alibaba,
-    InferenceProviderType.gemini,
-    InferenceProviderType.ollama,
-    InferenceProviderType.openAi,
-  };
-
-  /// Shows a dialog offering to set up default prompts for supported providers.
-  ///
-  /// Returns true if prompts were created, false otherwise.
-  Future<bool> offerPromptSetup({
-    required BuildContext context,
-    required WidgetRef ref,
-    required AiConfigInferenceProvider provider,
-  }) async {
-    // Only offer for supported provider types
-    if (!supportedProviders.contains(provider.inferenceProviderType)) {
-      return false;
-    }
-
-    final repository = ref.read(aiConfigRepositoryProvider);
-    final modelSelection = await _selectModelsForProvider(
-      repository: repository,
-      provider: provider,
-    );
-
-    if (modelSelection == null) {
-      return false;
-    }
-
-    if (!context.mounted) return false;
-
-    // Get the prompt configs and preview info based on provider type
-    final promptConfigs = _getPromptConfigs(
-      providerType: provider.inferenceProviderType,
-      modelSelection: modelSelection,
-    );
-
-    // No prompts to create for this provider type — nothing to do.
-    if (promptConfigs.isEmpty) return false;
-
-    final previewInfos = _getPromptPreviews(
-      providerType: provider.inferenceProviderType,
-      modelSelection: modelSelection,
-    );
-
-    // Show confirmation dialog
-    final confirmed = await _showSetupDialog(
-      context,
-      providerName: _getProviderDisplayName(provider.inferenceProviderType),
-      previews: previewInfos,
-    );
-
-    if (!confirmed) return false;
-    if (!context.mounted) return false;
-
-    // Create the prompts
-    final promptsCreated = await _createPrompts(
-      repository: repository,
-      promptConfigs: promptConfigs,
-    );
-
-    if (context.mounted && promptsCreated > 0) {
-      _showSuccessSnackbar(context, promptsCreated);
-    }
-
-    return promptsCreated > 0;
-  }
-
-  /// Gets the display name for a provider type.
-  String _getProviderDisplayName(InferenceProviderType type) {
-    return ProviderConfig.defaultNames[type] ?? 'AI Provider';
-  }
-
-  /// Selects the appropriate models for the provider based on its type.
-  Future<_ModelSelection?> _selectModelsForProvider({
-    required AiConfigRepository repository,
-    required AiConfigInferenceProvider provider,
-  }) async {
-    final allConfigs = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allConfigs
-        .whereType<AiConfigModel>()
-        .where((model) => model.inferenceProviderId == provider.id)
-        .toList();
-
-    if (providerModels.isEmpty) {
-      return null;
-    }
-
-    return switch (provider.inferenceProviderType) {
-      InferenceProviderType.alibaba => _selectAlibabaModels(providerModels),
-      InferenceProviderType.gemini => _selectGeminiModels(providerModels),
-      InferenceProviderType.ollama => _selectOllamaModels(providerModels),
-      _ => null,
-    };
-  }
-
-  /// Selects models for Alibaba provider (reasoning, audio, vision/image).
-  _ModelSelection _selectAlibabaModels(List<AiConfigModel> models) {
-    // Find reasoning model (complex tasks)
-    final reasoningModel = models.firstWhere(
-      (m) => m.isReasoningModel,
-      orElse: () => models.first,
-    );
-
-    // Find audio model (transcription)
-    final audioModel = models.firstWhereOrNull(
-      (m) => m.inputModalities.contains(Modality.audio),
-    );
-
-    // Find vision model (image analysis)
-    final imageModel = models.firstWhereOrNull(
-      (m) => m.inputModalities.contains(Modality.image),
-    );
-
-    return _ModelSelection(
-      audioModel: audioModel,
-      reasoningModel: reasoningModel,
-      imageModel: imageModel,
-    );
-  }
-
-  /// Selects Flash and Pro models for Gemini provider.
-  _ModelSelection _selectGeminiModels(List<AiConfigModel> models) {
-    // Find Flash model (for audio - fast processing)
-    final flashModel = models.firstWhere(
-      (m) =>
-          m.name.toLowerCase().contains('flash') &&
-          m.inputModalities.contains(Modality.audio),
-      orElse: () => models.first,
-    );
-
-    // Find Pro model (for reasoning tasks)
-    final proModel = models.firstWhere(
-      (m) => m.name.toLowerCase().contains('pro'),
-      orElse: () => models.firstWhere(
-        (m) => !m.name.toLowerCase().contains('flash'),
-        orElse: () => models.first,
-      ),
-    );
-
-    return _ModelSelection(
-      audioModel: flashModel,
-      reasoningModel: proModel,
-      imageModel: proModel,
-    );
-  }
-
-  /// Selects Qwen 3.5 for both text and image tasks.
-  ///
-  /// Qwen 3.5 is a native multimodal model with reasoning, tool calling,
-  /// and image understanding — one model covers all local Ollama needs.
-  _ModelSelection? _selectOllamaModels(List<AiConfigModel> models) {
-    if (models.isEmpty) return null;
-
-    // Pick the first available Qwen 3.5 variant, falling back to any
-    // model with function calling support, then the first model overall.
-    final reasoningModel = models.firstWhere(
-      (m) => m.name.toLowerCase().contains('qwen') && m.supportsFunctionCalling,
-      orElse: () => models.firstWhere(
-        (m) => m.supportsFunctionCalling,
-        orElse: () => models.first,
-      ),
-    );
-
-    // Use the same model for image analysis since Qwen 3.5 supports images.
-    final imageModel =
-        models.firstWhereOrNull(
-          (m) =>
-              m.name.toLowerCase().contains('qwen') &&
-              m.inputModalities.contains(Modality.image),
-        ) ??
-        models.firstWhereOrNull(
-          (m) => m.inputModalities.contains(Modality.image),
-        );
-
-    return _ModelSelection(
-      audioModel: null, // Ollama models don't support audio
-      reasoningModel: reasoningModel,
-      imageModel: imageModel,
-    );
-  }
-
-  /// Gets the prompt configurations based on provider type.
-  List<PromptConfig> _getPromptConfigs({
-    required InferenceProviderType providerType,
-    required _ModelSelection modelSelection,
-  }) {
-    return switch (providerType) {
-      InferenceProviderType.alibaba => [],
-      InferenceProviderType.gemini => [],
-      InferenceProviderType.ollama => [],
-      _ => [],
-    };
-  }
-
-  /// Gets preview information for the setup dialog.
-  List<PromptPreviewInfo> _getPromptPreviews({
-    required InferenceProviderType providerType,
-    required _ModelSelection modelSelection,
-  }) {
-    return switch (providerType) {
-      InferenceProviderType.alibaba => [],
-      InferenceProviderType.gemini => [],
-      InferenceProviderType.ollama => [],
-      _ => [],
-    };
-  }
-
-  /// Shows the confirmation dialog for setting up prompts.
-  Future<bool> _showSetupDialog(
-    BuildContext context, {
-    required String providerName,
-    required List<PromptPreviewInfo> previews,
-  }) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.auto_awesome,
-                    color: context.colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Set Up Default Prompts?',
-                    style: context.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Info message
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.primaryContainer.withValues(
-                        alpha: 0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: context.colorScheme.primary.withValues(
-                          alpha: 0.2,
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Get started quickly with $providerName',
-                          style: context.textTheme.titleSmall?.copyWith(
-                            color: context.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "We'll create ready-to-use prompts for common AI tasks, "
-                          'so you can start using AI features right away.',
-                          style: context.textTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onPrimaryContainer
-                                .withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Prompts that will be created
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: context.colorScheme.outline.withValues(
-                          alpha: 0.2,
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Prompts to create:',
-                          style: context.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...previews.map(
-                          (preview) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _buildPromptPreview(
-                              context,
-                              preview.icon,
-                              preview.name,
-                              preview.modelName,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              LottiTertiaryButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                label: 'No Thanks',
-              ),
-              LottiPrimaryButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                label: 'Set Up Prompts',
-                icon: Icons.auto_awesome,
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
-
-  Widget _buildPromptPreview(
-    BuildContext context,
-    IconData icon,
-    String name,
-    String modelHint,
-  ) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: context.colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            icon,
-            color: context.colorScheme.primary,
-            size: 16,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                'Uses $modelHint',
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Creates the prompts using the provided configurations.
-  Future<int> _createPrompts({
-    required AiConfigRepository repository,
-    required List<PromptConfig> promptConfigs,
-  }) async {
-    var promptsCreated = 0;
-    const uuid = Uuid();
-
-    for (final config in promptConfigs) {
-      final prompt = AiConfig.prompt(
-        id: uuid.v4(),
-        name: '${config.template.name} - ${config.model.name}',
-        systemMessage: config.template.systemMessage,
-        userMessage: config.template.userMessage,
-        defaultModelId: config.model.id,
-        modelIds: [config.model.id],
-        createdAt: DateTime.now(),
-        useReasoning: config.template.useReasoning,
-        requiredInputData: config.template.requiredInputData,
-        aiResponseType: config.template.aiResponseType,
-        description: config.template.description,
-        trackPreconfigured: true,
-        preconfiguredPromptId: config.template.id,
-        defaultVariables: config.template.defaultVariables,
-      );
-
-      await repository.saveConfig(prompt);
-      promptsCreated++;
-    }
-
-    return promptsCreated;
-  }
-
-  /// Shows a success snackbar after prompts are created.
-  void _showSuccessSnackbar(BuildContext context, int promptsCreated) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: context.colorScheme.inversePrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        duration: const Duration(seconds: 5),
-        dismissDirection: DismissDirection.down,
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: context.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                Icons.check_circle,
-                color: context.colorScheme.primary,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '$promptsCreated ${promptsCreated == 1 ? 'prompt' : 'prompts'} created successfully!',
-                style: context.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Internal class to hold the selected models for prompt creation.
-class _ModelSelection {
-  const _ModelSelection({
-    required this.audioModel,
-    required this.reasoningModel,
-    this.imageModel,
-  });
-
-  final AiConfigModel? audioModel;
-  final AiConfigModel reasoningModel;
-  final AiConfigModel? imageModel;
 }
 
 // =============================================================================
@@ -544,8 +40,6 @@ class GeminiFtueResult {
   const GeminiFtueResult({
     required this.modelsCreated,
     required this.modelsVerified,
-    required this.promptsCreated,
-    required this.promptsSkipped,
     required this.categoryCreated,
     this.categoryReused = false,
     this.categoryName,
@@ -554,30 +48,12 @@ class GeminiFtueResult {
 
   final int modelsCreated;
   final int modelsVerified;
-  final int promptsCreated;
-  final int promptsSkipped;
   final bool categoryCreated;
   final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
   int get totalModels => modelsCreated + modelsVerified;
-  int get totalPrompts => promptsCreated + promptsSkipped;
-}
-
-/// Configuration for a prompt to create during FTUE.
-class FtuePromptConfig {
-  const FtuePromptConfig({
-    required this.template,
-    required this.modelVariant,
-    required this.promptName,
-  });
-
-  final PreconfiguredPrompt template;
-
-  /// Which model to use: 'flash', 'pro', 'reasoning', or 'image'.
-  final String modelVariant;
-  final String promptName;
 }
 
 /// Extension to add Gemini FTUE functionality to ProviderPromptSetupService.
@@ -586,8 +62,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Three models (Flash, Pro, Nano Banana Pro) if they don't exist
-  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
-  /// 3. A test category with all prompts enabled and auto-selection configured
+  /// 2. A test category with auto-selection configured
   ///
   /// Returns [GeminiFtueResult] with details of what was created.
   Future<GeminiFtueResult?> performGeminiFtueSetup({
@@ -613,22 +88,12 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       return const GeminiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
-        promptsCreated: 0,
-        promptsSkipped: 0,
         categoryCreated: false,
         errors: ['Failed to find required Gemini model configurations'],
       );
     }
 
-    // Step 2: Create prompts
-    final promptResult = await _createFtuePrompts(
-      repository: repository,
-      flashModel: modelResult.flash,
-      proModel: modelResult.pro,
-      imageModel: modelResult.image,
-    );
-
-    // Step 3: Create or update category with auto-selection (uses all prompts)
+    // Step 2: Create or update category
     final (category, categoryWasCreated) = await _createOrReuseFtueCategory(
       categoryRepository: categoryRepository,
     );
@@ -636,8 +101,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     return GeminiFtueResult(
       modelsCreated: modelResult.created.length,
       modelsVerified: modelResult.verified.length,
-      promptsCreated: promptResult.created.length,
-      promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
       categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
@@ -718,109 +181,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Creates all FTUE prompts with idempotency checks.
-  /// Returns all prompts that should be in the category (both new and existing).
-  Future<_FtuePromptResult> _createFtuePrompts({
-    required AiConfigRepository repository,
-    required AiConfigModel flashModel,
-    required AiConfigModel proModel,
-    required AiConfigModel imageModel,
-  }) async {
-    final created = <AiConfigPrompt>[];
-    final allPrompts =
-        <AiConfigPrompt>[]; // All prompts for category (new + existing)
-    var skipped = 0;
-    const uuid = Uuid();
-
-    // Get existing prompts to check for duplicates
-    final existingPrompts = await repository.getConfigsByType(
-      AiConfigType.prompt,
-    );
-    final existingPromptsMap = <String, AiConfigPrompt>{};
-    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
-      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
-      existingPromptsMap[key] = p;
-    }
-
-    // Define all prompt configurations
-    final promptConfigs = _getFtuePromptConfigs();
-
-    for (final config in promptConfigs) {
-      final model = switch (config.modelVariant) {
-        'flash' => flashModel,
-        'pro' => proModel,
-        'image' => imageModel,
-        _ => flashModel,
-      };
-
-      // Check for existing prompt with same preconfiguredPromptId + modelId
-      final key = '${config.template.id}_${model.id}';
-      final existingPrompt = existingPromptsMap[key];
-      if (existingPrompt != null) {
-        // Prompt already exists, add it to allPrompts but don't recreate
-        allPrompts.add(existingPrompt);
-        skipped++;
-        continue;
-      }
-
-      // Enable reasoning/thinking for all models
-      // All Gemini 3 models support thinking mode, including Nano Banana Pro for image generation
-      const useReasoning = true;
-
-      final prompt = AiConfig.prompt(
-        id: uuid.v4(),
-        name: config.promptName,
-        systemMessage: config.template.systemMessage,
-        userMessage: config.template.userMessage,
-        defaultModelId: model.id,
-        modelIds: [model.id],
-        createdAt: DateTime.now(),
-        useReasoning: useReasoning,
-        requiredInputData: config.template.requiredInputData,
-        aiResponseType: config.template.aiResponseType,
-        description: config.template.description,
-        trackPreconfigured: true,
-        preconfiguredPromptId: config.template.id,
-        defaultVariables: config.template.defaultVariables,
-      );
-
-      await repository.saveConfig(prompt);
-      // AiConfig.prompt() creates AiConfigPrompt
-      final createdPrompt = prompt as AiConfigPrompt;
-      created.add(createdPrompt);
-      allPrompts.add(createdPrompt);
-    }
-
-    return _FtuePromptResult(
-      created: created,
-      skipped: skipped,
-      allPrompts: allPrompts,
-    );
-  }
-
-  /// Gets all prompt configurations for Gemini FTUE.
-  ///
-  /// Model assignments:
-  /// - Gemini Pro: Image Prompt Generation (complex reasoning)
-  /// - Nano Banana Pro: Cover Art Generation (image output)
-  List<FtuePromptConfig> _getFtuePromptConfigs() {
-    return const [
-      // Generate Image Prompt -> Pro (complex reasoning needed)
-      FtuePromptConfig(
-        template: imagePromptGenerationPrompt,
-        modelVariant: 'pro',
-        promptName: 'Image Prompt Gemini Pro',
-      ),
-
-      // Cover Art Generation -> Nano Banana Pro (image generation model)
-      FtuePromptConfig(
-        template: coverArtGenerationPrompt,
-        modelVariant: 'image', // Uses Nano Banana Pro for image generation
-        promptName: 'Cover Art Nano Banana Pro',
-      ),
-    ];
-  }
-
   /// Creates or reuses the FTUE test category.
   ///
   /// If the category already exists, it is reused as-is.
@@ -868,24 +228,6 @@ class _FtueModelResult {
   final List<AiConfigModel> verified;
 }
 
-/// Internal result class for prompt creation.
-class _FtuePromptResult {
-  const _FtuePromptResult({
-    required this.created,
-    required this.skipped,
-    required this.allPrompts,
-  });
-
-  /// Newly created prompts in this run.
-  final List<AiConfigPrompt> created;
-
-  /// Number of prompts that already existed and were skipped.
-  final int skipped;
-
-  /// All prompts that should be in the category (created + existing).
-  final List<AiConfigPrompt> allPrompts;
-}
-
 // =============================================================================
 // OpenAI FTUE (First Time User Experience) Setup
 // =============================================================================
@@ -895,8 +237,6 @@ class OpenAiFtueResult {
   const OpenAiFtueResult({
     required this.modelsCreated,
     required this.modelsVerified,
-    required this.promptsCreated,
-    required this.promptsSkipped,
     required this.categoryCreated,
     this.categoryReused = false,
     this.categoryName,
@@ -905,15 +245,12 @@ class OpenAiFtueResult {
 
   final int modelsCreated;
   final int modelsVerified;
-  final int promptsCreated;
-  final int promptsSkipped;
   final bool categoryCreated;
   final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
   int get totalModels => modelsCreated + modelsVerified;
-  int get totalPrompts => promptsCreated + promptsSkipped;
 }
 
 /// Extension to add OpenAI FTUE functionality to ProviderPromptSetupService.
@@ -921,9 +258,9 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for OpenAI providers.
   ///
   /// This creates:
-  /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o Transcribe, Image/GPT Image 1.5)
-  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
-  /// 3. A test category with all prompts enabled and auto-selection configured
+  /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o
+  ///    Transcribe, Image/GPT Image 1.5)
+  /// 2. A test category with auto-selection configured
   ///
   /// Returns [OpenAiFtueResult] with details of what was created.
   Future<OpenAiFtueResult?> performOpenAiFtueSetup({
@@ -949,22 +286,12 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       return const OpenAiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
-        promptsCreated: 0,
-        promptsSkipped: 0,
         categoryCreated: false,
         errors: ['Failed to find required OpenAI model configurations'],
       );
     }
 
-    // Step 2: Create prompts
-    final promptResult = await _createOpenAiFtuePrompts(
-      repository: repository,
-      flashModel: modelResult.flash,
-      reasoningModel: modelResult.reasoning,
-      imageModel: modelResult.image,
-    );
-
-    // Step 3: Create or update category with auto-selection
+    // Step 2: Create or update category with auto-selection
     final (
       category,
       categoryWasCreated,
@@ -975,8 +302,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     return OpenAiFtueResult(
       modelsCreated: modelResult.created.length,
       modelsVerified: modelResult.verified.length,
-      promptsCreated: promptResult.created.length,
-      promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
       categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
@@ -1065,105 +390,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Creates all FTUE prompts for OpenAI with idempotency checks.
-  Future<_FtuePromptResult> _createOpenAiFtuePrompts({
-    required AiConfigRepository repository,
-    required AiConfigModel flashModel,
-    required AiConfigModel reasoningModel,
-    required AiConfigModel imageModel,
-  }) async {
-    final created = <AiConfigPrompt>[];
-    final allPrompts = <AiConfigPrompt>[];
-    var skipped = 0;
-    const uuid = Uuid();
-
-    // Get existing prompts to check for duplicates
-    final existingPrompts = await repository.getConfigsByType(
-      AiConfigType.prompt,
-    );
-    final existingPromptsMap = <String, AiConfigPrompt>{};
-    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
-      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
-      existingPromptsMap[key] = p;
-    }
-
-    // Define all prompt configurations for OpenAI
-    final promptConfigs = _getOpenAiFtuePromptConfigs();
-
-    for (final config in promptConfigs) {
-      final model = switch (config.modelVariant) {
-        'flash' => flashModel,
-        'reasoning' => reasoningModel,
-        'image' => imageModel,
-        _ => flashModel,
-      };
-
-      // Check for existing prompt with same preconfiguredPromptId + modelId
-      final key = '${config.template.id}_${model.id}';
-      final existingPrompt = existingPromptsMap[key];
-      if (existingPrompt != null) {
-        allPrompts.add(existingPrompt);
-        skipped++;
-        continue;
-      }
-
-      // OpenAI GPT-5 models (GPT-5.2, GPT-5 Nano) support reasoning mode
-      final useReasoning =
-          config.modelVariant == 'reasoning' || config.modelVariant == 'flash';
-
-      final prompt = AiConfig.prompt(
-        id: uuid.v4(),
-        name: config.promptName,
-        systemMessage: config.template.systemMessage,
-        userMessage: config.template.userMessage,
-        defaultModelId: model.id,
-        modelIds: [model.id],
-        createdAt: DateTime.now(),
-        useReasoning: useReasoning,
-        requiredInputData: config.template.requiredInputData,
-        aiResponseType: config.template.aiResponseType,
-        description: config.template.description,
-        trackPreconfigured: true,
-        preconfiguredPromptId: config.template.id,
-        defaultVariables: config.template.defaultVariables,
-      );
-
-      await repository.saveConfig(prompt);
-      final createdPrompt = prompt as AiConfigPrompt;
-      created.add(createdPrompt);
-      allPrompts.add(createdPrompt);
-    }
-
-    return _FtuePromptResult(
-      created: created,
-      skipped: skipped,
-      allPrompts: allPrompts,
-    );
-  }
-
-  /// Gets all prompt configurations for OpenAI FTUE.
-  ///
-  /// Model assignments:
-  /// - GPT-5.2 (Reasoning): Image Prompt (complex reasoning)
-  /// - GPT Image 1.5: Image generation (cover art output)
-  List<FtuePromptConfig> _getOpenAiFtuePromptConfigs() {
-    return const [
-      // Generate Image Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: imagePromptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Image Prompt OpenAI GPT-5.2',
-      ),
-
-      // Cover Art Generation -> Image model (image generation)
-      FtuePromptConfig(
-        template: coverArtGenerationPrompt,
-        modelVariant: 'image',
-        promptName: 'Cover Art OpenAI GPT Image 1.5',
-      ),
-    ];
-  }
-
   /// Creates or reuses the FTUE test category for OpenAI.
   ///
   /// If the category already exists, it is reused as-is.
@@ -1221,8 +447,6 @@ class MistralFtueResult {
   const MistralFtueResult({
     required this.modelsCreated,
     required this.modelsVerified,
-    required this.promptsCreated,
-    required this.promptsSkipped,
     required this.categoryCreated,
     this.categoryReused = false,
     this.categoryName,
@@ -1231,15 +455,12 @@ class MistralFtueResult {
 
   final int modelsCreated;
   final int modelsVerified;
-  final int promptsCreated;
-  final int promptsSkipped;
   final bool categoryCreated;
   final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
   int get totalModels => modelsCreated + modelsVerified;
-  int get totalPrompts => promptsCreated + promptsSkipped;
 }
 
 /// Extension to add Mistral FTUE functionality to ProviderPromptSetupService.
@@ -1247,9 +468,9 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for Mistral providers.
   ///
   /// This creates:
-  /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium, Audio/Voxtral Small)
-  /// 2. 1 prompt (Image Prompt Generation; no image generation model available)
-  /// 3. A test category with all prompts enabled and auto-selection configured
+  /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium,
+  ///    Audio/Voxtral Mini)
+  /// 2. A test category with auto-selection configured
   ///
   /// Returns [MistralFtueResult] with details of what was created.
   Future<MistralFtueResult?> performMistralFtueSetup({
@@ -1275,21 +496,12 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       return const MistralFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
-        promptsCreated: 0,
-        promptsSkipped: 0,
         categoryCreated: false,
         errors: ['Failed to find required Mistral model configurations'],
       );
     }
 
-    // Step 2: Create prompts
-    final promptResult = await _createMistralFtuePrompts(
-      repository: repository,
-      flashModel: modelResult.flash,
-      reasoningModel: modelResult.reasoning,
-    );
-
-    // Step 3: Create or update category with auto-selection
+    // Step 2: Create or update category with auto-selection
     final (
       category,
       categoryWasCreated,
@@ -1300,8 +512,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     return MistralFtueResult(
       modelsCreated: modelResult.created.length,
       modelsVerified: modelResult.verified.length,
-      promptsCreated: promptResult.created.length,
-      promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
       categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
@@ -1383,97 +593,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Creates all FTUE prompts for Mistral with idempotency checks.
-  Future<_FtuePromptResult> _createMistralFtuePrompts({
-    required AiConfigRepository repository,
-    required AiConfigModel flashModel,
-    required AiConfigModel reasoningModel,
-  }) async {
-    final created = <AiConfigPrompt>[];
-    final allPrompts = <AiConfigPrompt>[];
-    var skipped = 0;
-    const uuid = Uuid();
-
-    // Get existing prompts to check for duplicates
-    final existingPrompts = await repository.getConfigsByType(
-      AiConfigType.prompt,
-    );
-    final existingPromptsMap = <String, AiConfigPrompt>{};
-    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
-      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
-      existingPromptsMap[key] = p;
-    }
-
-    // Define all prompt configurations for Mistral
-    final promptConfigs = _getMistralFtuePromptConfigs();
-
-    for (final config in promptConfigs) {
-      final model = switch (config.modelVariant) {
-        'flash' => flashModel,
-        'reasoning' => reasoningModel,
-        _ => flashModel,
-      };
-
-      // Check for existing prompt with same preconfiguredPromptId + modelId
-      final key = '${config.template.id}_${model.id}';
-      final existingPrompt = existingPromptsMap[key];
-      if (existingPrompt != null) {
-        allPrompts.add(existingPrompt);
-        skipped++;
-        continue;
-      }
-
-      // Magistral reasoning model supports reasoning mode
-      final useReasoning = config.modelVariant == 'reasoning';
-
-      final prompt = AiConfig.prompt(
-        id: uuid.v4(),
-        name: config.promptName,
-        systemMessage: config.template.systemMessage,
-        userMessage: config.template.userMessage,
-        defaultModelId: model.id,
-        modelIds: [model.id],
-        createdAt: DateTime.now(),
-        useReasoning: useReasoning,
-        requiredInputData: config.template.requiredInputData,
-        aiResponseType: config.template.aiResponseType,
-        description: config.template.description,
-        trackPreconfigured: true,
-        preconfiguredPromptId: config.template.id,
-        defaultVariables: config.template.defaultVariables,
-      );
-
-      await repository.saveConfig(prompt);
-      final createdPrompt = prompt as AiConfigPrompt;
-      created.add(createdPrompt);
-      allPrompts.add(createdPrompt);
-    }
-
-    return _FtuePromptResult(
-      created: created,
-      skipped: skipped,
-      allPrompts: allPrompts,
-    );
-  }
-
-  /// Gets all prompt configurations for Mistral FTUE.
-  ///
-  /// Model assignments:
-  /// - Magistral Medium (Reasoning): Image Prompt (complex reasoning)
-  /// Note: No image generation model available for Mistral
-  List<FtuePromptConfig> _getMistralFtuePromptConfigs() {
-    return const [
-      // Generate Image Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: imagePromptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Image Prompt Mistral Magistral',
-      ),
-
-      // Note: No cover art generation - Mistral has no image generation model
-    ];
-  }
-
   /// Creates or reuses the FTUE test category for Mistral.
   ///
   /// If the category already exists, it is reused as-is.
@@ -1529,8 +648,6 @@ class AlibabaFtueResult {
   const AlibabaFtueResult({
     required this.modelsCreated,
     required this.modelsVerified,
-    required this.promptsCreated,
-    required this.promptsSkipped,
     required this.categoryCreated,
     this.categoryReused = false,
     this.categoryName,
@@ -1539,15 +656,12 @@ class AlibabaFtueResult {
 
   final int modelsCreated;
   final int modelsVerified;
-  final int promptsCreated;
-  final int promptsSkipped;
   final bool categoryCreated;
   final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
   int get totalModels => modelsCreated + modelsVerified;
-  int get totalPrompts => promptsCreated + promptsSkipped;
 }
 
 /// Extension to add Alibaba FTUE functionality to ProviderPromptSetupService.
@@ -1555,9 +669,12 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for Alibaba providers.
   ///
   /// This creates:
-  /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen3 Max, Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
-  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
-  /// 3. A test category with all prompts enabled and auto-selection configured
+  /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen 3.5 Plus,
+  ///    Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
+  /// 2. A test category with auto-selection configured
+  ///
+  /// The Chinese AI Profile (inference profile) is automatically created
+  /// by ProfileSeedingService on app startup and links to these models.
   ///
   /// Returns [AlibabaFtueResult] with details of what was created.
   Future<AlibabaFtueResult?> performAlibabaFtueSetup({
@@ -1583,22 +700,12 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       return const AlibabaFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
-        promptsCreated: 0,
-        promptsSkipped: 0,
         categoryCreated: false,
         errors: ['Failed to find required Alibaba model configurations'],
       );
     }
 
-    // Step 2: Create prompts
-    final promptResult = await _createAlibabaFtuePrompts(
-      repository: repository,
-      flashModel: modelResult.flash,
-      reasoningModel: modelResult.reasoning,
-      imageModel: modelResult.image,
-    );
-
-    // Step 3: Create or update category with auto-selection
+    // Step 2: Create or update category with auto-selection
     final (
       category,
       categoryWasCreated,
@@ -1609,8 +716,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     return AlibabaFtueResult(
       modelsCreated: modelResult.created.length,
       modelsVerified: modelResult.verified.length,
-      promptsCreated: promptResult.created.length,
-      promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
       categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
@@ -1713,104 +818,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Creates all FTUE prompts for Alibaba with idempotency checks.
-  Future<_FtuePromptResult> _createAlibabaFtuePrompts({
-    required AiConfigRepository repository,
-    required AiConfigModel flashModel,
-    required AiConfigModel reasoningModel,
-    required AiConfigModel imageModel,
-  }) async {
-    final created = <AiConfigPrompt>[];
-    final allPrompts = <AiConfigPrompt>[];
-    var skipped = 0;
-    const uuid = Uuid();
-
-    // Get existing prompts to check for duplicates
-    final existingPrompts = await repository.getConfigsByType(
-      AiConfigType.prompt,
-    );
-    final existingPromptsMap = <String, AiConfigPrompt>{};
-    for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
-      final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
-      existingPromptsMap[key] = p;
-    }
-
-    // Define all prompt configurations for Alibaba
-    final promptConfigs = _getAlibabaFtuePromptConfigs();
-
-    for (final config in promptConfigs) {
-      final model = switch (config.modelVariant) {
-        'flash' => flashModel,
-        'reasoning' => reasoningModel,
-        'image' => imageModel,
-        _ => flashModel,
-      };
-
-      // Check for existing prompt with same preconfiguredPromptId + modelId
-      final key = '${config.template.id}_${model.id}';
-      final existingPrompt = existingPromptsMap[key];
-      if (existingPrompt != null) {
-        allPrompts.add(existingPrompt);
-        skipped++;
-        continue;
-      }
-
-      // Qwen3 Max supports reasoning mode
-      final useReasoning = config.modelVariant == 'reasoning';
-
-      final prompt = AiConfig.prompt(
-        id: uuid.v4(),
-        name: config.promptName,
-        systemMessage: config.template.systemMessage,
-        userMessage: config.template.userMessage,
-        defaultModelId: model.id,
-        modelIds: [model.id],
-        createdAt: DateTime.now(),
-        useReasoning: useReasoning,
-        requiredInputData: config.template.requiredInputData,
-        aiResponseType: config.template.aiResponseType,
-        description: config.template.description,
-        trackPreconfigured: true,
-        preconfiguredPromptId: config.template.id,
-        defaultVariables: config.template.defaultVariables,
-      );
-
-      await repository.saveConfig(prompt);
-      final createdPrompt = prompt as AiConfigPrompt;
-      created.add(createdPrompt);
-      allPrompts.add(createdPrompt);
-    }
-
-    return _FtuePromptResult(
-      created: created,
-      skipped: skipped,
-      allPrompts: allPrompts,
-    );
-  }
-
-  /// Gets all prompt configurations for Alibaba FTUE.
-  ///
-  /// Model assignments:
-  /// - Qwen3 Max (Reasoning): Image Prompt (complex reasoning)
-  /// - Wan 2.6 (Image): Cover art / image generation
-  List<FtuePromptConfig> _getAlibabaFtuePromptConfigs() {
-    return const [
-      // Generate Image Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: imagePromptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Image Prompt Alibaba Qwen3 Max',
-      ),
-
-      // Cover Art Generation -> Image model (Wan 2.6 for image generation)
-      FtuePromptConfig(
-        template: coverArtGenerationPrompt,
-        modelVariant: 'image',
-        promptName: 'Cover Art Alibaba Wan 2.6',
-      ),
-    ];
-  }
-
   /// Creates or reuses the FTUE test category for Alibaba.
   ///
   /// If the category already exists, it is reused as-is.
@@ -1830,10 +837,11 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       return (existingCategory, false);
     }
 
-    // Create new category
+    // Create new category with the Chinese AI Profile assigned
     final category = await categoryRepository.createCategory(
       name: categoryName,
       color: ftueAlibabaCategoryColor,
+      defaultProfileId: profileAlibabaId,
     );
 
     return (category, true);

@@ -9,8 +9,6 @@ void main() {
       const result = FtueResultData(
         modelsCreated: 3,
         modelsVerified: 0,
-        promptsCreated: 18,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryReused: false,
         categoryName: 'Test Category Gemini Enabled',
@@ -26,7 +24,6 @@ void main() {
 
       expect(find.text('Setup Complete'), findsOneWidget);
       expect(find.text('3 created'), findsOneWidget);
-      expect(find.text('18 created'), findsOneWidget);
       expect(
         find.text('Test Category Gemini Enabled (created)'),
         findsOneWidget,
@@ -38,8 +35,6 @@ void main() {
       const result = FtueResultData(
         modelsCreated: 2,
         modelsVerified: 1,
-        promptsCreated: 15,
-        promptsSkipped: 3,
         categoryCreated: true,
         categoryReused: false,
         categoryName: 'Test Category',
@@ -56,7 +51,6 @@ void main() {
 
       expect(find.text('Setup Completed with Warnings'), findsOneWidget);
       expect(find.text('2 created, 1 verified'), findsOneWidget);
-      expect(find.text('15 created, 3 skipped'), findsOneWidget);
       expect(find.text('Warnings:'), findsOneWidget);
       expect(
         find.text('Failed to create prompt: Audio Transcription'),
@@ -71,8 +65,6 @@ void main() {
       const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 0,
-        promptsCreated: 18,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryReused: false,
         categoryName: 'Test Category',
@@ -96,8 +88,6 @@ void main() {
       const result = FtueResultData(
         modelsCreated: 0,
         modelsVerified: 3,
-        promptsCreated: 0,
-        promptsSkipped: 18,
         categoryCreated: false,
         categoryReused: true,
         categoryName: 'Test Category',
@@ -121,8 +111,6 @@ void main() {
       const result = FtueResultData(
         modelsCreated: 3,
         modelsVerified: 0,
-        promptsCreated: 18,
-        promptsSkipped: 0,
         categoryCreated: false,
         categoryReused: false,
       );
@@ -142,8 +130,6 @@ void main() {
       const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
-        promptsCreated: 18,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category',
       );
@@ -178,8 +164,6 @@ void main() {
       const result = MistralFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
-        promptsCreated: 8,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category Mistral Enabled',
       );
@@ -202,7 +186,6 @@ void main() {
 
       expect(find.text('Setup Complete'), findsOneWidget);
       expect(find.text('3 created'), findsOneWidget);
-      expect(find.text('8 created'), findsOneWidget);
       expect(
         find.text('Test Category Mistral Enabled (created)'),
         findsOneWidget,
@@ -215,8 +198,6 @@ void main() {
       const result = AlibabaFtueResult(
         modelsCreated: 5,
         modelsVerified: 0,
-        promptsCreated: 9,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category Alibaba Enabled',
         errors: ['Test error'],
@@ -226,8 +207,6 @@ void main() {
 
       expect(data.modelsCreated, equals(5));
       expect(data.modelsVerified, equals(0));
-      expect(data.promptsCreated, equals(9));
-      expect(data.promptsSkipped, equals(0));
       expect(data.categoryCreated, isTrue);
       expect(data.categoryReused, isFalse);
       expect(data.categoryName, equals('Test Category Alibaba Enabled'));
@@ -240,8 +219,6 @@ void main() {
       const result = AlibabaFtueResult(
         modelsCreated: 5,
         modelsVerified: 0,
-        promptsCreated: 9,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category Alibaba Enabled',
       );
@@ -264,7 +241,6 @@ void main() {
 
       expect(find.text('Setup Complete'), findsOneWidget);
       expect(find.text('5 created'), findsOneWidget);
-      expect(find.text('9 created'), findsOneWidget);
       expect(
         find.text('Test Category Alibaba Enabled (created)'),
         findsOneWidget,
@@ -277,8 +253,6 @@ void main() {
       const result = MistralFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
-        promptsCreated: 8,
-        promptsSkipped: 0,
         categoryCreated: true,
         categoryName: 'Test Category Mistral Enabled',
         errors: ['Test error'],
@@ -288,8 +262,6 @@ void main() {
 
       expect(data.modelsCreated, equals(3));
       expect(data.modelsVerified, equals(0));
-      expect(data.promptsCreated, equals(8));
-      expect(data.promptsSkipped, equals(0));
       expect(data.categoryCreated, isTrue);
       expect(data.categoryReused, isFalse);
       expect(data.categoryName, equals('Test Category Mistral Enabled'));

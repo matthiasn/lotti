@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
@@ -932,7 +933,7 @@ void main() {
       },
     );
 
-    testWidgets('creates prompts when user confirms in setup dialog', (
+    testWidgets('creates models when user confirms in setup dialog', (
       WidgetTester tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
@@ -993,15 +994,18 @@ void main() {
       await tester.tap(saveButton);
       await tester.pump();
 
-      // Confirm prompt setup
+      // Confirm FTUE setup
       expect(find.text('Set Up AI Features?'), findsOneWidget);
       await tester.tap(find.text('Set Up'));
       await tester.pump();
 
-      // Verify prompts were created
-      // FTUE creates: 3 models + 2 prompts (image prompt generation + cover art)
+      // Verify models were created and no prompts
+      // Model prepopulation creates all known Gemini models on addConfig,
+      // then FTUE verifies the 3 FTUE models already exist.
+      final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
+      expect(modelsCreated, equals(geminiModels.length));
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-      expect(promptsCreated, equals(2));
+      expect(promptsCreated, equals(0));
     });
 
     testWidgets('skips prompt creation when user declines', (
@@ -1828,7 +1832,7 @@ void main() {
     });
 
     testWidgets(
-      'creates prompts for OpenAI when user confirms in setup dialog',
+      'creates models for OpenAI when user confirms in setup dialog',
       (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1888,14 +1892,18 @@ void main() {
         await tester.tap(saveButton);
         await tester.pump();
 
-        // Confirm prompt setup
+        // Confirm FTUE setup
         expect(find.text('Set Up AI Features?'), findsOneWidget);
         await tester.tap(find.text('Set Up'));
         await tester.pump();
 
-        // Verify prompts were created for OpenAI
+        // Verify models were created and no prompts
+        // Model prepopulation creates all known OpenAI models on addConfig,
+        // then FTUE verifies the 4 FTUE models already exist.
+        final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
+        expect(modelsCreated, equals(openaiModels.length));
         final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
-        expect(promptsCreated, equals(2));
+        expect(promptsCreated, equals(0));
       },
     );
   });
