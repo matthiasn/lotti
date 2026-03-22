@@ -69,3 +69,49 @@ This regenerates:
 The import currently targets the consolidated token export we have today. If the
 Figma export later splits into manifests, foundations, use cases, and styles,
 the importer can be extended without touching component code.
+
+## Widgetbook Export
+
+Build the standalone Widgetbook macOS bundle and zip it for review:
+
+```sh
+make widgetbook_macos_build
+```
+
+Upload the existing zip to the rolling GitHub release without rebuilding:
+
+```sh
+make widgetbook_macos_upload
+```
+
+Build and then upload the latest zip to the rolling GitHub release:
+
+```sh
+make widgetbook_macos_publish
+```
+
+This writes:
+
+- `build/widgetbook_macos_export/Lotti_Widgetbook.app`
+- `build/widgetbook_macos_export/Lotti_Widgetbook.app.zip`
+
+The app is built from `lib/widgetbook.dart` and then copied into a separate
+macOS app bundle for sharing.
+
+After unzipping, open the app bundle in Finder:
+
+```sh
+open "build/widgetbook_macos_export/Lotti_Widgetbook.app"
+```
+
+Because the app is unsigned, macOS may warn on first launch, especially if it
+was downloaded from GitHub Releases. In that case, use Finder's right-click
+`Open`, or remove quarantine locally:
+
+```sh
+xattr -dr com.apple.quarantine "Lotti_Widgetbook.app"
+```
+
+The publish command updates the `widgetbook-macos-latest` tag and uploads the
+zip to the matching prerelease via the GitHub CLI. It expects `gh` to be
+installed and authenticated locally.
