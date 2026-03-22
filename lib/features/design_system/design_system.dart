@@ -7,6 +7,7 @@ export 'components/checkboxes/design_system_checkbox.dart';
 export 'components/chips/design_system_chip.dart';
 export 'components/dividers/design_system_divider.dart';
 export 'components/dropdowns/design_system_dropdown.dart';
+export 'components/headers/design_system_header.dart';
 export 'components/progress_bars/design_system_progress_bar.dart';
 export 'components/radio_buttons/design_system_radio_button.dart';
 export 'components/search/design_system_search.dart';

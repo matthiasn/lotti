@@ -31,6 +31,7 @@ class DesignSystemDivider extends StatelessWidget {
       DesignSystemDividerOrientation.horizontal => _HorizontalDivider(
         color: color,
         label: label,
+        length: length,
       ),
       DesignSystemDividerOrientation.vertical => SizedBox(
         width: 1,
@@ -45,22 +46,43 @@ class _HorizontalDivider extends StatelessWidget {
   const _HorizontalDivider({
     required this.color,
     this.label,
+    this.length,
   });
+
+  static const double _defaultUnboundedWidth = 320;
 
   final Color color;
   final String? label;
+  final double? length;
 
   @override
   Widget build(BuildContext context) {
+    if (length != null) {
+      return _buildContent(context, length!);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : _defaultUnboundedWidth;
+        return _buildContent(context, resolvedWidth);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, double resolvedWidth) {
     final tokens = context.designTokens;
+
     if (label == null || label == '') {
       return SizedBox(
+        width: resolvedWidth,
         height: 1,
         child: ColoredBox(color: color),
       );
     }
 
     return SizedBox(
+      width: resolvedWidth,
       height: 16,
       child: Row(
         children: [

@@ -54,5 +54,32 @@ void main() {
 
       expect(vertical, findsOneWidget);
     });
+
+    testWidgets(
+      'keeps the unlabeled horizontal variant visible in shrink-wrap layouts',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const UnconstrainedBox(
+              child: DesignSystemDivider(),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final horizontal = find.byWidgetPredicate(
+          (widget) =>
+              widget is SizedBox && widget.width == 320 && widget.height == 1,
+        );
+        final line = find.byWidgetPredicate(
+          (widget) =>
+              widget is ColoredBox &&
+              widget.color == dsTokensLight.colors.decorative.level01,
+        );
+
+        expect(horizontal, findsOneWidget);
+        expect(line, findsOneWidget);
+      },
+    );
   });
 }

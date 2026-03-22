@@ -4503,6 +4503,60 @@ abstract class AppLocalizations {
   /// **'Filled'**
   String get designSystemFilledLabel;
 
+  /// No description provided for @designSystemHeaderApiConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API Configuration'**
+  String get designSystemHeaderApiConfigurationTitle;
+
+  /// No description provided for @designSystemHeaderApiDocumentationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API Documentation'**
+  String get designSystemHeaderApiDocumentationLabel;
+
+  /// No description provided for @designSystemHeaderBackActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get designSystemHeaderBackActionLabel;
+
+  /// No description provided for @designSystemHeaderFigmaDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Figma default'**
+  String get designSystemHeaderFigmaDefaultLabel;
+
+  /// No description provided for @designSystemHeaderHelpActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get designSystemHeaderHelpActionLabel;
+
+  /// No description provided for @designSystemHeaderLongTitleExample.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a very long page title that should truncate before the action area'**
+  String get designSystemHeaderLongTitleExample;
+
+  /// No description provided for @designSystemHeaderLongTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Long title'**
+  String get designSystemHeaderLongTitleLabel;
+
+  /// No description provided for @designSystemHeaderNotificationsActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get designSystemHeaderNotificationsActionLabel;
+
+  /// No description provided for @designSystemHeaderSearchActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get designSystemHeaderSearchActionLabel;
+
   /// No description provided for @designSystemHorizontalLabel.
   ///
   /// In en, this message translates to:

@@ -2547,6 +2547,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemFilledLabel => 'Relleno';
 
   @override
+  String get designSystemHeaderApiConfigurationTitle => 'Configuración de API';
+
+  @override
+  String get designSystemHeaderApiDocumentationLabel => 'Documentación de API';
+
+  @override
+  String get designSystemHeaderBackActionLabel => 'Atrás';
+
+  @override
+  String get designSystemHeaderFigmaDefaultLabel => 'Predeterminado de Figma';
+
+  @override
+  String get designSystemHeaderHelpActionLabel => 'Ayuda';
+
+  @override
+  String get designSystemHeaderLongTitleExample =>
+      'Este es un título de página muy largo que debe truncarse antes del área de acciones';
+
+  @override
+  String get designSystemHeaderLongTitleLabel => 'Título largo';
+
+  @override
+  String get designSystemHeaderNotificationsActionLabel => 'Notificaciones';
+
+  @override
+  String get designSystemHeaderSearchActionLabel => 'Buscar';
+
+  @override
   String get designSystemHorizontalLabel => 'Horizontal';
 
   @override

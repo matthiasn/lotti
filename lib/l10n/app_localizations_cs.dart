@@ -2487,6 +2487,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemFilledLabel => 'Vyplněné';
 
   @override
+  String get designSystemHeaderApiConfigurationTitle => 'Konfigurace API';
+
+  @override
+  String get designSystemHeaderApiDocumentationLabel => 'Dokumentace API';
+
+  @override
+  String get designSystemHeaderBackActionLabel => 'Zpět';
+
+  @override
+  String get designSystemHeaderFigmaDefaultLabel => 'Výchozí z Figma';
+
+  @override
+  String get designSystemHeaderHelpActionLabel => 'Nápověda';
+
+  @override
+  String get designSystemHeaderLongTitleExample =>
+      'Toto je velmi dlouhý název stránky, který se má zkrátit před oblastí akcí';
+
+  @override
+  String get designSystemHeaderLongTitleLabel => 'Dlouhý název';
+
+  @override
+  String get designSystemHeaderNotificationsActionLabel => 'Oznámení';
+
+  @override
+  String get designSystemHeaderSearchActionLabel => 'Hledat';
+
+  @override
   String get designSystemHorizontalLabel => 'Vodorovný';
 
   @override

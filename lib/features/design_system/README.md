@@ -27,6 +27,7 @@ This feature contains the standalone Widgetbook-first design system work.
 - Branding
 - Chips
 - Breadcrumbs
+- Header
 - Search
 - Toast
 - Divider

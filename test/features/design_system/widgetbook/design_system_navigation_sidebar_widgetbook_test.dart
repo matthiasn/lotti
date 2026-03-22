@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_sidebar_widgetbook.dart';
 
@@ -46,6 +48,11 @@ void main() {
       expect(find.text('Tab Bar Variants'), findsNothing);
       expect(find.text('Sub-components'), findsNothing);
 
+      final newLabel = tester.renderObject<RenderParagraph>(
+        find.text('New').first,
+      );
+
+      expect(newLabel.didExceedMaxLines, isFalse);
       await tester.tap(find.text('New').first);
       await tester.pump();
 
@@ -57,6 +64,7 @@ void main() {
 
       expect(find.text('2025'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      expect(find.byType(DesignSystemButton), findsAtLeastNWidgets(2));
     });
   });
 }
