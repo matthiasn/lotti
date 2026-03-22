@@ -2551,6 +2551,53 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Buton radio';
 
   @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'Asistent AI';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Restrâns';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Filtru zilnic';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Extins';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel => 'Filtrează după bloc';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Drumeție';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Concediu';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Perspective';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Sarcini Lotti';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Ziua mea';
+
+  @override
+  String get designSystemNavigationNewLabel => 'Nou';
+
+  @override
+  String get designSystemNavigationPlaceholderLabel => 'Substituent';
+
+  @override
+  String get designSystemNavigationSidebarSectionTitle =>
+      'Variante pentru bara laterală';
+
+  @override
+  String get designSystemNavigationSubComponentsSectionTitle => 'Subcomponente';
+
+  @override
+  String get designSystemNavigationTabBarSectionTitle =>
+      'Variante pentru bara de file';
+
+  @override
   String get designSystemSearchFilledText => 'Căutare Lotti';
 
   @override

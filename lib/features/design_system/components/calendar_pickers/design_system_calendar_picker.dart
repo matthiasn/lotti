@@ -2,18 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
-/// Width of the month rail panel (fits three-letter month labels + padding).
-const _railWidth = 128.0;
+@immutable
+class _CalendarPickerGeometry {
+  const _CalendarPickerGeometry({
+    required this.railWidth,
+    required this.controlHeight,
+    required this.railButtonWidth,
+    required this.dateCardWidth,
+    required this.dateCardHeight,
+  });
 
-/// Height used for header row and rail buttons.
-const _controlHeight = 36.0;
+  factory _CalendarPickerGeometry.fromTokens(DsTokens tokens) {
+    return _CalendarPickerGeometry(
+      // Fits a three-letter month label plus horizontal rail padding.
+      railWidth: tokens.spacing.step12 + (tokens.spacing.step5 * 2),
+      // Matches the design's compact rail/header control height.
+      controlHeight: tokens.spacing.step8 - tokens.spacing.step2,
+      railButtonWidth: tokens.spacing.step12,
+      // Matches the shipped 50x56 date cards while staying token-derived.
+      dateCardWidth: tokens.spacing.step9 + tokens.spacing.step1,
+      dateCardHeight: tokens.spacing.step9 + tokens.spacing.step3,
+    );
+  }
 
-/// Width used for rail buttons and year dividers (matches tokens.spacing.step12).
-const _railButtonWidth = 96.0;
-
-/// Date card dimensions (weekday + day stacked with padding).
-const _dateCardWidth = 50.0;
-const _dateCardHeight = 56.0;
+  final double railWidth;
+  final double controlHeight;
+  final double railButtonWidth;
+  final double dateCardWidth;
+  final double dateCardHeight;
+}
 
 enum DesignSystemCalendarDateCardVisualState {
   idle,
@@ -67,6 +84,7 @@ class _DesignSystemCalendarDateCardState
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
     final enabled = widget.onPressed != null;
     final visualState = _resolveVisualState(enabled);
     final styleSpec = _CalendarDateCardStyleSpec.fromTokens(
@@ -100,8 +118,8 @@ class _DesignSystemCalendarDateCardState
                   : Border.all(color: styleSpec.borderColor!),
             ),
             child: SizedBox(
-              width: _dateCardWidth,
-              height: _dateCardHeight,
+              width: geometry.dateCardWidth,
+              height: geometry.dateCardHeight,
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step2,
@@ -284,12 +302,13 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
     final cellSize = tokens.spacing.step8;
     final gap = tokens.spacing.step1;
     final verticalPadding = 2 * tokens.spacing.step5;
     final gridWidth = 7 * cellSize + 2 * tokens.spacing.step5;
-    final totalWidth = _railWidth + gridWidth;
-    final fixedContentHeight = _controlHeight + gap + cellSize + gap;
+    final totalWidth = geometry.railWidth + gridWidth;
+    final fixedContentHeight = geometry.controlHeight + gap + cellSize + gap;
     final weeksHeight = weeks.length * cellSize + (weeks.length - 1) * gap;
     final totalHeight = verticalPadding + fixedContentHeight + weeksHeight;
 
@@ -313,7 +332,7 @@ class DesignSystemCalendarPicker extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: _railWidth,
+                width: geometry.railWidth,
                 child: _CalendarMonthRail(
                   monthSections: monthSections,
                 ),
@@ -382,6 +401,7 @@ class _CalendarYearDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
     final labelColor = tokens.colors.decorative.level02;
 
     return Padding(
@@ -390,7 +410,7 @@ class _CalendarYearDivider extends StatelessWidget {
         bottom: tokens.spacing.step2,
       ),
       child: SizedBox(
-        width: _railButtonWidth,
+        width: geometry.railButtonWidth,
         height: tokens.typography.lineHeight.caption,
         child: Center(
           child: Text(
@@ -424,6 +444,7 @@ class _CalendarMonthRailButtonState extends State<_CalendarMonthRailButton> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
     final enabled = widget.item.onPressed != null;
 
     final backgroundColor = switch ((widget.item.selected, _hovered)) {
@@ -454,8 +475,8 @@ class _CalendarMonthRailButtonState extends State<_CalendarMonthRailButton> {
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
             child: SizedBox(
-              width: _railButtonWidth,
-              height: _controlHeight,
+              width: geometry.railButtonWidth,
+              height: geometry.controlHeight,
               child: Center(
                 child: Text(
                   widget.item.label,
@@ -544,12 +565,13 @@ class _CalendarMonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
 
     final cellSize = tokens.spacing.step8;
 
     return SizedBox(
       width: 7 * cellSize,
-      height: _controlHeight,
+      height: geometry.controlHeight,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -592,6 +614,7 @@ class _CalendarTodayButtonState extends State<_CalendarTodayButton> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
     final enabled = widget.onPressed != null;
 
     final button = Semantics(
@@ -610,8 +633,8 @@ class _CalendarTodayButtonState extends State<_CalendarTodayButton> {
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
             child: SizedBox(
-              width: _railButtonWidth,
-              height: _controlHeight,
+              width: geometry.railButtonWidth,
+              height: geometry.controlHeight,
               child: Center(
                 child: Text(
                   widget.label,

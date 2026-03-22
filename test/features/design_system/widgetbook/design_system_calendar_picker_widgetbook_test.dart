@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_calendar_picker_widgetbook.dart';
 
@@ -40,9 +41,12 @@ void main() {
       expect(find.text('Calendar Views'), findsOneWidget);
       expect(find.text('Calendar Picker'), findsOneWidget);
       expect(find.text('Weekly Calendar'), findsOneWidget);
+      expect(find.text('Light Theme'), findsNothing);
+      expect(find.text('Dark Theme'), findsNothing);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('January 2026'), findsOneWidget);
+      expect(find.text('January 2026'), findsAtLeastNWidgets(2));
       expect(find.byType(DesignSystemCalendarPicker), findsOneWidget);
+      expect(find.byType(DesignSystemTimeCalendarPicker), findsOneWidget);
       expect(find.byType(DesignSystemCalendarDateCard), findsNWidgets(10));
 
       await tester.tap(find.byType(DesignSystemCalendarDateCard).first);
@@ -56,7 +60,7 @@ void main() {
     ) async {
       await pumpOverview(tester);
 
-      expect(find.text('January 2026'), findsOneWidget);
+      expect(find.text('January 2026'), findsAtLeastNWidgets(2));
 
       // Feb may be outside the visible month rail viewport — scroll it in.
       final febFinder = find.text('Feb');
@@ -113,7 +117,7 @@ void main() {
       await tester.tap(todayFinder);
       await tester.pump();
 
-      expect(find.text('January 2026'), findsOneWidget);
+      expect(find.text('January 2026'), findsAtLeastNWidgets(2));
     });
 
     testWidgets('deselects a date when tapping the same day twice', (
@@ -134,5 +138,36 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'dismisses the month dialog when tapping outside in widgetbook',
+      (
+        tester,
+      ) async {
+        await pumpOverview(tester);
+
+        final monthLabel = find.descendant(
+          of: find.byType(DesignSystemTimeCalendarPicker),
+          matching: find.text('January 2026'),
+        );
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsOneWidget);
+        expect(monthLabel, findsOneWidget);
+
+        await tester.ensureVisible(monthLabel);
+        await tester.pumpAndSettle();
+        await tester.tap(monthLabel);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsNWidgets(2));
+
+        await tester.tapAt(const Offset(8, 8));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsOneWidget);
+      },
+    );
   });
 }
