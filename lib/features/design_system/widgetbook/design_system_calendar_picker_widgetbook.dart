@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
+import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -35,12 +34,12 @@ class _CalendarPickerOverviewPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CalendarSection(
+            WidgetbookSection(
               title: context.messages.designSystemDateCardsTitle,
               child: const _DateCardStates(),
             ),
             const SizedBox(height: 32),
-            _CalendarSection(
+            WidgetbookSection(
               title: context.messages.designSystemCalendarViewsTitle,
               child: _CalendarViewsShowcase(initialDate: initialDate),
             ),
@@ -64,31 +63,6 @@ class _CalendarViewsShowcase extends StatelessWidget {
         _InteractiveCalendarViews(initialDate: initialDate),
         const SizedBox(height: 32),
         _TimeCalendarPickerShowcase(initialDate: initialDate),
-      ],
-    );
-  }
-}
-
-class _CalendarSection extends StatelessWidget {
-  const _CalendarSection({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
-        child,
       ],
     );
   }
@@ -396,7 +370,7 @@ class _TimeCalendarPickerShowcase extends StatelessWidget {
         mode: mode,
         presentation: DesignSystemTimeCalendarPickerPresentation.regular,
         initialSelectedDate: previewDate,
-        currentDate: DateTime(previewDate.year, previewDate.month, 1),
+        currentDate: DateTime(previewDate.year, previewDate.month),
       ),
     );
   }

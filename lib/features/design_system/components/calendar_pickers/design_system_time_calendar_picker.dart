@@ -49,7 +49,6 @@ class _DesignSystemInteractiveTimeCalendarPickerState
   Future<void> _showMonthDialog() async {
     final nextMonth = await showDialog<DateTime>(
       context: context,
-      barrierDismissible: true,
       barrierColor: Colors.black.withValues(
         alpha: widget.mode == DesignSystemTimeCalendarPickerMode.dark
             ? 0.24
@@ -258,37 +257,27 @@ class _MonthCalendarCard extends StatelessWidget {
             Row(
               children: [
                 for (final day in week)
-                  day == null
-                      ? const SizedBox(width: 48, height: 44)
-                      : _CalendarDayButton(
+                  if (day == null)
+                    const SizedBox(width: 48, height: 44)
+                  else
+                    Builder(
+                      builder: (context) {
+                        final dayDate = DateTime(
+                          visibleMonth.year,
+                          visibleMonth.month,
+                          day,
+                        );
+                        return _CalendarDayButton(
                           palette: palette,
                           label: '$day',
-                          isCurrentDay: _isSameDay(
-                            DateTime(
-                              visibleMonth.year,
-                              visibleMonth.month,
-                              day,
-                            ),
-                            currentDate,
-                          ),
-                          isSelected: _isSameDay(
-                            DateTime(
-                              visibleMonth.year,
-                              visibleMonth.month,
-                              day,
-                            ),
-                            selectedDate,
-                          ),
+                          isCurrentDay: _isSameDay(dayDate, currentDate),
+                          isSelected: _isSameDay(dayDate, selectedDate),
                           onPressed: onDayPressed == null
                               ? null
-                              : () => onDayPressed!(
-                                  DateTime(
-                                    visibleMonth.year,
-                                    visibleMonth.month,
-                                    day,
-                                  ),
-                                ),
-                        ),
+                              : () => onDayPressed!(dayDate),
+                        );
+                      },
+                    ),
               ],
             ),
         ],

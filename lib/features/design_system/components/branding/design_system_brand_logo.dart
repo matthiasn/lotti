@@ -15,14 +15,11 @@ class DesignSystemBrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedVariant = switch (variant) {
-      DesignSystemBrandLogoVariant.automatic =>
-        Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemBrandLogoVariant.dark
-            : DesignSystemBrandLogoVariant.light,
-      DesignSystemBrandLogoVariant.light => DesignSystemBrandLogoVariant.light,
-      DesignSystemBrandLogoVariant.dark => DesignSystemBrandLogoVariant.dark,
-    };
+    final resolvedVariant = variant == DesignSystemBrandLogoVariant.automatic
+        ? (Theme.of(context).brightness == Brightness.dark
+              ? DesignSystemBrandLogoVariant.dark
+              : DesignSystemBrandLogoVariant.light)
+        : variant;
 
     return SvgPicture.string(
       resolvedVariant == DesignSystemBrandLogoVariant.dark
@@ -31,12 +28,11 @@ class DesignSystemBrandLogo extends StatelessWidget {
       key: ValueKey('designSystemBrandLogo.${resolvedVariant.name}'),
       width: height * _brandLogoAspectRatio,
       height: height,
-      fit: BoxFit.contain,
     );
   }
 }
 
-const _brandLogoAspectRatio = 205 / 74;
+const double _brandLogoAspectRatio = 205 / 74;
 
 const _lightBrandLogoSvg = '''
 <svg width="205" height="74" viewBox="0 0 205 74" fill="none" xmlns="http://www.w3.org/2000/svg">

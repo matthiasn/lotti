@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -25,12 +26,12 @@ class _NavigationTabBarOverviewPage extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       child: ListView(
         children: [
-          _TabBarSection(
+          WidgetbookSection(
             title: context.messages.designSystemNavigationTabBarSectionTitle,
             child: const _TabBarShowcase(),
           ),
           const SizedBox(height: 32),
-          _TabBarSection(
+          WidgetbookSection(
             title: context
                 .messages
                 .designSystemNavigationSubComponentsSectionTitle,
@@ -42,37 +43,12 @@ class _NavigationTabBarOverviewPage extends StatelessWidget {
   }
 }
 
-class _TabBarSection extends StatelessWidget {
-  const _TabBarSection({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
-        child,
-      ],
-    );
-  }
-}
-
 class _TabBarShowcase extends StatelessWidget {
   const _TabBarShowcase();
 
   @override
   Widget build(BuildContext context) {
-    final items = _navigationDestinations(context);
+    final items = widgetbookNavigationDestinations(context);
 
     return _PreviewSurface(
       child: Wrap(
@@ -97,7 +73,7 @@ class _NavigationTabBar extends StatelessWidget {
     this.minimized = false,
   });
 
-  final List<_NavigationDestination> items;
+  final List<WidgetbookNavigationDestination> items;
   final bool minimized;
 
   @override
@@ -364,38 +340,4 @@ class _AccessoryCircleButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NavigationDestination {
-  const _NavigationDestination({
-    required this.label,
-    required this.icon,
-    this.active = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool active;
-}
-
-List<_NavigationDestination> _navigationDestinations(BuildContext context) {
-  return [
-    _NavigationDestination(
-      label: context.messages.designSystemNavigationMyDailyLabel,
-      icon: Icons.calendar_today_outlined,
-      active: true,
-    ),
-    _NavigationDestination(
-      label: context.messages.navTabTitleTasks,
-      icon: Icons.format_list_bulleted_rounded,
-    ),
-    _NavigationDestination(
-      label: context.messages.designSystemBreadcrumbProjectsLabel,
-      icon: Icons.folder_rounded,
-    ),
-    _NavigationDestination(
-      label: context.messages.designSystemNavigationInsightsLabel,
-      icon: Icons.bar_chart_rounded,
-    ),
-  ];
 }

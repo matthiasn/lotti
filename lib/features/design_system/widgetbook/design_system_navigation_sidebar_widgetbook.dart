@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
+import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -28,19 +29,19 @@ class _NavigationSidebarOverviewPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _NavigationSection(
+            WidgetbookSection(
               title: context.messages.designSystemNavigationSidebarSectionTitle,
               child: const _SidebarShowcase(),
             ),
             const SizedBox(height: 32),
-            _NavigationSection(
+            WidgetbookSection(
               title: context
                   .messages
                   .designSystemNavigationDailyFilterSectionTitle,
               child: const _DailyFilterShowcase(),
             ),
             const SizedBox(height: 32),
-            _NavigationSection(
+            WidgetbookSection(
               title: context
                   .messages
                   .designSystemNavigationAiAssistantSectionTitle,
@@ -49,31 +50,6 @@ class _NavigationSidebarOverviewPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _NavigationSection extends StatelessWidget {
-  const _NavigationSection({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
-        child,
-      ],
     );
   }
 }
@@ -108,9 +84,7 @@ class _SidebarShowcase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mode = Theme.of(context).brightness == Brightness.dark
-        ? _SidebarMode.dark
-        : _SidebarMode.light;
+    final brightness = Theme.of(context).brightness;
 
     return Wrap(
       spacing: 24,
@@ -119,14 +93,14 @@ class _SidebarShowcase extends StatelessWidget {
         _PreviewCase(
           label: context.messages.designSystemNavigationExpandedLabel,
           child: _SidebarFrame(
-            mode: mode,
+            brightness: brightness,
             expanded: true,
           ),
         ),
         _PreviewCase(
           label: context.messages.designSystemNavigationCollapsedLabel,
           child: _SidebarFrame(
-            mode: mode,
+            brightness: brightness,
             expanded: false,
           ),
         ),
@@ -135,20 +109,18 @@ class _SidebarShowcase extends StatelessWidget {
   }
 }
 
-enum _SidebarMode { light, dark }
-
 class _SidebarFrame extends StatelessWidget {
   const _SidebarFrame({
-    required this.mode,
+    required this.brightness,
     required this.expanded,
   });
 
-  final _SidebarMode mode;
+  final Brightness brightness;
   final bool expanded;
 
   @override
   Widget build(BuildContext context) {
-    final palette = _SidebarPalette.fromMode(mode);
+    final palette = _SidebarPalette.fromBrightness(brightness);
 
     return Container(
       width: expanded ? 320 : 76,
@@ -191,7 +163,7 @@ class _ExpandedSidebarContent extends StatelessWidget {
                 size: DesignSystemButtonSize.medium,
                 leadingIcon: Icons.add_rounded,
                 trailingIcon: Icons.keyboard_arrow_down_rounded,
-                onPressed: _noop,
+                onPressed: widgetbookNoop,
               ),
               const Positioned(
                 top: 0,
@@ -202,7 +174,7 @@ class _ExpandedSidebarContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        for (final destination in _navigationDestinations(context))
+        for (final destination in widgetbookNavigationDestinations(context))
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
             child: _SidebarNavItem(
@@ -246,7 +218,7 @@ class _CollapsedSidebarContent extends StatelessWidget {
                   leadingIcon: Icons.add_rounded,
                   semanticsLabel:
                       context.messages.designSystemNavigationNewLabel,
-                  onPressed: _noop,
+                  onPressed: widgetbookNoop,
                 ),
               ),
               const Positioned(
@@ -284,7 +256,7 @@ class _SidebarLogoRow extends StatelessWidget {
           ),
           if (expanded) ...[
             const SizedBox(width: 16),
-            const DesignSystemBrandLogo(height: 32),
+            const DesignSystemBrandLogo(),
           ],
         ],
       ),
@@ -298,7 +270,7 @@ class _SidebarNavItem extends StatelessWidget {
     required this.palette,
   });
 
-  final _NavigationDestination destination;
+  final WidgetbookNavigationDestination destination;
   final _SidebarPalette palette;
 
   @override
@@ -311,7 +283,7 @@ class _SidebarNavItem extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: _noop,
+          onTap: widgetbookNoop,
           child: Ink(
             width: 288,
             height: 48,
@@ -360,7 +332,7 @@ class _SidebarCalendarPreview extends StatelessWidget {
       mode: mode,
       presentation: DesignSystemTimeCalendarPickerPresentation.compact,
       initialSelectedDate: DateTime(2025, 4, 17),
-      currentDate: DateTime(2025, 4, 1),
+      currentDate: DateTime(2025, 4),
     );
   }
 }
@@ -375,9 +347,9 @@ class _SidebarPalette {
     required this.calendarMode,
   });
 
-  factory _SidebarPalette.fromMode(_SidebarMode mode) {
-    return switch (mode) {
-      _SidebarMode.light => _SidebarPalette(
+  factory _SidebarPalette.fromBrightness(Brightness brightness) {
+    return switch (brightness) {
+      Brightness.light => _SidebarPalette(
         surface: const Color(0xFFF1F4F3),
         border: Colors.black.withValues(alpha: 0.12),
         iconColor: Colors.black.withValues(alpha: 0.64),
@@ -385,7 +357,7 @@ class _SidebarPalette {
         activeFill: const Color(0x3D2BA184),
         calendarMode: DesignSystemTimeCalendarPickerMode.light,
       ),
-      _SidebarMode.dark => _SidebarPalette(
+      Brightness.dark => _SidebarPalette(
         surface: const Color(0xFF2C2C2C),
         border: Colors.white.withValues(alpha: 0.12),
         iconColor: Colors.white.withValues(alpha: 0.64),
@@ -574,7 +546,7 @@ class _AiAssistantFab extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               customBorder: const CircleBorder(),
-              onTap: _noop,
+              onTap: widgetbookNoop,
               child: Ink(
                 width: 56,
                 height: 56,
@@ -645,39 +617,3 @@ class _AiAssistantBadge extends StatelessWidget {
     );
   }
 }
-
-class _NavigationDestination {
-  const _NavigationDestination({
-    required this.label,
-    required this.icon,
-    this.active = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool active;
-}
-
-List<_NavigationDestination> _navigationDestinations(BuildContext context) {
-  return [
-    _NavigationDestination(
-      label: context.messages.designSystemNavigationMyDailyLabel,
-      icon: Icons.calendar_today_outlined,
-      active: true,
-    ),
-    _NavigationDestination(
-      label: context.messages.navTabTitleTasks,
-      icon: Icons.format_list_bulleted_rounded,
-    ),
-    _NavigationDestination(
-      label: context.messages.designSystemBreadcrumbProjectsLabel,
-      icon: Icons.folder_rounded,
-    ),
-    _NavigationDestination(
-      label: context.messages.designSystemNavigationInsightsLabel,
-      icon: Icons.bar_chart_rounded,
-    ),
-  ];
-}
-
-void _noop() {}

@@ -24,7 +24,7 @@ void main() {
             presentation: presentation,
             visibleMonth: DateTime(2025, 4),
             selectedDate: DateTime(2025, 4, 17),
-            currentDate: DateTime(2025, 4, 1),
+            currentDate: DateTime(2025, 4),
             onMonthYearPressed: onMonthYearPressed,
             onPreviousPressed: onPreviousPressed,
             onNextPressed: onNextPressed,
@@ -49,7 +49,7 @@ void main() {
             mode: mode,
             presentation: presentation,
             initialSelectedDate: DateTime(2025, 4, 17),
-            currentDate: DateTime(2025, 4, 1),
+            currentDate: DateTime(2025, 4),
           ),
           theme: mode == DesignSystemTimeCalendarPickerMode.dark
               ? DesignSystemTheme.dark()
