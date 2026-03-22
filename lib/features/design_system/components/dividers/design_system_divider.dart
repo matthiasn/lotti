@@ -31,6 +31,7 @@ class DesignSystemDivider extends StatelessWidget {
       DesignSystemDividerOrientation.horizontal => _HorizontalDivider(
         color: color,
         label: label,
+        length: length,
       ),
       DesignSystemDividerOrientation.vertical => SizedBox(
         width: 1,
@@ -45,47 +46,67 @@ class _HorizontalDivider extends StatelessWidget {
   const _HorizontalDivider({
     required this.color,
     this.label,
+    this.length,
   });
 
   final Color color;
   final String? label;
+  final double? length;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    if (label == null || label == '') {
-      return SizedBox(
-        height: 1,
-        child: ColoredBox(color: color),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final resolvedWidth = _resolveWidth(constraints);
 
-    return SizedBox(
-      height: 16,
-      child: Row(
-        children: [
-          Expanded(
-            child: SizedBox(
-              height: 1,
-              child: ColoredBox(color: color),
-            ),
+        if (label == null || label == '') {
+          return SizedBox(
+            width: resolvedWidth,
+            height: 1,
+            child: ColoredBox(color: color),
+          );
+        }
+
+        return SizedBox(
+          width: resolvedWidth,
+          height: 16,
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 1,
+                  child: ColoredBox(color: color),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step5),
+              Text(
+                label!,
+                style: tokens.typography.styles.others.overline.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step5),
+              Expanded(
+                child: SizedBox(
+                  height: 1,
+                  child: ColoredBox(color: color),
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: tokens.spacing.step5),
-          Text(
-            label!,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step5),
-          Expanded(
-            child: SizedBox(
-              height: 1,
-              child: ColoredBox(color: color),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  double _resolveWidth(BoxConstraints constraints) {
+    if (length != null) {
+      return length!;
+    }
+    if (constraints.hasBoundedWidth) {
+      return constraints.maxWidth;
+    }
+    return 320;
   }
 }

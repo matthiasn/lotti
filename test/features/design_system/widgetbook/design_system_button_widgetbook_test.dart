@@ -37,6 +37,9 @@ void main() {
       final breadcrumbsComponent = components.singleWhere(
         (component) => component.name == 'Breadcrumbs',
       );
+      final headerComponent = components.singleWhere(
+        (component) => component.name == 'Header',
+      );
       final searchComponent = components.singleWhere(
         (component) => component.name == 'Search',
       );
@@ -90,6 +93,7 @@ void main() {
         'Badges',
         'Chips',
         'Breadcrumbs',
+        'Header',
         'Search',
         'Toast',
         'Divider',
@@ -111,6 +115,7 @@ void main() {
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
       expect(breadcrumbsComponent.useCases.single.name, 'Overview');
+      expect(headerComponent.useCases.single.name, 'Overview');
       expect(searchComponent.useCases.single.name, 'Overview');
       expect(toastComponent.useCases.single.name, 'Overview');
       expect(dividerComponent.useCases.single.name, 'Overview');

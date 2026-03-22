@@ -2543,6 +2543,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemFilledLabel => 'Rempli';
 
   @override
+  String get designSystemHeaderApiConfigurationTitle => 'Configuration API';
+
+  @override
+  String get designSystemHeaderApiDocumentationLabel => 'Documentation API';
+
+  @override
+  String get designSystemHeaderBackActionLabel => 'Retour';
+
+  @override
+  String get designSystemHeaderFigmaDefaultLabel => 'Défaut Figma';
+
+  @override
+  String get designSystemHeaderHelpActionLabel => 'Aide';
+
+  @override
+  String get designSystemHeaderLongTitleExample =>
+      'Voici un titre de page très long qui doit être tronqué avant la zone d\'actions';
+
+  @override
+  String get designSystemHeaderLongTitleLabel => 'Titre long';
+
+  @override
+  String get designSystemHeaderNotificationsActionLabel => 'Notifications';
+
+  @override
+  String get designSystemHeaderSearchActionLabel => 'Recherche';
+
+  @override
   String get designSystemHorizontalLabel => 'Horizontal';
 
   @override

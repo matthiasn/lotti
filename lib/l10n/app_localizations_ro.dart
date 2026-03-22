@@ -2511,6 +2511,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemFilledLabel => 'Completat';
 
   @override
+  String get designSystemHeaderApiConfigurationTitle => 'Configurare API';
+
+  @override
+  String get designSystemHeaderApiDocumentationLabel => 'Documentație API';
+
+  @override
+  String get designSystemHeaderBackActionLabel => 'Înapoi';
+
+  @override
+  String get designSystemHeaderFigmaDefaultLabel => 'Implicit Figma';
+
+  @override
+  String get designSystemHeaderHelpActionLabel => 'Ajutor';
+
+  @override
+  String get designSystemHeaderLongTitleExample =>
+      'Acesta este un titlu de pagină foarte lung care trebuie trunchiat înaintea zonei de acțiuni';
+
+  @override
+  String get designSystemHeaderLongTitleLabel => 'Titlu lung';
+
+  @override
+  String get designSystemHeaderNotificationsActionLabel => 'Notificări';
+
+  @override
+  String get designSystemHeaderSearchActionLabel => 'Caută';
+
+  @override
   String get designSystemHorizontalLabel => 'Orizontal';
 
   @override

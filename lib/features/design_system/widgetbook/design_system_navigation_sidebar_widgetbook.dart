@@ -151,7 +151,6 @@ class _ExpandedSidebarContent extends StatelessWidget {
   const _ExpandedSidebarContent({required this.palette});
 
   final _SidebarPalette palette;
-  static const _topActionButtonWidth = 111.0;
   static const _topActionButtonHeight = 44.0;
 
   @override
@@ -171,7 +170,6 @@ class _ExpandedSidebarContent extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               SizedBox(
-                width: _topActionButtonWidth,
                 height: _topActionButtonHeight,
                 child: DesignSystemButton(
                   label: context.messages.designSystemNavigationNewLabel,

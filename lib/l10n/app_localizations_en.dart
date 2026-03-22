@@ -2471,6 +2471,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemFilledLabel => 'Filled';
 
   @override
+  String get designSystemHeaderApiConfigurationTitle => 'API Configuration';
+
+  @override
+  String get designSystemHeaderApiDocumentationLabel => 'API Documentation';
+
+  @override
+  String get designSystemHeaderBackActionLabel => 'Back';
+
+  @override
+  String get designSystemHeaderFigmaDefaultLabel => 'Figma default';
+
+  @override
+  String get designSystemHeaderHelpActionLabel => 'Help';
+
+  @override
+  String get designSystemHeaderLongTitleExample =>
+      'This is a very long page title that should truncate before the action area';
+
+  @override
+  String get designSystemHeaderLongTitleLabel => 'Long title';
+
+  @override
+  String get designSystemHeaderNotificationsActionLabel => 'Notifications';
+
+  @override
+  String get designSystemHeaderSearchActionLabel => 'Search';
+
+  @override
   String get designSystemHorizontalLabel => 'Horizontal';
 
   @override
