@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -28,19 +31,40 @@ class _CalendarPickerOverviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: ListView(
-        children: [
-          _CalendarSection(
-            title: context.messages.designSystemDateCardsTitle,
-            child: const _DateCardStates(),
-          ),
-          const SizedBox(height: 32),
-          _CalendarSection(
-            title: context.messages.designSystemCalendarViewsTitle,
-            child: _InteractiveCalendarViews(initialDate: initialDate),
-          ),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _CalendarSection(
+              title: context.messages.designSystemDateCardsTitle,
+              child: const _DateCardStates(),
+            ),
+            const SizedBox(height: 32),
+            _CalendarSection(
+              title: context.messages.designSystemCalendarViewsTitle,
+              child: _CalendarViewsShowcase(initialDate: initialDate),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _CalendarViewsShowcase extends StatelessWidget {
+  const _CalendarViewsShowcase({this.initialDate});
+
+  final DateTime? initialDate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InteractiveCalendarViews(initialDate: initialDate),
+        const SizedBox(height: 32),
+        _TimeCalendarPickerShowcase(initialDate: initialDate),
+      ],
     );
   }
 }
@@ -350,6 +374,30 @@ class _InteractiveCalendarViewsState extends State<_InteractiveCalendarViews> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TimeCalendarPickerShowcase extends StatelessWidget {
+  const _TimeCalendarPickerShowcase({this.initialDate});
+
+  final DateTime? initialDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final previewDate = initialDate ?? DateTime(2025, 4, 20);
+    final mode = Theme.of(context).brightness == Brightness.dark
+        ? DesignSystemTimeCalendarPickerMode.dark
+        : DesignSystemTimeCalendarPickerMode.light;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DesignSystemInteractiveTimeCalendarPicker(
+        mode: mode,
+        presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+        initialSelectedDate: previewDate,
+        currentDate: DateTime(previewDate.year, previewDate.month, 1),
+      ),
     );
   }
 }

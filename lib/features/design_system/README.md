@@ -24,6 +24,7 @@ This feature contains the standalone Widgetbook-first design system work.
 - Typography showcase
 - Buttons
 - Badges
+- Branding
 - Chips
 - Breadcrumbs
 - Search
@@ -32,6 +33,8 @@ This feature contains the standalone Widgetbook-first design system work.
 - Dropdowns
 - Split buttons
 - Tabs
+- Navigation sidebar
+- Tab bar
 - Calendar picker
 - Progress bar
 - Toggles

@@ -2527,6 +2527,54 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Přepínač';
 
   @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'AI asistent';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Sbalené';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Denní filtr';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Rozbalené';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel =>
+      'Filtrovat podle bloku';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Turistika';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Dovolená';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Přehledy';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Úkoly Lotti';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Můj den';
+
+  @override
+  String get designSystemNavigationNewLabel => 'Nové';
+
+  @override
+  String get designSystemNavigationPlaceholderLabel => 'Zástupný text';
+
+  @override
+  String get designSystemNavigationSidebarSectionTitle =>
+      'Varianty postranního panelu';
+
+  @override
+  String get designSystemNavigationSubComponentsSectionTitle => 'Podkomponenty';
+
+  @override
+  String get designSystemNavigationTabBarSectionTitle =>
+      'Varianty lišty záložek';
+
+  @override
   String get designSystemSearchFilledText => 'Hledání Lotti';
 
   @override
@@ -2550,7 +2598,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemSpinnerPlainLabel => 'Bez pozadí';
 
   @override
-  String get designSystemSpinnerSkeletonLabel => 'Skeleton';
+  String get designSystemSpinnerSkeletonLabel => 'Skelet';
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulz';

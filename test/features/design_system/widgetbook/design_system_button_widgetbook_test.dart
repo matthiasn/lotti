@@ -25,6 +25,9 @@ void main() {
       final avatarComponent = components.singleWhere(
         (component) => component.name == 'Avatars',
       );
+      final brandingComponent = components.singleWhere(
+        (component) => component.name == 'Branding',
+      );
       final badgeComponent = components.singleWhere(
         (component) => component.name == 'Badges',
       );
@@ -52,6 +55,12 @@ void main() {
       final tabsComponent = components.singleWhere(
         (component) => component.name == 'Tabs',
       );
+      final navigationSidebarComponent = components.singleWhere(
+        (component) => component.name == 'Navigation Sidebar',
+      );
+      final navigationTabBarComponent = components.singleWhere(
+        (component) => component.name == 'Tab bar',
+      );
       final calendarPickerComponent = components.singleWhere(
         (component) => component.name == 'Calendar picker',
       );
@@ -77,6 +86,7 @@ void main() {
         'Typography',
         'Buttons',
         'Avatars',
+        'Branding',
         'Badges',
         'Chips',
         'Breadcrumbs',
@@ -86,6 +96,8 @@ void main() {
         'Dropdowns',
         'Split Buttons',
         'Tabs',
+        'Navigation Sidebar',
+        'Tab bar',
         'Calendar picker',
         'Progress bar',
         'Toggle',
@@ -95,6 +107,7 @@ void main() {
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(avatarComponent.useCases.single.name, 'Overview');
+      expect(brandingComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
       expect(breadcrumbsComponent.useCases.single.name, 'Overview');
@@ -104,6 +117,8 @@ void main() {
       expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
+      expect(navigationSidebarComponent.useCases.single.name, 'Overview');
+      expect(navigationTabBarComponent.useCases.single.name, 'Overview');
       expect(calendarPickerComponent.useCases.single.name, 'Overview');
       expect(progressBarComponent.useCases.single.name, 'Overview');
       expect(toggleComponent.useCases.single.name, 'Overview');

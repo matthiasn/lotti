@@ -2549,6 +2549,52 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Radio-Button';
 
   @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'KI-Assistent';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Eingeklappt';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Tagesfilter';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Ausgeklappt';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel => 'Nach Block filtern';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Wandern';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Urlaub';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Einblicke';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Lotti-Aufgaben';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Mein Tag';
+
+  @override
+  String get designSystemNavigationNewLabel => 'Neu';
+
+  @override
+  String get designSystemNavigationPlaceholderLabel => 'Platzhalter';
+
+  @override
+  String get designSystemNavigationSidebarSectionTitle => 'Sidebar-Varianten';
+
+  @override
+  String get designSystemNavigationSubComponentsSectionTitle =>
+      'Unterkomponenten';
+
+  @override
+  String get designSystemNavigationTabBarSectionTitle => 'Tableisten-Varianten';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-Suche';
 
   @override

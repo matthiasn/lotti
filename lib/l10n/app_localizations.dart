@@ -4581,6 +4581,96 @@ abstract class AppLocalizations {
   /// **'Radio button'**
   String get designSystemRadioButtonLabel;
 
+  /// No description provided for @designSystemNavigationAiAssistantSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get designSystemNavigationAiAssistantSectionTitle;
+
+  /// No description provided for @designSystemNavigationCollapsedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapsed'**
+  String get designSystemNavigationCollapsedLabel;
+
+  /// No description provided for @designSystemNavigationDailyFilterSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Filter'**
+  String get designSystemNavigationDailyFilterSectionTitle;
+
+  /// No description provided for @designSystemNavigationExpandedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expanded'**
+  String get designSystemNavigationExpandedLabel;
+
+  /// No description provided for @designSystemNavigationFilterByBlockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by block'**
+  String get designSystemNavigationFilterByBlockLabel;
+
+  /// No description provided for @designSystemNavigationHikingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking'**
+  String get designSystemNavigationHikingLabel;
+
+  /// No description provided for @designSystemNavigationHolidayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get designSystemNavigationHolidayLabel;
+
+  /// No description provided for @designSystemNavigationInsightsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get designSystemNavigationInsightsLabel;
+
+  /// No description provided for @designSystemNavigationLottiTasksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti Tasks'**
+  String get designSystemNavigationLottiTasksLabel;
+
+  /// No description provided for @designSystemNavigationMyDailyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My Daily'**
+  String get designSystemNavigationMyDailyLabel;
+
+  /// No description provided for @designSystemNavigationNewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get designSystemNavigationNewLabel;
+
+  /// No description provided for @designSystemNavigationPlaceholderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholder'**
+  String get designSystemNavigationPlaceholderLabel;
+
+  /// No description provided for @designSystemNavigationSidebarSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sidebar Variants'**
+  String get designSystemNavigationSidebarSectionTitle;
+
+  /// No description provided for @designSystemNavigationSubComponentsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-components'**
+  String get designSystemNavigationSubComponentsSectionTitle;
+
+  /// No description provided for @designSystemNavigationTabBarSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab Bar Variants'**
+  String get designSystemNavigationTabBarSectionTitle;
+
   /// No description provided for @designSystemSearchFilledText.
   ///
   /// In en, this message translates to:
