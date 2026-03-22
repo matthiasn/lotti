@@ -2411,6 +2411,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Calendar Views';
 
   @override
+  String get designSystemCaptionDescriptionSample =>
+      'Removing all users has unpublished this project. Add users to republish.';
+
+  @override
+  String get designSystemCaptionIconLeftLabel => 'Left icon';
+
+  @override
+  String get designSystemCaptionIconTopLabel => 'Top icon';
+
+  @override
+  String get designSystemCaptionNoIconLabel => 'No icon';
+
+  @override
+  String get designSystemCaptionTitleSample => 'Caption title';
+
+  @override
+  String get designSystemCaptionVariantsTitle => 'Caption Variants';
+
+  @override
+  String get designSystemCaptionWithActionsLabel => 'With actions';
+
+  @override
+  String get designSystemCaptionWithoutActionsLabel => 'Without actions';
+
+  @override
   String get designSystemCheckboxLabel => 'Checkbox';
 
   @override

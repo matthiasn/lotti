@@ -2427,6 +2427,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Zobrazení kalendáře';
 
   @override
+  String get designSystemCaptionDescriptionSample =>
+      'Odebrání všech uživatelů zrušilo publikování tohoto projektu. Přidejte uživatele pro opětovné publikování.';
+
+  @override
+  String get designSystemCaptionIconLeftLabel => 'Ikona vlevo';
+
+  @override
+  String get designSystemCaptionIconTopLabel => 'Ikona nahoře';
+
+  @override
+  String get designSystemCaptionNoIconLabel => 'Bez ikony';
+
+  @override
+  String get designSystemCaptionTitleSample => 'Nadpis';
+
+  @override
+  String get designSystemCaptionVariantsTitle => 'Varianty captionů';
+
+  @override
+  String get designSystemCaptionWithActionsLabel => 'S akcemi';
+
+  @override
+  String get designSystemCaptionWithoutActionsLabel => 'Bez akcí';
+
+  @override
   String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
 
   @override

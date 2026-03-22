@@ -4383,6 +4383,54 @@ abstract class AppLocalizations {
   /// **'Calendar Views'**
   String get designSystemCalendarViewsTitle;
 
+  /// No description provided for @designSystemCaptionDescriptionSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing all users has unpublished this project. Add users to republish.'**
+  String get designSystemCaptionDescriptionSample;
+
+  /// No description provided for @designSystemCaptionIconLeftLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Left icon'**
+  String get designSystemCaptionIconLeftLabel;
+
+  /// No description provided for @designSystemCaptionIconTopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Top icon'**
+  String get designSystemCaptionIconTopLabel;
+
+  /// No description provided for @designSystemCaptionNoIconLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No icon'**
+  String get designSystemCaptionNoIconLabel;
+
+  /// No description provided for @designSystemCaptionTitleSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption title'**
+  String get designSystemCaptionTitleSample;
+
+  /// No description provided for @designSystemCaptionVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption Variants'**
+  String get designSystemCaptionVariantsTitle;
+
+  /// No description provided for @designSystemCaptionWithActionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With actions'**
+  String get designSystemCaptionWithActionsLabel;
+
+  /// No description provided for @designSystemCaptionWithoutActionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Without actions'**
+  String get designSystemCaptionWithoutActionsLabel;
+
   /// No description provided for @designSystemCheckboxLabel.
   ///
   /// In en, this message translates to:

@@ -2449,6 +2449,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Kalenderansichten';
 
   @override
+  String get designSystemCaptionDescriptionSample =>
+      'Das Entfernen aller Benutzer hat dieses Projekt zurückgezogen. Füge Benutzer hinzu, um es erneut zu veröffentlichen.';
+
+  @override
+  String get designSystemCaptionIconLeftLabel => 'Symbol links';
+
+  @override
+  String get designSystemCaptionIconTopLabel => 'Symbol oben';
+
+  @override
+  String get designSystemCaptionNoIconLabel => 'Ohne Symbol';
+
+  @override
+  String get designSystemCaptionTitleSample => 'Überschrift';
+
+  @override
+  String get designSystemCaptionVariantsTitle => 'Caption-Varianten';
+
+  @override
+  String get designSystemCaptionWithActionsLabel => 'Mit Aktionen';
+
+  @override
+  String get designSystemCaptionWithoutActionsLabel => 'Ohne Aktionen';
+
+  @override
   String get designSystemCheckboxLabel => 'Checkbox';
 
   @override
