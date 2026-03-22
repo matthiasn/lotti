@@ -232,36 +232,39 @@ class _AccessoryField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return _FrostedSurface(
-      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-      child: SizedBox(
-        width: 324,
-        height: 48,
-        child: Row(
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: 20,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w400,
-                  color: tokens.colors.text.highEmphasis,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 324),
+      child: _FrostedSurface(
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+        child: SizedBox(
+          width: double.infinity,
+          height: tokens.spacing.step9,
+          child: Row(
+            children: [
+              Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
+                    color: tokens.colors.text.highEmphasis,
+                  ),
                 ),
               ),
-            ),
-            Icon(
-              Icons.close_rounded,
-              size: 20,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ],
+              Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );

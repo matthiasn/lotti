@@ -25,15 +25,18 @@ class _BrandingOverviewPage extends StatelessWidget {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step6),
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 360, minHeight: 180),
-          padding: EdgeInsets.all(tokens.spacing.step7),
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
-            borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360, minHeight: 180),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(tokens.spacing.step7),
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level02,
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+            ),
+            alignment: Alignment.center,
+            child: const DesignSystemBrandLogo(height: 74),
           ),
-          alignment: Alignment.center,
-          child: const DesignSystemBrandLogo(height: 74),
         ),
       ),
     );
