@@ -217,8 +217,10 @@ class _MonthCalendarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = _TimeCalendarPalette.fromMode(mode);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final firstDayOfWeek =
+        MaterialLocalizations.of(context).firstDayOfWeekIndex;
     final visibleLabel = DateFormat.yMMMM(localeTag).format(visibleMonth);
-    final weeks = _buildMonthGrid(visibleMonth);
+    final weeks = _buildMonthGrid(visibleMonth, firstDayOfWeek);
 
     return _CalendarMaterialCard(
       palette: palette,
@@ -236,7 +238,7 @@ class _MonthCalendarCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            children: _weekdayLabels(localeTag).map((label) {
+            children: _weekdayLabels(localeTag, firstDayOfWeek).map((label) {
               return SizedBox(
                 width: 48,
                 child: Center(
@@ -674,10 +676,10 @@ class _TimeCalendarPalette {
   final Color accent;
 }
 
-List<List<int?>> _buildMonthGrid(DateTime month) {
+List<List<int?>> _buildMonthGrid(DateTime month, int firstDayOfWeekIndex) {
   final firstDay = DateTime(month.year, month.month);
   final daysInMonth = _daysInMonth(month);
-  final offset = firstDay.weekday % 7;
+  final offset = (firstDay.weekday % 7 - firstDayOfWeekIndex + 7) % 7;
   final cells = <int?>[
     ...List<int?>.filled(offset, null),
     ...List<int?>.generate(daysInMonth, (index) => index + 1),
@@ -693,13 +695,14 @@ List<List<int?>> _buildMonthGrid(DateTime month) {
   ];
 }
 
-List<String> _weekdayLabels(String localeTag) {
+List<String> _weekdayLabels(String localeTag, int firstDayOfWeekIndex) {
   final sunday = DateTime(2025, 4, 6);
 
   return List.generate(7, (index) {
+    final dayIndex = (firstDayOfWeekIndex + index) % 7;
     final label = DateFormat.E(
       localeTag,
-    ).format(sunday.add(Duration(days: index)));
+    ).format(sunday.add(Duration(days: dayIndex)));
     return label.substring(0, math.min(3, label.length)).toUpperCase();
   });
 }

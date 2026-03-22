@@ -2563,7 +2563,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemNavigationExpandedLabel => 'Extins';
 
   @override
-  String get designSystemNavigationFilterByBlockLabel => 'Filtrați după bloc';
+  String get designSystemNavigationFilterByBlockLabel => 'Filtrează după bloc';
 
   @override
   String get designSystemNavigationHikingLabel => 'Drumeție';

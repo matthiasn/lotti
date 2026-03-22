@@ -2609,7 +2609,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemNavigationHolidayLabel => 'Vacaciones';
 
   @override
-  String get designSystemNavigationInsightsLabel => 'Insights';
+  String get designSystemNavigationInsightsLabel => 'Paneles';
 
   @override
   String get designSystemNavigationLottiTasksLabel => 'Tareas de Lotti';
