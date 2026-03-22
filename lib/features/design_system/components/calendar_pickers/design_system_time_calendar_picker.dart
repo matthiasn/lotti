@@ -151,30 +151,56 @@ class _DesignSystemInteractiveTimeCalendarPickerState
   }
 
   Future<void> _showMonthDialog() async {
-    final nextMonth = await showDialog<DateTime>(
+    final nextMonth = await showGeneralDialog<DateTime>(
       context: context,
+      barrierDismissible: true,
+      useRootNavigator: false,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      transitionDuration: const Duration(milliseconds: 150),
       barrierColor: Colors.black.withValues(
         alpha: widget.mode == DesignSystemTimeCalendarPickerMode.dark
             ? 0.24
             : 0.16,
       ),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: _TimeCalendarGeometry.fromTokens(
-          context.designTokens,
-        ).dialogInsetPadding,
-        child: Center(
-          child: DesignSystemTimeCalendarPicker(
-            mode: widget.mode,
-            presentation:
-                DesignSystemTimeCalendarPickerPresentation.monthDialog,
-            visibleMonth: _visibleMonth,
-            selectedDate: _selectedDate,
-            currentDate: _dateOnly(widget.currentDate),
-            onMonthPressed: Navigator.of(context).pop,
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        final geometry = _TimeCalendarGeometry.fromTokens(
+          dialogContext.designTokens,
+        );
+
+        return SizedBox.expand(
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  child: const SizedBox.expand(),
+                ),
+                Center(
+                  child: Padding(
+                    padding: geometry.dialogInsetPadding,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.deferToChild,
+                      onTap: () {},
+                      child: DesignSystemTimeCalendarPicker(
+                        mode: widget.mode,
+                        presentation: DesignSystemTimeCalendarPickerPresentation
+                            .monthDialog,
+                        visibleMonth: _visibleMonth,
+                        selectedDate: _selectedDate,
+                        currentDate: _dateOnly(widget.currentDate),
+                        onMonthPressed: Navigator.of(dialogContext).pop,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
 
     if (nextMonth == null || !mounted) {
@@ -524,12 +550,6 @@ class _CalendarMaterialCard extends StatelessWidget {
                 child: ColoredBox(color: palette.surfaceBase),
               ),
             ),
-            if (palette.surfaceOverlay != null)
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: palette.surfaceOverlay),
-                ),
-              ),
             Padding(
               padding: padding ?? geometry.contentPadding,
               child: child,
@@ -780,7 +800,6 @@ class _TimeCalendarPalette {
     required this.lowEmphasis,
     required this.accent,
     required this.onAccent,
-    this.surfaceOverlay,
   });
 
   factory _TimeCalendarPalette.fromMode(
@@ -804,11 +823,14 @@ class _TimeCalendarPalette {
       ),
       DesignSystemTimeCalendarPickerMode.dark => _TimeCalendarPalette(
         mode: mode,
-        surfaceBase: tokens.colors.background.level01.withValues(alpha: 0.94),
-        // The MCP component uses a color-dodge material layer over the dark
-        // sidebar. Using the tokenized dark surface highlight keeps the card
-        // slightly lighter than the surrounding `background.level02`.
-        surfaceOverlay: tokens.colors.surface.enabled,
+        // The dark sidebar instance in Figma sits on `background.level02`
+        // and uses a lifted material treatment, so the card should read
+        // slightly brighter than the shell instead of falling back to the
+        // raw `background.level01` token.
+        surfaceBase: Color.alphaBlend(
+          tokens.colors.surface.enabled,
+          tokens.colors.background.level02,
+        ),
         surfaceBlurSigma: 24,
         shadow: Colors.black.withValues(alpha: 0.10),
         highEmphasis: tokens.colors.text.highEmphasis,
@@ -821,7 +843,6 @@ class _TimeCalendarPalette {
 
   final DesignSystemTimeCalendarPickerMode mode;
   final Color surfaceBase;
-  final Color? surfaceOverlay;
   final double surfaceBlurSigma;
   final Color shadow;
   final Color highEmphasis;

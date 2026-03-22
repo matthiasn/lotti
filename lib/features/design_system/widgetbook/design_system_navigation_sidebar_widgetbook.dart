@@ -151,6 +151,8 @@ class _ExpandedSidebarContent extends StatelessWidget {
   const _ExpandedSidebarContent({required this.palette});
 
   final _SidebarPalette palette;
+  static const _topActionButtonWidth = 111.0;
+  static const _topActionButtonHeight = 44.0;
 
   @override
   Widget build(BuildContext context) {
@@ -166,13 +168,18 @@ class _ExpandedSidebarContent extends StatelessWidget {
           width: 288,
           height: 56,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              DesignSystemButton(
-                label: context.messages.designSystemNavigationNewLabel,
-                size: DesignSystemButtonSize.medium,
-                leadingIcon: Icons.add_rounded,
-                trailingIcon: Icons.keyboard_arrow_down_rounded,
-                onPressed: widgetbookNoop,
+              SizedBox(
+                width: _topActionButtonWidth,
+                height: _topActionButtonHeight,
+                child: DesignSystemButton(
+                  label: context.messages.designSystemNavigationNewLabel,
+                  size: DesignSystemButtonSize.medium,
+                  leadingIcon: Icons.add_rounded,
+                  trailingIcon: Icons.keyboard_arrow_down_rounded,
+                  onPressed: widgetbookNoop,
+                ),
               ),
               const Positioned(
                 top: 0,
@@ -546,89 +553,39 @@ class _AiAssistantFab extends StatelessWidget {
 
   final int variant;
 
+  static const _buttonSize = 56.0;
+  static const _assetExtent = 108.0;
+
   @override
   Widget build(BuildContext context) {
-    final icon = switch (variant) {
-      1 => Icons.auto_awesome_rounded,
-      _ => Icons.auto_awesome_mosaic_rounded,
+    final assetName = switch (variant) {
+      1 => 'assets/design_system/ai_assistant_variant_1.png',
+      _ => 'assets/design_system/ai_assistant_variant_2.png',
     };
 
     return Semantics(
       button: true,
       label: context.messages.designSystemNavigationAiAssistantSectionTitle,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: widgetbookNoop,
-              child: Ink(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const SweepGradient(
-                    colors: [
-                      Color(0xFF7300FF),
-                      Color(0xFF0066FF),
-                      Color(0xFF00E6CC),
-                      Color(0xFFFF66B3),
-                      Color(0xFFFF9900),
-                      Color(0xFFE60080),
-                      Color(0xFF7300FF),
-                    ],
-                  ),
-                  border: Border.all(
-                    color: context.designTokens.colors.decorative.level01,
-                    width: 2,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x594D33CC),
-                      blurRadius: 16,
-                      offset: Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Color(0x264D33CC),
-                      blurRadius: 32,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(icon, color: Colors.white, size: 20),
-                ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widgetbookNoop,
+        child: SizedBox.square(
+          dimension: _buttonSize,
+          child: OverflowBox(
+            minWidth: _assetExtent,
+            maxWidth: _assetExtent,
+            minHeight: _assetExtent,
+            maxHeight: _assetExtent,
+            child: ExcludeSemantics(
+              child: Image.asset(
+                assetName,
+                width: _assetExtent,
+                height: _assetExtent,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
             ),
           ),
-          const Positioned(
-            top: 0,
-            right: 0,
-            child: _AiAssistantBadge(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiAssistantBadge extends StatelessWidget {
-  const _AiAssistantBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFFFF0500),
-            Color(0xFF990300),
-          ],
         ),
       ),
     );

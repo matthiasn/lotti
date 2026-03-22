@@ -138,5 +138,36 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'dismisses the month dialog when tapping outside in widgetbook',
+      (
+        tester,
+      ) async {
+        await pumpOverview(tester);
+
+        final monthLabel = find.descendant(
+          of: find.byType(DesignSystemTimeCalendarPicker),
+          matching: find.text('January 2026'),
+        );
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsOneWidget);
+        expect(monthLabel, findsOneWidget);
+
+        await tester.ensureVisible(monthLabel);
+        await tester.pumpAndSettle();
+        await tester.tap(monthLabel);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsNWidgets(2));
+
+        await tester.tapAt(const Offset(8, 8));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.byType(DesignSystemTimeCalendarPicker), findsOneWidget);
+      },
+    );
   });
 }
