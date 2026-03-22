@@ -2366,6 +2366,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activated';
 
   @override
+  String get designSystemAvatarAwayLabel => 'Away';
+
+  @override
+  String get designSystemAvatarBusyLabel => 'Busy';
+
+  @override
+  String get designSystemAvatarConnectedLabel => 'Connected';
+
+  @override
+  String get designSystemAvatarEnabledLabel => 'Enabled';
+
+  @override
+  String get designSystemAvatarSizeMatrixTitle => 'Size Matrix';
+
+  @override
+  String get designSystemAvatarStatusMatrixTitle => 'Status Matrix';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override

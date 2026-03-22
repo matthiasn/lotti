@@ -2382,6 +2382,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override
+  String get designSystemAvatarAwayLabel => 'Nepřítomen';
+
+  @override
+  String get designSystemAvatarBusyLabel => 'Zaneprázdněn';
+
+  @override
+  String get designSystemAvatarConnectedLabel => 'Připojen';
+
+  @override
+  String get designSystemAvatarEnabledLabel => 'Aktivní';
+
+  @override
+  String get designSystemAvatarSizeMatrixTitle => 'Matice velikostí';
+
+  @override
+  String get designSystemAvatarStatusMatrixTitle => 'Matice stavů';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override

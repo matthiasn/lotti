@@ -22,6 +22,9 @@ void main() {
       final buttonComponent = components.singleWhere(
         (component) => component.name == 'Buttons',
       );
+      final avatarComponent = components.singleWhere(
+        (component) => component.name == 'Avatars',
+      );
       final badgeComponent = components.singleWhere(
         (component) => component.name == 'Badges',
       );
@@ -70,6 +73,7 @@ void main() {
       expect(components.map((component) => component.name), [
         'Typography',
         'Buttons',
+        'Avatars',
         'Badges',
         'Chips',
         'Breadcrumbs',
@@ -86,6 +90,7 @@ void main() {
         'Checkbox',
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
+      expect(avatarComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
       expect(breadcrumbsComponent.useCases.single.name, 'Overview');
