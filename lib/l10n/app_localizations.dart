@@ -4617,6 +4617,48 @@ abstract class AppLocalizations {
   /// **'Open {label} options'**
   String designSystemSplitButtonDropdownSemantics(String label);
 
+  /// No description provided for @designSystemSpinnerPlainLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain'**
+  String get designSystemSpinnerPlainLabel;
+
+  /// No description provided for @designSystemSpinnerSkeletonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Skeleton'**
+  String get designSystemSpinnerSkeletonLabel;
+
+  /// No description provided for @designSystemSpinnerSkeletonPulseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulse'**
+  String get designSystemSpinnerSkeletonPulseLabel;
+
+  /// No description provided for @designSystemSpinnerSkeletonWaveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wave'**
+  String get designSystemSpinnerSkeletonWaveLabel;
+
+  /// No description provided for @designSystemSpinnerSpinnersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spinners'**
+  String get designSystemSpinnerSpinnersTitle;
+
+  /// No description provided for @designSystemSpinnerTrackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With track'**
+  String get designSystemSpinnerTrackLabel;
+
+  /// No description provided for @designSystemSpinnerSkeletonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skeletons'**
+  String get designSystemSpinnerSkeletonsTitle;
+
   /// No description provided for @designSystemStateMatrixTitle.
   ///
   /// In en, this message translates to:

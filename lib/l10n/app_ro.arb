@@ -1118,6 +1118,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Simplu",
+  "designSystemSpinnerSkeletonLabel": "Schelet",
+  "designSystemSpinnerSkeletonPulseLabel": "Puls",
+  "designSystemSpinnerSkeletonWaveLabel": "Val",
+  "designSystemSpinnerSkeletonsTitle": "Schelete",
+  "designSystemSpinnerSpinnersTitle": "Spinnere",
+  "designSystemSpinnerTrackLabel": "Cu pistă",
   "designSystemStateMatrixTitle": "Matrice de stări",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabPendingLabel": "În așteptare",

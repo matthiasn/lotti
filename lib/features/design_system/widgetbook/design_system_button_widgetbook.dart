@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_w
 import 'package:lotti/features/design_system/widgetbook/design_system_progress_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_search_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_spinner_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toast_widgetbook.dart';
@@ -47,6 +48,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       buildDesignSystemToggleWidgetbookComponent(),
       buildDesignSystemRadioButtonWidgetbookComponent(),
       buildDesignSystemCheckboxWidgetbookComponent(),
+      buildDesignSystemSpinnerWidgetbookComponent(),
     ],
   );
 }

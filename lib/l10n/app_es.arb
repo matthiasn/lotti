@@ -1118,6 +1118,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Sin fondo",
+  "designSystemSpinnerSkeletonLabel": "Esqueleto",
+  "designSystemSpinnerSkeletonPulseLabel": "Pulso",
+  "designSystemSpinnerSkeletonWaveLabel": "Onda",
+  "designSystemSpinnerSkeletonsTitle": "Esqueletos",
+  "designSystemSpinnerSpinnersTitle": "Spinners",
+  "designSystemSpinnerTrackLabel": "Con pista",
   "designSystemStateMatrixTitle": "Matriz de estados",
   "designSystemSuccessLabel": "Éxito",
   "designSystemTabPendingLabel": "Pendiente",

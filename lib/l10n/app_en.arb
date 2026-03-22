@@ -1268,6 +1268,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Plain",
+  "designSystemSpinnerSkeletonLabel": "Skeleton",
+  "designSystemSpinnerSkeletonPulseLabel": "Pulse",
+  "designSystemSpinnerSkeletonWaveLabel": "Wave",
+  "designSystemSpinnerSpinnersTitle": "Spinners",
+  "designSystemSpinnerTrackLabel": "With track",
+  "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemStateMatrixTitle": "State Matrix",
   "designSystemSuccessLabel": "Success",
   "designSystemTabPendingLabel": "Pending",

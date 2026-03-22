@@ -2604,6 +2604,27 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get designSystemSpinnerPlainLabel => 'Simple';
+
+  @override
+  String get designSystemSpinnerSkeletonLabel => 'Squelette';
+
+  @override
+  String get designSystemSpinnerSkeletonPulseLabel => 'Pulsation';
+
+  @override
+  String get designSystemSpinnerSkeletonWaveLabel => 'Vague';
+
+  @override
+  String get designSystemSpinnerSpinnersTitle => 'Spinners';
+
+  @override
+  String get designSystemSpinnerTrackLabel => 'Avec piste';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Squelettes';
+
+  @override
   String get designSystemStateMatrixTitle => 'Matrice d\'états';
 
   @override

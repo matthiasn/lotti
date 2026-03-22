@@ -923,6 +923,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Bez pozadí",
+  "designSystemSpinnerSkeletonLabel": "Skelet",
+  "designSystemSpinnerSkeletonPulseLabel": "Pulz",
+  "designSystemSpinnerSkeletonWaveLabel": "Vlna",
+  "designSystemSpinnerSkeletonsTitle": "Skelety",
+  "designSystemSpinnerSpinnersTitle": "Spinnery",
+  "designSystemSpinnerTrackLabel": "Se stopou",
   "designSystemStateMatrixTitle": "Matice stavů",
   "designSystemSuccessLabel": "Úspěch",
   "designSystemTabPendingLabel": "Čekající",

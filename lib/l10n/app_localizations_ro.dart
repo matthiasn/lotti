@@ -2571,6 +2571,27 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get designSystemSpinnerPlainLabel => 'Simplu';
+
+  @override
+  String get designSystemSpinnerSkeletonLabel => 'Schelet';
+
+  @override
+  String get designSystemSpinnerSkeletonPulseLabel => 'Puls';
+
+  @override
+  String get designSystemSpinnerSkeletonWaveLabel => 'Val';
+
+  @override
+  String get designSystemSpinnerSpinnersTitle => 'Spinnere';
+
+  @override
+  String get designSystemSpinnerTrackLabel => 'Cu pistă';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Schelete';
+
+  @override
   String get designSystemStateMatrixTitle => 'Matrice de stări';
 
   @override
