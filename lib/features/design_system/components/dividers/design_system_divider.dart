@@ -49,6 +49,8 @@ class _HorizontalDivider extends StatelessWidget {
     this.length,
   });
 
+  static const double _defaultUnboundedWidth = 320;
+
   final Color color;
   final String? label;
   final double? length;
@@ -62,7 +64,7 @@ class _HorizontalDivider extends StatelessWidget {
       builder: (context, constraints) {
         final resolvedWidth = constraints.hasBoundedWidth
             ? constraints.maxWidth
-            : 320.0;
+            : _defaultUnboundedWidth;
         return _buildContent(context, resolvedWidth);
       },
     );

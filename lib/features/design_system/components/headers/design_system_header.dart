@@ -126,21 +126,14 @@ class _TrailingCluster extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing.step3;
-    final children = <Widget>[];
+    final items = <Widget>[...actions, ?avatar];
+    final children = <Widget>[?leadingGap];
 
-    if (leadingGap case final leadingGap?) {
-      children.add(leadingGap);
-    }
-
-    for (var index = 0; index < actions.length; index++) {
-      children.add(actions[index]);
-      if (index != actions.length - 1 || avatar != null) {
+    for (var index = 0; index < items.length; index++) {
+      children.add(items[index]);
+      if (index < items.length - 1) {
         children.add(SizedBox(width: spacing));
       }
-    }
-
-    if (avatar != null) {
-      children.add(avatar!);
     }
 
     return Row(
