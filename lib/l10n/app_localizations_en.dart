@@ -2513,6 +2513,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get designSystemSpinnerPlainLabel => 'Plain';
+
+  @override
+  String get designSystemSpinnerSkeletonLabel => 'Skeleton';
+
+  @override
+  String get designSystemSpinnerSkeletonPulseLabel => 'Pulse';
+
+  @override
+  String get designSystemSpinnerSkeletonWaveLabel => 'Wave';
+
+  @override
+  String get designSystemSpinnerSpinnersTitle => 'Spinners';
+
+  @override
+  String get designSystemSpinnerTrackLabel => 'With track';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Skeletons';
+
+  @override
   String get designSystemStateMatrixTitle => 'State Matrix';
 
   @override

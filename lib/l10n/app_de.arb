@@ -1112,6 +1112,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Ohne Spur",
+  "designSystemSpinnerSkeletonLabel": "Skeleton",
+  "designSystemSpinnerSkeletonPulseLabel": "Puls",
+  "designSystemSpinnerSkeletonWaveLabel": "Welle",
+  "designSystemSpinnerSkeletonsTitle": "Skelette",
+  "designSystemSpinnerSpinnersTitle": "Spinner",
+  "designSystemSpinnerTrackLabel": "Mit Spur",
   "designSystemStateMatrixTitle": "Statusmatrix",
   "designSystemSuccessLabel": "Erfolg",
   "designSystemTabPendingLabel": "Ausstehend",

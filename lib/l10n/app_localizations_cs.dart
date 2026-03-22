@@ -2529,6 +2529,27 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get designSystemSpinnerPlainLabel => 'Bez pozadí';
+
+  @override
+  String get designSystemSpinnerSkeletonLabel => 'Skeleton';
+
+  @override
+  String get designSystemSpinnerSkeletonPulseLabel => 'Pulz';
+
+  @override
+  String get designSystemSpinnerSkeletonWaveLabel => 'Vlna';
+
+  @override
+  String get designSystemSpinnerSpinnersTitle => 'Spinnery';
+
+  @override
+  String get designSystemSpinnerTrackLabel => 'Se stopou';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Skelety';
+
+  @override
   String get designSystemStateMatrixTitle => 'Matice stavů';
 
   @override

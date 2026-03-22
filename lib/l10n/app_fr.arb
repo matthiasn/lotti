@@ -1112,6 +1112,13 @@
       }
     }
   },
+  "designSystemSpinnerPlainLabel": "Simple",
+  "designSystemSpinnerSkeletonLabel": "Squelette",
+  "designSystemSpinnerSkeletonPulseLabel": "Pulsation",
+  "designSystemSpinnerSkeletonWaveLabel": "Vague",
+  "designSystemSpinnerSkeletonsTitle": "Squelettes",
+  "designSystemSpinnerSpinnersTitle": "Spinners",
+  "designSystemSpinnerTrackLabel": "Avec piste",
   "designSystemStateMatrixTitle": "Matrice d'états",
   "designSystemSuccessLabel": "Succès",
   "designSystemTabPendingLabel": "En attente",
