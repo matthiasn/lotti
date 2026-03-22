@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 enum DesignSystemTimeCalendarPickerMode { light, dark }
 
@@ -10,6 +11,109 @@ enum DesignSystemTimeCalendarPickerPresentation {
   regular,
   compact,
   monthDialog,
+}
+
+@immutable
+class _TimeCalendarGeometry {
+  const _TimeCalendarGeometry({
+    required this.dialogInsetPadding,
+    required this.compactWidth,
+    required this.compactHeight,
+    required this.cardWidth,
+    required this.cardRadius,
+    required this.cardShadowBlur,
+    required this.cardShadowOffsetY,
+    required this.contentPadding,
+    required this.monthDialogPadding,
+    required this.headerHeight,
+    required this.sectionGap,
+    required this.labelDisclosureGap,
+    required this.labelTapRadius,
+    required this.headerIconClusterWidth,
+    required this.headerIconSize,
+    required this.headerIconConstraint,
+    required this.headerIconSplashRadius,
+    required this.weekdayColumnWidth,
+    required this.dayCellWidth,
+    required this.dayCellHeight,
+    required this.selectedDayDiameter,
+    required this.selectedDayRadius,
+    required this.monthButtonWidth,
+    required this.monthButtonHeight,
+    required this.monthButtonRadius,
+  });
+
+  factory _TimeCalendarGeometry.fromTokens(DsTokens tokens) {
+    final cardRadius = tokens.radii.m + (tokens.spacing.step1 / 2);
+    final cardWidth =
+        (7 * tokens.spacing.step9) +
+        (tokens.spacing.step5 * 2) +
+        tokens.spacing.step1;
+
+    return _TimeCalendarGeometry(
+      dialogInsetPadding: EdgeInsets.all(tokens.spacing.step6),
+      compactWidth: 288,
+      compactHeight: 256,
+      cardWidth: cardWidth,
+      cardRadius: cardRadius,
+      cardShadowBlur: 60,
+      cardShadowOffsetY: 10,
+      contentPadding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+      ),
+      monthDialogPadding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+      ),
+      headerHeight: tokens.spacing.step9,
+      sectionGap: tokens.spacing.step3,
+      labelDisclosureGap: tokens.spacing.step2,
+      labelTapRadius: tokens.radii.badgesPills,
+      headerIconClusterWidth: tokens.spacing.step10 + tokens.spacing.step2,
+      headerIconSize: 28,
+      headerIconConstraint: tokens.spacing.step9,
+      headerIconSplashRadius: tokens.spacing.step6,
+      weekdayColumnWidth: tokens.spacing.step9,
+      dayCellWidth: tokens.spacing.step9,
+      dayCellHeight: tokens.spacing.step9,
+      selectedDayDiameter: tokens.spacing.step8,
+      selectedDayRadius: tokens.spacing.step6 - tokens.spacing.step1,
+      monthButtonWidth: (cardWidth - (tokens.spacing.step5 * 2)) / 4,
+      monthButtonHeight: tokens.spacing.step11 - tokens.spacing.step1,
+      monthButtonRadius: tokens.radii.l,
+    );
+  }
+
+  final EdgeInsets dialogInsetPadding;
+  final double compactWidth;
+  final double compactHeight;
+  final double cardWidth;
+  final double cardRadius;
+  final double cardShadowBlur;
+  final double cardShadowOffsetY;
+  final EdgeInsets contentPadding;
+  final EdgeInsets monthDialogPadding;
+  final double headerHeight;
+  final double sectionGap;
+  final double labelDisclosureGap;
+  final double labelTapRadius;
+  final double headerIconClusterWidth;
+  final double headerIconSize;
+  final double headerIconConstraint;
+  final double headerIconSplashRadius;
+  final double weekdayColumnWidth;
+  final double dayCellWidth;
+  final double dayCellHeight;
+  final double selectedDayDiameter;
+  final double selectedDayRadius;
+  final double monthButtonWidth;
+  final double monthButtonHeight;
+  final double monthButtonRadius;
 }
 
 class DesignSystemInteractiveTimeCalendarPicker extends StatefulWidget {
@@ -56,7 +160,9 @@ class _DesignSystemInteractiveTimeCalendarPickerState
       ),
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(24),
+        insetPadding: _TimeCalendarGeometry.fromTokens(
+          context.designTokens,
+        ).dialogInsetPadding,
         child: Center(
           child: DesignSystemTimeCalendarPicker(
             mode: widget.mode,
@@ -150,6 +256,8 @@ class DesignSystemTimeCalendarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
+
     switch (presentation) {
       case DesignSystemTimeCalendarPickerPresentation.regular:
         return _MonthCalendarCard(
@@ -164,8 +272,8 @@ class DesignSystemTimeCalendarPicker extends StatelessWidget {
         );
       case DesignSystemTimeCalendarPickerPresentation.compact:
         return SizedBox(
-          width: 288,
-          height: 256,
+          width: geometry.compactWidth,
+          height: geometry.compactHeight,
           child: FittedBox(
             alignment: Alignment.topLeft,
             fit: BoxFit.scaleDown,
@@ -216,31 +324,35 @@ class _MonthCalendarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _TimeCalendarPalette.fromMode(mode);
+    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final firstDayOfWeek =
-        MaterialLocalizations.of(context).firstDayOfWeekIndex;
+    final firstDayOfWeek = MaterialLocalizations.of(
+      context,
+    ).firstDayOfWeekIndex;
     final visibleLabel = DateFormat.yMMMM(localeTag).format(visibleMonth);
     final weeks = _buildMonthGrid(visibleMonth, firstDayOfWeek);
 
     return _CalendarMaterialCard(
       palette: palette,
+      geometry: geometry,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MonthHeader(
             palette: palette,
+            geometry: geometry,
             label: visibleLabel,
             showDisclosure: true,
             onLabelPressed: onMonthYearPressed,
             onPreviousPressed: onPreviousPressed,
             onNextPressed: onNextPressed,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: geometry.sectionGap),
           Row(
             children: _weekdayLabels(localeTag, firstDayOfWeek).map((label) {
               return SizedBox(
-                width: 48,
+                width: geometry.weekdayColumnWidth,
                 child: Center(
                   child: Text(
                     label,
@@ -254,13 +366,16 @@ class _MonthCalendarCard extends StatelessWidget {
               );
             }).toList(),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: geometry.sectionGap),
           for (final week in weeks)
             Row(
               children: [
                 for (final day in week)
                   if (day == null)
-                    const SizedBox(width: 48, height: 44)
+                    SizedBox(
+                      width: geometry.dayCellWidth,
+                      height: geometry.dayCellHeight,
+                    )
                   else
                     Builder(
                       builder: (context) {
@@ -318,6 +433,7 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
   @override
   Widget build(BuildContext context) {
     final palette = _TimeCalendarPalette.fromMode(widget.mode);
+    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final months = List.generate(
       12,
@@ -327,19 +443,21 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
 
     return _CalendarMaterialCard(
       palette: palette,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      geometry: geometry,
+      padding: geometry.monthDialogPadding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MonthHeader(
             palette: palette,
+            geometry: geometry,
             label: '$_visibleYear',
             showDisclosure: false,
             onPreviousPressed: () => setState(() => _visibleYear -= 1),
             onNextPressed: () => setState(() => _visibleYear += 1),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: context.designTokens.spacing.step4),
           for (var row = 0; row < 3; row++)
             Row(
               children: [
@@ -369,30 +487,32 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
 class _CalendarMaterialCard extends StatelessWidget {
   const _CalendarMaterialCard({
     required this.palette,
+    required this.geometry,
     required this.child,
-    this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 12),
+    this.padding,
   });
 
   final _TimeCalendarPalette palette;
-  final EdgeInsets padding;
+  final _TimeCalendarGeometry geometry;
+  final EdgeInsets? padding;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 370,
+      width: geometry.cardWidth,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(geometry.cardRadius),
         boxShadow: [
           BoxShadow(
             color: palette.shadow,
-            blurRadius: 60,
-            offset: const Offset(0, 10),
+            blurRadius: geometry.cardShadowBlur,
+            offset: Offset(0, geometry.cardShadowOffsetY),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(geometry.cardRadius),
         child: Stack(
           children: [
             Positioned.fill(
@@ -411,7 +531,7 @@ class _CalendarMaterialCard extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: padding,
+              padding: padding ?? geometry.contentPadding,
               child: child,
             ),
           ],
@@ -424,6 +544,7 @@ class _CalendarMaterialCard extends StatelessWidget {
 class _MonthHeader extends StatelessWidget {
   const _MonthHeader({
     required this.palette,
+    required this.geometry,
     required this.label,
     required this.showDisclosure,
     this.onLabelPressed,
@@ -432,6 +553,7 @@ class _MonthHeader extends StatelessWidget {
   });
 
   final _TimeCalendarPalette palette;
+  final _TimeCalendarGeometry geometry;
   final String label;
   final bool showDisclosure;
   final VoidCallback? onLabelPressed;
@@ -456,7 +578,7 @@ class _MonthHeader extends StatelessWidget {
           ),
         ),
         if (showDisclosure) ...[
-          const SizedBox(width: 4),
+          SizedBox(width: geometry.labelDisclosureGap),
           Icon(
             Icons.chevron_right_rounded,
             size: 18,
@@ -467,7 +589,7 @@ class _MonthHeader extends StatelessWidget {
     );
 
     return SizedBox(
-      height: 40,
+      height: geometry.headerHeight,
       child: Row(
         children: [
           Expanded(
@@ -475,28 +597,37 @@ class _MonthHeader extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: onLabelPressed == null
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        vertical: context.designTokens.spacing.step3,
+                      ),
                       child: labelWidget,
                     )
                   : InkWell(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(
+                        geometry.labelTapRadius,
+                      ),
                       onTap: onLabelPressed,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: EdgeInsets.symmetric(
+                          vertical: context.designTokens.spacing.step3,
+                        ),
                         child: labelWidget,
                       ),
                     ),
             ),
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               _HeaderIconButton(
+                geometry: geometry,
                 icon: Icons.chevron_left_rounded,
                 color: palette.accent,
                 onPressed: onPreviousPressed,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: context.designTokens.spacing.step1),
               _HeaderIconButton(
+                geometry: geometry,
                 icon: Icons.chevron_right_rounded,
                 color: palette.accent,
                 onPressed: onNextPressed,
@@ -511,11 +642,13 @@ class _MonthHeader extends StatelessWidget {
 
 class _HeaderIconButton extends StatelessWidget {
   const _HeaderIconButton({
+    required this.geometry,
     required this.icon,
     required this.color,
     this.onPressed,
   });
 
+  final _TimeCalendarGeometry geometry;
   final IconData icon;
   final Color color;
   final VoidCallback? onPressed;
@@ -524,10 +657,13 @@ class _HeaderIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 24, height: 24),
-      splashRadius: 16,
+      constraints: BoxConstraints.tightFor(
+        width: geometry.headerIconConstraint,
+        height: geometry.headerIconConstraint,
+      ),
+      splashRadius: geometry.headerIconSplashRadius,
       onPressed: onPressed,
-      icon: Icon(icon, size: 28, color: color),
+      icon: Icon(icon, size: geometry.headerIconSize, color: color),
     );
   }
 }
@@ -549,37 +685,43 @@ class _CalendarDayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
       fontSize: 16,
       fontWeight: FontWeight.w400,
       color: switch ((isSelected, isCurrentDay, palette.mode)) {
-        (true, _, DesignSystemTimeCalendarPickerMode.light) => Colors.white,
-        (true, _, DesignSystemTimeCalendarPickerMode.dark) => const Color(
-          0xFF0E0E0E,
-        ),
+        (true, _, _) => palette.onAccent,
         (_, true, _) => palette.accent,
         _ => palette.highEmphasis,
       },
     );
 
     return SizedBox(
-      width: 48,
-      height: 44,
+      width: geometry.dayCellWidth,
+      height: geometry.dayCellHeight,
       child: Center(
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(geometry.selectedDayRadius),
             onTap: onPressed,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected ? palette.accent : Colors.transparent,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: geometry.dayCellWidth,
+                minHeight: geometry.dayCellHeight,
               ),
-              alignment: Alignment.center,
-              child: Text(label, style: baseStyle),
+              child: Center(
+                child: Container(
+                  width: geometry.selectedDayDiameter,
+                  height: geometry.selectedDayDiameter,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? palette.accent : Colors.transparent,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(label, style: baseStyle),
+                ),
+              ),
             ),
           ),
         ),
@@ -603,13 +745,14 @@ class _MonthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     return SizedBox(
-      width: 84.5,
-      height: 78,
+      width: geometry.monthButtonWidth,
+      height: geometry.monthButtonHeight,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(geometry.monthButtonRadius),
           onTap: onPressed,
           child: Center(
             child: Text(
@@ -636,32 +779,42 @@ class _TimeCalendarPalette {
     required this.highEmphasis,
     required this.lowEmphasis,
     required this.accent,
+    required this.onAccent,
     this.surfaceOverlay,
   });
 
   factory _TimeCalendarPalette.fromMode(
     DesignSystemTimeCalendarPickerMode mode,
   ) {
+    final tokens = switch (mode) {
+      DesignSystemTimeCalendarPickerMode.light => dsTokensLight,
+      DesignSystemTimeCalendarPickerMode.dark => dsTokensDark,
+    };
+
     return switch (mode) {
       DesignSystemTimeCalendarPickerMode.light => _TimeCalendarPalette(
         mode: mode,
-        surfaceBase: Colors.white.withValues(alpha: 0.92),
-        surfaceOverlay: Colors.white.withValues(alpha: 0.08),
+        surfaceBase: tokens.colors.background.level01.withValues(alpha: 0.92),
         surfaceBlurSigma: 24,
         shadow: Colors.black.withValues(alpha: 0.10),
-        highEmphasis: Colors.black.withValues(alpha: 0.88),
-        lowEmphasis: Colors.black.withValues(alpha: 0.32),
-        accent: const Color(0xFF2BA184),
+        highEmphasis: tokens.colors.text.highEmphasis,
+        lowEmphasis: tokens.colors.text.lowEmphasis,
+        accent: tokens.colors.interactive.enabled,
+        onAccent: tokens.colors.text.onInteractiveAlert,
       ),
       DesignSystemTimeCalendarPickerMode.dark => _TimeCalendarPalette(
         mode: mode,
-        surfaceBase: const Color(0xFF202020).withValues(alpha: 0.92),
-        surfaceOverlay: Colors.white.withValues(alpha: 0.02),
+        surfaceBase: tokens.colors.background.level01.withValues(alpha: 0.94),
+        // The MCP component uses a color-dodge material layer over the dark
+        // sidebar. Using the tokenized dark surface highlight keeps the card
+        // slightly lighter than the surrounding `background.level02`.
+        surfaceOverlay: tokens.colors.surface.enabled,
         surfaceBlurSigma: 24,
         shadow: Colors.black.withValues(alpha: 0.10),
-        highEmphasis: Colors.white.withValues(alpha: 0.88),
-        lowEmphasis: Colors.white.withValues(alpha: 0.32),
-        accent: const Color(0xFF5ED4B7),
+        highEmphasis: tokens.colors.text.highEmphasis,
+        lowEmphasis: tokens.colors.text.lowEmphasis,
+        accent: tokens.colors.interactive.enabled,
+        onAccent: tokens.colors.text.onInteractiveAlert,
       ),
     };
   }
@@ -674,6 +827,7 @@ class _TimeCalendarPalette {
   final Color highEmphasis;
   final Color lowEmphasis;
   final Color accent;
+  final Color onAccent;
 }
 
 List<List<int?>> _buildMonthGrid(DateTime month, int firstDayOfWeekIndex) {

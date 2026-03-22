@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -120,15 +121,23 @@ class _SidebarFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _SidebarPalette.fromBrightness(brightness);
+    final palette = _SidebarPalette.fromTokens(
+      context.designTokens,
+      brightness,
+    );
 
     return Container(
       width: expanded ? 320 : 76,
       height: 900,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        context.designTokens.spacing.step5,
+        context.designTokens.spacing.step6,
+        context.designTokens.spacing.step5,
+        context.designTokens.spacing.step6,
+      ),
       decoration: BoxDecoration(
         color: palette.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(context.designTokens.radii.s),
         border: Border.all(color: palette.border),
       ),
       child: expanded
@@ -291,16 +300,20 @@ class _SidebarNavItem extends StatelessWidget {
               color: destination.active
                   ? palette.activeFill
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                context.designTokens.radii.m,
+              ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.designTokens.spacing.step5,
+              ),
               child: Row(
                 children: [
                   Icon(
                     destination.icon,
                     size: 20,
-                    color: palette.primaryTextColor.withValues(alpha: 0.64),
+                    color: palette.iconColor,
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -308,7 +321,7 @@ class _SidebarNavItem extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: palette.primaryTextColor.withValues(alpha: 0.88),
+                      color: palette.primaryTextColor,
                     ),
                   ),
                 ],
@@ -347,25 +360,17 @@ class _SidebarPalette {
     required this.calendarMode,
   });
 
-  factory _SidebarPalette.fromBrightness(Brightness brightness) {
-    return switch (brightness) {
-      Brightness.light => _SidebarPalette(
-        surface: const Color(0xFFF1F4F3),
-        border: Colors.black.withValues(alpha: 0.12),
-        iconColor: Colors.black.withValues(alpha: 0.64),
-        primaryTextColor: Colors.black,
-        activeFill: const Color(0x3D2BA184),
-        calendarMode: DesignSystemTimeCalendarPickerMode.light,
-      ),
-      Brightness.dark => _SidebarPalette(
-        surface: const Color(0xFF2C2C2C),
-        border: Colors.white.withValues(alpha: 0.12),
-        iconColor: Colors.white.withValues(alpha: 0.64),
-        primaryTextColor: Colors.white,
-        activeFill: const Color(0x3D5ED4B7),
-        calendarMode: DesignSystemTimeCalendarPickerMode.dark,
-      ),
-    };
+  factory _SidebarPalette.fromTokens(DsTokens tokens, Brightness brightness) {
+    return _SidebarPalette(
+      surface: tokens.colors.background.level02,
+      border: tokens.colors.decorative.level01,
+      iconColor: tokens.colors.text.mediumEmphasis,
+      primaryTextColor: tokens.colors.text.highEmphasis,
+      activeFill: tokens.colors.surface.active,
+      calendarMode: brightness == Brightness.dark
+          ? DesignSystemTimeCalendarPickerMode.dark
+          : DesignSystemTimeCalendarPickerMode.light,
+    );
   }
 
   final Color surface;
@@ -405,17 +410,18 @@ class _DailyFilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       width: 288,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(tokens.spacing.step5),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
+        color: tokens.colors.background.level01,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: tokens.spacing.step4,
+            offset: Offset(0, tokens.spacing.step2),
           ),
         ],
       ),
@@ -430,34 +436,38 @@ class _DailyFilterCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black.withValues(alpha: 0.64),
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
               Icon(
                 open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                 size: 20,
-                color: Colors.black.withValues(alpha: 0.64),
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ],
           ),
           if (open) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: tokens.spacing.step5),
             _DailyFilterChip(
               label: context.messages.designSystemNavigationHolidayLabel,
               fillColor: const Color(0x3D9500FF),
               borderColor: const Color(0xFF9500FF),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spacing.step3),
             _DailyFilterChip(
               label: context.messages.designSystemNavigationLottiTasksLabel,
-              fillColor: const Color(0x3D00DBFD),
-              borderColor: const Color(0xFF1CA3E3),
+              fillColor: tokens.colors.alert.info.defaultColor.withValues(
+                alpha: 0.24,
+              ),
+              borderColor: tokens.colors.alert.info.defaultColor,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spacing.step3),
             _DailyFilterChip(
               label: context.messages.designSystemNavigationHikingLabel,
-              fillColor: const Color(0x3DFFCC00),
-              borderColor: const Color(0xFFFFCC00),
+              fillColor: tokens.colors.alert.warning.defaultColor.withValues(
+                alpha: 0.24,
+              ),
+              borderColor: tokens.colors.alert.warning.defaultColor,
             ),
           ],
         ],
@@ -479,8 +489,14 @@ class _DailyFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 2, 16, 2),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step3,
+        tokens.spacing.step1,
+        tokens.spacing.step5,
+        tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
         color: fillColor,
         borderRadius: const BorderRadius.only(
@@ -493,7 +509,7 @@ class _DailyFilterChip extends StatelessWidget {
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           fontSize: 12,
-          color: Colors.black.withValues(alpha: 0.88),
+          color: tokens.colors.text.highEmphasis,
         ),
       ),
     );
@@ -505,12 +521,13 @@ class _AiAssistantShowcase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(tokens.spacing.step6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F1F1F),
-        borderRadius: BorderRadius.circular(16),
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -564,7 +581,7 @@ class _AiAssistantFab extends StatelessWidget {
                     ],
                   ),
                   border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.12),
+                    color: context.designTokens.colors.decorative.level01,
                     width: 2,
                   ),
                   boxShadow: const [

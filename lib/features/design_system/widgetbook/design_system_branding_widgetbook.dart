@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemBrandingWidgetbookComponent() {
@@ -19,19 +20,17 @@ class _BrandingOverviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
+    final tokens = context.designTokens;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(tokens.spacing.step6),
         child: Container(
           constraints: const BoxConstraints(minWidth: 360, minHeight: 180),
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(tokens.spacing.step7),
           decoration: BoxDecoration(
-            color: brightness == Brightness.dark
-                ? const Color(0xFF1F1F1F)
-                : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: tokens.colors.background.level02,
+            borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
           ),
           alignment: Alignment.center,
           child: const DesignSystemBrandLogo(height: 74),

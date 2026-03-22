@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -76,14 +77,21 @@ void main() {
         onDayPressed: (date) => pressedDay = date,
       );
 
+      final enabledHeaderButtons = find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.onPressed != null,
+      );
+
       expect(find.text('April 2025'), findsOneWidget);
       expect(find.text('SUN'), findsOneWidget);
+      expect(enabledHeaderButtons, findsNWidgets(2));
+      expect(tester.getSize(enabledHeaderButtons.first), const Size(48, 48));
+      expect(tester.getSize(enabledHeaderButtons.last), const Size(48, 48));
 
       await tester.tap(find.text('April 2025'));
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.tap(enabledHeaderButtons.first);
       await tester.pump();
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded).last);
+      await tester.tap(enabledHeaderButtons.last);
       await tester.pump();
       await tester.tap(find.text('17'));
       await tester.pump();
@@ -144,8 +152,11 @@ void main() {
       final selectedDay = tester.widget<Text>(find.text('17'));
       final currentDay = tester.widget<Text>(find.text('1'));
 
-      expect(selectedDay.style?.color, const Color(0xFF0E0E0E));
-      expect(currentDay.style?.color, const Color(0xFF5ED4B7));
+      expect(
+        selectedDay.style?.color,
+        dsTokensDark.colors.text.onInteractiveAlert,
+      );
+      expect(currentDay.style?.color, dsTokensDark.colors.interactive.enabled);
     });
 
     testWidgets('interactive compact picker opens the month dialog', (

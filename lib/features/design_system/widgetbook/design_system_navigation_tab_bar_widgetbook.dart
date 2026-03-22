@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -78,12 +79,13 @@ class _NavigationTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _FrostedSurface(
-          borderRadius: BorderRadius.circular(9999),
-          padding: const EdgeInsets.all(4),
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+          padding: EdgeInsets.all(tokens.spacing.step2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -124,12 +126,13 @@ class _NavigationTabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final iconColor = active
-        ? const Color(0xFF2BA184)
-        : Colors.black.withValues(alpha: 0.64);
+        ? tokens.colors.interactive.enabled
+        : tokens.colors.text.mediumEmphasis;
     final labelColor = active
-        ? const Color(0xFF2BA184)
-        : Colors.black.withValues(alpha: 0.88);
+        ? tokens.colors.interactive.enabled
+        : tokens.colors.text.highEmphasis;
 
     return Semantics(
       button: true,
@@ -145,8 +148,8 @@ class _NavigationTabItem extends StatelessWidget {
           vertical: symbol ? 10 : 8,
         ),
         decoration: BoxDecoration(
-          color: active ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(100),
+          color: active ? tokens.colors.background.level01 : Colors.transparent,
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -228,9 +231,10 @@ class _AccessoryField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return _FrostedSurface(
-      borderRadius: BorderRadius.circular(296),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       child: SizedBox(
         width: 324,
         height: 48,
@@ -239,23 +243,23 @@ class _AccessoryField extends StatelessWidget {
             Icon(
               Icons.search_rounded,
               size: 20,
-              color: Colors.black.withValues(alpha: 0.64),
+              color: tokens.colors.text.mediumEmphasis,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: tokens.spacing.step3),
             Expanded(
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontSize: 17,
                   fontWeight: FontWeight.w400,
-                  color: Colors.black.withValues(alpha: 0.88),
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
             ),
             Icon(
               Icons.close_rounded,
               size: 20,
-              color: Colors.black.withValues(alpha: 0.64),
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ],
         ),
@@ -271,12 +275,13 @@ class _PreviewSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(tokens.spacing.step6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1F1F1F),
-        borderRadius: BorderRadius.circular(16),
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
       ),
       child: child,
     );
@@ -296,20 +301,29 @@ class _FrostedSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final brightness = Theme.of(context).brightness;
+    final frostedFill = brightness == Brightness.dark
+        ? tokens.colors.surface.hover
+        : tokens.colors.background.level01.withValues(alpha: 0.72);
+
     return ClipRRect(
       borderRadius: borderRadius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(
+          sigmaX: tokens.spacing.step5,
+          sigmaY: tokens.spacing.step5,
+        ),
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: frostedFill,
             borderRadius: borderRadius,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 2),
+                blurRadius: tokens.spacing.step5 + tokens.spacing.step2,
+                offset: Offset(0, tokens.spacing.step1),
               ),
             ],
           ),
@@ -325,15 +339,16 @@ class _AccessoryCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return _FrostedSurface(
-      borderRadius: BorderRadius.circular(9999),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       child: SizedBox(
         width: 60,
         height: 60,
         child: Center(
           child: Icon(
             Icons.search_rounded,
-            color: Colors.black.withValues(alpha: 0.64),
+            color: tokens.colors.text.mediumEmphasis,
             size: 20,
           ),
         ),
