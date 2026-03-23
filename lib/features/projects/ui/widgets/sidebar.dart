@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The left-hand navigation sidebar for the desktop layout.
 class Sidebar extends StatelessWidget {
-  const Sidebar({super.key});
+  const Sidebar({
+    this.onAiAssistantPressed,
+    super.key,
+  });
+
+  final VoidCallback? onAiAssistantPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +56,13 @@ class Sidebar extends StatelessWidget {
                 onPressed: () {},
               ),
               const Spacer(),
-              const _AiAssistantOrb(),
+              DesignSystemAiAssistantButton(
+                assetName: 'assets/design_system/ai_assistant_variant_1.png',
+                semanticLabel: context
+                    .messages
+                    .designSystemNavigationAiAssistantSectionTitle,
+                onPressed: onAiAssistantPressed,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -76,39 +88,6 @@ class Sidebar extends StatelessWidget {
           ),
           const Spacer(),
         ],
-      ),
-    );
-  }
-}
-
-class _AiAssistantOrb extends StatelessWidget {
-  const _AiAssistantOrb();
-
-  static const _buttonSize = 56.0;
-  static const _assetExtent = 108.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: context.messages.designSystemNavigationAiAssistantSectionTitle,
-      child: SizedBox.square(
-        dimension: _buttonSize,
-        child: OverflowBox(
-          minWidth: _assetExtent,
-          maxWidth: _assetExtent,
-          minHeight: _assetExtent,
-          maxHeight: _assetExtent,
-          child: ExcludeSemantics(
-            child: Image.asset(
-              'assets/design_system/ai_assistant_variant_1.png',
-              width: _assetExtent,
-              height: _assetExtent,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-            ),
-          ),
-        ),
       ),
     );
   }

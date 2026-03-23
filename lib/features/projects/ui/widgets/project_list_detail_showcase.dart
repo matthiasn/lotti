@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/sidebar.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Desktop list/detail showcase composed from production widgets fed with mock
 /// data.
@@ -19,6 +21,7 @@ class ProjectListDetailShowcase extends ConsumerWidget {
       projectListDetailShowcaseControllerProvider.notifier,
     );
     final selected = state.selectedProject;
+    final closeButtonLabel = MaterialLocalizations.of(context).closeButtonLabel;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -29,7 +32,35 @@ class ProjectListDetailShowcase extends ConsumerWidget {
         height: 900,
         child: Row(
           children: [
-            const Sidebar(),
+            Sidebar(
+              onAiAssistantPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: Text(dialogContext.messages.aiAssistantTitle),
+                    content: SizedBox(
+                      width: 160,
+                      height: 120,
+                      child: Center(
+                        child: DesignSystemAiAssistantButton(
+                          assetName:
+                              'assets/design_system/ai_assistant_variant_1.png',
+                          semanticLabel: dialogContext
+                              .messages
+                              .designSystemNavigationAiAssistantSectionTitle,
+                        ),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        child: Text(closeButtonLabel),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             Expanded(
               child: Column(
                 children: [

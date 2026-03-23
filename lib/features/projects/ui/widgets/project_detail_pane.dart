@@ -117,13 +117,17 @@ class _DetailHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                record.project.data.title,
-                style: tokens.typography.styles.heading.heading3.copyWith(
-                  color: ShowcasePalette.highText(context),
+              Expanded(
+                child: Text(
+                  record.project.data.title,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: tokens.typography.styles.heading.heading3.copyWith(
+                    color: ShowcasePalette.highText(context),
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Icon(
                 Icons.more_vert_rounded,
                 size: 20,
@@ -145,7 +149,9 @@ class _DetailHeader extends StatelessWidget {
                 const SizedBox(width: 8),
                 _OutlinedMetaTag(
                   icon: Icons.calendar_today_outlined,
-                  label: DateFormat('MMM d, y').format(targetDate),
+                  label: DateFormat.yMMMd(
+                    Localizations.localeOf(context).toString(),
+                  ).format(targetDate),
                 ),
               ],
               const Spacer(),

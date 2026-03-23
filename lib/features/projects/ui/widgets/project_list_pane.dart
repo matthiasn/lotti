@@ -365,7 +365,8 @@ class ProjectRow extends StatelessWidget {
       return '$taskCount · ${context.messages.projectShowcaseOngoing}';
     }
 
-    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat('MMM d').format(targetDate))}';
+    final locale = Localizations.localeOf(context).toString();
+    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat.MMMd(locale).format(targetDate))}';
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 
@@ -9,15 +10,30 @@ import '../../test_utils.dart';
 void main() {
   final testCurrentTime = DateTime(2026, 4, 2, 9, 30);
 
-  Widget wrap(Widget child) {
-    return makeTestableWidget2(
-      Theme(
-        data: DesignSystemTheme.dark(),
-        child: Scaffold(
-          body: SizedBox(width: 700, height: 900, child: child),
-        ),
+  Widget wrap(
+    Widget child, {
+    Locale? locale,
+    double width = 700,
+    Size viewportSize = const Size(800, 1000),
+  }) {
+    final themedChild = Theme(
+      data: DesignSystemTheme.dark(),
+      child: Scaffold(
+        body: SizedBox(width: width, height: 900, child: child),
       ),
-      mediaQueryData: const MediaQueryData(size: Size(800, 1000)),
+    );
+
+    return makeTestableWidget2(
+      Builder(
+        builder: (context) => locale == null
+            ? themedChild
+            : Localizations.override(
+                context: context,
+                locale: locale,
+                child: themedChild,
+              ),
+      ),
+      mediaQueryData: MediaQueryData(size: viewportSize),
     );
   }
 
@@ -123,6 +139,33 @@ void main() {
       expect(find.text('Apr 15, 2026'), findsOneWidget);
     });
 
+    testWidgets('renders target date using the active locale format', (
+      tester,
+    ) async {
+      final targetDate = DateTime(2026, 4, 15);
+      final record = makeTestProjectRecord(
+        project: makeTestProject(
+          id: 'p1',
+          title: 'Dated',
+          categoryId: 'cat-1',
+          targetDate: targetDate,
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectDetailPane(record: record, currentTime: testCurrentTime),
+          locale: const Locale('de'),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(DateFormat.yMMMd('de').format(targetDate)),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('renders status pill', (tester) async {
       final record = makeTestProjectRecord();
 
@@ -146,6 +189,26 @@ void main() {
       await tester.pump();
 
       expect(find.text('Description'), findsOneWidget);
+    });
+
+    testWidgets('does not overflow with long project titles', (tester) async {
+      final record = makeTestProjectRecord(
+        project: makeTestProject(
+          id: 'p1',
+          title:
+              'A very long project title that should be truncated before it collides with the trailing menu icon in the detail header',
+          categoryId: 'cat-1',
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectDetailPane(record: record, currentTime: testCurrentTime),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

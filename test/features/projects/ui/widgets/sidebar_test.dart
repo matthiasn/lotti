@@ -1,5 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/widgets/sidebar.dart';
 
@@ -40,13 +43,51 @@ void main() {
     });
 
     testWidgets('renders AI assistant orb with semantics', (tester) async {
-      await tester.pumpWidget(wrap(const Sidebar()));
+      final handle = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          wrap(
+            Sidebar(onAiAssistantPressed: () {}),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(DesignSystemAiAssistantButton), findsOneWidget);
+
+        final semanticsNode = tester.getSemantics(
+          find.bySemanticsLabel('AI Assistant'),
+        );
+
+        expect(semanticsNode.label, 'AI Assistant');
+        expect(
+          semanticsNode.getSemanticsData().flagsCollection.isButton,
+          anyOf(isTrue, Tristate.isTrue),
+        );
+        expect(
+          semanticsNode.getSemanticsData().flagsCollection.isEnabled,
+          anyOf(isTrue, Tristate.isTrue),
+        );
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    testWidgets('tapping the AI assistant orb invokes the callback', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        wrap(
+          Sidebar(onAiAssistantPressed: () => tapped = true),
+        ),
+      );
       await tester.pump();
 
-      expect(
-        find.bySemanticsLabel('AI Assistant'),
-        findsOneWidget,
-      );
+      await tester.tap(find.byType(DesignSystemAiAssistantButton));
+      await tester.pump();
+
+      expect(tapped, isTrue);
     });
   });
 
