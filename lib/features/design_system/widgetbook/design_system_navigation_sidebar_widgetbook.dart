@@ -194,20 +194,19 @@ class _CollapsedSidebarContent extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         SizedBox(
-          width: 100,
-          height: 56,
+          key: const Key('collapsed-sidebar-action-slot'),
+          width: 44,
+          height: 44,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               SizedBox(
+                key: const Key('collapsed-sidebar-new-button'),
                 width: 44,
                 height: 44,
-                child: DesignSystemButton(
-                  label: '',
-                  leadingIcon: Icons.add_rounded,
+                child: _CollapsedSidebarNewButton(
                   semanticsLabel:
                       context.messages.designSystemNavigationNewLabel,
-                  onPressed: widgetbookNoop,
                 ),
               ),
               const Positioned(
@@ -219,6 +218,44 @@ class _CollapsedSidebarContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CollapsedSidebarNewButton extends StatelessWidget {
+  const _CollapsedSidebarNewButton({
+    required this.semanticsLabel,
+  });
+
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: tokens.colors.interactive.enabled,
+            borderRadius: BorderRadius.circular(tokens.radii.l),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.radii.l),
+            onTap: widgetbookNoop,
+            child: Center(
+              child: Icon(
+                Icons.add_rounded,
+                size: tokens.typography.lineHeight.subtitle2,
+                color: tokens.colors.text.onInteractiveAlert,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

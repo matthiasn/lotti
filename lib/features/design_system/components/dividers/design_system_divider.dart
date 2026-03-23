@@ -94,7 +94,7 @@ class _HorizontalDivider extends StatelessWidget {
           ),
           SizedBox(width: tokens.spacing.step5),
           Text(
-            label!,
+            label!.toUpperCase(),
             style: tokens.typography.styles.others.overline.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),

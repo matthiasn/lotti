@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -213,7 +214,7 @@ class _CheckboxRowConfig {
   final bool enabled;
 }
 
-class _CheckboxPreviewConfig {
+class _CheckboxPreviewConfig extends Equatable {
   const _CheckboxPreviewConfig({
     required this.value,
     this.label,
@@ -225,14 +226,38 @@ class _CheckboxPreviewConfig {
   final String? label;
   final bool enabled;
   final DesignSystemCheckboxVisualState? state;
+
+  @override
+  List<Object?> get props => [value, label, enabled, state];
 }
 
-class _CheckboxPreviewTile extends StatelessWidget {
+class _CheckboxPreviewTile extends StatefulWidget {
   const _CheckboxPreviewTile({
     required this.config,
   });
 
   final _CheckboxPreviewConfig config;
+
+  @override
+  State<_CheckboxPreviewTile> createState() => _CheckboxPreviewTileState();
+}
+
+class _CheckboxPreviewTileState extends State<_CheckboxPreviewTile> {
+  late bool? _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.config.value;
+  }
+
+  @override
+  void didUpdateWidget(covariant _CheckboxPreviewTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.config != widget.config) {
+      _value = widget.config.value;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +266,18 @@ class _CheckboxPreviewTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         DesignSystemCheckbox(
-          value: config.value,
-          label: config.label,
+          value: _value,
+          label: widget.config.label,
           semanticsLabel:
-              config.label ?? context.messages.designSystemCheckboxLabel,
-          forcedState: config.state,
-          onChanged: config.enabled ? (_) {} : null,
+              widget.config.label ?? context.messages.designSystemCheckboxLabel,
+          forcedState: widget.config.state,
+          onChanged: widget.config.enabled
+              ? (nextValue) {
+                  setState(() {
+                    _value = nextValue;
+                  });
+                }
+              : null,
         ),
         const SizedBox(height: 8),
         Text(
@@ -258,17 +289,17 @@ class _CheckboxPreviewTile extends StatelessWidget {
   }
 
   String get _previewLabel {
-    final valueLabel = switch (config.value) {
+    final valueLabel = switch (_value) {
       true => 'Checked',
       false => 'Unchecked',
       null => 'Indeterminate',
     };
-    final stateLabel = switch (config.state) {
+    final stateLabel = switch (widget.config.state) {
       DesignSystemCheckboxVisualState.hover => ' / Hover',
       DesignSystemCheckboxVisualState.pressed => ' / Pressed',
       null || DesignSystemCheckboxVisualState.idle => '',
     };
-    final enabledLabel = config.enabled ? '' : ' / Disabled';
+    final enabledLabel = widget.config.enabled ? '' : ' / Disabled';
     return '$valueLabel$stateLabel$enabledLabel';
   }
 }

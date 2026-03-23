@@ -61,11 +61,22 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
       value: widget.value,
       visualState: visualState,
     );
+    final showTransientGlyph =
+        enabled &&
+        widget.value == false &&
+        visualState != DesignSystemCheckboxVisualState.idle;
+    final glyphColor = widget.value == false
+        ? styleSpec.borderColor
+        : styleSpec.glyphColor;
 
     final checkbox = Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        splashColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         onTap: enabled ? _handleTap : null,
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
@@ -96,9 +107,10 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
                   borderRadius: sizeSpec.cornerRadius,
                   fillColor: styleSpec.backgroundColor,
                   borderColor: styleSpec.borderColor,
-                  glyphColor: styleSpec.glyphColor,
+                  glyphColor: glyphColor,
                   glyphSize: sizeSpec.glyphSize,
                   glyphStrokeWidth: sizeSpec.glyphStrokeWidth,
+                  showGlyph: widget.value != false || showTransientGlyph,
                   value: widget.value,
                 ),
               ),
@@ -146,6 +158,7 @@ class _CheckboxContent extends StatelessWidget {
     required this.glyphColor,
     required this.glyphSize,
     required this.glyphStrokeWidth,
+    required this.showGlyph,
     required this.value,
     this.label,
   });
@@ -159,6 +172,7 @@ class _CheckboxContent extends StatelessWidget {
   final Color glyphColor;
   final double glyphSize;
   final double glyphStrokeWidth;
+  final bool showGlyph;
   final bool? value;
 
   @override
@@ -176,7 +190,7 @@ class _CheckboxContent extends StatelessWidget {
               width: glyphStrokeWidth,
             ),
           ),
-          child: value == null || value == true
+          child: showGlyph
               ? Center(
                   child: SizedBox.square(
                     dimension: glyphSize,
@@ -289,7 +303,7 @@ class _CheckboxStyleSpec {
             DesignSystemCheckboxVisualState.idle =>
               tokens.colors.text.mediumEmphasis,
             DesignSystemCheckboxVisualState.hover =>
-              tokens.colors.interactive.hover,
+              tokens.colors.interactive.enabled,
             DesignSystemCheckboxVisualState.pressed =>
               tokens.colors.interactive.pressed,
           };

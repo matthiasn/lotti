@@ -72,7 +72,7 @@ void main() {
       );
       expect(
         controlDecoration.border!.top.color,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.text.mediumEmphasis,
       );
       expect(
         _radioSquareCount(tester, 8),
@@ -112,7 +112,7 @@ void main() {
       expect(_radioSquareCount(tester, 10), 1);
       expect(
         controlDecoration.border!.top.color,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.interactive.enabled,
       );
       expect(semantics.properties.selected, isTrue);
 
@@ -135,9 +135,24 @@ void main() {
       );
 
       expect(
-        _radioDecoration(tester, 20).border!.top.color,
-        dsTokensLight.colors.alert.info.hover,
+        _radioDecoration(tester, 20).color,
+        dsTokensLight.colors.surface.hover,
       );
+      expect(
+        _radioDecoration(tester, 20).border!.top.color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(_radioSquareCount(tester, 8), 1);
+
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+
+      expect(
+        inkWell.overlayColor?.resolve({WidgetState.hovered}),
+        Colors.transparent,
+      );
+      expect(inkWell.hoverColor, Colors.transparent);
+      expect(inkWell.highlightColor, Colors.transparent);
+      expect(inkWell.splashColor, Colors.transparent);
     });
 
     testWidgets('renders the control only when the label is omitted', (
@@ -199,7 +214,7 @@ void main() {
 
       expect(
         _radioDecoration(tester, 20).border!.top.color,
-        dsTokensLight.colors.alert.info.hover,
+        dsTokensLight.colors.interactive.enabled,
       );
 
       enabled.value = false;
@@ -209,7 +224,7 @@ void main() {
 
       expect(
         _radioDecoration(tester, 20).border!.top.color,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.text.mediumEmphasis,
       );
     });
 
@@ -247,7 +262,7 @@ void main() {
 
       expect(
         controlDecoration.border!.top.color,
-        dsTokensDark.colors.alert.info.defaultColor,
+        dsTokensDark.colors.interactive.enabled,
       );
       expectTextStyle(
         richText.text.style!,

@@ -23,7 +23,7 @@ void main() {
         ),
       );
 
-      final label = tester.widget<Text>(find.text('Divider label'));
+      final label = tester.widget<Text>(find.text('DIVIDER LABEL'));
       final lines = find.byWidgetPredicate(
         (widget) =>
             widget is ColoredBox &&

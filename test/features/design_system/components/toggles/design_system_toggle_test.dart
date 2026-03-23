@@ -82,11 +82,15 @@ void main() {
 
       expect(
         (track.decoration! as BoxDecoration).color,
-        dsTokensLight.colors.background.level02,
+        Colors.transparent,
+      );
+      expect(
+        ((track.decoration! as BoxDecoration).border! as Border).top.color,
+        dsTokensLight.colors.text.mediumEmphasis,
       );
       expect(
         (thumb.decoration! as BoxDecoration).color,
-        dsTokensLight.colors.background.level01,
+        dsTokensLight.colors.text.highEmphasis,
       );
       expect(align.alignment, Alignment.centerLeft);
       expectTextStyle(
@@ -171,7 +175,7 @@ void main() {
     testWidgets('applies token-driven hover and disabled treatments', (
       tester,
     ) async {
-      const hoverKey = Key('toggle-hover');
+      const hoverKey = Key('toggle-hover-off');
       const disabledKey = Key('toggle-disabled');
 
       await tester.pumpWidget(
@@ -181,7 +185,7 @@ void main() {
             children: [
               DesignSystemToggle(
                 key: hoverKey,
-                value: true,
+                value: false,
                 label: 'Hover toggle',
                 forcedState: DesignSystemToggleVisualState.hover,
                 onChanged: _noopToggle,
@@ -219,8 +223,27 @@ void main() {
 
       expect(
         (hoverTrack.decoration! as BoxDecoration).color,
-        dsTokensLight.colors.interactive.hover,
+        dsTokensLight.colors.surface.hover,
       );
+      expect(
+        (((hoverTrack.decoration! as BoxDecoration).border!) as Border)
+            .top
+            .color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+      final hoverInkWell = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(hoverKey),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(
+        hoverInkWell.overlayColor?.resolve({WidgetState.hovered}),
+        Colors.transparent,
+      );
+      expect(hoverInkWell.hoverColor, Colors.transparent);
+      expect(hoverInkWell.highlightColor, Colors.transparent);
+      expect(hoverInkWell.splashColor, Colors.transparent);
       expect(disabledOpacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
       expect(
         tester

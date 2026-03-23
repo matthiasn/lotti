@@ -74,12 +74,20 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
     final sizeSpec = _RadioButtonSizeSpec.fromTokens(tokens, widget.size);
     final colorSpec = _RadioButtonColorSpec.fromTokens(
       tokens: tokens,
+      selected: widget.selected,
       visualState: visualState,
     );
+    final showInnerDot =
+        widget.selected ||
+        visualState == DesignSystemRadioButtonVisualState.hover;
 
     final radio = Material(
       color: Colors.transparent,
       child: InkWell(
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        splashColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         onTap: widget.onPressed,
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
@@ -98,6 +106,7 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
               label: widget.semanticsLabel ?? widget.label,
               child: _RadioButtonContent(
                 selected: widget.selected,
+                showInnerDot: showInnerDot,
                 sizeSpec: sizeSpec,
                 colorSpec: colorSpec,
                 label: widget.label,
@@ -136,6 +145,7 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
 class _RadioButtonContent extends StatelessWidget {
   const _RadioButtonContent({
     required this.selected,
+    required this.showInnerDot,
     required this.sizeSpec,
     required this.colorSpec,
     this.label,
@@ -144,6 +154,7 @@ class _RadioButtonContent extends StatelessWidget {
   });
 
   final bool selected;
+  final bool showInnerDot;
   final _RadioButtonSizeSpec sizeSpec;
   final _RadioButtonColorSpec colorSpec;
   final String? label;
@@ -156,7 +167,7 @@ class _RadioButtonContent extends StatelessWidget {
       _RadioControl(
         sizeSpec: sizeSpec,
         colorSpec: colorSpec,
-        selected: selected,
+        showInnerDot: showInnerDot,
       ),
     ];
 
@@ -194,12 +205,12 @@ class _RadioButtonContent extends StatelessWidget {
 
 class _RadioControl extends StatelessWidget {
   const _RadioControl({
-    required this.selected,
+    required this.showInnerDot,
     required this.sizeSpec,
     required this.colorSpec,
   });
 
-  final bool selected;
+  final bool showInnerDot;
   final _RadioButtonSizeSpec sizeSpec;
   final _RadioButtonColorSpec colorSpec;
 
@@ -216,7 +227,7 @@ class _RadioControl extends StatelessWidget {
             width: sizeSpec.controlBorderWidth,
           ),
         ),
-        child: selected
+        child: showInnerDot
             ? Center(
                 child: SizedBox.square(
                   dimension: sizeSpec.selectedDotSize,
@@ -292,18 +303,26 @@ class _RadioButtonColorSpec {
 
   factory _RadioButtonColorSpec.fromTokens({
     required DsTokens tokens,
+    required bool selected,
     required DesignSystemRadioButtonVisualState visualState,
   }) {
-    final accentColor = switch (visualState) {
-      DesignSystemRadioButtonVisualState.idle =>
-        tokens.colors.alert.info.defaultColor,
-      DesignSystemRadioButtonVisualState.hover =>
-        tokens.colors.alert.info.hover,
+    final controlBorderColor = switch ((selected, visualState)) {
+      (false, DesignSystemRadioButtonVisualState.idle) =>
+        tokens.colors.text.mediumEmphasis,
+      (false, DesignSystemRadioButtonVisualState.hover) =>
+        tokens.colors.interactive.enabled,
+      (true, DesignSystemRadioButtonVisualState.idle) =>
+        tokens.colors.interactive.enabled,
+      (true, DesignSystemRadioButtonVisualState.hover) =>
+        tokens.colors.interactive.hover,
     };
 
     return _RadioButtonColorSpec(
-      controlBackgroundColor: tokens.colors.background.level01,
-      controlBorderColor: accentColor,
+      controlBackgroundColor:
+          visualState == DesignSystemRadioButtonVisualState.hover
+          ? tokens.colors.surface.hover
+          : tokens.colors.background.level01,
+      controlBorderColor: controlBorderColor,
       labelColor: tokens.colors.text.highEmphasis,
       tooltipColor: tokens.colors.text.mediumEmphasis,
     );
