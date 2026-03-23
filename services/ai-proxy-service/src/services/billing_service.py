@@ -11,7 +11,7 @@ from ..core.constants import (
     MODEL_PRICING,
 )
 from ..core.exceptions import AIProviderException
-from ..core.interfaces import IBillingService
+from ..core.interfaces import IBillingService, IPricingService
 from ..core.models import BillingMetadata
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,14 @@ logger = logging.getLogger(__name__)
 class BillingService(IBillingService):
     """Service for billing operations with credits service integration"""
 
-    def __init__(self):
-        """Initialize billing service with credits service configuration"""
+    def __init__(self, pricing_service: IPricingService | None = None):
+        """Initialize billing service with credits service configuration
+
+        Args:
+            pricing_service: Optional pricing service for dynamic pricing lookups.
+                If not provided, falls back to constant-based pricing.
+        """
+        self._pricing_service = pricing_service
         self.credits_service_url = os.getenv("CREDITS_SERVICE_URL", "")
         self.credits_service_api_key = os.getenv("CREDITS_SERVICE_API_KEY", "")
         self.phase2_enabled = bool(self.credits_service_url and self.credits_service_api_key)
@@ -41,10 +47,14 @@ class BillingService(IBillingService):
         Returns:
             Dict with input_price_per_1k and output_price_per_1k
         """
-        # First, map the model name if it's an OpenAI-style name
-        mapped_model = MODEL_MAPPINGS.get(model, model)
+        # Use dynamic pricing service if available
+        if self._pricing_service is not None:
+            pricing = self._pricing_service.get_pricing_for_model_sync(model)
+            logger.debug(f"Pricing for model '{model}' (from pricing service): {pricing}")
+            return pricing
 
-        # Look up pricing for the mapped model
+        # Fall back to constant-based lookup
+        mapped_model = MODEL_MAPPINGS.get(model, model)
         pricing = MODEL_PRICING.get(mapped_model, DEFAULT_MODEL_PRICING)
 
         logger.debug(f"Pricing for model '{model}' (mapped to '{mapped_model}'): {pricing}")

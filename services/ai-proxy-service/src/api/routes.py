@@ -1,11 +1,12 @@
 """API routes for AI proxy service"""
 
+from __future__ import annotations
+
 import json
 import logging
 import time
 import uuid
 from decimal import Decimal
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
@@ -21,6 +22,12 @@ from ..core.models import (
     ChatCompletionRequest,
     ErrorResponse,
     BillingMetadata,
+    UsageLogEntry,
+    UsageQueryResponse,
+    ModelPricing,
+    ModelPricingListResponse,
+    ModelPricingUpdateRequest,
+    ModelPricingCreateRequest,
 )
 from ..core.metrics import metrics_collector
 
@@ -29,7 +36,32 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/health", response_model=Dict[str, str])
+async def _log_usage_entry(
+    user_id: str,
+    model: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+    total_tokens: int,
+    cost_usd: float,
+    request_id: str,
+) -> None:
+    """Log a usage entry for persistent tracking. Errors are logged but not raised."""
+    try:
+        usage_log = container.get_usage_log()
+        await usage_log.log_usage(
+            user_id=user_id,
+            model=model,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cost_usd=cost_usd,
+            request_id=request_id,
+        )
+    except Exception:
+        logger.exception(f"[{request_id}] Failed to log usage")
+
+
+@router.get("/health", response_model=dict[str, str])
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
@@ -142,6 +174,17 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
             # Log billing (Phase 1: just logging)
             await billing_service.log_billing(billing_metadata)
 
+            # Log usage for persistent tracking
+            await _log_usage_entry(
+                user_id=body.user_id or "anonymous",
+                model=body.model,
+                prompt_tokens=response.usage.prompt_tokens,
+                completion_tokens=response.usage.completion_tokens,
+                total_tokens=response.usage.total_tokens,
+                cost_usd=float(cost),
+                request_id=request_id,
+            )
+
             logger.info(f"[{request_id}] Chat completion successful")
 
             # Record metrics
@@ -244,6 +287,18 @@ async def _stream_real_response(
             )
 
             await billing_service.log_billing(billing_metadata)
+
+            # Log usage for persistent tracking
+            await _log_usage_entry(
+                user_id=user_id,
+                model=model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost_usd=float(cost),
+                request_id=request_id,
+            )
+
             logger.info(f"[{request_id}] Streaming completion successful")
 
     except Exception as e:
@@ -256,3 +311,79 @@ async def _stream_real_response(
             }
         }
         yield f"data: {json.dumps(error_chunk)}\n\n"
+
+
+# --- Usage log endpoints ---
+
+
+@router.get("/v1/usage/user/{user_id}")
+async def get_user_usage(user_id: str, page: int = 1, page_size: int = 20):
+    """Get usage history for a user"""
+    usage_log = container.get_usage_log()
+    page_size = max(1, min(page_size, 100))
+    entries, total = await usage_log.get_user_usage(user_id, page, page_size)
+    return UsageQueryResponse(
+        entries=[UsageLogEntry(**e) for e in entries],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/v1/usage/user/{user_id}/summary")
+async def get_user_usage_summary(user_id: str):
+    """Get usage summary for a user"""
+    usage_log = container.get_usage_log()
+    return await usage_log.get_user_summary(user_id)
+
+
+@router.get("/v1/usage/summary")
+async def get_system_usage_summary():
+    """Get system-wide usage summary"""
+    usage_log = container.get_usage_log()
+    return await usage_log.get_system_summary()
+
+
+# --- Pricing endpoints ---
+
+
+@router.get("/v1/pricing", response_model=ModelPricingListResponse)
+async def list_pricing():
+    """List all model pricing"""
+    pricing_service = container.get_pricing_service()
+    models = await pricing_service.get_all_pricing()
+    return ModelPricingListResponse(models=[ModelPricing(**m) for m in models])
+
+
+@router.put("/v1/pricing/{model_id}", response_model=ModelPricing)
+async def update_pricing(model_id: str, body: ModelPricingUpdateRequest):
+    """Update pricing for a model"""
+    pricing_service = container.get_pricing_service()
+    existing = await pricing_service.get_pricing(model_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
+    result = await pricing_service.update_pricing(
+        model_id,
+        body.display_name,
+        float(body.input_price_per_1k),
+        float(body.output_price_per_1k),
+    )
+    return ModelPricing(**result)
+
+
+@router.post("/v1/pricing", response_model=ModelPricing, status_code=201)
+async def create_pricing(body: ModelPricingCreateRequest):
+    """Create new model pricing"""
+    pricing_service = container.get_pricing_service()
+    existing = await pricing_service.get_pricing(body.model_id)
+    if existing:
+        raise HTTPException(
+            status_code=409, detail=f"Model '{body.model_id}' already exists"
+        )
+    result = await pricing_service.create_pricing(
+        body.model_id,
+        body.display_name,
+        float(body.input_price_per_1k),
+        float(body.output_price_per_1k),
+    )
+    return ModelPricing(**result)
