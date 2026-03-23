@@ -91,6 +91,9 @@ void main() {
       final captionComponent = components.singleWhere(
         (component) => component.name == 'Caption',
       );
+      final textareaComponent = components.singleWhere(
+        (component) => component.name == 'Textarea',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -116,6 +119,7 @@ void main() {
         'Split Buttons',
         'Tab bar',
         'Tabs',
+        'Textarea',
         'Time picker',
         'Toast',
         'Toggle',
@@ -145,6 +149,7 @@ void main() {
       expect(timePickerComponent.useCases.single.name, 'Overview');
       expect(listComponent.useCases.single.name, 'Overview');
       expect(captionComponent.useCases.single.name, 'Overview');
+      expect(textareaComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

@@ -2728,6 +2728,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemTabPendingLabel => 'În așteptare';
 
   @override
+  String get designSystemTextareaErrorSample => 'Acest câmp este obligatoriu';
+
+  @override
+  String get designSystemTextareaHelperSample =>
+      'Introduceți mesajul dvs. aici';
+
+  @override
+  String get designSystemTextareaHintSample => 'Scrieți ceva...';
+
+  @override
+  String get designSystemTextareaLabelSample => 'Etichetă';
+
+  @override
+  String get designSystemTextareaVariantsTitle => 'Variante textarea';
+
+  @override
+  String get designSystemTextareaWithCounterLabel => 'Cu contor';
+
+  @override
+  String get designSystemTextareaWithErrorLabel => 'Cu eroare';
+
+  @override
+  String get designSystemTextareaWithHelperLabel => 'Cu text ajutător';
+
+  @override
   String get designSystemTimePickerFormatsTitle => 'Formate de oră';
 
   @override

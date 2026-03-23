@@ -4923,6 +4923,54 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get designSystemTabPendingLabel;
 
+  /// No description provided for @designSystemTextareaErrorSample.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get designSystemTextareaErrorSample;
+
+  /// No description provided for @designSystemTextareaHelperSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your message here'**
+  String get designSystemTextareaHelperSample;
+
+  /// No description provided for @designSystemTextareaHintSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Type something...'**
+  String get designSystemTextareaHintSample;
+
+  /// No description provided for @designSystemTextareaLabelSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get designSystemTextareaLabelSample;
+
+  /// No description provided for @designSystemTextareaVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Textarea Variants'**
+  String get designSystemTextareaVariantsTitle;
+
+  /// No description provided for @designSystemTextareaWithCounterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With counter'**
+  String get designSystemTextareaWithCounterLabel;
+
+  /// No description provided for @designSystemTextareaWithErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With error'**
+  String get designSystemTextareaWithErrorLabel;
+
+  /// No description provided for @designSystemTextareaWithHelperLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With helper text'**
+  String get designSystemTextareaWithHelperLabel;
+
   /// No description provided for @designSystemTimePickerFormatsTitle.
   ///
   /// In en, this message translates to:
