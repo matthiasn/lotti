@@ -52,6 +52,7 @@ class DesignSystemRadioButton extends StatefulWidget {
 
 class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
   bool _hovered = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DesignSystemRadioButton oldWidget) {
@@ -63,6 +64,7 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
 
     if (interactionModeChanged) {
       _hovered = false;
+      _focused = false;
     }
   }
 
@@ -91,6 +93,9 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
         onTap: widget.onPressed,
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
+            : null,
+        onFocusChange: widget.forcedState == null && enabled
+            ? (value) => setState(() => _focused = value)
             : null,
         child: DefaultTextStyle.merge(
           style: sizeSpec.labelStyle.copyWith(color: colorSpec.labelColor),
@@ -134,7 +139,7 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
       return widget.forcedState!;
     }
 
-    if (_hovered) {
+    if (_hovered || _focused) {
       return DesignSystemRadioButtonVisualState.hover;
     }
 

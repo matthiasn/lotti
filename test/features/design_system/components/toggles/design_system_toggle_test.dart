@@ -1,6 +1,7 @@
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -241,6 +242,10 @@ void main() {
         hoverInkWell.overlayColor?.resolve({WidgetState.hovered}),
         Colors.transparent,
       );
+      expect(
+        hoverInkWell.overlayColor?.resolve({WidgetState.focused}),
+        Colors.transparent,
+      );
       expect(hoverInkWell.hoverColor, Colors.transparent);
       expect(hoverInkWell.highlightColor, Colors.transparent);
       expect(hoverInkWell.splashColor, Colors.transparent);
@@ -380,6 +385,41 @@ void main() {
         dsTokensLight.colors.interactive.enabled,
       );
     });
+
+    testWidgets(
+      'uses the hover visuals for keyboard focus only on the control',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const DesignSystemToggle(
+              value: false,
+              label: 'Focus toggle',
+              onChanged: _noopToggle,
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+
+        final track = _toggleTrack(tester);
+        final decoration = track.decoration! as BoxDecoration;
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+
+        expect(decoration.color, dsTokensLight.colors.surface.hover);
+        expect(
+          (decoration.border! as Border).top.color,
+          dsTokensLight.colors.text.mediumEmphasis,
+        );
+        expect(
+          inkWell.overlayColor?.resolve({WidgetState.focused}),
+          Colors.transparent,
+        );
+      },
+    );
 
     test('asserts when neither a label nor semantics label is provided', () {
       expect(

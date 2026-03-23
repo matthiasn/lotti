@@ -1,6 +1,7 @@
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/radio_buttons/design_system_radio_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -150,10 +151,47 @@ void main() {
         inkWell.overlayColor?.resolve({WidgetState.hovered}),
         Colors.transparent,
       );
+      expect(
+        inkWell.overlayColor?.resolve({WidgetState.focused}),
+        Colors.transparent,
+      );
       expect(inkWell.hoverColor, Colors.transparent);
       expect(inkWell.highlightColor, Colors.transparent);
       expect(inkWell.splashColor, Colors.transparent);
     });
+
+    testWidgets(
+      'uses the hover visuals for keyboard focus only on the control',
+      (
+        tester,
+      ) async {
+        await _pumpRadio(
+          tester,
+          const DesignSystemRadioButton(
+            selected: false,
+            label: 'Radio button',
+            onPressed: _noop,
+          ),
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+
+        final decoration = _radioDecoration(tester, 20);
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+
+        expect(decoration.color, dsTokensLight.colors.surface.hover);
+        expect(
+          decoration.border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+        expect(_radioSquareCount(tester, 8), 1);
+        expect(
+          inkWell.overlayColor?.resolve({WidgetState.focused}),
+          Colors.transparent,
+        );
+      },
+    );
 
     testWidgets('renders the control only when the label is omitted', (
       tester,
