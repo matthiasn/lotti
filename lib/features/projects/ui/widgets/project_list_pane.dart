@@ -280,74 +280,77 @@ class ProjectRow extends StatelessWidget {
     return MouseRegion(
       onEnter: (_) => onHoverChanged(true),
       onExit: (_) => onHoverChanged(false),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          hoverColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            constraints: const BoxConstraints(minHeight: 60),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: showStateSurface ? stateColor : Colors.transparent,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        record.project.data.title,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: ShowcasePalette.highText(context),
+      child: Semantics(
+        selected: selected,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            hoverColor: Colors.transparent,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              constraints: const BoxConstraints(minHeight: 60),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: showStateSurface ? stateColor : Colors.transparent,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          record.project.data.title,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: ShowcasePalette.highText(context),
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _TinyProgressRing(score: record.healthScore),
+                            Text(
+                              '${record.healthScore}',
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: ShowcasePalette.lowText(context),
+                                  ),
                             ),
-                      ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          _TinyProgressRing(score: record.healthScore),
-                          Text(
-                            '${record.healthScore}',
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: ShowcasePalette.lowText(context),
-                                ),
-                          ),
-                          Text(
-                            '·',
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: ShowcasePalette.lowText(context),
-                                ),
-                          ),
-                          Text(
-                            _taskSummaryLabel(
-                              context,
-                              record.totalTaskCount,
-                              record.project.data.targetDate,
+                            Text(
+                              '·',
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: ShowcasePalette.lowText(context),
+                                  ),
                             ),
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: ShowcasePalette.lowText(context),
-                                ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            Text(
+                              _taskSummaryLabel(
+                                context,
+                                record.totalTaskCount,
+                                record.project.data.targetDate,
+                              ),
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: ShowcasePalette.lowText(context),
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                ProjectStatusLabel(status: record.project.data.status),
-              ],
+                  const SizedBox(width: 12),
+                  ProjectStatusLabel(status: record.project.data.status),
+                ],
+              ),
             ),
           ),
         ),

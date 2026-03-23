@@ -97,7 +97,7 @@ class ProjectDetailPane extends StatelessWidget {
   ) {
     final difference = currentTime.difference(updatedAt);
 
-    if (difference.inHours < 1) {
+    if (difference.isNegative || difference.inHours < 1) {
       final minutes = difference.inMinutes < 1 ? 1 : difference.inMinutes;
       return context.messages.projectShowcaseUpdatedMinutesAgo(minutes);
     }
@@ -186,7 +186,7 @@ class _OutlinedMetaTag extends StatelessWidget {
     final tokens = context.designTokens;
 
     return Container(
-      height: 20,
+      constraints: const BoxConstraints(minHeight: 20),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),

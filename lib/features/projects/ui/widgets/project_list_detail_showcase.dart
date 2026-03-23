@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/sidebar.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
@@ -81,7 +80,7 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                         ),
                         Expanded(
                           child: selected == null
-                              ? const NoResultsPane()
+                              ? const SizedBox.shrink()
                               : ProjectDetailPane(
                                   record: selected,
                                   currentTime: state.data.currentTime,

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -118,7 +119,34 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('2'), findsAtLeastNWidgets(1));
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ProjectDetailPane)),
+      )!;
+      expect(
+        find.text(l10n.projectShowcaseUpdatedHoursAgo(2)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders updated minutes ago label for sub-hour delta', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        reportUpdatedAt: DateTime(2026, 4, 2, 9, 15),
+      );
+
+      await tester.pumpWidget(
+        wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
+      );
+      await tester.pump();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(ProjectDetailPane)),
+      )!;
+      expect(
+        find.text(l10n.projectShowcaseUpdatedMinutesAgo(15)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders target date when present', (tester) async {
