@@ -6823,6 +6823,12 @@ abstract class AppLocalizations {
   /// **'Updated {hours}h ago ↻'**
   String projectShowcaseUpdatedHoursAgo(int hours);
 
+  /// No description provided for @projectShowcaseUpdatedMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {minutes}m ago ↻'**
+  String projectShowcaseUpdatedMinutesAgo(int minutes);
+
   /// No description provided for @projectShowcaseUsefulness.
   ///
   /// In en, this message translates to:

@@ -3799,6 +3799,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String projectShowcaseUpdatedMinutesAgo(int minutes) {
+    return 'Updated ${minutes}m ago ↻';
+  }
+
+  @override
   String get projectShowcaseUsefulness => 'Usefulness';
 
   @override

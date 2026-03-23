@@ -1,8 +1,12 @@
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
+
+import '../../features/categories/test_utils.dart';
 
 /// Shared test factory for creating [ProjectEntry] instances.
 ///
@@ -78,4 +82,122 @@ Task makeTestTask({
         entryText: const EntryText(plainText: ''),
       )
       as Task;
+}
+
+/// Creates a [ProjectRecord] presentation model for testing.
+ProjectRecord makeTestProjectRecord({
+  ProjectEntry? project,
+  CategoryDefinition? category,
+  int healthScore = 78,
+  int completedTaskCount = 3,
+  int totalTaskCount = 5,
+  int blockedTaskCount = 1,
+  String aiSummary = 'Test AI summary.',
+  List<String> recommendations = const ['Recommendation A'],
+  DateTime? reportUpdatedAt,
+  List<TaskSummary> highlightedTaskSummaries = const [],
+  List<ReviewSession> reviewSessions = const [],
+  Duration highlightedTasksTotalDuration = Duration.zero,
+}) {
+  final cat =
+      category ??
+      CategoryTestUtils.createTestCategory(
+        id: 'cat-1',
+        name: 'Work',
+        color: '#4AB6E8',
+      );
+  return ProjectRecord(
+    project:
+        project ??
+        makeTestProject(
+          id: 'project-1',
+          categoryId: cat.id,
+        ),
+    category: cat,
+    healthScore: healthScore,
+    completedTaskCount: completedTaskCount,
+    totalTaskCount: totalTaskCount,
+    blockedTaskCount: blockedTaskCount,
+    aiSummary: aiSummary,
+    recommendations: recommendations,
+    reportUpdatedAt: reportUpdatedAt ?? DateTime(2026, 4, 2, 7, 30),
+    highlightedTaskSummaries: highlightedTaskSummaries,
+    reviewSessions: reviewSessions,
+    highlightedTasksTotalDuration: highlightedTasksTotalDuration,
+  );
+}
+
+/// Creates a [TaskSummary] for testing.
+TaskSummary makeTestTaskSummary({
+  Task? task,
+  Duration estimatedDuration = const Duration(hours: 2),
+}) {
+  return TaskSummary(
+    task: task ?? makeTestTask(id: 'task-1'),
+    estimatedDuration: estimatedDuration,
+  );
+}
+
+/// Creates a [ReviewSession] for testing.
+ReviewSession makeTestReviewSession({
+  String id = 'review-1',
+  String summaryLabel = 'Week 11 · Mar 10',
+  int rating = 4,
+  List<ReviewMetric> metrics = const [],
+  String? note,
+  bool expanded = false,
+}) {
+  return ReviewSession(
+    id: id,
+    summaryLabel: summaryLabel,
+    rating: rating,
+    metrics: metrics,
+    note: note,
+    expanded: expanded,
+  );
+}
+
+/// Creates a [ProjectListData] for testing with two categories and two
+/// projects.
+ProjectListData makeTestProjectListData({
+  List<CategoryDefinition>? categories,
+  List<ProjectRecord>? projects,
+  DateTime? currentTime,
+}) {
+  final time = currentTime ?? DateTime(2026, 4, 2, 9, 30);
+  final workCat = CategoryTestUtils.createTestCategory(
+    id: 'work',
+    name: 'Work',
+    color: '#4AB6E8',
+  );
+  final studyCat = CategoryTestUtils.createTestCategory(
+    id: 'study',
+    name: 'Study',
+    color: '#FBA337',
+  );
+
+  return ProjectListData(
+    categories: categories ?? [workCat, studyCat],
+    currentTime: time,
+    projects:
+        projects ??
+        [
+          makeTestProjectRecord(
+            project: makeTestProject(
+              id: 'p1',
+              title: 'Project Alpha',
+              categoryId: 'work',
+            ),
+            category: workCat,
+          ),
+          makeTestProjectRecord(
+            project: makeTestProject(
+              id: 'p2',
+              title: 'Project Beta',
+              categoryId: 'study',
+            ),
+            category: studyCat,
+          ),
+        ],
+  );
 }

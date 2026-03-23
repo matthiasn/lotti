@@ -1438,6 +1438,14 @@
       }
     }
   },
+  "projectShowcaseUpdatedMinutesAgo": "Aktualizováno před {minutes} min ↻",
+  "@projectShowcaseUpdatedMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseUsefulness": "Užitečnost",
   "projectShowcaseViewBlocker": "Zobrazit blokátor",
   "projectStatusActive": "Aktivní",

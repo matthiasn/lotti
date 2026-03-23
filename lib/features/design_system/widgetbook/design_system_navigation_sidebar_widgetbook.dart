@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -154,10 +155,16 @@ class _ExpandedSidebarContent extends StatelessWidget {
                   onPressed: widgetbookNoop,
                 ),
               ),
-              const Positioned(
+              Positioned(
                 top: 0,
                 right: 0,
-                child: _AiAssistantFab(variant: 1),
+                child: DesignSystemAiAssistantButton(
+                  assetName: 'assets/design_system/ai_assistant_variant_1.png',
+                  semanticLabel: context
+                      .messages
+                      .designSystemNavigationAiAssistantSectionTitle,
+                  onPressed: widgetbookNoop,
+                ),
               ),
             ],
           ),
@@ -209,10 +216,16 @@ class _CollapsedSidebarContent extends StatelessWidget {
                       context.messages.designSystemNavigationNewLabel,
                 ),
               ),
-              const Positioned(
+              Positioned(
                 top: 0,
                 left: 54,
-                child: _AiAssistantFab(variant: 1),
+                child: DesignSystemAiAssistantButton(
+                  assetName: 'assets/design_system/ai_assistant_variant_1.png',
+                  semanticLabel: context
+                      .messages
+                      .designSystemNavigationAiAssistantSectionTitle,
+                  onPressed: widgetbookNoop,
+                ),
               ),
             ],
           ),
@@ -546,57 +559,23 @@ class _AiAssistantShowcase extends StatelessWidget {
         color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _AiAssistantFab(variant: 1),
-          SizedBox(width: 24),
-          _AiAssistantFab(variant: 2),
-        ],
-      ),
-    );
-  }
-}
-
-class _AiAssistantFab extends StatelessWidget {
-  const _AiAssistantFab({required this.variant});
-
-  final int variant;
-
-  static const _buttonSize = 56.0;
-  static const _assetExtent = 108.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final assetName = switch (variant) {
-      1 => 'assets/design_system/ai_assistant_variant_1.png',
-      _ => 'assets/design_system/ai_assistant_variant_2.png',
-    };
-
-    return Semantics(
-      button: true,
-      label: context.messages.designSystemNavigationAiAssistantSectionTitle,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widgetbookNoop,
-        child: SizedBox.square(
-          dimension: _buttonSize,
-          child: OverflowBox(
-            minWidth: _assetExtent,
-            maxWidth: _assetExtent,
-            minHeight: _assetExtent,
-            maxHeight: _assetExtent,
-            child: ExcludeSemantics(
-              child: Image.asset(
-                assetName,
-                width: _assetExtent,
-                height: _assetExtent,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              ),
-            ),
+          DesignSystemAiAssistantButton(
+            assetName: 'assets/design_system/ai_assistant_variant_1.png',
+            semanticLabel:
+                context.messages.designSystemNavigationAiAssistantSectionTitle,
+            onPressed: widgetbookNoop,
           ),
-        ),
+          const SizedBox(width: 24),
+          DesignSystemAiAssistantButton(
+            assetName: 'assets/design_system/ai_assistant_variant_2.png',
+            semanticLabel:
+                context.messages.designSystemNavigationAiAssistantSectionTitle,
+            onPressed: widgetbookNoop,
+          ),
+        ],
       ),
     );
   }
