@@ -2720,6 +2720,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemTabPendingLabel => 'Pendiente';
 
   @override
+  String get designSystemTimePickerFormatsTitle => 'Formatos de hora';
+
+  @override
+  String get designSystemTimePickerTwelveHourLabel => '12 horas';
+
+  @override
+  String get designSystemTimePickerTwentyFourHourLabel => '24 horas';
+
+  @override
   String get designSystemToastDetailsLabel => 'Detalles de la notificación';
 
   @override

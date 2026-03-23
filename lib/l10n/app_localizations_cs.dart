@@ -2659,6 +2659,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemTabPendingLabel => 'Čekající';
 
   @override
+  String get designSystemTimePickerFormatsTitle => 'Formáty času';
+
+  @override
+  String get designSystemTimePickerTwelveHourLabel => '12hodinový';
+
+  @override
+  String get designSystemTimePickerTwentyFourHourLabel => '24hodinový';
+
+  @override
   String get designSystemToastDetailsLabel => 'Detaily oznámení';
 
   @override
