@@ -19,13 +19,10 @@ class ProjectListDetailState {
   ProjectRecord? get selectedProject {
     final visible = visibleProjects;
 
-    for (final record in visible) {
-      if (record.project.meta.id == selectedProjectId) {
-        return record;
-      }
-    }
-
-    return visible.isNotEmpty ? visible.first : null;
+    return visible
+            .where((r) => r.project.meta.id == selectedProjectId)
+            .firstOrNull ??
+        visible.firstOrNull;
   }
 
   List<ProjectRecord> get visibleProjects {
@@ -44,18 +41,18 @@ class ProjectListDetailState {
   }
 
   List<ProjectGroup> get visibleGroups {
-    final visibleIds = visibleProjects
-        .map((project) => project.project.meta.id)
-        .toSet();
+    final visible = visibleProjects;
+    final byCategory = <String, List<ProjectRecord>>{};
+
+    for (final record in visible) {
+      (byCategory[record.category.id] ??= []).add(record);
+    }
+
     final groups = <ProjectGroup>[];
 
     for (final category in data.categories) {
-      final projects = data.projects.where((record) {
-        return record.category.id == category.id &&
-            visibleIds.contains(record.project.meta.id);
-      }).toList();
-
-      if (projects.isEmpty) {
+      final projects = byCategory[category.id];
+      if (projects == null || projects.isEmpty) {
         continue;
       }
 

@@ -9,9 +9,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The health-score panel shown at the top of the detail pane.
 class HealthPanel extends StatelessWidget {
-  const HealthPanel({required this.record, super.key});
+  const HealthPanel({
+    required this.record,
+    this.onViewBlockerPressed,
+    super.key,
+  });
 
   final ProjectRecord record;
+  final VoidCallback? onViewBlockerPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +113,7 @@ class HealthPanel extends StatelessWidget {
               DesignSystemButton(
                 label: context.messages.projectShowcaseViewBlocker,
                 variant: DesignSystemButtonVariant.secondary,
-                onPressed: () {},
+                onPressed: onViewBlockerPressed,
               ),
             ],
           ),

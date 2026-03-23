@@ -1815,6 +1815,14 @@
       }
     }
   },
+  "projectShowcaseUpdatedMinutesAgo": "Updated {minutes}m ago ↻",
+  "@projectShowcaseUpdatedMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseUsefulness": "Usefulness",
   "projectShowcaseViewBlocker": "View blocker",
   "projectStatusActive": "Active",

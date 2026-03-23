@@ -1651,6 +1651,14 @@
       }
     }
   },
+  "projectShowcaseUpdatedMinutesAgo": "Actualizat acum {minutes} min ↻",
+  "@projectShowcaseUpdatedMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseUsefulness": "Utilitate",
   "projectShowcaseViewBlocker": "Vezi blocajul",
   "projectStatusActive": "Activ",

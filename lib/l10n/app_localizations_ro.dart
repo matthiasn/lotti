@@ -3869,6 +3869,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String projectShowcaseUpdatedMinutesAgo(int minutes) {
+    return 'Actualizat acum $minutes min ↻';
+  }
+
+  @override
   String get projectShowcaseUsefulness => 'Utilitate';
 
   @override

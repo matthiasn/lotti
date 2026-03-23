@@ -23,18 +23,31 @@ class ProjectListDetailShowcaseController
   }
 
   void updateSearchQuery(String value) {
-    final nextSelectedProjectId = _selectedProjectIdForQuery(
-      query: value,
-      fallbackSelectedProjectId: state.selectedProjectId,
+    if (value == state.searchQuery) {
+      return;
+    }
+
+    final candidate = state.copyWith(searchQuery: value);
+    final visible = candidate.visibleProjects;
+
+    final currentStillVisible = visible.any(
+      (r) => r.project.meta.id == state.selectedProjectId,
     );
 
-    state = state.copyWith(
-      searchQuery: value,
-      selectedProjectId: nextSelectedProjectId,
-    );
+    final nextSelectedId = currentStillVisible
+        ? state.selectedProjectId
+        : (visible.isNotEmpty
+              ? visible.first.project.meta.id
+              : state.selectedProjectId);
+
+    state = candidate.copyWith(selectedProjectId: nextSelectedId);
   }
 
   void selectProject(String projectId) {
+    if (projectId == state.selectedProjectId) {
+      return;
+    }
+
     final projectExists = state.data.projects.any(
       (record) => record.project.meta.id == projectId,
     );
@@ -43,38 +56,5 @@ class ProjectListDetailShowcaseController
     }
 
     state = state.copyWith(selectedProjectId: projectId);
-  }
-
-  String _selectedProjectIdForQuery({
-    required String query,
-    required String fallbackSelectedProjectId,
-  }) {
-    final visibleProjectIds = _visibleProjectIdsForQuery(query);
-
-    if (visibleProjectIds.contains(fallbackSelectedProjectId)) {
-      return fallbackSelectedProjectId;
-    }
-
-    if (visibleProjectIds.isNotEmpty) {
-      return visibleProjectIds.first;
-    }
-
-    return fallbackSelectedProjectId;
-  }
-
-  List<String> _visibleProjectIdsForQuery(String query) {
-    final trimmed = query.trim().toLowerCase();
-    final projects = trimmed.isEmpty
-        ? state.data.projects
-        : state.data.projects.where((record) {
-            final titleMatch = record.project.data.title.toLowerCase().contains(
-              trimmed,
-            );
-            final categoryMatch = record.category.name.toLowerCase().contains(
-              trimmed,
-            );
-            return titleMatch || categoryMatch;
-          });
-    return projects.map((record) => record.project.meta.id).toList();
   }
 }

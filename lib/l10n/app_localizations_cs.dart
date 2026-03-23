@@ -3849,6 +3849,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String projectShowcaseUpdatedMinutesAgo(int minutes) {
+    return 'Aktualizováno před $minutes min ↻';
+  }
+
+  @override
   String get projectShowcaseUsefulness => 'Užitečnost';
 
   @override

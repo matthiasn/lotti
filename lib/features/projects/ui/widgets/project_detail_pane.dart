@@ -96,8 +96,13 @@ class ProjectDetailPane extends StatelessWidget {
     DateTime currentTime,
   ) {
     final difference = currentTime.difference(updatedAt);
-    final hours = difference.inHours < 1 ? 1 : difference.inHours;
-    return context.messages.projectShowcaseUpdatedHoursAgo(hours);
+
+    if (difference.inHours < 1) {
+      final minutes = difference.inMinutes < 1 ? 1 : difference.inMinutes;
+      return context.messages.projectShowcaseUpdatedMinutesAgo(minutes);
+    }
+
+    return context.messages.projectShowcaseUpdatedHoursAgo(difference.inHours);
   }
 }
 

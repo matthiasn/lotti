@@ -1651,6 +1651,14 @@
       }
     }
   },
+  "projectShowcaseUpdatedMinutesAgo": "Actualizado hace {minutes} min ↻",
+  "@projectShowcaseUpdatedMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseUsefulness": "Utilidad",
   "projectShowcaseViewBlocker": "Ver bloqueo",
   "projectStatusActive": "Activo",
