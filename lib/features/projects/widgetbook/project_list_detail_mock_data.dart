@@ -164,8 +164,8 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
     title: 'Design System Book',
     description:
         'Wrap up the final chapters on component inventories, tokens, and rollout strategy for multi-platform systems.',
-    status: _projectCompleted(DateTime(2026, 4, 10, 20)),
-    targetDate: DateTime(2026, 4, 10),
+    status: _projectCompleted(DateTime(2026, 3, 28, 20)),
+    targetDate: DateTime(2026, 3, 28),
   );
 
   final showcaseNow = DateTime(2026, 4, 2, 9, 30);
@@ -326,7 +326,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         aiSummary:
             'Design System Book is complete and the main takeaways have already been folded into current UI work.',
         recommendations: const [],
-        reportUpdatedAt: DateTime(2026, 4, 10, 21),
+        reportUpdatedAt: DateTime(2026, 3, 28, 21),
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,

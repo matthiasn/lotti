@@ -3750,7 +3750,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectShowcaseNoResults =>
-      'Niciun proiect nu corespunde căutării dvs.';
+      'Niciun proiect nu corespunde căutării tale.';
 
   @override
   String get projectShowcaseOneOnOneReviewsTab => 'Revizuiri 1:1';
@@ -3765,7 +3765,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseRecommendationsTitle => 'Recomandări';
 
   @override
-  String get projectShowcaseSearchHint => 'Căutați proiecte';
+  String get projectShowcaseSearchHint => 'Caută proiecte';
 
   @override
   String projectShowcaseSessionsCount(int count) {
@@ -3793,7 +3793,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseUsefulness => 'Utilitate';
 
   @override
-  String get projectShowcaseViewBlocker => 'Vedeți blocajul';
+  String get projectShowcaseViewBlocker => 'Vezi blocajul';
 
   @override
   String get projectStatusActive => 'Activ';

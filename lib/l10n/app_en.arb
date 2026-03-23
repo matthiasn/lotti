@@ -1770,7 +1770,7 @@
       }
     }
   },
-  "projectShowcaseTasksCompleted": "{completed}/{total} tasks completed",
+  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} task completed} other{{completed}/{total} tasks completed}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
       "completed": {

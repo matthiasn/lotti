@@ -1592,12 +1592,12 @@
   },
   "projectShowcaseHealthScoreDescription": "Acest scor se bazează pe viteza sarcinilor, blocaje și timpul rămas până la termen.",
   "projectShowcaseHealthScoreTitle": "Scor de sănătate",
-  "projectShowcaseNoResults": "Niciun proiect nu corespunde căutării dvs.",
+  "projectShowcaseNoResults": "Niciun proiect nu corespunde căutării tale.",
   "projectShowcaseOneOnOneReviewsTab": "Revizuiri 1:1",
   "projectShowcaseOngoing": "În curs",
   "projectShowcaseProjectTasksTab": "Sarcinile proiectului",
   "projectShowcaseRecommendationsTitle": "Recomandări",
-  "projectShowcaseSearchHint": "Căutați proiecte",
+  "projectShowcaseSearchHint": "Caută proiecte",
   "projectShowcaseSessionsCount": "{count, plural, one{{count} sesiune} few{{count} sesiuni} other{{count} de sesiuni}}",
   "@projectShowcaseSessionsCount": {
     "placeholders": {
@@ -1626,7 +1626,7 @@
     }
   },
   "projectShowcaseUsefulness": "Utilitate",
-  "projectShowcaseViewBlocker": "Vedeți blocajul",
+  "projectShowcaseViewBlocker": "Vezi blocajul",
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
   "projectStatusChangeTitle": "Schimbă starea",

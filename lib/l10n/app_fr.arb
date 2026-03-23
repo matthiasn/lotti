@@ -1557,7 +1557,7 @@
   "projectRecommendationsTitle": "Prochaines étapes recommandées",
   "projectRecommendationUpdateError": "Impossible de mettre à jour la recommandation. Réessaie.",
   "projectShowcaseAiReportTitle": "Rapport IA",
-  "projectShowcaseBlockedLegend": "{count} bloquées",
+  "projectShowcaseBlockedLegend": "{count, plural, one{{count} bloquée} other{{count} bloquées}}",
   "@projectShowcaseBlockedLegend": {
     "placeholders": {
       "count": {
@@ -1573,7 +1573,7 @@
       }
     }
   },
-  "projectShowcaseCompletedLegend": "{count} terminées",
+  "projectShowcaseCompletedLegend": "{count, plural, one{{count} terminée} other{{count} terminées}}",
   "@projectShowcaseCompletedLegend": {
     "placeholders": {
       "count": {
@@ -1606,7 +1606,7 @@
       }
     }
   },
-  "projectShowcaseTasksCompleted": "{completed}/{total} tâches terminées",
+  "projectShowcaseTasksCompleted": "{total, plural, one{{completed}/{total} tâche terminée} other{{completed}/{total} tâches terminées}}",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
       "completed": {

@@ -6658,7 +6658,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectShowcaseTasksCompleted.
   ///
   /// In en, this message translates to:
-  /// **'{completed}/{total} tasks completed'**
+  /// **'{total, plural, one{{completed}/{total} task completed} other{{completed}/{total} tasks completed}}'**
   String projectShowcaseTasksCompleted(int completed, int total);
 
   /// No description provided for @projectShowcaseUpdatedHoursAgo.

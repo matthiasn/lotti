@@ -3733,7 +3733,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Žádné projekty neodpovídají tvému hledání.';
 
   @override
-  String get projectShowcaseOneOnOneReviewsTab => '1:1 review';
+  String get projectShowcaseOneOnOneReviewsTab => '1:1 hodnocení';
 
   @override
   String get projectShowcaseOngoing => 'Průběžně';

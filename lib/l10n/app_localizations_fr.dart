@@ -3764,7 +3764,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String projectShowcaseBlockedLegend(int count) {
-    return '$count bloquées';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count bloquées',
+      one: '$count bloquée',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3780,7 +3786,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String projectShowcaseCompletedLegend(int count) {
-    return '$count terminées';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count terminées',
+      one: '$count terminée',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3830,7 +3842,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String projectShowcaseTasksCompleted(int completed, int total) {
-    return '$completed/$total tâches terminées';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$completed/$total tâches terminées',
+      one: '$completed/$total tâche terminée',
+    );
+    return '$_temp0';
   }
 
   @override

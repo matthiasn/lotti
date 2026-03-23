@@ -3705,7 +3705,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String projectShowcaseTasksCompleted(int completed, int total) {
-    return '$completed/$total tasks completed';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$completed/$total tasks completed',
+      one: '$completed/$total task completed',
+    );
+    return '$_temp0';
   }
 
   @override

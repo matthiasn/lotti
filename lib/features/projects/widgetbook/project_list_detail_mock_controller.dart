@@ -25,9 +25,15 @@ class ProjectListDetailShowcaseState {
   final String selectedProjectId;
 
   ProjectListDetailMockRecord? get selectedProject {
-    return _recordForId(selectedProjectId) ??
-        (visibleProjects.isNotEmpty ? visibleProjects.first : null) ??
-        (data.projects.isNotEmpty ? data.projects.first : null);
+    final visible = visibleProjects;
+
+    for (final record in visible) {
+      if (record.project.meta.id == selectedProjectId) {
+        return record;
+      }
+    }
+
+    return visible.isNotEmpty ? visible.first : null;
   }
 
   List<ProjectListDetailMockRecord> get visibleProjects {
@@ -82,15 +88,6 @@ class ProjectListDetailShowcaseState {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedProjectId: selectedProjectId ?? this.selectedProjectId,
     );
-  }
-
-  ProjectListDetailMockRecord? _recordForId(String projectId) {
-    for (final record in data.projects) {
-      if (record.project.meta.id == projectId) {
-        return record;
-      }
-    }
-    return null;
   }
 }
 
@@ -153,23 +150,9 @@ class ProjectListDetailShowcaseController
   }
 
   List<String> _visibleProjectIdsForQuery(String query) {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return state.data.projects
-          .map((record) => record.project.meta.id)
-          .toList();
-    }
-
-    return state.data.projects
-        .where((record) {
-          final titleMatch = record.project.data.title.toLowerCase().contains(
-            normalizedQuery,
-          );
-          final categoryMatch = record.category.name.toLowerCase().contains(
-            normalizedQuery,
-          );
-          return titleMatch || categoryMatch;
-        })
+    return state
+        .copyWith(searchQuery: query)
+        .visibleProjects
         .map((record) => record.project.meta.id)
         .toList();
   }

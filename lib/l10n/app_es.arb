@@ -1557,7 +1557,7 @@
   "projectRecommendationsTitle": "Siguientes pasos recomendados",
   "projectRecommendationUpdateError": "No se pudo actualizar la recomendación. Inténtalo de nuevo.",
   "projectShowcaseAiReportTitle": "Informe de IA",
-  "projectShowcaseBlockedLegend": "{count} bloqueadas",
+  "projectShowcaseBlockedLegend": "{count, plural, one{{count} bloqueada} other{{count} bloqueadas}}",
   "@projectShowcaseBlockedLegend": {
     "placeholders": {
       "count": {
@@ -1573,7 +1573,7 @@
       }
     }
   },
-  "projectShowcaseCompletedLegend": "{count} completadas",
+  "projectShowcaseCompletedLegend": "{count, plural, one{{count} completada} other{{count} completadas}}",
   "@projectShowcaseCompletedLegend": {
     "placeholders": {
       "count": {
