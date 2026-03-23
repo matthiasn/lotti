@@ -1,108 +1,21 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_data.dart';
-
-class ProjectListDetailShowcaseGroup {
-  const ProjectListDetailShowcaseGroup({
-    required this.label,
-    required this.projects,
-  });
-
-  final String label;
-  final List<ProjectListDetailMockRecord> projects;
-}
-
-class ProjectListDetailShowcaseState {
-  const ProjectListDetailShowcaseState({
-    required this.data,
-    required this.searchQuery,
-    required this.selectedProjectId,
-  });
-
-  final ProjectListDetailMockData data;
-  final String searchQuery;
-  final String selectedProjectId;
-
-  ProjectListDetailMockRecord? get selectedProject {
-    final visible = visibleProjects;
-
-    for (final record in visible) {
-      if (record.project.meta.id == selectedProjectId) {
-        return record;
-      }
-    }
-
-    return visible.isNotEmpty ? visible.first : null;
-  }
-
-  List<ProjectListDetailMockRecord> get visibleProjects {
-    final query = searchQuery.trim().toLowerCase();
-    if (query.isEmpty) {
-      return data.projects;
-    }
-
-    return data.projects.where((record) {
-      final titleMatch = record.project.data.title.toLowerCase().contains(
-        query,
-      );
-      final categoryMatch = record.category.name.toLowerCase().contains(query);
-      return titleMatch || categoryMatch;
-    }).toList();
-  }
-
-  List<ProjectListDetailShowcaseGroup> get visibleGroups {
-    final visibleIds = visibleProjects
-        .map((project) => project.project.meta.id)
-        .toSet();
-    final groups = <ProjectListDetailShowcaseGroup>[];
-
-    for (final category in data.categories) {
-      final projects = data.projects.where((record) {
-        return record.category.id == category.id &&
-            visibleIds.contains(record.project.meta.id);
-      }).toList();
-
-      if (projects.isEmpty) {
-        continue;
-      }
-
-      groups.add(
-        ProjectListDetailShowcaseGroup(
-          label: category.name,
-          projects: projects,
-        ),
-      );
-    }
-
-    return groups;
-  }
-
-  ProjectListDetailShowcaseState copyWith({
-    ProjectListDetailMockData? data,
-    String? searchQuery,
-    String? selectedProjectId,
-  }) {
-    return ProjectListDetailShowcaseState(
-      data: data ?? this.data,
-      searchQuery: searchQuery ?? this.searchQuery,
-      selectedProjectId: selectedProjectId ?? this.selectedProjectId,
-    );
-  }
-}
 
 final projectListDetailShowcaseControllerProvider =
     NotifierProvider.autoDispose<
       ProjectListDetailShowcaseController,
-      ProjectListDetailShowcaseState
+      ProjectListDetailState
     >(ProjectListDetailShowcaseController.new);
 
 class ProjectListDetailShowcaseController
-    extends Notifier<ProjectListDetailShowcaseState> {
+    extends Notifier<ProjectListDetailState> {
   @override
-  ProjectListDetailShowcaseState build() {
+  ProjectListDetailState build() {
     final data = buildProjectListDetailMockData();
-    return ProjectListDetailShowcaseState(
+    return ProjectListDetailState(
       data: data,
       searchQuery: '',
       selectedProjectId: data.projects.first.project.meta.id,
@@ -150,10 +63,18 @@ class ProjectListDetailShowcaseController
   }
 
   List<String> _visibleProjectIdsForQuery(String query) {
-    return state
-        .copyWith(searchQuery: query)
-        .visibleProjects
-        .map((record) => record.project.meta.id)
-        .toList();
+    final trimmed = query.trim().toLowerCase();
+    final projects = trimmed.isEmpty
+        ? state.data.projects
+        : state.data.projects.where((record) {
+            final titleMatch = record.project.data.title.toLowerCase().contains(
+              trimmed,
+            );
+            final categoryMatch = record.category.name.toLowerCase().contains(
+              trimmed,
+            );
+            return titleMatch || categoryMatch;
+          });
+    return projects.map((record) => record.project.meta.id).toList();
   }
 }

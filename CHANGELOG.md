@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.931] - 2026-03-23
+### Changed
+- Project list/detail showcase: extracted ~30 private widgets and mock types
+  into production presentation models, state, and reusable widget files. The
+  showcase is now a thin wrapper feeding mock data to production widgets.
+
 ### Added
 - Qwen 3.5 Plus model: added Alibaba Cloud's advanced multimodal reasoning
   model with text and image understanding for complex analytical tasks.

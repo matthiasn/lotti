@@ -4,96 +4,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 
-class ProjectListDetailMockData {
-  const ProjectListDetailMockData({
-    required this.categories,
-    required this.projects,
-    required this.showcaseNow,
-  });
-
-  final List<CategoryDefinition> categories;
-  final List<ProjectListDetailMockRecord> projects;
-  final DateTime showcaseNow;
-}
-
-class ProjectListDetailMockRecord {
-  const ProjectListDetailMockRecord({
-    required this.project,
-    required this.category,
-    required this.healthScore,
-    required this.completedTaskCount,
-    required this.totalTaskCount,
-    required this.blockedTaskCount,
-    required this.aiSummary,
-    required this.recommendations,
-    required this.reportUpdatedAt,
-    required this.highlightedTaskSummaries,
-    required this.reviewSessions,
-    required this.highlightedTasksTotalDuration,
-    required this.showcaseNow,
-  });
-
-  final ProjectEntry project;
-  final CategoryDefinition category;
-  final int healthScore;
-  final int completedTaskCount;
-  final int totalTaskCount;
-  final int blockedTaskCount;
-  final String aiSummary;
-  final List<String> recommendations;
-  final DateTime reportUpdatedAt;
-  final List<ProjectListDetailMockTaskSummary> highlightedTaskSummaries;
-  final List<ProjectListDetailMockReviewSession> reviewSessions;
-  final Duration highlightedTasksTotalDuration;
-  final DateTime showcaseNow;
-}
-
-class ProjectListDetailMockTaskSummary {
-  const ProjectListDetailMockTaskSummary({
-    required this.task,
-    required this.estimatedDuration,
-  });
-
-  final Task task;
-  final Duration estimatedDuration;
-}
-
-enum ProjectListDetailMockReviewMetricType {
-  communication,
-  usefulness,
-  accuracy,
-}
-
-class ProjectListDetailMockReviewMetric {
-  const ProjectListDetailMockReviewMetric({
-    required this.type,
-    required this.rating,
-  });
-
-  final ProjectListDetailMockReviewMetricType type;
-  final int rating;
-}
-
-class ProjectListDetailMockReviewSession {
-  const ProjectListDetailMockReviewSession({
-    required this.id,
-    required this.summaryLabel,
-    required this.rating,
-    this.metrics = const [],
-    this.note,
-    this.expanded = false,
-  });
-
-  final String id;
-  final String summaryLabel;
-  final int rating;
-  final List<ProjectListDetailMockReviewMetric> metrics;
-  final String? note;
-  final bool expanded;
-}
-
-ProjectListDetailMockData buildProjectListDetailMockData() {
+ProjectListData buildProjectListDetailMockData() {
   final workCategory = _category(
     id: 'work',
     name: 'Work',
@@ -168,17 +81,17 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
     targetDate: DateTime(2026, 3, 28),
   );
 
-  final showcaseNow = DateTime(2026, 4, 2, 9, 30);
+  final currentTime = DateTime(2026, 4, 2, 9, 30);
 
-  return ProjectListDetailMockData(
+  return ProjectListData(
     categories: [
       workCategory,
       mealsCategory,
       studyCategory,
     ],
-    showcaseNow: showcaseNow,
+    currentTime: currentTime,
     projects: [
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: deviceSync,
         category: workCategory,
         healthScore: 78,
@@ -195,7 +108,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
         highlightedTasksTotalDuration: const Duration(minutes: 11, seconds: 38),
         highlightedTaskSummaries: [
-          ProjectListDetailMockTaskSummary(
+          TaskSummary(
             task: _task(
               id: 'sync-engine-task',
               title: 'Implement sync engine',
@@ -204,7 +117,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
             ),
             estimatedDuration: const Duration(hours: 2, minutes: 30),
           ),
-          ProjectListDetailMockTaskSummary(
+          TaskSummary(
             task: _task(
               id: 'offline-cache-task',
               title: 'Offline cache parity',
@@ -218,37 +131,36 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
           ),
         ],
         reviewSessions: const [
-          ProjectListDetailMockReviewSession(
+          ReviewSession(
             id: 'review-1',
             summaryLabel: 'Week 11 · Mar 10',
             rating: 4,
             expanded: true,
             metrics: [
-              ProjectListDetailMockReviewMetric(
-                type: ProjectListDetailMockReviewMetricType.communication,
+              ReviewMetric(
+                type: ReviewMetricType.communication,
                 rating: 4,
               ),
-              ProjectListDetailMockReviewMetric(
-                type: ProjectListDetailMockReviewMetricType.usefulness,
+              ReviewMetric(
+                type: ReviewMetricType.usefulness,
                 rating: 4,
               ),
-              ProjectListDetailMockReviewMetric(
-                type: ProjectListDetailMockReviewMetricType.accuracy,
+              ReviewMetric(
+                type: ReviewMetricType.accuracy,
                 rating: 4,
               ),
             ],
             note:
                 '"Good week overall. Offline cache work needs prioritising next sprint."',
           ),
-          ProjectListDetailMockReviewSession(
+          ReviewSession(
             id: 'review-2',
             summaryLabel: 'Week 10 · Mar 3',
             rating: 5,
           ),
         ],
-        showcaseNow: showcaseNow,
       ),
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: apiMigration,
         category: workCategory,
         healthScore: 89,
@@ -264,9 +176,8 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
-        showcaseNow: showcaseNow,
       ),
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: ciCdPipeline,
         category: workCategory,
         healthScore: 95,
@@ -280,9 +191,8 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
-        showcaseNow: showcaseNow,
       ),
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: weeklyMealPrep,
         category: mealsCategory,
         healthScore: 62,
@@ -298,9 +208,8 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
-        showcaseNow: showcaseNow,
       ),
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: reactCourse,
         category: studyCategory,
         healthScore: 45,
@@ -314,9 +223,8 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
-        showcaseNow: showcaseNow,
       ),
-      ProjectListDetailMockRecord(
+      ProjectRecord(
         project: designSystemBook,
         category: studyCategory,
         healthScore: 88,
@@ -330,7 +238,6 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
-        showcaseNow: showcaseNow,
       ),
     ],
   );
