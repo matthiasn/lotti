@@ -2705,6 +2705,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemTabPendingLabel => 'Čekající';
 
   @override
+  String get designSystemTextareaErrorSample => 'Toto pole je povinné';
+
+  @override
+  String get designSystemTextareaHelperSample => 'Zadej svou zprávu zde';
+
+  @override
+  String get designSystemTextareaHintSample => 'Napiš něco...';
+
+  @override
+  String get designSystemTextareaLabelSample => 'Štítek';
+
+  @override
+  String get designSystemTextareaVariantsTitle => 'Varianty textarea';
+
+  @override
+  String get designSystemTextareaWithCounterLabel => 'S počítadlem';
+
+  @override
+  String get designSystemTextareaWithErrorLabel => 'S chybou';
+
+  @override
+  String get designSystemTextareaWithHelperLabel => 'S nápovědou';
+
+  @override
   String get designSystemTimePickerFormatsTitle => 'Formáty času';
 
   @override

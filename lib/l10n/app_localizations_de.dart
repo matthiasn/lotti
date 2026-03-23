@@ -2725,6 +2725,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemTabPendingLabel => 'Ausstehend';
 
   @override
+  String get designSystemTextareaErrorSample => 'Dieses Feld ist erforderlich';
+
+  @override
+  String get designSystemTextareaHelperSample => 'Gib deine Nachricht hier ein';
+
+  @override
+  String get designSystemTextareaHintSample => 'Etwas eingeben...';
+
+  @override
+  String get designSystemTextareaLabelSample => 'Label';
+
+  @override
+  String get designSystemTextareaVariantsTitle => 'Textarea-Varianten';
+
+  @override
+  String get designSystemTextareaWithCounterLabel => 'Mit Zähler';
+
+  @override
+  String get designSystemTextareaWithErrorLabel => 'Mit Fehler';
+
+  @override
+  String get designSystemTextareaWithHelperLabel => 'Mit Hilfstext';
+
+  @override
   String get designSystemTimePickerFormatsTitle => 'Zeitformate';
 
   @override

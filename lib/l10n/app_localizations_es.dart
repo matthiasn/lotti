@@ -2767,6 +2767,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemTabPendingLabel => 'Pendiente';
 
   @override
+  String get designSystemTextareaErrorSample => 'Este campo es obligatorio';
+
+  @override
+  String get designSystemTextareaHelperSample => 'Introduce tu mensaje aquí';
+
+  @override
+  String get designSystemTextareaHintSample => 'Escribe algo...';
+
+  @override
+  String get designSystemTextareaLabelSample => 'Etiqueta';
+
+  @override
+  String get designSystemTextareaVariantsTitle => 'Variantes de textarea';
+
+  @override
+  String get designSystemTextareaWithCounterLabel => 'Con contador';
+
+  @override
+  String get designSystemTextareaWithErrorLabel => 'Con error';
+
+  @override
+  String get designSystemTextareaWithHelperLabel => 'Con texto de ayuda';
+
+  @override
   String get designSystemTimePickerFormatsTitle => 'Formatos de hora';
 
   @override
