@@ -1343,6 +1343,35 @@
   "projectRecommendationResolveTooltip": "Označit jako vyřešené",
   "projectRecommendationsTitle": "Doporučené další kroky",
   "projectRecommendationUpdateError": "Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.",
+  "projectShowcaseAiReportTitle": "AI report",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} blokovaný úkol} few{{count} blokované úkoly} other{{count} blokovaných úkolů}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Popis",
+  "projectShowcaseHealthScoreDescription": "Tohle skóre vychází z rychlosti postupu úkolů, blokátorů a času do termínu.",
+  "projectShowcaseHealthScoreTitle": "Skóre zdraví",
+  "projectShowcaseNoResults": "Žádné projekty neodpovídají tvému hledání.",
+  "projectShowcaseOneOnOneReviewsTab": "1:1 review",
+  "projectShowcaseProjectTasksTab": "Projektové úkoly",
+  "projectShowcaseRecommendationsTitle": "Doporučení",
+  "projectShowcaseSearchHint": "Hledat projekty",
+  "projectShowcaseTasksCompleted": "{completed} z {total} úkolů dokončeno",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseViewBlocker": "Zobrazit blokátor",
   "projectStatusActive": "Aktivní",
   "projectStatusArchived": "Archivovaný",
   "projectStatusChangeTitle": "Změnit stav",

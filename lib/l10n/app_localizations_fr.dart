@@ -3760,6 +3760,54 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de mettre à jour la recommandation. Réessaie.';
 
   @override
+  String get projectShowcaseAiReportTitle => 'Rapport IA';
+
+  @override
+  String projectShowcaseBlockedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches bloquées',
+      one: '$count tâche bloquée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectShowcaseDescriptionTitle => 'Description';
+
+  @override
+  String get projectShowcaseHealthScoreDescription =>
+      'Ce score se base sur le rythme des tâches, les blocages et le temps restant avant l\'échéance.';
+
+  @override
+  String get projectShowcaseHealthScoreTitle => 'Score de santé';
+
+  @override
+  String get projectShowcaseNoResults =>
+      'Aucun projet ne correspond à ta recherche.';
+
+  @override
+  String get projectShowcaseOneOnOneReviewsTab => 'Revues 1:1';
+
+  @override
+  String get projectShowcaseProjectTasksTab => 'Tâches du projet';
+
+  @override
+  String get projectShowcaseRecommendationsTitle => 'Recommandations';
+
+  @override
+  String get projectShowcaseSearchHint => 'Rechercher des projets';
+
+  @override
+  String projectShowcaseTasksCompleted(int completed, int total) {
+    return '$completed/$total tâches terminées';
+  }
+
+  @override
+  String get projectShowcaseViewBlocker => 'Voir le blocage';
+
+  @override
   String get projectStatusActive => 'Actif';
 
   @override

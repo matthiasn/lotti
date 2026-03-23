@@ -3689,6 +3689,55 @@ class AppLocalizationsCs extends AppLocalizations {
       'Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.';
 
   @override
+  String get projectShowcaseAiReportTitle => 'AI report';
+
+  @override
+  String projectShowcaseBlockedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count blokovaných úkolů',
+      few: '$count blokované úkoly',
+      one: '$count blokovaný úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectShowcaseDescriptionTitle => 'Popis';
+
+  @override
+  String get projectShowcaseHealthScoreDescription =>
+      'Tohle skóre vychází z rychlosti postupu úkolů, blokátorů a času do termínu.';
+
+  @override
+  String get projectShowcaseHealthScoreTitle => 'Skóre zdraví';
+
+  @override
+  String get projectShowcaseNoResults =>
+      'Žádné projekty neodpovídají tvému hledání.';
+
+  @override
+  String get projectShowcaseOneOnOneReviewsTab => '1:1 review';
+
+  @override
+  String get projectShowcaseProjectTasksTab => 'Projektové úkoly';
+
+  @override
+  String get projectShowcaseRecommendationsTitle => 'Doporučení';
+
+  @override
+  String get projectShowcaseSearchHint => 'Hledat projekty';
+
+  @override
+  String projectShowcaseTasksCompleted(int completed, int total) {
+    return '$completed z $total úkolů dokončeno';
+  }
+
+  @override
+  String get projectShowcaseViewBlocker => 'Zobrazit blokátor';
+
+  @override
   String get projectStatusActive => 'Aktivní';
 
   @override

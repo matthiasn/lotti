@@ -39,6 +39,10 @@ lib/features/projects/
 ├── state/
 │   ├── project_providers.dart        # projectsForCategoryProvider, projectForTaskProvider, projectTaskCountProvider
 │   └── project_detail_controller.dart # Detail page state (form tracking, save)
+├── widgetbook/
+│   ├── project_list_detail_mock_controller.dart # Widgetbook-only mock controller for the list/detail showcase
+│   ├── project_list_detail_mock_data.dart       # Mock ProjectEntry/Task-backed showcase data
+│   └── project_widgetbook.dart                  # Widgetbook registration for project showcase use cases
 └── ui/
     ├── pages/
     │   ├── project_create_page.dart   # New project form
@@ -48,6 +52,7 @@ lib/features/projects/
         ├── project_agent_report_card.dart        # Agent report display
         ├── project_health_header.dart            # Expandable project overview on tasks page
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
+        ├── project_list_detail_showcase.dart     # Desktop list/detail showcase used in Widgetbook
         ├── project_selection_modal_content.dart  # Project picker modal
         ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
         ├── project_status_chip.dart              # Status badge with icon/color
@@ -83,6 +88,10 @@ Project routes live under the settings location:
 ### ProjectHealthHeader
 
 Expandable header on the tasks page. Collapsed (default) shows a `ModernBaseCard` with a folder icon, "Projects" title, and a summary like "2 projects, 4 tasks". Tapping expands to reveal per-project rows with name, task count, target date, and status chip. Tapping a project row navigates to its detail page.
+
+### ProjectListDetailShowcase
+
+Widgetbook-only desktop showcase that mirrors the Figma list/detail layout using real `ProjectEntry`, `Task`, and `CategoryDefinition` shapes plus presentation-only report metadata. A dedicated mock controller drives search and selection without depending on the live repository, while project-local wrappers compose the screen from Material and `features/design_system` primitives only.
 
 ### ProjectStatusPicker
 

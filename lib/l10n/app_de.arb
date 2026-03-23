@@ -1556,6 +1556,35 @@
   "projectRecommendationResolveTooltip": "Als erledigt markieren",
   "projectRecommendationsTitle": "Empfohlene nächste Schritte",
   "projectRecommendationUpdateError": "Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+  "projectShowcaseAiReportTitle": "AI-Bericht",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} blockierte Aufgabe} other{{count} blockierte Aufgaben}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Beschreibung",
+  "projectShowcaseHealthScoreDescription": "Dieser Wert basiert auf Aufgabentempo, Blockern und der verbleibenden Zeit bis zur Deadline.",
+  "projectShowcaseHealthScoreTitle": "Gesundheitswert",
+  "projectShowcaseNoResults": "Keine Projekte passen zu deiner Suche.",
+  "projectShowcaseOneOnOneReviewsTab": "1:1-Reviews",
+  "projectShowcaseProjectTasksTab": "Projektaufgaben",
+  "projectShowcaseRecommendationsTitle": "Empfehlungen",
+  "projectShowcaseSearchHint": "Projekte suchen",
+  "projectShowcaseTasksCompleted": "{completed}/{total} Aufgaben abgeschlossen",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseViewBlocker": "Blocker ansehen",
   "projectStatusActive": "Aktiv",
   "projectStatusArchived": "Archiviert",
   "projectStatusChangeTitle": "Status ändern",

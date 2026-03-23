@@ -1556,6 +1556,35 @@
   "projectRecommendationResolveTooltip": "Marcar como resuelto",
   "projectRecommendationsTitle": "Siguientes pasos recomendados",
   "projectRecommendationUpdateError": "No se pudo actualizar la recomendación. Inténtalo de nuevo.",
+  "projectShowcaseAiReportTitle": "Informe de IA",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} tarea bloqueada} other{{count} tareas bloqueadas}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Descripción",
+  "projectShowcaseHealthScoreDescription": "Esta puntuación se basa en la velocidad de las tareas, los bloqueos y el tiempo que queda hasta la fecha límite.",
+  "projectShowcaseHealthScoreTitle": "Puntuación de salud",
+  "projectShowcaseNoResults": "Ningún proyecto coincide con tu búsqueda.",
+  "projectShowcaseOneOnOneReviewsTab": "Revisiones 1:1",
+  "projectShowcaseProjectTasksTab": "Tareas del proyecto",
+  "projectShowcaseRecommendationsTitle": "Recomendaciones",
+  "projectShowcaseSearchHint": "Buscar proyectos",
+  "projectShowcaseTasksCompleted": "{completed}/{total} tareas completadas",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseViewBlocker": "Ver bloqueo",
   "projectStatusActive": "Activo",
   "projectStatusArchived": "Archivado",
   "projectStatusChangeTitle": "Cambiar estado",

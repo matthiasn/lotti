@@ -1556,6 +1556,35 @@
   "projectRecommendationResolveTooltip": "Marchează ca rezolvat",
   "projectRecommendationsTitle": "Pași următori recomandați",
   "projectRecommendationUpdateError": "Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.",
+  "projectShowcaseAiReportTitle": "Raport AI",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} sarcină blocată} few{{count} sarcini blocate} other{{count} de sarcini blocate}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Descriere",
+  "projectShowcaseHealthScoreDescription": "Acest scor se bazează pe viteza sarcinilor, blocaje și timpul rămas până la termen.",
+  "projectShowcaseHealthScoreTitle": "Scor de sănătate",
+  "projectShowcaseNoResults": "Niciun proiect nu corespunde căutării dvs.",
+  "projectShowcaseOneOnOneReviewsTab": "Revizuiri 1:1",
+  "projectShowcaseProjectTasksTab": "Sarcinile proiectului",
+  "projectShowcaseRecommendationsTitle": "Recomandări",
+  "projectShowcaseSearchHint": "Căutați proiecte",
+  "projectShowcaseTasksCompleted": "{completed}/{total} sarcini finalizate",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseViewBlocker": "Vedeți blocajul",
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
   "projectStatusChangeTitle": "Schimbă starea",

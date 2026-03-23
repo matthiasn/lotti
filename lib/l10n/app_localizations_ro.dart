@@ -3709,6 +3709,55 @@ class AppLocalizationsRo extends AppLocalizations {
       'Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.';
 
   @override
+  String get projectShowcaseAiReportTitle => 'Raport AI';
+
+  @override
+  String projectShowcaseBlockedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini blocate',
+      few: '$count sarcini blocate',
+      one: '$count sarcină blocată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectShowcaseDescriptionTitle => 'Descriere';
+
+  @override
+  String get projectShowcaseHealthScoreDescription =>
+      'Acest scor se bazează pe viteza sarcinilor, blocaje și timpul rămas până la termen.';
+
+  @override
+  String get projectShowcaseHealthScoreTitle => 'Scor de sănătate';
+
+  @override
+  String get projectShowcaseNoResults =>
+      'Niciun proiect nu corespunde căutării dvs.';
+
+  @override
+  String get projectShowcaseOneOnOneReviewsTab => 'Revizuiri 1:1';
+
+  @override
+  String get projectShowcaseProjectTasksTab => 'Sarcinile proiectului';
+
+  @override
+  String get projectShowcaseRecommendationsTitle => 'Recomandări';
+
+  @override
+  String get projectShowcaseSearchHint => 'Căutați proiecte';
+
+  @override
+  String projectShowcaseTasksCompleted(int completed, int total) {
+    return '$completed/$total sarcini finalizate';
+  }
+
+  @override
+  String get projectShowcaseViewBlocker => 'Vedeți blocajul';
+
+  @override
   String get projectStatusActive => 'Activ';
 
   @override

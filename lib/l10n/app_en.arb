@@ -1720,6 +1720,35 @@
   "projectRecommendationResolveTooltip": "Mark resolved",
   "projectRecommendationsTitle": "Recommended next steps",
   "projectRecommendationUpdateError": "Couldn't update the recommendation. Please try again.",
+  "projectShowcaseAiReportTitle": "AI Report",
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} task blocked} other{{count} tasks blocked}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Description",
+  "projectShowcaseHealthScoreDescription": "This score is based on task velocity, blockers, and time left to deadline.",
+  "projectShowcaseHealthScoreTitle": "Health Score",
+  "projectShowcaseNoResults": "No projects match your search.",
+  "projectShowcaseOneOnOneReviewsTab": "One-on-one Reviews",
+  "projectShowcaseProjectTasksTab": "Project Tasks",
+  "projectShowcaseRecommendationsTitle": "Recommendations",
+  "projectShowcaseSearchHint": "Search projects",
+  "projectShowcaseTasksCompleted": "{completed}/{total} tasks completed",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseViewBlocker": "View blocker",
   "projectStatusActive": "Active",
   "projectStatusArchived": "Archived",
   "projectStatusChangeTitle": "Change Status",

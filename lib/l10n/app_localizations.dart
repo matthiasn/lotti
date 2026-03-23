@@ -6565,6 +6565,78 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update the recommendation. Please try again.'**
   String get projectRecommendationUpdateError;
 
+  /// No description provided for @projectShowcaseAiReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Report'**
+  String get projectShowcaseAiReportTitle;
+
+  /// No description provided for @projectShowcaseBlockedTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task blocked} other{{count} tasks blocked}}'**
+  String projectShowcaseBlockedTaskCount(int count);
+
+  /// No description provided for @projectShowcaseDescriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get projectShowcaseDescriptionTitle;
+
+  /// No description provided for @projectShowcaseHealthScoreDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This score is based on task velocity, blockers, and time left to deadline.'**
+  String get projectShowcaseHealthScoreDescription;
+
+  /// No description provided for @projectShowcaseHealthScoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Score'**
+  String get projectShowcaseHealthScoreTitle;
+
+  /// No description provided for @projectShowcaseNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects match your search.'**
+  String get projectShowcaseNoResults;
+
+  /// No description provided for @projectShowcaseOneOnOneReviewsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'One-on-one Reviews'**
+  String get projectShowcaseOneOnOneReviewsTab;
+
+  /// No description provided for @projectShowcaseProjectTasksTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Tasks'**
+  String get projectShowcaseProjectTasksTab;
+
+  /// No description provided for @projectShowcaseRecommendationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendations'**
+  String get projectShowcaseRecommendationsTitle;
+
+  /// No description provided for @projectShowcaseSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get projectShowcaseSearchHint;
+
+  /// No description provided for @projectShowcaseTasksCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed}/{total} tasks completed'**
+  String projectShowcaseTasksCompleted(int completed, int total);
+
+  /// No description provided for @projectShowcaseViewBlocker.
+  ///
+  /// In en, this message translates to:
+  /// **'View blocker'**
+  String get projectShowcaseViewBlocker;
+
   /// No description provided for @projectStatusActive.
   ///
   /// In en, this message translates to:

@@ -143,6 +143,41 @@ void main() {
       expect(semantics.properties.label, 'Overall progress');
       expect(semantics.properties.value, '100%');
     });
+
+    testWidgets('supports custom figma-specific colors', (tester) async {
+      const barKey = Key('custom-progress-bar');
+      const labelColor = Color(0xE0FFFFFF);
+      const progressColor = Color(0xA3FFFFFF);
+      const fillColor = Color(0xFF5ED4B7);
+
+      await _pumpProgressBar(
+        tester,
+        const DesignSystemProgressBar(
+          key: barKey,
+          value: 0.5,
+          label: 'Tasks',
+          progressText: '3/5 completed',
+          labelColor: labelColor,
+          progressColor: progressColor,
+          fillColor: fillColor,
+        ),
+      );
+
+      final label = _findTextNode(tester, barKey, 'Tasks');
+      final progress = _findTextNode(tester, barKey, '3/5 completed');
+      final fill = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byKey(barKey),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is ColoredBox && widget.color == fillColor,
+          ),
+        ),
+      );
+
+      expect(label.style?.color, labelColor);
+      expect(progress.style?.color, progressColor);
+      expect(fill.color, fillColor);
+    });
   });
 }
 

@@ -103,21 +103,24 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: widget.focusNode,
-                      enabled: widget.enabled,
-                      onChanged: widget.onChanged,
-                      onSubmitted: widget.onSubmitted,
-                      textInputAction: TextInputAction.search,
-                      style: spec.textStyle.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                      textAlignVertical: TextAlignVertical.center,
-                      decoration: InputDecoration.collapsed(
-                        hintText: widget.hintText,
-                        hintStyle: spec.textStyle.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
+                    child: Transform.translate(
+                      offset: const Offset(0, -4),
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: widget.focusNode,
+                        enabled: widget.enabled,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.onSubmitted,
+                        textInputAction: TextInputAction.search,
+                        style: spec.textStyle.copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration.collapsed(
+                          hintText: widget.hintText,
+                          hintStyle: spec.textStyle.copyWith(
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
                         ),
                       ),
                     ),
@@ -191,7 +194,7 @@ class _SearchActionButton extends StatelessWidget {
                 Icons.search_rounded,
                 size: size.iconSize,
                 color: enabled
-                    ? tokens.colors.text.highEmphasis
+                    ? tokens.colors.text.mediumEmphasis
                     : tokens.colors.text.lowEmphasis,
               ),
             ),

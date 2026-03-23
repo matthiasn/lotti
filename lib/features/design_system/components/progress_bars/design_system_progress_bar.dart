@@ -14,6 +14,10 @@ class DesignSystemProgressBar extends StatelessWidget {
     this.label,
     this.progressText,
     this.trailingIcon,
+    this.labelColor,
+    this.progressColor,
+    this.fillColor,
+    this.trackColor,
     this.semanticsLabel,
     this.semanticsValue,
     super.key,
@@ -27,13 +31,24 @@ class DesignSystemProgressBar extends StatelessWidget {
   final String? label;
   final String? progressText;
   final IconData? trailingIcon;
+  final Color? labelColor;
+  final Color? progressColor;
+  final Color? fillColor;
+  final Color? trackColor;
   final String? semanticsLabel;
   final String? semanticsValue;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final spec = _ProgressBarSpec.fromTokens(tokens, style);
+    final spec = _ProgressBarSpec.fromTokens(
+      tokens,
+      style,
+      labelColor: labelColor,
+      progressColor: progressColor,
+      fillColor: fillColor,
+      trackColor: trackColor,
+    );
     final clampedValue = value.clamp(0.0, 1.0);
     final showHeader =
         label?.isNotEmpty == true ||
@@ -311,15 +326,19 @@ class _ProgressBarSpec {
 
   factory _ProgressBarSpec.fromTokens(
     DsTokens tokens,
-    DesignSystemProgressBarStyle style,
-  ) {
+    DesignSystemProgressBarStyle style, {
+    Color? labelColor,
+    Color? progressColor,
+    Color? fillColor,
+    Color? trackColor,
+  }) {
     return _ProgressBarSpec(
       style: style,
       headerTextStyle: tokens.typography.styles.body.bodyMedium,
-      labelColor: tokens.colors.text.mediumEmphasis,
-      progressColor: tokens.colors.text.highEmphasis,
-      fillColor: tokens.colors.interactive.enabled,
-      trackColor: tokens.colors.decorative.level01,
+      labelColor: labelColor ?? tokens.colors.text.mediumEmphasis,
+      progressColor: progressColor ?? tokens.colors.text.highEmphasis,
+      fillColor: fillColor ?? tokens.colors.interactive.enabled,
+      trackColor: trackColor ?? tokens.colors.decorative.level01,
       headerHeight: tokens.typography.lineHeight.bodyMedium,
       headerSpacing: tokens.spacing.step3,
       trackHeight: tokens.spacing.step5,
