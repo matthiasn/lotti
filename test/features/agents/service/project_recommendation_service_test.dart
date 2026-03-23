@@ -181,4 +181,74 @@ void main() {
       );
     },
   );
+
+  test(
+    'dismissRecommendation updates an active recommendation and notifies',
+    () async {
+      final recommendation = makeTestProjectRecommendation(
+        id: 'rec-2',
+        agentId: 'agent-1',
+        projectId: 'project-1',
+      );
+      when(() => mockRepository.getEntity('rec-2')).thenAnswer(
+        (_) async => recommendation,
+      );
+
+      final success = await service.dismissRecommendation('rec-2');
+
+      expect(success, isTrue);
+      final updated =
+          verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured.single
+              as ProjectRecommendationEntity;
+      expect(updated.status, ProjectRecommendationStatus.dismissed);
+      expect(updated.dismissedAt, isNotNull);
+      verify(
+        () => mockNotifications.notify(
+          {'agent-1', 'project-1', agentNotification},
+          fromSync: true,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'recordConfirmedRecommendations throws when no valid steps are provided',
+    () async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-1',
+        taskId: 'project-1',
+      );
+      final decision = makeTestChangeDecision(
+        id: 'decision-invalid',
+        agentId: 'agent-1',
+        changeSetId: changeSet.id,
+        toolName: 'recommend_next_steps',
+        taskId: 'project-1',
+        args: const {
+          'steps': [
+            {'title': '   '},
+            {'rationale': 'missing title'},
+            'invalid',
+          ],
+        },
+      );
+
+      await expectLater(
+        () => service.recordConfirmedRecommendations(
+          changeSet: changeSet,
+          decision: decision,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      verifyNever(
+        () => mockRepository.getEntitiesByAgentId(
+          any(),
+          type: any(named: 'type'),
+          limit: any(named: 'limit'),
+        ),
+      );
+    },
+  );
 }

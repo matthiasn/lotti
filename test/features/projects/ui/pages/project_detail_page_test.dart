@@ -567,6 +567,35 @@ void main() {
               'saving',
         );
       });
+
+      testWidgets(
+        'successful save falls back to NavService.beamBack on settings project routes',
+        (tester) async {
+          final mockNavService = MockNavService();
+          when(() => mockNavService.currentPath).thenReturn(
+            '/settings/projects/test-project-id',
+          );
+          when(mockNavService.beamBack).thenReturn(null);
+          getIt.registerSingleton<NavService>(mockNavService);
+
+          final controller = await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: true,
+            ),
+          );
+
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+
+          expect(controller.saveChangesCalls, 1);
+          verify(mockNavService.beamBack).called(1);
+        },
+      );
     });
 
     group('cancel button', () {

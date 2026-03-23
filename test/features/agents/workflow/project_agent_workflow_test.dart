@@ -705,6 +705,7 @@ void main() {
 
         final taskReport = makeTestReport(
           agentId: 'task-agent-1',
+          createdAt: DateTime(2024, 6, 21, 9, 30),
           content: 'Task is 80% complete with 3 tests passing.',
         );
 
@@ -742,6 +743,10 @@ void main() {
 
         expect(capturedMessage, contains('80% complete'));
         expect(capturedMessage, contains('task-agent-1'));
+        expect(
+          capturedMessage,
+          contains(DateTime(2024, 6, 21, 9, 30).toIso8601String()),
+        );
       });
 
       test('resolves observation payloads into user message', () async {

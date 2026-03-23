@@ -196,6 +196,74 @@ void main() {
       verify(() => mockService.triggerReanalysis('agent-1')).called(1);
     });
 
+    testWidgets('shows running indicator while the project agent is running', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith((ref, agentId) async => null),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(true),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows report loading spinner while report is loading', (
+      tester,
+    ) async {
+      final completer = Completer<AgentDomainEntity?>();
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith(
+              (ref, agentId) => completer.future,
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows placeholder when no project report exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            agentReportProvider.overrideWith((ref, agentId) async => null),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ProjectAgentReportCard));
+      expect(find.text(context.messages.agentReportNone), findsOneWidget);
+    });
+
     testWidgets('create agent button provisions a missing project agent', (
       tester,
     ) async {
@@ -283,6 +351,118 @@ void main() {
       );
     });
 
+    testWidgets(
+      'create agent falls back to global templates without category',
+      (
+        tester,
+      ) async {
+        final mockService = MockProjectAgentService();
+        final mockTemplateService = MockAgentTemplateService();
+        final template = makeTestTemplate(
+          id: 'project-template-global',
+          agentId: 'project-template-global',
+          displayName: 'Global Project Template',
+          kind: AgentTemplateKind.projectAgent,
+        );
+
+        when(
+          mockTemplateService.listTemplates,
+        ).thenAnswer((_) async => [template]);
+        when(
+          () => mockService.createProjectAgent(
+            projectId: any(named: 'projectId'),
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            profileId: any(named: 'profileId'),
+          ),
+        ).thenAnswer((_) async => testAgent);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const ProjectAgentReportCard(
+              projectId: projectId,
+              projectTitle: projectTitle,
+            ),
+            overrides: [
+              projectAgentProvider(projectId).overrideWith((ref) async => null),
+              projectAgentServiceProvider.overrideWithValue(mockService),
+              agentTemplateServiceProvider.overrideWithValue(
+                mockTemplateService,
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _FakeInferenceProfileController([testProfile]),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Create Agent'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(testProfile.name));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => mockTemplateService.listTemplatesForCategory(any()));
+        verify(
+          () => mockService.createProjectAgent(
+            projectId: projectId,
+            templateId: 'project-template-global',
+            displayName: projectTitle,
+            allowedCategoryIds: const {},
+            profileId: testProfile.id,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('create agent shows snackbar when provisioning fails', (
+      tester,
+    ) async {
+      final mockService = MockProjectAgentService();
+      final mockTemplateService = MockAgentTemplateService();
+      final template = makeTestTemplate(
+        id: 'project-template-1',
+        agentId: 'project-template-1',
+        displayName: 'Project Template',
+        kind: AgentTemplateKind.projectAgent,
+      );
+
+      when(
+        () => mockTemplateService.listTemplatesForCategory(categoryId),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockService.createProjectAgent(
+          projectId: any(named: 'projectId'),
+          templateId: any(named: 'templateId'),
+          displayName: any(named: 'displayName'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          profileId: any(named: 'profileId'),
+        ),
+      ).thenThrow(Exception('boom'));
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith((ref) async => null),
+            projectAgentServiceProvider.overrideWithValue(mockService),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _FakeInferenceProfileController([testProfile]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create Agent'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(testProfile.name));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('boom'), findsOneWidget);
+    });
+
     testWidgets('shows active project recommendations', (tester) async {
       await tester.pumpWidget(
         buildSubject(
@@ -358,6 +538,56 @@ void main() {
 
       verify(() => mockService.markResolved('rec-1')).called(1);
       verify(() => mockService.dismissRecommendation('rec-1')).called(1);
+    });
+
+    testWidgets('recommendation action failures show an error snackbar', (
+      tester,
+    ) async {
+      final mockService = MockProjectRecommendationService();
+      when(
+        () => mockService.markResolved(any()),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockService.dismissRecommendation(any()),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => testAgent,
+            ),
+            projectRecommendationsProvider(projectId).overrideWith(
+              (ref) async => [
+                makeTestProjectRecommendation(
+                  id: 'rec-1',
+                  agentId: 'agent-1',
+                  projectId: projectId,
+                  title: 'Unblock QA',
+                ),
+              ],
+            ),
+            projectRecommendationServiceProvider.overrideWithValue(mockService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(ProjectAgentReportCard));
+
+      await tester.tap(find.byTooltip('Mark resolved'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(context.messages.projectRecommendationUpdateError),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Dismiss'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(context.messages.projectRecommendationUpdateError),
+        findsOneWidget,
+      );
     });
   });
 }

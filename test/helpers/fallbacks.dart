@@ -235,6 +235,22 @@ void registerAllFallbackValues() {
         )
         as ChangeSetEntity,
   );
+  registerFallbackValue(
+    AgentDomainEntity.changeDecision(
+          id: 'fallback-cd',
+          agentId: 'fallback-agent',
+          changeSetId: 'fallback-cs',
+          itemIndex: 0,
+          toolName: 'fallback_tool',
+          verdict: ChangeDecisionVerdict.confirmed,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          vectorClock: null,
+          taskId: 'fallback-task',
+          humanSummary: 'Fallback decision',
+          args: const {'title': 'Fallback recommendation'},
+        )
+        as ChangeDecisionEntity,
+  );
 
   // Logging enum fallbacks
   registerFallbackValue(InsightLevel.info);

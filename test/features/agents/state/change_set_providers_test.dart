@@ -7,10 +7,12 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -25,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -435,6 +438,40 @@ void main() {
     });
 
     test(
+      'returns empty list when project agent is not an identity entity',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            projectAgentProvider('project-001').overrideWith(
+              (ref) async => makeTestState(),
+            ),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          projectRecommendationsProvider('project-001'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          projectRecommendationsProvider('project-001').future,
+        );
+
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockRepository.getEntitiesByAgentId(
+            any(),
+            type: any(named: 'type'),
+            limit: any(named: 'limit'),
+          ),
+        );
+      },
+    );
+
+    test(
       'returns active project recommendations ordered for display',
       () async {
         final agent = makeTestIdentity();
@@ -525,6 +562,25 @@ void main() {
     );
   });
 
+  group('projectRecommendationServiceProvider', () {
+    test('creates the service when optional notifications are absent', () {
+      final mockSyncService = MockAgentSyncService();
+      final mockLogger = MockDomainLogger();
+      final container = ProviderContainer(
+        overrides: [
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          domainLoggerProvider.overrideWithValue(mockLogger),
+          maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final service = container.read(projectRecommendationServiceProvider);
+
+      expect(service, isA<ProjectRecommendationService>());
+    });
+  });
+
   group('changeSetConfirmationServiceProvider', () {
     late MockPersistenceLogic mockPersistenceLogic;
     late MockEntitiesCacheService mockEntitiesCacheService;
@@ -597,5 +653,149 @@ void main() {
 
       expect(service, isA<ChangeSetConfirmationService>());
     });
+
+    test(
+      'project-scoped service records confirmed recommendations for recommend_next_steps',
+      () async {
+        final mockSyncService = MockAgentSyncService();
+        final mockProjectRepository = MockProjectRepository();
+        final mockTaskAgentService = MockTaskAgentService();
+        final mockLabelsRepository = MockLabelsRepository();
+        final mockRecommendationService = MockProjectRecommendationService();
+        final mockLogger = MockDomainLogger();
+        final changeSet = makeTestChangeSet(
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: ProjectAgentToolNames.recommendNextSteps,
+              args: {
+                'steps': [
+                  {'title': 'Verify the rollout'},
+                ],
+              },
+              humanSummary: 'Recommend the next step',
+            ),
+          ],
+        );
+
+        when(() => mockSyncService.repository).thenReturn(mockRepository);
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRecommendationService.recordConfirmedRecommendations(
+            changeSet: any(named: 'changeSet'),
+            decision: any(named: 'decision'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLogger.log(
+            any(),
+            any(),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            projectRepositoryProvider.overrideWithValue(mockProjectRepository),
+            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+            labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+            projectRecommendationServiceProvider.overrideWithValue(
+              mockRecommendationService,
+            ),
+            domainLoggerProvider.overrideWithValue(mockLogger),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final service = container.read(
+          projectChangeSetConfirmationServiceProvider,
+        );
+        final result = await service.confirmItem(changeSet, 0);
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockRecommendationService.recordConfirmedRecommendations(
+            changeSet: any(named: 'changeSet'),
+            decision: any(named: 'decision'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'project-scoped service skips recommendation recording for non-recommend tools',
+      () async {
+        final mockSyncService = MockAgentSyncService();
+        final mockProjectRepository = MockProjectRepository();
+        final mockTaskAgentService = MockTaskAgentService();
+        final mockLabelsRepository = MockLabelsRepository();
+        final mockRecommendationService = MockProjectRecommendationService();
+        final mockLogger = MockDomainLogger();
+        final changeSet = makeTestChangeSet(
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: ProjectAgentToolNames.updateProjectStatus,
+              args: {'status': 'active'},
+              humanSummary: 'Mark the project active',
+            ),
+          ],
+        );
+
+        when(() => mockSyncService.repository).thenReturn(mockRepository);
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockProjectRepository.getProjectById('project-001'),
+        ).thenAnswer((_) async => makeTestProject(id: 'project-001'));
+        when(
+          () => mockProjectRepository.updateProject(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockLogger.log(
+            any(),
+            any(),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            projectRepositoryProvider.overrideWithValue(mockProjectRepository),
+            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+            labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+            projectRecommendationServiceProvider.overrideWithValue(
+              mockRecommendationService,
+            ),
+            domainLoggerProvider.overrideWithValue(mockLogger),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final service = container.read(
+          projectChangeSetConfirmationServiceProvider,
+        );
+        final result = await service.confirmItem(changeSet, 0);
+
+        expect(result.success, isTrue);
+        verifyNever(
+          () => mockRecommendationService.recordConfirmedRecommendations(
+            changeSet: any(named: 'changeSet'),
+            decision: any(named: 'decision'),
+          ),
+        );
+      },
+    );
   });
 }

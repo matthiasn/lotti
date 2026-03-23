@@ -463,6 +463,56 @@ void main() {
       );
     });
 
+    test('create_task accepts additional priority aliases', () async {
+      final createdTask = makeTestTask(id: taskId, title: 'Write docs');
+      final capturedPriorities = <TaskPriority>[];
+
+      when(
+        () => mockProjectRepository.getProjectById(projectId),
+      ).thenAnswer((_) async => project);
+      when(
+        () => mockEntitiesCacheService.getCategoryById('cat-001'),
+      ).thenReturn(null);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPriorities.add(
+          (invocation.namedArguments[#data]! as TaskData).priority,
+        );
+        return createdTask;
+      });
+      when(
+        () => mockProjectRepository.linkTaskToProject(
+          projectId: projectId,
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final cases = <String, TaskPriority>{
+        'P0': TaskPriority.p0Urgent,
+        'P2': TaskPriority.p2Medium,
+        'P3': TaskPriority.p3Low,
+      };
+
+      for (final entry in cases.entries) {
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.createTask,
+          {
+            'title': 'Write docs',
+            'priority': entry.key,
+          },
+          projectId,
+        );
+        expect(result.success, isTrue);
+      }
+
+      expect(capturedPriorities, cases.values.toList());
+    });
+
     test('dispatch returns error for unknown tool name', () async {
       final result = await dispatcher.dispatch(
         'nonexistent_tool',
@@ -551,6 +601,40 @@ void main() {
       expect(result.success, isFalse);
       expect(result.errorMessage, 'Invalid project status');
       expect(result.output, contains('unsupported project status'));
+    });
+
+    test('update_project_status accepts additional status aliases', () async {
+      final capturedStatuses = <ProjectStatus>[];
+
+      when(
+        () => mockProjectRepository.getProjectById(projectId),
+      ).thenAnswer((_) async => project);
+      when(
+        () => mockProjectRepository.updateProject(any()),
+      ).thenAnswer((invocation) async {
+        capturedStatuses.add(
+          (invocation.positionalArguments.single as ProjectEntry).data.status,
+        );
+        return true;
+      });
+
+      final cases = <String, Type>{
+        'done': ProjectCompleted,
+        'canceled': ProjectArchived,
+      };
+
+      for (final entry in cases.entries) {
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.updateProjectStatus,
+          {'status': entry.key},
+          projectId,
+        );
+        expect(result.success, isTrue);
+      }
+
+      expect(capturedStatuses, hasLength(2));
+      expect(capturedStatuses[0], isA<ProjectCompleted>());
+      expect(capturedStatuses[1], isA<ProjectArchived>());
     });
 
     test('update_project_status returns failure when update fails', () async {
