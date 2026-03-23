@@ -37,6 +37,7 @@ lib/features/projects/
 ├── repository/
 │   └── project_repository.dart      # CRUD, task linking, query methods
 ├── state/
+│   ├── project_health_metrics.dart   # Deterministic project health signals and band mapping
 │   ├── project_providers.dart        # projectsForCategoryProvider, projectForTaskProvider, projectTaskCountProvider
 │   └── project_detail_controller.dart # Detail page state (form tracking, save)
 ├── widgetbook/
@@ -56,6 +57,7 @@ lib/features/projects/
         ├── project_agent_report_card.dart        # Agent report display
         ├── project_detail_pane.dart              # Right-hand detail pane (header, health, report, tasks, reviews)
         ├── project_health_header.dart            # Expandable project overview on tasks page
+        ├── project_health_indicator.dart         # Compact health band chip with reason text
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
         ├── project_list_pane.dart                # Left-hand pane with search and grouped project rows
@@ -78,6 +80,7 @@ lib/features/projects/
 
 - `projectsForCategoryProvider(categoryId)` — `FutureProvider.autoDispose.family` fetching projects for a category. Auto-invalidates on `projectNotification` updates.
 - `projectTaskCountProvider(projectId)` — `FutureProvider.autoDispose.family` returning the number of tasks linked to a project.
+- `projectHealthMetricsProvider(projectId)` — `FutureProvider.autoDispose.family` computing deterministic project health metrics from linked tasks, target date, and project-agent summary freshness.
 - `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
 
 ### Detail Controller (`project_detail_controller.dart`)
@@ -102,6 +105,8 @@ Project routes live under the settings location:
 
 Expandable header on the tasks page. Collapsed (default) shows a `ModernBaseCard` with a folder icon, "Projects" title, and a summary like "2 projects, 4 tasks". Tapping expands to reveal per-project rows with name, task count, target date, and status chip. Tapping a project row navigates to its detail page.
 
+Each expanded row also renders a compact project health band (`Surviving`, `On Track`, `Watch`, `At Risk`, `Blocked`) derived from deterministic signals such as stalled tasks, overdue work, stale summaries, and recent task movement.
+
 ### ProjectListDetailShowcase
 
 Widgetbook-only thin wrapper that composes the production desktop layout widgets (`Sidebar`, `MainTopBar`, `ProjectListPane`, `ProjectDetailPane`) with mock data from `project_list_detail_mock_data.dart`. The production widgets live under `ui/widgets/` and consume `ProjectListDetailState` and `ProjectRecord` presentation models from `ui/model/`. A dedicated mock controller in `widgetbook/` drives search and selection without depending on the live repository.
@@ -115,13 +120,14 @@ Interactive status selector on the project detail page. Shows the current status
 Form page with three sections:
 1. **Status** — `ProjectStatusPicker` for changing project status.
 2. **Project Title** — text field and optional target date.
-3. **Agent** — current project-agent report, active project
+3. **Project Health** — compact health band chip plus a one-line reason derived from linked-task state, target dates, and summary freshness.
+4. **Agent** — current project-agent report, active project
    recommendations, manual refresh action, and an explicit empty state when
    no project agent has been provisioned. Confirmed
    `recommend_next_steps` proposals become first-class recommendation records
    that supersede any older active set and can be resolved or dismissed from
    this section.
-4. **Linked Tasks** — list of tasks in this project.
+5. **Linked Tasks** — list of tasks in this project.
 
 ## Integration Points
 

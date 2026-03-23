@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
+import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
 import 'package:lotti/features/projects/ui/widgets/project_linked_tasks_section.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
@@ -144,6 +146,9 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     );
     final messages = context.messages;
     final project = state.project;
+    final healthMetrics = ref.watch(
+      projectHealthMetricsProvider(widget.projectId),
+    );
 
     if (project == null && !state.isLoading) {
       final isLoadFailure = state.error == ProjectDetailError.loadFailed;
@@ -277,6 +282,17 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                         ],
                       ),
                       const SizedBox(height: 24),
+
+                      if (healthMetrics.asData?.value case final metrics?) ...[
+                        LottiFormSection(
+                          title: messages.projectHealthSectionTitle,
+                          icon: Icons.monitor_heart_outlined,
+                          children: [
+                            ProjectHealthIndicator(metrics: metrics),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
 
                       // Agent Report
                       ProjectAgentReportCard(

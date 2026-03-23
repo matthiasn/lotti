@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/get_it.dart';
@@ -48,6 +49,7 @@ void main() {
     void Function(Set<String>)? onClearStale,
     Map<String, int> taskCounts = const {},
     Map<String, ProjectAgentSummaryState?> projectSummaries = const {},
+    Map<String, ProjectHealthMetrics?> projectHealthMetrics = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -68,6 +70,23 @@ void main() {
           for (final entry in projectSummaries.entries)
             projectAgentSummaryProvider(entry.key).overrideWith(
               (ref) async => entry.value,
+            ),
+          for (final project in projects)
+            projectHealthMetricsProvider(project.meta.id).overrideWith(
+              (ref) async =>
+                  projectHealthMetrics[project.meta.id] ??
+                  computeProjectHealthMetrics(
+                    project: project,
+                    linkedTasks: List.generate(
+                      taskCounts[project.meta.id] ?? 0,
+                      (index) => makeTestTask(
+                        id: '${project.meta.id}-task-$index',
+                        createdAt: now,
+                      ),
+                    ),
+                    agentSummary: projectSummaries[project.meta.id],
+                    now: now,
+                  ),
             ),
         ],
       ),
@@ -227,11 +246,13 @@ void main() {
 
       await tester.tap(find.text('Projects'));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Beta'), findsOneWidget);
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
+      expect(find.text('On Track'), findsNWidgets(2));
     });
 
     testWidgets('shows outdated summary message for stale project reports', (
@@ -263,6 +284,7 @@ void main() {
 
       expect(find.textContaining('Summary outdated'), findsOneWidget);
       expect(find.textContaining('2026'), findsOneWidget);
+      expect(find.text('Surviving'), findsOneWidget);
     });
 
     testWidgets('tapping again collapses the header', (tester) async {

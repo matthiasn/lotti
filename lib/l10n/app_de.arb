@@ -1563,6 +1563,35 @@
     }
   },
   "projectHealthTitle": "Projekte",
+  "projectHealthSectionTitle": "Projektgesundheit",
+  "projectHealthBandSurviving": "Über Wasser",
+  "projectHealthBandOnTrack": "Im Plan",
+  "projectHealthBandWatch": "Beobachten",
+  "projectHealthBandAtRisk": "Riskant",
+  "projectHealthBandBlocked": "Blockiert",
+  "projectHealthReasonCompleted": "Das Projekt ist abgeschlossen.",
+  "projectHealthReasonOnHold": "Das Projekt ist pausiert.",
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} Aufgabe steckt fest} other{{count} Aufgaben stecken fest}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} Aufgabe ist überfällig} other{{count} Aufgaben sind überfällig}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonTargetDatePassed": "Das Zieldatum ist überschritten.",
+  "projectHealthReasonNoRecentProgress": "Zuletzt gab es keinen erkennbaren Fortschritt.",
+  "projectHealthReasonSummaryOutdated": "Die Projektzusammenfassung ist veraltet.",
+  "projectHealthReasonNoLinkedTasks": "Dem Projekt sind noch keine Aufgaben zugeordnet.",
+  "projectHealthReasonSteadyProgress": "Das Projekt macht konstant Fortschritt.",
   "projectLinkedTaskCount": "{count, plural, one{{count} verknüpfte Aufgabe} other{{count} verknüpfte Aufgaben}}",
   "@projectLinkedTaskCount": {
     "placeholders": {

@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -205,6 +209,88 @@ void main() {
         projectTaskCountProvider(projectId).future,
       );
       expect(result, 0);
+    });
+  });
+
+  group('projectHealthMetricsProvider', () {
+    const projectId = 'proj-health';
+
+    test(
+      'returns null without reading the summary provider when project is missing',
+      () async {
+        when(
+          () => mockRepo.getProjectById(projectId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getTasksForProject(projectId),
+        ).thenAnswer((_) async => []);
+
+        var summaryRead = false;
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectAgentSummaryProvider(projectId).overrideWith((ref) async {
+              summaryRead = true;
+              throw StateError('summary provider should not be read');
+            }),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthMetricsProvider(projectId).future,
+        );
+
+        expect(result, isNull);
+        expect(summaryRead, isFalse);
+      },
+    );
+
+    test('computes a blocked health band from stalled tasks', () async {
+      final project = makeTestProject(id: projectId, categoryId: categoryId);
+      final stalledTask =
+          makeTestTask(
+            createdAt: DateTime(2026, 4, 1, 10),
+          ).copyWith(
+            data:
+                makeTestTask(
+                  createdAt: DateTime(2026, 4, 1, 10),
+                ).data.copyWith(
+                  status: TaskStatus.blocked(
+                    id: 'blocked-1',
+                    createdAt: DateTime(2026, 4, 1, 10),
+                    utcOffset: 0,
+                    reason: 'Waiting on backend',
+                  ),
+                ),
+          );
+
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => project);
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [stalledTask]);
+
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          projectRepositoryProvider.overrideWithValue(mockRepo),
+          projectAgentSummaryProvider(
+            projectId,
+          ).overrideWith((ref) async => null),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+
+      final result = await withClock(Clock.fixed(DateTime(2026, 4, 2, 9)), () {
+        return scopedContainer.read(
+          projectHealthMetricsProvider(projectId).future,
+        );
+      });
+
+      expect(result, isNotNull);
+      expect(result!.band, ProjectHealthBand.blocked);
+      expect(result.stalledTaskCount, 1);
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -11,8 +13,11 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -302,6 +307,119 @@ void main() {
 
         expect(find.byType(ProjectAgentReportCard), findsOneWidget);
       });
+
+      testWidgets('shows project health indicator near the top', (
+        tester,
+      ) async {
+        await pumpPage(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          extraOverrides: [
+            projectHealthMetricsProvider(_projectId).overrideWith(
+              (ref) async => const ProjectHealthMetrics(
+                band: ProjectHealthBand.onTrack,
+                score: 90,
+                reason: ProjectHealthReason(
+                  ProjectHealthReasonKind.steadyProgress,
+                ),
+                totalTaskCount: 1,
+                completedTaskCount: 1,
+                stalledTaskCount: 0,
+                overdueTaskCount: 0,
+                isSummaryOutdated: false,
+                targetDatePassed: false,
+                hasRecentTaskUpdate: true,
+              ),
+            ),
+          ],
+        );
+
+        expect(find.text('Project health'), findsOneWidget);
+        expect(find.byType(ProjectHealthIndicator), findsOneWidget);
+        expect(find.text('On Track'), findsOneWidget);
+      });
+
+      testWidgets(
+        'hides the project health section while health metrics are loading',
+        (tester) async {
+          final completer = Completer<ProjectHealthMetrics?>();
+
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            extraOverrides: [
+              projectHealthMetricsProvider(_projectId).overrideWith(
+                (ref) => completer.future,
+              ),
+            ],
+          );
+
+          expect(find.text('Project health'), findsNothing);
+          expect(find.byType(ProjectHealthIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides the project health section when health metrics are unavailable',
+        (tester) async {
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            extraOverrides: [
+              projectHealthMetricsProvider(
+                _projectId,
+              ).overrideWith((ref) async => null),
+            ],
+          );
+
+          expect(find.text('Project health'), findsNothing);
+          expect(find.byType(ProjectHealthIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides the project health section when loading health metrics fails',
+        (tester) async {
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            extraOverrides: [
+              projectHealthMetricsProvider(_projectId).overrideWith(
+                (ref) async => throw Exception('health failed'),
+              ),
+            ],
+          );
+
+          await tester.pump();
+
+          expect(find.text('Project health'), findsNothing);
+          expect(find.byType(ProjectHealthIndicator), findsNothing);
+        },
+      );
 
       testWidgets(
         'shows active project recommendations',

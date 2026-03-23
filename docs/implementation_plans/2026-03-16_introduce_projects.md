@@ -1,11 +1,11 @@
 # Implementation Plan: Introduce Projects Layer
 
 **Date:** 2026-03-16
-**Status:** In Progress — implementation snapshot updated 2026-03-20
+**Status:** In Progress — implementation snapshot updated 2026-03-23
 
 ---
 
-## 0. Current Status Snapshot (2026-03-20)
+## 0. Current Status Snapshot (2026-03-23)
 
 This document started as a proposal. The repository now contains a substantial
 partial implementation, so the plan needs to distinguish between what has
@@ -66,7 +66,9 @@ already landed and what is still missing.
 
 - **Finish the remaining runtime cadence.** Daily digest scheduling is now in
   place, but weekly review scheduling/bookkeeping (`lastWeeklyReviewAt`,
-  `weeklyReviewCount`) is still missing.
+  `weeklyReviewCount`) is intentionally deferred until the weekly 1-on-1
+  actually improves the `projectAgent` template rather than duplicating the
+  normal digest flow.
 - **Tighten activity sources.** Replace the current broad linked-task/project
   stale-marking behavior with the planned status-transition/day-plan-driven
   triggering if we want a narrower definition of meaningful project activity.
@@ -433,6 +435,11 @@ Project agents use a **fundamentally different wake cadence** than task agents:
 The key difference from task agents: project agents do **not** wake on every task edit (text
 changes, checklist toggles). They only wake on *status transitions* and *scheduled cadences*.
 
+Current implementation note: the Monday 10:00 slot is intentionally not
+shipped yet. A real weekly review must improve the `projectAgent` template via
+feedback and directive evolution; raw scheduling/bookkeeping without that
+template-improvement loop does not count as meaningful product value.
+
 ### 5.4 Mermaid: Project Agent Lifecycle
 
 ```mermaid
@@ -547,6 +554,10 @@ sequenceDiagram
 | `render_surface` | Render GenUI elements (questionnaires, ratings) |
 
 ### 6.3 Weekly 1-on-1 Tools
+
+This is the intended toolchain for a real weekly review. Until these tools are
+wired into template evolution for `projectAgent` templates, the Monday slot
+should remain unshipped.
 
 | Tool | Description |
 |------|-------------|
@@ -760,7 +771,9 @@ yet; some of that behavior is currently folded into `ProjectHealthHeader`.
 4. **Create `ProjectAgentWorkflow`** extending the existing workflow pattern
 5. **Create `ProjectAgentStrategy`** for conversation handling
 6. **Register project agent tools** in the tool registry
-7. **Implement scheduled wake** (daily + weekly) via `scheduledWakeAt`
+7. **Implement scheduled wake** (daily now, weekly later) via
+   `scheduledWakeAt`; only ship the weekly Monday slot once it drives template
+   evolution for `projectAgent` templates
 8. **Implement status-transition subscription** (filtered wake on task status changes only)
 9. **Create project agent auto-assignment** on project creation (similar to category→task agent
    auto-assignment)

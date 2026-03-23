@@ -6649,6 +6649,96 @@ abstract class AppLocalizations {
   /// **'Projects'**
   String get projectHealthTitle;
 
+  /// No description provided for @projectHealthSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project health'**
+  String get projectHealthSectionTitle;
+
+  /// No description provided for @projectHealthBandSurviving.
+  ///
+  /// In en, this message translates to:
+  /// **'Surviving'**
+  String get projectHealthBandSurviving;
+
+  /// No description provided for @projectHealthBandOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'On Track'**
+  String get projectHealthBandOnTrack;
+
+  /// No description provided for @projectHealthBandWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get projectHealthBandWatch;
+
+  /// No description provided for @projectHealthBandAtRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'At Risk'**
+  String get projectHealthBandAtRisk;
+
+  /// No description provided for @projectHealthBandBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get projectHealthBandBlocked;
+
+  /// No description provided for @projectHealthReasonCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'The project is complete.'**
+  String get projectHealthReasonCompleted;
+
+  /// No description provided for @projectHealthReasonOnHold.
+  ///
+  /// In en, this message translates to:
+  /// **'The project is on hold.'**
+  String get projectHealthReasonOnHold;
+
+  /// No description provided for @projectHealthReasonStalledTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}'**
+  String projectHealthReasonStalledTasks(int count);
+
+  /// No description provided for @projectHealthReasonOverdueTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}'**
+  String projectHealthReasonOverdueTasks(int count);
+
+  /// No description provided for @projectHealthReasonTargetDatePassed.
+  ///
+  /// In en, this message translates to:
+  /// **'The target date has passed.'**
+  String get projectHealthReasonTargetDatePassed;
+
+  /// No description provided for @projectHealthReasonNoRecentProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent progress.'**
+  String get projectHealthReasonNoRecentProgress;
+
+  /// No description provided for @projectHealthReasonSummaryOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'The project summary is outdated.'**
+  String get projectHealthReasonSummaryOutdated;
+
+  /// No description provided for @projectHealthReasonNoLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No linked tasks yet.'**
+  String get projectHealthReasonNoLinkedTasks;
+
+  /// No description provided for @projectHealthReasonSteadyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'The project is moving steadily.'**
+  String get projectHealthReasonSteadyProgress;
+
   /// No description provided for @projectLinkedTaskCount.
   ///
   /// In en, this message translates to:

@@ -3742,6 +3742,74 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectHealthTitle => 'Proiecte';
 
   @override
+  String get projectHealthSectionTitle => 'Starea proiectului';
+
+  @override
+  String get projectHealthBandSurviving => 'Se menține';
+
+  @override
+  String get projectHealthBandOnTrack => 'Pe drumul bun';
+
+  @override
+  String get projectHealthBandWatch => 'De urmărit';
+
+  @override
+  String get projectHealthBandAtRisk => 'Cu risc';
+
+  @override
+  String get projectHealthBandBlocked => 'Blocat';
+
+  @override
+  String get projectHealthReasonCompleted => 'Proiectul este finalizat.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Proiectul este pus în așteptare.';
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini sunt blocate',
+      few: '$count sarcini sunt blocate',
+      one: '$count sarcină este blocată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini sunt întârziate',
+      few: '$count sarcini sunt întârziate',
+      one: '$count sarcină este întârziată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonTargetDatePassed =>
+      'Data-țintă a fost depășită.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Nu a existat progres recent.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Rezumatul proiectului nu mai este actualizat.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Proiectul nu are încă sarcini asociate.';
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Proiectul avansează constant.';
+
+  @override
   String projectLinkedTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
