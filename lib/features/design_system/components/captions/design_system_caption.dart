@@ -103,12 +103,14 @@ class DesignSystemCaption extends StatelessWidget {
         ),
         if (hasActions) ...[
           SizedBox(height: spec.gap),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            runAlignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: spec.actionGap,
+            runSpacing: spec.textGap,
             children: [
               ?secondaryAction,
-              if (secondaryAction != null && primaryAction != null)
-                SizedBox(width: spec.actionGap),
               ?primaryAction,
             ],
           ),

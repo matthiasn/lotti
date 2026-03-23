@@ -2412,7 +2412,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemCaptionDescriptionSample =>
-      'Removing all users has unpublished this project. Add users to republish.';
+      'Removing all users unpublished this project. Add users to publish it again.';
 
   @override
   String get designSystemCaptionIconLeftLabel => 'Left icon';

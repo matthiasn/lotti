@@ -4386,7 +4386,7 @@ abstract class AppLocalizations {
   /// No description provided for @designSystemCaptionDescriptionSample.
   ///
   /// In en, this message translates to:
-  /// **'Removing all users has unpublished this project. Add users to republish.'**
+  /// **'Removing all users unpublished this project. Add users to publish it again.'**
   String get designSystemCaptionDescriptionSample;
 
   /// No description provided for @designSystemCaptionIconLeftLabel.

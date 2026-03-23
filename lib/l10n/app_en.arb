@@ -1222,7 +1222,7 @@
   "designSystemBreadcrumbTrailTitle": "Breadcrumb Trail",
   "designSystemCalendarPickerLabel": "Calendar Picker",
   "designSystemCalendarViewsTitle": "Calendar Views",
-  "designSystemCaptionDescriptionSample": "Removing all users has unpublished this project. Add users to republish.",
+  "designSystemCaptionDescriptionSample": "Removing all users unpublished this project. Add users to publish it again.",
   "designSystemCaptionIconLeftLabel": "Left icon",
   "designSystemCaptionIconTopLabel": "Top icon",
   "designSystemCaptionNoIconLabel": "No icon",
