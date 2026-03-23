@@ -2554,37 +2554,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemMediumLabel => 'Mediu';
 
   @override
-  String get designSystemPressedLabel => 'Apăsat';
-
-  @override
-  String get designSystemProgressBarChunkyLabel => 'Segmentat';
-
-  @override
-  String get designSystemProgressBarLabelAndPercentageLabel =>
-      'Etichetă + procent';
-
-  @override
-  String get designSystemProgressBarLabelOnlyLabel => 'Doar etichetă';
-
-  @override
-  String get designSystemProgressBarOffLabel => 'Oprit';
-
-  @override
-  String get designSystemProgressBarPercentageOnlyLabel => 'Procent';
-
-  @override
-  String get designSystemProgressBarQuestBarLabel => 'Bară de quest';
-
-  @override
-  String get designSystemProgressBarQuestLabel => 'Etichetă mega premiu';
-
-  @override
-  String get designSystemProgressBarSampleLabel => 'Etichetă bară de progres';
-
-  @override
-  String get designSystemRadioButtonLabel => 'Buton radio';
-
-  @override
   String get designSystemNavigationAiAssistantSectionTitle => 'Asistent AI';
 
   @override
@@ -2632,6 +2601,37 @@ class AppLocalizationsRo extends AppLocalizations {
       'Variante pentru bara de file';
 
   @override
+  String get designSystemPressedLabel => 'Apăsat';
+
+  @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentat';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Etichetă + procent';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Doar etichetă';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Oprit';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Procent';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Bară de quest';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Etichetă mega premiu';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Etichetă bară de progres';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Buton radio';
+
+  @override
   String get designSystemSearchFilledText => 'Căutare Lotti';
 
   @override
@@ -2647,11 +2647,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemSmallLabel => 'Mic';
 
   @override
-  String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Deschide opțiunile pentru $label';
-  }
-
-  @override
   String get designSystemSpinnerPlainLabel => 'Simplu';
 
   @override
@@ -2659,6 +2654,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Puls';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Schelete';
 
   @override
   String get designSystemSpinnerSkeletonWaveLabel => 'Val';
@@ -2670,7 +2668,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemSpinnerTrackLabel => 'Cu pistă';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Schelete';
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Deschide opțiunile pentru $label';
+  }
 
   @override
   String get designSystemStateMatrixTitle => 'Matrice de stări';
@@ -3596,14 +3596,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get privateLabel => 'Privat';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
-
-  @override
   String get projectAgentNotProvisioned =>
       'Încă nu a fost configurat niciun agent de proiect pentru acest proiect.';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Pașii următori acceptați';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3684,14 +3681,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectManageTooltip => 'Gestionați proiectele';
 
   @override
-  String get projectSummaryOutdated => 'Rezumatul este învechit.';
-
-  @override
-  String projectSummaryOutdatedScheduled(String date, String time) {
-    return 'Rezumatul este învechit. Următoarea actualizare va fi pe $date la $time.';
-  }
-
-  @override
   String get projectNoLinkedTasks => 'Nicio sarcină asociată încă';
 
   @override
@@ -3705,6 +3694,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Fără proiect';
+
+  @override
+  String get projectRecommendationDismissTooltip => 'Respinge';
+
+  @override
+  String get projectRecommendationResolveTooltip => 'Marchează ca rezolvat';
+
+  @override
+  String get projectRecommendationsTitle => 'Pași următori recomandați';
+
+  @override
+  String get projectRecommendationUpdateError =>
+      'Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.';
 
   @override
   String get projectStatusActive => 'Activ';
@@ -3723,6 +3725,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectStatusOpen => 'Deschis';
+
+  @override
+  String get projectSummaryOutdated => 'Rezumatul este învechit.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Rezumatul este învechit. Următoarea actualizare va fi pe $date la $time.';
+  }
 
   @override
   String get projectTargetDateLabel => 'Data țintă';

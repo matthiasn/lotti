@@ -7,20 +7,18 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
-import 'package:lotti/features/ai/model/ai_config.dart'
-    show AiConfig, AiConfigInferenceProfile;
+import 'package:lotti/features/ai/model/ai_config.dart' show AiConfig;
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../agents/test_utils.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_utils.dart';
 
 void main() {
   const projectId = 'proj-agent-1';
@@ -285,72 +283,82 @@ void main() {
       );
     });
 
-    testWidgets(
-      'shows accepted next steps from confirmed recommendation decisions',
-      (
-        tester,
-      ) async {
-        final mockRepository = MockAgentRepository();
-        final updateController = StreamController<Set<String>>.broadcast();
-        addTearDown(updateController.close);
-        final decision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-001',
+    testWidgets('shows active project recommendations', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(
+              projectId,
+            ).overrideWith((ref) async => testAgent),
+            projectRecommendationsProvider(projectId).overrideWith(
+              (ref) async => [
+                makeTestProjectRecommendation(
+                  id: 'rec-1',
                   agentId: 'agent-1',
-                  changeSetId: 'change-set-001',
-                  itemIndex: 0,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: projectId,
-                  humanSummary: 'Recommend 2 next step(s)',
-                  args: const {
-                    'steps': [
-                      {
-                        'title': 'Unblock QA',
-                        'rationale': 'Staging data is missing',
-                        'priority': 'high',
-                      },
-                      {
-                        'title': 'Write launch checklist',
-                        'rationale': 'Avoid release drift',
-                      },
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: const VectorClock({}),
-                )
-                as ChangeDecisionEntity;
+                  projectId: projectId,
+                  title: 'Unblock QA',
+                  rationale: 'Staging data is missing',
+                ),
+                makeTestProjectRecommendation(
+                  id: 'rec-2',
+                  agentId: 'agent-1',
+                  projectId: projectId,
+                  title: 'Write launch checklist',
+                  rationale: 'Avoid release drift',
+                  priority: null,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        when(
-          () => mockRepository.getRecentDecisions(
-            'agent-1',
-            taskId: projectId,
-          ),
-        ).thenAnswer((_) async => [decision]);
+      expect(find.text('Recommended next steps'), findsOneWidget);
+      expect(find.text('Unblock QA'), findsOneWidget);
+      expect(find.text('Staging data is missing'), findsOneWidget);
+      expect(find.text('HIGH'), findsOneWidget);
+      expect(find.text('Write launch checklist'), findsOneWidget);
+      expect(find.text('Avoid release drift'), findsOneWidget);
+    });
 
-        await tester.pumpWidget(
-          buildSubject(
-            overrides: [
-              projectAgentProvider(projectId).overrideWith(
-                (ref) async => testAgent,
-              ),
-              agentRepositoryProvider.overrideWithValue(mockRepository),
-              agentUpdateStreamProvider('agent-1').overrideWith(
-                (ref) => updateController.stream,
-              ),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('recommendation actions call the service', (tester) async {
+      final mockService = MockProjectRecommendationService();
+      when(() => mockService.markResolved(any())).thenAnswer((_) async => true);
+      when(
+        () => mockService.dismissRecommendation(any()),
+      ).thenAnswer((_) async => true);
 
-        expect(find.text('Accepted next steps'), findsOneWidget);
-        expect(find.text('Unblock QA'), findsOneWidget);
-        expect(find.text('Staging data is missing'), findsOneWidget);
-        expect(find.text('HIGH'), findsOneWidget);
-        expect(find.text('Write launch checklist'), findsOneWidget);
-        expect(find.text('Avoid release drift'), findsOneWidget);
-      },
-    );
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            projectAgentProvider(
+              projectId,
+            ).overrideWith((ref) async => testAgent),
+            projectRecommendationsProvider(projectId).overrideWith(
+              (ref) async => [
+                makeTestProjectRecommendation(
+                  id: 'rec-1',
+                  agentId: 'agent-1',
+                  projectId: projectId,
+                  title: 'Unblock QA',
+                ),
+              ],
+            ),
+            projectRecommendationServiceProvider.overrideWithValue(mockService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Mark resolved'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Dismiss'));
+      await tester.pump();
+
+      verify(() => mockService.markResolved('rec-1')).called(1);
+      verify(() => mockService.dismissRecommendation('rec-1')).called(1);
+    });
   });
 }
 

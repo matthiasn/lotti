@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -9,19 +7,17 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -308,11 +304,8 @@ void main() {
       });
 
       testWidgets(
-        'shows accepted next steps from confirmed recommendation decisions',
+        'shows active project recommendations',
         (tester) async {
-          final mockRepository = MockAgentRepository();
-          final updateController = StreamController<Set<String>>.broadcast();
-          addTearDown(updateController.close);
           final agent =
               AgentDomainEntity.agent(
                     id: 'agent-001',
@@ -329,37 +322,6 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentIdentityEntity;
-          final decision =
-              AgentDomainEntity.changeDecision(
-                    id: 'decision-001',
-                    agentId: 'agent-001',
-                    changeSetId: 'change-set-001',
-                    itemIndex: 0,
-                    toolName: ProjectAgentToolNames.recommendNextSteps,
-                    verdict: ChangeDecisionVerdict.confirmed,
-                    taskId: _projectId,
-                    humanSummary: 'Recommend 1 next step(s)',
-                    args: const {
-                      'steps': [
-                        {
-                          'title': 'Prepare beta rollout',
-                          'rationale': 'The release branch is nearly ready',
-                          'priority': 'high',
-                        },
-                      ],
-                    },
-                    createdAt: DateTime(2024, 3, 16),
-                    vectorClock: const VectorClock({}),
-                  )
-                  as ChangeDecisionEntity;
-
-          when(
-            () => mockRepository.getRecentDecisions(
-              'agent-001',
-              taskId: _projectId,
-            ),
-          ).thenAnswer((_) async => [decision]);
-
           await pumpPage(
             tester,
             controllerState: ProjectDetailState(
@@ -371,14 +333,28 @@ void main() {
             ),
             projectAgent: agent,
             extraOverrides: [
-              agentRepositoryProvider.overrideWithValue(mockRepository),
-              agentUpdateStreamProvider('agent-001').overrideWith(
-                (ref) => updateController.stream,
+              projectRecommendationsProvider(_projectId).overrideWith(
+                (ref) async => [
+                  AgentDomainEntity.projectRecommendation(
+                        id: 'rec-001',
+                        agentId: 'agent-001',
+                        projectId: _projectId,
+                        title: 'Prepare beta rollout',
+                        position: 0,
+                        status: ProjectRecommendationStatus.active,
+                        createdAt: DateTime(2024, 3, 16),
+                        updatedAt: DateTime(2024, 3, 16),
+                        vectorClock: const VectorClock({}),
+                        rationale: 'The release branch is nearly ready',
+                        priority: 'HIGH',
+                      )
+                      as ProjectRecommendationEntity,
+                ],
               ),
             ],
           );
 
-          expect(find.text('Accepted next steps'), findsOneWidget);
+          expect(find.text('Recommended next steps'), findsOneWidget);
           expect(find.text('Prepare beta rollout'), findsOneWidget);
           expect(
             find.text('The release branch is nearly ready'),

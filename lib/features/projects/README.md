@@ -1,6 +1,6 @@
 # Projects Feature
 
-Projects provide a grouping layer between categories and tasks. Each project belongs to a category and can have multiple tasks linked to it. An optional AI agent is auto-created per project for analysis and reporting.
+Projects provide a grouping layer between categories and tasks. Each project belongs to a category and can have multiple tasks linked to it. When a matching `projectAgent` template is available, project creation provisions a project agent for analysis and reporting. If no agent exists yet, the detail page lets the user create one later.
 
 ## Feature Flag
 
@@ -93,9 +93,12 @@ Interactive status selector on the project detail page. Shows the current status
 Form page with three sections:
 1. **Status** — `ProjectStatusPicker` for changing project status.
 2. **Project Title** — text field and optional target date.
-3. **Agent** — current project-agent report, accepted next steps, manual
-   refresh action, and an explicit empty state when no project agent has been
-   provisioned.
+3. **Agent** — current project-agent report, active project
+   recommendations, manual refresh action, and an explicit empty state when
+   no project agent has been provisioned. Confirmed
+   `recommend_next_steps` proposals become first-class recommendation records
+   that supersede any older active set and can be resolved or dismissed from
+   this section.
 4. **Linked Tasks** — list of tasks in this project.
 
 ## Integration Points
@@ -109,7 +112,9 @@ Form page with three sections:
   spends tokens on a refreshed report.
 - **Deferred agent proposals**: Project detail pages now surface project-agent
   change sets so users can confirm or reject proposed status changes, task
-  creation, and other reviewed actions in place.
+  creation, and other reviewed actions in place. Confirmed
+  `recommend_next_steps` proposals are persisted as active project
+  recommendations instead of being replayed from raw decision history.
 
 ## Task-Project Linking
 

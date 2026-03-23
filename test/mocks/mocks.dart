@@ -25,6 +25,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -461,6 +462,9 @@ class MockImproverAgentService extends Mock implements ImproverAgentService {}
 class MockImproverAgentWorkflow extends Mock implements ImproverAgentWorkflow {}
 
 class MockProjectAgentService extends Mock implements ProjectAgentService {}
+
+class MockProjectRecommendationService extends Mock
+    implements ProjectRecommendationService {}
 
 class MockProjectAgentWorkflow extends Mock implements ProjectAgentWorkflow {}
 

@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -112,13 +114,24 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
       return _deduplicateChangeSets(sets);
     });
 
-/// Fetches accepted project recommendations that were explicitly confirmed.
-final FutureProviderFamily<List<ProjectAcceptedRecommendation>, String>
-projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
-    .family<List<ProjectAcceptedRecommendation>, String>((
-      ref,
-      projectId,
-    ) async {
+final projectRecommendationServiceProvider =
+    Provider<ProjectRecommendationService>(
+      (ref) {
+        final notifications =
+            ref.watch(maybeUpdateNotificationsProvider) ??
+            UpdateNotifications();
+        return ProjectRecommendationService(
+          syncService: ref.watch(agentSyncServiceProvider),
+          notifications: notifications,
+          domainLogger: ref.watch(domainLoggerProvider),
+        );
+      },
+    );
+
+/// Fetches active project recommendations for a given project agent.
+final FutureProviderFamily<List<ProjectRecommendationEntity>, String>
+projectRecommendationsProvider = FutureProvider.autoDispose
+    .family<List<ProjectRecommendationEntity>, String>((ref, projectId) async {
       final agent = await ref.watch(projectAgentProvider(projectId).future);
       final identity = agent?.mapOrNull(agent: (a) => a);
       if (identity == null) return const [];
@@ -126,55 +139,30 @@ projectAcceptedRecommendationsProvider = FutureProvider.autoDispose
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
       final repo = ref.watch(agentRepositoryProvider);
-      // Change decisions share the same historical `taskId` storage field for
-      // both task and project targets.
-      final decisions = await repo.getRecentDecisions(
+      final entities = await repo.getEntitiesByAgentId(
         identity.agentId,
-        taskId: projectId,
+        type: AgentEntityTypes.projectRecommendation,
       );
 
-      return _extractAcceptedRecommendations(decisions);
+      final recommendations =
+          entities
+              .whereType<ProjectRecommendationEntity>()
+              .where(
+                (recommendation) =>
+                    recommendation.projectId == projectId &&
+                    recommendation.status == ProjectRecommendationStatus.active,
+              )
+              .toList()
+            ..sort((a, b) {
+              final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
+              if (updatedAtOrder != 0) {
+                return updatedAtOrder;
+              }
+              return a.position.compareTo(b.position);
+            });
+
+      return recommendations;
     });
-
-List<ProjectAcceptedRecommendation> _extractAcceptedRecommendations(
-  Iterable<ChangeDecisionEntity> decisions,
-) {
-  final recommendations = <ProjectAcceptedRecommendation>[];
-
-  for (final decision in decisions) {
-    if (decision.verdict != ChangeDecisionVerdict.confirmed ||
-        decision.toolName != ProjectAgentToolNames.recommendNextSteps) {
-      continue;
-    }
-
-    final rawSteps = decision.args?['steps'];
-    if (rawSteps is! List) continue;
-
-    for (final rawStep in rawSteps) {
-      if (rawStep is! Map) continue;
-
-      final title = rawStep['title'];
-      if (title is! String || title.trim().isEmpty) continue;
-
-      final rationale = rawStep['rationale'];
-      final priority = rawStep['priority'];
-
-      recommendations.add(
-        ProjectAcceptedRecommendation(
-          title: title.trim(),
-          rationale: rationale is String && rationale.trim().isNotEmpty
-              ? rationale.trim()
-              : null,
-          priority: priority is String && priority.trim().isNotEmpty
-              ? priority.trim().toUpperCase()
-              : null,
-        ),
-      );
-    }
-  }
-
-  return recommendations;
-}
 
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
 @riverpod
@@ -214,5 +202,22 @@ final projectChangeSetConfirmationServiceProvider =
         ).dispatch,
         labelsRepository: labelsRepository,
         domainLogger: logger,
+        onConfirmedDecision:
+            ({
+              required changeSet,
+              required item,
+              required decision,
+            }) async {
+              if (item.toolName != ProjectAgentToolNames.recommendNextSteps) {
+                return;
+              }
+
+              await ref
+                  .read(projectRecommendationServiceProvider)
+                  .recordConfirmedRecommendations(
+                    changeSet: changeSet,
+                    decision: decision,
+                  );
+            },
       );
     });

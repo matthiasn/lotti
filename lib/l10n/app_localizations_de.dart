@@ -2552,37 +2552,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemMediumLabel => 'Mittel';
 
   @override
-  String get designSystemPressedLabel => 'Gedrückt';
-
-  @override
-  String get designSystemProgressBarChunkyLabel => 'Chunky';
-
-  @override
-  String get designSystemProgressBarLabelAndPercentageLabel =>
-      'Label + Prozent';
-
-  @override
-  String get designSystemProgressBarLabelOnlyLabel => 'Nur Label';
-
-  @override
-  String get designSystemProgressBarOffLabel => 'Aus';
-
-  @override
-  String get designSystemProgressBarPercentageOnlyLabel => 'Prozent';
-
-  @override
-  String get designSystemProgressBarQuestBarLabel => 'Quest-Leiste';
-
-  @override
-  String get designSystemProgressBarQuestLabel => 'Mega-Preis-Label';
-
-  @override
-  String get designSystemProgressBarSampleLabel => 'Progress-Bar-Label';
-
-  @override
-  String get designSystemRadioButtonLabel => 'Radio-Button';
-
-  @override
   String get designSystemNavigationAiAssistantSectionTitle => 'KI-Assistent';
 
   @override
@@ -2629,6 +2598,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemNavigationTabBarSectionTitle => 'Tableisten-Varianten';
 
   @override
+  String get designSystemPressedLabel => 'Gedrückt';
+
+  @override
+  String get designSystemProgressBarChunkyLabel => 'Chunky';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Label + Prozent';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Nur Label';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Aus';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Prozent';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Quest-Leiste';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Mega-Preis-Label';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Progress-Bar-Label';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Radio-Button';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti-Suche';
 
   @override
@@ -2644,11 +2644,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemSmallLabel => 'Klein';
 
   @override
-  String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Optionen für $label öffnen';
-  }
-
-  @override
   String get designSystemSpinnerPlainLabel => 'Ohne Spur';
 
   @override
@@ -2656,6 +2651,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Puls';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Skelette';
 
   @override
   String get designSystemSpinnerSkeletonWaveLabel => 'Welle';
@@ -2667,7 +2665,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemSpinnerTrackLabel => 'Mit Spur';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skelette';
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Optionen für $label öffnen';
+  }
 
   @override
   String get designSystemStateMatrixTitle => 'Statusmatrix';
@@ -3582,14 +3582,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get privateLabel => 'Privat';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
-
-  @override
   String get projectAgentNotProvisioned =>
       'Für dieses Projekt wurde noch kein Projekt-Agent eingerichtet.';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Akzeptierte nächste Schritte';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3666,14 +3663,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectManageTooltip => 'Projekte verwalten';
 
   @override
-  String get projectSummaryOutdated => 'Zusammenfassung ist veraltet.';
-
-  @override
-  String projectSummaryOutdatedScheduled(String date, String time) {
-    return 'Zusammenfassung ist veraltet. Nächstes Update am $date um $time.';
-  }
-
-  @override
   String get projectNoLinkedTasks => 'Noch keine Aufgaben verknüpft';
 
   @override
@@ -3687,6 +3676,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Kein Projekt';
+
+  @override
+  String get projectRecommendationDismissTooltip => 'Ausblenden';
+
+  @override
+  String get projectRecommendationResolveTooltip => 'Als erledigt markieren';
+
+  @override
+  String get projectRecommendationsTitle => 'Empfohlene nächste Schritte';
+
+  @override
+  String get projectRecommendationUpdateError =>
+      'Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.';
 
   @override
   String get projectStatusActive => 'Aktiv';
@@ -3705,6 +3707,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectStatusOpen => 'Offen';
+
+  @override
+  String get projectSummaryOutdated => 'Zusammenfassung ist veraltet.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Zusammenfassung ist veraltet. Nächstes Update am $date um $time.';
+  }
 
   @override
   String get projectTargetDateLabel => 'Zieldatum';

@@ -4587,66 +4587,6 @@ abstract class AppLocalizations {
   /// **'Medium'**
   String get designSystemMediumLabel;
 
-  /// No description provided for @designSystemPressedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Pressed'**
-  String get designSystemPressedLabel;
-
-  /// No description provided for @designSystemProgressBarChunkyLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Chunky'**
-  String get designSystemProgressBarChunkyLabel;
-
-  /// No description provided for @designSystemProgressBarLabelAndPercentageLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Label + Percentage'**
-  String get designSystemProgressBarLabelAndPercentageLabel;
-
-  /// No description provided for @designSystemProgressBarLabelOnlyLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Label only'**
-  String get designSystemProgressBarLabelOnlyLabel;
-
-  /// No description provided for @designSystemProgressBarOffLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Off'**
-  String get designSystemProgressBarOffLabel;
-
-  /// No description provided for @designSystemProgressBarPercentageOnlyLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Percentage'**
-  String get designSystemProgressBarPercentageOnlyLabel;
-
-  /// No description provided for @designSystemProgressBarQuestBarLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Quest bar'**
-  String get designSystemProgressBarQuestBarLabel;
-
-  /// No description provided for @designSystemProgressBarQuestLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Mega prize label'**
-  String get designSystemProgressBarQuestLabel;
-
-  /// No description provided for @designSystemProgressBarSampleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Progress bar label'**
-  String get designSystemProgressBarSampleLabel;
-
-  /// No description provided for @designSystemRadioButtonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Radio button'**
-  String get designSystemRadioButtonLabel;
-
   /// No description provided for @designSystemNavigationAiAssistantSectionTitle.
   ///
   /// In en, this message translates to:
@@ -4737,6 +4677,66 @@ abstract class AppLocalizations {
   /// **'Tab Bar Variants'**
   String get designSystemNavigationTabBarSectionTitle;
 
+  /// No description provided for @designSystemPressedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressed'**
+  String get designSystemPressedLabel;
+
+  /// No description provided for @designSystemProgressBarChunkyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chunky'**
+  String get designSystemProgressBarChunkyLabel;
+
+  /// No description provided for @designSystemProgressBarLabelAndPercentageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label + Percentage'**
+  String get designSystemProgressBarLabelAndPercentageLabel;
+
+  /// No description provided for @designSystemProgressBarLabelOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label only'**
+  String get designSystemProgressBarLabelOnlyLabel;
+
+  /// No description provided for @designSystemProgressBarOffLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get designSystemProgressBarOffLabel;
+
+  /// No description provided for @designSystemProgressBarPercentageOnlyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage'**
+  String get designSystemProgressBarPercentageOnlyLabel;
+
+  /// No description provided for @designSystemProgressBarQuestBarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quest bar'**
+  String get designSystemProgressBarQuestBarLabel;
+
+  /// No description provided for @designSystemProgressBarQuestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mega prize label'**
+  String get designSystemProgressBarQuestLabel;
+
+  /// No description provided for @designSystemProgressBarSampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress bar label'**
+  String get designSystemProgressBarSampleLabel;
+
+  /// No description provided for @designSystemRadioButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio button'**
+  String get designSystemRadioButtonLabel;
+
   /// No description provided for @designSystemSearchFilledText.
   ///
   /// In en, this message translates to:
@@ -4767,12 +4767,6 @@ abstract class AppLocalizations {
   /// **'Small'**
   String get designSystemSmallLabel;
 
-  /// No description provided for @designSystemSplitButtonDropdownSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Open {label} options'**
-  String designSystemSplitButtonDropdownSemantics(String label);
-
   /// No description provided for @designSystemSpinnerPlainLabel.
   ///
   /// In en, this message translates to:
@@ -4790,6 +4784,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pulse'**
   String get designSystemSpinnerSkeletonPulseLabel;
+
+  /// No description provided for @designSystemSpinnerSkeletonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skeletons'**
+  String get designSystemSpinnerSkeletonsTitle;
 
   /// No description provided for @designSystemSpinnerSkeletonWaveLabel.
   ///
@@ -4809,11 +4809,11 @@ abstract class AppLocalizations {
   /// **'With track'**
   String get designSystemSpinnerTrackLabel;
 
-  /// No description provided for @designSystemSpinnerSkeletonsTitle.
+  /// No description provided for @designSystemSplitButtonDropdownSemantics.
   ///
   /// In en, this message translates to:
-  /// **'Skeletons'**
-  String get designSystemSpinnerSkeletonsTitle;
+  /// **'Open {label} options'**
+  String designSystemSplitButtonDropdownSemantics(String label);
 
   /// No description provided for @designSystemStateMatrixTitle.
   ///
@@ -6415,23 +6415,17 @@ abstract class AppLocalizations {
   /// **'Private'**
   String get privateLabel;
 
-  /// No description provided for @projectAgentSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent'**
-  String get projectAgentSectionTitle;
-
   /// No description provided for @projectAgentNotProvisioned.
   ///
   /// In en, this message translates to:
   /// **'No project agent has been provisioned for this project yet.'**
   String get projectAgentNotProvisioned;
 
-  /// No description provided for @projectAcceptedNextStepsTitle.
+  /// No description provided for @projectAgentSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Accepted next steps'**
-  String get projectAcceptedNextStepsTitle;
+  /// **'Agent'**
+  String get projectAgentSectionTitle;
 
   /// No description provided for @projectCountSummary.
   ///
@@ -6517,18 +6511,6 @@ abstract class AppLocalizations {
   /// **'Manage projects'**
   String get projectManageTooltip;
 
-  /// No description provided for @projectSummaryOutdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Summary outdated.'**
-  String get projectSummaryOutdated;
-
-  /// No description provided for @projectSummaryOutdatedScheduled.
-  ///
-  /// In en, this message translates to:
-  /// **'Summary outdated. Next update {date} at {time}.'**
-  String projectSummaryOutdatedScheduled(String date, String time);
-
   /// No description provided for @projectNoLinkedTasks.
   ///
   /// In en, this message translates to:
@@ -6558,6 +6540,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No project'**
   String get projectPickerUnassigned;
+
+  /// No description provided for @projectRecommendationDismissTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get projectRecommendationDismissTooltip;
+
+  /// No description provided for @projectRecommendationResolveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark resolved'**
+  String get projectRecommendationResolveTooltip;
+
+  /// No description provided for @projectRecommendationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended next steps'**
+  String get projectRecommendationsTitle;
+
+  /// No description provided for @projectRecommendationUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the recommendation. Please try again.'**
+  String get projectRecommendationUpdateError;
 
   /// No description provided for @projectStatusActive.
   ///
@@ -6594,6 +6600,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open'**
   String get projectStatusOpen;
+
+  /// No description provided for @projectSummaryOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary outdated.'**
+  String get projectSummaryOutdated;
+
+  /// No description provided for @projectSummaryOutdatedScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary outdated. Next update {date} at {time}.'**
+  String projectSummaryOutdatedScheduled(String date, String time);
 
   /// No description provided for @projectTargetDateLabel.
   ///

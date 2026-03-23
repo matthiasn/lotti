@@ -533,6 +533,46 @@ ChangeDecisionEntity makeTestChangeDecision({
       as ChangeDecisionEntity;
 }
 
+ProjectRecommendationEntity makeTestProjectRecommendation({
+  String id = 'pr-001',
+  String agentId = kTestAgentId,
+  String projectId = 'project-001',
+  String title = 'Confirm rollout',
+  int position = 0,
+  ProjectRecommendationStatus status = ProjectRecommendationStatus.active,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  String? sourceChangeSetId,
+  String? sourceDecisionId,
+  String? rationale = 'Keep an eye on the final handoff.',
+  String? priority = 'HIGH',
+  DateTime? resolvedAt,
+  DateTime? dismissedAt,
+  DateTime? supersededAt,
+}) {
+  final timestamp = createdAt ?? kAgentTestDate;
+  return AgentDomainEntity.projectRecommendation(
+        id: id,
+        agentId: agentId,
+        projectId: projectId,
+        title: title,
+        position: position,
+        status: status,
+        createdAt: timestamp,
+        updatedAt: updatedAt ?? timestamp,
+        vectorClock: vectorClock,
+        sourceChangeSetId: sourceChangeSetId,
+        sourceDecisionId: sourceDecisionId,
+        rationale: rationale,
+        priority: priority,
+        resolvedAt: resolvedAt,
+        dismissedAt: dismissedAt,
+        supersededAt: supersededAt,
+      )
+      as ProjectRecommendationEntity;
+}
+
 // ── AI config factories (for inference provider resolution tests) ────────────
 
 /// Creates a test [AiConfigInferenceProvider] for use in provider resolution

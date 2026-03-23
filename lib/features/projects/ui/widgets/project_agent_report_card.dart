@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -16,8 +15,8 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 
 /// Renders project-agent context on the project detail page.
 ///
-/// Shows the provisioned agent's display name and any accepted
-/// `recommend_next_steps` decisions that have been confirmed by the user.
+/// Shows the provisioned agent's display name, current report, and active
+/// project recommendations that the user can resolve or dismiss.
 class ProjectAgentReportCard extends ConsumerWidget {
   const ProjectAgentReportCard({
     required this.projectId,
@@ -68,7 +67,7 @@ class ProjectAgentReportCard extends ConsumerWidget {
         projectId: projectId,
         templateId: result.templateId,
         displayName: projectTitle,
-        allowedCategoryIds: {if (categoryId != null) categoryId!},
+        allowedCategoryIds: categoryId == null ? const {} : {categoryId!},
         profileId: result.profileId,
       );
 
@@ -133,12 +132,12 @@ class ProjectAgentReportCard extends ConsumerWidget {
         final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
         final isRunning =
             ref.watch(agentIsRunningProvider(agent.agentId)).value ?? false;
-        final acceptedRecommendations =
+        final recommendations =
             ref
-                .watch(projectAcceptedRecommendationsProvider(projectId))
+                .watch(projectRecommendationsProvider(projectId))
                 .asData
                 ?.value ??
-            const <ProjectAcceptedRecommendation>[];
+            const <ProjectRecommendationEntity>[];
         final hasReport = report != null && report.content.trim().isNotEmpty;
 
         return LottiFormSection(
@@ -231,19 +230,19 @@ class ProjectAgentReportCard extends ConsumerWidget {
                   ),
                 ),
               ),
-            if (acceptedRecommendations.isNotEmpty) ...[
+            if (recommendations.isNotEmpty) ...[
               const Divider(height: 24),
               Text(
-                context.messages.projectAcceptedNextStepsTitle,
+                context.messages.projectRecommendationsTitle,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
-              for (final recommendation in acceptedRecommendations)
+              for (final recommendation in recommendations)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _AcceptedRecommendationTile(
+                  child: _ProjectRecommendationTile(
                     recommendation: recommendation,
                   ),
                 ),
@@ -255,13 +254,39 @@ class ProjectAgentReportCard extends ConsumerWidget {
   }
 }
 
-class _AcceptedRecommendationTile extends StatelessWidget {
-  const _AcceptedRecommendationTile({required this.recommendation});
+class _ProjectRecommendationTile extends ConsumerWidget {
+  const _ProjectRecommendationTile({required this.recommendation});
 
-  final ProjectAcceptedRecommendation recommendation;
+  final ProjectRecommendationEntity recommendation;
+
+  Future<void> _handleResolve(BuildContext context, WidgetRef ref) async {
+    final success = await ref
+        .read(projectRecommendationServiceProvider)
+        .markResolved(recommendation.id);
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.projectRecommendationUpdateError),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDismiss(BuildContext context, WidgetRef ref) async {
+    final success = await ref
+        .read(projectRecommendationServiceProvider)
+        .dismissRecommendation(recommendation.id);
+    if (!success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.messages.projectRecommendationUpdateError),
+        ),
+      );
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -288,6 +313,7 @@ class _AcceptedRecommendationTile extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               if (recommendation.priority case final priority?)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -306,6 +332,24 @@ class _AcceptedRecommendationTile extends StatelessWidget {
                     ),
                   ),
                 ),
+              IconButton(
+                icon: Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: context.colorScheme.primary,
+                ),
+                tooltip: context.messages.projectRecommendationResolveTooltip,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _handleResolve(context, ref),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+                tooltip: context.messages.projectRecommendationDismissTooltip,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _handleDismiss(context, ref),
+              ),
             ],
           ),
           if (recommendation.rationale case final rationale?) ...[

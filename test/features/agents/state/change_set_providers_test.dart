@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -402,7 +402,7 @@ void main() {
     });
   });
 
-  group('projectAcceptedRecommendationsProvider', () {
+  group('projectRecommendationsProvider', () {
     test('returns empty list when no project agent exists', () async {
       final container = ProviderContainer(
         overrides: [
@@ -415,126 +415,82 @@ void main() {
       addTearDown(container.dispose);
 
       final sub = container.listen(
-        projectAcceptedRecommendationsProvider('project-001'),
+        projectRecommendationsProvider('project-001'),
         (_, _) {},
       );
       addTearDown(sub.close);
 
       final result = await container.read(
-        projectAcceptedRecommendationsProvider('project-001').future,
+        projectRecommendationsProvider('project-001').future,
       );
 
       expect(result, isEmpty);
       verifyNever(
-        () => mockRepository.getRecentDecisions(
+        () => mockRepository.getEntitiesByAgentId(
           any(),
-          taskId: any(named: 'taskId'),
+          type: any(named: 'type'),
           limit: any(named: 'limit'),
         ),
       );
     });
 
     test(
-      'maps confirmed recommendation decisions into accepted steps',
+      'returns active project recommendations ordered for display',
       () async {
         final agent = makeTestIdentity();
         final updateController = StreamController<Set<String>>.broadcast();
         addTearDown(updateController.close);
 
-        final validDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-accepted',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 0,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Recommend next steps',
-                  args: const {
-                    'steps': [
-                      {
-                        'title': 'Unblock QA',
-                        'rationale': 'Staging data is missing',
-                        'priority': 'high',
-                      },
-                      {
-                        'title': 'Write launch checklist',
-                      },
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final rejectedDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-rejected',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 1,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.rejected,
-                  taskId: 'project-001',
-                  humanSummary: 'Rejected steps',
-                  args: const {
-                    'steps': [
-                      {'title': 'Should not render'},
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final otherToolDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-other-tool',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 2,
-                  toolName: ProjectAgentToolNames.updateProjectStatus,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Other tool',
-                  args: const {
-                    'status': 'active',
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
-        final malformedDecision =
-            AgentDomainEntity.changeDecision(
-                  id: 'decision-malformed',
-                  agentId: agent.agentId,
-                  changeSetId: 'change-set-001',
-                  itemIndex: 3,
-                  toolName: ProjectAgentToolNames.recommendNextSteps,
-                  verdict: ChangeDecisionVerdict.confirmed,
-                  taskId: 'project-001',
-                  humanSummary: 'Malformed steps',
-                  args: const {
-                    'steps': [
-                      {'title': '  '},
-                      {'rationale': 'Missing title'},
-                    ],
-                  },
-                  createdAt: DateTime(2024, 3, 16),
-                  vectorClock: null,
-                )
-                as ChangeDecisionEntity;
+        final olderActive = makeTestProjectRecommendation(
+          id: 'pr-older',
+          agentId: agent.agentId,
+          title: 'Older recommendation',
+          createdAt: DateTime(2024, 3, 15, 9),
+          updatedAt: DateTime(2024, 3, 15, 9),
+        );
+        final secondInBatch = makeTestProjectRecommendation(
+          id: 'pr-second',
+          agentId: agent.agentId,
+          title: 'Second in latest batch',
+          position: 1,
+          createdAt: DateTime(2024, 3, 16, 9),
+          updatedAt: DateTime(2024, 3, 16, 9),
+          priority: null,
+          rationale: null,
+        );
+        final firstInBatch = makeTestProjectRecommendation(
+          id: 'pr-first',
+          agentId: agent.agentId,
+          title: 'First in latest batch',
+          createdAt: DateTime(2024, 3, 16, 9),
+          updatedAt: DateTime(2024, 3, 16, 9),
+          priority: 'MEDIUM',
+        );
+        final resolved = makeTestProjectRecommendation(
+          id: 'pr-resolved',
+          agentId: agent.agentId,
+          title: 'Resolved recommendation',
+          status: ProjectRecommendationStatus.resolved,
+        );
+        final otherProject = makeTestProjectRecommendation(
+          id: 'pr-other-project',
+          agentId: agent.agentId,
+          projectId: 'project-999',
+          title: 'Other project recommendation',
+        );
 
         when(
-          () => mockRepository.getRecentDecisions(
+          () => mockRepository.getEntitiesByAgentId(
             agent.agentId,
-            taskId: 'project-001',
+            type: AgentEntityTypes.projectRecommendation,
           ),
         ).thenAnswer(
           (_) async => [
-            validDecision,
-            rejectedDecision,
-            otherToolDecision,
-            malformedDecision,
+            olderActive,
+            secondInBatch,
+            firstInBatch,
+            resolved,
+            otherProject,
           ],
         );
 
@@ -552,22 +508,19 @@ void main() {
         addTearDown(container.dispose);
 
         final sub = container.listen(
-          projectAcceptedRecommendationsProvider('project-001'),
+          projectRecommendationsProvider('project-001'),
           (_, _) {},
         );
         addTearDown(sub.close);
 
         final result = await container.read(
-          projectAcceptedRecommendationsProvider('project-001').future,
+          projectRecommendationsProvider('project-001').future,
         );
 
-        expect(result, hasLength(2));
-        expect(result[0].title, 'Unblock QA');
-        expect(result[0].rationale, 'Staging data is missing');
-        expect(result[0].priority, 'HIGH');
-        expect(result[1].title, 'Write launch checklist');
-        expect(result[1].rationale, isNull);
-        expect(result[1].priority, isNull);
+        expect(result, hasLength(3));
+        expect(result[0].id, 'pr-first');
+        expect(result[1].id, 'pr-second');
+        expect(result[2].id, 'pr-older');
       },
     );
   });

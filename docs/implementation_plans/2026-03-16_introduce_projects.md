@@ -55,10 +55,12 @@ already landed and what is still missing.
 - **Project activity tracking is broader than planned.** Linked task edits still
   bubble up to the project via parent-link notifications, but they now mark the
   project report as stale instead of waking the project agent immediately.
-- **Accepted next-step recommendations are acknowledgement-only.** Confirming
-  `recommend_next_steps` resolves the proposal and records the decision, but it
-  does not yet persist a separate project recommendation artifact beyond the
-  normal change-decision history.
+- **Confirmed next-step recommendations now persist as their own artifact.**
+  Confirming `recommend_next_steps` writes active
+  `projectRecommendation` entities, supersedes any older active set for the
+  same project, and surfaces them on the project detail page with explicit
+  resolve/dismiss actions. They are still project-level guidance, not direct
+  task/status mutations.
 
 ### Remaining Work
 
@@ -68,9 +70,10 @@ already landed and what is still missing.
 - **Tighten activity sources.** Replace the current broad linked-task/project
   stale-marking behavior with the planned status-transition/day-plan-driven
   triggering if we want a narrower definition of meaningful project activity.
-- **Deepen deferred project actions.** The project-scoped review/apply path is
-  now present, but accepted `recommend_next_steps` still only acknowledge the
-  proposal instead of writing a richer project recommendation record.
+- **Connect recommendations to downstream execution.** Confirmed
+  `recommend_next_steps` now persist as lifecycle-managed project
+  recommendations, but they still do not auto-create tasks or apply project
+  status changes. That execution path remains a separate product decision.
 - **Implement Phase 4.** Weekly review GenUI, inline directive evolution,
   weekly review history, seeded project templates, and improver-agent wiring
   are still outstanding.
@@ -516,7 +519,7 @@ sequenceDiagram
 
     alt recommend_next_steps
         PAS->>Tools: execute(recommend_next_steps, args)
-        Tools->>ADB: Persist recommendations as observations
+        Tools->>ADB: Persist active project recommendations<br/>and supersede prior active set
     end
 
     PAW->>ADB: Persist messages, state, set next scheduledWakeAt
