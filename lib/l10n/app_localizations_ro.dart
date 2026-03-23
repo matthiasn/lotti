@@ -2576,6 +2576,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHoverLabel => 'La survolare';
 
   @override
+  String get designSystemInputErrorSample => 'Acest câmp este obligatoriu';
+
+  @override
+  String get designSystemInputHelperSample => 'Introduceți numele dvs.';
+
+  @override
+  String get designSystemInputHintSample => 'Substituent...';
+
+  @override
+  String get designSystemInputLabelSample => 'Etichetă';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Variante câmp de introducere';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'Cu eroare';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'Cu text ajutător';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'Cu pictograme';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Activat';
 
   @override

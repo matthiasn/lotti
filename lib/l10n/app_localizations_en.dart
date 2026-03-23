@@ -2536,6 +2536,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemInputErrorSample => 'This field is required';
+
+  @override
+  String get designSystemInputHelperSample => 'Enter your name';
+
+  @override
+  String get designSystemInputHintSample => 'Placeholder...';
+
+  @override
+  String get designSystemInputLabelSample => 'Label';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Input Variants';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'With error';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'With helper text';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'With icons';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Activated';
 
   @override

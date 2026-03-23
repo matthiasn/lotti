@@ -2608,6 +2608,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemHoverLabel => 'Survol';
 
   @override
+  String get designSystemInputErrorSample => 'Ce champ est obligatoire';
+
+  @override
+  String get designSystemInputHelperSample => 'Saisis ton nom';
+
+  @override
+  String get designSystemInputHintSample => 'Espace réservé...';
+
+  @override
+  String get designSystemInputLabelSample => 'Libellé';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Variantes de champ de saisie';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'Avec erreur';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'Avec texte d\'aide';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'Avec icônes';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Activé';
 
   @override
