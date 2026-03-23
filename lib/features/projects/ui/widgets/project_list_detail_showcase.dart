@@ -56,7 +56,7 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                         ),
                         Expanded(
                           child: state.selectedProject == null
-                              ? const SizedBox.shrink()
+                              ? const _NoResultsPane()
                               : _ProjectDetailPane(
                                   record: state.selectedProject!,
                                 ),
@@ -157,7 +157,7 @@ class _AiAssistantOrb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      image: true,
+      button: true,
       label: context.messages.designSystemNavigationAiAssistantSectionTitle,
       child: SizedBox.square(
         dimension: _buttonSize,
@@ -666,8 +666,7 @@ class _ProjectRow extends StatelessWidget {
       return '$taskCount · ${context.messages.projectShowcaseOngoing}';
     }
 
-    final locale = Localizations.localeOf(context).toString();
-    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat.MMMd(locale).format(targetDate))}';
+    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat('MMM d').format(targetDate))}';
   }
 }
 
@@ -810,17 +809,13 @@ class _DetailHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  record.project.data.title,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
-                    color: _ProjectListDetailPalette.highText(context),
-                  ),
+              Text(
+                record.project.data.title,
+                style: tokens.typography.styles.heading.heading3.copyWith(
+                  color: _ProjectListDetailPalette.highText(context),
                 ),
               ),
-              const SizedBox(width: 8),
+              const Spacer(),
               Icon(
                 Icons.more_vert_rounded,
                 size: 20,
@@ -840,9 +835,7 @@ class _DetailHeader extends StatelessWidget {
                 const SizedBox(width: 8),
                 _OutlinedMetaTag(
                   icon: Icons.calendar_today_outlined,
-                  label: DateFormat.yMMMd(
-                    Localizations.localeOf(context).toString(),
-                  ).format(targetDate),
+                  label: DateFormat('MMM d, y').format(targetDate),
                 ),
               ],
               const Spacer(),
