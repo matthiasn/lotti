@@ -114,11 +114,15 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                         color: tokens.colors.text.highEmphasis,
                       ),
                       textAlignVertical: TextAlignVertical.center,
-                      decoration: InputDecoration.collapsed(
+                      decoration: InputDecoration(
                         hintText: widget.hintText,
                         hintStyle: spec.textStyle.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
+                          color: tokens.colors.text.mediumEmphasis,
                         ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                        isCollapsed: true,
                       ),
                     ),
                   ),
@@ -191,7 +195,7 @@ class _SearchActionButton extends StatelessWidget {
                 Icons.search_rounded,
                 size: size.iconSize,
                 color: enabled
-                    ? tokens.colors.text.highEmphasis
+                    ? tokens.colors.text.mediumEmphasis
                     : tokens.colors.text.lowEmphasis,
               ),
             ),

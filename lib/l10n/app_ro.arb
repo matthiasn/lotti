@@ -1097,10 +1097,10 @@
   "designSystemHeaderBackActionLabel": "Înapoi",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
   "designSystemHeaderFigmaDefaultLabel": "Implicit Figma",
-  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderHelpActionLabel": "Ajutor",
   "designSystemHeaderLongTitleExample": "Acesta este un titlu de pagină foarte lung care trebuie trunchiat înaintea zonei de acțiuni",
   "designSystemHeaderLongTitleLabel": "Titlu lung",
+  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderNotificationsActionLabel": "Notificări",
   "designSystemHeaderSearchActionLabel": "Caută",
   "designSystemHorizontalLabel": "Orizontal",
@@ -1556,6 +1556,77 @@
   "projectRecommendationResolveTooltip": "Marchează ca rezolvat",
   "projectRecommendationsTitle": "Pași următori recomandați",
   "projectRecommendationUpdateError": "Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.",
+  "projectShowcaseAiReportTitle": "Raport AI",
+  "projectShowcaseBlockedLegend": "{count} blocate",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} sarcină blocată} few{{count} sarcini blocate} other{{count} de sarcini blocate}}",
+  "@projectShowcaseBlockedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseCompletedLegend": "{count} finalizate",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseDescriptionTitle": "Descriere",
+  "projectShowcaseDueDate": "Termen {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "projectShowcaseHealthScoreDescription": "Acest scor se bazează pe viteza sarcinilor, blocaje și timpul rămas până la termen.",
+  "projectShowcaseHealthScoreTitle": "Scor de sănătate",
+  "projectShowcaseNoResults": "Niciun proiect nu corespunde căutării tale.",
+  "projectShowcaseOneOnOneReviewsTab": "Revizuiri 1:1",
+  "projectShowcaseOngoing": "În curs",
+  "projectShowcaseProjectTasksTab": "Sarcinile proiectului",
+  "projectShowcaseRecommendationsTitle": "Recomandări",
+  "projectShowcaseSearchHint": "Caută proiecte",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} sesiune} few{{count} sesiuni} other{{count} de sesiuni}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseTasksCompleted": "{completed}/{total} sarcini finalizate",
+  "@projectShowcaseTasksCompleted": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUpdatedHoursAgo": "Actualizat acum {hours} ore ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Utilitate",
+  "projectShowcaseViewBlocker": "Vezi blocajul",
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
   "projectStatusChangeTitle": "Schimbă starea",

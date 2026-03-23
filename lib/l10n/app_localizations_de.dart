@@ -2524,9 +2524,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemHeaderFigmaDefaultLabel => 'Figma-Standard';
 
   @override
-  String get designSystemHeaderMobileSectionTitle => 'Mobil';
-
-  @override
   String get designSystemHeaderHelpActionLabel => 'Hilfe';
 
   @override
@@ -2535,6 +2532,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemHeaderLongTitleLabel => 'Langer Titel';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobil';
 
   @override
   String get designSystemHeaderNotificationsActionLabel => 'Benachrichtigungen';
@@ -3689,6 +3689,91 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.';
+
+  @override
+  String get projectShowcaseAiReportTitle => 'AI-Bericht';
+
+  @override
+  String projectShowcaseBlockedLegend(int count) {
+    return '$count Blockiert';
+  }
+
+  @override
+  String projectShowcaseBlockedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count blockierte Aufgaben',
+      one: '$count blockierte Aufgabe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectShowcaseCompletedLegend(int count) {
+    return '$count Abgeschlossen';
+  }
+
+  @override
+  String get projectShowcaseDescriptionTitle => 'Beschreibung';
+
+  @override
+  String projectShowcaseDueDate(String date) {
+    return 'Fällig $date';
+  }
+
+  @override
+  String get projectShowcaseHealthScoreDescription =>
+      'Dieser Wert basiert auf Aufgabentempo, Blockern und der verbleibenden Zeit bis zur Deadline.';
+
+  @override
+  String get projectShowcaseHealthScoreTitle => 'Gesundheitswert';
+
+  @override
+  String get projectShowcaseNoResults =>
+      'Keine Projekte passen zu deiner Suche.';
+
+  @override
+  String get projectShowcaseOneOnOneReviewsTab => '1:1-Reviews';
+
+  @override
+  String get projectShowcaseOngoing => 'Laufend';
+
+  @override
+  String get projectShowcaseProjectTasksTab => 'Projektaufgaben';
+
+  @override
+  String get projectShowcaseRecommendationsTitle => 'Empfehlungen';
+
+  @override
+  String get projectShowcaseSearchHint => 'Projekte suchen';
+
+  @override
+  String projectShowcaseSessionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Sitzungen',
+      one: '$count Sitzung',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectShowcaseTasksCompleted(int completed, int total) {
+    return '$completed/$total Aufgaben abgeschlossen';
+  }
+
+  @override
+  String projectShowcaseUpdatedHoursAgo(int hours) {
+    return 'Aktualisiert vor $hours Std. ↻';
+  }
+
+  @override
+  String get projectShowcaseUsefulness => 'Nützlichkeit';
+
+  @override
+  String get projectShowcaseViewBlocker => 'Blocker ansehen';
 
   @override
   String get projectStatusActive => 'Aktiv';

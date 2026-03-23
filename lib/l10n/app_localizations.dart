@@ -4533,12 +4533,6 @@ abstract class AppLocalizations {
   /// **'Figma default'**
   String get designSystemHeaderFigmaDefaultLabel;
 
-  /// No description provided for @designSystemHeaderMobileSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile'**
-  String get designSystemHeaderMobileSectionTitle;
-
   /// No description provided for @designSystemHeaderHelpActionLabel.
   ///
   /// In en, this message translates to:
@@ -4556,6 +4550,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Long title'**
   String get designSystemHeaderLongTitleLabel;
+
+  /// No description provided for @designSystemHeaderMobileSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get designSystemHeaderMobileSectionTitle;
 
   /// No description provided for @designSystemHeaderNotificationsActionLabel.
   ///
@@ -6564,6 +6564,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the recommendation. Please try again.'**
   String get projectRecommendationUpdateError;
+
+  /// No description provided for @projectShowcaseAiReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Report'**
+  String get projectShowcaseAiReportTitle;
+
+  /// No description provided for @projectShowcaseBlockedLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Blocked'**
+  String projectShowcaseBlockedLegend(int count);
+
+  /// No description provided for @projectShowcaseBlockedTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task blocked} other{{count} tasks blocked}}'**
+  String projectShowcaseBlockedTaskCount(int count);
+
+  /// No description provided for @projectShowcaseCompletedLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Completed'**
+  String projectShowcaseCompletedLegend(int count);
+
+  /// No description provided for @projectShowcaseDescriptionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get projectShowcaseDescriptionTitle;
+
+  /// No description provided for @projectShowcaseDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String projectShowcaseDueDate(String date);
+
+  /// No description provided for @projectShowcaseHealthScoreDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This score is based on task velocity, blockers, and time left to deadline.'**
+  String get projectShowcaseHealthScoreDescription;
+
+  /// No description provided for @projectShowcaseHealthScoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Score'**
+  String get projectShowcaseHealthScoreTitle;
+
+  /// No description provided for @projectShowcaseNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects match your search.'**
+  String get projectShowcaseNoResults;
+
+  /// No description provided for @projectShowcaseOneOnOneReviewsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'One-on-one Reviews'**
+  String get projectShowcaseOneOnOneReviewsTab;
+
+  /// No description provided for @projectShowcaseOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get projectShowcaseOngoing;
+
+  /// No description provided for @projectShowcaseProjectTasksTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Tasks'**
+  String get projectShowcaseProjectTasksTab;
+
+  /// No description provided for @projectShowcaseRecommendationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommendations'**
+  String get projectShowcaseRecommendationsTitle;
+
+  /// No description provided for @projectShowcaseSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get projectShowcaseSearchHint;
+
+  /// No description provided for @projectShowcaseSessionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} session} other{{count} sessions}}'**
+  String projectShowcaseSessionsCount(int count);
+
+  /// No description provided for @projectShowcaseTasksCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, one{{completed}/{total} task completed} other{{completed}/{total} tasks completed}}'**
+  String projectShowcaseTasksCompleted(int completed, int total);
+
+  /// No description provided for @projectShowcaseUpdatedHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {hours}h ago ↻'**
+  String projectShowcaseUpdatedHoursAgo(int hours);
+
+  /// No description provided for @projectShowcaseUsefulness.
+  ///
+  /// In en, this message translates to:
+  /// **'Usefulness'**
+  String get projectShowcaseUsefulness;
+
+  /// No description provided for @projectShowcaseViewBlocker.
+  ///
+  /// In en, this message translates to:
+  /// **'View blocker'**
+  String get projectShowcaseViewBlocker;
 
   /// No description provided for @projectStatusActive.
   ///

@@ -2502,9 +2502,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemHeaderFigmaDefaultLabel => 'Výchozí z Figma';
 
   @override
-  String get designSystemHeaderMobileSectionTitle => 'Mobil';
-
-  @override
   String get designSystemHeaderHelpActionLabel => 'Nápověda';
 
   @override
@@ -2513,6 +2510,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemHeaderLongTitleLabel => 'Dlouhý název';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobil';
 
   @override
   String get designSystemHeaderNotificationsActionLabel => 'Oznámení';
@@ -3687,6 +3687,93 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.';
+
+  @override
+  String get projectShowcaseAiReportTitle => 'AI report';
+
+  @override
+  String projectShowcaseBlockedLegend(int count) {
+    return '$count blokováno';
+  }
+
+  @override
+  String projectShowcaseBlockedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count blokovaných úkolů',
+      few: '$count blokované úkoly',
+      one: '$count blokovaný úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectShowcaseCompletedLegend(int count) {
+    return '$count dokončeno';
+  }
+
+  @override
+  String get projectShowcaseDescriptionTitle => 'Popis';
+
+  @override
+  String projectShowcaseDueDate(String date) {
+    return 'Termín $date';
+  }
+
+  @override
+  String get projectShowcaseHealthScoreDescription =>
+      'Tohle skóre vychází z rychlosti postupu úkolů, blokátorů a času do termínu.';
+
+  @override
+  String get projectShowcaseHealthScoreTitle => 'Skóre zdraví';
+
+  @override
+  String get projectShowcaseNoResults =>
+      'Žádné projekty neodpovídají tvému hledání.';
+
+  @override
+  String get projectShowcaseOneOnOneReviewsTab => '1:1 hodnocení';
+
+  @override
+  String get projectShowcaseOngoing => 'Průběžně';
+
+  @override
+  String get projectShowcaseProjectTasksTab => 'Projektové úkoly';
+
+  @override
+  String get projectShowcaseRecommendationsTitle => 'Doporučení';
+
+  @override
+  String get projectShowcaseSearchHint => 'Hledat projekty';
+
+  @override
+  String projectShowcaseSessionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sezení',
+      few: '$count sezení',
+      one: '$count sezení',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectShowcaseTasksCompleted(int completed, int total) {
+    return '$completed z $total úkolů dokončeno';
+  }
+
+  @override
+  String projectShowcaseUpdatedHoursAgo(int hours) {
+    return 'Aktualizováno před $hours hod. ↻';
+  }
+
+  @override
+  String get projectShowcaseUsefulness => 'Užitečnost';
+
+  @override
+  String get projectShowcaseViewBlocker => 'Zobrazit blokátor';
 
   @override
   String get projectStatusActive => 'Aktivní';
