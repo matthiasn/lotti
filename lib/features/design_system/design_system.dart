@@ -15,6 +15,7 @@ export 'components/search/design_system_search.dart';
 export 'components/spinners/design_system_spinner.dart';
 export 'components/split_buttons/design_system_split_button.dart';
 export 'components/tabs/design_system_tab.dart';
+export 'components/time_pickers/design_system_time_picker.dart';
 export 'components/toasts/design_system_toast.dart';
 export 'components/toggles/design_system_toggle.dart';
 export 'theme/design_system_theme.dart';

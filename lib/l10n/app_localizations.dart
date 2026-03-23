@@ -4833,6 +4833,24 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get designSystemTabPendingLabel;
 
+  /// No description provided for @designSystemTimePickerFormatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Formats'**
+  String get designSystemTimePickerFormatsTitle;
+
+  /// No description provided for @designSystemTimePickerTwelveHourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'12-hour'**
+  String get designSystemTimePickerTwelveHourLabel;
+
+  /// No description provided for @designSystemTimePickerTwentyFourHourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'24-hour'**
+  String get designSystemTimePickerTwentyFourHourLabel;
+
   /// No description provided for @designSystemToastDetailsLabel.
   ///
   /// In en, this message translates to:

@@ -82,6 +82,9 @@ void main() {
       final spinnerComponent = components.singleWhere(
         (component) => component.name == 'Spinner & loaders',
       );
+      final timePickerComponent = components.singleWhere(
+        (component) => component.name == 'Time picker',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -108,6 +111,7 @@ void main() {
         'Radio buttons',
         'Checkbox',
         'Spinner & loaders',
+        'Time picker',
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(avatarComponent.useCases.single.name, 'Overview');
@@ -130,6 +134,7 @@ void main() {
       expect(radioButtonComponent.useCases.single.name, 'Overview');
       expect(checkboxComponent.useCases.single.name, 'Overview');
       expect(spinnerComponent.useCases.single.name, 'Overview');
+      expect(timePickerComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

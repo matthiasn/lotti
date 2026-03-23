@@ -2682,6 +2682,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemTabPendingLabel => 'În așteptare';
 
   @override
+  String get designSystemTimePickerFormatsTitle => 'Formate de oră';
+
+  @override
+  String get designSystemTimePickerTwelveHourLabel => '12 ore';
+
+  @override
+  String get designSystemTimePickerTwentyFourHourLabel => '24 de ore';
+
+  @override
   String get designSystemToastDetailsLabel => 'Detalii notificare';
 
   @override
