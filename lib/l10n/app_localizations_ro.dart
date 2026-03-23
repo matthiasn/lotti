@@ -2551,6 +2551,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHoverLabel => 'La survolare';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Activat';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'O linie';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Subtitlu';
+
+  @override
+  String get designSystemListItemTitleSample => 'Titlu';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Două linii';
+
+  @override
+  String get designSystemListItemVariantsTitle => 'Variante element de listă';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'Cu separator';
+
+  @override
   String get designSystemMediumLabel => 'Mediu';
 
   @override

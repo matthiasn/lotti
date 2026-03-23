@@ -2587,6 +2587,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemHoverLabel => 'Al pasar';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Activado';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'Una línea';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Subtítulo';
+
+  @override
+  String get designSystemListItemTitleSample => 'Título';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Dos líneas';
+
+  @override
+  String get designSystemListItemVariantsTitle =>
+      'Variantes de elemento de lista';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'Con separador';
+
+  @override
   String get designSystemMediumLabel => 'Mediano';
 
   @override

@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_chip_widge
 import 'package:lotti/features/design_system/widgetbook/design_system_divider_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_header_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_list_item_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_sidebar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_tab_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_progress_bar_widgetbook.dart';
@@ -58,6 +59,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       buildDesignSystemRadioButtonWidgetbookComponent(),
       buildDesignSystemCheckboxWidgetbookComponent(),
       buildDesignSystemSpinnerWidgetbookComponent(),
+      buildDesignSystemListItemWidgetbookComponent(),
       buildDesignSystemTimePickerWidgetbookComponent(),
     ],
   );

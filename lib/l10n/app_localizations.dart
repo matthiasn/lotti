@@ -4581,6 +4581,48 @@ abstract class AppLocalizations {
   /// **'Hover'**
   String get designSystemHoverLabel;
 
+  /// No description provided for @designSystemListItemActivatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activated'**
+  String get designSystemListItemActivatedLabel;
+
+  /// No description provided for @designSystemListItemOneLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'One line'**
+  String get designSystemListItemOneLineLabel;
+
+  /// No description provided for @designSystemListItemSubtitleSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtitle'**
+  String get designSystemListItemSubtitleSample;
+
+  /// No description provided for @designSystemListItemTitleSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get designSystemListItemTitleSample;
+
+  /// No description provided for @designSystemListItemTwoLinesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Two lines'**
+  String get designSystemListItemTwoLinesLabel;
+
+  /// No description provided for @designSystemListItemVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'List Item Variants'**
+  String get designSystemListItemVariantsTitle;
+
+  /// No description provided for @designSystemListItemWithDividerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With divider'**
+  String get designSystemListItemWithDividerLabel;
+
   /// No description provided for @designSystemMediumLabel.
   ///
   /// In en, this message translates to:

@@ -2549,6 +2549,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Aktiviert';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'Einzeilig';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Untertitel';
+
+  @override
+  String get designSystemListItemTitleSample => 'Titel';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Zweizeilig';
+
+  @override
+  String get designSystemListItemVariantsTitle => 'Listenelement-Varianten';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'Mit Trennlinie';
+
+  @override
   String get designSystemMediumLabel => 'Mittel';
 
   @override
