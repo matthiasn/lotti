@@ -70,6 +70,13 @@ class ToolExecutionResult {
   final String? denialReason;
 }
 
+typedef AgentToolDispatch =
+    Future<ToolExecutionResult> Function(
+      String toolName,
+      Map<String, dynamic> args,
+      String targetId,
+    );
+
 /// Orchestrates tool calls on behalf of an agent with category enforcement
 /// and audit logging.
 ///

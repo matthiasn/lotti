@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   const id = 'report-id-1';
@@ -239,6 +240,73 @@ void main() {
       final companion = AgentDbConversions.toEntityCompanion(entity);
 
       expect(companion.subtype, const Value<String?>.absent());
+    });
+
+    test(
+      'populates subtype and timestamps for projectRecommendation entities',
+      () {
+        final entity = AgentDomainEntity.projectRecommendation(
+          id: 'project-rec-001',
+          agentId: agentId,
+          projectId: 'project-001',
+          title: 'Close the loop with George',
+          position: 0,
+          status: ProjectRecommendationStatus.active,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: const VectorClock({}),
+          rationale: 'The main delivery work is already complete',
+          priority: 'MEDIUM',
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.type, const Value('projectRecommendation'));
+        expect(companion.subtype, const Value('active'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(updatedAt));
+      },
+    );
+  });
+
+  group('AgentDbConversions — projectRecommendation entity roundtrip', () {
+    test('fromEntityRow roundtrips projectRecommendation variant', () {
+      final entity = AgentDomainEntity.projectRecommendation(
+        id: 'project-rec-002',
+        agentId: agentId,
+        projectId: 'project-001',
+        title: 'Archive the project',
+        position: 1,
+        status: ProjectRecommendationStatus.dismissed,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: const VectorClock({}),
+        rationale: 'No additional follow-up work is expected',
+        priority: 'LOW',
+        dismissedAt: updatedAt,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'project-rec-002',
+        agentId: agentId,
+        type: 'projectRecommendation',
+        subtype: 'dismissed',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+
+      expect(result, isA<ProjectRecommendationEntity>());
+      final recommendation = result as ProjectRecommendationEntity;
+      expect(recommendation.projectId, 'project-001');
+      expect(recommendation.title, 'Archive the project');
+      expect(recommendation.status, ProjectRecommendationStatus.dismissed);
+      expect(recommendation.priority, 'LOW');
+      expect(recommendation.dismissedAt, updatedAt);
     });
   });
 

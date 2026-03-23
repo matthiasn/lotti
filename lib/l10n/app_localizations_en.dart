@@ -2514,37 +2514,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemMediumLabel => 'Medium';
 
   @override
-  String get designSystemPressedLabel => 'Pressed';
-
-  @override
-  String get designSystemProgressBarChunkyLabel => 'Chunky';
-
-  @override
-  String get designSystemProgressBarLabelAndPercentageLabel =>
-      'Label + Percentage';
-
-  @override
-  String get designSystemProgressBarLabelOnlyLabel => 'Label only';
-
-  @override
-  String get designSystemProgressBarOffLabel => 'Off';
-
-  @override
-  String get designSystemProgressBarPercentageOnlyLabel => 'Percentage';
-
-  @override
-  String get designSystemProgressBarQuestBarLabel => 'Quest bar';
-
-  @override
-  String get designSystemProgressBarQuestLabel => 'Mega prize label';
-
-  @override
-  String get designSystemProgressBarSampleLabel => 'Progress bar label';
-
-  @override
-  String get designSystemRadioButtonLabel => 'Radio button';
-
-  @override
   String get designSystemNavigationAiAssistantSectionTitle => 'AI Assistant';
 
   @override
@@ -2591,6 +2560,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemNavigationTabBarSectionTitle => 'Tab Bar Variants';
 
   @override
+  String get designSystemPressedLabel => 'Pressed';
+
+  @override
+  String get designSystemProgressBarChunkyLabel => 'Chunky';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Label + Percentage';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Label only';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Off';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Percentage';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Quest bar';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Mega prize label';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Progress bar label';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Radio button';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti search';
 
   @override
@@ -2606,11 +2606,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemSmallLabel => 'Small';
 
   @override
-  String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Open $label options';
-  }
-
-  @override
   String get designSystemSpinnerPlainLabel => 'Plain';
 
   @override
@@ -2618,6 +2613,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulse';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Skeletons';
 
   @override
   String get designSystemSpinnerSkeletonWaveLabel => 'Wave';
@@ -2629,7 +2627,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemSpinnerTrackLabel => 'With track';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skeletons';
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Open $label options';
+  }
 
   @override
   String get designSystemStateMatrixTitle => 'State Matrix';
@@ -3528,6 +3528,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privateLabel => 'Private';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'No project agent has been provisioned for this project yet.';
+
+  @override
   String get projectAgentSectionTitle => 'Agent';
 
   @override
@@ -3619,6 +3623,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectPickerUnassigned => 'No project';
 
   @override
+  String get projectRecommendationDismissTooltip => 'Dismiss';
+
+  @override
+  String get projectRecommendationResolveTooltip => 'Mark resolved';
+
+  @override
+  String get projectRecommendationsTitle => 'Recommended next steps';
+
+  @override
+  String get projectRecommendationUpdateError =>
+      'Couldn\'t update the recommendation. Please try again.';
+
+  @override
   String get projectStatusActive => 'Active';
 
   @override
@@ -3635,6 +3652,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectStatusOpen => 'Open';
+
+  @override
+  String get projectSummaryOutdated => 'Summary outdated.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Summary outdated. Next update $date at $time.';
+  }
 
   @override
   String get projectTargetDateLabel => 'Target Date';

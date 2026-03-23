@@ -163,6 +163,21 @@ enum ChangeDecisionVerdict {
   deferred,
 }
 
+/// Lifecycle state of a persisted project recommendation.
+enum ProjectRecommendationStatus {
+  /// Currently relevant and visible on the project detail page.
+  active,
+
+  /// Explicitly marked complete by the user.
+  resolved,
+
+  /// Explicitly dismissed by the user.
+  dismissed,
+
+  /// Replaced by a newer recommendation set.
+  superseded,
+}
+
 /// Sentiment classification for agent feedback.
 enum FeedbackSentiment {
   /// Positive signal (e.g., confirmed change, high confidence report).

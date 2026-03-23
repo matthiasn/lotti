@@ -63,6 +63,7 @@ class EvolutionDataBundle {
 /// Well-known template IDs for seeded defaults.
 const lauraTemplateId = 'template-laura-001';
 const tomTemplateId = 'template-tom-001';
+const projectTemplateId = 'template-project-001';
 const improverTemplateId = 'template-improver-001';
 const metaImproverTemplateId = 'template-meta-improver-001';
 const kDefaultAgentTemplateModelId = 'models/gemini-3-flash-preview';
@@ -668,21 +669,29 @@ class AgentTemplateService {
     return false;
   }
 
-  /// Idempotent seed of default templates (Laura and Tom).
+  /// Idempotent seed of default templates.
   ///
   /// Checks each default template independently, seeding only those that are
   /// missing. This handles partial-seed scenarios (e.g., Laura exists but Tom
   /// does not).
   Future<void> seedDefaults() async {
-    final [laura, tom, improver, metaImprover] = await Future.wait([
+    final [
+      laura,
+      tom,
+      projectTemplate,
+      improver,
+      metaImprover,
+    ] = await Future.wait([
       getTemplate(lauraTemplateId),
       getTemplate(tomTemplateId),
+      getTemplate(projectTemplateId),
       getTemplate(improverTemplateId),
       getTemplate(metaImproverTemplateId),
     ]);
 
     if (laura != null &&
         tom != null &&
+        projectTemplate != null &&
         improver != null &&
         metaImprover != null) {
       developer.log(
@@ -720,6 +729,22 @@ class AgentTemplateService {
             'and find innovative solutions. You write insightful reports.',
         generalDirective: taskAgentGeneralDirective,
         reportDirective: taskAgentReportDirective,
+        authoredBy: 'system',
+      );
+    }
+
+    if (projectTemplate == null) {
+      await createTemplate(
+        templateId: projectTemplateId,
+        displayName: 'Project Analyst',
+        kind: AgentTemplateKind.projectAgent,
+        modelId: kDefaultAgentTemplateModelId,
+        directives:
+            'You are a project-level agent. You synthesize progress across '
+            'linked tasks, highlight delivery risks, and keep the project '
+            'report current with concise, actionable summaries.',
+        generalDirective: projectAgentGeneralDirective,
+        reportDirective: projectAgentReportDirective,
         authoredBy: 'system',
       );
     }
@@ -805,7 +830,10 @@ class AgentTemplateService {
           templateImproverGeneralDirective,
           templateImproverReportDirective,
         ),
-        AgentTemplateKind.projectAgent => ('', ''),
+        AgentTemplateKind.projectAgent => (
+          projectAgentGeneralDirective,
+          projectAgentReportDirective,
+        ),
       };
 
       final updated = activeVersion.copyWith(

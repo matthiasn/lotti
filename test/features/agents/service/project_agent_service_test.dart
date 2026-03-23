@@ -1,10 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -72,8 +72,8 @@ void main() {
 
   group('ProjectAgentService', () {
     group('createProjectAgent', () {
-      test('creates agent, updates state, creates link, and registers '
-          'subscription', () async {
+      test('creates agent, updates state, creates links, and enqueues '
+          'creation wake', () async {
         final identity = makeIdentity();
         final template = makeTestTemplate(
           kind: AgentTemplateKind.projectAgent,
@@ -103,7 +103,6 @@ void main() {
           () => mockRepository.getAgentState('agent-1'),
         ).thenAnswer((_) async => state);
 
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
           () => mockOrchestrator.enqueueManualWake(
             agentId: any(named: 'agentId'),
@@ -138,15 +137,6 @@ void main() {
         expect(projectLink.fromId, 'agent-1');
         expect(projectLink.toId, 'project-1');
 
-        // Verify subscription was registered.
-        final subCalls = verify(
-          () => mockOrchestrator.addSubscription(captureAny()),
-        ).captured;
-        final sub = subCalls.first as AgentSubscription;
-        expect(sub.agentId, 'agent-1');
-        expect(sub.matchEntityIds, contains('project-1'));
-        expect(sub.id, 'agent-1_project_project-1');
-
         // Verify creation wake was enqueued.
         verify(
           () => mockOrchestrator.enqueueManualWake(
@@ -156,6 +146,60 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'initializes the next daily digest at 06:00 on the next day',
+        () async {
+          final identity = makeIdentity();
+          final template = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final testDate = DateTime(2026, 3, 20, 14, 30);
+
+          when(
+            () => mockRepository.getLinksTo(
+              'project-daily',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn(null);
+
+          await withClock(Clock.fixed(testDate), () async {
+            await service.createProjectAgent(
+              projectId: 'project-daily',
+              templateId: kTestTemplateId,
+              displayName: 'Daily Digest Agent',
+              allowedCategoryIds: const {},
+            );
+          });
+
+          final stateCalls = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = stateCalls.first as AgentStateEntity;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        },
+      );
 
       test(
         'creates template_assignment link when templateId provided',
@@ -185,7 +229,6 @@ void main() {
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => makeState());
-          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
           when(
             () => mockOrchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
@@ -241,7 +284,6 @@ void main() {
         when(
           () => mockRepository.getAgentState('agent-1'),
         ).thenAnswer((_) async => makeState());
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
           () => mockOrchestrator.enqueueManualWake(
             agentId: any(named: 'agentId'),
@@ -495,59 +537,6 @@ void main() {
     });
 
     group('restoreSubscriptions', () {
-      test('registers subscriptions for active project agents', () async {
-        final projectAgent = makeIdentity(agentId: 'pa-1');
-        final otherAgent = makeIdentity(
-          agentId: 'other-1',
-          kind: 'task_agent',
-        );
-
-        when(
-          () => mockAgentService.listAgents(
-            lifecycle: AgentLifecycle.active,
-          ),
-        ).thenAnswer((_) async => [projectAgent, otherAgent]);
-
-        final link = AgentLink.agentProject(
-          id: 'link-1',
-          fromId: 'pa-1',
-          toId: 'project-10',
-          createdAt: kAgentTestDate,
-          updatedAt: kAgentTestDate,
-          vectorClock: null,
-        );
-
-        when(
-          () => mockRepository.getLinksFrom(
-            'pa-1',
-            type: 'agent_project',
-          ),
-        ).thenAnswer((_) async => [link]);
-        when(
-          () => mockRepository.getAgentState('pa-1'),
-        ).thenAnswer((_) async => null);
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-
-        await service.restoreSubscriptions();
-
-        final captured = verify(
-          () => mockOrchestrator.addSubscription(captureAny()),
-        ).captured.cast<AgentSubscription>();
-
-        expect(captured, hasLength(1));
-        expect(captured.first.agentId, 'pa-1');
-        expect(captured.first.matchEntityIds, contains('project-10'));
-        expect(captured.first.id, 'pa-1_project_project-10');
-
-        // Verify getLinksFrom was NOT called for the non-project agent.
-        verifyNever(
-          () => mockRepository.getLinksFrom(
-            'other-1',
-            type: 'agent_project',
-          ),
-        );
-      });
-
       test('skips non-project_agent agents', () async {
         final taskAgent = makeIdentity(
           agentId: 'ta-1',
@@ -563,143 +552,36 @@ void main() {
         await service.restoreSubscriptions();
 
         verifyNever(
-          () => mockRepository.getLinksFrom(
-            any(),
-            type: any(named: 'type'),
-          ),
+          () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
         );
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
-      test('hydrates throttle deadline from persisted state', () async {
-        final projectAgent = makeIdentity(agentId: 'pa-2');
-        final futureDeadline = DateTime(2026, 3, 15, 12, 5);
-        final stateWithDeadline = makeTestState(
-          id: 'state-pa-2',
-          agentId: 'pa-2',
-        ).copyWith(nextWakeAt: futureDeadline);
+      test(
+        'does not touch repository or orchestrator for project agents',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-1');
+          final otherAgent = makeIdentity(
+            agentId: 'other-1',
+            kind: 'task_agent',
+          );
 
-        when(
-          () => mockAgentService.listAgents(
-            lifecycle: AgentLifecycle.active,
-          ),
-        ).thenAnswer((_) async => [projectAgent]);
-        when(
-          () => mockRepository.getLinksFrom(
-            'pa-2',
-            type: 'agent_project',
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockRepository.getAgentState('pa-2'),
-        ).thenAnswer((_) async => stateWithDeadline);
-        when(
-          () => mockOrchestrator.setThrottleDeadline(any(), any()),
-        ).thenReturn(null);
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent, otherAgent]);
 
-        await service.restoreSubscriptions();
+          await service.restoreSubscriptions();
 
-        verify(
-          () => mockOrchestrator.setThrottleDeadline(
-            'pa-2',
-            futureDeadline,
-          ),
-        ).called(1);
-      });
-
-      test('catches error and continues to next agent', () async {
-        final failingAgent = makeIdentity(agentId: 'pa-fail');
-        final okAgent = makeIdentity(agentId: 'pa-ok');
-
-        when(
-          () => mockAgentService.listAgents(
-            lifecycle: AgentLifecycle.active,
-          ),
-        ).thenAnswer((_) async => [failingAgent, okAgent]);
-
-        when(
-          () => mockRepository.getLinksFrom(
-            'pa-fail',
-            type: 'agent_project',
-          ),
-        ).thenThrow(Exception('DB error'));
-
-        final link = AgentLink.agentProject(
-          id: 'link-ok',
-          fromId: 'pa-ok',
-          toId: 'project-ok',
-          createdAt: kAgentTestDate,
-          updatedAt: kAgentTestDate,
-          vectorClock: null,
-        );
-        when(
-          () => mockRepository.getLinksFrom(
-            'pa-ok',
-            type: 'agent_project',
-          ),
-        ).thenAnswer((_) async => [link]);
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(
-          () => mockRepository.getAgentState('pa-ok'),
-        ).thenAnswer((_) async => null);
-
-        await service.restoreSubscriptions();
-
-        final captured = verify(
-          () => mockOrchestrator.addSubscription(captureAny()),
-        ).captured;
-        expect(captured, hasLength(1));
-        final sub = captured.first as AgentSubscription;
-        expect(sub.agentId, 'pa-ok');
-      });
-
-      test('restores only primary link when multiple links exist', () async {
-        final projectAgent = makeIdentity(agentId: 'pa-multi');
-
-        when(
-          () => mockAgentService.listAgents(
-            lifecycle: AgentLifecycle.active,
-          ),
-        ).thenAnswer((_) async => [projectAgent]);
-
-        final olderLink = AgentLink.agentProject(
-          id: 'link-old',
-          fromId: 'pa-multi',
-          toId: 'project-old',
-          createdAt: DateTime(2026, 1, 10),
-          updatedAt: DateTime(2026, 1, 10),
-          vectorClock: null,
-        );
-        final newerLink = AgentLink.agentProject(
-          id: 'link-new',
-          fromId: 'pa-multi',
-          toId: 'project-new',
-          createdAt: DateTime(2026, 3, 15),
-          updatedAt: DateTime(2026, 3, 15),
-          vectorClock: null,
-        );
-
-        when(
-          () => mockRepository.getLinksFrom(
-            'pa-multi',
-            type: 'agent_project',
-          ),
-        ).thenAnswer((_) async => [olderLink, newerLink]);
-        when(
-          () => mockRepository.getAgentState('pa-multi'),
-        ).thenAnswer((_) async => null);
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-
-        await service.restoreSubscriptions();
-
-        final captured = verify(
-          () => mockOrchestrator.addSubscription(captureAny()),
-        ).captured.cast<AgentSubscription>();
-
-        // Only the primary (newest) link should be registered.
-        expect(captured, hasLength(1));
-        expect(captured.first.matchEntityIds, contains('project-new'));
-      });
+          verifyNever(
+            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
+          );
+          verifyNever(() => mockRepository.getAgentState(any()));
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          verifyNever(() => mockOrchestrator.setThrottleDeadline(any(), any()));
+        },
+      );
 
       test('handles empty agent list gracefully', () async {
         when(
@@ -711,10 +593,7 @@ void main() {
         await service.restoreSubscriptions();
 
         verifyNever(
-          () => mockRepository.getLinksFrom(
-            any(),
-            type: any(named: 'type'),
-          ),
+          () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
         );
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
@@ -737,12 +616,6 @@ void main() {
               lifecycle: AgentLifecycle.active,
             ),
           ).thenAnswer((_) async => [failingAgent]);
-          when(
-            () => mockRepository.getLinksFrom(
-              'pa-fail',
-              type: 'agent_project',
-            ),
-          ).thenThrow(Exception('DB error'));
 
           await nullLoggerService.restoreSubscriptions();
 

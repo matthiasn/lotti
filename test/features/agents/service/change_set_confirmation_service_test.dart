@@ -59,7 +59,7 @@ void main() {
 
     service = ChangeSetConfirmationService(
       syncService: mockSyncService,
-      toolDispatcher: mockToolDispatcher,
+      toolDispatcher: mockToolDispatcher.dispatch,
       labelsRepository: mockLabelsRepository,
       domainLogger: mockDomainLogger,
     );
@@ -210,6 +210,134 @@ void main() {
           );
         });
       });
+
+      test('invokes post-confirm callback after successful dispatch', () async {
+        final changeSet = makeChangeSetWith(
+          items: const [
+            ChangeItem(
+              toolName: 'recommend_next_steps',
+              args: {
+                'steps': [
+                  {'title': 'Verify rollout'},
+                ],
+              },
+              humanSummary: 'Recommend 1 next step',
+            ),
+          ],
+        );
+        ChangeDecisionEntity? capturedDecision;
+        ChangeItem? capturedItem;
+
+        final serviceWithCallback = ChangeSetConfirmationService(
+          syncService: mockSyncService,
+          toolDispatcher: mockToolDispatcher.dispatch,
+          labelsRepository: mockLabelsRepository,
+          domainLogger: mockDomainLogger,
+          onConfirmedDecision:
+              ({
+                required changeSet,
+                required item,
+                required decision,
+              }) async {
+                capturedItem = item;
+                capturedDecision = decision;
+              },
+        );
+
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'Accepted 1 recommended next step(s)',
+          ),
+        );
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          final result = await serviceWithCallback.confirmItem(changeSet, 0);
+
+          expect(result.success, isTrue);
+          expect(capturedItem?.toolName, 'recommend_next_steps');
+          expect(capturedDecision, isNotNull);
+          expect(capturedDecision?.toolName, 'recommend_next_steps');
+          expect(capturedDecision?.verdict, ChangeDecisionVerdict.confirmed);
+          expect(capturedDecision?.taskId, changeSet.taskId);
+        });
+      });
+
+      test(
+        'reverts item to pending when post-confirm callback fails',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: 'recommend_next_steps',
+                args: {
+                  'steps': [
+                    {'title': 'Verify rollout'},
+                  ],
+                },
+                humanSummary: 'Recommend 1 next step',
+              ),
+            ],
+          );
+
+          final serviceWithCallback = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher.dispatch,
+            labelsRepository: mockLabelsRepository,
+            domainLogger: mockDomainLogger,
+            onConfirmedDecision:
+                ({
+                  required changeSet,
+                  required item,
+                  required decision,
+                }) async {
+                  throw StateError('failed to persist recommendation');
+                },
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Accepted 1 recommended next step(s)',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await serviceWithCallback.confirmItem(changeSet, 0);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              contains('failed to persist recommendation'),
+            );
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            expect(captured, hasLength(3));
+            expect(captured[0], isA<ChangeDecisionEntity>());
+            expect(
+              (captured[1] as ChangeSetEntity).items.first.status,
+              ChangeItemStatus.confirmed,
+            );
+            expect(
+              (captured[2] as ChangeSetEntity).items.first.status,
+              ChangeItemStatus.pending,
+            );
+          });
+        },
+      );
 
       test(
         'injects the wake timestamp when dispatching create_time_entry',
@@ -928,7 +1056,7 @@ void main() {
           // Fresh service instance — _resolvedIds is empty.
           final freshService = ChangeSetConfirmationService(
             syncService: mockSyncService,
-            toolDispatcher: mockToolDispatcher,
+            toolDispatcher: mockToolDispatcher.dispatch,
             labelsRepository: mockLabelsRepository,
           );
 

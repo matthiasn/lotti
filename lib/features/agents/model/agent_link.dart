@@ -99,3 +99,35 @@ abstract class AgentLink with _$AgentLink {
   factory AgentLink.fromJson(Map<String, dynamic> json) =>
       _$AgentLinkFromJson(json);
 }
+
+/// Shared selection helper for resolving the "primary" link when multiple
+/// links of the same type point at the same target.
+///
+/// Sorts by `createdAt` descending, then `id` descending, and returns the
+/// first element. This is the canonical tie-breaking strategy used by task
+/// agent services, project agent services, and the activity monitor.
+extension AgentLinkSelection on List<AgentLink> {
+  /// Returns a new list ordered by selection priority.
+  ///
+  /// Links are sorted by `createdAt` descending, then `id` descending.
+  List<AgentLink> orderedPrimaryFirst() {
+    final sorted = toList()
+      ..sort((a, b) {
+        final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+        if (byCreatedAt != 0) return byCreatedAt;
+        return b.id.compareTo(a.id);
+      });
+    return sorted;
+  }
+
+  /// Returns the most recently created link, breaking ties by ID.
+  ///
+  /// Throws [StateError] if the list is empty.
+  AgentLink selectPrimary() {
+    if (isEmpty) {
+      throw StateError('Cannot select a primary link from an empty list.');
+    }
+    final sorted = orderedPrimaryFirst();
+    return sorted.first;
+  }
+}

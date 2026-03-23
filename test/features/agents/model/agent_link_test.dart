@@ -357,4 +357,69 @@ void main() {
       });
     });
   });
+
+  group('AgentLinkSelection', () {
+    test('orderedPrimaryFirst sorts by createdAt then id descending', () {
+      final links = [
+        AgentLink.agentTask(
+          id: 'link-b',
+          fromId: 'agent-b',
+          toId: 'task-1',
+          createdAt: DateTime(2026, 2, 20, 9),
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentTask(
+          id: 'link-c',
+          fromId: 'agent-c',
+          toId: 'task-1',
+          createdAt: DateTime(2026, 2, 20, 10),
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentTask(
+          id: 'link-a',
+          fromId: 'agent-a',
+          toId: 'task-1',
+          createdAt: DateTime(2026, 2, 20, 10),
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+      ];
+
+      final ordered = links.orderedPrimaryFirst();
+
+      expect(ordered.map((link) => link.id), ['link-c', 'link-a', 'link-b']);
+    });
+
+    test(
+      'selectPrimary returns the first ordered link and throws on empty',
+      () {
+        final links = [
+          AgentLink.agentProject(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'project-1',
+            createdAt: DateTime(2026, 2, 20, 10),
+            updatedAt: updatedAt,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-2',
+            fromId: 'agent-2',
+            toId: 'project-1',
+            createdAt: DateTime(2026, 2, 20, 11),
+            updatedAt: updatedAt,
+            vectorClock: null,
+          ),
+        ];
+
+        expect(links.selectPrimary().id, 'link-2');
+        expect(
+          () => <AgentLink>[].selectPrimary(),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+  });
 }

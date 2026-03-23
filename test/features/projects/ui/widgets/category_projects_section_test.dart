@@ -158,7 +158,9 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockNavService.beamToNamed('/settings/projects/proj-detail'),
+        () => mockNavService.beamToNamed(
+          '/settings/projects/proj-detail?categoryId=$categoryId',
+        ),
       ).called(1);
     });
   });

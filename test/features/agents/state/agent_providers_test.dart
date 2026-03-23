@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -313,6 +314,31 @@ void main() {
       final stamped = entity.copyWith(vectorClock: stampedClock);
       verify(() => mockRepository.upsertEntity(stamped)).called(1);
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+  });
+
+  group('projectActivityMonitorProvider', () {
+    test('creates the monitor from injected dependencies', () {
+      final mockNotifications = MockUpdateNotifications();
+      final mockSyncService = MockAgentSyncService();
+      final logger = DomainLogger(loggingService: LoggingService());
+
+      final container = ProviderContainer(
+        overrides: [
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          domainLoggerProvider.overrideWithValue(logger),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final monitor = container.read(projectActivityMonitorProvider);
+
+      expect(monitor, isA<ProjectActivityMonitor>());
+
+      // Dispose should exercise the provider cleanup hook without errors.
+      container.dispose();
     });
   });
 
@@ -1306,6 +1332,7 @@ void main() {
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
     late MockScheduledWakeManager mockScheduledWakeManager;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -1318,6 +1345,7 @@ void main() {
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
       mockScheduledWakeManager = MockScheduledWakeManager();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -1336,6 +1364,8 @@ void main() {
       ).thenAnswer((_) async => 0);
       when(() => mockScheduledWakeManager.start()).thenReturn(null);
       when(() => mockScheduledWakeManager.stop()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       // Profile seeding stubs.
       when(
         () => mockAiConfigRepo.getConfigById(any()),
@@ -1371,6 +1401,9 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           scheduledWakeManagerProvider.overrideWithValue(
             mockScheduledWakeManager,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           configFlagProvider.overrideWith(
             (ref, flagName) => Stream.value(
@@ -1430,6 +1463,20 @@ void main() {
       await container.read(agentInitializationProvider.future);
 
       verify(() => mockScheduledWakeManager.start()).called(1);
+    });
+
+    test('starts the project activity monitor when enabled', () async {
+      final container = createInitContainer(enableAgents: true);
+
+      final sub = container.listen(
+        agentInitializationProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      await container.read(agentInitializationProvider.future);
+
+      verify(() => mockProjectActivityMonitor.start()).called(1);
     });
 
     test('sets wakeExecutor on orchestrator when enabled', () async {
@@ -3094,6 +3141,7 @@ void main() {
     late MockProjectAgentService mockProjectAgentService;
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -3104,6 +3152,7 @@ void main() {
       mockProjectAgentService = MockProjectAgentService();
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -3113,6 +3162,8 @@ void main() {
       when(
         () => mockProjectAgentService.restoreSubscriptions(),
       ).thenAnswer((_) async {});
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       // Profile seeding stubs.
       when(
@@ -3141,6 +3192,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           projectAgentServiceProvider.overrideWithValue(
             mockProjectAgentService,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
@@ -3314,6 +3368,7 @@ void main() {
     late MockProjectAgentService mockProjectAgentService;
     late MockAgentTemplateService mockTemplateService;
     late MockAiConfigRepository mockAiConfigRepo;
+    late MockProjectActivityMonitor mockProjectActivityMonitor;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -3324,6 +3379,7 @@ void main() {
       mockProjectAgentService = MockProjectAgentService();
       mockTemplateService = MockAgentTemplateService();
       mockAiConfigRepo = MockAiConfigRepository();
+      mockProjectActivityMonitor = MockProjectActivityMonitor();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -3333,6 +3389,8 @@ void main() {
       when(
         () => mockProjectAgentService.restoreSubscriptions(),
       ).thenAnswer((_) async {});
+      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
+      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
       when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
       when(
         () => mockRepository.abandonOrphanedWakeRuns(),
@@ -3367,6 +3425,9 @@ void main() {
           taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           projectAgentServiceProvider.overrideWithValue(
             mockProjectAgentService,
+          ),
+          projectActivityMonitorProvider.overrideWithValue(
+            mockProjectActivityMonitor,
           ),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),

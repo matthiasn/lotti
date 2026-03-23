@@ -2530,37 +2530,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemMediumLabel => 'Střední';
 
   @override
-  String get designSystemPressedLabel => 'Stisknuto';
-
-  @override
-  String get designSystemProgressBarChunkyLabel => 'Segmentovaný';
-
-  @override
-  String get designSystemProgressBarLabelAndPercentageLabel =>
-      'Štítek + procento';
-
-  @override
-  String get designSystemProgressBarLabelOnlyLabel => 'Jen štítek';
-
-  @override
-  String get designSystemProgressBarOffLabel => 'Vypnuto';
-
-  @override
-  String get designSystemProgressBarPercentageOnlyLabel => 'Procento';
-
-  @override
-  String get designSystemProgressBarQuestBarLabel => 'Quest lišta';
-
-  @override
-  String get designSystemProgressBarQuestLabel => 'Štítek mega odměny';
-
-  @override
-  String get designSystemProgressBarSampleLabel => 'Štítek ukazatele průběhu';
-
-  @override
-  String get designSystemRadioButtonLabel => 'Přepínač';
-
-  @override
   String get designSystemNavigationAiAssistantSectionTitle => 'AI asistent';
 
   @override
@@ -2609,6 +2578,37 @@ class AppLocalizationsCs extends AppLocalizations {
       'Varianty lišty záložek';
 
   @override
+  String get designSystemPressedLabel => 'Stisknuto';
+
+  @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentovaný';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Štítek + procento';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Jen štítek';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Vypnuto';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Procento';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Quest lišta';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Štítek mega odměny';
+
+  @override
+  String get designSystemProgressBarSampleLabel => 'Štítek ukazatele průběhu';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Přepínač';
+
+  @override
   String get designSystemSearchFilledText => 'Hledání Lotti';
 
   @override
@@ -2624,11 +2624,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemSmallLabel => 'Malý';
 
   @override
-  String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Otevřít možnosti pro $label';
-  }
-
-  @override
   String get designSystemSpinnerPlainLabel => 'Bez pozadí';
 
   @override
@@ -2636,6 +2631,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulz';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Skelety';
 
   @override
   String get designSystemSpinnerSkeletonWaveLabel => 'Vlna';
@@ -2647,7 +2645,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemSpinnerTrackLabel => 'Se stopou';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skelety';
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Otevřít možnosti pro $label';
+  }
 
   @override
   String get designSystemStateMatrixTitle => 'Matice stavů';
@@ -3577,6 +3577,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get privateLabel => 'Soukromé';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'Pro tento projekt ještě nebyl nastaven žádný projektový agent.';
+
+  @override
   String get projectAgentSectionTitle => 'Agent';
 
   @override
@@ -3672,6 +3676,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectPickerUnassigned => 'Žádný projekt';
 
   @override
+  String get projectRecommendationDismissTooltip => 'Zahodit';
+
+  @override
+  String get projectRecommendationResolveTooltip => 'Označit jako vyřešené';
+
+  @override
+  String get projectRecommendationsTitle => 'Doporučené další kroky';
+
+  @override
+  String get projectRecommendationUpdateError =>
+      'Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.';
+
+  @override
   String get projectStatusActive => 'Aktivní';
 
   @override
@@ -3688,6 +3705,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectStatusOpen => 'Otevřený';
+
+  @override
+  String get projectSummaryOutdated => 'Shrnutí je zastaralé.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'Shrnutí je zastaralé. Další aktualizace $date v $time.';
+  }
 
   @override
   String get projectTargetDateLabel => 'Cílové datum';

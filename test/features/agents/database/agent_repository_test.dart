@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
@@ -704,6 +705,97 @@ void main() {
         expect(rows.first.subtype, 'daily');
       });
     });
+
+    group('getLatestReportsByAgentIds', () {
+      test('returns the latest report for each agent in scope', () async {
+        final reportA = makeReport(
+          id: 'report-a',
+        );
+        final reportB = makeReport(
+          id: 'report-b',
+          agentId: otherAgentId,
+        );
+        final headA = makeReportHead(
+          id: 'head-a',
+          reportId: 'report-a',
+        );
+        final headB = makeReportHead(
+          id: 'head-b',
+          agentId: otherAgentId,
+          reportId: 'report-b',
+        );
+
+        await repo.upsertEntity(reportA);
+        await repo.upsertEntity(reportB);
+        await repo.upsertEntity(headA);
+        await repo.upsertEntity(headB);
+
+        final result = await repo.getLatestReportsByAgentIds(
+          [testAgentId, otherAgentId],
+          'daily',
+        );
+
+        expect(result[testAgentId]?.id, 'report-a');
+        expect(result[otherAgentId]?.id, 'report-b');
+      });
+
+      test('prefers the newest report head when duplicates exist', () async {
+        final olderReport =
+            AgentDomainEntity.agentReport(
+                  id: 'report-old',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  createdAt: testDate,
+                  vectorClock: null,
+                  content: 'Old report',
+                )
+                as AgentReportEntity;
+        final newerReport =
+            AgentDomainEntity.agentReport(
+                  id: 'report-new',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  createdAt: testDate.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                  content: 'New report',
+                )
+                as AgentReportEntity;
+        final olderHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'head-old',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  reportId: 'report-old',
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+        final newerHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'head-new',
+                  agentId: testAgentId,
+                  scope: 'daily',
+                  reportId: 'report-new',
+                  updatedAt: testDate.add(const Duration(minutes: 1)),
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+
+        await repo.upsertEntity(olderReport);
+        await repo.upsertEntity(newerReport);
+        await repo.upsertEntity(olderHead);
+        await repo.upsertEntity(newerHead);
+
+        final singleResult = await repo.getReportHead(testAgentId, 'daily');
+        final batchResult = await repo.getLatestReportsByAgentIds(
+          [testAgentId],
+          'daily',
+        );
+
+        expect(singleResult?.reportId, 'report-new');
+        expect(batchResult[testAgentId]?.id, 'report-new');
+      });
+    });
   });
 
   group('getAllAgentIdentities', () {
@@ -846,6 +938,87 @@ void main() {
       test('returns empty list when no links point to toId', () async {
         final results = await repo.getLinksTo('nonexistent-entity');
         expect(results, isEmpty);
+      });
+    });
+
+    group('getLinksToMultiple', () {
+      test('returns empty map when no ids are requested', () async {
+        final result = await repo.getLinksToMultiple(
+          const [],
+          type: AgentLinkTypes.agentTask,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('groups matching links by toId and excludes deleted rows', () async {
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'task-link-1',
+            fromId: 'agent-a',
+            toId: 'task-a',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'task-link-2',
+            fromId: 'agent-b',
+            toId: 'task-a',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            updatedAt: testDate.add(const Duration(minutes: 1)),
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'task-link-3',
+            fromId: 'agent-c',
+            toId: 'task-b',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.messagePrev(
+            id: 'wrong-type',
+            fromId: 'message-b',
+            toId: 'task-a',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'deleted-link',
+            fromId: 'agent-d',
+            toId: 'task-b',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+            deletedAt: testDate.add(const Duration(hours: 1)),
+          ),
+        );
+
+        final result = await repo.getLinksToMultiple(
+          ['task-a', 'task-b', 'task-c'],
+          type: AgentLinkTypes.agentTask,
+        );
+
+        expect(result.keys, unorderedEquals(['task-a', 'task-b']));
+        expect(
+          result['task-a']?.map((link) => link.id),
+          unorderedEquals(['task-link-1', 'task-link-2']),
+        );
+        expect(
+          result['task-b']?.map((link) => link.id),
+          unorderedEquals(['task-link-3']),
+        );
+        expect(result['task-c'], isNull);
       });
     });
 

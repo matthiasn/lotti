@@ -25,6 +25,7 @@ abstract final class AgentEntityTypes {
   static const agentMessage = 'agentMessage';
   static const agentReport = 'agentReport';
   static const agentReportHead = 'agentReportHead';
+  static const projectRecommendation = 'projectRecommendation';
   static const agentTemplate = 'agentTemplate';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';
@@ -37,6 +38,10 @@ abstract final class AgentReportScopes {
 
 abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
+}
+
+abstract final class AgentSchedules {
+  static const projectDailyDigestHour = 6;
 }
 
 /// Format a [DateTime] as YYYY-MM-DD. Returns `null` for a `null` input.

@@ -984,6 +984,9 @@ void main() {
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => null);
       when(
+        () => mockRepo.getEntity(projectTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
         () => mockRepo.getEntity(improverTemplateId),
       ).thenAnswer((_) async => null);
       when(
@@ -994,8 +997,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // 4 templates * 3 entities each = 12 upserts.
-      verify(() => mockSync.upsertEntity(any())).called(12);
+      // 5 templates * 3 entities each = 15 upserts.
+      verify(() => mockSync.upsertEntity(any())).called(15);
     });
 
     test('skips creation when all already seeded', () async {
@@ -1006,6 +1009,11 @@ void main() {
       final tom = makeTestTemplate(
         id: tomTemplateId,
         agentId: tomTemplateId,
+      );
+      final projectTemplate = makeTestTemplate(
+        id: projectTemplateId,
+        agentId: projectTemplateId,
+        kind: AgentTemplateKind.projectAgent,
       );
       final improver = makeTestTemplate(
         id: improverTemplateId,
@@ -1021,6 +1029,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(projectTemplateId),
+      ).thenAnswer((_) async => projectTemplate);
       when(
         () => mockRepo.getEntity(improverTemplateId),
       ).thenAnswer((_) async => improver);
@@ -1042,6 +1053,11 @@ void main() {
         id: improverTemplateId,
         agentId: improverTemplateId,
       );
+      final projectTemplate = makeTestTemplate(
+        id: projectTemplateId,
+        agentId: projectTemplateId,
+        kind: AgentTemplateKind.projectAgent,
+      );
       final metaImprover = makeTestTemplate(
         id: metaImproverTemplateId,
         agentId: metaImproverTemplateId,
@@ -1052,6 +1068,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(projectTemplateId),
+      ).thenAnswer((_) async => projectTemplate);
       when(
         () => mockRepo.getEntity(improverTemplateId),
       ).thenAnswer((_) async => improver);
@@ -1071,6 +1090,11 @@ void main() {
         id: tomTemplateId,
         agentId: tomTemplateId,
       );
+      final projectTemplate = makeTestTemplate(
+        id: projectTemplateId,
+        agentId: projectTemplateId,
+        kind: AgentTemplateKind.projectAgent,
+      );
       final metaImprover = makeTestTemplate(
         id: metaImproverTemplateId,
         agentId: metaImproverTemplateId,
@@ -1081,6 +1105,9 @@ void main() {
       when(
         () => mockRepo.getEntity(tomTemplateId),
       ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(projectTemplateId),
+      ).thenAnswer((_) async => projectTemplate);
       when(
         () => mockRepo.getEntity(improverTemplateId),
       ).thenAnswer((_) async => null);
@@ -1093,6 +1120,54 @@ void main() {
 
       // Laura + Improver: 2 * 3 entities = 6 upserts.
       verify(() => mockSync.upsertEntity(any())).called(6);
+    });
+
+    test('seeds missing default project template', () async {
+      final laura = makeTestTemplate(
+        id: lauraTemplateId,
+        agentId: lauraTemplateId,
+      );
+      final tom = makeTestTemplate(
+        id: tomTemplateId,
+        agentId: tomTemplateId,
+      );
+      final improver = makeTestTemplate(
+        id: improverTemplateId,
+        agentId: improverTemplateId,
+      );
+      final metaImprover = makeTestTemplate(
+        id: metaImproverTemplateId,
+        agentId: metaImproverTemplateId,
+      );
+
+      when(
+        () => mockRepo.getEntity(lauraTemplateId),
+      ).thenAnswer((_) async => laura);
+      when(
+        () => mockRepo.getEntity(tomTemplateId),
+      ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(projectTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(improverTemplateId),
+      ).thenAnswer((_) async => improver);
+      when(
+        () => mockRepo.getEntity(metaImproverTemplateId),
+      ).thenAnswer((_) async => metaImprover);
+      when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
+
+      await service.seedDefaults();
+
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      final template = captured.first as AgentTemplateEntity;
+
+      expect(template.id, projectTemplateId);
+      expect(template.kind, AgentTemplateKind.projectAgent);
+      expect(template.displayName, 'Project Analyst');
+      expect(captured, hasLength(3));
     });
   });
 
@@ -1157,6 +1232,36 @@ void main() {
       expect(seeded.generalDirective, isNotEmpty);
       // Template improver has empty report directive.
       expect(seeded.reportDirective, isEmpty);
+    });
+
+    test('seeds empty directive fields for project agent template', () async {
+      final template = makeTestTemplate(
+        id: 'tpl-project',
+        agentId: 'tpl-project',
+        kind: AgentTemplateKind.projectAgent,
+      );
+      final version = makeTestTemplateVersion(
+        id: 'v-project',
+        agentId: 'tpl-project',
+        directives: 'Old project directives',
+      );
+
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-project'),
+      ).thenAnswer((_) async => version);
+
+      await service.seedDirectiveFields();
+
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      expect(captured, hasLength(1));
+      final seeded = captured.first as AgentTemplateVersionEntity;
+      expect(seeded.generalDirective, isNotEmpty);
+      expect(seeded.reportDirective, isNotEmpty);
     });
 
     test(

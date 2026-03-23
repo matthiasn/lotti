@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -187,6 +188,18 @@ void main() {
         resolvedModelId: any(named: 'resolvedModelId'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => mockAgentRepository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockAgentRepository.getLinksToMultiple(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockAgentRepository.getLatestReportsByAgentIds(any(), any()),
+    ).thenAnswer((_) async => {});
     when(() => mockConversationManager.messages).thenReturn([]);
 
     workflow = ProjectAgentWorkflow(
@@ -370,7 +383,7 @@ void main() {
           () => mockAgentRepository.getReportHead(agentId, 'current'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => []);
@@ -407,6 +420,123 @@ void main() {
           greaterThanOrEqualTo(3),
         );
       });
+
+      test(
+        'skips due scheduled wake when no pending project activity exists',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final dueState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.single as AgentStateEntity;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.lastDailyWakeAt, isNull);
+          expect(mockConversationRepository.deletedConversationIds, isEmpty);
+          verifyNever(
+            () => mockAgentRepository.updateWakeRunTemplate(
+              any(),
+              any(),
+              any(),
+              resolvedModelId: any(named: 'resolvedModelId'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rolls forward the daily digest schedule when the scheduled wake is due',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final dueState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.lastDailyWakeAt, testDate);
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
+        },
+      );
+
+      test(
+        'keeps the future digest schedule and clears pending activity on non-due wakes',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 9);
+          final futureSchedule = DateTime(2026, 3, 21, 6);
+          final scheduledState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 8),
+            ),
+            scheduledWakeAt: futureSchedule,
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => scheduledState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => makeTestReport());
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, futureSchedule);
+          expect(updatedState.slots.lastDailyWakeAt, isNull);
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
+        },
+      );
 
       test('records template provenance on wake run', () async {
         await workflow.execute(
@@ -500,17 +630,17 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-001',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-001'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) async => {});
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -548,7 +678,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -563,23 +693,30 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-002',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-002'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [agentLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-002': [agentLink],
+          },
+        );
 
         final taskReport = makeTestReport(
           agentId: 'task-agent-1',
+          createdAt: DateTime(2024, 6, 21, 9, 30),
           content: 'Task is 80% complete with 3 tests passing.',
         );
 
         when(
-          () => mockAgentRepository.getLatestReport(
-            'task-agent-1',
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-1'],
             'current',
           ),
-        ).thenAnswer((_) async => taskReport);
+        ).thenAnswer(
+          (_) async => {'task-agent-1': taskReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -606,6 +743,10 @@ void main() {
 
         expect(capturedMessage, contains('80% complete'));
         expect(capturedMessage, contains('task-agent-1'));
+        expect(
+          capturedMessage,
+          contains(DateTime(2024, 6, 21, 9, 30).toIso8601String()),
+        );
       });
 
       test('resolves observation payloads into user message', () async {
@@ -846,7 +987,7 @@ void main() {
 
       test('handles linked tasks context error gracefully', () async {
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenThrow(Exception('DB connection lost'));
@@ -1281,19 +1422,17 @@ void main() {
         ];
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => tasks);
 
-        for (final task in tasks) {
-          when(
-            () => mockAgentRepository.getLinksTo(
-              task.meta.id,
-              type: AgentLinkTypes.agentTask,
-            ),
-          ).thenAnswer((_) async => []);
-        }
+        when(
+          () => mockAgentRepository.getLinksToMultiple(
+            tasks.map((t) => t.meta.id).toList(),
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => {});
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1520,14 +1659,14 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-err',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-err'],
             type: AgentLinkTypes.agentTask,
           ),
         ).thenThrow(Exception('Link lookup failed'));
@@ -1570,7 +1709,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -1585,11 +1724,15 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-empty-rpt',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-empty-rpt'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [agentLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-empty-rpt': [agentLink],
+          },
+        );
 
         final emptyReport = makeTestReport(
           agentId: 'task-agent-2',
@@ -1597,8 +1740,13 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLatestReport('task-agent-2', 'current'),
-        ).thenAnswer((_) async => emptyReport);
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-2'],
+            'current',
+          ),
+        ).thenAnswer(
+          (_) async => {'task-agent-2': emptyReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1625,6 +1773,73 @@ void main() {
 
         // Should not include task-agent-2 since the report content was empty.
         expect(capturedMessage, isNot(contains('task-agent-2')));
+      });
+
+      test('handles batch report lookup failure gracefully', () async {
+        final linkedTask = _fakeTaskEntity(
+          id: 'task-report-err',
+          title: 'Batch Report Failure Task',
+        );
+
+        when(
+          () => mockJournalRepository.getLinkedEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        final agentLink = AgentLink.agentTask(
+          id: 'link-batch-rpt',
+          fromId: 'task-agent-batch',
+          toId: 'task-report-err',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-report-err'],
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'task-report-err': [agentLink],
+          },
+        );
+
+        when(
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            ['task-agent-batch'],
+            'current',
+          ),
+        ).thenThrow(Exception('Batch report lookup failed'));
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+        expect(capturedMessage, contains('Batch Report Failure Task'));
+        expect(capturedMessage, isNot(contains('task-agent-batch')));
       });
 
       test('handles state update failure after main error', () async {
@@ -1816,7 +2031,7 @@ void main() {
         );
 
         when(
-          () => mockJournalRepository.getLinkedToEntities(
+          () => mockJournalRepository.getLinkedEntities(
             linkedTo: projectId,
           ),
         ).thenAnswer((_) async => [linkedTask]);
@@ -1840,11 +2055,15 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLinksTo(
-            'task-multi-link',
+          () => mockAgentRepository.getLinksToMultiple(
+            ['task-multi-link'],
             type: AgentLinkTypes.agentTask,
           ),
-        ).thenAnswer((_) async => [olderLink, newerLink]);
+        ).thenAnswer(
+          (_) async => {
+            'task-multi-link': [olderLink, newerLink],
+          },
+        );
 
         final newerReport = makeTestReport(
           agentId: 'new-agent',
@@ -1852,8 +2071,13 @@ void main() {
         );
 
         when(
-          () => mockAgentRepository.getLatestReport('new-agent', 'current'),
-        ).thenAnswer((_) async => newerReport);
+          () => mockAgentRepository.getLatestReportsByAgentIds(
+            any(),
+            'current',
+          ),
+        ).thenAnswer(
+          (_) async => {'new-agent': newerReport},
+        );
 
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
@@ -1882,6 +2106,91 @@ void main() {
         expect(capturedMessage, contains('Newer agent report'));
         expect(capturedMessage, contains('new-agent'));
       });
+
+      test(
+        'falls back to an older task-agent report when the newest link has none',
+        () async {
+          final linkedTask = _fakeTaskEntity(
+            id: 'task-fallback-link',
+            title: 'Fallback Task',
+          );
+
+          when(
+            () => mockJournalRepository.getLinkedEntities(
+              linkedTo: projectId,
+            ),
+          ).thenAnswer((_) async => [linkedTask]);
+
+          final olderLink = AgentLink.agentTask(
+            id: 'link-older',
+            fromId: 'older-agent',
+            toId: 'task-fallback-link',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+          );
+          final newerLink = AgentLink.agentTask(
+            id: 'link-newer',
+            fromId: 'newer-agent',
+            toId: 'task-fallback-link',
+            createdAt: DateTime(2024, 6),
+            updatedAt: DateTime(2024, 6),
+            vectorClock: null,
+          );
+
+          when(
+            () => mockAgentRepository.getLinksToMultiple(
+              ['task-fallback-link'],
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'task-fallback-link': [olderLink, newerLink],
+            },
+          );
+
+          final olderReport = makeTestReport(
+            agentId: 'older-agent',
+            content: 'Older agent still has the useful report.',
+          );
+          when(
+            () => mockAgentRepository.getLatestReportsByAgentIds(
+              any(),
+              'current',
+            ),
+          ).thenAnswer((_) async => {'older-agent': olderReport});
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(
+            capturedMessage,
+            contains('Older agent still has the useful report.'),
+          );
+          expect(capturedMessage, contains('older-agent'));
+          expect(capturedMessage, isNot(contains('newer-agent')));
+        },
+      );
 
       test('skips linked tasks section when no tasks are linked', () async {
         String? capturedMessage;

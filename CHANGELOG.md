@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.930] - 2026-03-22
+## [0.9.931] - 2026-03-23
 ### Added
 - Qwen 3.5 Plus model: added Alibaba Cloud's advanced multimodal reasoning
   model with text and image understanding for complex analytical tasks.
@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FTUE setup simplified: provider setup wizards no longer create prompts —
   all AI capabilities are handled by the skill-based automation system via
   inference profiles.
+- Project agents now skip dormant daily digests, track pending project
+  activity in synced agent state, and show stale summaries in the tasks-page
+  project header until the next 06:00 report refresh.
+- Project detail pages now render the current project-agent report inline,
+  expose a manual refresh action, show when no project agent exists yet, and
+  return to the originating category instead of dropping back to the top
+  settings page.
+- Confirmed project-agent next-step proposals now persist as active project
+  recommendations that supersede older active guidance and can be resolved or
+  dismissed from the project detail page.
 
 ## [0.9.929] - 2026-03-21
 ### Added

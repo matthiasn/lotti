@@ -2590,38 +2590,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemMediumLabel => 'Mediano';
 
   @override
-  String get designSystemPressedLabel => 'Pulsada';
-
-  @override
-  String get designSystemProgressBarChunkyLabel => 'Segmentada';
-
-  @override
-  String get designSystemProgressBarLabelAndPercentageLabel =>
-      'Etiqueta + porcentaje';
-
-  @override
-  String get designSystemProgressBarLabelOnlyLabel => 'Solo etiqueta';
-
-  @override
-  String get designSystemProgressBarOffLabel => 'Apagada';
-
-  @override
-  String get designSystemProgressBarPercentageOnlyLabel => 'Porcentaje';
-
-  @override
-  String get designSystemProgressBarQuestBarLabel => 'Barra de misión';
-
-  @override
-  String get designSystemProgressBarQuestLabel => 'Etiqueta de mega premio';
-
-  @override
-  String get designSystemProgressBarSampleLabel =>
-      'Etiqueta de barra de progreso';
-
-  @override
-  String get designSystemRadioButtonLabel => 'Botón de radio';
-
-  @override
   String get designSystemNavigationAiAssistantSectionTitle => 'Asistente de IA';
 
   @override
@@ -2670,6 +2638,38 @@ class AppLocalizationsEs extends AppLocalizations {
       'Variantes de barra de pestañas';
 
   @override
+  String get designSystemPressedLabel => 'Pulsada';
+
+  @override
+  String get designSystemProgressBarChunkyLabel => 'Segmentada';
+
+  @override
+  String get designSystemProgressBarLabelAndPercentageLabel =>
+      'Etiqueta + porcentaje';
+
+  @override
+  String get designSystemProgressBarLabelOnlyLabel => 'Solo etiqueta';
+
+  @override
+  String get designSystemProgressBarOffLabel => 'Apagada';
+
+  @override
+  String get designSystemProgressBarPercentageOnlyLabel => 'Porcentaje';
+
+  @override
+  String get designSystemProgressBarQuestBarLabel => 'Barra de misión';
+
+  @override
+  String get designSystemProgressBarQuestLabel => 'Etiqueta de mega premio';
+
+  @override
+  String get designSystemProgressBarSampleLabel =>
+      'Etiqueta de barra de progreso';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Botón de radio';
+
+  @override
   String get designSystemSearchFilledText => 'Búsqueda de Lotti';
 
   @override
@@ -2685,11 +2685,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemSmallLabel => 'Pequeño';
 
   @override
-  String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Abrir opciones de $label';
-  }
-
-  @override
   String get designSystemSpinnerPlainLabel => 'Sin fondo';
 
   @override
@@ -2697,6 +2692,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulso';
+
+  @override
+  String get designSystemSpinnerSkeletonsTitle => 'Esqueletos';
 
   @override
   String get designSystemSpinnerSkeletonWaveLabel => 'Onda';
@@ -2708,7 +2706,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemSpinnerTrackLabel => 'Con pista';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Esqueletos';
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Abrir opciones de $label';
+  }
 
   @override
   String get designSystemStateMatrixTitle => 'Matriz de estados';
@@ -3649,6 +3649,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get privateLabel => 'Privado';
 
   @override
+  String get projectAgentNotProvisioned =>
+      'Todavía no se ha configurado un agente de proyecto para este proyecto.';
+
+  @override
   String get projectAgentSectionTitle => 'Agente';
 
   @override
@@ -3741,6 +3745,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get projectPickerUnassigned => 'Sin proyecto';
 
   @override
+  String get projectRecommendationDismissTooltip => 'Descartar';
+
+  @override
+  String get projectRecommendationResolveTooltip => 'Marcar como resuelto';
+
+  @override
+  String get projectRecommendationsTitle => 'Siguientes pasos recomendados';
+
+  @override
+  String get projectRecommendationUpdateError =>
+      'No se pudo actualizar la recomendación. Inténtalo de nuevo.';
+
+  @override
   String get projectStatusActive => 'Activo';
 
   @override
@@ -3757,6 +3774,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectStatusOpen => 'Abierto';
+
+  @override
+  String get projectSummaryOutdated => 'El resumen está desactualizado.';
+
+  @override
+  String projectSummaryOutdatedScheduled(String date, String time) {
+    return 'El resumen está desactualizado. La próxima actualización será el $date a las $time.';
+  }
 
   @override
   String get projectTargetDateLabel => 'Fecha objetivo';

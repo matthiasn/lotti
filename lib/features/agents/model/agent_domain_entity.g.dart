@@ -582,6 +582,69 @@ const _$ChangeDecisionVerdictEnumMap = {
   ChangeDecisionVerdict.deferred: 'deferred',
 };
 
+ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
+  Map<String, dynamic> json,
+) => ProjectRecommendationEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  projectId: json['projectId'] as String,
+  title: json['title'] as String,
+  position: (json['position'] as num).toInt(),
+  status: $enumDecode(_$ProjectRecommendationStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  sourceChangeSetId: json['sourceChangeSetId'] as String?,
+  sourceDecisionId: json['sourceDecisionId'] as String?,
+  rationale: json['rationale'] as String?,
+  priority: json['priority'] as String?,
+  resolvedAt: json['resolvedAt'] == null
+      ? null
+      : DateTime.parse(json['resolvedAt'] as String),
+  dismissedAt: json['dismissedAt'] == null
+      ? null
+      : DateTime.parse(json['dismissedAt'] as String),
+  supersededAt: json['supersededAt'] == null
+      ? null
+      : DateTime.parse(json['supersededAt'] as String),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$ProjectRecommendationEntityToJson(
+  ProjectRecommendationEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'projectId': instance.projectId,
+  'title': instance.title,
+  'position': instance.position,
+  'status': _$ProjectRecommendationStatusEnumMap[instance.status]!,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'sourceChangeSetId': instance.sourceChangeSetId,
+  'sourceDecisionId': instance.sourceDecisionId,
+  'rationale': instance.rationale,
+  'priority': instance.priority,
+  'resolvedAt': instance.resolvedAt?.toIso8601String(),
+  'dismissedAt': instance.dismissedAt?.toIso8601String(),
+  'supersededAt': instance.supersededAt?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$ProjectRecommendationStatusEnumMap = {
+  ProjectRecommendationStatus.active: 'active',
+  ProjectRecommendationStatus.resolved: 'resolved',
+  ProjectRecommendationStatus.dismissed: 'dismissed',
+  ProjectRecommendationStatus.superseded: 'superseded',
+};
+
 WakeTokenUsageEntity _$WakeTokenUsageEntityFromJson(
   Map<String, dynamic> json,
 ) => WakeTokenUsageEntity(

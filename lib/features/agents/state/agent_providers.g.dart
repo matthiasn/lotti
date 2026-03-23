@@ -783,6 +783,62 @@ final class ScheduledWakeManagerProvider
 String _$scheduledWakeManagerHash() =>
     r'3652b1b63cd7080347e2abaa86212b1239a04234';
 
+/// Tracks local project/task changes and marks project reports stale without
+/// waking the project agent immediately.
+
+@ProviderFor(projectActivityMonitor)
+final projectActivityMonitorProvider = ProjectActivityMonitorProvider._();
+
+/// Tracks local project/task changes and marks project reports stale without
+/// waking the project agent immediately.
+
+final class ProjectActivityMonitorProvider
+    extends
+        $FunctionalProvider<
+          ProjectActivityMonitor,
+          ProjectActivityMonitor,
+          ProjectActivityMonitor
+        >
+    with $Provider<ProjectActivityMonitor> {
+  /// Tracks local project/task changes and marks project reports stale without
+  /// waking the project agent immediately.
+  ProjectActivityMonitorProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'projectActivityMonitorProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$projectActivityMonitorHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProjectActivityMonitor> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProjectActivityMonitor create(Ref ref) {
+    return projectActivityMonitor(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProjectActivityMonitor value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProjectActivityMonitor>(value),
+    );
+  }
+}
+
+String _$projectActivityMonitorHash() =>
+    r'be70af4bae95fb4cf368b3bca6d2e02d6db132f0';
+
 /// The high-level agent service.
 
 @ProviderFor(agentService)
@@ -3783,4 +3839,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'f0151127420eb81978fdbc4a29ac6107aefd1a83';
+    r'65c633aa15a10f6b5780b4a5c4e4d699bd0a923a';

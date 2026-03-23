@@ -10,6 +10,8 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -100,11 +102,12 @@ class ProjectAgentWorkflow {
     );
 
     // 1. Load current state.
-    final state = await agentRepository.getAgentState(agentId);
-    if (state == null) {
+    final loadedState = await agentRepository.getAgentState(agentId);
+    if (loadedState == null) {
       _log('no agent state found — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'No agent state found');
     }
+    var state = loadedState;
 
     final projectId = state.slots.activeProjectId;
     if (projectId == null) {
@@ -115,7 +118,46 @@ class ProjectAgentWorkflow {
       );
     }
 
-    // 2. Load project entity and linked task context.
+    final now = clock.now();
+
+    // 2. Load the latest report and decide whether a due scheduled wake can be
+    // skipped cheaply because no new project activity was recorded.
+    final lastReport = await agentRepository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    final initialScheduledWakeWasDue =
+        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+    if (initialScheduledWakeWasDue && lastReport != null) {
+      final latestState = await agentRepository.getAgentState(agentId) ?? state;
+      final latestScheduledWakeWasDue =
+          latestState.scheduledWakeAt != null &&
+          !latestState.scheduledWakeAt!.isAfter(now);
+
+      if (!latestScheduledWakeWasDue) {
+        _log(
+          'scheduled wake already handled elsewhere — skipping duplicate run',
+          subDomain: 'execute',
+        );
+        return const WakeResult(success: true);
+      }
+
+      if (latestState.slots.pendingProjectActivityAt == null) {
+        await _skipDormantScheduledWake(
+          state: latestState,
+          now: now,
+        );
+        return const WakeResult(success: true);
+      }
+
+      state = latestState;
+    }
+
+    final scheduledWakeWasDue =
+        state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+    final shouldInitializeSchedule = state.scheduledWakeAt == null;
+
+    // 3. Load project entity and linked task context.
     final projectEntity = await journalRepository.getJournalEntityById(
       projectId,
     );
@@ -130,20 +172,16 @@ class ProjectAgentWorkflow {
       );
     }
 
-    // 3. Load previous report and observations.
-    final lastReport = await agentRepository.getLatestReport(
-      agentId,
-      AgentReportScopes.current,
-    );
+    // 4. Load observations.
     final journalObservations = await agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
     );
 
-    // 4. Resolve template and active version.
+    // 5. Resolve template and active version.
     final templateCtx = await _resolveTemplate(agentId);
 
-    // 5. Resolve inference profile → provider.
+    // 6. Resolve inference profile → provider.
     final profileResolver = ProfileResolver(
       aiConfigRepository: aiConfigRepository,
     );
@@ -167,15 +205,15 @@ class ProjectAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
-    // 5b. Load observation payloads so we can render actual text.
+    // 6b. Load observation payloads so we can render actual text.
     final observationPayloads = await _resolveObservationPayloads(
       journalObservations,
     );
 
-    // 5c. Load linked tasks and their task-agent reports.
+    // 6c. Load linked tasks and their task-agent reports.
     final linkedTasksContext = await _buildLinkedTasksContext(projectId);
 
-    // 6. Assemble system prompt and user message.
+    // 7. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       projectEntity: projectEntity,
@@ -186,15 +224,13 @@ class ProjectAgentWorkflow {
       triggerTokens: triggerTokens,
     );
 
-    // 7. Create conversation and run with strategy.
+    // 8. Create conversation and run with strategy.
     final conversationId = conversationRepository.createConversation(
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    final now = clock.now();
-
-    // 7a. Persist user message for inspectability.
+    // 8a. Persist user message for inspectability.
     try {
       final userPayloadId = _uuid.v4();
       await syncService.upsertEntity(
@@ -250,7 +286,7 @@ class ProjectAgentWorkflow {
         }
       }
 
-      // 8. Run the conversation.
+      // 9. Run the conversation.
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -283,8 +319,10 @@ class ProjectAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
-
       await syncService.runInTransaction(() async {
+        final latestState =
+            await agentRepository.getAgentState(agentId) ?? state;
+
         // Persist thought.
         final thoughtText = strategy.finalResponse;
         if (thoughtText != null) {
@@ -379,11 +417,6 @@ class ProjectAgentWorkflow {
         }
 
         // Persist deferred change set (if any items were accumulated).
-        // TODO(project-agent): The change set confirmation infrastructure
-        // (providers, UI, dispatcher) is currently task-scoped. These change
-        // sets are persisted correctly but have no review/apply path until a
-        // project-scoped `ChangeSetSummaryCard`, `ProjectToolDispatcher`,
-        // and `pendingChangeSetsForProject` provider are implemented.
         if (deferredItems.isNotEmpty) {
           final changeItems = deferredItems.map((item) {
             final toolName = item['toolName'] as String? ?? '';
@@ -411,13 +444,34 @@ class ProjectAgentWorkflow {
         }
 
         // Update state.
+        final nextScheduledWakeAt =
+            scheduledWakeWasDue || shouldInitializeSchedule
+            ? nextLocalDayAtTime(
+                now,
+                hour: AgentSchedules.projectDailyDigestHour,
+              )
+            : latestState.scheduledWakeAt;
+        final latestPendingActivityAt =
+            latestState.slots.pendingProjectActivityAt;
+        final nextPendingActivityAt =
+            latestPendingActivityAt != null &&
+                latestPendingActivityAt.isAfter(now)
+            ? latestPendingActivityAt
+            : null;
+        final nextSlots = scheduledWakeWasDue
+            ? latestState.slots.copyWith(lastDailyWakeAt: now)
+            : latestState.slots;
         await syncService.upsertEntity(
-          state.copyWith(
-            revision: state.revision + 1,
+          latestState.copyWith(
+            revision: latestState.revision + 1,
+            slots: nextSlots.copyWith(
+              pendingProjectActivityAt: nextPendingActivityAt,
+            ),
             lastWakeAt: now,
+            scheduledWakeAt: nextScheduledWakeAt,
             updatedAt: now,
             consecutiveFailureCount: 0,
-            wakeCounter: state.wakeCounter + 1,
+            wakeCounter: latestState.wakeCounter + 1,
           ),
         );
       });
@@ -455,6 +509,32 @@ class ProjectAgentWorkflow {
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
+
+  Future<void> _skipDormantScheduledWake({
+    required AgentStateEntity state,
+    required DateTime now,
+  }) async {
+    await syncService.runInTransaction(() async {
+      await syncService.upsertEntity(
+        state.copyWith(
+          revision: state.revision + 1,
+          lastWakeAt: now,
+          scheduledWakeAt: nextLocalDayAtTime(
+            now,
+            hour: AgentSchedules.projectDailyDigestHour,
+          ),
+          updatedAt: now,
+          consecutiveFailureCount: 0,
+          wakeCounter: state.wakeCounter + 1,
+        ),
+      );
+    });
+
+    _log(
+      'scheduled wake skipped: no pending project activity',
+      subDomain: 'execute',
+    );
+  }
 
   Future<void> _persistTokenUsage({
     required InferenceUsage? usage,
@@ -658,7 +738,7 @@ immediately.''';
     final data = project.data;
     buf
       ..writeln('- **Title**: ${data.title}')
-      ..writeln('- **Status**: ${_projectStatusLabel(data.status)}')
+      ..writeln('- **Status**: ${data.status.label}')
       ..writeln(
         '- **Date range**: '
         '${data.dateFrom.toIso8601String().substring(0, 10)} → '
@@ -719,9 +799,14 @@ immediately.''';
   // ── Linked-task context ───────────────────────────────────────────────────
 
   /// Builds a JSON string with linked tasks and their task-agent reports.
+  ///
+  /// Project links are stored as `project -> task`, so this must resolve the
+  /// project's outgoing links. Uses batch queries (2 SQL statements total) for
+  /// the agent-link and report lookups to avoid an N+1 pattern when many tasks
+  /// are linked to the project.
   Future<String> _buildLinkedTasksContext(String projectId) async {
     try {
-      final linkedEntities = await journalRepository.getLinkedToEntities(
+      final linkedEntities = await journalRepository.getLinkedEntities(
         linkedTo: projectId,
       );
 
@@ -729,8 +814,39 @@ immediately.''';
 
       if (taskEntities.isEmpty) return '{}';
 
-      final taskRows = <Map<String, dynamic>>[];
+      final taskIds = taskEntities.map((t) => t.meta.id).toList();
 
+      // 1. Batch-fetch all agent_task links for the linked tasks (1 query).
+      var linksByTaskId = <String, List<AgentLink>>{};
+      try {
+        linksByTaskId = await agentRepository.getLinksToMultiple(
+          taskIds,
+          type: AgentLinkTypes.agentTask,
+        );
+      } catch (e, s) {
+        _logError('batch link lookup failed', error: e, stackTrace: s);
+      }
+
+      // 2. Batch-fetch the latest reports for all linked task agents (1 query).
+      var reportsByAgentId = <String, AgentReportEntity>{};
+      final linkedAgentIds = linksByTaskId.values
+          .expand((links) => links.map((link) => link.fromId))
+          .toSet()
+          .toList();
+      if (linkedAgentIds.isNotEmpty) {
+        try {
+          reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
+            linkedAgentIds,
+            AgentReportScopes.current,
+          );
+        } catch (e, s) {
+          _logError('batch report lookup failed', error: e, stackTrace: s);
+        }
+      }
+
+      // 3. Assemble rows, preserving the prior fallback behavior:
+      // newest link wins only if that agent has a non-empty current report.
+      final taskRows = <Map<String, dynamic>>[];
       for (final task in taskEntities) {
         final row = <String, dynamic>{
           'id': task.meta.id,
@@ -738,13 +854,19 @@ immediately.''';
           'status': _taskStatusLabel(task.data.status),
         };
 
-        // Resolve task-agent report if available.
-        final report = await _resolveLatestTaskAgentReport(task.meta.id);
-        if (report != null) {
-          row['taskAgentId'] = report.agentId;
-          row['latestTaskAgentReport'] = report.content;
-          row['latestTaskAgentReportCreatedAt'] = report.createdAt
-              .toIso8601String();
+        final taskLinks = linksByTaskId[task.meta.id];
+        if (taskLinks != null) {
+          for (final link in taskLinks.orderedPrimaryFirst()) {
+            final report = reportsByAgentId[link.fromId];
+            if (report == null) continue;
+            final content = report.content.trim();
+            if (content.isEmpty) continue;
+            row['taskAgentId'] = link.fromId;
+            row['latestTaskAgentReport'] = content;
+            row['latestTaskAgentReportCreatedAt'] = report.createdAt
+                .toIso8601String();
+            break;
+          }
         }
 
         taskRows.add(row);
@@ -760,48 +882,6 @@ immediately.''';
         stackTrace: stackTrace,
       );
       return '{}';
-    }
-  }
-
-  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
-    String taskId,
-  ) async {
-    try {
-      final links = await agentRepository.getLinksTo(
-        taskId,
-        type: AgentLinkTypes.agentTask,
-      );
-      if (links.isEmpty) return null;
-
-      final sortedLinks = links.toList()
-        ..sort((a, b) {
-          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-          if (byCreatedAt != 0) return byCreatedAt;
-          return b.id.compareTo(a.id);
-        });
-
-      for (final link in sortedLinks) {
-        final report = await agentRepository.getLatestReport(
-          link.fromId,
-          AgentReportScopes.current,
-        );
-        if (report == null) continue;
-        final content = report.content.trim();
-        if (content.isEmpty) continue;
-        return _LinkedTaskAgentReport(
-          agentId: link.fromId,
-          content: content,
-          createdAt: report.createdAt,
-        );
-      }
-      return null;
-    } catch (e, s) {
-      _logError(
-        'failed to resolve linked task-agent report',
-        error: e,
-        stackTrace: s,
-      );
-      return null;
     }
   }
 
@@ -843,16 +923,6 @@ immediately.''';
     final text = payload.content['text'];
     if (text is String && text.isNotEmpty) return text;
     return '(no content)';
-  }
-
-  static String _projectStatusLabel(ProjectStatus status) {
-    return switch (status) {
-      ProjectOpen() => 'Open',
-      ProjectActive() => 'Active',
-      ProjectOnHold() => 'On Hold',
-      ProjectCompleted() => 'Completed',
-      ProjectArchived() => 'Archived',
-    };
   }
 
   static String _taskStatusLabel(TaskStatus status) {
@@ -897,16 +967,4 @@ class _TemplateContext {
   const _TemplateContext({required this.template, required this.version});
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
-}
-
-class _LinkedTaskAgentReport {
-  const _LinkedTaskAgentReport({
-    required this.agentId,
-    required this.content,
-    required this.createdAt,
-  });
-
-  final String agentId;
-  final String content;
-  final DateTime createdAt;
 }

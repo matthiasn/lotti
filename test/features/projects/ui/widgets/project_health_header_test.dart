@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/get_it.dart';
@@ -46,6 +47,7 @@ void main() {
     void Function(String)? onToggleProject,
     void Function(Set<String>)? onClearStale,
     Map<String, int> taskCounts = const {},
+    Map<String, ProjectAgentSummaryState?> projectSummaries = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -61,6 +63,10 @@ void main() {
           ),
           for (final entry in taskCounts.entries)
             projectTaskCountProvider(entry.key).overrideWith(
+              (ref) async => entry.value,
+            ),
+          for (final entry in projectSummaries.entries)
+            projectAgentSummaryProvider(entry.key).overrideWith(
               (ref) async => entry.value,
             ),
         ],
@@ -92,6 +98,56 @@ void main() {
       await tester.pump();
 
       expect(find.text('Projects'), findsNothing);
+    });
+
+    testWidgets('shows nothing when error', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ProjectHealthHeader(
+            categoryId: categoryId,
+            selectedProjectIds: const {},
+            onToggleProject: (_) {},
+            onClearStale: (_) {},
+          ),
+          overrides: [
+            projectsForCategoryProvider(categoryId).overrideWith(
+              (ref) => throw Exception('DB error'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Projects'), findsNothing);
+    });
+
+    testWidgets('shows outdated message without scheduled time', (
+      tester,
+    ) async {
+      final project = makeTestProject(
+        id: 'proj-no-wake',
+        title: 'No Wake',
+        categoryId: categoryId,
+      );
+
+      await pumpHeader(
+        tester,
+        projects: [project],
+        taskCounts: {'proj-no-wake': 1},
+        projectSummaries: {
+          'proj-no-wake': ProjectAgentSummaryState(
+            agentId: 'agent-1',
+            hasReport: true,
+            pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
+          ),
+        },
+      );
+
+      await tester.tap(find.text('Projects'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Summary outdated'), findsOneWidget);
     });
 
     testWidgets('shows nothing when no projects', (tester) async {
@@ -176,6 +232,37 @@ void main() {
       expect(find.text('Beta'), findsOneWidget);
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
+    });
+
+    testWidgets('shows outdated summary message for stale project reports', (
+      tester,
+    ) async {
+      final project = makeTestProject(
+        id: 'proj-stale',
+        title: 'Stale Project',
+        categoryId: categoryId,
+      );
+
+      await pumpHeader(
+        tester,
+        projects: [project],
+        taskCounts: {'proj-stale': 2},
+        projectSummaries: {
+          'proj-stale': ProjectAgentSummaryState(
+            agentId: 'agent-1',
+            hasReport: true,
+            pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
+            scheduledWakeAt: DateTime(2026, 3, 23, 6),
+          ),
+        },
+      );
+
+      await tester.tap(find.text('Projects'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Summary outdated'), findsOneWidget);
+      expect(find.textContaining('2026'), findsOneWidget);
     });
 
     testWidgets('tapping again collapses the header', (tester) async {

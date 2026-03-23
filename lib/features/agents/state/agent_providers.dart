@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -224,6 +226,22 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
   );
   ref.onDispose(manager.stop);
   return manager;
+}
+
+/// Tracks local project/task changes and marks project reports stale without
+/// waking the project agent immediately.
+@Riverpod(keepAlive: true)
+ProjectActivityMonitor projectActivityMonitor(Ref ref) {
+  final monitor = ProjectActivityMonitor(
+    notifications: ref.watch(updateNotificationsProvider),
+    agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
+  ref.onDispose(() {
+    unawaited(monitor.stop());
+  });
+  return monitor;
 }
 
 /// The high-level agent service.
@@ -899,6 +917,7 @@ Future<void> agentInitialization(Ref ref) async {
   final templateService = ref.watch(agentTemplateServiceProvider);
   final updateNotifications = ref.watch(updateNotificationsProvider);
   final syncEventProcessor = ref.watch(maybeSyncEventProcessorProvider);
+  final projectActivityMonitor = ref.watch(projectActivityMonitorProvider);
 
   // Register the dispose callback before any async work so it is always
   // installed, even if an await below throws.
@@ -934,6 +953,9 @@ Future<void> agentInitialization(Ref ref) async {
 
   // 3.5. Start the scheduled wake manager.
   ref.watch(scheduledWakeManagerProvider).start();
+
+  // 3.6. Track project-linked activity without triggering immediate wakes.
+  projectActivityMonitor.start();
 
   // 4. Wire the sync event processor for cross-device agent data.
   _wireSyncEventProcessor(

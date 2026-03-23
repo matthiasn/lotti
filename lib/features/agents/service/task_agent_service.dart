@@ -90,7 +90,7 @@ class TaskAgentService {
         type: AgentLinkTypes.agentTask,
       );
       if (linksForTask.isNotEmpty) {
-        final primaryLink = _selectPrimaryTaskLink(linksForTask);
+        final primaryLink = linksForTask.selectPrimary();
         throw StateError(
           'A task agent already exists for task $taskId '
           '(agent ${primaryLink.fromId})',
@@ -187,7 +187,7 @@ class TaskAgentService {
     );
     if (links.isEmpty) return null;
 
-    final agentId = _selectPrimaryTaskLink(links).fromId;
+    final agentId = links.selectPrimary().fromId;
     return agentService.getAgent(agentId);
   }
 
@@ -375,27 +375,5 @@ class TaskAgentService {
       'restored $count task agent subscriptions',
       subDomain: 'restore',
     );
-  }
-
-  AgentLink _selectPrimaryTaskLink(List<AgentLink> links) {
-    final sorted = links.toList()
-      ..sort((a, b) {
-        final createdAtComparison = b.createdAt.compareTo(a.createdAt);
-        if (createdAtComparison != 0) {
-          return createdAtComparison;
-        }
-        return b.id.compareTo(a.id);
-      });
-
-    if (sorted.length > 1) {
-      domainLogger?.log(
-        LogDomains.agentRuntime,
-        'multiple task-agent links found; choosing latest '
-        '${DomainLogger.sanitizeId(sorted.first.id)}',
-        subDomain: 'resolve',
-      );
-    }
-
-    return sorted.first;
   }
 }

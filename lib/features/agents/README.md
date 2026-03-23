@@ -3,7 +3,7 @@
 This feature provides persistent, sync-aware agents for Lotti, centered on:
 
 1. Task Agents (production path): wake on task changes, run tool calls, and keep a durable report.
-2. Project Agents: auto-created per project via `ProjectAgentService.createProjectAgent`, providing project-level analysis and reporting. See [`lib/features/projects/README.md`](../projects/README.md) for the projects feature.
+2. Project Agents: provisioned during project creation when a matching `projectAgent` template is available, with a manual create fallback on the project detail page. They provide project-level analysis, reporting, and lifecycle-managed project recommendations. See [`lib/features/projects/README.md`](../projects/README.md) for the projects feature.
 3. Template Evolution Sessions: chat-driven directive evolution with versioned template history.
 4. Improver Agents: scheduled weekly rituals that extract feedback from agent instances and propose directive improvements.
 5. Meta-Improver: recursive self-improvement that evaluates and improves the improver agents themselves on a monthly cadence, with recursion depth governed by the policy cap (max depth 2 per ADR 0012).
@@ -227,7 +227,7 @@ sequenceDiagram
 ## Module Responsibilities
 
 - `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
-- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`).
+- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`, `ProjectToolDispatcher`).
 - `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
 - `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.

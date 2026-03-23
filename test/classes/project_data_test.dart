@@ -174,6 +174,50 @@ void main() {
       );
     });
 
+    test('label returns human-readable labels', () {
+      expect(
+        ProjectStatus.open(
+          id: 'ps-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).label,
+        'Open',
+      );
+      expect(
+        ProjectStatus.active(
+          id: 'ps-2',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).label,
+        'Active',
+      );
+      expect(
+        ProjectStatus.onHold(
+          id: 'ps-3',
+          createdAt: testDate,
+          utcOffset: 0,
+          reason: 'blocked',
+        ).label,
+        'On Hold',
+      );
+      expect(
+        ProjectStatus.completed(
+          id: 'ps-4',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).label,
+        'Completed',
+      );
+      expect(
+        ProjectStatus.archived(
+          id: 'ps-5',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).label,
+        'Archived',
+      );
+    });
+
     test('onHold preserves reason field', () {
       final status = ProjectStatus.onHold(
         id: 'ps-1',

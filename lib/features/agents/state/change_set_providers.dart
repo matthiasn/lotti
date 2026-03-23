@@ -1,16 +1,26 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -84,6 +94,76 @@ List<AgentDomainEntity> _deduplicateChangeSets(
   return seen.values.toList();
 }
 
+/// Fetches pending (and partially resolved) change sets for a given project.
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+projectPendingChangeSetsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>((ref, projectId) async {
+      final agent = await ref.watch(projectAgentProvider(projectId).future);
+      final identity = agent?.mapOrNull(agent: (a) => a);
+      if (identity == null) return [];
+
+      ref.watch(agentUpdateStreamProvider(identity.agentId));
+
+      final repo = ref.watch(agentRepositoryProvider);
+      // Project-targeted change sets still persist their target entity ID in
+      // the historical `taskId` field.
+      final sets = await repo.getPendingChangeSets(
+        identity.agentId,
+        taskId: projectId,
+      );
+      return _deduplicateChangeSets(sets);
+    });
+
+final projectRecommendationServiceProvider =
+    Provider<ProjectRecommendationService>(
+      (ref) {
+        final notifications =
+            ref.watch(maybeUpdateNotificationsProvider) ??
+            UpdateNotifications();
+        return ProjectRecommendationService(
+          syncService: ref.watch(agentSyncServiceProvider),
+          notifications: notifications,
+          domainLogger: ref.watch(domainLoggerProvider),
+        );
+      },
+    );
+
+/// Fetches active project recommendations for a given project agent.
+final FutureProviderFamily<List<ProjectRecommendationEntity>, String>
+projectRecommendationsProvider = FutureProvider.autoDispose
+    .family<List<ProjectRecommendationEntity>, String>((ref, projectId) async {
+      final agent = await ref.watch(projectAgentProvider(projectId).future);
+      final identity = agent?.mapOrNull(agent: (a) => a);
+      if (identity == null) return const [];
+
+      ref.watch(agentUpdateStreamProvider(identity.agentId));
+
+      final repo = ref.watch(agentRepositoryProvider);
+      final entities = await repo.getEntitiesByAgentId(
+        identity.agentId,
+        type: AgentEntityTypes.projectRecommendation,
+      );
+
+      final recommendations =
+          entities
+              .whereType<ProjectRecommendationEntity>()
+              .where(
+                (recommendation) =>
+                    recommendation.projectId == projectId &&
+                    recommendation.status == ProjectRecommendationStatus.active,
+              )
+              .toList()
+            ..sort((a, b) {
+              final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
+              if (updatedAtOrder != 0) {
+                return updatedAtOrder;
+              }
+              return a.position.compareTo(b.position);
+            });
+
+      return recommendations;
+    });
+
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
 @riverpod
 ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
@@ -100,8 +180,44 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       timeService: getIt<TimeService>(),
       domainLogger: logger,
       taskAgentService: ref.watch(taskAgentServiceProvider),
-    ),
+    ).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,
   );
 }
+
+/// Project-scoped confirmation service for confirmed project-agent proposals.
+final projectChangeSetConfirmationServiceProvider =
+    Provider<ChangeSetConfirmationService>((ref) {
+      final labelsRepository = ref.watch(labelsRepositoryProvider);
+      final logger = ref.watch(domainLoggerProvider);
+      return ChangeSetConfirmationService(
+        syncService: ref.watch(agentSyncServiceProvider),
+        toolDispatcher: ProjectToolDispatcher(
+          projectRepository: ref.watch(projectRepositoryProvider),
+          persistenceLogic: getIt<PersistenceLogic>(),
+          entitiesCacheService: getIt<EntitiesCacheService>(),
+          domainLogger: logger,
+          taskAgentService: ref.watch(taskAgentServiceProvider),
+        ).dispatch,
+        labelsRepository: labelsRepository,
+        domainLogger: logger,
+        onConfirmedDecision:
+            ({
+              required changeSet,
+              required item,
+              required decision,
+            }) async {
+              if (item.toolName != ProjectAgentToolNames.recommendNextSteps) {
+                return;
+              }
+
+              await ref
+                  .read(projectRecommendationServiceProvider)
+                  .recordConfirmedRecommendations(
+                    changeSet: changeSet,
+                    decision: decision,
+                  );
+            },
+      );
+    });

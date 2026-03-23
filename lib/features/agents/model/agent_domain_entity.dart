@@ -225,9 +225,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// A batch of proposed mutations from a single agent wake.
   ///
-  /// The [agentId] stores the agent instance ID. The [taskId] identifies
-  /// the journal entity being modified. Items are individually confirmable
-  /// or rejectable by the user — batch tool calls (e.g.,
+  /// The [agentId] stores the agent instance ID. The [taskId] field is
+  /// historically named, but identifies the target journal entity being
+  /// modified for both task and project agents. Items are individually
+  /// confirmable or rejectable by the user — batch tool calls (e.g.,
   /// `add_multiple_checklist_items`) are exploded into per-item entries.
   const factory AgentDomainEntity.changeSet({
     required String id,
@@ -246,7 +247,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// Records a user's verdict on a single change item.
   ///
   /// Persisted for decision history so the agent can learn which kinds of
-  /// suggestions are typically accepted or rejected.
+  /// suggestions are typically accepted or rejected. The optional [taskId]
+  /// field is likewise historical and may contain either a task ID or a
+  /// project ID depending on the agent scope.
   const factory AgentDomainEntity.changeDecision({
     required String id,
     required String agentId,
@@ -269,6 +272,27 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     Map<String, dynamic>? args,
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
+
+  /// A human-approved project recommendation with lifecycle.
+  const factory AgentDomainEntity.projectRecommendation({
+    required String id,
+    required String agentId,
+    required String projectId,
+    required String title,
+    required int position,
+    required ProjectRecommendationStatus status,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    String? sourceChangeSetId,
+    String? sourceDecisionId,
+    String? rationale,
+    String? priority,
+    DateTime? resolvedAt,
+    DateTime? dismissedAt,
+    DateTime? supersededAt,
+    DateTime? deletedAt,
+  }) = ProjectRecommendationEntity;
 
   /// Token usage record for a single wake cycle.
   ///
