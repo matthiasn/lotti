@@ -1,3 +1,5 @@
+// ignore_for_file: specify_nonobvious_property_types
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_data.dart';
 
@@ -92,11 +94,7 @@ class ProjectListDetailShowcaseState {
   }
 }
 
-final NotifierProvider<
-  ProjectListDetailShowcaseController,
-  ProjectListDetailShowcaseState
->
-projectListDetailShowcaseControllerProvider =
+final projectListDetailShowcaseControllerProvider =
     NotifierProvider.autoDispose<
       ProjectListDetailShowcaseController,
       ProjectListDetailShowcaseState

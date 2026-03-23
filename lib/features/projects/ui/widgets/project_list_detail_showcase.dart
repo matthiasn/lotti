@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_data.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/color.dart';
 
 class ProjectListDetailShowcase extends ConsumerWidget {
   const ProjectListDetailShowcase({super.key});
@@ -427,7 +428,7 @@ class _ProjectGroupSectionState extends State<_ProjectGroupSection> {
               _CategoryTag(
                 label: widget.group.label,
                 icon: category.icon?.iconData ?? Icons.label_outline,
-                color: _colorFromHex(category.color ?? '#4AB6E8'),
+                color: colorFromCssHex(category.color ?? '#4AB6E8'),
               ),
               const Spacer(),
               Text(
@@ -531,13 +532,13 @@ class _CategoryTag extends StatelessWidget {
           Icon(
             icon,
             size: 12,
-            color: _ProjectListDetailPalette.tagText,
+            color: _ProjectListDetailPalette.tagText(context),
           ),
           const SizedBox(width: 2),
           Text(
             label,
             style: tokens.typography.styles.others.caption.copyWith(
-              color: _ProjectListDetailPalette.tagText,
+              color: _ProjectListDetailPalette.tagText(context),
             ),
           ),
         ],
@@ -610,7 +611,7 @@ class _ProjectRow extends StatelessWidget {
                         children: [
                           _TinyProgressRing(score: record.healthScore),
                           Text(
-                            '$record.healthScore',
+                            '${record.healthScore}',
                             style: tokens.typography.styles.others.caption
                                 .copyWith(
                                   color: _ProjectListDetailPalette.lowText(
@@ -662,10 +663,10 @@ class _ProjectRow extends StatelessWidget {
   ) {
     final taskCount = context.messages.settingsCategoriesTaskCount(count);
     if (targetDate == null) {
-      return '$taskCount · Ongoing';
+      return '$taskCount · ${context.messages.projectShowcaseOngoing}';
     }
 
-    return '$taskCount · Due ${DateFormat('MMM d').format(targetDate)}';
+    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat('MMM d').format(targetDate))}';
   }
 }
 
@@ -749,7 +750,11 @@ class _ProjectDetailPane extends StatelessWidget {
                   _TextSection(
                     title: context.messages.projectShowcaseAiReportTitle,
                     body: record.aiSummary,
-                    trailingLabel: _updatedLabel(record.reportUpdatedAt),
+                    trailingLabel: _updatedLabel(
+                      context,
+                      record.reportUpdatedAt,
+                      record.showcaseNow,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -777,11 +782,14 @@ class _ProjectDetailPane extends StatelessWidget {
     );
   }
 
-  String _updatedLabel(DateTime updatedAt) {
-    final now = DateTime(2026, 4, 2, 9, 30);
-    final difference = now.difference(updatedAt);
+  String _updatedLabel(
+    BuildContext context,
+    DateTime updatedAt,
+    DateTime showcaseNow,
+  ) {
+    final difference = showcaseNow.difference(updatedAt);
     final hours = difference.inHours < 1 ? 1 : difference.inHours;
-    return 'Updated ${hours}h ago ↻';
+    return context.messages.projectShowcaseUpdatedHoursAgo(hours);
   }
 }
 
@@ -821,7 +829,7 @@ class _DetailHeader extends StatelessWidget {
               _CategoryTag(
                 label: record.category.name,
                 icon: record.category.icon?.iconData ?? Icons.label_outline,
-                color: _colorFromHex(record.category.color ?? '#4AB6E8'),
+                color: colorFromCssHex(record.category.color ?? '#4AB6E8'),
               ),
               if (record.project.data.targetDate case final targetDate?) ...[
                 const SizedBox(width: 8),
@@ -947,7 +955,9 @@ class _HealthPanel extends StatelessWidget {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'This score is based on task velocity,\nblockers & time left to deadline',
+                            context
+                                .messages
+                                .projectShowcaseHealthScoreDescription,
                             style: tokens.typography.styles.others.caption
                                 .copyWith(
                                   color: _ProjectListDetailPalette.grayText(
@@ -1015,12 +1025,16 @@ class _HealthPanel extends StatelessWidget {
             children: [
               _LegendItem(
                 color: _ProjectListDetailPalette.teal(context),
-                label: '${record.completedTaskCount} Completed',
+                label: context.messages.projectShowcaseCompletedLegend(
+                  record.completedTaskCount,
+                ),
               ),
               const SizedBox(width: 12),
               _LegendItem(
                 color: _ProjectListDetailPalette.error(context),
-                label: '${record.blockedTaskCount} Blocked',
+                label: context.messages.projectShowcaseBlockedLegend(
+                  record.blockedTaskCount,
+                ),
               ),
             ],
           ),
@@ -1336,7 +1350,7 @@ class _ReviewSessionsPanel extends StatelessWidget {
         color: _ProjectListDetailPalette.surface(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _ProjectListDetailPalette.reviewBorder(context),
+          color: _ProjectListDetailPalette.border(context),
         ),
       ),
       child: Column(
@@ -1370,7 +1384,9 @@ class _ReviewSessionsPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${record.reviewSessions.length} sessions',
+                  context.messages.projectShowcaseSessionsCount(
+                    record.reviewSessions.length,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.others.caption.copyWith(
@@ -1485,7 +1501,8 @@ class _ReviewMetricRow extends StatelessWidget {
             switch (metric.type) {
               ProjectListDetailMockReviewMetricType.communication =>
                 context.messages.agentFeedbackCategoryCommunication,
-              ProjectListDetailMockReviewMetricType.usefulness => 'Usefulness',
+              ProjectListDetailMockReviewMetricType.usefulness =>
+                context.messages.projectShowcaseUsefulness,
               ProjectListDetailMockReviewMetricType.accuracy =>
                 context.messages.agentFeedbackCategoryAccuracy,
             },
@@ -1545,7 +1562,7 @@ class _CountDotBadge extends StatelessWidget {
       child: Text(
         '$count',
         style: tokens.typography.styles.others.caption.copyWith(
-          color: _ProjectListDetailPalette.tagText,
+          color: _ProjectListDetailPalette.tagText(context),
         ),
       ),
     );
@@ -1701,9 +1718,6 @@ class _ProjectListDetailPalette {
   static Color border(BuildContext context) =>
       context.designTokens.colors.decorative.level01;
 
-  static Color reviewBorder(BuildContext context) =>
-      context.designTokens.colors.decorative.level01;
-
   static Color highText(BuildContext context) =>
       context.designTokens.colors.text.highEmphasis;
 
@@ -1716,7 +1730,8 @@ class _ProjectListDetailPalette {
   static Color grayText(BuildContext context) =>
       context.designTokens.colors.text.mediumEmphasis;
 
-  static const tagText = Color(0xFF0E0E0E);
+  static Color tagText(BuildContext context) =>
+      context.designTokens.colors.text.onInteractiveAlert;
 
   static Color white32(BuildContext context) =>
       context.designTokens.colors.text.lowEmphasis;
@@ -1774,12 +1789,6 @@ Color _projectStatusColor(BuildContext context, ProjectStatus status) =>
       ProjectOnHold() => _ProjectListDetailPalette.amber(context),
       ProjectOpen() => _ProjectListDetailPalette.infoBlue(context),
     };
-
-Color _colorFromHex(String value) {
-  final normalized = value.replaceFirst('#', '');
-  final withAlpha = normalized.length == 6 ? 'FF$normalized' : normalized;
-  return Color(int.parse(withAlpha, radix: 16));
-}
 
 String _formatDuration(Duration duration) {
   final hours = duration.inHours;

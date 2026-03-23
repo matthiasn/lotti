@@ -902,10 +902,10 @@
   "designSystemHeaderBackActionLabel": "Zpět",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
   "designSystemHeaderFigmaDefaultLabel": "Výchozí z Figma",
-  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderHelpActionLabel": "Nápověda",
   "designSystemHeaderLongTitleExample": "Toto je velmi dlouhý název stránky, který se má zkrátit před oblastí akcí",
   "designSystemHeaderLongTitleLabel": "Dlouhý název",
+  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderNotificationsActionLabel": "Oznámení",
   "designSystemHeaderSearchActionLabel": "Hledat",
   "designSystemHorizontalLabel": "Vodorovný",
@@ -1344,6 +1344,14 @@
   "projectRecommendationsTitle": "Doporučené další kroky",
   "projectRecommendationUpdateError": "Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.",
   "projectShowcaseAiReportTitle": "AI report",
+  "projectShowcaseBlockedLegend": "{count} blokováno",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} blokovaný úkol} few{{count} blokované úkoly} other{{count} blokovaných úkolů}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
@@ -1352,14 +1360,39 @@
       }
     }
   },
+  "projectShowcaseCompletedLegend": "{count} dokončeno",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseDescriptionTitle": "Popis",
+  "projectShowcaseDueDate": "Termín {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "projectShowcaseHealthScoreDescription": "Tohle skóre vychází z rychlosti postupu úkolů, blokátorů a času do termínu.",
   "projectShowcaseHealthScoreTitle": "Skóre zdraví",
   "projectShowcaseNoResults": "Žádné projekty neodpovídají tvému hledání.",
   "projectShowcaseOneOnOneReviewsTab": "1:1 review",
+  "projectShowcaseOngoing": "Průběžně",
   "projectShowcaseProjectTasksTab": "Projektové úkoly",
   "projectShowcaseRecommendationsTitle": "Doporučení",
   "projectShowcaseSearchHint": "Hledat projekty",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} sezení} few{{count} sezení} other{{count} sezení}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseTasksCompleted": "{completed} z {total} úkolů dokončeno",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
@@ -1371,6 +1404,15 @@
       }
     }
   },
+  "projectShowcaseUpdatedHoursAgo": "Aktualizováno před {hours} hod. ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Užitečnost",
   "projectShowcaseViewBlocker": "Zobrazit blokátor",
   "projectStatusActive": "Aktivní",
   "projectStatusArchived": "Archivovaný",

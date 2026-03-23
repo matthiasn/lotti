@@ -2486,9 +2486,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemHeaderFigmaDefaultLabel => 'Figma default';
 
   @override
-  String get designSystemHeaderMobileSectionTitle => 'Mobile';
-
-  @override
   String get designSystemHeaderHelpActionLabel => 'Help';
 
   @override
@@ -2497,6 +2494,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemHeaderLongTitleLabel => 'Long title';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobile';
 
   @override
   String get designSystemHeaderNotificationsActionLabel => 'Notifications';
@@ -3639,6 +3639,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectShowcaseAiReportTitle => 'AI Report';
 
   @override
+  String projectShowcaseBlockedLegend(int count) {
+    return '$count Blocked';
+  }
+
+  @override
   String projectShowcaseBlockedTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3650,7 +3655,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String projectShowcaseCompletedLegend(int count) {
+    return '$count Completed';
+  }
+
+  @override
   String get projectShowcaseDescriptionTitle => 'Description';
+
+  @override
+  String projectShowcaseDueDate(String date) {
+    return 'Due $date';
+  }
 
   @override
   String get projectShowcaseHealthScoreDescription =>
@@ -3666,6 +3681,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectShowcaseOneOnOneReviewsTab => 'One-on-one Reviews';
 
   @override
+  String get projectShowcaseOngoing => 'Ongoing';
+
+  @override
   String get projectShowcaseProjectTasksTab => 'Project Tasks';
 
   @override
@@ -3675,9 +3693,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectShowcaseSearchHint => 'Search projects';
 
   @override
+  String projectShowcaseSessionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessions',
+      one: '$count session',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     return '$completed/$total tasks completed';
   }
+
+  @override
+  String projectShowcaseUpdatedHoursAgo(int hours) {
+    return 'Updated ${hours}h ago ↻';
+  }
+
+  @override
+  String get projectShowcaseUsefulness => 'Usefulness';
 
   @override
   String get projectShowcaseViewBlocker => 'View blocker';

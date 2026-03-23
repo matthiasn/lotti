@@ -1097,10 +1097,10 @@
   "designSystemHeaderBackActionLabel": "Zurück",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
   "designSystemHeaderFigmaDefaultLabel": "Figma-Standard",
-  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderHelpActionLabel": "Hilfe",
   "designSystemHeaderLongTitleExample": "Dies ist ein sehr langer Seitentitel, der vor dem Aktionsbereich abgeschnitten werden soll",
   "designSystemHeaderLongTitleLabel": "Langer Titel",
+  "designSystemHeaderMobileSectionTitle": "Mobil",
   "designSystemHeaderNotificationsActionLabel": "Benachrichtigungen",
   "designSystemHeaderSearchActionLabel": "Suchen",
   "designSystemHorizontalLabel": "Horizontal",
@@ -1557,6 +1557,14 @@
   "projectRecommendationsTitle": "Empfohlene nächste Schritte",
   "projectRecommendationUpdateError": "Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.",
   "projectShowcaseAiReportTitle": "AI-Bericht",
+  "projectShowcaseBlockedLegend": "{count} Blockiert",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} blockierte Aufgabe} other{{count} blockierte Aufgaben}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
@@ -1565,14 +1573,39 @@
       }
     }
   },
+  "projectShowcaseCompletedLegend": "{count} Abgeschlossen",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseDescriptionTitle": "Beschreibung",
+  "projectShowcaseDueDate": "Fällig {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "projectShowcaseHealthScoreDescription": "Dieser Wert basiert auf Aufgabentempo, Blockern und der verbleibenden Zeit bis zur Deadline.",
   "projectShowcaseHealthScoreTitle": "Gesundheitswert",
   "projectShowcaseNoResults": "Keine Projekte passen zu deiner Suche.",
   "projectShowcaseOneOnOneReviewsTab": "1:1-Reviews",
+  "projectShowcaseOngoing": "Laufend",
   "projectShowcaseProjectTasksTab": "Projektaufgaben",
   "projectShowcaseRecommendationsTitle": "Empfehlungen",
   "projectShowcaseSearchHint": "Projekte suchen",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} Sitzung} other{{count} Sitzungen}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseTasksCompleted": "{completed}/{total} Aufgaben abgeschlossen",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
@@ -1584,6 +1617,15 @@
       }
     }
   },
+  "projectShowcaseUpdatedHoursAgo": "Aktualisiert vor {hours} Std. ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Nützlichkeit",
   "projectShowcaseViewBlocker": "Blocker ansehen",
   "projectStatusActive": "Aktiv",
   "projectStatusArchived": "Archiviert",

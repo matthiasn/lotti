@@ -31,6 +31,7 @@ class ProjectListDetailMockRecord {
     required this.highlightedTaskSummaries,
     required this.reviewSessions,
     required this.highlightedTasksTotalDuration,
+    required this.showcaseNow,
   });
 
   final ProjectEntry project;
@@ -45,6 +46,7 @@ class ProjectListDetailMockRecord {
   final List<ProjectListDetailMockTaskSummary> highlightedTaskSummaries;
   final List<ProjectListDetailMockReviewSession> reviewSessions;
   final Duration highlightedTasksTotalDuration;
+  final DateTime showcaseNow;
 }
 
 class ProjectListDetailMockTaskSummary {
@@ -166,13 +168,15 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
     targetDate: DateTime(2026, 4, 10),
   );
 
+  final showcaseNow = DateTime(2026, 4, 2, 9, 30);
+
   return ProjectListDetailMockData(
     categories: [
       workCategory,
       mealsCategory,
       studyCategory,
     ],
-    showcaseNow: DateTime(2026, 4, 2, 9, 30),
+    showcaseNow: showcaseNow,
     projects: [
       ProjectListDetailMockRecord(
         project: deviceSync,
@@ -242,6 +246,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
             rating: 5,
           ),
         ],
+        showcaseNow: showcaseNow,
       ),
       ProjectListDetailMockRecord(
         project: apiMigration,
@@ -259,6 +264,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
+        showcaseNow: showcaseNow,
       ),
       ProjectListDetailMockRecord(
         project: ciCdPipeline,
@@ -274,6 +280,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
+        showcaseNow: showcaseNow,
       ),
       ProjectListDetailMockRecord(
         project: weeklyMealPrep,
@@ -291,6 +298,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
+        showcaseNow: showcaseNow,
       ),
       ProjectListDetailMockRecord(
         project: reactCourse,
@@ -306,6 +314,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
+        showcaseNow: showcaseNow,
       ),
       ProjectListDetailMockRecord(
         project: designSystemBook,
@@ -321,6 +330,7 @@ ProjectListDetailMockData buildProjectListDetailMockData() {
         highlightedTaskSummaries: const [],
         reviewSessions: const [],
         highlightedTasksTotalDuration: Duration.zero,
+        showcaseNow: showcaseNow,
       ),
     ],
   );

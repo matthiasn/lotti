@@ -2526,9 +2526,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHeaderFigmaDefaultLabel => 'Implicit Figma';
 
   @override
-  String get designSystemHeaderMobileSectionTitle => 'Mobil';
-
-  @override
   String get designSystemHeaderHelpActionLabel => 'Ajutor';
 
   @override
@@ -2537,6 +2534,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemHeaderLongTitleLabel => 'Titlu lung';
+
+  @override
+  String get designSystemHeaderMobileSectionTitle => 'Mobil';
 
   @override
   String get designSystemHeaderNotificationsActionLabel => 'Notificări';
@@ -3712,6 +3712,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseAiReportTitle => 'Raport AI';
 
   @override
+  String projectShowcaseBlockedLegend(int count) {
+    return '$count blocate';
+  }
+
+  @override
   String projectShowcaseBlockedTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3724,7 +3729,17 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String projectShowcaseCompletedLegend(int count) {
+    return '$count finalizate';
+  }
+
+  @override
   String get projectShowcaseDescriptionTitle => 'Descriere';
+
+  @override
+  String projectShowcaseDueDate(String date) {
+    return 'Termen $date';
+  }
 
   @override
   String get projectShowcaseHealthScoreDescription =>
@@ -3741,6 +3756,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseOneOnOneReviewsTab => 'Revizuiri 1:1';
 
   @override
+  String get projectShowcaseOngoing => 'În curs';
+
+  @override
   String get projectShowcaseProjectTasksTab => 'Sarcinile proiectului';
 
   @override
@@ -3750,9 +3768,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseSearchHint => 'Căutați proiecte';
 
   @override
+  String projectShowcaseSessionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sesiuni',
+      few: '$count sesiuni',
+      one: '$count sesiune',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String projectShowcaseTasksCompleted(int completed, int total) {
     return '$completed/$total sarcini finalizate';
   }
+
+  @override
+  String projectShowcaseUpdatedHoursAgo(int hours) {
+    return 'Actualizat acum $hours ore ↻';
+  }
+
+  @override
+  String get projectShowcaseUsefulness => 'Utilitate';
 
   @override
   String get projectShowcaseViewBlocker => 'Vedeți blocajul';

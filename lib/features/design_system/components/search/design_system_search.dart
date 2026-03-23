@@ -103,25 +103,26 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Transform.translate(
-                      offset: const Offset(0, -4),
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: widget.focusNode,
-                        enabled: widget.enabled,
-                        onChanged: widget.onChanged,
-                        onSubmitted: widget.onSubmitted,
-                        textInputAction: TextInputAction.search,
-                        style: spec.textStyle.copyWith(
-                          color: tokens.colors.text.highEmphasis,
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: widget.focusNode,
+                      enabled: widget.enabled,
+                      onChanged: widget.onChanged,
+                      onSubmitted: widget.onSubmitted,
+                      textInputAction: TextInputAction.search,
+                      style: spec.textStyle.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                      textAlignVertical: TextAlignVertical.center,
+                      decoration: InputDecoration(
+                        hintText: widget.hintText,
+                        hintStyle: spec.textStyle.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
                         ),
-                        textAlignVertical: TextAlignVertical.center,
-                        decoration: InputDecoration.collapsed(
-                          hintText: widget.hintText,
-                          hintStyle: spec.textStyle.copyWith(
-                            color: tokens.colors.text.mediumEmphasis,
-                          ),
-                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                        isCollapsed: true,
                       ),
                     ),
                   ),

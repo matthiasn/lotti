@@ -4533,12 +4533,6 @@ abstract class AppLocalizations {
   /// **'Figma default'**
   String get designSystemHeaderFigmaDefaultLabel;
 
-  /// No description provided for @designSystemHeaderMobileSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile'**
-  String get designSystemHeaderMobileSectionTitle;
-
   /// No description provided for @designSystemHeaderHelpActionLabel.
   ///
   /// In en, this message translates to:
@@ -4556,6 +4550,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Long title'**
   String get designSystemHeaderLongTitleLabel;
+
+  /// No description provided for @designSystemHeaderMobileSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get designSystemHeaderMobileSectionTitle;
 
   /// No description provided for @designSystemHeaderNotificationsActionLabel.
   ///
@@ -6571,17 +6571,35 @@ abstract class AppLocalizations {
   /// **'AI Report'**
   String get projectShowcaseAiReportTitle;
 
+  /// No description provided for @projectShowcaseBlockedLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Blocked'**
+  String projectShowcaseBlockedLegend(int count);
+
   /// No description provided for @projectShowcaseBlockedTaskCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{{count} task blocked} other{{count} tasks blocked}}'**
   String projectShowcaseBlockedTaskCount(int count);
 
+  /// No description provided for @projectShowcaseCompletedLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Completed'**
+  String projectShowcaseCompletedLegend(int count);
+
   /// No description provided for @projectShowcaseDescriptionTitle.
   ///
   /// In en, this message translates to:
   /// **'Description'**
   String get projectShowcaseDescriptionTitle;
+
+  /// No description provided for @projectShowcaseDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {date}'**
+  String projectShowcaseDueDate(String date);
 
   /// No description provided for @projectShowcaseHealthScoreDescription.
   ///
@@ -6607,6 +6625,12 @@ abstract class AppLocalizations {
   /// **'One-on-one Reviews'**
   String get projectShowcaseOneOnOneReviewsTab;
 
+  /// No description provided for @projectShowcaseOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get projectShowcaseOngoing;
+
   /// No description provided for @projectShowcaseProjectTasksTab.
   ///
   /// In en, this message translates to:
@@ -6625,11 +6649,29 @@ abstract class AppLocalizations {
   /// **'Search projects'**
   String get projectShowcaseSearchHint;
 
+  /// No description provided for @projectShowcaseSessionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} session} other{{count} sessions}}'**
+  String projectShowcaseSessionsCount(int count);
+
   /// No description provided for @projectShowcaseTasksCompleted.
   ///
   /// In en, this message translates to:
   /// **'{completed}/{total} tasks completed'**
   String projectShowcaseTasksCompleted(int completed, int total);
+
+  /// No description provided for @projectShowcaseUpdatedHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {hours}h ago ↻'**
+  String projectShowcaseUpdatedHoursAgo(int hours);
+
+  /// No description provided for @projectShowcaseUsefulness.
+  ///
+  /// In en, this message translates to:
+  /// **'Usefulness'**
+  String get projectShowcaseUsefulness;
 
   /// No description provided for @projectShowcaseViewBlocker.
   ///

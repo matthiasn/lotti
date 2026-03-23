@@ -1247,10 +1247,10 @@
   "designSystemHeaderBackActionLabel": "Back",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
   "designSystemHeaderFigmaDefaultLabel": "Figma default",
-  "designSystemHeaderMobileSectionTitle": "Mobile",
   "designSystemHeaderHelpActionLabel": "Help",
   "designSystemHeaderLongTitleExample": "This is a very long page title that should truncate before the action area",
   "designSystemHeaderLongTitleLabel": "Long title",
+  "designSystemHeaderMobileSectionTitle": "Mobile",
   "designSystemHeaderNotificationsActionLabel": "Notifications",
   "designSystemHeaderSearchActionLabel": "Search",
   "designSystemHorizontalLabel": "Horizontal",
@@ -1721,6 +1721,14 @@
   "projectRecommendationsTitle": "Recommended next steps",
   "projectRecommendationUpdateError": "Couldn't update the recommendation. Please try again.",
   "projectShowcaseAiReportTitle": "AI Report",
+  "projectShowcaseBlockedLegend": "{count} Blocked",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} task blocked} other{{count} tasks blocked}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
@@ -1729,14 +1737,39 @@
       }
     }
   },
+  "projectShowcaseCompletedLegend": "{count} Completed",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseDescriptionTitle": "Description",
+  "projectShowcaseDueDate": "Due {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "projectShowcaseHealthScoreDescription": "This score is based on task velocity, blockers, and time left to deadline.",
   "projectShowcaseHealthScoreTitle": "Health Score",
   "projectShowcaseNoResults": "No projects match your search.",
   "projectShowcaseOneOnOneReviewsTab": "One-on-one Reviews",
+  "projectShowcaseOngoing": "Ongoing",
   "projectShowcaseProjectTasksTab": "Project Tasks",
   "projectShowcaseRecommendationsTitle": "Recommendations",
   "projectShowcaseSearchHint": "Search projects",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} session} other{{count} sessions}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseTasksCompleted": "{completed}/{total} tasks completed",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
@@ -1748,6 +1781,15 @@
       }
     }
   },
+  "projectShowcaseUpdatedHoursAgo": "Updated {hours}h ago ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Usefulness",
   "projectShowcaseViewBlocker": "View blocker",
   "projectStatusActive": "Active",
   "projectStatusArchived": "Archived",

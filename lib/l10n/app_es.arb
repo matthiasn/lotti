@@ -1097,10 +1097,10 @@
   "designSystemHeaderBackActionLabel": "Atrás",
   "designSystemHeaderDesktopSectionTitle": "Escritorio",
   "designSystemHeaderFigmaDefaultLabel": "Predeterminado de Figma",
-  "designSystemHeaderMobileSectionTitle": "Móvil",
   "designSystemHeaderHelpActionLabel": "Ayuda",
   "designSystemHeaderLongTitleExample": "Este es un título de página muy largo que debe truncarse antes del área de acciones",
   "designSystemHeaderLongTitleLabel": "Título largo",
+  "designSystemHeaderMobileSectionTitle": "Móvil",
   "designSystemHeaderNotificationsActionLabel": "Notificaciones",
   "designSystemHeaderSearchActionLabel": "Buscar",
   "designSystemHorizontalLabel": "Horizontal",
@@ -1557,6 +1557,14 @@
   "projectRecommendationsTitle": "Siguientes pasos recomendados",
   "projectRecommendationUpdateError": "No se pudo actualizar la recomendación. Inténtalo de nuevo.",
   "projectShowcaseAiReportTitle": "Informe de IA",
+  "projectShowcaseBlockedLegend": "{count} bloqueadas",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} tarea bloqueada} other{{count} tareas bloqueadas}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
@@ -1565,14 +1573,39 @@
       }
     }
   },
+  "projectShowcaseCompletedLegend": "{count} completadas",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseDescriptionTitle": "Descripción",
+  "projectShowcaseDueDate": "Vence {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "projectShowcaseHealthScoreDescription": "Esta puntuación se basa en la velocidad de las tareas, los bloqueos y el tiempo que queda hasta la fecha límite.",
   "projectShowcaseHealthScoreTitle": "Puntuación de salud",
   "projectShowcaseNoResults": "Ningún proyecto coincide con tu búsqueda.",
   "projectShowcaseOneOnOneReviewsTab": "Revisiones 1:1",
+  "projectShowcaseOngoing": "En curso",
   "projectShowcaseProjectTasksTab": "Tareas del proyecto",
   "projectShowcaseRecommendationsTitle": "Recomendaciones",
   "projectShowcaseSearchHint": "Buscar proyectos",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} sesión} other{{count} sesiones}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseTasksCompleted": "{completed}/{total} tareas completadas",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
@@ -1584,6 +1617,15 @@
       }
     }
   },
+  "projectShowcaseUpdatedHoursAgo": "Actualizado hace {hours} h ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Utilidad",
   "projectShowcaseViewBlocker": "Ver bloqueo",
   "projectStatusActive": "Activo",
   "projectStatusArchived": "Archivado",

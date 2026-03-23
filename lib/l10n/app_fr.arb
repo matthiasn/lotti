@@ -1097,10 +1097,10 @@
   "designSystemHeaderBackActionLabel": "Retour",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
   "designSystemHeaderFigmaDefaultLabel": "Défaut Figma",
-  "designSystemHeaderMobileSectionTitle": "Mobile",
   "designSystemHeaderHelpActionLabel": "Aide",
   "designSystemHeaderLongTitleExample": "Voici un titre de page très long qui doit être tronqué avant la zone d'actions",
   "designSystemHeaderLongTitleLabel": "Titre long",
+  "designSystemHeaderMobileSectionTitle": "Mobile",
   "designSystemHeaderNotificationsActionLabel": "Notifications",
   "designSystemHeaderSearchActionLabel": "Recherche",
   "designSystemHorizontalLabel": "Horizontal",
@@ -1557,6 +1557,14 @@
   "projectRecommendationsTitle": "Prochaines étapes recommandées",
   "projectRecommendationUpdateError": "Impossible de mettre à jour la recommandation. Réessaie.",
   "projectShowcaseAiReportTitle": "Rapport IA",
+  "projectShowcaseBlockedLegend": "{count} bloquées",
+  "@projectShowcaseBlockedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseBlockedTaskCount": "{count, plural, one{{count} tâche bloquée} other{{count} tâches bloquées}}",
   "@projectShowcaseBlockedTaskCount": {
     "placeholders": {
@@ -1565,14 +1573,39 @@
       }
     }
   },
+  "projectShowcaseCompletedLegend": "{count} terminées",
+  "@projectShowcaseCompletedLegend": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseDescriptionTitle": "Description",
+  "projectShowcaseDueDate": "Échéance {date}",
+  "@projectShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "projectShowcaseHealthScoreDescription": "Ce score se base sur le rythme des tâches, les blocages et le temps restant avant l'échéance.",
   "projectShowcaseHealthScoreTitle": "Score de santé",
   "projectShowcaseNoResults": "Aucun projet ne correspond à ta recherche.",
   "projectShowcaseOneOnOneReviewsTab": "Revues 1:1",
+  "projectShowcaseOngoing": "En cours",
   "projectShowcaseProjectTasksTab": "Tâches du projet",
   "projectShowcaseRecommendationsTitle": "Recommandations",
   "projectShowcaseSearchHint": "Rechercher des projets",
+  "projectShowcaseSessionsCount": "{count, plural, one{{count} session} other{{count} sessions}}",
+  "@projectShowcaseSessionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectShowcaseTasksCompleted": "{completed}/{total} tâches terminées",
   "@projectShowcaseTasksCompleted": {
     "placeholders": {
@@ -1584,6 +1617,15 @@
       }
     }
   },
+  "projectShowcaseUpdatedHoursAgo": "Mis à jour il y a {hours} h ↻",
+  "@projectShowcaseUpdatedHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "projectShowcaseUsefulness": "Utilité",
   "projectShowcaseViewBlocker": "Voir le blocage",
   "projectStatusActive": "Actif",
   "projectStatusArchived": "Archivé",
