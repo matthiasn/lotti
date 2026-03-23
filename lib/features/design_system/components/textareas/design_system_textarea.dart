@@ -58,10 +58,18 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
       _controller = TextEditingController();
       _ownsController = true;
     }
+    if (widget.showCounter) {
+      _controller.addListener(_onTextChanged);
+    }
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     if (_ownsController) {
       _controller.dispose();
     }

@@ -2731,11 +2731,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemTextareaErrorSample => 'Acest câmp este obligatoriu';
 
   @override
-  String get designSystemTextareaHelperSample =>
-      'Introduceți mesajul dvs. aici';
+  String get designSystemTextareaHelperSample => 'Introdu mesajul tău aici';
 
   @override
-  String get designSystemTextareaHintSample => 'Scrieți ceva...';
+  String get designSystemTextareaHintSample => 'Scrie ceva...';
 
   @override
   String get designSystemTextareaLabelSample => 'Etichetă';
