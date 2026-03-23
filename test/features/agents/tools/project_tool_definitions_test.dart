@@ -92,14 +92,41 @@ void main() {
         expect(tool.description, contains('report'));
       });
 
-      test('requires markdown parameter and accepts optional tldr', () {
-        final properties = tool.parameters['properties'] as Map;
-        final markdownProp = properties['markdown'] as Map;
-        expect(markdownProp['type'], equals('string'));
-        final tldrProp = properties['tldr'] as Map;
-        expect(tldrProp['type'], equals('string'));
-        expect(tool.parameters['required'], contains('markdown'));
-      });
+      test(
+        'requires markdown, tldr, and health fields and accepts optional confidence',
+        () {
+          final properties = tool.parameters['properties'] as Map;
+          final markdownProp = properties['markdown'] as Map;
+          expect(markdownProp['type'], equals('string'));
+          final tldrProp = properties['tldr'] as Map;
+          expect(tldrProp['type'], equals('string'));
+          final healthBandProp = properties['health_band'] as Map;
+          expect(healthBandProp['type'], equals('string'));
+          expect(
+            healthBandProp['enum'],
+            containsAll([
+              'surviving',
+              'on_track',
+              'watch',
+              'at_risk',
+              'blocked',
+            ]),
+          );
+          final healthRationaleProp = properties['health_rationale'] as Map;
+          expect(healthRationaleProp['type'], equals('string'));
+          final healthConfidenceProp = properties['health_confidence'] as Map;
+          expect(healthConfidenceProp['type'], equals('number'));
+          expect(
+            tool.parameters['required'],
+            containsAll([
+              'markdown',
+              'tldr',
+              'health_band',
+              'health_rationale',
+            ]),
+          );
+        },
+      );
     });
 
     group('record_observations', () {

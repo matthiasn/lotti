@@ -3766,6 +3766,73 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectHealthTitle => 'Projekty';
 
   @override
+  String get projectHealthSectionTitle => 'Stav projektu';
+
+  @override
+  String get projectHealthBandSurviving => 'Drží se';
+
+  @override
+  String get projectHealthBandOnTrack => 'Na dobré cestě';
+
+  @override
+  String get projectHealthBandWatch => 'Sledovat';
+
+  @override
+  String get projectHealthBandAtRisk => 'V ohrožení';
+
+  @override
+  String get projectHealthBandBlocked => 'Blokováno';
+
+  @override
+  String get projectHealthReasonCompleted => 'Projekt je dokončený.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Projekt je pozastavený.';
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů stojí na místě',
+      few: '$count úkoly stojí na místě',
+      one: '$count úkol stojí na místě',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů je po termínu',
+      few: '$count úkoly jsou po termínu',
+      one: '$count úkol je po termínu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonTargetDatePassed => 'Cílové datum už uplynulo.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Poslední dobou není vidět žádný posun.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Souhrn projektu je zastaralý.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Projekt ještě nemá propojené úkoly.';
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Projekt se posouvá stabilně.';
+
+  @override
   String projectLinkedTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

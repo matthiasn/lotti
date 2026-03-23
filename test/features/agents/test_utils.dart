@@ -159,6 +159,7 @@ AgentReportEntity makeTestReport({
   String content = '# Test Report\n\nEverything is fine.',
   String? tldr,
   double? confidence,
+  Map<String, Object?> provenance = const {},
 }) {
   return AgentDomainEntity.agentReport(
         id: id,
@@ -169,6 +170,7 @@ AgentReportEntity makeTestReport({
         content: content,
         tldr: tldr,
         confidence: confidence,
+        provenance: provenance,
       )
       as AgentReportEntity;
 }

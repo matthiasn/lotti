@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -267,6 +268,9 @@ class _ProjectRow extends ConsumerWidget {
     final summaryAsync = ref.watch(
       projectAgentSummaryProvider(project.meta.id),
     );
+    final healthAsync = ref.watch(
+      projectHealthMetricsProvider(project.meta.id),
+    );
     final messages = context.messages;
 
     final taskCountText = countAsync.when(
@@ -275,6 +279,7 @@ class _ProjectRow extends ConsumerWidget {
       error: (_, _) => '—',
     );
     final summary = summaryAsync.asData?.value;
+    final healthMetrics = healthAsync.asData?.value;
 
     final targetText = project.data.targetDate != null
         ? ' · ${project.data.targetDate!.ymd}'
@@ -322,6 +327,14 @@ class _ProjectRow extends ConsumerWidget {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (healthMetrics != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: ProjectHealthIndicator(
+                          metrics: healthMetrics,
+                          showReason: false,
+                        ),
+                      ),
                     if (summary != null && summary.isSummaryOutdated)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),

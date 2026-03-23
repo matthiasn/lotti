@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -49,6 +50,9 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   String? _reportContent;
   String? _reportTldr;
+  String? _reportHealthBand;
+  String? _reportHealthRationale;
+  double? _reportHealthConfidence;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
   final _deferredItems = <Map<String, dynamic>>[];
@@ -149,6 +153,15 @@ class ProjectAgentStrategy extends ConversationStrategy {
   /// Extracts the TLDR published via `update_project_report`.
   String? extractReportTldr() => _reportTldr;
 
+  /// Extracts the health band published via `update_project_report`.
+  String? extractReportHealthBand() => _reportHealthBand;
+
+  /// Extracts the health rationale published via `update_project_report`.
+  String? extractReportHealthRationale() => _reportHealthRationale;
+
+  /// Extracts the optional health confidence from `update_project_report`.
+  double? extractReportHealthConfidence() => _reportHealthConfidence;
+
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
@@ -164,10 +177,20 @@ class ProjectAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final markdownValue = args['markdown'];
+    final markdownValue = args[ProjectAgentReportToolArgs.markdown];
     final markdown = markdownValue is String ? markdownValue.trim() : '';
-    final tldrValue = args['tldr'];
+    final tldrValue = args[ProjectAgentReportToolArgs.tldr];
     final tldr = tldrValue is String ? tldrValue.trim() : null;
+    final healthBandValue = args[ProjectAgentReportToolArgs.healthBand];
+    final healthBand = healthBandValue is String ? healthBandValue.trim() : '';
+    final healthRationaleValue =
+        args[ProjectAgentReportToolArgs.healthRationale];
+    final healthRationale = healthRationaleValue is String
+        ? healthRationaleValue.trim()
+        : '';
+    final healthConfidence = _parseHealthConfidence(
+      args[ProjectAgentReportToolArgs.healthConfidence],
+    );
 
     if (markdown.isEmpty) {
       const errorMsg =
@@ -181,10 +204,59 @@ class ProjectAgentStrategy extends ConversationStrategy {
       return;
     }
 
-    _reportContent = markdown;
-    if (tldr != null && tldr.isNotEmpty) {
-      _reportTldr = tldr;
+    if (tldr == null || tldr.isEmpty) {
+      const errorMsg =
+          'Error: "tldr" field is required and must not '
+          'be empty.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: ProjectAgentToolNames.updateProjectReport,
+        errorMessage: errorMsg,
+      );
+      return;
     }
+
+    if (!ProjectAgentHealthBandValues.values.contains(healthBand)) {
+      const errorMsg =
+          'Error: "health_band" is required and must be one of '
+          '`surviving`, `on_track`, `watch`, `at_risk`, or `blocked`.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: ProjectAgentToolNames.updateProjectReport,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    if (healthRationale.isEmpty) {
+      const errorMsg =
+          'Error: "health_rationale" field is required and must not '
+          'be empty.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: ProjectAgentToolNames.updateProjectReport,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    if (args.containsKey(ProjectAgentReportToolArgs.healthConfidence) &&
+        healthConfidence == null) {
+      const errorMsg =
+          'Error: "health_confidence" must be a number between 0 and 1.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: ProjectAgentToolNames.updateProjectReport,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    _reportContent = markdown;
+    _reportTldr = tldr;
+    _reportHealthBand = healthBand;
+    _reportHealthRationale = healthRationale;
+    _reportHealthConfidence = healthConfidence;
 
     manager.addToolResponse(
       toolCallId: callId,
@@ -251,6 +323,17 @@ class ProjectAgentStrategy extends ConversationStrategy {
     await _recordToolResultMessage(
       toolName: ProjectAgentToolNames.recordObservations,
     );
+  }
+
+  double? _parseHealthConfidence(Object? value) {
+    if (value == null) return null;
+    final parsed = switch (value) {
+      final num number => number.toDouble(),
+      final String text => double.tryParse(text.trim()),
+      _ => null,
+    };
+    if (parsed == null || parsed < 0 || parsed > 1) return null;
+    return parsed;
   }
 
   ObservationPriority _parseObservationPriority(String? raw) {

@@ -3,6 +3,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -82,6 +83,19 @@ Task makeTestTask({
         entryText: const EntryText(plainText: ''),
       )
       as Task;
+}
+
+/// Shared test factory for creating [ProjectHealthMetrics] instances.
+ProjectHealthMetrics makeTestProjectHealthMetrics({
+  ProjectHealthBand band = ProjectHealthBand.onTrack,
+  String rationale = 'The project is moving in the right direction.',
+  double? confidence,
+}) {
+  return ProjectHealthMetrics(
+    band: band,
+    rationale: rationale,
+    confidence: confidence,
+  );
 }
 
 /// Creates a [ProjectRecord] presentation model for testing.

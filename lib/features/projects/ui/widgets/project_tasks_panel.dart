@@ -16,79 +16,50 @@ class ProjectTasksPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: ShowcasePalette.surface(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ShowcasePalette.border(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return ShowcasePanel(
+      header: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          Expanded(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          context.messages.projectShowcaseProjectTasksTab,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(
-                                color: ShowcasePalette.highText(context),
-                              ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      CountDotBadge(
-                        count: record.highlightedTaskSummaries.length,
-                      ),
-                    ],
+                Flexible(
+                  child: Text(
+                    context.messages.projectShowcaseProjectTasksTab,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: ShowcasePalette.highText(context),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.timer_outlined,
-                  size: 20,
-                  color: ShowcasePalette.timeGreen(context),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  showcaseFormatDuration(
-                    record.highlightedTasksTotalDuration,
-                  ),
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: ShowcasePalette.timeGreen(context),
-                  ),
+                CountDotBadge(
+                  count: record.highlightedTaskSummaries.length,
                 ),
               ],
             ),
           ),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: ShowcasePalette.border(context),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.timer_outlined,
+            size: 20,
+            color: ShowcasePalette.timeGreen(context),
           ),
-          for (
-            var index = 0;
-            index < record.highlightedTaskSummaries.length;
-            index++
-          ) ...[
-            TaskSummaryRow(summary: record.highlightedTaskSummaries[index]),
-            if (index < record.highlightedTaskSummaries.length - 1)
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: ShowcasePalette.border(context),
-              ),
-          ],
+          const SizedBox(width: 2),
+          Text(
+            showcaseFormatDuration(
+              record.highlightedTasksTotalDuration,
+            ),
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: ShowcasePalette.timeGreen(context),
+            ),
+          ),
         ],
       ),
+      itemCount: record.highlightedTaskSummaries.length,
+      itemBuilder: (_, index) =>
+          TaskSummaryRow(summary: record.highlightedTaskSummaries[index]),
     );
   }
 }

@@ -1226,6 +1226,9 @@ void main() {
                       arguments: jsonEncode({
                         'markdown': '# Status Report\nAll good.',
                         'tldr': 'On track.',
+                        'health_band': 'on_track',
+                        'health_rationale': 'Recent work is landing well.',
+                        'health_confidence': 0.88,
                       }),
                     ),
                   ),
@@ -1264,6 +1267,11 @@ void main() {
         expect(reports, hasLength(1));
         expect(reports.first.content, '# Status Report\nAll good.');
         expect(reports.first.tldr, 'On track.');
+        expect(reports.first.provenance, {
+          'project_health_band': 'on_track',
+          'project_health_rationale': 'Recent work is landing well.',
+          'project_health_confidence': 0.88,
+        });
 
         final heads = captured.whereType<AgentReportHeadEntity>().toList();
         expect(heads, hasLength(1));
@@ -1518,7 +1526,13 @@ void main() {
                     type: ChatCompletionMessageToolCallType.function,
                     function: ChatCompletionMessageFunctionCall(
                       name: ProjectAgentToolNames.updateProjectReport,
-                      arguments: jsonEncode({'markdown': 'Updated report.'}),
+                      arguments: jsonEncode({
+                        'markdown': 'Updated report.',
+                        'tldr': 'Still waiting on confirmation.',
+                        'health_band': 'watch',
+                        'health_rationale':
+                            'A dependency still needs confirmation.',
+                      }),
                     ),
                   ),
                 ];

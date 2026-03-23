@@ -244,4 +244,69 @@ void main() {
       expect(find.text('•'), findsNothing);
     });
   });
+
+  group('ShowcasePanel', () {
+    testWidgets('renders header, dividers between items, and all items', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ShowcasePanel(
+            header: const Text('Panel Title'),
+            itemCount: 3,
+            itemBuilder: (_, index) => Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text('Item $index'),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Panel Title'), findsOneWidget);
+      expect(find.text('Item 0'), findsOneWidget);
+      expect(find.text('Item 1'), findsOneWidget);
+      expect(find.text('Item 2'), findsOneWidget);
+      // 1 divider below header + 2 dividers between 3 items = 3 total
+      expect(find.byType(Divider), findsNWidgets(3));
+    });
+
+    testWidgets('renders only header divider when itemCount is zero', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ShowcasePanel(
+            header: const Text('Empty'),
+            itemCount: 0,
+            itemBuilder: (_, _) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Empty'), findsOneWidget);
+      // Only the header divider
+      expect(find.byType(Divider), findsOneWidget);
+    });
+
+    testWidgets('renders no inter-item divider for a single item', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ShowcasePanel(
+            header: const Text('Solo'),
+            itemCount: 1,
+            itemBuilder: (_, _) => const Text('Only item'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Only item'), findsOneWidget);
+      // 1 divider below header, 0 between items
+      expect(find.byType(Divider), findsOneWidget);
+    });
+  });
 }

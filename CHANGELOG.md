@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.932] - 2026-03-23
+### Changed
+- Projects now expose a user-facing health band (`Surviving`, `On Track`,
+  `Watch`, `At Risk`, `Blocked`) in the tasks-page project header and project
+  detail page based on the latest project-agent report.
+
 ## [0.9.931] - 2026-03-23
 ### Added
 - Qwen 3.5 Plus model: added Alibaba Cloud's advanced multimodal reasoning

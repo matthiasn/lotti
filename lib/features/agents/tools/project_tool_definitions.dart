@@ -1,5 +1,6 @@
 // Tool definitions for the project agent.
 
+import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tool name constants used by the project agent.
@@ -18,23 +19,49 @@ const projectAgentTools = <AgentToolDefinition>[
     description:
         'Publish the updated project report. You MUST call this tool at '
         'the end of every wake with the full, updated markdown report. '
-        'Include a brief tldr (1-2 sentences) summarizing the most '
-        'important change since the last report.',
+        'Include a brief tldr (1-3 sentences) summarizing the most '
+        'important change since the last report, plus the user-facing '
+        'project health band and a concise rationale. The health band is '
+        'shown directly in the UI, so choose the best fit based on your '
+        'overall assessment of the project. The tldr is shown in the '
+        'collapsed report view, so it must stand on its own.',
     parameters: {
       'type': 'object',
       'properties': {
-        'markdown': {
+        ProjectAgentReportToolArgs.markdown: {
           'type': 'string',
           'description':
               'The full markdown content of the updated project report.',
         },
-        'tldr': {
+        ProjectAgentReportToolArgs.tldr: {
           'type': 'string',
           'description':
-              'A brief 1-2 sentence summary of the most important change.',
+              'A concise 1-3 sentence overview of the project state. This is '
+              'shown in the collapsed view, so make it useful on its own.',
+        },
+        ProjectAgentReportToolArgs.healthBand: {
+          'type': 'string',
+          'enum': ProjectAgentHealthBandValues.values,
+          'description':
+              'The overall project health band. Must be one of '
+              '`surviving`, `on_track`, `watch`, `at_risk`, or `blocked`.',
+        },
+        ProjectAgentReportToolArgs.healthRationale: {
+          'type': 'string',
+          'description':
+              'A short user-facing explanation of why this health band fits '
+              'right now. This is shown directly in the UI under the band, '
+              'so mention the main reason in plain language.',
+        },
+        ProjectAgentReportToolArgs.healthConfidence: {
+          'type': 'number',
+          'minimum': 0,
+          'maximum': 1,
+          'description':
+              'Optional confidence in the health assessment, from 0 to 1.',
         },
       },
-      'required': ['markdown'],
+      'required': ProjectAgentReportToolArgs.required,
     },
   ),
   AgentToolDefinition(
