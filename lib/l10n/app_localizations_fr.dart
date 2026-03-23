@@ -2483,6 +2483,31 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vues du calendrier';
 
   @override
+  String get designSystemCaptionDescriptionSample =>
+      'La suppression de tous les utilisateurs a dépublié ce projet. Ajoute des utilisateurs pour republier.';
+
+  @override
+  String get designSystemCaptionIconLeftLabel => 'Icône à gauche';
+
+  @override
+  String get designSystemCaptionIconTopLabel => 'Icône en haut';
+
+  @override
+  String get designSystemCaptionNoIconLabel => 'Sans icône';
+
+  @override
+  String get designSystemCaptionTitleSample => 'Titre';
+
+  @override
+  String get designSystemCaptionVariantsTitle => 'Variantes de caption';
+
+  @override
+  String get designSystemCaptionWithActionsLabel => 'Avec actions';
+
+  @override
+  String get designSystemCaptionWithoutActionsLabel => 'Sans actions';
+
+  @override
   String get designSystemCheckboxLabel => 'Case à cocher';
 
   @override

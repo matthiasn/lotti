@@ -2451,6 +2451,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vizualizări calendar';
 
   @override
+  String get designSystemCaptionDescriptionSample =>
+      'Eliminarea tuturor utilizatorilor a retras publicarea acestui proiect. Adăugați utilizatori pentru a republica.';
+
+  @override
+  String get designSystemCaptionIconLeftLabel => 'Pictogramă stânga';
+
+  @override
+  String get designSystemCaptionIconTopLabel => 'Pictogramă sus';
+
+  @override
+  String get designSystemCaptionNoIconLabel => 'Fără pictogramă';
+
+  @override
+  String get designSystemCaptionTitleSample => 'Titlu';
+
+  @override
+  String get designSystemCaptionVariantsTitle => 'Variante de caption';
+
+  @override
+  String get designSystemCaptionWithActionsLabel => 'Cu acțiuni';
+
+  @override
+  String get designSystemCaptionWithoutActionsLabel => 'Fără acțiuni';
+
+  @override
   String get designSystemCheckboxLabel => 'Casetă de selectare';
 
   @override

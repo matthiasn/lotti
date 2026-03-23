@@ -88,6 +88,9 @@ void main() {
       final listComponent = components.singleWhere(
         (component) => component.name == 'List',
       );
+      final captionComponent = components.singleWhere(
+        (component) => component.name == 'Caption',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -116,6 +119,7 @@ void main() {
         'Spinner & loaders',
         'List',
         'Time picker',
+        'Caption',
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(avatarComponent.useCases.single.name, 'Overview');
@@ -140,6 +144,7 @@ void main() {
       expect(spinnerComponent.useCases.single.name, 'Overview');
       expect(timePickerComponent.useCases.single.name, 'Overview');
       expect(listComponent.useCases.single.name, 'Overview');
+      expect(captionComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(
