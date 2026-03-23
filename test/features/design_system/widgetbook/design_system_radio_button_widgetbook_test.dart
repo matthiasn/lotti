@@ -8,6 +8,11 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('buildDesignSystemRadioButtonWidgetbookComponent', () {
+    const sizeScaleDefaultKey = Key('radio-size-scale-default');
+    const sizeScaleDefaultSelectedKey = Key(
+      'radio-size-scale-default-selected',
+    );
+
     testWidgets('builds the radio overview use case', (tester) async {
       final component = buildDesignSystemRadioButtonWidgetbookComponent();
       final useCase = component.useCases.single;
@@ -29,10 +34,76 @@ void main() {
       expect(find.text('Disabled'), findsOneWidget);
       expect(find.byType(DesignSystemRadioButton), findsAtLeastNWidgets(1));
 
-      await tester.tap(find.byType(DesignSystemRadioButton).first);
+      expect(
+        _radioSemantics(tester, sizeScaleDefaultKey).properties.selected,
+        isFalse,
+      );
+      expect(
+        _radioSemantics(
+          tester,
+          sizeScaleDefaultSelectedKey,
+        ).properties.selected,
+        isTrue,
+      );
+
+      await tester.tap(find.byKey(sizeScaleDefaultKey));
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+      expect(
+        _radioSemantics(tester, sizeScaleDefaultKey).properties.selected,
+        isTrue,
+      );
+      expect(
+        _radioSemantics(
+          tester,
+          sizeScaleDefaultSelectedKey,
+        ).properties.selected,
+        isFalse,
+      );
+
+      await tester.tap(find.byKey(sizeScaleDefaultKey));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        _radioSemantics(tester, sizeScaleDefaultKey).properties.selected,
+        isTrue,
+      );
+      expect(
+        _radioSemantics(
+          tester,
+          sizeScaleDefaultSelectedKey,
+        ).properties.selected,
+        isFalse,
+      );
+
+      await tester.tap(find.byKey(sizeScaleDefaultSelectedKey));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        _radioSemantics(tester, sizeScaleDefaultKey).properties.selected,
+        isFalse,
+      );
+      expect(
+        _radioSemantics(
+          tester,
+          sizeScaleDefaultSelectedKey,
+        ).properties.selected,
+        isTrue,
+      );
     });
   });
+}
+
+Semantics _radioSemantics(WidgetTester tester, Key key) {
+  return tester.widget<Semantics>(
+    find.descendant(
+      of: find.byKey(key),
+      matching: find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.button == true,
+      ),
+    ),
+  );
 }

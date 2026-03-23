@@ -120,6 +120,10 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     final toggle = Material(
       color: Colors.transparent,
       child: InkWell(
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        splashColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         onTap: enabled ? () => widget.onChanged(!widget.value) : null,
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
@@ -304,17 +308,29 @@ class _ToggleVariantSpec {
           tokens.colors.interactive.pressed,
       },
       false => switch (visualState) {
-        DesignSystemToggleVisualState.idle => tokens.colors.background.level02,
+        DesignSystemToggleVisualState.idle => Colors.transparent,
         DesignSystemToggleVisualState.hover => tokens.colors.surface.hover,
         DesignSystemToggleVisualState.pressed =>
           tokens.colors.surface.focusPressed,
       },
     };
+    final trackBorderColor = switch (value) {
+      true => tokens.colors.decorative.level02,
+      false => switch (visualState) {
+        DesignSystemToggleVisualState.idle => tokens.colors.text.mediumEmphasis,
+        DesignSystemToggleVisualState.hover =>
+          tokens.colors.text.mediumEmphasis,
+        DesignSystemToggleVisualState.pressed =>
+          tokens.colors.interactive.pressed,
+      },
+    };
 
     return _ToggleVariantSpec(
       trackColor: trackColor,
-      trackBorderColor: value ? null : tokens.colors.decorative.level02,
-      thumbColor: tokens.colors.background.level01,
+      trackBorderColor: trackBorderColor,
+      thumbColor: value
+          ? tokens.colors.text.onInteractiveAlert
+          : tokens.colors.text.highEmphasis,
       thumbBorderColor: tokens.colors.decorative.level02,
       labelColor: tokens.colors.text.highEmphasis,
       iconColor: tokens.colors.text.mediumEmphasis,

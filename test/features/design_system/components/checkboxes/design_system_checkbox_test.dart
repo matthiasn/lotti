@@ -234,7 +234,51 @@ void main() {
       expect(decoration.color, dsTokensLight.colors.surface.hover);
       expect(
         decoration.border!.top.color,
-        dsTokensLight.colors.interactive.hover,
+        dsTokensLight.colors.interactive.enabled,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemCheckbox),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uses the pressed unchecked fill for click feedback', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemCheckbox(
+            value: false,
+            label: 'Accept terms',
+            forcedState: DesignSystemCheckboxVisualState.pressed,
+            onChanged: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byType(DesignSystemCheckbox),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final decoration = decoratedBox.decoration as BoxDecoration;
+
+      expect(decoration.color, dsTokensLight.colors.surface.focusPressed);
+      expect(
+        decoration.border!.top.color,
+        dsTokensLight.colors.interactive.pressed,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemCheckbox),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -264,7 +308,7 @@ void main() {
       expect(decoration.color, dsTokensLight.colors.surface.hover);
       expect(
         decoration.border!.top.color,
-        dsTokensLight.colors.interactive.hover,
+        dsTokensLight.colors.interactive.enabled,
       );
 
       enabled.value = false;

@@ -64,7 +64,27 @@ void main() {
 
       expect(find.text('2025'), findsOneWidget);
       expect(tester.takeException(), isNull);
-      expect(find.byType(DesignSystemButton), findsAtLeastNWidgets(2));
+      expect(find.byType(DesignSystemButton), findsOneWidget);
+      final actionSlotSize = tester.getSize(
+        find.byKey(const Key('collapsed-sidebar-action-slot')),
+      );
+      final actionButtonSize = tester.getSize(
+        find.byKey(const Key('collapsed-sidebar-new-button')),
+      );
+      final collapsedButton = find.byKey(
+        const Key('collapsed-sidebar-new-button'),
+      );
+      final collapsedPlusIcon = find.descendant(
+        of: collapsedButton,
+        matching: find.byIcon(Icons.add_rounded),
+      );
+      final buttonCenter = tester.getCenter(collapsedButton);
+      final iconCenter = tester.getCenter(collapsedPlusIcon);
+
+      expect(actionSlotSize.height, 44);
+      expect(actionSlotSize, actionButtonSize);
+      expect(iconCenter.dx, moreOrLessEquals(buttonCenter.dx, epsilon: 0.01));
+      expect(iconCenter.dy, moreOrLessEquals(buttonCenter.dy, epsilon: 0.01));
     });
   });
 }

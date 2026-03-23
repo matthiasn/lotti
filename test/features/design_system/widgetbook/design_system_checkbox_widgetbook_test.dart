@@ -27,10 +27,60 @@ void main() {
       expect(find.text('Checkbox label'), findsWidgets);
       expect(find.text('Disabled'), findsOneWidget);
 
+      final initialGlyphCount = find.byType(CustomPaint).evaluate().length;
       await tester.tap(find.byType(DesignSystemCheckbox).first);
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+      expect(find.byType(CustomPaint).evaluate().length, initialGlyphCount + 1);
     });
+
+    testWidgets(
+      'preserves interactive checkbox state across overview rebuilds',
+      (tester) async {
+        final component = buildDesignSystemCheckboxWidgetbookComponent();
+        final useCase = component.useCases.single;
+
+        Widget buildOverview() => makeTestableWidgetWithScaffold(
+          Builder(builder: useCase.builder),
+          theme: DesignSystemTheme.light(),
+        );
+
+        await tester.pumpWidget(buildOverview());
+
+        expect(
+          tester
+              .widget<DesignSystemCheckbox>(
+                find.byType(DesignSystemCheckbox).first,
+              )
+              .value,
+          isFalse,
+        );
+
+        await tester.tap(find.byType(DesignSystemCheckbox).first);
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<DesignSystemCheckbox>(
+                find.byType(DesignSystemCheckbox).first,
+              )
+              .value,
+          isTrue,
+        );
+
+        await tester.pumpWidget(buildOverview());
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<DesignSystemCheckbox>(
+                find.byType(DesignSystemCheckbox).first,
+              )
+              .value,
+          isTrue,
+        );
+      },
+    );
   });
 }

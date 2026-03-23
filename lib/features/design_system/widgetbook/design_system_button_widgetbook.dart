@@ -27,43 +27,50 @@ import 'package:lotti/features/design_system/widgetbook/design_system_typography
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildDesignSystemWidgetbookFolder() {
+  final children =
+      <WidgetbookNode>[
+        buildDesignSystemTypographyWidgetbookComponent(),
+        WidgetbookComponent(
+          name: 'Buttons',
+          useCases: [
+            WidgetbookUseCase(
+              name: 'Overview',
+              builder: (context) => const _ButtonOverviewPage(),
+            ),
+          ],
+        ),
+        buildDesignSystemAvatarWidgetbookComponent(),
+        buildDesignSystemBrandingWidgetbookComponent(),
+        buildDesignSystemBadgeWidgetbookComponent(),
+        buildDesignSystemChipWidgetbookComponent(),
+        buildDesignSystemCaptionWidgetbookComponent(),
+        buildDesignSystemBreadcrumbsWidgetbookComponent(),
+        buildDesignSystemHeaderWidgetbookComponent(),
+        buildDesignSystemSearchWidgetbookComponent(),
+        buildDesignSystemToastWidgetbookComponent(),
+        buildDesignSystemDividerWidgetbookComponent(),
+        buildDesignSystemDropdownWidgetbookComponent(),
+        buildDesignSystemSplitButtonWidgetbookComponent(),
+        buildDesignSystemTabWidgetbookComponent(),
+        buildDesignSystemListItemWidgetbookComponent(),
+        buildDesignSystemNavigationSidebarWidgetbookComponent(),
+        buildDesignSystemNavigationTabBarWidgetbookComponent(),
+        buildDesignSystemCalendarPickerWidgetbookComponent(),
+        buildDesignSystemProgressBarWidgetbookComponent(),
+        buildDesignSystemToggleWidgetbookComponent(),
+        buildDesignSystemRadioButtonWidgetbookComponent(),
+        buildDesignSystemCheckboxWidgetbookComponent(),
+        buildDesignSystemSpinnerWidgetbookComponent(),
+        buildDesignSystemTimePickerWidgetbookComponent(),
+      ]..sort(
+        (left, right) => left.name.toLowerCase().compareTo(
+          right.name.toLowerCase(),
+        ),
+      );
+
   return WidgetbookFolder(
     name: 'Design System',
-    children: [
-      buildDesignSystemTypographyWidgetbookComponent(),
-      WidgetbookComponent(
-        name: 'Buttons',
-        useCases: [
-          WidgetbookUseCase(
-            name: 'Overview',
-            builder: (context) => const _ButtonOverviewPage(),
-          ),
-        ],
-      ),
-      buildDesignSystemAvatarWidgetbookComponent(),
-      buildDesignSystemBrandingWidgetbookComponent(),
-      buildDesignSystemBadgeWidgetbookComponent(),
-      buildDesignSystemChipWidgetbookComponent(),
-      buildDesignSystemBreadcrumbsWidgetbookComponent(),
-      buildDesignSystemHeaderWidgetbookComponent(),
-      buildDesignSystemSearchWidgetbookComponent(),
-      buildDesignSystemToastWidgetbookComponent(),
-      buildDesignSystemDividerWidgetbookComponent(),
-      buildDesignSystemDropdownWidgetbookComponent(),
-      buildDesignSystemSplitButtonWidgetbookComponent(),
-      buildDesignSystemTabWidgetbookComponent(),
-      buildDesignSystemNavigationSidebarWidgetbookComponent(),
-      buildDesignSystemNavigationTabBarWidgetbookComponent(),
-      buildDesignSystemCalendarPickerWidgetbookComponent(),
-      buildDesignSystemProgressBarWidgetbookComponent(),
-      buildDesignSystemToggleWidgetbookComponent(),
-      buildDesignSystemRadioButtonWidgetbookComponent(),
-      buildDesignSystemCheckboxWidgetbookComponent(),
-      buildDesignSystemSpinnerWidgetbookComponent(),
-      buildDesignSystemListItemWidgetbookComponent(),
-      buildDesignSystemTimePickerWidgetbookComponent(),
-      buildDesignSystemCaptionWidgetbookComponent(),
-    ],
+    children: children,
   );
 }
 

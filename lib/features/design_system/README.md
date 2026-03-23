@@ -55,6 +55,16 @@ import 'package:lotti/features/design_system/design_system.dart';
 - `utils/disabled_overlay.dart` — `Widget.withDisabledOpacity()` extension used
   by all interactive components for consistent disabled treatment.
 
+## Presentation Notes
+
+- Divider labels render in uppercase overline styling.
+- Search examples use the shared input-field geometry for the small and medium
+  size-scale and filled states.
+- Tab counters use the blue filled number-badge treatment with
+  `text.onInteractiveAlert`.
+- The collapsed navigation sidebar keeps the primary action in a centered 44px
+  slot so the Widgetbook preview matches the Figma geometry.
+
 ## Import Workflow
 
 Run:

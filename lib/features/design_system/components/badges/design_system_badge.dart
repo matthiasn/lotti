@@ -272,26 +272,30 @@ class _BadgeStyleSpec {
     required DesignSystemBadgeTone tone,
   }) {
     if (tone == DesignSystemBadgeTone.secondary) {
-      final color = tokens.colors.alert.info.defaultColor;
-      final background = tokens.colors.surface.enabled;
+      final accentColor = tokens.colors.alert.info.defaultColor;
+      final surfaceColor = tokens.colors.surface.enabled;
 
       return switch (type) {
         _DesignSystemBadgeType.dot => _BadgeStyleSpec(
-          backgroundColor: background,
+          backgroundColor: surfaceColor,
           foregroundColor: Colors.transparent,
           borderColor: null,
         ),
-        _DesignSystemBadgeType.number ||
+        _DesignSystemBadgeType.number => _BadgeStyleSpec(
+          backgroundColor: accentColor,
+          foregroundColor: tokens.colors.text.onInteractiveAlert,
+          borderColor: null,
+        ),
         _DesignSystemBadgeType.filled ||
         _DesignSystemBadgeType.icon => _BadgeStyleSpec(
-          backgroundColor: background,
-          foregroundColor: color,
+          backgroundColor: surfaceColor,
+          foregroundColor: accentColor,
           borderColor: null,
         ),
         _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
-          backgroundColor: background,
-          foregroundColor: color,
-          borderColor: color,
+          backgroundColor: surfaceColor,
+          foregroundColor: accentColor,
+          borderColor: accentColor,
         ),
       };
     }

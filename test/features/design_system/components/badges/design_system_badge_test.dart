@@ -75,11 +75,11 @@ void main() {
       final richText = _findTextNode(tester, '10');
 
       expect(_badgeSize(tester), const Size.square(20));
-      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      expect(decoration.color, dsTokensLight.colors.alert.info.defaultColor);
       expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.others.caption,
-        dsTokensLight.colors.alert.info.defaultColor,
+        dsTokensLight.colors.text.onInteractiveAlert,
       );
     });
 

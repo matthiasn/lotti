@@ -26,7 +26,37 @@ void main() {
       );
 
       expect(find.text('Type user'), findsOneWidget);
+      expect(
+        tester.getSize(find.byKey(const Key('design-system-search-shell'))),
+        const Size(244, 56),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dx,
+        closeTo(12, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dy,
+        closeTo(16, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.text('Type user')).dx,
+        closeTo(44, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.text('Type user')).dy,
+        closeTo(16, 0.1),
+      );
       expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+
+      final mediumEditableText = tester.widget<EditableText>(
+        find.byType(EditableText),
+      );
+      final mediumTextField = tester.widget<TextField>(find.byType(TextField));
+      expect(mediumEditableText.style.height, 1);
+      expect(
+        mediumTextField.textAlignVertical,
+        const TextAlignVertical(y: -0.25),
+      );
 
       await tester.enterText(find.byType(TextField), 'Lotti search');
       await tester.pump();
@@ -78,12 +108,34 @@ void main() {
       final editableText = tester.widget<EditableText>(
         find.byType(EditableText),
       );
+      final textField = tester.widget<TextField>(find.byType(TextField));
 
       expect(
         editableText.style.fontSize,
         dsTokensLight.typography.size.bodySmall,
       );
-
+      expect(editableText.style.height, 1);
+      expect(textField.textAlignVertical, const TextAlignVertical(y: -0.25));
+      expect(
+        tester.getSize(find.byKey(const Key('design-system-search-shell'))),
+        const Size(244, 48),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dx,
+        closeTo(12, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dy,
+        closeTo(14, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.text('Lotti search')).dx,
+        closeTo(40, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.text('Lotti search')).dy,
+        closeTo(14, 0.1),
+      );
       await tester.tap(find.byIcon(Icons.search_rounded));
       await tester.pump();
 

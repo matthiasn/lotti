@@ -72,37 +72,41 @@ class _RadioButtonSizeScale extends StatelessWidget {
     final label = context.messages.designSystemRadioButtonLabel;
 
     return Wrap(
-      spacing: 24,
+      spacing: 48,
       runSpacing: 16,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _RadioButtonPreviewTile(
-          config: _RadioButtonPreviewConfig(
-            size: DesignSystemRadioButtonSize.defaultSize,
-            label: label,
-            showTooltipIcon: true,
-            selected: false,
-          ),
+        _InteractiveRadioButtonPreviewGroup(
+          configs: [
+            _RadioButtonPreviewConfig(
+              widgetKey: const Key('radio-size-scale-default'),
+              size: DesignSystemRadioButtonSize.defaultSize,
+              label: label,
+              showTooltipIcon: true,
+              selected: false,
+            ),
+            const _RadioButtonPreviewConfig(
+              widgetKey: Key('radio-size-scale-default-selected'),
+              size: DesignSystemRadioButtonSize.defaultSize,
+              selected: true,
+            ),
+          ],
         ),
-        _RadioButtonPreviewTile(
-          config: _RadioButtonPreviewConfig(
-            size: DesignSystemRadioButtonSize.large,
-            label: label,
-            showTooltipIcon: true,
-            selected: false,
-          ),
-        ),
-        const _RadioButtonPreviewTile(
-          config: _RadioButtonPreviewConfig(
-            size: DesignSystemRadioButtonSize.defaultSize,
-            selected: true,
-          ),
-        ),
-        const _RadioButtonPreviewTile(
-          config: _RadioButtonPreviewConfig(
-            size: DesignSystemRadioButtonSize.large,
-            selected: true,
-          ),
+        _InteractiveRadioButtonPreviewGroup(
+          configs: [
+            _RadioButtonPreviewConfig(
+              widgetKey: const Key('radio-size-scale-large'),
+              size: DesignSystemRadioButtonSize.large,
+              label: label,
+              showTooltipIcon: true,
+              selected: false,
+            ),
+            const _RadioButtonPreviewConfig(
+              widgetKey: Key('radio-size-scale-large-selected'),
+              size: DesignSystemRadioButtonSize.large,
+              selected: true,
+            ),
+          ],
         ),
       ],
     );
@@ -191,6 +195,7 @@ class _RadioButtonPreviewConfig {
     required this.size,
     required this.selected,
     this.label,
+    this.widgetKey,
     this.showTooltipIcon = false,
     this.enabled = true,
     this.forcedState,
@@ -199,6 +204,7 @@ class _RadioButtonPreviewConfig {
   final DesignSystemRadioButtonSize size;
   final bool selected;
   final String? label;
+  final Key? widgetKey;
   final bool showTooltipIcon;
   final bool enabled;
   final DesignSystemRadioButtonVisualState? forcedState;
@@ -207,6 +213,7 @@ class _RadioButtonPreviewConfig {
     DesignSystemRadioButtonSize? size,
     bool? selected,
     String? label,
+    Key? widgetKey,
     bool? showTooltipIcon,
     bool? enabled,
     DesignSystemRadioButtonVisualState? forcedState,
@@ -215,6 +222,7 @@ class _RadioButtonPreviewConfig {
       size: size ?? this.size,
       selected: selected ?? this.selected,
       label: label ?? this.label,
+      widgetKey: widgetKey ?? this.widgetKey,
       showTooltipIcon: showTooltipIcon ?? this.showTooltipIcon,
       enabled: enabled ?? this.enabled,
       forcedState: forcedState ?? this.forcedState,
@@ -301,6 +309,7 @@ class _RadioButtonPreviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesignSystemRadioButton(
+      key: config.widgetKey,
       selected: config.selected,
       size: config.size,
       label: config.label,
@@ -309,6 +318,54 @@ class _RadioButtonPreviewTile extends StatelessWidget {
       showTooltipIcon: config.showTooltipIcon,
       forcedState: config.forcedState,
       onPressed: config.enabled ? _noop : null,
+    );
+  }
+}
+
+class _InteractiveRadioButtonPreviewGroup extends StatefulWidget {
+  const _InteractiveRadioButtonPreviewGroup({
+    required this.configs,
+  });
+
+  final List<_RadioButtonPreviewConfig> configs;
+
+  @override
+  State<_InteractiveRadioButtonPreviewGroup> createState() =>
+      _InteractiveRadioButtonPreviewGroupState();
+}
+
+class _InteractiveRadioButtonPreviewGroupState
+    extends State<_InteractiveRadioButtonPreviewGroup> {
+  late int _selectedIndex = widget.configs.indexWhere(
+    (config) => config.selected,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 24,
+      runSpacing: 16,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (final (index, config) in widget.configs.indexed)
+          DesignSystemRadioButton(
+            key: config.widgetKey,
+            selected: index == _selectedIndex,
+            size: config.size,
+            label: config.label,
+            semanticsLabel:
+                config.label ?? context.messages.designSystemRadioButtonLabel,
+            showTooltipIcon: config.showTooltipIcon,
+            forcedState: config.forcedState,
+            onPressed: config.enabled
+                ? () {
+                    if (_selectedIndex != index) {
+                      setState(() => _selectedIndex = index);
+                    }
+                  }
+                : null,
+          ),
+      ],
     );
   }
 }
