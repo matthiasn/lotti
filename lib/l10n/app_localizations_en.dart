@@ -2511,6 +2511,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Activated';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'One line';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Subtitle';
+
+  @override
+  String get designSystemListItemTitleSample => 'Title';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Two lines';
+
+  @override
+  String get designSystemListItemVariantsTitle => 'List Item Variants';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'With divider';
+
+  @override
   String get designSystemMediumLabel => 'Medium';
 
   @override

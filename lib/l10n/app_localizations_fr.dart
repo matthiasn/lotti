@@ -2583,6 +2583,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemHoverLabel => 'Survol';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Activé';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'Une ligne';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Sous-titre';
+
+  @override
+  String get designSystemListItemTitleSample => 'Titre';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Deux lignes';
+
+  @override
+  String get designSystemListItemVariantsTitle =>
+      'Variantes d\'élément de liste';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'Avec séparateur';
+
+  @override
   String get designSystemMediumLabel => 'Moyen';
 
   @override

@@ -2527,6 +2527,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemHoverLabel => 'Přejetí';
 
   @override
+  String get designSystemListItemActivatedLabel => 'Aktivní';
+
+  @override
+  String get designSystemListItemOneLineLabel => 'Jednořádkový';
+
+  @override
+  String get designSystemListItemSubtitleSample => 'Podtitulek';
+
+  @override
+  String get designSystemListItemTitleSample => 'Název';
+
+  @override
+  String get designSystemListItemTwoLinesLabel => 'Dvouřádkový';
+
+  @override
+  String get designSystemListItemVariantsTitle => 'Varianty položky seznamu';
+
+  @override
+  String get designSystemListItemWithDividerLabel => 'S oddělovačem';
+
+  @override
   String get designSystemMediumLabel => 'Střední';
 
   @override
