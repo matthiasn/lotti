@@ -277,7 +277,7 @@ class _BadgeStyleSpec {
 
       return switch (type) {
         _DesignSystemBadgeType.dot => _BadgeStyleSpec(
-          backgroundColor: surfaceColor,
+          backgroundColor: accentColor,
           foregroundColor: Colors.transparent,
           borderColor: null,
         ),

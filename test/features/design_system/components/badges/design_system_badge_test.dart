@@ -60,6 +60,25 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('renders the secondary dot badge visibly from tokens', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.dot(
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+
+      expect(
+        decoration.color,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+      expect(decoration.border, isNull);
+    });
+
     testWidgets('renders the secondary number badge from tokens', (
       tester,
     ) async {

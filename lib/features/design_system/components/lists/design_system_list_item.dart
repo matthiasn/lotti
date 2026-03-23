@@ -112,12 +112,10 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                   child: Row(
                     children: [
                       if (widget.leadingExtra != null) widget.leadingExtra!,
-                      if (widget.leadingExtra != null &&
-                          widget.leading != null)
+                      if (widget.leadingExtra != null && widget.leading != null)
                         SizedBox(width: spec.itemGap),
                       if (widget.leading != null) widget.leading!,
-                      if (widget.leadingExtra != null ||
-                          widget.leading != null)
+                      if (widget.leadingExtra != null || widget.leading != null)
                         SizedBox(width: spec.itemGap),
                       Expanded(
                         child: _TitleContent(
