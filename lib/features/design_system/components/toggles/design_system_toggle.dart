@@ -47,6 +47,7 @@ class DesignSystemToggle extends StatefulWidget {
 class _DesignSystemToggleState extends State<DesignSystemToggle> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DesignSystemToggle oldWidget) {
@@ -59,6 +60,7 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     if (interactionModeChanged) {
       _hovered = false;
       _pressed = false;
+      _focused = false;
     }
   }
 
@@ -128,6 +130,9 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
             : null,
+        onFocusChange: widget.forcedState == null && enabled
+            ? (value) => setState(() => _focused = value)
+            : null,
         onHighlightChanged: widget.forcedState == null && enabled
             ? (value) => setState(() => _pressed = value)
             : null,
@@ -158,7 +163,7 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     if (_pressed) {
       return DesignSystemToggleVisualState.pressed;
     }
-    if (_hovered) {
+    if (_hovered || _focused) {
       return DesignSystemToggleVisualState.hover;
     }
     return DesignSystemToggleVisualState.idle;

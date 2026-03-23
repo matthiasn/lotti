@@ -34,6 +34,7 @@ class DesignSystemCheckbox extends StatefulWidget {
 class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
   bool _hovered = false;
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void didUpdateWidget(covariant DesignSystemCheckbox oldWidget) {
@@ -46,6 +47,7 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
     if (interactionModeChanged) {
       _hovered = false;
       _pressed = false;
+      _focused = false;
     }
   }
 
@@ -80,6 +82,9 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
         onTap: enabled ? _handleTap : null,
         onHover: widget.forcedState == null && enabled
             ? (value) => setState(() => _hovered = value)
+            : null,
+        onFocusChange: widget.forcedState == null && enabled
+            ? (value) => setState(() => _focused = value)
             : null,
         onHighlightChanged: widget.forcedState == null && enabled
             ? (value) => setState(() => _pressed = value)
@@ -141,7 +146,7 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
     if (_pressed) {
       return DesignSystemCheckboxVisualState.pressed;
     }
-    if (_hovered) {
+    if (_hovered || _focused) {
       return DesignSystemCheckboxVisualState.hover;
     }
     return DesignSystemCheckboxVisualState.idle;

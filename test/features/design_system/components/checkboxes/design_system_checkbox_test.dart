@@ -1,6 +1,7 @@
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -323,6 +324,40 @@ void main() {
         dsTokensLight.colors.text.mediumEmphasis,
       );
     });
+
+    testWidgets(
+      'uses the hover visuals for keyboard focus only on the control',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const DesignSystemCheckbox(
+              value: false,
+              label: 'Accept terms',
+              onChanged: _noop,
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+
+        final decoration = _checkboxDecoration(tester);
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+
+        expect(decoration.color, dsTokensLight.colors.surface.hover);
+        expect(
+          decoration.border!.top.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+        expect(
+          inkWell.overlayColor?.resolve({WidgetState.focused}),
+          Colors.transparent,
+        );
+      },
+    );
 
     test('asserts when neither a label nor semanticsLabel is provided', () {
       expect(
