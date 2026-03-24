@@ -2552,6 +2552,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemHoverLabel => 'Přejetí';
 
   @override
+  String get designSystemInputErrorSample => 'Toto pole je povinné';
+
+  @override
+  String get designSystemInputHelperSample => 'Zadej své jméno';
+
+  @override
+  String get designSystemInputHintSample => 'Zástupný text...';
+
+  @override
+  String get designSystemInputLabelSample => 'Štítek';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Varianty vstupního pole';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'S chybou';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'S nápovědou';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'S ikonami';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Aktivní';
 
   @override

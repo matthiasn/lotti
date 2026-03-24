@@ -2612,6 +2612,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemHoverLabel => 'Al pasar';
 
   @override
+  String get designSystemInputErrorSample => 'Este campo es obligatorio';
+
+  @override
+  String get designSystemInputHelperSample => 'Introduce tu nombre';
+
+  @override
+  String get designSystemInputHintSample => 'Marcador...';
+
+  @override
+  String get designSystemInputLabelSample => 'Etiqueta';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Variantes de campo de entrada';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'Con error';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'Con texto de ayuda';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'Con iconos';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Activado';
 
   @override

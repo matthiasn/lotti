@@ -4629,6 +4629,54 @@ abstract class AppLocalizations {
   /// **'Hover'**
   String get designSystemHoverLabel;
 
+  /// No description provided for @designSystemInputErrorSample.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get designSystemInputErrorSample;
+
+  /// No description provided for @designSystemInputHelperSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name'**
+  String get designSystemInputHelperSample;
+
+  /// No description provided for @designSystemInputHintSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholder...'**
+  String get designSystemInputHintSample;
+
+  /// No description provided for @designSystemInputLabelSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get designSystemInputLabelSample;
+
+  /// No description provided for @designSystemInputVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Input Variants'**
+  String get designSystemInputVariantsTitle;
+
+  /// No description provided for @designSystemInputWithErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With error'**
+  String get designSystemInputWithErrorLabel;
+
+  /// No description provided for @designSystemInputWithHelperLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With helper text'**
+  String get designSystemInputWithHelperLabel;
+
+  /// No description provided for @designSystemInputWithIconsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With icons'**
+  String get designSystemInputWithIconsLabel;
+
   /// No description provided for @designSystemListItemActivatedLabel.
   ///
   /// In en, this message translates to:

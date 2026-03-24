@@ -2574,6 +2574,30 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemInputErrorSample => 'Dieses Feld ist erforderlich';
+
+  @override
+  String get designSystemInputHelperSample => 'Gib deinen Namen ein';
+
+  @override
+  String get designSystemInputHintSample => 'Platzhalter...';
+
+  @override
+  String get designSystemInputLabelSample => 'Label';
+
+  @override
+  String get designSystemInputVariantsTitle => 'Eingabefeld-Varianten';
+
+  @override
+  String get designSystemInputWithErrorLabel => 'Mit Fehler';
+
+  @override
+  String get designSystemInputWithHelperLabel => 'Mit Hilfstext';
+
+  @override
+  String get designSystemInputWithIconsLabel => 'Mit Symbolen';
+
+  @override
   String get designSystemListItemActivatedLabel => 'Aktiviert';
 
   @override
