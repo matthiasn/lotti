@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_calendar_p
 import 'package:lotti/features/design_system/widgetbook/design_system_caption_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_context_menu_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_divider_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_header_widgetbook.dart';
@@ -70,6 +71,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemScrollbarWidgetbookComponent(),
         buildDesignSystemTextInputWidgetbookComponent(),
         buildDesignSystemTooltipIconWidgetbookComponent(),
+        buildDesignSystemContextMenuWidgetbookComponent(),
       ]..sort(
         (left, right) => left.name.toLowerCase().compareTo(
           right.name.toLowerCase(),

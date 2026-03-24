@@ -1081,6 +1081,8 @@
   "designSystemCaptionWithActionsLabel": "Con acciones",
   "designSystemCaptionWithoutActionsLabel": "Sin acciones",
   "designSystemCheckboxLabel": "Casilla de verificación",
+  "designSystemContextMenuDeleteLabel": "Eliminar",
+  "designSystemContextMenuVariantsTitle": "Variantes de menú contextual",
   "designSystemDateCardsTitle": "Tarjetas de fecha",
   "designSystemDefaultLabel": "Predeterminado",
   "designSystemDisabledLabel": "Desactivado",

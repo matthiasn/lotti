@@ -1081,6 +1081,8 @@
   "designSystemCaptionWithActionsLabel": "Cu acțiuni",
   "designSystemCaptionWithoutActionsLabel": "Fără acțiuni",
   "designSystemCheckboxLabel": "Casetă de selectare",
+  "designSystemContextMenuDeleteLabel": "Șterge",
+  "designSystemContextMenuVariantsTitle": "Variante meniu contextual",
   "designSystemDateCardsTitle": "Carduri de dată",
   "designSystemDefaultLabel": "Implicit",
   "designSystemDisabledLabel": "Dezactivat",

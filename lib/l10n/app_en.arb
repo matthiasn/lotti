@@ -1231,6 +1231,8 @@
   "designSystemCaptionWithActionsLabel": "With actions",
   "designSystemCaptionWithoutActionsLabel": "Without actions",
   "designSystemCheckboxLabel": "Checkbox",
+  "designSystemContextMenuDeleteLabel": "Delete",
+  "designSystemContextMenuVariantsTitle": "Context Menu Variants",
   "designSystemDateCardsTitle": "Date Cards",
   "designSystemDefaultLabel": "Default",
   "designSystemDisabledLabel": "Disabled",

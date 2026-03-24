@@ -886,6 +886,8 @@
   "designSystemCaptionWithActionsLabel": "S akcemi",
   "designSystemCaptionWithoutActionsLabel": "Bez akcí",
   "designSystemCheckboxLabel": "Zaškrtávací políčko",
+  "designSystemContextMenuDeleteLabel": "Smazat",
+  "designSystemContextMenuVariantsTitle": "Varianty kontextového menu",
   "designSystemDateCardsTitle": "Datumové karty",
   "designSystemDefaultLabel": "Výchozí",
   "designSystemDisabledLabel": "Zakázáno",

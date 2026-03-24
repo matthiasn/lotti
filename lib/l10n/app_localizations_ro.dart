@@ -2479,6 +2479,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemCheckboxLabel => 'Casetă de selectare';
 
   @override
+  String get designSystemContextMenuDeleteLabel => 'Șterge';
+
+  @override
+  String get designSystemContextMenuVariantsTitle =>
+      'Variante meniu contextual';
+
+  @override
   String get designSystemDateCardsTitle => 'Carduri de dată';
 
   @override

@@ -2439,6 +2439,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemCheckboxLabel => 'Checkbox';
 
   @override
+  String get designSystemContextMenuDeleteLabel => 'Delete';
+
+  @override
+  String get designSystemContextMenuVariantsTitle => 'Context Menu Variants';
+
+  @override
   String get designSystemDateCardsTitle => 'Date Cards';
 
   @override
