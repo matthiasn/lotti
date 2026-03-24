@@ -63,6 +63,9 @@ void main() {
             args: {
               'markdown': '# Project Report\nAll good.',
               'tldr': 'Everything is on track.',
+              'health_band': 'on_track',
+              'health_rationale': 'Recent work is landing cleanly.',
+              'health_confidence': 0.82,
             },
           ),
         ];
@@ -74,6 +77,12 @@ void main() {
 
         expect(strategy.extractReportContent(), '# Project Report\nAll good.');
         expect(strategy.extractReportTldr(), 'Everything is on track.');
+        expect(strategy.extractReportHealthBand(), 'on_track');
+        expect(
+          strategy.extractReportHealthRationale(),
+          'Recent work is landing cleanly.',
+        );
+        expect(strategy.extractReportHealthConfidence(), 0.82);
 
         verify(
           () => mockManager.addToolResponse(
@@ -87,7 +96,12 @@ void main() {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': ''},
+            args: {
+              'markdown': '',
+              'tldr': 'Short summary.',
+              'health_band': 'watch',
+              'health_rationale': 'Progress has slowed down.',
+            },
           ),
         ];
 
@@ -109,11 +123,14 @@ void main() {
         ).called(1);
       });
 
-      test('handles missing tldr gracefully', () async {
+      test('returns error when health fields are missing', () async {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': 'Some content'},
+            args: {
+              'markdown': 'Some content',
+              'tldr': 'Short summary.',
+            },
           ),
         ];
 
@@ -122,8 +139,49 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractReportContent(), 'Some content');
+        expect(strategy.extractReportContent(), isEmpty);
+        expect(strategy.extractReportHealthBand(), isNull);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('health_band'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns error when tldr is missing', () async {
+        final toolCalls = [
+          _makeToolCall(
+            name: ProjectAgentToolNames.updateProjectReport,
+            args: {
+              'markdown': 'Some content',
+              'health_band': 'watch',
+              'health_rationale': 'There is still uncertainty.',
+            },
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), isEmpty);
         expect(strategy.extractReportTldr(), isNull);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('tldr'),
+            ),
+          ),
+        ).called(1);
       });
     });
 
@@ -472,7 +530,15 @@ void main() {
       });
 
       test('parses markdown-wrapped JSON arguments', () async {
-        const wrappedJson = '```json\n{"markdown": "# Report"}\n```';
+        const wrappedJson = '''
+```json
+{
+  "markdown": "# Report",
+  "tldr": "Quick summary.",
+  "health_band": "watch",
+  "health_rationale": "There is still some uncertainty."
+}
+```''';
         final toolCalls = [
           const ChatCompletionMessageToolCall(
             id: 'call-1',
@@ -490,6 +556,7 @@ void main() {
         );
 
         expect(strategy.extractReportContent(), '# Report');
+        expect(strategy.extractReportHealthBand(), 'watch');
       });
     });
 
@@ -514,7 +581,12 @@ void main() {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': 'Report content'},
+            args: {
+              'markdown': 'Report content',
+              'tldr': 'Things are moving.',
+              'health_band': 'on_track',
+              'health_rationale': 'The work is in a good place.',
+            },
           ),
         ];
 
@@ -549,7 +621,12 @@ void main() {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': 'Report'},
+            args: {
+              'markdown': 'Report',
+              'tldr': 'Mixed signals overall.',
+              'health_band': 'watch',
+              'health_rationale': 'The signal is mixed.',
+            },
           ),
         ];
 
@@ -567,7 +644,12 @@ void main() {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': 'Report'},
+            args: {
+              'markdown': 'Report',
+              'tldr': 'Mixed signals overall.',
+              'health_band': 'watch',
+              'health_rationale': 'The signal is mixed.',
+            },
           ),
         ];
 
@@ -588,7 +670,12 @@ void main() {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
-            args: {'markdown': 'Report'},
+            args: {
+              'markdown': 'Report',
+              'tldr': 'Mixed signals overall.',
+              'health_band': 'watch',
+              'health_rationale': 'The signal is mixed.',
+            },
           ),
         ];
 

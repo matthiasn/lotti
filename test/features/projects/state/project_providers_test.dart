@@ -2,7 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -207,4 +213,113 @@ void main() {
       expect(result, 0);
     });
   });
+
+  group('projectHealthMetricsProvider', () {
+    const projectId = 'proj-health';
+    const agentId = 'agent-health';
+
+    test(
+      'returns null without reading the report provider when no project agent exists',
+      () async {
+        var reportRead = false;
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectAgentProvider(projectId).overrideWith((ref) async => null),
+            agentReportProvider(agentId).overrideWith((ref) async {
+              reportRead = true;
+              throw StateError('report provider should not be read');
+            }),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthMetricsProvider(projectId).future,
+        );
+
+        expect(result, isNull);
+        expect(reportRead, isFalse);
+      },
+    );
+
+    test('returns null when the project agent has no report yet', () async {
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          projectRepositoryProvider.overrideWithValue(mockRepo),
+          projectAgentProvider(projectId).overrideWith(
+            (ref) async => _makeProjectAgent(agentId),
+          ),
+          agentReportProvider(agentId).overrideWith((ref) async => null),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+
+      final result = await scopedContainer.read(
+        projectHealthMetricsProvider(projectId).future,
+      );
+
+      expect(result, isNull);
+    });
+
+    test(
+      'reads the health band from the latest project-agent report',
+      () async {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectAgentProvider(projectId).overrideWith(
+              (ref) async => _makeProjectAgent(agentId),
+            ),
+            agentReportProvider(agentId).overrideWith(
+              (ref) async => AgentDomainEntity.agentReport(
+                id: 'report-1',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 4, 2, 9),
+                vectorClock: null,
+                content: '# Status Report',
+                provenance: const {
+                  'project_health_band': 'blocked',
+                  'project_health_rationale':
+                      'A dependency is still blocking the next step.',
+                  'project_health_confidence': 0.91,
+                },
+              ),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthMetricsProvider(projectId).future,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.band, ProjectHealthBand.blocked);
+        expect(
+          result.rationale,
+          'A dependency is still blocking the next step.',
+        );
+        expect(result.confidence, 0.91);
+      },
+    );
+  });
+}
+
+AgentDomainEntity _makeProjectAgent(String agentId) {
+  return AgentDomainEntity.agent(
+    id: agentId,
+    agentId: agentId,
+    kind: 'project_agent',
+    displayName: 'Project Agent',
+    lifecycle: AgentLifecycle.active,
+    mode: AgentInteractionMode.autonomous,
+    allowedCategoryIds: const {},
+    currentStateId: 'state-1',
+    config: const AgentConfig(),
+    createdAt: DateTime(2026, 4, 2, 9),
+    updatedAt: DateTime(2026, 4, 2, 9),
+    vectorClock: null,
+  );
 }

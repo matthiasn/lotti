@@ -6,7 +6,7 @@ import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart
 /// ID. Computed getters derive the visible projects and groups from these
 /// values.
 class ProjectListDetailState {
-  const ProjectListDetailState({
+  ProjectListDetailState({
     required this.data,
     required this.searchQuery,
     required this.selectedProjectId,
@@ -16,16 +16,18 @@ class ProjectListDetailState {
   final String searchQuery;
   final String selectedProjectId;
 
-  ProjectRecord? get selectedProject {
-    final visible = visibleProjects;
+  /// Cached filtered project list. Computed lazily on first access and reused
+  /// by [selectedProject] and [visibleGroups].
+  late final List<ProjectRecord> visibleProjects = _computeVisibleProjects();
 
-    return visible
+  ProjectRecord? get selectedProject {
+    return visibleProjects
             .where((r) => r.project.meta.id == selectedProjectId)
             .firstOrNull ??
-        visible.firstOrNull;
+        visibleProjects.firstOrNull;
   }
 
-  List<ProjectRecord> get visibleProjects {
+  List<ProjectRecord> _computeVisibleProjects() {
     final query = searchQuery.trim().toLowerCase();
     if (query.isEmpty) {
       return data.projects;
@@ -40,7 +42,10 @@ class ProjectListDetailState {
     }).toList();
   }
 
-  List<ProjectGroup> get visibleGroups {
+  /// Cached grouped project list. Computed lazily on first access.
+  late final List<ProjectGroup> visibleGroups = _computeVisibleGroups();
+
+  List<ProjectGroup> _computeVisibleGroups() {
     final visible = visibleProjects;
     final byCategory = <String, List<ProjectRecord>>{};
 

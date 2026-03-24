@@ -1577,6 +1577,35 @@
     }
   },
   "projectHealthTitle": "Proyectos",
+  "projectHealthSectionTitle": "Salud del proyecto",
+  "projectHealthBandSurviving": "A flote",
+  "projectHealthBandOnTrack": "En marcha",
+  "projectHealthBandWatch": "Vigilar",
+  "projectHealthBandAtRisk": "En riesgo",
+  "projectHealthBandBlocked": "Bloqueado",
+  "projectHealthReasonCompleted": "El proyecto está terminado.",
+  "projectHealthReasonOnHold": "El proyecto está en pausa.",
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} tarea está atascada} other{{count} tareas están atascadas}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} tarea está vencida} other{{count} tareas están vencidas}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonTargetDatePassed": "La fecha objetivo ya pasó.",
+  "projectHealthReasonNoRecentProgress": "No ha habido progreso reciente.",
+  "projectHealthReasonSummaryOutdated": "El resumen del proyecto está desactualizado.",
+  "projectHealthReasonNoLinkedTasks": "El proyecto todavía no tiene tareas vinculadas.",
+  "projectHealthReasonSteadyProgress": "El proyecto avanza de forma constante.",
   "projectLinkedTaskCount": "{count, plural, one{{count} tarea vinculada} other{{count} tareas vinculadas}}",
   "@projectLinkedTaskCount": {
     "placeholders": {

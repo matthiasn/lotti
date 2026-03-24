@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.932" date="2026-03-23">
+      <description>
+          <p>Projects now show a compact health band at a glance in both the tasks-page project header and project detail page based on the latest project-agent report.</p>
+      </description>
+    </release>
     <release version="0.9.931" date="2026-03-23">
       <description>
           <p>Chinese AI Profile: added Qwen 3.5 Plus model and Chinese AI inference profile for Alibaba Cloud with multimodal capabilities (text, vision, audio, image generation). Simplified FTUE setup by removing automatic prompt creation — AI capabilities now use skill-based automation via inference profiles.</p>

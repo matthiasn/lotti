@@ -1577,6 +1577,35 @@
     }
   },
   "projectHealthTitle": "Proiecte",
+  "projectHealthSectionTitle": "Starea proiectului",
+  "projectHealthBandSurviving": "Se menține",
+  "projectHealthBandOnTrack": "Pe drumul bun",
+  "projectHealthBandWatch": "De urmărit",
+  "projectHealthBandAtRisk": "Cu risc",
+  "projectHealthBandBlocked": "Blocat",
+  "projectHealthReasonCompleted": "Proiectul este finalizat.",
+  "projectHealthReasonOnHold": "Proiectul este pus în așteptare.",
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} sarcină este blocată} few{{count} sarcini sunt blocate} other{{count} de sarcini sunt blocate}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} sarcină este întârziată} few{{count} sarcini sunt întârziate} other{{count} de sarcini sunt întârziate}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonTargetDatePassed": "Data-țintă a fost depășită.",
+  "projectHealthReasonNoRecentProgress": "Nu a existat progres recent.",
+  "projectHealthReasonSummaryOutdated": "Rezumatul proiectului nu mai este actualizat.",
+  "projectHealthReasonNoLinkedTasks": "Proiectul nu are încă sarcini asociate.",
+  "projectHealthReasonSteadyProgress": "Proiectul avansează constant.",
   "projectLinkedTaskCount": "{count, plural, one{{count} sarcină asociată} few{{count} sarcini asociate} other{{count} de sarcini asociate}}",
   "@projectLinkedTaskCount": {
     "placeholders": {

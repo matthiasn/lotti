@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -317,6 +318,9 @@ class ProjectAgentWorkflow {
       // 9. Persist all wake outputs.
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
+      final reportHealthBand = strategy.extractReportHealthBand();
+      final reportHealthRationale = strategy.extractReportHealthRationale();
+      final reportHealthConfidence = strategy.extractReportHealthConfidence();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
       await syncService.runInTransaction(() async {
@@ -363,6 +367,17 @@ class ProjectAgentWorkflow {
               vectorClock: null,
               content: reportContent,
               tldr: reportTldr,
+              provenance: <String, Object?>{
+                ProjectAgentReportProvenanceKeys.healthBand: reportHealthBand,
+                ProjectAgentReportProvenanceKeys.healthRationale:
+                    reportHealthRationale,
+                ...?reportHealthConfidence == null
+                    ? null
+                    : <String, Object?>{
+                        ProjectAgentReportProvenanceKeys.healthConfidence:
+                            reportHealthConfidence,
+                      },
+              },
               threadId: threadId,
             ),
           );
@@ -610,6 +625,21 @@ with the full updated report as markdown. Structure the report as follows:
 5. **⚠️ Risks & Blockers** — Issues that could delay the project.
    Omit if none.
 6. **📅 Next Steps** — Recommended priorities for the next work cycle.
+
+## Health Assessment
+
+Every `update_project_report` call must also include:
+
+- `tldr`: a concise 1-3 sentence overview shown in the collapsed report view
+- `health_band`: one of `surviving`, `on_track`, `watch`, `at_risk`, or
+  `blocked`
+- `health_rationale`: a short user-facing explanation of why the band fits
+  right now
+- `health_confidence`: optional number from 0 to 1
+
+You are the source of truth for the user-facing project health band. Do not
+treat this as a mechanical task-count rubric. Use your best overall judgment
+from the project context, linked task reports, and the latest changes.
 
 ## Observations
 

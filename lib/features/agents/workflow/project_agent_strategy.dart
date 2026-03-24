@@ -6,9 +6,11 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -49,6 +51,9 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   String? _reportContent;
   String? _reportTldr;
+  String? _reportHealthBand;
+  String? _reportHealthRationale;
+  double? _reportHealthConfidence;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
   final _deferredItems = <Map<String, dynamic>>[];
@@ -149,6 +154,15 @@ class ProjectAgentStrategy extends ConversationStrategy {
   /// Extracts the TLDR published via `update_project_report`.
   String? extractReportTldr() => _reportTldr;
 
+  /// Extracts the health band published via `update_project_report`.
+  String? extractReportHealthBand() => _reportHealthBand;
+
+  /// Extracts the health rationale published via `update_project_report`.
+  String? extractReportHealthRationale() => _reportHealthRationale;
+
+  /// Extracts the optional health confidence from `update_project_report`.
+  double? extractReportHealthConfidence() => _reportHealthConfidence;
+
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
@@ -164,27 +178,63 @@ class ProjectAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final markdownValue = args['markdown'];
+    final markdownValue = args[ProjectAgentReportToolArgs.markdown];
     final markdown = markdownValue is String ? markdownValue.trim() : '';
-    final tldrValue = args['tldr'];
+    final tldrValue = args[ProjectAgentReportToolArgs.tldr];
     final tldr = tldrValue is String ? tldrValue.trim() : null;
+    final healthBandValue = args[ProjectAgentReportToolArgs.healthBand];
+    final healthBand = healthBandValue is String ? healthBandValue.trim() : '';
+    final healthRationaleValue =
+        args[ProjectAgentReportToolArgs.healthRationale];
+    final healthRationale = healthRationaleValue is String
+        ? healthRationaleValue.trim()
+        : '';
+    final healthConfidence = parseHealthConfidence(
+      args[ProjectAgentReportToolArgs.healthConfidence],
+    );
 
-    if (markdown.isEmpty) {
-      const errorMsg =
-          'Error: "markdown" field is required and must not '
-          'be empty.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
+    final validations = [
+      (
+        markdown.isEmpty,
+        'Error: "markdown" field is required and must not be empty.',
+      ),
+      (
+        tldr == null || tldr.isEmpty,
+        'Error: "tldr" field is required and must not be empty.',
+      ),
+      (
+        !ProjectAgentHealthBandValues.values.contains(healthBand),
+        'Error: "health_band" is required and must be one of '
+            '`surviving`, `on_track`, `watch`, `at_risk`, or `blocked`.',
+      ),
+      (
+        healthRationale.isEmpty,
+        'Error: "health_rationale" field is required and must not be empty.',
+      ),
+      (
+        args.containsKey(ProjectAgentReportToolArgs.healthConfidence) &&
+            healthConfidence == null,
+        'Error: "health_confidence" must be a number between 0 and 1.',
+      ),
+    ];
+
+    for (final (failed, errorMsg) in validations) {
+      if (failed) {
+        await _rejectToolCall(
+          callId: callId,
+          toolName: ProjectAgentToolNames.updateProjectReport,
+          errorMsg: errorMsg,
+          manager: manager,
+        );
+        return;
+      }
     }
 
     _reportContent = markdown;
-    if (tldr != null && tldr.isNotEmpty) {
-      _reportTldr = tldr;
-    }
+    _reportTldr = tldr;
+    _reportHealthBand = healthBand;
+    _reportHealthRationale = healthRationale;
+    _reportHealthConfidence = healthConfidence;
 
     manager.addToolResponse(
       toolCallId: callId,
@@ -204,11 +254,11 @@ class ProjectAgentStrategy extends ConversationStrategy {
   ) async {
     final rawList = args['observations'];
     if (rawList is! List || rawList.isEmpty) {
-      const errorMsg = 'Error: "observations" must be a non-empty array.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
+      await _rejectToolCall(
+        callId: callId,
         toolName: ProjectAgentToolNames.recordObservations,
-        errorMessage: errorMsg,
+        errorMsg: 'Error: "observations" must be a non-empty array.',
+        manager: manager,
       );
       return;
     }
@@ -269,6 +319,18 @@ class ProjectAgentStrategy extends ConversationStrategy {
       if (value.name.toLowerCase() == normalized) return value;
     }
     return ObservationCategory.operational;
+  }
+
+  // ── Error helpers ──────────────────────────────────────────────────────────
+
+  Future<void> _rejectToolCall({
+    required String callId,
+    required String toolName,
+    required String errorMsg,
+    required ConversationManager manager,
+  }) async {
+    manager.addToolResponse(toolCallId: callId, response: errorMsg);
+    await _recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
   }
 
   // ── JSON argument parsing ──────────────────────────────────────────────────

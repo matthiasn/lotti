@@ -15,76 +15,48 @@ class ReviewSessionsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: ShowcasePalette.surface(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ShowcasePalette.border(context),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return ShowcasePanel(
+      header: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          Expanded(
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          context.messages.projectShowcaseOneOnOneReviewsTab,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(
-                                color: ShowcasePalette.highText(context),
-                              ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      CountDotBadge(count: record.reviewSessions.length),
-                    ],
+                Flexible(
+                  child: Text(
+                    context.messages.projectShowcaseOneOnOneReviewsTab,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: ShowcasePalette.highText(context),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  context.messages.projectShowcaseSessionsCount(
-                    record.reviewSessions.length,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: ShowcasePalette.mediumText(context),
-                    fontSize: 13,
-                  ),
-                ),
+                CountDotBadge(count: record.reviewSessions.length),
               ],
             ),
           ),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: ShowcasePalette.border(context),
-          ),
-          for (
-            var index = 0;
-            index < record.reviewSessions.length;
-            index++
-          ) ...[
-            ReviewSessionBlock(session: record.reviewSessions[index]),
-            if (index < record.reviewSessions.length - 1)
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: ShowcasePalette.border(context),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              context.messages.projectShowcaseSessionsCount(
+                record.reviewSessions.length,
               ),
-          ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ShowcasePalette.mediumText(context),
+                fontSize: 13,
+              ),
+            ),
+          ),
         ],
       ),
+      itemCount: record.reviewSessions.length,
+      itemBuilder: (_, index) =>
+          ReviewSessionBlock(session: record.reviewSessions[index]),
     );
   }
 }

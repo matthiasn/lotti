@@ -214,6 +214,55 @@ class CountDotBadge extends StatelessWidget {
   }
 }
 
+/// A bordered panel with a header row, divider, and a list of children
+/// separated by dividers.
+class ShowcasePanel extends StatelessWidget {
+  const ShowcasePanel({
+    required this.header,
+    required this.itemCount,
+    required this.itemBuilder,
+    super.key,
+  });
+
+  final Widget header;
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ShowcasePalette.surface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ShowcasePalette.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: header,
+          ),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: ShowcasePalette.border(context),
+          ),
+          for (var index = 0; index < itemCount; index++) ...[
+            itemBuilder(context, index),
+            if (index < itemCount - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: ShowcasePalette.border(context),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// A centred "no results" message.
 class NoResultsPane extends StatelessWidget {
   const NoResultsPane({super.key});

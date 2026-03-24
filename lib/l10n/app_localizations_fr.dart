@@ -3840,6 +3840,72 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectHealthTitle => 'Projets';
 
   @override
+  String get projectHealthSectionTitle => 'Santé du projet';
+
+  @override
+  String get projectHealthBandSurviving => 'Ça tient';
+
+  @override
+  String get projectHealthBandOnTrack => 'Sur la bonne voie';
+
+  @override
+  String get projectHealthBandWatch => 'À surveiller';
+
+  @override
+  String get projectHealthBandAtRisk => 'À risque';
+
+  @override
+  String get projectHealthBandBlocked => 'Bloqué';
+
+  @override
+  String get projectHealthReasonCompleted => 'Le projet est terminé.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Le projet est en pause.';
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches sont bloquées',
+      one: '$count tâche est bloquée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches sont en retard',
+      one: '$count tâche est en retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonTargetDatePassed =>
+      'La date cible est dépassée.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Il n’y a pas eu de progrès récent.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Le résumé du projet n’est plus à jour.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Le projet n’a pas encore de tâches liées.';
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Le projet avance régulièrement.';
+
+  @override
   String projectLinkedTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

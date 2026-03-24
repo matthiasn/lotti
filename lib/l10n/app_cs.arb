@@ -1364,6 +1364,35 @@
     }
   },
   "projectHealthTitle": "Projekty",
+  "projectHealthSectionTitle": "Stav projektu",
+  "projectHealthBandSurviving": "Drží se",
+  "projectHealthBandOnTrack": "Na dobré cestě",
+  "projectHealthBandWatch": "Sledovat",
+  "projectHealthBandAtRisk": "V ohrožení",
+  "projectHealthBandBlocked": "Blokováno",
+  "projectHealthReasonCompleted": "Projekt je dokončený.",
+  "projectHealthReasonOnHold": "Projekt je pozastavený.",
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} úkol stojí na místě} few{{count} úkoly stojí na místě} other{{count} úkolů stojí na místě}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} úkol je po termínu} few{{count} úkoly jsou po termínu} other{{count} úkolů je po termínu}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonTargetDatePassed": "Cílové datum už uplynulo.",
+  "projectHealthReasonNoRecentProgress": "Poslední dobou není vidět žádný posun.",
+  "projectHealthReasonSummaryOutdated": "Souhrn projektu je zastaralý.",
+  "projectHealthReasonNoLinkedTasks": "Projekt ještě nemá propojené úkoly.",
+  "projectHealthReasonSteadyProgress": "Projekt se posouvá stabilně.",
   "projectLinkedTaskCount": "{count, plural, one{{count} propojený úkol} few{{count} propojené úkoly} other{{count} propojených úkolů}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
