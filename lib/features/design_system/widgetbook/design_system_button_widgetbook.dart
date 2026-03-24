@@ -26,6 +26,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_textarea_w
 import 'package:lotti/features/design_system/widgetbook/design_system_time_picker_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toast_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_tooltip_icon_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -68,6 +69,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemTextareaWidgetbookComponent(),
         buildDesignSystemScrollbarWidgetbookComponent(),
         buildDesignSystemTextInputWidgetbookComponent(),
+        buildDesignSystemTooltipIconWidgetbookComponent(),
       ]..sort(
         (left, right) => left.name.toLowerCase().compareTo(
           right.name.toLowerCase(),

@@ -2608,6 +2608,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemHoverLabel => 'Survol';
 
   @override
+  String get designSystemInfoLabel => 'Info';
+
+  @override
   String get designSystemInputErrorSample => 'Ce champ est obligatoire';
 
   @override
@@ -2829,6 +2832,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemToggleLabel => 'Libellé du toggle';
+
+  @override
+  String get designSystemTooltipIconMessageSample =>
+      'Informations utiles sur ce champ';
+
+  @override
+  String get designSystemTooltipIconVariantsTitle => 'Icône d\'info-bulle';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matrice des variantes';

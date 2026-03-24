@@ -2576,6 +2576,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemHoverLabel => 'La survolare';
 
   @override
+  String get designSystemInfoLabel => 'Info';
+
+  @override
   String get designSystemInputErrorSample => 'Acest câmp este obligatoriu';
 
   @override
@@ -2792,6 +2795,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemToggleLabel => 'Etichetă pentru toggle';
+
+  @override
+  String get designSystemTooltipIconMessageSample =>
+      'Informații utile despre acest câmp';
+
+  @override
+  String get designSystemTooltipIconVariantsTitle => 'Pictogramă tooltip';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matrice de variante';
