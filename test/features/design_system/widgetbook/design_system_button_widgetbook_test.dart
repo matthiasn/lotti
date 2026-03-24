@@ -94,6 +94,9 @@ void main() {
       final textareaComponent = components.singleWhere(
         (component) => component.name == 'Textarea',
       );
+      final scrollbarComponent = components.singleWhere(
+        (component) => component.name == 'Scrollbar',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -114,6 +117,7 @@ void main() {
         'Navigation Sidebar',
         'Progress bar',
         'Radio buttons',
+        'Scrollbar',
         'Search',
         'Spinner & loaders',
         'Split Buttons',
@@ -150,6 +154,7 @@ void main() {
       expect(listComponent.useCases.single.name, 'Overview');
       expect(captionComponent.useCases.single.name, 'Overview');
       expect(textareaComponent.useCases.single.name, 'Overview');
+      expect(scrollbarComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

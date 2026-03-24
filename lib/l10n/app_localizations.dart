@@ -4827,6 +4827,12 @@ abstract class AppLocalizations {
   /// **'Radio button'**
   String get designSystemRadioButtonLabel;
 
+  /// No description provided for @designSystemScrollbarSizesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scrollbar Sizes'**
+  String get designSystemScrollbarSizesTitle;
+
   /// No description provided for @designSystemSearchFilledText.
   ///
   /// In en, this message translates to:
