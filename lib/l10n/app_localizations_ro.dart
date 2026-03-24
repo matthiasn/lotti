@@ -2678,6 +2678,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Buton radio';
 
   @override
+  String get designSystemScrollbarSizesTitle => 'Dimensiuni bară de derulare';
+
+  @override
   String get designSystemSearchFilledText => 'Căutare Lotti';
 
   @override

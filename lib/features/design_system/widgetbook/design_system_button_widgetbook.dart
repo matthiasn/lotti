@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_navigation
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_tab_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_progress_bar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_scrollbar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_search_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_spinner_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
@@ -64,6 +65,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemSpinnerWidgetbookComponent(),
         buildDesignSystemTimePickerWidgetbookComponent(),
         buildDesignSystemTextareaWidgetbookComponent(),
+        buildDesignSystemScrollbarWidgetbookComponent(),
       ]..sort(
         (left, right) => left.name.toLowerCase().compareTo(
           right.name.toLowerCase(),
