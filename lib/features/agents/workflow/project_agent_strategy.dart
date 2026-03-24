@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -188,68 +189,45 @@ class ProjectAgentStrategy extends ConversationStrategy {
     final healthRationale = healthRationaleValue is String
         ? healthRationaleValue.trim()
         : '';
-    final healthConfidence = _parseHealthConfidence(
+    final healthConfidence = parseHealthConfidence(
       args[ProjectAgentReportToolArgs.healthConfidence],
     );
 
-    if (markdown.isEmpty) {
-      const errorMsg =
-          'Error: "markdown" field is required and must not '
-          'be empty.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
-    }
+    final validations = [
+      (
+        markdown.isEmpty,
+        'Error: "markdown" field is required and must not be empty.',
+      ),
+      (
+        tldr == null || tldr.isEmpty,
+        'Error: "tldr" field is required and must not be empty.',
+      ),
+      (
+        !ProjectAgentHealthBandValues.values.contains(healthBand),
+        'Error: "health_band" is required and must be one of '
+            '`surviving`, `on_track`, `watch`, `at_risk`, or `blocked`.',
+      ),
+      (
+        healthRationale.isEmpty,
+        'Error: "health_rationale" field is required and must not be empty.',
+      ),
+      (
+        args.containsKey(ProjectAgentReportToolArgs.healthConfidence) &&
+            healthConfidence == null,
+        'Error: "health_confidence" must be a number between 0 and 1.',
+      ),
+    ];
 
-    if (tldr == null || tldr.isEmpty) {
-      const errorMsg =
-          'Error: "tldr" field is required and must not '
-          'be empty.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
-    }
-
-    if (!ProjectAgentHealthBandValues.values.contains(healthBand)) {
-      const errorMsg =
-          'Error: "health_band" is required and must be one of '
-          '`surviving`, `on_track`, `watch`, `at_risk`, or `blocked`.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
-    }
-
-    if (healthRationale.isEmpty) {
-      const errorMsg =
-          'Error: "health_rationale" field is required and must not '
-          'be empty.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
-    }
-
-    if (args.containsKey(ProjectAgentReportToolArgs.healthConfidence) &&
-        healthConfidence == null) {
-      const errorMsg =
-          'Error: "health_confidence" must be a number between 0 and 1.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
-        toolName: ProjectAgentToolNames.updateProjectReport,
-        errorMessage: errorMsg,
-      );
-      return;
+    for (final (failed, errorMsg) in validations) {
+      if (failed) {
+        await _rejectToolCall(
+          callId: callId,
+          toolName: ProjectAgentToolNames.updateProjectReport,
+          errorMsg: errorMsg,
+          manager: manager,
+        );
+        return;
+      }
     }
 
     _reportContent = markdown;
@@ -276,11 +254,11 @@ class ProjectAgentStrategy extends ConversationStrategy {
   ) async {
     final rawList = args['observations'];
     if (rawList is! List || rawList.isEmpty) {
-      const errorMsg = 'Error: "observations" must be a non-empty array.';
-      manager.addToolResponse(toolCallId: callId, response: errorMsg);
-      await _recordToolResultMessage(
+      await _rejectToolCall(
+        callId: callId,
         toolName: ProjectAgentToolNames.recordObservations,
-        errorMessage: errorMsg,
+        errorMsg: 'Error: "observations" must be a non-empty array.',
+        manager: manager,
       );
       return;
     }
@@ -325,17 +303,6 @@ class ProjectAgentStrategy extends ConversationStrategy {
     );
   }
 
-  double? _parseHealthConfidence(Object? value) {
-    if (value == null) return null;
-    final parsed = switch (value) {
-      final num number => number.toDouble(),
-      final String text => double.tryParse(text.trim()),
-      _ => null,
-    };
-    if (parsed == null || parsed < 0 || parsed > 1) return null;
-    return parsed;
-  }
-
   ObservationPriority _parseObservationPriority(String? raw) {
     if (raw == null) return ObservationPriority.routine;
     final normalized = raw.trim().toLowerCase();
@@ -352,6 +319,18 @@ class ProjectAgentStrategy extends ConversationStrategy {
       if (value.name.toLowerCase() == normalized) return value;
     }
     return ObservationCategory.operational;
+  }
+
+  // ── Error helpers ──────────────────────────────────────────────────────────
+
+  Future<void> _rejectToolCall({
+    required String callId,
+    required String toolName,
+    required String errorMsg,
+    required ConversationManager manager,
+  }) async {
+    manager.addToolResponse(toolCallId: callId, response: errorMsg);
+    await _recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
   }
 
   // ── JSON argument parsing ──────────────────────────────────────────────────

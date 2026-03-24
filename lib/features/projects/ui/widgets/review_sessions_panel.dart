@@ -38,15 +38,18 @@ class ReviewSessionsPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            context.messages.projectShowcaseSessionsCount(
-              record.reviewSessions.length,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: ShowcasePalette.mediumText(context),
-              fontSize: 13,
+          Flexible(
+            child: Text(
+              context.messages.projectShowcaseSessionsCount(
+                record.reviewSessions.length,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ShowcasePalette.mediumText(context),
+                fontSize: 13,
+              ),
             ),
           ),
         ],

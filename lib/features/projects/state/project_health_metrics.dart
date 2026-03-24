@@ -47,7 +47,7 @@ ProjectHealthMetrics? projectHealthMetricsFromProvenance(
   return ProjectHealthMetrics(
     band: band,
     rationale: rationale,
-    confidence: _parseConfidence(confidence),
+    confidence: parseHealthConfidence(confidence),
   );
 }
 
@@ -64,12 +64,19 @@ ProjectHealthBand? parseProjectHealthBand(String raw) {
   };
 }
 
-double? _parseConfidence(Object? value) {
+/// Parses a confidence value (0–1) from a number or string.
+///
+/// Returns `null` for `null`, non-finite values (e.g. NaN, infinity),
+/// or values outside the 0–1 range.
+double? parseHealthConfidence(Object? value) {
+  if (value == null) return null;
   final parsed = switch (value) {
     final num number => number.toDouble(),
     final String text => double.tryParse(text.trim()),
     _ => null,
   };
-  if (parsed == null || parsed < 0 || parsed > 1) return null;
+  if (parsed == null || !parsed.isFinite || parsed < 0 || parsed > 1) {
+    return null;
+  }
   return parsed;
 }

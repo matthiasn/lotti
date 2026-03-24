@@ -42,7 +42,10 @@ class ProjectListDetailState {
     }).toList();
   }
 
-  List<ProjectGroup> get visibleGroups {
+  /// Cached grouped project list. Computed lazily on first access.
+  late final List<ProjectGroup> visibleGroups = _computeVisibleGroups();
+
+  List<ProjectGroup> _computeVisibleGroups() {
     final visible = visibleProjects;
     final byCategory = <String, List<ProjectRecord>>{};
 

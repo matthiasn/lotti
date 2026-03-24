@@ -98,6 +98,7 @@ void main() {
             name: ProjectAgentToolNames.updateProjectReport,
             args: {
               'markdown': '',
+              'tldr': 'Short summary.',
               'health_band': 'watch',
               'health_rationale': 'Progress has slowed down.',
             },

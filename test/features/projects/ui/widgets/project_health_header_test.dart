@@ -73,9 +73,9 @@ void main() {
             ),
           for (final project in projects)
             projectHealthMetricsProvider(project.meta.id).overrideWith(
-              (ref) async =>
-                  projectHealthMetrics[project.meta.id] ??
-                  makeTestProjectHealthMetrics(),
+              (ref) async => projectHealthMetrics.containsKey(project.meta.id)
+                  ? projectHealthMetrics[project.meta.id]
+                  : makeTestProjectHealthMetrics(),
             ),
         ],
       ),
