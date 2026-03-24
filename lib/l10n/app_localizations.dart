@@ -4437,6 +4437,18 @@ abstract class AppLocalizations {
   /// **'Checkbox'**
   String get designSystemCheckboxLabel;
 
+  /// No description provided for @designSystemContextMenuDeleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get designSystemContextMenuDeleteLabel;
+
+  /// No description provided for @designSystemContextMenuVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Context Menu Variants'**
+  String get designSystemContextMenuVariantsTitle;
+
   /// No description provided for @designSystemDateCardsTitle.
   ///
   /// In en, this message translates to:

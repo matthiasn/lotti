@@ -2511,6 +2511,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemCheckboxLabel => 'Case à cocher';
 
   @override
+  String get designSystemContextMenuDeleteLabel => 'Supprimer';
+
+  @override
+  String get designSystemContextMenuVariantsTitle =>
+      'Variantes de menu contextuel';
+
+  @override
   String get designSystemDateCardsTitle => 'Cartes de date';
 
   @override

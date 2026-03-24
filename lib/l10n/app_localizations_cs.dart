@@ -2455,6 +2455,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
 
   @override
+  String get designSystemContextMenuDeleteLabel => 'Smazat';
+
+  @override
+  String get designSystemContextMenuVariantsTitle =>
+      'Varianty kontextového menu';
+
+  @override
   String get designSystemDateCardsTitle => 'Datumové karty';
 
   @override

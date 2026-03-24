@@ -6,6 +6,7 @@ export 'components/calendar_pickers/design_system_calendar_picker.dart';
 export 'components/captions/design_system_caption.dart';
 export 'components/checkboxes/design_system_checkbox.dart';
 export 'components/chips/design_system_chip.dart';
+export 'components/context_menus/design_system_context_menu.dart';
 export 'components/dividers/design_system_divider.dart';
 export 'components/dropdowns/design_system_dropdown.dart';
 export 'components/headers/design_system_header.dart';

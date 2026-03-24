@@ -103,6 +103,9 @@ void main() {
       final tooltipIconComponent = components.singleWhere(
         (component) => component.name == 'Tooltip icon',
       );
+      final contextMenuComponent = components.singleWhere(
+        (component) => component.name == 'Context menu',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -116,6 +119,7 @@ void main() {
         'Caption',
         'Checkbox',
         'Chips',
+        'Context menu',
         'Divider',
         'Dropdowns',
         'Header',
@@ -165,6 +169,7 @@ void main() {
       expect(scrollbarComponent.useCases.single.name, 'Overview');
       expect(textInputComponent.useCases.single.name, 'Overview');
       expect(tooltipIconComponent.useCases.single.name, 'Overview');
+      expect(contextMenuComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

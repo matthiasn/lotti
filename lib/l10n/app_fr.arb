@@ -1081,6 +1081,8 @@
   "designSystemCaptionWithActionsLabel": "Avec actions",
   "designSystemCaptionWithoutActionsLabel": "Sans actions",
   "designSystemCheckboxLabel": "Case à cocher",
+  "designSystemContextMenuDeleteLabel": "Supprimer",
+  "designSystemContextMenuVariantsTitle": "Variantes de menu contextuel",
   "designSystemDateCardsTitle": "Cartes de date",
   "designSystemDefaultLabel": "Par défaut",
   "designSystemDisabledLabel": "Désactivé",
