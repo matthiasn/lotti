@@ -27,6 +27,8 @@ services:
       - TIGERBEETLE_PORT=3000
       - LOG_LEVEL=INFO
       - PORT=8001
+    volumes:
+      - credits-data:/app/data
     depends_on:
       tigerbeetle:
         condition: service_healthy
@@ -36,6 +38,8 @@ services:
 
 volumes:
   tigerbeetle-data:
+    driver: local
+  credits-data:
     driver: local
 
 networks:
