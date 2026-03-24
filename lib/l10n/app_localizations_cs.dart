@@ -2552,6 +2552,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemHoverLabel => 'Přejetí';
 
   @override
+  String get designSystemInfoLabel => 'Info';
+
+  @override
   String get designSystemInputErrorSample => 'Toto pole je povinné';
 
   @override
@@ -2769,6 +2772,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemToggleLabel => 'Popisek přepínače';
+
+  @override
+  String get designSystemTooltipIconMessageSample =>
+      'Užitečné informace o tomto poli';
+
+  @override
+  String get designSystemTooltipIconVariantsTitle => 'Ikona nápovědy';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matice variant';

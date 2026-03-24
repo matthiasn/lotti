@@ -2612,6 +2612,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemHoverLabel => 'Al pasar';
 
   @override
+  String get designSystemInfoLabel => 'Info';
+
+  @override
   String get designSystemInputErrorSample => 'Este campo es obligatorio';
 
   @override
@@ -2832,6 +2835,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get designSystemToggleLabel => 'Etiqueta del toggle';
+
+  @override
+  String get designSystemTooltipIconMessageSample =>
+      'Información útil sobre este campo';
+
+  @override
+  String get designSystemTooltipIconVariantsTitle => 'Icono de tooltip';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matriz de variantes';

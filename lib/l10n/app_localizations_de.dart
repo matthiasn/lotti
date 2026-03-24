@@ -2574,6 +2574,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemHoverLabel => 'Hover';
 
   @override
+  String get designSystemInfoLabel => 'Info';
+
+  @override
   String get designSystemInputErrorSample => 'Dieses Feld ist erforderlich';
 
   @override
@@ -2789,6 +2792,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemToggleLabel => 'Toggle-Label';
+
+  @override
+  String get designSystemTooltipIconMessageSample =>
+      'Hilfreiche Informationen zu diesem Feld';
+
+  @override
+  String get designSystemTooltipIconVariantsTitle => 'Tooltip-Symbol';
 
   @override
   String get designSystemVariantMatrixTitle => 'Variantenmatrix';

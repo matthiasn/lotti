@@ -4629,6 +4629,12 @@ abstract class AppLocalizations {
   /// **'Hover'**
   String get designSystemHoverLabel;
 
+  /// No description provided for @designSystemInfoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get designSystemInfoLabel;
+
   /// No description provided for @designSystemInputErrorSample.
   ///
   /// In en, this message translates to:
@@ -5054,6 +5060,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toggle label'**
   String get designSystemToggleLabel;
+
+  /// No description provided for @designSystemTooltipIconMessageSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpful information about this field'**
+  String get designSystemTooltipIconMessageSample;
+
+  /// No description provided for @designSystemTooltipIconVariantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tooltip Icon'**
+  String get designSystemTooltipIconVariantsTitle;
 
   /// No description provided for @designSystemVariantMatrixTitle.
   ///

@@ -23,5 +23,6 @@ export 'components/textareas/design_system_textarea.dart';
 export 'components/time_pickers/design_system_time_picker.dart';
 export 'components/toasts/design_system_toast.dart';
 export 'components/toggles/design_system_toggle.dart';
+export 'components/tooltip_icons/design_system_tooltip_icon.dart';
 export 'theme/design_system_theme.dart';
 export 'theme/design_tokens.dart';

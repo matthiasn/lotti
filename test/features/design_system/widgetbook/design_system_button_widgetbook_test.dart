@@ -100,6 +100,9 @@ void main() {
       final textInputComponent = components.singleWhere(
         (component) => component.name == 'Text input',
       );
+      final tooltipIconComponent = components.singleWhere(
+        (component) => component.name == 'Tooltip icon',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -131,6 +134,7 @@ void main() {
         'Time picker',
         'Toast',
         'Toggle',
+        'Tooltip icon',
         'Typography',
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
@@ -160,6 +164,7 @@ void main() {
       expect(textareaComponent.useCases.single.name, 'Overview');
       expect(scrollbarComponent.useCases.single.name, 'Overview');
       expect(textInputComponent.useCases.single.name, 'Overview');
+      expect(tooltipIconComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(
