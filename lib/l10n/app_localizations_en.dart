@@ -2637,6 +2637,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Radio button';
 
   @override
+  String get designSystemScrollbarSizesTitle => 'Scrollbar Sizes';
+
+  @override
   String get designSystemSearchFilledText => 'Lotti search';
 
   @override

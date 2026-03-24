@@ -2655,6 +2655,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Přepínač';
 
   @override
+  String get designSystemScrollbarSizesTitle => 'Velikosti posuvníku';
+
+  @override
   String get designSystemSearchFilledText => 'Hledání Lotti';
 
   @override

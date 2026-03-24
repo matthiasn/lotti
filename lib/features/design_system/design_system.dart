@@ -13,6 +13,7 @@ export 'components/lists/design_system_list_item.dart';
 export 'components/progress_bars/design_system_circular_progress.dart';
 export 'components/progress_bars/design_system_progress_bar.dart';
 export 'components/radio_buttons/design_system_radio_button.dart';
+export 'components/scrollbars/design_system_scrollbar.dart';
 export 'components/search/design_system_search.dart';
 export 'components/spinners/design_system_spinner.dart';
 export 'components/split_buttons/design_system_split_button.dart';
