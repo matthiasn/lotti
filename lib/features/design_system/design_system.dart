@@ -9,6 +9,7 @@ export 'components/chips/design_system_chip.dart';
 export 'components/context_menus/design_system_context_menu.dart';
 export 'components/dividers/design_system_divider.dart';
 export 'components/dropdowns/design_system_dropdown.dart';
+export 'components/file_uploads/design_system_file_upload.dart';
 export 'components/headers/design_system_header.dart';
 export 'components/inputs/design_system_text_input.dart';
 export 'components/lists/design_system_list_item.dart';

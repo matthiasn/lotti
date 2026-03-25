@@ -2576,6 +2576,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemErrorLabel => 'Error';
 
   @override
+  String get designSystemFileUploadClickLabel => 'Haz clic para subir';
+
+  @override
+  String get designSystemFileUploadCompleteLabel => 'Completado';
+
+  @override
+  String get designSystemFileUploadDefaultLabel => 'Predeterminado';
+
+  @override
+  String get designSystemFileUploadDragLabel => 'o arrastra y suelta';
+
+  @override
+  String get designSystemFileUploadDropZoneSectionTitle => 'Zona de subida';
+
+  @override
+  String get designSystemFileUploadErrorLabel => 'Error';
+
+  @override
+  String get designSystemFileUploadFailedText => 'Error al subir';
+
+  @override
+  String get designSystemFileUploadHintText =>
+      'SVG, PNG, JPG o GIF (máx. 800×400px)';
+
+  @override
+  String get designSystemFileUploadHoverLabel => 'Al pasar';
+
+  @override
+  String get designSystemFileUploadItemSectionTitle => 'Elementos de archivo';
+
+  @override
+  String get designSystemFileUploadRetryLabel => 'Reintentar';
+
+  @override
+  String get designSystemFileUploadUploadingLabel => 'Subiendo';
+
+  @override
   String get designSystemFilledLabel => 'Relleno';
 
   @override

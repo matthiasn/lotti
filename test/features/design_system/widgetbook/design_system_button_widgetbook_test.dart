@@ -52,6 +52,9 @@ void main() {
       final dropdownComponent = components.singleWhere(
         (component) => component.name == 'Dropdowns',
       );
+      final fileUploadComponent = components.singleWhere(
+        (component) => component.name == 'File upload',
+      );
       final splitButtonComponent = components.singleWhere(
         (component) => component.name == 'Split Buttons',
       );
@@ -128,6 +131,7 @@ void main() {
         'Context menu',
         'Divider',
         'Dropdowns',
+        'File upload',
         'Header',
         'List',
         'Navigation Sidebar',
@@ -160,6 +164,7 @@ void main() {
       expect(toastComponent.useCases.single.name, 'Overview');
       expect(dividerComponent.useCases.single.name, 'Overview');
       expect(dropdownComponent.useCases.single.name, 'Overview');
+      expect(fileUploadComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
       expect(taskFilterComponent.useCases.single.name, 'Overview');

@@ -2516,6 +2516,43 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemErrorLabel => 'Chyba';
 
   @override
+  String get designSystemFileUploadClickLabel => 'Klikni pro nahrání';
+
+  @override
+  String get designSystemFileUploadCompleteLabel => 'Dokončeno';
+
+  @override
+  String get designSystemFileUploadDefaultLabel => 'Výchozí';
+
+  @override
+  String get designSystemFileUploadDragLabel => 'nebo přetáhni';
+
+  @override
+  String get designSystemFileUploadDropZoneSectionTitle => 'Oblast pro nahrání';
+
+  @override
+  String get designSystemFileUploadErrorLabel => 'Chyba';
+
+  @override
+  String get designSystemFileUploadFailedText => 'Nahrání selhalo';
+
+  @override
+  String get designSystemFileUploadHintText =>
+      'SVG, PNG, JPG nebo GIF (max. 800×400px)';
+
+  @override
+  String get designSystemFileUploadHoverLabel => 'Najetí';
+
+  @override
+  String get designSystemFileUploadItemSectionTitle => 'Položky souborů';
+
+  @override
+  String get designSystemFileUploadRetryLabel => 'Zkusit znovu';
+
+  @override
+  String get designSystemFileUploadUploadingLabel => 'Nahrávání';
+
+  @override
   String get designSystemFilledLabel => 'Vyplněné';
 
   @override

@@ -126,8 +126,9 @@ void main() {
       );
       expect(firstDismissible, findsOneWidget);
 
-      final dismissible = tester.widget<Dismissible>(firstDismissible);
-      dismissible.onDismissed?.call(DismissDirection.endToStart);
+      // Swipe the first one left to dismiss.
+      await tester.drag(firstDismissible, const Offset(-500, 0));
+      await tester.pumpAndSettle();
 
       // Verify onDeleteAt was called with index 0
       expect(deletedIndex, equals(0));
