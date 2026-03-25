@@ -176,19 +176,25 @@ class _HealthSummary extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 16,
-              color: ShowcasePalette.error(context),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: ShowcasePalette.error(context),
+              ),
             ),
             const SizedBox(width: 4),
-            Text(
-              context.messages.projectShowcaseBlockedTaskCount(
-                record.blockedTaskCount,
-              ),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: ShowcasePalette.mediumText(context),
+            Expanded(
+              child: Text(
+                context.messages.projectShowcaseBlockedTaskCount(
+                  record.blockedTaskCount,
+                ),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: ShowcasePalette.mediumText(context),
+                ),
               ),
             ),
           ],
