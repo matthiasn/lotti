@@ -105,15 +105,13 @@ class DesignSystemTaskFilterFieldState {
   Map<String, dynamic> toJson() => {
     'label': label,
     'options': options.map((option) => option.toJson()).toList(growable: false),
-    'selectedIds': selectedOptions
-        .map((option) => option.id)
-        .toList(growable: false),
+    'selectedIds': selectedIds.toList(growable: false),
   };
 }
 
 @immutable
 class DesignSystemTaskFilterState {
-  const DesignSystemTaskFilterState({
+  DesignSystemTaskFilterState({
     required this.title,
     required this.clearAllLabel,
     required this.applyLabel,
@@ -127,7 +125,10 @@ class DesignSystemTaskFilterState {
     required this.categoryField,
     required this.labelField,
     this.showDragHandle = true,
-  });
+  }) : assert(
+         priorityOptions.any((option) => option.id == allPriorityId),
+         'priorityOptions must contain an option with id "$allPriorityId"',
+       );
 
   factory DesignSystemTaskFilterState.fromJson(Map<String, dynamic> json) {
     return DesignSystemTaskFilterState(
@@ -388,15 +389,23 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                           runSpacing: 8,
                           children: [
                             for (final option in state.priorityOptions)
-                              _TaskFilterPriorityPill(
+                              _TaskFilterChoicePill(
                                 key: ValueKey(
                                   'design-system-task-filter-priority-${option.id}',
                                 ),
-                                option: option,
+                                label: option.label,
                                 selected: option.id == state.selectedPriorityId,
                                 palette: palette,
                                 textStyle:
                                     tokens.typography.styles.subtitle.subtitle2,
+                                leading:
+                                    option.glyph !=
+                                        DesignSystemTaskFilterGlyph.none
+                                    ? _TaskFilterPriorityGlyph(
+                                        glyph: option.glyph,
+                                        palette: palette,
+                                      )
+                                    : null,
                                 onTap: () =>
                                     onChanged(state.selectPriority(option.id)),
                               ),
@@ -674,6 +683,7 @@ class _TaskFilterChoicePill extends StatelessWidget {
     required this.palette,
     required this.textStyle,
     required this.onTap,
+    this.leading,
     super.key,
   });
 
@@ -682,56 +692,10 @@ class _TaskFilterChoicePill extends StatelessWidget {
   final _TaskFilterPalette palette;
   final TextStyle textStyle;
   final VoidCallback onTap;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: selected ? palette.selectedPillBackground : palette.pillFill,
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.pillRadius),
-          border: Border.all(
-            color: selected ? palette.accent : Colors.transparent,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.pillRadius),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-            child: Text(
-              label,
-              style: textStyle.copyWith(color: palette.primaryText),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskFilterPriorityPill extends StatelessWidget {
-  const _TaskFilterPriorityPill({
-    required this.option,
-    required this.selected,
-    required this.palette,
-    required this.textStyle,
-    required this.onTap,
-    super.key,
-  });
-
-  final DesignSystemTaskFilterOption option;
-  final bool selected;
-  final _TaskFilterPalette palette;
-  final TextStyle textStyle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasGlyph = option.glyph != DesignSystemTaskFilterGlyph.none;
-
     return Material(
       color: Colors.transparent,
       child: Ink(
@@ -748,21 +712,18 @@ class _TaskFilterPriorityPill extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: hasGlyph ? 16 : 20,
+              horizontal: leading != null ? 16 : 20,
               vertical: 11,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (hasGlyph) ...[
-                  _TaskFilterPriorityGlyph(
-                    glyph: option.glyph,
-                    palette: palette,
-                  ),
+                if (leading != null) ...[
+                  leading!,
                   const SizedBox(width: 8),
                 ],
                 Text(
-                  option.label,
+                  label,
                   style: textStyle.copyWith(color: palette.primaryText),
                 ),
               ],

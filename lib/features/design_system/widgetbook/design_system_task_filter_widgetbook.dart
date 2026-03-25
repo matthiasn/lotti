@@ -29,11 +29,32 @@ class _TaskFilterOverviewPage extends StatefulWidget {
 
 class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
   DesignSystemTaskFilterState? _state;
+  AppLocalizations? _lastMessages;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _state ??= _buildSampleState(context.messages);
+    final messages = context.messages;
+    if (_lastMessages != messages) {
+      _lastMessages = messages;
+      final previous = _state;
+      final fresh = _buildSampleState(messages);
+      _state = previous == null
+          ? fresh
+          : fresh.copyWith(
+              selectedSortId: previous.selectedSortId,
+              selectedPriorityId: previous.selectedPriorityId,
+              statusField: fresh.statusField.copyWith(
+                selectedIds: previous.statusField.selectedIds,
+              ),
+              categoryField: fresh.categoryField.copyWith(
+                selectedIds: previous.categoryField.selectedIds,
+              ),
+              labelField: fresh.labelField.copyWith(
+                selectedIds: previous.labelField.selectedIds,
+              ),
+            );
+    }
   }
 
   @override
