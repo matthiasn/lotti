@@ -2631,6 +2631,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'Cu separator';
 
   @override
+  String get designSystemTaskListBlockedLabel => 'Blocat';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Variante element listă de sarcini';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'În așteptare';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Deschis';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Apăsat';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Studiu';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Testare utilizatori';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'Cu separator';
+
+  @override
   String get designSystemMediumLabel => 'Mediu';
 
   @override

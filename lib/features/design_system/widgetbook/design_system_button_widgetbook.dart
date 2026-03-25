@@ -22,6 +22,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_search_wid
 import 'package:lotti/features/design_system/widgetbook/design_system_spinner_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_tab_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_task_list_item_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_text_input_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_textarea_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_time_picker_widgetbook.dart';
@@ -67,6 +68,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemCheckboxWidgetbookComponent(),
         buildDesignSystemSpinnerWidgetbookComponent(),
         buildDesignSystemTimePickerWidgetbookComponent(),
+        buildDesignSystemTaskListItemWidgetbookComponent(),
         buildDesignSystemTextareaWidgetbookComponent(),
         buildDesignSystemScrollbarWidgetbookComponent(),
         buildDesignSystemTextInputWidgetbookComponent(),

@@ -15,11 +15,9 @@ void main() {
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(
-        makeTestableWidget(
-          Theme(
-            data: DesignSystemTheme.light(),
-            child: Builder(builder: useCase.builder),
-          ),
+        makeTestableWidgetWithScaffold(
+          Builder(builder: useCase.builder),
+          theme: DesignSystemTheme.light(),
         ),
       );
 
