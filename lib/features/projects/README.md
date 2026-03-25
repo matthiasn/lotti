@@ -43,7 +43,7 @@ lib/features/projects/
 ├── widgetbook/
 │   ├── project_list_detail_mock_controller.dart # Widgetbook-only mock controller for the list/detail showcase
 │   ├── project_list_detail_mock_data.dart       # Factory building ProjectListData with realistic mock records
-│   └── project_widgetbook.dart                  # Widgetbook registration for project showcase use cases
+│   └── project_widgetbook.dart                  # Widgetbook registration for desktop + mobile project showcase use cases
 └── ui/
     ├── model/
     │   ├── project_list_detail_models.dart       # Production presentation models (ProjectRecord, TaskSummary, ReviewSession, etc.)
@@ -61,6 +61,7 @@ lib/features/projects/
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
         ├── project_list_pane.dart                # Left-hand pane with search and grouped project rows
+        ├── project_mobile_list_detail_showcase.dart # Mobile list/detail showcase with shared mock selection state and adaptive split/stack layout
         ├── project_selection_modal_content.dart  # Project picker modal
         ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
         ├── project_status_chip.dart              # Status badge with icon/color
@@ -110,6 +111,10 @@ Each expanded row also renders a compact project health band (`Surviving`, `On T
 ### ProjectListDetailShowcase
 
 Widgetbook-only thin wrapper that composes the production desktop layout widgets (`Sidebar`, `MainTopBar`, `ProjectListPane`, `ProjectDetailPane`) with mock data from `project_list_detail_mock_data.dart`. The production widgets live under `ui/widgets/` and consume `ProjectListDetailState` and `ProjectRecord` presentation models from `ui/model/`. A dedicated mock controller in `widgetbook/` drives search and selection without depending on the live repository.
+
+### ProjectMobileListDetailShowcase
+
+Widgetbook-only mobile showcase that uses the same mock controller/provider as the desktop showcase. On wide canvases it renders list and detail phone frames side by side; on narrow canvases it navigates between the list screen and the selected detail screen while preserving selection state. The mobile screens reuse the same `ProjectListDetailState` data, custom project grouping, project detail panels, and theme-token palette so dark and light mode stay in sync with the Figma references.
 
 ### ProjectStatusPicker
 

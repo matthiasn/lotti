@@ -6,6 +6,7 @@ import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart'
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
+import '../../../../helpers/test_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -147,7 +148,7 @@ void main() {
       final expectedSummary =
           '${l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount)} · ${l10n.projectShowcaseDueDate(expectedDate)}';
 
-      expect(find.text(expectedSummary), findsOneWidget);
+      expect(findRichTextContaining(expectedSummary), findsOneWidget);
     });
   });
 
@@ -194,7 +195,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('Test Project'), findsOneWidget);
-      expect(find.text('78'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('project-row-health-ring')),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {
