@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # OpenAI-compatible request/response models
@@ -24,7 +24,6 @@ class ChatCompletionRequest(BaseModel):
     temperature: float | None = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: int | None = Field(default=None, description="Maximum tokens to generate")
     stream: bool | None = Field(default=False, description="Whether to stream the response")
-    user_id: str | None = Field(default=None, description="User identifier for billing")
 
 
 class Usage(BaseModel):
@@ -134,6 +133,17 @@ class ModelPricingUpdateRequest(BaseModel):
     input_price_per_1k: Decimal = Field(..., description="Input price per 1K tokens", ge=0)
     output_price_per_1k: Decimal = Field(..., description="Output price per 1K tokens", ge=0)
 
+    @field_validator("input_price_per_1k", "output_price_per_1k")
+    @classmethod
+    def validate_price_precision(cls, value: Decimal) -> Decimal:
+        """Keep price precision compatible with exact microcent billing."""
+        scaled = value * Decimal("100000")
+        if scaled != scaled.to_integral_value():
+            raise ValueError(
+                "Price per 1K tokens must use at most 5 decimal places",
+            )
+        return value
+
 
 class ModelPricingCreateRequest(BaseModel):
     """Request to create new model pricing"""
@@ -142,3 +152,14 @@ class ModelPricingCreateRequest(BaseModel):
     display_name: str | None = Field(None, description="Human-readable name")
     input_price_per_1k: Decimal = Field(..., description="Input price per 1K tokens", ge=0)
     output_price_per_1k: Decimal = Field(..., description="Output price per 1K tokens", ge=0)
+
+    @field_validator("input_price_per_1k", "output_price_per_1k")
+    @classmethod
+    def validate_price_precision(cls, value: Decimal) -> Decimal:
+        """Keep price precision compatible with exact microcent billing."""
+        scaled = value * Decimal("100000")
+        if scaled != scaled.to_integral_value():
+            raise ValueError(
+                "Price per 1K tokens must use at most 5 decimal places",
+            )
+        return value

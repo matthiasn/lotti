@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from shared.auth import AuthContext, require_admin_api_key, require_internal_or_admin_api_key
 
 from ..container import container
 from ..core.exceptions import (
@@ -29,6 +30,7 @@ from ..core.models import (
     UserInfo,
     UserListResponse,
 )
+from ..core.money import microcents_to_usd, usd_to_microcents
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,10 @@ async def health_check():
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def create_account(request: AccountCreateRequest):
+async def create_account(
+    request: AccountCreateRequest,
+    _: AuthContext = Depends(require_admin_api_key),
+):
     """
     Create a new account for a user
 
@@ -97,7 +102,10 @@ async def create_account(request: AccountCreateRequest):
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def get_balance(request: BalanceRequest):
+async def get_balance(
+    request: BalanceRequest,
+    _: AuthContext = Depends(require_admin_api_key),
+):
     """
     Get account balance
 
@@ -137,7 +145,10 @@ async def get_balance(request: BalanceRequest):
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def top_up(request: TopUpRequest):
+async def top_up(
+    request: TopUpRequest,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """
     Add credits to an account
 
@@ -154,9 +165,18 @@ async def top_up(request: TopUpRequest):
     """
     try:
         billing_service = container.get_billing_service()
-        new_balance = await billing_service.top_up(request.user_id, request.amount)
+        amount_microcents = (
+            request.amount_microcents
+            if request.amount_microcents is not None
+            else usd_to_microcents(request.amount)
+        )
+        new_balance = await billing_service.top_up_microcents(request.user_id, amount_microcents)
 
-        return TopUpResponse(user_id=request.user_id, amount_added=request.amount, new_balance=new_balance)
+        return TopUpResponse(
+            user_id=request.user_id,
+            amount_added=microcents_to_usd(amount_microcents),
+            new_balance=new_balance,
+        )
 
     except InvalidAmountException as e:
         logger.warning(f"Top-up failed: {e}")
@@ -182,7 +202,10 @@ async def top_up(request: TopUpRequest):
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def bill(request: BillRequest):
+async def bill(
+    request: BillRequest,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """
     Bill an account (deduct credits)
 
@@ -200,9 +223,18 @@ async def bill(request: BillRequest):
     """
     try:
         billing_service = container.get_billing_service()
-        new_balance = await billing_service.bill(request.user_id, request.amount, request.description)
+        amount_microcents = (
+            request.amount_microcents
+            if request.amount_microcents is not None
+            else usd_to_microcents(request.amount)
+        )
+        new_balance = await billing_service.bill_microcents(request.user_id, amount_microcents)
 
-        return BillResponse(user_id=request.user_id, amount_billed=request.amount, new_balance=new_balance)
+        return BillResponse(
+            user_id=request.user_id,
+            amount_billed=microcents_to_usd(amount_microcents),
+            new_balance=new_balance,
+        )
 
     except InvalidAmountException as e:
         logger.warning(f"Billing failed: {e}")
@@ -222,7 +254,10 @@ async def bill(request: BillRequest):
 
 
 @router.get("/users", response_model=UserListResponse)
-async def list_users(paging: Paging = Depends()):
+async def list_users(
+    paging: Paging = Depends(),
+    _: AuthContext = Depends(require_admin_api_key),
+):
     """List all registered users with pagination"""
     try:
         user_registry = container.get_user_registry()
@@ -269,7 +304,10 @@ async def list_users(paging: Paging = Depends()):
     response_model=UserInfo,
     responses={404: {"model": ErrorResponse, "description": "User not found"}},
 )
-async def get_user(user_id: str):
+async def get_user(
+    user_id: str,
+    _: AuthContext = Depends(require_admin_api_key),
+):
     """Get user details including balance"""
     try:
         user_registry = container.get_user_registry()
@@ -310,7 +348,11 @@ async def get_user(user_id: str):
     response_model=TransactionListResponse,
     responses={404: {"model": ErrorResponse, "description": "User not found"}},
 )
-async def get_transactions(user_id: str, paging: Paging = Depends()):
+async def get_transactions(
+    user_id: str,
+    paging: Paging = Depends(),
+    _: AuthContext = Depends(require_admin_api_key),
+):
     """Get transaction history for a user"""
     try:
         user_registry = container.get_user_registry()

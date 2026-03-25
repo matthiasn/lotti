@@ -3,9 +3,9 @@
 import logging
 from decimal import Decimal
 
-from ..core.constants import CURRENCY_PRECISION
 from ..core.exceptions import AccountNotFoundException
 from ..core.interfaces import IBalanceService, ITigerBeetleClient
+from ..core.money import microcents_to_usd
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +35,17 @@ class BalanceService(IBalanceService):
         Raises:
             AccountNotFoundException: If account doesn't exist
         """
-        logger.debug(f"Getting balance for user {user_id}")
+        logger.debug("Getting balance")
 
         account_id = self.client.user_id_to_account_id(user_id)
 
         try:
-            balance_cents = await self.client.get_account_balance(account_id)
-            balance_usd = Decimal(balance_cents) / CURRENCY_PRECISION
+            balance_microcents = await self.client.get_account_balance(account_id)
+            balance_usd = microcents_to_usd(balance_microcents)
 
-            logger.debug(f"User {user_id} balance: ${balance_usd}")
+            logger.debug(f"Balance lookup succeeded: ${balance_usd}")
             return balance_usd
 
         except AccountNotFoundException:
-            logger.warning(f"Account not found for user {user_id}")
+            logger.warning("Balance lookup failed: account not found")
             raise

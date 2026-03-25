@@ -27,7 +27,7 @@ class TestBalanceService:
     @pytest.mark.asyncio
     async def test_get_balance_success(self, balance_service, mock_client):
         """Test getting balance successfully"""
-        mock_client.get_account_balance.return_value = 1500  # $15.00 in cents
+        mock_client.get_account_balance.return_value = 1_500_000_000  # $15.00 in microcents
 
         balance = await balance_service.get_balance("user@example.com")
 
@@ -53,9 +53,9 @@ class TestBalanceService:
             await balance_service.get_balance("user@example.com")
 
     @pytest.mark.asyncio
-    async def test_get_balance_fractional_cents(self, balance_service, mock_client):
-        """Test balance conversion from cents to USD"""
-        mock_client.get_account_balance.return_value = 12345  # $123.45 in cents
+    async def test_get_balance_fractional_usd(self, balance_service, mock_client):
+        """Test balance conversion from microcents to USD."""
+        mock_client.get_account_balance.return_value = 12_345_000_000  # $123.45 in microcents
 
         balance = await balance_service.get_balance("user@example.com")
 

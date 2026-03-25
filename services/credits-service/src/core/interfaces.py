@@ -26,7 +26,7 @@ class ITigerBeetleClient(ABC):
 
     @abstractmethod
     async def get_account_balance(self, account_id: int) -> int:
-        """Get account balance in cents"""
+        """Get account balance in microcents"""
         pass
 
     @abstractmethod
@@ -35,7 +35,7 @@ class ITigerBeetleClient(ABC):
         transfer_id: int,
         debit_account_id: int,
         credit_account_id: int,
-        amount_cents: int,
+        amount_microcents: int,
     ) -> None:
         """Create a transfer between accounts"""
         pass
@@ -97,9 +97,29 @@ class IBillingService(ABC):
         pass
 
     @abstractmethod
-    async def bill(self, user_id: str, amount: Decimal, description: str | None = None) -> Decimal:
+    async def top_up_microcents(self, user_id: str, amount_microcents: int) -> Decimal:
+        """
+        Add credits to an account using exact internal units.
+
+        Returns:
+            New balance
+        """
+        pass
+
+    @abstractmethod
+    async def bill(self, user_id: str, amount: Decimal) -> Decimal:
         """
         Bill an account
+
+        Returns:
+            New balance
+        """
+        pass
+
+    @abstractmethod
+    async def bill_microcents(self, user_id: str, amount_microcents: int) -> Decimal:
+        """
+        Bill an account using exact internal units.
 
         Returns:
             New balance

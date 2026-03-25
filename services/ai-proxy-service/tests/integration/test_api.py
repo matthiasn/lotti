@@ -4,7 +4,17 @@ import os
 import pytest
 from httpx import AsyncClient, ASGITransport
 
+os.environ.setdefault("INTERNAL_API_KEYS", "test-internal-key")
+os.environ.setdefault("ADMIN_API_KEYS", "test-admin-key")
+
 from src.main import app
+
+
+def _auth_headers(subject: str = "usr_test_subject") -> dict[str, str]:
+    return {
+        "Authorization": "Bearer test-internal-key",
+        "X-Authenticated-Subject": subject,
+    }
 
 
 class TestHealthEndpoint:
@@ -29,14 +39,17 @@ class TestChatCompletionsEndpoint:
     async def test_chat_completions_basic(self):
         """Test basic chat completion (requires GEMINI_API_KEY)"""
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers=_auth_headers(),
+        ) as client:
             response = await client.post(
                 "/v1/chat/completions",
                 json={
                     "model": "gemini-pro",
                     "messages": [{"role": "user", "content": "Say 'Hello, World!' and nothing else."}],
                     "temperature": 0.1,
-                    "user_id": "test@example.com",
                 },
             )
 
@@ -59,7 +72,11 @@ class TestChatCompletionsEndpoint:
     async def test_chat_completions_empty_messages(self):
         """Test chat completion with empty messages"""
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers=_auth_headers(),
+        ) as client:
             response = await client.post(
                 "/v1/chat/completions",
                 json={
@@ -75,14 +92,17 @@ class TestChatCompletionsEndpoint:
     async def test_chat_completions_model_mapping(self):
         """Test that OpenAI model names are mapped to Gemini models"""
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers=_auth_headers(),
+        ) as client:
             response = await client.post(
                 "/v1/chat/completions",
                 json={
                     "model": "gpt-4",  # Should map to gemini-1.5-pro
                     "messages": [{"role": "user", "content": "Say 'test' and nothing else."}],
                     "temperature": 0.1,
-                    "user_id": "test@example.com",
                 },
             )
 
@@ -95,7 +115,11 @@ class TestChatCompletionsEndpoint:
     async def test_chat_completions_streaming(self):
         """Test streaming chat completion"""
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers=_auth_headers(),
+        ) as client:
             response = await client.post(
                 "/v1/chat/completions",
                 json={
@@ -103,7 +127,6 @@ class TestChatCompletionsEndpoint:
                     "messages": [{"role": "user", "content": "Say 'Hello' and nothing else."}],
                     "temperature": 0.1,
                     "stream": True,
-                    "user_id": "test@example.com",
                 },
             )
 
@@ -149,7 +172,11 @@ class TestErrorHandling:
             mock_client.generate_completion.side_effect = InvalidModelException("Invalid model")
             mock_get_client.return_value = mock_client
 
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=_auth_headers(),
+            ) as client:
                 response = await client.post(
                     "/v1/chat/completions",
                     json={
@@ -175,7 +202,11 @@ class TestErrorHandling:
             mock_client.generate_completion.side_effect = AIProviderException("Provider error")
             mock_get_client.return_value = mock_client
 
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=_auth_headers(),
+            ) as client:
                 response = await client.post(
                     "/v1/chat/completions",
                     json={
@@ -200,7 +231,11 @@ class TestErrorHandling:
             mock_client.generate_completion.side_effect = RuntimeError("Unexpected error")
             mock_get_client.return_value = mock_client
 
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=_auth_headers(),
+            ) as client:
                 response = await client.post(
                     "/v1/chat/completions",
                     json={

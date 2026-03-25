@@ -35,6 +35,19 @@ class TestTransactionLogService:
         assert txns[0]["description"] == "Gemini API call"
 
     @pytest.mark.asyncio
+    async def test_transaction_with_sub_cent_precision(self, service):
+        await service.log_transaction(
+            "user-1",
+            "bill",
+            Decimal("0.000625"),
+            Decimal("0.999375"),
+        )
+        txns, total = await service.get_transactions("user-1")
+        assert total == 1
+        assert txns[0]["amount"] == Decimal("0.000625")
+        assert txns[0]["balance_after"] == Decimal("0.999375")
+
+    @pytest.mark.asyncio
     async def test_transactions_ordered_newest_first(self, service):
         await service.log_transaction("user-1", "topup", Decimal("100.00"), Decimal("100.00"))
         await service.log_transaction("user-1", "bill", Decimal("10.00"), Decimal("90.00"))

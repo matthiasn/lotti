@@ -1,13 +1,10 @@
 """Request ID middleware for tracing requests across services"""
 
-import logging
 import uuid
 from typing import Callable
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-
-logger = logging.getLogger(__name__)
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -34,19 +31,10 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         # Store in request state for access by route handlers
         request.state.request_id = request_id
 
-        # Log request with ID
-        logger.info(
-            f"[{request_id}] {request.method} {request.url.path} "
-            f"from {request.client.host if request.client else 'unknown'}"
-        )
-
         # Process request
         response = await call_next(request)
 
         # Add request ID to response headers for tracing
         response.headers["X-Request-ID"] = request_id
-
-        # Log response
-        logger.info(f"[{request_id}] Response: {response.status_code}")
 
         return response

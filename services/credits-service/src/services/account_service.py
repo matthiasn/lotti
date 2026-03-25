@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from decimal import Decimal
 
-from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
+from ..core.constants import SYSTEM_ACCOUNT_ID
 from ..core.exceptions import AccountAlreadyExistsException, AccountNotFoundException
 from ..core.interfaces import IAccountService, ITigerBeetleClient, IUserRegistryService
+from ..core.money import usd_to_microcents
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,29 @@ class AccountService(IAccountService):
         """
         self.client = tigerbeetle_client
         self.user_registry = user_registry
+        self._system_account_initialized = False
+        self._system_account_lock = asyncio.Lock()
+
+    async def _ensure_system_account(self) -> None:
+        """Ensure the internal system account exists before minting credits."""
+        if self._system_account_initialized:
+            return
+
+        async with self._system_account_lock:
+            if self._system_account_initialized:
+                return
+
+            try:
+                await self.client.get_account_balance(SYSTEM_ACCOUNT_ID)
+            except AccountNotFoundException:
+                logger.info("Creating system account")
+                await self.client.create_account(
+                    SYSTEM_ACCOUNT_ID,
+                    "system",
+                    is_system_account=True,
+                )
+
+            self._system_account_initialized = True
 
     async def create_account(self, user_id: str, initial_balance: Decimal | None = None) -> tuple[int, Decimal]:
         """
@@ -47,7 +72,7 @@ class AccountService(IAccountService):
         if initial_balance is None:
             initial_balance = Decimal("0.00")
 
-        logger.info(f"Creating account for user {user_id} with balance ${initial_balance}")
+        logger.info(f"Creating account with initial balance ${initial_balance}")
 
         # Convert user_id to account_id
         account_id = self.client.user_id_to_account_id(user_id)
@@ -55,7 +80,7 @@ class AccountService(IAccountService):
         try:
             # Create the account with zero balance (TigerBeetle requirement)
             await self.client.create_account(account_id, user_id)
-            logger.info(f"Successfully created account {account_id} for user {user_id}")
+            logger.info("Successfully created account")
 
             # Register user in the user registry (best-effort; failure must not
             # roll back a successful TigerBeetle account creation)
@@ -64,26 +89,26 @@ class AccountService(IAccountService):
                     await self.user_registry.register_user(user_id)
                 except Exception:
                     logger.exception(
-                        "Failed to register user %s in registry; account was created successfully",
-                        user_id,
+                        "Failed to register user in registry; account was created successfully",
                     )
 
             # If an initial balance is specified, transfer from system account
             if initial_balance > 0:
-                initial_balance_cents = int(initial_balance * CURRENCY_PRECISION)
+                await self._ensure_system_account()
+                initial_balance_microcents = usd_to_microcents(initial_balance)
                 transfer_id = self.client.generate_transfer_id()
                 await self.client.create_transfer(
                     transfer_id=transfer_id,
                     debit_account_id=SYSTEM_ACCOUNT_ID,
                     credit_account_id=account_id,
-                    amount_cents=initial_balance_cents,
+                    amount_microcents=initial_balance_microcents,
                 )
-                logger.info(f"Transferred initial balance of ${initial_balance} to account {account_id}")
+                logger.info(f"Transferred initial balance of ${initial_balance} to account")
 
             return account_id, initial_balance
 
         except AccountAlreadyExistsException:
-            logger.warning(f"Account for user {user_id} already exists")
+            logger.warning("Account already exists")
             raise
 
     async def account_exists(self, user_id: str) -> bool:

@@ -51,7 +51,7 @@ class TestAccountService:
         call_kwargs = mock_client.create_transfer.call_args.kwargs
         assert call_kwargs["debit_account_id"] == 1  # SYSTEM_ACCOUNT_ID
         assert call_kwargs["credit_account_id"] == 12345
-        assert call_kwargs["amount_cents"] == 1000  # $10.00 in cents
+        assert call_kwargs["amount_microcents"] == 1_000_000_000  # $10.00 in microcents
 
     @pytest.mark.asyncio
     async def test_create_account_already_exists(self, account_service, mock_client):

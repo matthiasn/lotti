@@ -10,14 +10,14 @@ from httpx import ASGITransport, AsyncClient
 
 @pytest.fixture(autouse=True)
 def set_api_keys():
-    """Ensure API_KEYS env var is set for auth middleware"""
-    original = os.environ.get("API_KEYS")
-    os.environ["API_KEYS"] = "test-key"
+    """Ensure admin API key env var is set for route auth."""
+    original = os.environ.get("ADMIN_API_KEYS")
+    os.environ["ADMIN_API_KEYS"] = "admin-test-key"
     yield
     if original is None:
-        os.environ.pop("API_KEYS", None)
+        os.environ.pop("ADMIN_API_KEYS", None)
     else:
-        os.environ["API_KEYS"] = original
+        os.environ["ADMIN_API_KEYS"] = original
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ async def client(mock_container):
     async with AsyncClient(
         transport=transport,
         base_url="http://test",
-        headers={"Authorization": "Bearer test-key"},
+        headers={"Authorization": "Bearer admin-test-key"},
     ) as ac:
         yield ac
 

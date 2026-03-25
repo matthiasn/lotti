@@ -9,8 +9,8 @@ import sqlite3
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from ..core.constants import CURRENCY_PRECISION
 from ..core.interfaces import ITransactionLogService
+from ..core.money import microcents_to_usd, usd_to_microcents
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ class TransactionLogService(ITransactionLogService):
 
     def __init__(self, db_path: str = "data/transaction_log.db"):
         self.db_path = db_path
+        self._has_legacy_cent_columns = False
         self._ensure_db()
 
     def _ensure_db(self) -> None:
@@ -32,12 +33,39 @@ class TransactionLogService(ITransactionLogService):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id TEXT NOT NULL,
                     type TEXT NOT NULL,
-                    amount_cents INTEGER NOT NULL,
+                    amount_microcents INTEGER,
                     description TEXT,
-                    balance_after_cents INTEGER NOT NULL,
+                    balance_after_microcents INTEGER,
                     created_at TEXT NOT NULL
                 )
             """)
+            columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(transactions)").fetchall()
+            }
+            self._has_legacy_cent_columns = {
+                "amount_cents",
+                "balance_after_cents",
+            }.issubset(columns)
+            if "amount_microcents" not in columns:
+                conn.execute("ALTER TABLE transactions ADD COLUMN amount_microcents INTEGER")
+            if "balance_after_microcents" not in columns:
+                conn.execute("ALTER TABLE transactions ADD COLUMN balance_after_microcents INTEGER")
+            if "amount_cents" in columns:
+                conn.execute(
+                    """
+                    UPDATE transactions
+                    SET amount_microcents = amount_cents * 1000000
+                    WHERE amount_microcents IS NULL
+                    """,
+                )
+            if "balance_after_cents" in columns:
+                conn.execute(
+                    """
+                    UPDATE transactions
+                    SET balance_after_microcents = balance_after_cents * 1000000
+                    WHERE balance_after_microcents IS NULL
+                    """,
+                )
             conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_transactions_user_id
                 ON transactions (user_id)
@@ -54,26 +82,20 @@ class TransactionLogService(ITransactionLogService):
         balance_after: Decimal,
         description: str | None,
     ) -> None:
-        amount_scaled = amount * CURRENCY_PRECISION
-        balance_scaled = balance_after * CURRENCY_PRECISION
-        if amount_scaled != int(amount_scaled):
-            raise ValueError(f"amount must be whole cents, got {amount}")
-        if balance_scaled != int(balance_scaled):
-            raise ValueError(f"balance_after must be whole cents, got {balance_after}")
-        amount_cents = int(amount_scaled)
-        balance_after_cents = int(balance_scaled)
+        amount_microcents = usd_to_microcents(amount)
+        balance_after_microcents = usd_to_microcents(balance_after)
         conn = sqlite3.connect(self.db_path)
         try:
             conn.execute(
                 """INSERT INTO transactions
-                   (user_id, type, amount_cents, description, balance_after_cents, created_at)
+                   (user_id, type, amount_microcents, description, balance_after_microcents, created_at)
                    VALUES (?, ?, ?, ?, ?, ?)""",
                 (
                     user_id,
                     tx_type,
-                    amount_cents,
+                    amount_microcents,
                     description,
-                    balance_after_cents,
+                    balance_after_microcents,
                     datetime.now(timezone.utc).isoformat(),
                 ),
             )
@@ -106,15 +128,37 @@ class TransactionLogService(ITransactionLogService):
                 "SELECT COUNT(*) FROM transactions WHERE user_id = ?", (user_id,)
             ).fetchone()[0]
             offset = (page - 1) * page_size
+            amount_expression = "amount_microcents"
+            balance_expression = "balance_after_microcents"
+            if self._has_legacy_cent_columns:
+                amount_expression = "COALESCE(amount_microcents, amount_cents * 1000000)"
+                balance_expression = (
+                    "COALESCE(balance_after_microcents, balance_after_cents * 1000000)"
+                )
             rows = conn.execute(
-                "SELECT * FROM transactions WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+                f"""
+                SELECT
+                    id,
+                    user_id,
+                    type,
+                    description,
+                    created_at,
+                    {amount_expression} AS amount_microcents,
+                    {balance_expression} AS balance_after_microcents
+                FROM transactions
+                WHERE user_id = ?
+                ORDER BY id DESC
+                LIMIT ? OFFSET ?
+                """,
                 (user_id, page_size, offset),
             ).fetchall()
             result = []
             for row in rows:
                 d = dict(row)
-                d["amount"] = Decimal(d.pop("amount_cents")) / CURRENCY_PRECISION
-                d["balance_after"] = Decimal(d.pop("balance_after_cents")) / CURRENCY_PRECISION
+                d["amount"] = microcents_to_usd(d.pop("amount_microcents"))
+                d["balance_after"] = microcents_to_usd(
+                    d.pop("balance_after_microcents"),
+                )
                 result.append(d)
             return result, total
         finally:

@@ -79,7 +79,7 @@ All endpoints are under `/api/v1` prefix.
 ```bash
 POST /api/v1/accounts
 {
-  "user_id": "john@example.com",
+  "user_id": "usr_demo_123",
   "initial_balance": 0.00
 }
 ```
@@ -88,7 +88,7 @@ Response:
 ```json
 {
   "account_id": 123456789,
-  "user_id": "john@example.com",
+  "user_id": "usr_demo_123",
   "balance": 0.00
 }
 ```
@@ -98,14 +98,14 @@ Response:
 ```bash
 POST /api/v1/balance
 {
-  "user_id": "john@example.com"
+  "user_id": "usr_demo_123"
 }
 ```
 
 Response:
 ```json
 {
-  "user_id": "john@example.com",
+  "user_id": "usr_demo_123",
   "balance": 100.00
 }
 ```
@@ -115,7 +115,7 @@ Response:
 ```bash
 POST /api/v1/topup
 {
-  "user_id": "john@example.com",
+  "user_id": "usr_demo_123",
   "amount": 100.00
 }
 ```
@@ -123,7 +123,7 @@ POST /api/v1/topup
 Response:
 ```json
 {
-  "user_id": "john@example.com",
+  "user_id": "usr_demo_123",
   "amount_added": 100.00,
   "new_balance": 100.00
 }
@@ -134,18 +134,18 @@ Response:
 ```bash
 POST /api/v1/bill
 {
-  "user_id": "john@example.com",
-  "amount": 0.25,
-  "description": "Gemini API call"
+  "user_id": "usr_demo_123",
+  "amount_microcents": 62500,
+  "request_id": "req_demo_123"
 }
 ```
 
 Response:
 ```json
 {
-  "user_id": "john@example.com",
-  "amount_billed": 0.25,
-  "new_balance": 99.75
+  "user_id": "usr_demo_123",
+  "amount_billed": 0.000625,
+  "new_balance": 99.999375
 }
 ```
 

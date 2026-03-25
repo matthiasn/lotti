@@ -6,3 +6,4 @@ google-generativeai==0.8.3
 httpx==0.28.1
 python-dotenv==1.0.1
 slowapi==0.1.9
+PyJWT[crypto]==2.10.1

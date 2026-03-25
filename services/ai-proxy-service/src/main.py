@@ -8,7 +8,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
-from shared.auth import APIKeyAuthMiddleware
 from .middleware.rate_limit import limiter, rate_limit_handler
 from .middleware.request_id import RequestIDMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -47,11 +46,8 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Authenticated-Subject"],
 )
-
-# Add API key authentication middleware (exempts /health, /metrics, /docs)
-app.add_middleware(APIKeyAuthMiddleware, exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"])
 
 # Add request ID middleware for tracing
 app.add_middleware(RequestIDMiddleware)

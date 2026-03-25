@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class AccountCreateRequest(BaseModel):
@@ -47,15 +47,29 @@ class TopUpRequest(BaseModel):
     """Request to add credits to an account"""
 
     user_id: str = Field(..., description="User identifier")
-    amount: Decimal = Field(..., description="Amount to add in USD", gt=0)
+    amount: Decimal | None = Field(default=None, description="Amount to add in USD", gt=0)
+    amount_microcents: int | None = Field(
+        default=None,
+        description="Exact internal billing amount in microcents",
+        gt=0,
+    )
 
     @field_validator("amount")
     @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
+    def validate_amount(cls, v: Decimal | None) -> Decimal | None:
         """Ensure amount is positive"""
+        if v is None:
+            return v
         if v <= 0:
             raise ValueError("Amount must be positive")
         return v
+
+    @model_validator(mode="after")
+    def validate_amount_source(self) -> "TopUpRequest":
+        """Require exactly one amount representation."""
+        if (self.amount is None) == (self.amount_microcents is None):
+            raise ValueError("Provide exactly one of amount or amount_microcents")
+        return self
 
 
 class TopUpResponse(BaseModel):
@@ -70,16 +84,30 @@ class BillRequest(BaseModel):
     """Request to bill an account"""
 
     user_id: str = Field(..., description="User identifier")
-    amount: Decimal = Field(..., description="Amount to bill in USD", gt=0)
-    description: str | None = Field(None, description="Description of the charge (e.g., 'Gemini API call')")
+    amount: Decimal | None = Field(default=None, description="Amount to bill in USD", gt=0)
+    amount_microcents: int | None = Field(
+        default=None,
+        description="Exact internal billing amount in microcents",
+        gt=0,
+    )
+    request_id: str | None = Field(None, description="Opaque request identifier for traceability")
 
     @field_validator("amount")
     @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
+    def validate_amount(cls, v: Decimal | None) -> Decimal | None:
         """Ensure amount is positive"""
+        if v is None:
+            return v
         if v <= 0:
             raise ValueError("Amount must be positive")
         return v
+
+    @model_validator(mode="after")
+    def validate_amount_source(self) -> "BillRequest":
+        """Require exactly one amount representation."""
+        if (self.amount is None) == (self.amount_microcents is None):
+            raise ValueError("Provide exactly one of amount or amount_microcents")
+        return self
 
 
 class BillResponse(BaseModel):

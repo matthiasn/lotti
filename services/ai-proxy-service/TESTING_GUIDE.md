@@ -286,8 +286,8 @@ async with httpx.AsyncClient() as client:
         f"http://localhost:8001/api/v1/bill",
         json={
             "user_id": metadata.user_id,
-            "amount": float(metadata.estimated_cost_usd),
-            "description": f"{metadata.model} - {metadata.total_tokens} tokens",
+            "amount_microcents": billing_service.cost_to_microcents(metadata.estimated_cost_usd),
+            "request_id": metadata.request_id,
         },
     )
 ```

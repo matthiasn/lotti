@@ -27,7 +27,11 @@ class TestEndToEndFlow:
     async def client(self, app):
         """HTTP client for testing"""
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={"Authorization": "Bearer admin-test-key"},
+        ) as ac:
             yield ac
 
     async def test_complete_flow(self, client: AsyncClient, user_id: str):
@@ -68,7 +72,7 @@ class TestEndToEndFlow:
         # Step 4: Bill $0.25 (simulating an API call charge)
         response = await client.post(
             "/api/v1/bill",
-            json={"user_id": user_id, "amount": 0.25, "description": "Gemini API call"},
+            json={"user_id": user_id, "amount": 0.25},
         )
         assert response.status_code == 200, f"Failed to bill: {response.text}"
         data = response.json()
@@ -137,3 +141,22 @@ class TestEndToEndFlow:
         assert response.status_code == 404
 
         print("✓ Operations on non-existent account correctly rejected")
+
+    async def test_internal_microcent_billing(self, client: AsyncClient):
+        """Test exact internal-unit billing for sub-cent AI charges."""
+        user_id = f"test_user_{uuid.uuid4().hex[:16]}"
+
+        response = await client.post("/api/v1/accounts", json={"user_id": user_id, "initial_balance": 0.0})
+        assert response.status_code == 201
+
+        response = await client.post("/api/v1/topup", json={"user_id": user_id, "amount": 1.0})
+        assert response.status_code == 200
+
+        response = await client.post(
+            "/api/v1/bill",
+            json={"user_id": user_id, "amount_microcents": 62_500},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert Decimal(str(data["amount_billed"])) == Decimal("0.000625")
+        assert Decimal(str(data["new_balance"])) == Decimal("0.999375")

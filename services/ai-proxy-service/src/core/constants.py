@@ -37,3 +37,7 @@ MODEL_MAPPINGS = {
 
 # Default model if not specified
 DEFAULT_MODEL = "gemini-2.5-flash"
+
+# Exact internal billing precision.
+# 1 USD = 100,000,000 microcents = 10^-8 USD.
+USD_MICROCENTS_PER_USD = 100_000_000

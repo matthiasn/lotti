@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from decimal import Decimal
 
 from .models import ChatMessage, ChatCompletionResponse, BillingMetadata
 
@@ -74,7 +75,7 @@ class IBillingService(ABC):
         model: str,
         prompt_tokens: int,
         completion_tokens: int,
-    ) -> float:
+    ) -> Decimal:
         """
         Calculate the cost of an AI request
 

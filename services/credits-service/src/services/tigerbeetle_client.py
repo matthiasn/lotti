@@ -10,6 +10,7 @@ from tigerbeetle import ClientAsync, Account, Transfer, AccountFlags, TransferFl
 from ..core.constants import (
     LEDGER_ID,
     ACCOUNT_CODE_USER,
+    ACCOUNT_CODE_SYSTEM,
 )
 from ..core.exceptions import (
     TigerBeetleException,
@@ -118,7 +119,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                 user_data_64=0,
                 user_data_32=0,
                 ledger=LEDGER_ID,  # USD ledger
-                code=ACCOUNT_CODE_USER,  # User account type
+                code=ACCOUNT_CODE_SYSTEM if is_system_account else ACCOUNT_CODE_USER,
                 flags=flags,
                 timestamp=0,  # Let TigerBeetle set the timestamp
             )
@@ -129,13 +130,13 @@ class TigerBeetleClient(ITigerBeetleClient):
                 error = errors[0]
                 # Check for account already exists errors (21 = EXISTS, 25 = exists_with_different_flags)
                 if error.result in (21, 25):
-                    logger.warning(f"Account {account_id} already exists")
-                    raise AccountAlreadyExistsException(f"Account for user {user_id} already exists")
+                    logger.warning("Account already exists")
+                    raise AccountAlreadyExistsException("Account already exists")
                 else:
                     logger.error(f"TigerBeetle error creating account: {error}")
                     raise TigerBeetleException(f"Failed to create account: {error}")
 
-            logger.info(f"Created account {account_id} for user {user_id}")
+            logger.info("Created account")
 
         except (AccountAlreadyExistsException, TigerBeetleException):
             raise
@@ -145,10 +146,10 @@ class TigerBeetleClient(ITigerBeetleClient):
 
     async def get_account_balance(self, account_id: int) -> int:
         """
-        Get account balance in cents
+        Get account balance in microcents
 
         Returns:
-            Balance in cents (credits - debits)
+            Balance in microcents (credits - debits)
 
         Raises:
             AccountNotFoundException: If account doesn't exist
@@ -165,10 +166,10 @@ class TigerBeetleClient(ITigerBeetleClient):
 
             account = accounts[0]
             # Balance = credits - debits
-            balance_cents = account.credits_posted - account.debits_posted
+            balance_microcents = account.credits_posted - account.debits_posted
 
-            logger.debug(f"Account {account_id} balance: {balance_cents} cents")
-            return balance_cents
+            logger.debug(f"Account {account_id} balance: {balance_microcents} microcents")
+            return balance_microcents
 
         except AccountNotFoundException:
             raise
@@ -181,7 +182,7 @@ class TigerBeetleClient(ITigerBeetleClient):
         transfer_id: int,
         debit_account_id: int,
         credit_account_id: int,
-        amount_cents: int,
+        amount_microcents: int,
     ) -> None:
         """
         Create a transfer between accounts
@@ -190,7 +191,7 @@ class TigerBeetleClient(ITigerBeetleClient):
             transfer_id: Unique transfer ID
             debit_account_id: Account to debit (sender)
             credit_account_id: Account to credit (receiver)
-            amount_cents: Amount in cents
+            amount_microcents: Amount in microcents
 
         Raises:
             AccountNotFoundException: If either account doesn't exist
@@ -204,7 +205,7 @@ class TigerBeetleClient(ITigerBeetleClient):
                 id=transfer_id,
                 debit_account_id=debit_account_id,
                 credit_account_id=credit_account_id,
-                amount=amount_cents,
+                amount=amount_microcents,
                 pending_id=0,
                 user_data_128=0,
                 user_data_64=0,
@@ -233,7 +234,11 @@ class TigerBeetleClient(ITigerBeetleClient):
                     raise TigerBeetleException(f"Failed to create transfer: {error}")
 
             logger.info(
-                f"Created transfer {transfer_id}: {amount_cents} cents from {debit_account_id} to {credit_account_id}"
+                "Created transfer %s: %s microcents from %s to %s",
+                transfer_id,
+                amount_microcents,
+                debit_account_id,
+                credit_account_id,
             )
 
         except (TigerBeetleException, AccountNotFoundException, InsufficientBalanceException):

@@ -6,9 +6,8 @@ import json
 import logging
 import time
 import uuid
-from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 
 from ..container import container
@@ -30,6 +29,7 @@ from ..core.models import (
     ModelPricingCreateRequest,
 )
 from ..core.metrics import metrics_collector
+from shared.auth import AuthContext, require_authenticated_subject, require_internal_or_admin_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ async def health_check():
 
 
 @router.get("/metrics")
-async def get_metrics():
+async def get_metrics(_: AuthContext = Depends(require_internal_or_admin_api_key)):
     """
     Get service metrics for observability
 
@@ -92,7 +92,11 @@ async def get_metrics():
     },
 )
 @limiter.limit("30/minute")  # More restrictive limit for AI completions (expensive)
-async def chat_completions(request: Request, body: ChatCompletionRequest):
+async def chat_completions(
+    request: Request,
+    body: ChatCompletionRequest,
+    auth_context: AuthContext = Depends(require_authenticated_subject),
+):
     """
     OpenAI-compatible chat completions endpoint
 
@@ -112,12 +116,15 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
         500: Internal server error
     """
     start_time = time.time()
-    request_id = f"req-{uuid.uuid4().hex[:12]}"
+    request_id = getattr(request.state, "request_id", f"req-{uuid.uuid4().hex[:12]}")
+    subject = auth_context.subject
+    if subject is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authenticated subject required")
 
     try:
         logger.info(
             f"[{request_id}] Chat completion request: model={body.model}, "
-            f"messages={len(body.messages)}, stream={body.stream}, user_id={body.user_id}"
+            f"messages={len(body.messages)}, stream={body.stream}"
         )
 
         # Validate request
@@ -139,7 +146,7 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
                     model=body.model,
                     temperature=body.temperature if body.temperature is not None else 0.7,
                     max_tokens=body.max_tokens,
-                    user_id=body.user_id or "anonymous",
+                    user_id=subject,
                     request_id=request_id,
                 ),
                 media_type="text/event-stream",
@@ -162,12 +169,12 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
 
             # Create billing metadata
             billing_metadata = BillingMetadata(
-                user_id=body.user_id or "anonymous",
+                user_id=subject,
                 model=body.model,
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                estimated_cost_usd=Decimal(str(cost)),
+                estimated_cost_usd=cost,
                 request_id=request_id,
             )
 
@@ -176,7 +183,7 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
 
             # Log usage for persistent tracking
             await _log_usage_entry(
-                user_id=body.user_id or "anonymous",
+                user_id=subject,
                 model=body.model,
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
@@ -282,7 +289,7 @@ async def _stream_real_response(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
-                estimated_cost_usd=Decimal(str(cost)),
+                estimated_cost_usd=cost,
                 request_id=request_id,
             )
 
@@ -317,7 +324,12 @@ async def _stream_real_response(
 
 
 @router.get("/v1/usage/user/{user_id}")
-async def get_user_usage(user_id: str, page: int = 1, page_size: int = 20):
+async def get_user_usage(
+    user_id: str,
+    page: int = 1,
+    page_size: int = 20,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """Get usage history for a user"""
     usage_log = container.get_usage_log()
     page_size = max(1, min(page_size, 100))
@@ -331,14 +343,46 @@ async def get_user_usage(user_id: str, page: int = 1, page_size: int = 20):
 
 
 @router.get("/v1/usage/user/{user_id}/summary")
-async def get_user_usage_summary(user_id: str):
+async def get_user_usage_summary(
+    user_id: str,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """Get usage summary for a user"""
     usage_log = container.get_usage_log()
     return await usage_log.get_user_summary(user_id)
 
 
+@router.get("/v1/me/usage")
+async def get_my_usage(
+    auth_context: AuthContext = Depends(require_authenticated_subject),
+    page: int = 1,
+    page_size: int = 20,
+):
+    """Get usage history for the authenticated subject."""
+    usage_log = container.get_usage_log()
+    page_size = max(1, min(page_size, 100))
+    entries, total = await usage_log.get_user_usage(auth_context.subject, page, page_size)
+    return UsageQueryResponse(
+        entries=[UsageLogEntry(**e) for e in entries],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/v1/me/usage/summary")
+async def get_my_usage_summary(
+    auth_context: AuthContext = Depends(require_authenticated_subject),
+):
+    """Get usage summary for the authenticated subject."""
+    usage_log = container.get_usage_log()
+    return await usage_log.get_user_summary(auth_context.subject)
+
+
 @router.get("/v1/usage/summary")
-async def get_system_usage_summary():
+async def get_system_usage_summary(
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """Get system-wide usage summary"""
     usage_log = container.get_usage_log()
     return await usage_log.get_system_summary()
@@ -348,7 +392,7 @@ async def get_system_usage_summary():
 
 
 @router.get("/v1/pricing", response_model=ModelPricingListResponse)
-async def list_pricing():
+async def list_pricing(_: AuthContext = Depends(require_internal_or_admin_api_key)):
     """List all model pricing"""
     pricing_service = container.get_pricing_service()
     models = await pricing_service.get_all_pricing()
@@ -356,7 +400,11 @@ async def list_pricing():
 
 
 @router.put("/v1/pricing/{model_id}", response_model=ModelPricing)
-async def update_pricing(model_id: str, body: ModelPricingUpdateRequest):
+async def update_pricing(
+    model_id: str,
+    body: ModelPricingUpdateRequest,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """Update pricing for a model"""
     pricing_service = container.get_pricing_service()
     existing = await pricing_service.get_pricing(model_id)
@@ -372,7 +420,10 @@ async def update_pricing(model_id: str, body: ModelPricingUpdateRequest):
 
 
 @router.post("/v1/pricing", response_model=ModelPricing, status_code=201)
-async def create_pricing(body: ModelPricingCreateRequest):
+async def create_pricing(
+    body: ModelPricingCreateRequest,
+    _: AuthContext = Depends(require_internal_or_admin_api_key),
+):
     """Create new model pricing"""
     pricing_service = container.get_pricing_service()
     existing = await pricing_service.get_pricing(body.model_id)

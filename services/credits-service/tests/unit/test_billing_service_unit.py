@@ -61,7 +61,7 @@ class TestBillingService:
     @pytest.mark.asyncio
     async def test_top_up_success(self, billing_service, mock_client):
         """Test successful top-up"""
-        mock_client.get_account_balance.return_value = 2500  # $25.00 after top-up
+        mock_client.get_account_balance.return_value = 2_500_000_000  # $25.00 after top-up
 
         new_balance = await billing_service.top_up("user@example.com", Decimal("10.00"))
 
@@ -72,7 +72,7 @@ class TestBillingService:
         call_kwargs = mock_client.create_transfer.call_args.kwargs
         assert call_kwargs["debit_account_id"] == SYSTEM_ACCOUNT_ID
         assert call_kwargs["credit_account_id"] == 12345
-        assert call_kwargs["amount_cents"] == 1000  # $10.00 in cents
+        assert call_kwargs["amount_microcents"] == 1_000_000_000  # $10.00 in microcents
 
     @pytest.mark.asyncio
     async def test_top_up_invalid_amount(self, billing_service, mock_client):
@@ -94,7 +94,7 @@ class TestBillingService:
     @pytest.mark.asyncio
     async def test_bill_success(self, billing_service, mock_client):
         """Test successful billing"""
-        mock_client.get_account_balance.return_value = 500  # $5.00 after billing
+        mock_client.get_account_balance.return_value = 500_000_000  # $5.00 after billing
 
         new_balance = await billing_service.bill("user@example.com", Decimal("10.00"))
 
@@ -105,16 +105,18 @@ class TestBillingService:
         call_kwargs = mock_client.create_transfer.call_args.kwargs
         assert call_kwargs["debit_account_id"] == 12345
         assert call_kwargs["credit_account_id"] == SYSTEM_ACCOUNT_ID
-        assert call_kwargs["amount_cents"] == 1000  # $10.00 in cents
+        assert call_kwargs["amount_microcents"] == 1_000_000_000  # $10.00 in microcents
 
     @pytest.mark.asyncio
-    async def test_bill_with_description(self, billing_service, mock_client):
-        """Test billing with description"""
-        mock_client.get_account_balance.return_value = 500
+    async def test_bill_sub_cent_amount_uses_exact_internal_unit(self, billing_service, mock_client):
+        """Test that sub-cent billing is not truncated to zero."""
+        mock_client.get_account_balance.return_value = 99_937_500
 
-        await billing_service.bill("user@example.com", Decimal("10.00"), description="AI API usage")
+        new_balance = await billing_service.bill("user@example.com", Decimal("0.000625"))
 
-        mock_client.create_transfer.assert_called_once()
+        assert new_balance == Decimal("0.999375")
+        call_kwargs = mock_client.create_transfer.call_args.kwargs
+        assert call_kwargs["amount_microcents"] == 62_500
 
     @pytest.mark.asyncio
     async def test_bill_invalid_amount(self, billing_service, mock_client):

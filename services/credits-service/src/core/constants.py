@@ -23,5 +23,6 @@ ACCOUNT_CODE_SYSTEM = 2
 SERVICE_USER_REGISTRY = "user_registry"
 SERVICE_TRANSACTION_LOG = "transaction_log"
 
-# Currency precision (cents)
-CURRENCY_PRECISION = 100  # 1 USD = 100 cents
+# Internal billing precision (microcents)
+# 1 USD = 100,000,000 microcents = 10^-8 USD
+USD_MICROCENTS_PER_USD = 100_000_000

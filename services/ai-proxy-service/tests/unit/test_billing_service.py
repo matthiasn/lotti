@@ -3,6 +3,7 @@
 import pytest
 from decimal import Decimal
 
+import src.services.billing_service as billing_module
 from src.services.billing_service import BillingService
 from src.core.models import BillingMetadata
 
@@ -26,7 +27,7 @@ class TestBillingService:
 
         # Expected (Pro pricing): (1000/1000 * 0.00125) + (1000/1000 * 0.01)
         # = 0.00125 + 0.01 = 0.01125
-        assert cost == pytest.approx(0.01125, rel=1e-6)
+        assert cost == Decimal("0.01125")
 
     def test_calculate_cost_small_request(self, billing_service):
         """Test cost calculation for small request"""
@@ -39,7 +40,7 @@ class TestBillingService:
 
         # Expected (Pro pricing): (100/1000 * 0.00125) + (50/1000 * 0.01)
         # = 0.000125 + 0.0005 = 0.000625
-        assert cost == pytest.approx(0.000625, rel=1e-6)
+        assert cost == Decimal("0.000625")
 
     def test_calculate_cost_large_request(self, billing_service):
         """Test cost calculation for large request"""
@@ -52,7 +53,7 @@ class TestBillingService:
 
         # Expected (Pro pricing): (5000/1000 * 0.00125) + (2000/1000 * 0.01)
         # = 0.00625 + 0.02 = 0.02625
-        assert cost == pytest.approx(0.02625, rel=1e-6)
+        assert cost == Decimal("0.02625")
 
     def test_calculate_cost_zero_tokens(self, billing_service):
         """Test cost calculation with zero tokens"""
@@ -62,7 +63,7 @@ class TestBillingService:
             completion_tokens=0,
         )
 
-        assert cost == 0.0
+        assert cost == Decimal("0")
 
     def test_calculate_cost_flash_model(self, billing_service):
         """Test cost calculation for flash model (cheaper pricing)"""
@@ -75,7 +76,7 @@ class TestBillingService:
 
         # Expected (Flash pricing): (1000/1000 * 0.0003) + (1000/1000 * 0.0025)
         # = 0.0003 + 0.0025 = 0.0028
-        assert cost == pytest.approx(0.0028, rel=1e-6)
+        assert cost == Decimal("0.0028")
 
     def test_calculate_cost_openai_model_mapping(self, billing_service):
         """Test cost calculation with OpenAI model name (maps to Gemini)"""
@@ -88,7 +89,7 @@ class TestBillingService:
 
         # Should use Pro pricing: (1000/1000 * 0.00125) + (1000/1000 * 0.01)
         # = 0.00125 + 0.01 = 0.01125
-        assert cost == pytest.approx(0.01125, rel=1e-6)
+        assert cost == Decimal("0.01125")
 
     def test_calculate_cost_gpt35_mapping(self, billing_service):
         """Test cost calculation with gpt-3.5-turbo (maps to flash)"""
@@ -101,7 +102,7 @@ class TestBillingService:
 
         # Should use Flash pricing: (1000/1000 * 0.0003) + (1000/1000 * 0.0025)
         # = 0.0003 + 0.0025 = 0.0028
-        assert cost == pytest.approx(0.0028, rel=1e-6)
+        assert cost == Decimal("0.0028")
 
     def test_calculate_cost_unknown_model_uses_default(self, billing_service):
         """Test cost calculation for unknown model (uses default Pro pricing)"""
@@ -112,7 +113,7 @@ class TestBillingService:
         )
 
         # Should use default (Pro) pricing: 0.00125 + 0.01 = 0.01125
-        assert cost == pytest.approx(0.01125, rel=1e-6)
+        assert cost == Decimal("0.01125")
 
     @pytest.mark.asyncio
     async def test_log_billing(self, billing_service, caplog):
@@ -123,7 +124,7 @@ class TestBillingService:
         caplog.set_level(logging.INFO)
 
         metadata = BillingMetadata(
-            user_id="test@example.com",
+            user_id="usr_test_subject",
             model="gemini-pro",
             prompt_tokens=100,
             completion_tokens=50,
@@ -136,6 +137,59 @@ class TestBillingService:
 
         # Check that billing was logged
         assert "BILLING" in caplog.text
-        assert "test@example.com" in caplog.text
         assert "gemini-pro" in caplog.text
         assert "req-test123" in caplog.text
+        assert "usr_test_subject" not in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_log_billing_sends_exact_microcents(
+        self,
+        monkeypatch,
+    ):
+        """Test credits-service billing payload uses exact internal units."""
+        captured = {}
+
+        class FakeResponse:
+            status_code = 200
+            text = "ok"
+
+        class FakeAsyncClient:
+            def __init__(self, *args, **kwargs):
+                captured["client_kwargs"] = kwargs
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def post(self, url, json, headers):
+                captured["url"] = url
+                captured["json"] = json
+                captured["headers"] = headers
+                return FakeResponse()
+
+        monkeypatch.setenv("CREDITS_SERVICE_URL", "http://credits.test")
+        monkeypatch.setenv("CREDITS_SERVICE_API_KEY", "internal-key")
+        monkeypatch.setattr(billing_module.httpx, "AsyncClient", FakeAsyncClient)
+
+        billing_service = BillingService()
+        metadata = BillingMetadata(
+            user_id="usr_test_subject",
+            model="gemini-pro",
+            prompt_tokens=100,
+            completion_tokens=50,
+            total_tokens=150,
+            estimated_cost_usd=Decimal("0.000625"),
+            request_id="req-test123",
+        )
+
+        await billing_service.log_billing(metadata)
+
+        assert captured["url"] == "http://credits.test/api/v1/bill"
+        assert captured["json"] == {
+            "user_id": "usr_test_subject",
+            "amount_microcents": 62_500,
+            "request_id": "req-test123",
+        }
+        assert captured["headers"] == {"Authorization": "Bearer internal-key"}

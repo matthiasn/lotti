@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
 from .container import container
-from shared.auth import APIKeyAuthMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -59,11 +58,8 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Authenticated-Subject"],
 )
-
-# Add API key authentication middleware
-app.add_middleware(APIKeyAuthMiddleware)
 
 # Include routes
 app.include_router(router, prefix="/api/v1")

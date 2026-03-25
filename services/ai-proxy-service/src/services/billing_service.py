@@ -1,5 +1,6 @@
 """Billing service for tracking AI usage costs"""
 
+from decimal import Decimal
 import logging
 import os
 
@@ -9,12 +10,15 @@ from ..core.constants import (
     DEFAULT_MODEL_PRICING,
     MODEL_MAPPINGS,
     MODEL_PRICING,
+    USD_MICROCENTS_PER_USD,
 )
 from ..core.exceptions import AIProviderException
 from ..core.interfaces import IBillingService, IPricingService
 from ..core.models import BillingMetadata
 
 logger = logging.getLogger(__name__)
+
+USD_MICROCENTS_PER_USD_DECIMAL = Decimal(USD_MICROCENTS_PER_USD)
 
 
 class BillingService(IBillingService):
@@ -65,7 +69,7 @@ class BillingService(IBillingService):
         model: str,
         prompt_tokens: int,
         completion_tokens: int,
-    ) -> float:
+    ) -> Decimal:
         """
         Calculate the cost of an AI request
 
@@ -80,8 +84,10 @@ class BillingService(IBillingService):
         # Get model-specific pricing
         pricing = self._get_pricing_for_model(model)
 
-        input_cost = (prompt_tokens / 1000) * pricing["input_price_per_1k"]
-        output_cost = (completion_tokens / 1000) * pricing["output_price_per_1k"]
+        input_price = Decimal(str(pricing["input_price_per_1k"]))
+        output_price = Decimal(str(pricing["output_price_per_1k"]))
+        input_cost = (Decimal(prompt_tokens) / Decimal("1000")) * input_price
+        output_cost = (Decimal(completion_tokens) / Decimal("1000")) * output_price
         total_cost = input_cost + output_cost
 
         logger.debug(
@@ -90,6 +96,16 @@ class BillingService(IBillingService):
         )
 
         return total_cost
+
+    def cost_to_microcents(self, amount_usd: Decimal) -> int:
+        """Convert a USD cost to exact microcents without truncation."""
+        amount_microcents = amount_usd * USD_MICROCENTS_PER_USD_DECIMAL
+        integral_microcents = amount_microcents.to_integral_value()
+        if amount_microcents != integral_microcents:
+            raise AIProviderException(
+                "Billing precision misconfiguration. Please contact support.",
+            )
+        return int(integral_microcents)
 
     async def log_billing(self, metadata: BillingMetadata) -> None:
         """
@@ -104,26 +120,24 @@ class BillingService(IBillingService):
         # Always log billing info
         logger.info(
             f"💰 BILLING | "
-            f"User: {metadata.user_id} | "
             f"Model: {metadata.model} | "
             f"Tokens: {metadata.prompt_tokens} input + "
             f"{metadata.completion_tokens} output = {metadata.total_tokens} total | "
-            f"Cost: ${metadata.estimated_cost_usd:.6f} USD | "
+            f"Cost: ${metadata.estimated_cost_usd:.8f} USD | "
             f"Request ID: {metadata.request_id}"
         )
 
         # Phase 2: Call credits service to bill the user
         if self.phase2_enabled:
             try:
+                amount_microcents = self.cost_to_microcents(metadata.estimated_cost_usd)
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     response = await client.post(
                         f"{self.credits_service_url}/api/v1/bill",
                         json={
                             "user_id": metadata.user_id,
-                            "amount": float(metadata.estimated_cost_usd),
-                            "description": (
-                                f"{metadata.model} - {metadata.total_tokens} tokens " f"(req: {metadata.request_id})"
-                            ),
+                            "amount_microcents": amount_microcents,
+                            "request_id": metadata.request_id,
                         },
                         headers={"Authorization": f"Bearer {self.credits_service_api_key}"},
                     )
@@ -131,8 +145,8 @@ class BillingService(IBillingService):
                     if response.status_code == 402:
                         # Insufficient balance - this is a client error
                         logger.warning(
-                            f"Billing failed for {metadata.user_id}: Insufficient balance "
-                            f"(cost: ${metadata.estimated_cost_usd:.6f})"
+                            f"Billing failed for request {metadata.request_id}: Insufficient balance "
+                            f"(cost: ${metadata.estimated_cost_usd:.8f})"
                         )
                         raise AIProviderException(
                             "Insufficient balance. Please top up your account to continue using AI services."
@@ -140,23 +154,25 @@ class BillingService(IBillingService):
                     elif response.status_code != 200:
                         # Other billing errors
                         logger.error(
-                            f"Billing failed for {metadata.user_id}: "
+                            f"Billing failed for request {metadata.request_id}: "
                             f"Status {response.status_code}, Response: {response.text}"
                         )
                         raise AIProviderException("Billing service error - please contact support")
 
                     # Billing successful
-                    logger.info(f"✓ Billed ${metadata.estimated_cost_usd:.6f} to {metadata.user_id}")
+                    logger.info(
+                        f"✓ Billed request {metadata.request_id} for ${metadata.estimated_cost_usd:.8f}"
+                    )
 
             except httpx.TimeoutException as e:
-                logger.error(f"Timeout calling credits service for {metadata.user_id}")
+                logger.error(f"Timeout calling credits service for request {metadata.request_id}")
                 raise AIProviderException("Billing service timeout - please try again later") from e
             except httpx.RequestError as e:
-                logger.error(f"Request error calling credits service for {metadata.user_id}: {e}")
+                logger.error(f"Request error calling credits service for request {metadata.request_id}: {e}")
                 raise AIProviderException("Billing service unavailable - please try again later") from e
             except AIProviderException:
                 # Re-raise our custom exceptions
                 raise
             except Exception as e:
-                logger.exception(f"Unexpected error billing {metadata.user_id}")
+                logger.exception(f"Unexpected error billing request {metadata.request_id}")
                 raise AIProviderException("Billing error - please contact support") from e
