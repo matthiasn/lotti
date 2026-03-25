@@ -5373,6 +5373,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String get tasksFilterApplyTitle => 'Apply filter';
+
+  @override
+  String get tasksFilterClearAll => 'Clear all';
+
+  @override
   String get tasksFilterTitle => 'Tasks Filter';
 
   @override

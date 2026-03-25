@@ -5541,6 +5541,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agente';
 
   @override
+  String get tasksFilterApplyTitle => 'Aplicar filtro';
+
+  @override
+  String get tasksFilterClearAll => 'Borrar todo';
+
+  @override
   String get tasksFilterTitle => 'Filtro de tareas';
 
   @override

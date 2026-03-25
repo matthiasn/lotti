@@ -9670,6 +9670,18 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get tasksAgentFilterTitle;
 
+  /// No description provided for @tasksFilterApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filter'**
+  String get tasksFilterApplyTitle;
+
+  /// No description provided for @tasksFilterClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get tasksFilterClearAll;
+
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:

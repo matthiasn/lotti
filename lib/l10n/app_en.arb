@@ -2416,6 +2416,8 @@
   "tasksAgentFilterHasAgent": "Has Agent",
   "tasksAgentFilterNoAgent": "No Agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Apply filter",
+  "tasksFilterClearAll": "Clear all",
   "tasksFilterTitle": "Tasks Filter",
   "tasksLabelFilterAll": "All",
   "tasksLabelFilterTitle": "Labels",

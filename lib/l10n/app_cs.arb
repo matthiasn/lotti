@@ -2016,6 +2016,8 @@
   "tasksAgentFilterHasAgent": "Má agenta",
   "tasksAgentFilterNoAgent": "Bez agenta",
   "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Použít filtr",
+  "tasksFilterClearAll": "Vymazat vše",
   "tasksFilterTitle": "Filtr úkolů",
   "tasksLabelFilterAll": "Vše",
   "tasksLabelFilterTitle": "Štítky",

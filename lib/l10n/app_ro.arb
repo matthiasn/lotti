@@ -2245,6 +2245,8 @@
   "tasksAgentFilterHasAgent": "Cu agent",
   "tasksAgentFilterNoAgent": "Fără agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Aplică filtrul",
+  "tasksFilterClearAll": "Șterge tot",
   "tasksFilterTitle": "Filtru sarcini",
   "tasksLabelFilterAll": "Toate",
   "tasksLabelFilterTitle": "Etichete",

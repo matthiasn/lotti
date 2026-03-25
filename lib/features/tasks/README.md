@@ -52,6 +52,9 @@ Tasks support optional due dates with visual status indicators and flexible disp
 
 - Model helpers live in `lib/classes/task.dart` (priority enum, rank/short/color mapping)
 - Filter state lives in `JournalPageController`/`JournalPageState` (Riverpod) at `lib/features/journal/state/`; TasksFilter JSON is used for persistence
+- Mobile task-filter sheet exploration now also lives in the design system as
+  `lib/features/design_system/components/task_filters/design_system_task_filter_sheet.dart`
+  with a single immutable state object and widgetbook coverage
 - Task progress batching reads task estimates through a lightweight DB lookup
   and aggregates linked work via lightweight linked time-span reads instead of
   hydrating full task and child entities for progress calculations

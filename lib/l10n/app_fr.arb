@@ -2245,6 +2245,8 @@
   "tasksAgentFilterHasAgent": "A un agent",
   "tasksAgentFilterNoAgent": "Sans agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Appliquer le filtre",
+  "tasksFilterClearAll": "Tout effacer",
   "tasksFilterTitle": "Filtre des tâches",
   "tasksLabelFilterAll": "Toutes",
   "tasksLabelFilterTitle": "Étiquettes",

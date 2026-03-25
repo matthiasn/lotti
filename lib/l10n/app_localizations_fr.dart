@@ -5550,6 +5550,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String get tasksFilterApplyTitle => 'Appliquer le filtre';
+
+  @override
+  String get tasksFilterClearAll => 'Tout effacer';
+
+  @override
   String get tasksFilterTitle => 'Filtre des tâches';
 
   @override
