@@ -7,12 +7,19 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('buildProjectListDetailWidgetbookComponent', () {
-    testWidgets('renders the project list and detail showcase', (tester) async {
+    testWidgets('renders the desktop project list and detail showcase', (
+      tester,
+    ) async {
       final component = buildProjectListDetailWidgetbookComponent();
-      final useCase = component.useCases.single;
+      final useCase = component.useCases.firstWhere(
+        (useCase) => useCase.name == 'Desktop',
+      );
 
       expect(component.name, 'Project list & detail');
-      expect(useCase.name, 'Overview');
+      expect(
+        component.useCases.map((useCase) => useCase.name),
+        ['Desktop', 'Mobile'],
+      );
 
       await tester.pumpWidget(
         makeTestableWidget2(
@@ -42,6 +49,38 @@ void main() {
       expect(find.text('One-on-one Reviews'), findsOneWidget);
       expect(find.text('11m 38s'), findsOneWidget);
       expect(find.text('Week 11 · Mar 10'), findsOneWidget);
+    });
+
+    testWidgets('renders the mobile showcase in light mode', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1100, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final component = buildProjectListDetailWidgetbookComponent();
+      final useCase = component.useCases.firstWhere(
+        (useCase) => useCase.name == 'Mobile',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.light(),
+            child: Scaffold(
+              body: SizedBox(
+                width: 920,
+                height: 920,
+                child: Builder(builder: useCase.builder),
+              ),
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(1100, 1000)),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Projects'), findsAtLeastNWidgets(2));
+      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('Project Tasks'), findsOneWidget);
     });
   });
 }

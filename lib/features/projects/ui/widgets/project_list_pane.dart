@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
@@ -48,17 +52,19 @@ class ProjectListPane extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               child: groups.isEmpty
                   ? const NoResultsPane()
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: groups.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        return ProjectGroupSection(
-                          group: groups[index],
-                          selectedProjectId: selectedId,
-                          onProjectSelected: onProjectSelected,
-                        );
-                      },
+                  : DesignSystemScrollbar(
+                      child: ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: groups.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          return ProjectGroupSection(
+                            group: groups[index],
+                            selectedProjectId: selectedId,
+                            onProjectSelected: onProjectSelected,
+                          );
+                        },
+                      ),
                     ),
             ),
           ),
@@ -89,29 +95,14 @@ class _SearchHeader extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Container(
+              child: SizedBox(
                 height: 48,
-                alignment: Alignment.centerLeft,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: ShowcasePalette.border(context),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                    4,
-                    2,
-                    12,
-                    2,
-                  ),
-                  child: DesignSystemSearch(
-                    hintText: context.messages.projectShowcaseSearchHint,
-                    initialText: query,
-                    onChanged: onSearchChanged,
-                    onClear: onSearchCleared,
-                    onSearchPressed: onSearchChanged,
-                  ),
+                child: DesignSystemSearch(
+                  hintText: context.messages.projectShowcaseSearchHint,
+                  initialText: query,
+                  onChanged: onSearchChanged,
+                  onClear: onSearchCleared,
+                  onSearchPressed: onSearchChanged,
                 ),
               ),
             ),
@@ -272,124 +263,148 @@ class ProjectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final showStateSurface = selected || hovered;
-    final stateColor = selected
-        ? ShowcasePalette.selectedRow(context)
-        : ShowcasePalette.hoverFill(context);
+    final metaStyle = tokens.typography.styles.others.caption.copyWith(
+      color: ShowcasePalette.lowText(context),
+    );
 
     return MouseRegion(
       onEnter: (_) => onHoverChanged(true),
       onExit: (_) => onHoverChanged(false),
-      child: Semantics(
-        selected: selected,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            hoverColor: Colors.transparent,
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            onTap: onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              curve: Curves.easeOut,
-              constraints: const BoxConstraints(minHeight: 60),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: showStateSurface ? stateColor : Colors.transparent,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          record.project.data.title,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(
-                                color: ShowcasePalette.highText(context),
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _TinyProgressRing(score: record.healthScore),
-                            Text(
-                              '${record.healthScore}',
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: ShowcasePalette.lowText(context),
-                                  ),
-                            ),
-                            Text(
-                              '·',
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: ShowcasePalette.lowText(context),
-                                  ),
-                            ),
-                            Text(
-                              _taskSummaryLabel(
-                                context,
-                                record.totalTaskCount,
-                                record.project.data.targetDate,
-                              ),
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: ShowcasePalette.lowText(context),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ProjectStatusLabel(status: record.project.data.status),
-                ],
-              ),
-            ),
-          ),
+      child: DesignSystemListItem(
+        title: record.project.data.title,
+        subtitleSpans: _metaSpans(
+          context,
+          metaStyle,
+          record.healthScore,
+          record.totalTaskCount,
+          record.project.data.targetDate,
         ),
+        trailing: ProjectStatusLabel(status: record.project.data.status),
+        activated: selected,
+        selected: selected,
+        activatedBackgroundColor: ShowcasePalette.selectedRow(context),
+        hoverBackgroundColor: ShowcasePalette.hoverFill(context),
+        onTap: onTap,
       ),
     );
   }
 
-  String _taskSummaryLabel(
+  List<InlineSpan> _metaSpans(
     BuildContext context,
+    TextStyle metaStyle,
+    int score,
     int count,
     DateTime? targetDate,
   ) {
+    final tokens = context.designTokens;
     final taskCount = context.messages.settingsCategoriesTaskCount(count);
-    if (targetDate == null) {
-      return '$taskCount · ${context.messages.projectShowcaseOngoing}';
-    }
+    final dueLabel = targetDate == null
+        ? context.messages.projectShowcaseOngoing
+        : context.messages.projectShowcaseDueDate(
+            DateFormat.MMMd(
+              Localizations.localeOf(context).toString(),
+            ).format(targetDate),
+          );
 
-    final locale = Localizations.localeOf(context).toString();
-    return '$taskCount · ${context.messages.projectShowcaseDueDate(DateFormat.MMMd(locale).format(targetDate))}';
+    return [
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 3),
+          child: _TinyProgressRing(
+            key: const ValueKey('project-row-health-ring'),
+            score: score,
+          ),
+        ),
+      ),
+      TextSpan(text: '$score · ', style: metaStyle),
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Icon(
+          Icons.format_list_bulleted_rounded,
+          size: tokens.typography.lineHeight.caption,
+          color: ShowcasePalette.lowText(context),
+        ),
+      ),
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: SizedBox(width: tokens.spacing.step1),
+      ),
+      TextSpan(text: '$taskCount · $dueLabel', style: metaStyle),
+    ];
   }
 }
 
 class _TinyProgressRing extends StatelessWidget {
-  const _TinyProgressRing({required this.score});
+  const _TinyProgressRing({required this.score, super.key});
 
   final int score;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.square(
-      dimension: 16,
-      child: CircularProgressIndicator(
-        value: score / 100,
-        strokeWidth: 2,
-        backgroundColor: ShowcasePalette.border(context),
-        valueColor: AlwaysStoppedAnimation(
-          ShowcasePalette.amber(context),
+      dimension: 18,
+      child: CustomPaint(
+        painter: _TinyProgressRingPainter(
+          progress: score.clamp(0, 100) / 100,
+          trackColor: ShowcasePalette.lowText(
+            context,
+          ).withValues(alpha: 0.18),
+          progressColor: score >= 80
+              ? ShowcasePalette.timeGreen(context)
+              : ShowcasePalette.amber(context),
         ),
       ),
     );
   }
+}
+
+class _TinyProgressRingPainter extends CustomPainter {
+  const _TinyProgressRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 2.25;
+    const inset = strokeWidth / 2;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - strokeWidth,
+      size.height - strokeWidth,
+    );
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas
+      ..drawArc(rect, -math.pi / 2, math.pi * 2, false, trackPaint)
+      ..drawArc(
+        rect,
+        -math.pi / 2,
+        -(math.pi * 2 * progress.clamp(0.0, 1.0)),
+        false,
+        progressPaint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TinyProgressRingPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.trackColor != trackColor ||
+      oldDelegate.progressColor != progressColor;
 }

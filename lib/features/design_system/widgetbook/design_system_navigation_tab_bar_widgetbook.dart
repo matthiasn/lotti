@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -79,30 +78,20 @@ class _NavigationTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _FrostedSurface(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-          padding: EdgeInsets.all(tokens.spacing.step2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var index = 0; index < items.length; index++)
-                Padding(
-                  padding: EdgeInsets.only(
-                    right: index == items.length - 1 ? 0 : 4,
-                  ),
-                  child: _NavigationTabItem(
-                    label: items[index].label,
-                    icon: items[index].icon,
-                    active: items[index].active,
-                    symbol: minimized,
-                  ),
+        DesignSystemNavigationTabBar(
+          minimized: minimized,
+          items: items
+              .map(
+                (item) => DesignSystemNavigationTabBarItem(
+                  label: item.label,
+                  icon: item.icon,
+                  active: item.active,
                 ),
-            ],
-          ),
+              )
+              .toList(),
         ),
         const SizedBox(width: 16),
         const _AccessoryCircleButton(),
@@ -234,7 +223,7 @@ class _AccessoryField extends StatelessWidget {
     final tokens = context.designTokens;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 324),
-      child: _FrostedSurface(
+      child: DesignSystemNavigationFrostedSurface(
         borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
         padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
         child: SizedBox(
@@ -291,59 +280,13 @@ class _PreviewSurface extends StatelessWidget {
   }
 }
 
-class _FrostedSurface extends StatelessWidget {
-  const _FrostedSurface({
-    required this.child,
-    required this.borderRadius,
-    this.padding = EdgeInsets.zero,
-  });
-
-  final Widget child;
-  final BorderRadius borderRadius;
-  final EdgeInsets padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final brightness = Theme.of(context).brightness;
-    final frostedFill = brightness == Brightness.dark
-        ? tokens.colors.surface.hover
-        : tokens.colors.background.level01.withValues(alpha: 0.72);
-
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: tokens.spacing.step5,
-          sigmaY: tokens.spacing.step5,
-        ),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: frostedFill,
-            borderRadius: borderRadius,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: tokens.spacing.step5 + tokens.spacing.step2,
-                offset: Offset(0, tokens.spacing.step1),
-              ),
-            ],
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 class _AccessoryCircleButton extends StatelessWidget {
   const _AccessoryCircleButton();
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return _FrostedSurface(
+    return DesignSystemNavigationFrostedSurface(
       borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       child: SizedBox(
         width: 60,

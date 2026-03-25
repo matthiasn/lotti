@@ -10,6 +10,18 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  Finder richTextContaining(String text) => find.byWidgetPredicate(
+    (widget) => widget is RichText && widget.text.toPlainText().contains(text),
+  );
+
+  TextStyle? richTextStyleFor(WidgetTester tester, String text) {
+    final richText = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .firstWhere((widget) => widget.text.toPlainText().contains(text));
+    final span = _findTextSpan(richText.text as TextSpan, text);
+    return span?.style;
+  }
+
   group('DesignSystemTaskListItem', () {
     testWidgets('renders title, priority, and status', (tester) async {
       const key = Key('basic-task');
@@ -27,7 +39,7 @@ void main() {
       );
 
       expect(find.text('User Testing'), findsOneWidget);
-      expect(find.text('P2'), findsOneWidget);
+      expect(richTextContaining('P2'), findsOneWidget);
       expect(find.text('Blocked'), findsOneWidget);
     });
 
@@ -69,7 +81,7 @@ void main() {
         ),
       );
 
-      expect(find.text('8:00-9:30am'), findsOneWidget);
+      expect(richTextContaining('8:00-9:30am'), findsOneWidget);
       expect(find.byIcon(Icons.access_time), findsOneWidget);
     });
 
@@ -231,10 +243,8 @@ void main() {
         ),
       );
 
-      final p1Text = tester.widget<Text>(find.text('P1'));
-
       expect(
-        p1Text.style?.color,
+        richTextStyleFor(tester, 'P1')?.color,
         dsTokensLight.colors.alert.error.defaultColor,
       );
     });
@@ -254,10 +264,8 @@ void main() {
         ),
       );
 
-      final p2Text = tester.widget<Text>(find.text('P2'));
-
       expect(
-        p2Text.style?.color,
+        richTextStyleFor(tester, 'P2')?.color,
         dsTokensLight.colors.alert.warning.defaultColor,
       );
     });
@@ -277,10 +285,8 @@ void main() {
         ),
       );
 
-      final p3Text = tester.widget<Text>(find.text('P3'));
-
       expect(
-        p3Text.style?.color,
+        richTextStyleFor(tester, 'P3')?.color,
         dsTokensLight.colors.text.mediumEmphasis,
       );
     });
@@ -565,4 +571,21 @@ Future<void> _pumpTaskListItem(
       theme: DesignSystemTheme.light(),
     ),
   );
+}
+
+TextSpan? _findTextSpan(TextSpan span, String text) {
+  if (span.text?.contains(text) ?? false) {
+    return span;
+  }
+
+  for (final child in span.children ?? const <InlineSpan>[]) {
+    if (child case final TextSpan textChild) {
+      final match = _findTextSpan(textChild, text);
+      if (match != null) {
+        return match;
+      }
+    }
+  }
+
+  return null;
 }

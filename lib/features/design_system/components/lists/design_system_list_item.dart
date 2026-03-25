@@ -15,8 +15,10 @@ enum DesignSystemListItemVisualState {
 
 class DesignSystemListItem extends StatefulWidget {
   const DesignSystemListItem({
-    required this.title,
+    this.title,
     this.subtitle,
+    this.titleContent,
+    this.subtitleSpans,
     this.size = DesignSystemListItemSize.medium,
     this.leading,
     this.leadingExtra,
@@ -24,14 +26,27 @@ class DesignSystemListItem extends StatefulWidget {
     this.trailingExtra,
     this.showDivider = false,
     this.activated = false,
+    this.selected = false,
+    this.activatedBackgroundColor,
+    this.hoverBackgroundColor,
+    this.pressedBackgroundColor,
     this.onTap,
     this.semanticsLabel,
     this.forcedState,
     super.key,
-  });
+  }) : assert(
+         title != null || titleContent != null,
+         'Provide either title or titleContent.',
+       ),
+       assert(
+         subtitle == null || subtitleSpans == null,
+         'Provide either subtitle or subtitleSpans, not both.',
+       );
 
-  final String title;
+  final String? title;
   final String? subtitle;
+  final Widget? titleContent;
+  final List<InlineSpan>? subtitleSpans;
   final DesignSystemListItemSize size;
   final Widget? leading;
   final Widget? leadingExtra;
@@ -39,6 +54,10 @@ class DesignSystemListItem extends StatefulWidget {
   final Widget? trailingExtra;
   final bool showDivider;
   final bool activated;
+  final bool selected;
+  final Color? activatedBackgroundColor;
+  final Color? hoverBackgroundColor;
+  final Color? pressedBackgroundColor;
   final VoidCallback? onTap;
   final String? semanticsLabel;
   final DesignSystemListItemVisualState? forcedState;
@@ -77,13 +96,14 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
     final visualState = _resolveVisualState(enabled);
 
     final backgroundColor = widget.activated
-        ? tokens.colors.surface.active
+        ? widget.activatedBackgroundColor ?? tokens.colors.surface.active
         : switch (visualState) {
             DesignSystemListItemVisualState.idle => Colors.transparent,
             DesignSystemListItemVisualState.hover =>
-              tokens.colors.surface.hover,
+              widget.hoverBackgroundColor ?? tokens.colors.surface.hover,
             DesignSystemListItemVisualState.pressed =>
-              tokens.colors.surface.focusPressed,
+              widget.pressedBackgroundColor ??
+                  tokens.colors.surface.focusPressed,
           };
 
     final item = Column(
@@ -104,6 +124,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
               child: Semantics(
                 button: widget.onTap != null,
                 label: widget.semanticsLabel,
+                selected: widget.selected,
                 child: Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: spec.horizontalPadding,
@@ -121,6 +142,8 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                         child: _TitleContent(
                           title: widget.title,
                           subtitle: widget.subtitle,
+                          titleContent: widget.titleContent,
+                          subtitleSpans: widget.subtitleSpans,
                           spec: spec,
                         ),
                       ),
@@ -157,13 +180,17 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
 
 class _TitleContent extends StatelessWidget {
   const _TitleContent({
-    required this.title,
     required this.spec,
+    this.title,
     this.subtitle,
+    this.titleContent,
+    this.subtitleSpans,
   });
 
-  final String title;
+  final String? title;
   final String? subtitle;
+  final Widget? titleContent;
+  final List<InlineSpan>? subtitleSpans;
   final _ListItemSpec spec;
 
   @override
@@ -172,20 +199,29 @@ class _TitleContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          title,
-          style: spec.titleStyle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        if (subtitle != null) ...[
+        titleContent ??
+            Text(
+              title!,
+              style: spec.titleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        if (subtitle != null || subtitleSpans != null) ...[
           SizedBox(height: spec.textGap),
-          Text(
-            subtitle!,
-            style: spec.subtitleStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          if (subtitleSpans != null)
+            RichText(
+              text: TextSpan(
+                style: spec.subtitleStyle,
+                children: subtitleSpans,
+              ),
+            )
+          else
+            Text(
+              subtitle!,
+              style: spec.subtitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
         ],
       ],
     );

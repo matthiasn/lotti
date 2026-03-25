@@ -46,6 +46,50 @@ void main() {
       expect(find.text('Subtitle text'), findsOneWidget);
     });
 
+    testWidgets('renders custom title content and metadata spans', (
+      tester,
+    ) async {
+      const itemKey = Key('rich-item');
+
+      await _pumpListItem(
+        tester,
+        const DesignSystemListItem(
+          key: itemKey,
+          titleContent: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Projects'),
+              SizedBox(width: 4),
+              Icon(Icons.folder_open, size: 12),
+            ],
+          ),
+          subtitleSpans: [
+            TextSpan(text: '78'),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(Icons.format_list_bulleted_rounded, size: 12),
+              ),
+            ),
+            TextSpan(text: ' 5 tasks'),
+          ],
+        ),
+      );
+
+      expect(find.text('Projects'), findsOneWidget);
+      expect(find.byIcon(Icons.folder_open), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText &&
+              widget.text.toPlainText().contains('78') &&
+              widget.text.toPlainText().contains('5 tasks'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('renders leading and trailing widgets', (tester) async {
       const itemKey = Key('slots-item');
 
@@ -190,6 +234,31 @@ void main() {
       final decoration = ink.decoration! as BoxDecoration;
 
       expect(decoration.color, dsTokensLight.colors.surface.active);
+    });
+
+    testWidgets('uses overridden activated background color', (tester) async {
+      const itemKey = Key('custom-activated-item');
+      const activeColor = Colors.orange;
+
+      await _pumpListItem(
+        tester,
+        const DesignSystemListItem(
+          key: itemKey,
+          title: 'Activated',
+          activated: true,
+          activatedBackgroundColor: activeColor,
+        ),
+      );
+
+      final ink = tester.widget<Ink>(
+        find.descendant(
+          of: find.byKey(itemKey),
+          matching: find.byType(Ink),
+        ),
+      );
+      final decoration = ink.decoration! as BoxDecoration;
+
+      expect(decoration.color, activeColor);
     });
 
     testWidgets('applies hover background via forced state', (tester) async {

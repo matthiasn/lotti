@@ -28,9 +28,27 @@ void main() {
 
       // Verify sample content is rendered
       expect(find.text('User Testing'), findsAtLeast(1));
-      expect(find.text('P2'), findsAtLeast(1));
-      expect(find.text('P1'), findsAtLeast(1));
-      expect(find.text('P3'), findsAtLeast(1));
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('P2'),
+        ),
+        findsAtLeast(1),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('P1'),
+        ),
+        findsAtLeast(1),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('P3'),
+        ),
+        findsAtLeast(1),
+      );
 
       expect(tester.takeException(), isNull);
     });

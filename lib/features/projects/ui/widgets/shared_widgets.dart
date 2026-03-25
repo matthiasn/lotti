@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -80,8 +81,8 @@ class ProjectStatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            showcaseProjectStatusIcon(status),
+          _ProjectStatusIcon(
+            status: status,
             size: 16,
             color: statusColor,
           ),
@@ -119,9 +120,9 @@ class ProjectStatusLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          showcaseProjectStatusIcon(status),
-          size: 14,
+        _ProjectStatusIcon(
+          status: status,
+          size: 16,
           color: showcaseProjectStatusColor(context, status),
         ),
         const SizedBox(width: 4),
@@ -134,6 +135,43 @@ class ProjectStatusLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProjectStatusIcon extends StatelessWidget {
+  const _ProjectStatusIcon({
+    required this.status,
+    required this.size,
+    required this.color,
+  });
+
+  final ProjectStatus status;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final assetName = switch (status) {
+      ProjectActive() => 'assets/design_system/project_status_active.svg',
+      ProjectCompleted() => 'assets/design_system/project_status_completed.svg',
+      ProjectArchived() => 'assets/design_system/project_status_archived.svg',
+      _ => null,
+    };
+
+    if (assetName != null) {
+      return SvgPicture.asset(
+        assetName,
+        width: size,
+        height: size,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      );
+    }
+
+    return Icon(
+      showcaseProjectStatusIcon(status),
+      size: size,
+      color: color,
     );
   }
 }

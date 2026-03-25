@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Priority level for a task list item.
@@ -37,7 +38,7 @@ class DesignSystemTaskCategory {
 /// A task list item showing title, category, priority, time range, and status.
 ///
 /// Designed to be stacked in a list with dividers between items.
-class DesignSystemTaskListItem extends StatefulWidget {
+class DesignSystemTaskListItem extends StatelessWidget {
   const DesignSystemTaskListItem({
     required this.title,
     required this.priority,
@@ -64,192 +65,73 @@ class DesignSystemTaskListItem extends StatefulWidget {
   final String? semanticsLabel;
 
   @override
-  State<DesignSystemTaskListItem> createState() =>
-      _DesignSystemTaskListItemState();
-}
-
-class _DesignSystemTaskListItemState extends State<DesignSystemTaskListItem> {
-  bool _hovered = false;
-  bool _pressed = false;
-
-  @override
-  void didUpdateWidget(covariant DesignSystemTaskListItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.forcedState != widget.forcedState ||
-        (oldWidget.onTap == null) != (widget.onTap == null)) {
-      _hovered = false;
-      _pressed = false;
-    }
-  }
-
-  DesignSystemTaskListItemVisualState _resolveVisualState() {
-    if (widget.forcedState != null) return widget.forcedState!;
-    if (_pressed) return DesignSystemTaskListItemVisualState.pressed;
-    if (_hovered) return DesignSystemTaskListItemVisualState.hover;
-    return DesignSystemTaskListItemVisualState.idle;
-  }
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _TaskListItemSpec.fromTokens(tokens);
-    final enabled = widget.onTap != null;
-    final visualState = _resolveVisualState();
-
-    final backgroundColor = switch (visualState) {
-      DesignSystemTaskListItemVisualState.idle => Colors.transparent,
-      DesignSystemTaskListItemVisualState.hover =>
-        tokens.colors.surface.selected,
-      DesignSystemTaskListItemVisualState.pressed =>
-        tokens.colors.surface.focusPressed,
-    };
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: Ink(
-            decoration: BoxDecoration(color: backgroundColor),
-            child: InkWell(
-              onTap: widget.onTap,
-              onHover: widget.forcedState == null && enabled
-                  ? (value) => setState(() => _hovered = value)
-                  : null,
-              onHighlightChanged: widget.forcedState == null && enabled
-                  ? (value) => setState(() => _pressed = value)
-                  : null,
-              child: Semantics(
-                button: widget.onTap != null,
-                label: widget.semanticsLabel,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: spec.horizontalPadding,
-                    vertical: spec.verticalPadding,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TopRow(
-                        title: widget.title,
-                        category: widget.category,
-                        status: widget.status,
-                        statusLabel: widget.statusLabel,
-                        spec: spec,
-                        tokens: tokens,
-                      ),
-                      SizedBox(height: spec.rowGap),
-                      _BottomRow(
-                        priority: widget.priority,
-                        timeRange: widget.timeRange,
-                        spec: spec,
-                        tokens: tokens,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        if (widget.showDivider)
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: tokens.colors.decorative.level01,
-          ),
-      ],
+    return DesignSystemListItem(
+      titleContent: _TaskTitleContent(
+        title: title,
+        category: category,
+        spec: spec,
+      ),
+      subtitleSpans: _taskMetadataSpans(
+        priority: priority,
+        timeRange: timeRange,
+        spec: spec,
+        tokens: tokens,
+      ),
+      trailing: _StatusIndicator(
+        status: status,
+        statusLabel: statusLabel,
+        spec: spec,
+        tokens: tokens,
+      ),
+      showDivider: showDivider,
+      onTap: onTap,
+      semanticsLabel: semanticsLabel,
+      forcedState: switch (forcedState) {
+        DesignSystemTaskListItemVisualState.idle =>
+          DesignSystemListItemVisualState.idle,
+        DesignSystemTaskListItemVisualState.hover =>
+          DesignSystemListItemVisualState.hover,
+        DesignSystemTaskListItemVisualState.pressed =>
+          DesignSystemListItemVisualState.pressed,
+        null => null,
+      },
+      hoverBackgroundColor: tokens.colors.surface.selected,
+      pressedBackgroundColor: tokens.colors.surface.focusPressed,
     );
   }
 }
 
-class _TopRow extends StatelessWidget {
-  const _TopRow({
+class _TaskTitleContent extends StatelessWidget {
+  const _TaskTitleContent({
     required this.title,
-    required this.status,
-    required this.statusLabel,
     required this.spec,
-    required this.tokens,
     this.category,
   });
 
   final String title;
   final DesignSystemTaskCategory? category;
-  final DesignSystemTaskStatus status;
-  final String statusLabel;
   final _TaskListItemSpec spec;
-  final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: spec.titleStyle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (category != null) ...[
-                SizedBox(width: spec.itemGap),
-                DesignSystemBadge.filled(
-                  label: category!.label,
-                  tone: category!.badgeTone,
-                ),
-              ],
-            ],
+        Flexible(
+          child: Text(
+            title,
+            style: spec.titleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: spec.itemGap),
-        _StatusIndicator(
-          status: status,
-          statusLabel: statusLabel,
-          spec: spec,
-          tokens: tokens,
-        ),
-      ],
-    );
-  }
-}
-
-class _BottomRow extends StatelessWidget {
-  const _BottomRow({
-    required this.priority,
-    required this.spec,
-    required this.tokens,
-    this.timeRange,
-  });
-
-  final DesignSystemTaskPriority priority;
-  final String? timeRange;
-  final _TaskListItemSpec spec;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _PriorityIndicator(
-          priority: priority,
-          spec: spec,
-          tokens: tokens,
-        ),
-        if (timeRange != null) ...[
-          SizedBox(width: spec.metaGap),
-          Icon(
-            Icons.access_time,
-            size: spec.metaIconSize,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-          SizedBox(width: spec.metaIconGap),
-          Text(
-            timeRange!,
-            style: spec.metaStyle,
+        if (category != null) ...[
+          SizedBox(width: spec.itemGap),
+          DesignSystemBadge.filled(
+            label: category!.label,
+            tone: category!.badgeTone,
           ),
         ],
       ],
@@ -257,53 +139,70 @@ class _BottomRow extends StatelessWidget {
   }
 }
 
-class _PriorityIndicator extends StatelessWidget {
-  const _PriorityIndicator({
-    required this.priority,
-    required this.spec,
-    required this.tokens,
-  });
+List<InlineSpan> _taskMetadataSpans({
+  required DesignSystemTaskPriority priority,
+  required _TaskListItemSpec spec,
+  required DsTokens tokens,
+  String? timeRange,
+}) {
+  final (priorityColor, priorityLabel) = switch (priority) {
+    DesignSystemTaskPriority.p1 => (
+      tokens.colors.alert.error.defaultColor,
+      'P1',
+    ),
+    DesignSystemTaskPriority.p2 => (
+      tokens.colors.alert.warning.defaultColor,
+      'P2',
+    ),
+    DesignSystemTaskPriority.p3 => (
+      tokens.colors.text.mediumEmphasis,
+      'P3',
+    ),
+  };
 
-  final DesignSystemTaskPriority priority;
-  final _TaskListItemSpec spec;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final (color, label) = switch (priority) {
-      DesignSystemTaskPriority.p1 => (
-        tokens.colors.alert.error.defaultColor,
-        'P1',
+  return [
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Icon(
+        Icons.circle,
+        size: spec.priorityDotSize,
+        color: priorityColor,
       ),
-      DesignSystemTaskPriority.p2 => (
-        tokens.colors.alert.warning.defaultColor,
-        'P2',
+    ),
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: SizedBox(width: spec.metaIconGap),
+    ),
+    TextSpan(
+      text: priorityLabel,
+      style: spec.metaStyle.copyWith(
+        color: priorityColor,
+        fontWeight: FontWeight.w600,
       ),
-      DesignSystemTaskPriority.p3 => (
-        tokens.colors.text.mediumEmphasis,
-        'P3',
+    ),
+    if (timeRange != null) ...[
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: SizedBox(width: spec.metaGap),
       ),
-    };
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.circle,
-          size: spec.priorityDotSize,
-          color: color,
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Icon(
+          Icons.access_time,
+          size: spec.metaIconSize,
+          color: tokens.colors.text.mediumEmphasis,
         ),
-        SizedBox(width: spec.metaIconGap),
-        Text(
-          label,
-          style: spec.metaStyle.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: SizedBox(width: spec.metaIconGap),
+      ),
+      TextSpan(
+        text: timeRange,
+        style: spec.metaStyle,
+      ),
+    ],
+  ];
 }
 
 class _StatusIndicator extends StatelessWidget {

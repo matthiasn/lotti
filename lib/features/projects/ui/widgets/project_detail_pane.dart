@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
@@ -16,11 +17,13 @@ class ProjectDetailPane extends StatelessWidget {
   const ProjectDetailPane({
     required this.record,
     required this.currentTime,
+    this.showLeadingBorder = true,
     super.key,
   });
 
   final ProjectRecord record;
   final DateTime currentTime;
+  final bool showLeadingBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -28,63 +31,83 @@ class ProjectDetailPane extends StatelessWidget {
       decoration: BoxDecoration(
         color: ShowcasePalette.page(context),
         border: Border(
-          left: BorderSide(color: ShowcasePalette.border(context)),
+          left: showLeadingBorder
+              ? BorderSide(color: ShowcasePalette.border(context))
+              : BorderSide.none,
         ),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DetailHeader(record: record),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HealthPanel(record: record),
-                  const SizedBox(height: 16),
-                  TextSection(
-                    title: context.messages.projectShowcaseDescriptionTitle,
-                    body: record.project.entryText?.plainText ?? '',
-                  ),
-                  const SizedBox(height: 16),
-                  TextSection(
-                    title: context.messages.projectShowcaseAiReportTitle,
-                    body: record.aiSummary,
-                    trailingLabel: _updatedLabel(
-                      context,
-                      record.reportUpdatedAt,
-                      currentTime,
+      child: DesignSystemScrollbar(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DetailHeader(record: record),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HealthPanel(record: record),
+                    const SizedBox(height: 16),
+                    TextSection(
+                      title: context.messages.projectShowcaseDescriptionTitle,
+                      body: record.project.entryText?.plainText ?? '',
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.messages.projectShowcaseRecommendationsTitle,
-                    style: context
-                        .designTokens
-                        .typography
-                        .styles
-                        .subtitle
-                        .subtitle2
-                        .copyWith(
-                          color: ShowcasePalette.highText(context),
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  RecommendationsList(items: record.recommendations),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: ProjectTasksPanel(record: record)),
-                      const SizedBox(width: 16),
-                      Expanded(child: ReviewSessionsPanel(record: record)),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    TextSection(
+                      title: context.messages.projectShowcaseAiReportTitle,
+                      body: record.aiSummary,
+                      trailingLabel: _updatedLabel(
+                        context,
+                        record.reportUpdatedAt,
+                        currentTime,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.messages.projectShowcaseRecommendationsTitle,
+                      style: context
+                          .designTokens
+                          .typography
+                          .styles
+                          .subtitle
+                          .subtitle2
+                          .copyWith(
+                            color: ShowcasePalette.highText(context),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    RecommendationsList(items: record.recommendations),
+                    const SizedBox(height: 16),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 720) {
+                          return Column(
+                            children: [
+                              ProjectTasksPanel(record: record),
+                              const SizedBox(height: 16),
+                              ReviewSessionsPanel(record: record),
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: ProjectTasksPanel(record: record)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: ReviewSessionsPanel(record: record),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

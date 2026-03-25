@@ -10,6 +10,10 @@ import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
+  Finder richTextContaining(String text) => find.byWidgetPredicate(
+    (widget) => widget is RichText && widget.text.toPlainText().contains(text),
+  );
+
   Widget wrap(Widget child, {Locale? locale}) {
     final themedChild = Theme(
       data: DesignSystemTheme.dark(),
@@ -147,7 +151,7 @@ void main() {
       final expectedSummary =
           '${l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount)} · ${l10n.projectShowcaseDueDate(expectedDate)}';
 
-      expect(find.text(expectedSummary), findsOneWidget);
+      expect(richTextContaining(expectedSummary), findsOneWidget);
     });
   });
 
@@ -194,7 +198,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('Test Project'), findsOneWidget);
-      expect(find.text('78'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('project-row-health-ring')),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {

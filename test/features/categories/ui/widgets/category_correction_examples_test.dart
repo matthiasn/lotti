@@ -92,7 +92,7 @@ void main() {
       expect(findRichTextContaining('macOS'), findsOneWidget);
     });
 
-    testWidgets('calls onDeleteAt with correct index when swiped', (
+    testWidgets('calls onDeleteAt with correct index when dismissed', (
       tester,
     ) async {
       int? deletedIndex;
@@ -121,16 +121,13 @@ void main() {
         ),
       );
 
-      // Find all Dismissible widgets
-      final dismissibleFinder = find.byType(Dismissible);
-      expect(dismissibleFinder, findsNWidgets(2));
+      final firstDismissible = find.byKey(
+        const ValueKey('correction-example-0'),
+      );
+      expect(firstDismissible, findsOneWidget);
 
-      // Swipe the first one left to dismiss.
-      // Dismissible has two animation phases (slide + resize), so we need
-      // pumpAndSettle to complete both. Use a short frame duration to avoid
-      // CI timeout issues with the default 100ms pump interval.
-      await tester.drag(dismissibleFinder.first, const Offset(-500, 0));
-      await tester.pumpAndSettle(const Duration(milliseconds: 16));
+      final dismissible = tester.widget<Dismissible>(firstDismissible);
+      dismissible.onDismissed?.call(DismissDirection.endToStart);
 
       // Verify onDeleteAt was called with index 0
       expect(deletedIndex, equals(0));

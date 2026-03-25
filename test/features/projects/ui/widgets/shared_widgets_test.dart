@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -51,7 +52,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Active'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.byType(SvgPicture), findsOneWidget);
     });
 
     testWidgets('renders expand chevron when large', (tester) async {
