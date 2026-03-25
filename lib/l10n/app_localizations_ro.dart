@@ -5472,6 +5472,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String get tasksFilterApplyTitle => 'Aplică filtrul';
+
+  @override
+  String get tasksFilterClearAll => 'Șterge tot';
+
+  @override
   String get tasksFilterTitle => 'Filtru sarcini';
 
   @override

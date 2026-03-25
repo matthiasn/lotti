@@ -5443,6 +5443,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksAgentFilterTitle => 'Agent';
 
   @override
+  String get tasksFilterApplyTitle => 'Použít filtr';
+
+  @override
+  String get tasksFilterClearAll => 'Vymazat vše';
+
+  @override
   String get tasksFilterTitle => 'Filtr úkolů';
 
   @override

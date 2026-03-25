@@ -2245,6 +2245,8 @@
   "tasksAgentFilterHasAgent": "Hat Agent",
   "tasksAgentFilterNoAgent": "Kein Agent",
   "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Filter anwenden",
+  "tasksFilterClearAll": "Alles löschen",
   "tasksFilterTitle": "Aufgabenfilter",
   "tasksLabelFilterAll": "Alle",
   "tasksLabelFilterTitle": "Labels",

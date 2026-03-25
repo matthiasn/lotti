@@ -61,6 +61,9 @@ void main() {
       final tabsComponent = components.singleWhere(
         (component) => component.name == 'Tabs',
       );
+      final taskFilterComponent = components.singleWhere(
+        (component) => component.name == 'Task filter modal',
+      );
       final navigationSidebarComponent = components.singleWhere(
         (component) => component.name == 'Navigation Sidebar',
       );
@@ -136,6 +139,7 @@ void main() {
         'Split Buttons',
         'Tab bar',
         'Tabs',
+        'Task filter modal',
         'Task list item',
         'Text input',
         'Textarea',
@@ -158,6 +162,7 @@ void main() {
       expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
+      expect(taskFilterComponent.useCases.single.name, 'Overview');
       expect(taskListItemComponent.useCases.single.name, 'Overview');
       expect(navigationSidebarComponent.useCases.single.name, 'Overview');
       expect(navigationTabBarComponent.useCases.single.name, 'Overview');

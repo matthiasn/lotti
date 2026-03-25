@@ -115,52 +115,52 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                 ? (_) => setState(() => _hovered = false)
                 : null,
             child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(spec.borderRadius),
-                  border: Border.all(
-                    color: borderColor,
-                    width: _focused ? 2 : 1,
-                  ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(spec.borderRadius),
+                border: Border.all(
+                  color: borderColor,
+                  width: _focused ? 2 : 1,
                 ),
-                child: SizedBox(
-                  height: spec.fieldHeight,
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    enabled: widget.enabled,
-                    obscureText: widget.obscureText,
-                    onChanged: widget.onChanged,
-                    onSubmitted: widget.onSubmitted,
-                    style: spec.textStyle,
-                    decoration: InputDecoration(
-                      hintText: widget.hintText,
-                      hintStyle: spec.hintStyle,
-                      contentPadding: spec.contentPadding,
-                      border: InputBorder.none,
-                      prefixIcon: widget.leadingIcon != null
-                          ? Icon(
-                              widget.leadingIcon,
+              ),
+              child: SizedBox(
+                height: spec.fieldHeight,
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: widget.enabled,
+                  obscureText: widget.obscureText,
+                  onChanged: widget.onChanged,
+                  onSubmitted: widget.onSubmitted,
+                  style: spec.textStyle,
+                  decoration: InputDecoration(
+                    hintText: widget.hintText,
+                    hintStyle: spec.hintStyle,
+                    contentPadding: spec.contentPadding,
+                    border: InputBorder.none,
+                    prefixIcon: widget.leadingIcon != null
+                        ? Icon(
+                            widget.leadingIcon,
+                            size: spec.iconSize,
+                            color: tokens.colors.text.mediumEmphasis,
+                          )
+                        : null,
+                    suffixIcon: widget.trailingIcon != null
+                        ? IconButton(
+                            icon: Icon(
+                              widget.trailingIcon,
                               size: spec.iconSize,
                               color: tokens.colors.text.mediumEmphasis,
-                            )
-                          : null,
-                      suffixIcon: widget.trailingIcon != null
-                          ? IconButton(
-                              icon: Icon(
-                                widget.trailingIcon,
-                                size: spec.iconSize,
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                              onPressed: widget.enabled
-                                  ? widget.onTrailingIconTap
-                                  : null,
-                            )
-                          : null,
-                    ),
+                            ),
+                            onPressed: widget.enabled
+                                ? widget.onTrailingIconTap
+                                : null,
+                          )
+                        : null,
                   ),
                 ),
               ),
             ),
+          ),
           if (_hasExtraInfo) ...[
             SizedBox(height: spec.extraInfoGap),
             Text(
