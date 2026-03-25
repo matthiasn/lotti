@@ -2668,6 +2668,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'Con separador';
 
   @override
+  String get designSystemTaskListBlockedLabel => 'Bloqueado';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Predeterminado';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Al pasar';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Variantes de elemento de lista de tareas';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'En espera';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Abierto';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Presionado';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Estudio';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Pruebas de usuario';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'Con separador';
+
+  @override
   String get designSystemMediumLabel => 'Mediano';
 
   @override

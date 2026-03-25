@@ -2590,6 +2590,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'With divider';
 
   @override
+  String get designSystemTaskListBlockedLabel => 'Blocked';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Default';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Hover';
+
+  @override
+  String get designSystemTaskListItemSectionTitle => 'Task List Item Variants';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'On Hold';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Open';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Pressed';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Study';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30am';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'User Testing';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'With divider';
+
+  @override
   String get designSystemMediumLabel => 'Medium';
 
   @override

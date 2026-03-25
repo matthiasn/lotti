@@ -4737,6 +4737,72 @@ abstract class AppLocalizations {
   /// **'With divider'**
   String get designSystemListItemWithDividerLabel;
 
+  /// No description provided for @designSystemTaskListBlockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get designSystemTaskListBlockedLabel;
+
+  /// No description provided for @designSystemTaskListDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get designSystemTaskListDefaultLabel;
+
+  /// No description provided for @designSystemTaskListHoverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover'**
+  String get designSystemTaskListHoverLabel;
+
+  /// No description provided for @designSystemTaskListItemSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task List Item Variants'**
+  String get designSystemTaskListItemSectionTitle;
+
+  /// No description provided for @designSystemTaskListOnHoldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On Hold'**
+  String get designSystemTaskListOnHoldLabel;
+
+  /// No description provided for @designSystemTaskListOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get designSystemTaskListOpenLabel;
+
+  /// No description provided for @designSystemTaskListPressedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressed'**
+  String get designSystemTaskListPressedLabel;
+
+  /// No description provided for @designSystemTaskListSampleCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get designSystemTaskListSampleCategory;
+
+  /// No description provided for @designSystemTaskListSampleTime.
+  ///
+  /// In en, this message translates to:
+  /// **'8:00-9:30am'**
+  String get designSystemTaskListSampleTime;
+
+  /// No description provided for @designSystemTaskListSampleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Testing'**
+  String get designSystemTaskListSampleTitle;
+
+  /// No description provided for @designSystemTaskListWithDividerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With divider'**
+  String get designSystemTaskListWithDividerLabel;
+
   /// No description provided for @designSystemMediumLabel.
   ///
   /// In en, this message translates to:

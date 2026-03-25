@@ -2607,6 +2607,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'S oddělovačem';
 
   @override
+  String get designSystemTaskListBlockedLabel => 'Blokováno';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Výchozí';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Přejetí';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Varianty položky seznamu úkolů';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'Pozastaveno';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Otevřeno';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Stisknuto';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Studium';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Testování uživatelů';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'S oddělovačem';
+
+  @override
   String get designSystemMediumLabel => 'Střední';
 
   @override

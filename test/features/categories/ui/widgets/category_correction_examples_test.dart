@@ -125,9 +125,12 @@ void main() {
       final dismissibleFinder = find.byType(Dismissible);
       expect(dismissibleFinder, findsNWidgets(2));
 
-      // Swipe the first one left to dismiss
+      // Swipe the first one left to dismiss.
+      // Dismissible has two animation phases (slide + resize), so we need
+      // pumpAndSettle to complete both. Use a short frame duration to avoid
+      // CI timeout issues with the default 100ms pump interval.
       await tester.drag(dismissibleFinder.first, const Offset(-500, 0));
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(const Duration(milliseconds: 16));
 
       // Verify onDeleteAt was called with index 0
       expect(deletedIndex, equals(0));
