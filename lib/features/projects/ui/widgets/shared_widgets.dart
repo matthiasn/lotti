@@ -373,6 +373,22 @@ class TextSection extends StatelessWidget {
   }
 }
 
+/// Formats a relative "Updated X ago" label from a pair of timestamps.
+String showcaseUpdatedLabel(
+  BuildContext context, {
+  required DateTime updatedAt,
+  required DateTime currentTime,
+}) {
+  final difference = currentTime.difference(updatedAt);
+
+  if (difference.isNegative || difference.inHours < 1) {
+    final minutes = difference.inMinutes < 1 ? 1 : difference.inMinutes;
+    return context.messages.projectShowcaseUpdatedMinutesAgo(minutes);
+  }
+
+  return context.messages.projectShowcaseUpdatedHoursAgo(difference.inHours);
+}
+
 /// A bullet-point list of recommendation strings.
 class RecommendationsList extends StatelessWidget {
   const RecommendationsList({required this.items, super.key});

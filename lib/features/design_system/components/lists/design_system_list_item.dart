@@ -35,8 +35,8 @@ class DesignSystemListItem extends StatefulWidget {
     this.forcedState,
     super.key,
   }) : assert(
-         title != null || titleContent != null,
-         'Provide either title or titleContent.',
+         (title != null) ^ (titleContent != null),
+         'Provide exactly one of title or titleContent, not both.',
        ),
        assert(
          subtitle == null || subtitleSpans == null,

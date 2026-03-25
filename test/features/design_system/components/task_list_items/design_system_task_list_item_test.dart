@@ -7,13 +7,10 @@ import 'package:lotti/features/design_system/components/task_list_items/design_s
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+import '../../../../helpers/test_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  Finder richTextContaining(String text) => find.byWidgetPredicate(
-    (widget) => widget is RichText && widget.text.toPlainText().contains(text),
-  );
-
   TextStyle? richTextStyleFor(WidgetTester tester, String text) {
     final richText = tester
         .widgetList<RichText>(find.byType(RichText))
@@ -39,7 +36,7 @@ void main() {
       );
 
       expect(find.text('User Testing'), findsOneWidget);
-      expect(richTextContaining('P2'), findsOneWidget);
+      expect(findRichTextContaining('P2'), findsOneWidget);
       expect(find.text('Blocked'), findsOneWidget);
     });
 
@@ -81,7 +78,7 @@ void main() {
         ),
       );
 
-      expect(richTextContaining('8:00-9:30am'), findsOneWidget);
+      expect(findRichTextContaining('8:00-9:30am'), findsOneWidget);
       expect(find.byIcon(Icons.access_time), findsOneWidget);
     });
 

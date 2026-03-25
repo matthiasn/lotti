@@ -289,7 +289,7 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
             child: Row(
               children: [
                 TextButton.icon(
-                  onPressed: onBack ?? () {},
+                  onPressed: onBack,
                   style: TextButton.styleFrom(
                     foregroundColor: ShowcasePalette.highText(context),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -325,10 +325,10 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
                     TextSection(
                       title: context.messages.projectShowcaseAiReportTitle,
                       body: record.aiSummary,
-                      trailingLabel: _updatedLabel(
+                      trailingLabel: showcaseUpdatedLabel(
                         context,
-                        record.reportUpdatedAt,
-                        currentTime,
+                        updatedAt: record.reportUpdatedAt,
+                        currentTime: currentTime,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -361,21 +361,6 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _updatedLabel(
-    BuildContext context,
-    DateTime updatedAt,
-    DateTime currentTime,
-  ) {
-    final difference = currentTime.difference(updatedAt);
-
-    if (difference.isNegative || difference.inHours < 1) {
-      final minutes = difference.inMinutes < 1 ? 1 : difference.inMinutes;
-      return context.messages.projectShowcaseUpdatedMinutesAgo(minutes);
-    }
-
-    return context.messages.projectShowcaseUpdatedHoursAgo(difference.inHours);
   }
 }
 

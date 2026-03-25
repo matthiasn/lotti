@@ -6,14 +6,11 @@ import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart'
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
+import '../../../../helpers/test_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
-  Finder richTextContaining(String text) => find.byWidgetPredicate(
-    (widget) => widget is RichText && widget.text.toPlainText().contains(text),
-  );
-
   Widget wrap(Widget child, {Locale? locale}) {
     final themedChild = Theme(
       data: DesignSystemTheme.dark(),
@@ -151,7 +148,7 @@ void main() {
       final expectedSummary =
           '${l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount)} · ${l10n.projectShowcaseDueDate(expectedDate)}';
 
-      expect(richTextContaining(expectedSummary), findsOneWidget);
+      expect(findRichTextContaining(expectedSummary), findsOneWidget);
     });
   });
 

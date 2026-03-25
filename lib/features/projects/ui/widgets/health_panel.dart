@@ -29,6 +29,26 @@ class HealthPanel extends StatelessWidget {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 420;
 
+        final healthRing = DesignSystemCircularProgress(
+          value: record.healthScore / 100,
+          size: DesignSystemCircularProgressSize.large,
+          progressColor: ShowcasePalette.amber(context),
+          trackColor: ShowcasePalette.border(context),
+          semanticsLabel: context.messages.projectShowcaseHealthScoreTitle,
+          center: Text('${record.healthScore}'),
+        );
+
+        final summary = _HealthSummary(
+          record: record,
+          tokens: tokens,
+        );
+
+        final blockerButton = DesignSystemButton(
+          label: context.messages.projectShowcaseViewBlocker,
+          variant: DesignSystemButtonVariant.secondary,
+          onPressed: onViewBlockerPressed,
+        );
+
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -44,59 +64,25 @@ class HealthPanel extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DesignSystemCircularProgress(
-                      value: record.healthScore / 100,
-                      size: DesignSystemCircularProgressSize.large,
-                      progressColor: ShowcasePalette.amber(context),
-                      trackColor: ShowcasePalette.border(context),
-                      semanticsLabel:
-                          context.messages.projectShowcaseHealthScoreTitle,
-                      center: Text('${record.healthScore}'),
-                    ),
+                    healthRing,
                     const SizedBox(width: 16),
-                    Expanded(
-                      child: _HealthSummary(
-                        record: record,
-                        tokens: tokens,
-                      ),
-                    ),
+                    Expanded(child: summary),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: DesignSystemButton(
-                    label: context.messages.projectShowcaseViewBlocker,
-                    variant: DesignSystemButtonVariant.secondary,
-                    onPressed: onViewBlockerPressed,
-                  ),
+                  child: blockerButton,
                 ),
               ] else
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DesignSystemCircularProgress(
-                      value: record.healthScore / 100,
-                      size: DesignSystemCircularProgressSize.large,
-                      progressColor: ShowcasePalette.amber(context),
-                      trackColor: ShowcasePalette.border(context),
-                      semanticsLabel:
-                          context.messages.projectShowcaseHealthScoreTitle,
-                      center: Text('${record.healthScore}'),
-                    ),
+                    healthRing,
                     const SizedBox(width: 16),
-                    Expanded(
-                      child: _HealthSummary(
-                        record: record,
-                        tokens: tokens,
-                      ),
-                    ),
+                    Expanded(child: summary),
                     const SizedBox(width: 12),
-                    DesignSystemButton(
-                      label: context.messages.projectShowcaseViewBlocker,
-                      variant: DesignSystemButtonVariant.secondary,
-                      onPressed: onViewBlockerPressed,
-                    ),
+                    blockerButton,
                   ],
                 ),
               const SizedBox(height: 14),

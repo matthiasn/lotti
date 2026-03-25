@@ -396,7 +396,7 @@ class _TinyProgressRingPainter extends CustomPainter {
       ..drawArc(
         rect,
         -math.pi / 2,
-        -(math.pi * 2 * progress.clamp(0.0, 1.0)),
+        math.pi * 2 * progress.clamp(0.0, 1.0),
         false,
         progressPaint,
       );
