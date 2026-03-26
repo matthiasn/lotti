@@ -349,9 +349,9 @@ class _MonthCalendarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _TimeCalendarPalette.fromMode(mode);
-    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     final tokens = context.designTokens;
+    final palette = _TimeCalendarPalette.fromMode(mode);
+    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final firstDayOfWeek = MaterialLocalizations.of(
       context,
@@ -703,15 +703,15 @@ class _CalendarDayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
-    final baseStyle = context.designTokens.typography.styles.body.bodyMedium
-        .copyWith(
-          color: switch ((isSelected, isCurrentDay, palette.mode)) {
-            (true, _, _) => palette.onAccent,
-            (_, true, _) => palette.accent,
-            _ => palette.highEmphasis,
-          },
-        );
+    final tokens = context.designTokens;
+    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
+    final baseStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: switch ((isSelected, isCurrentDay, palette.mode)) {
+        (true, _, _) => palette.onAccent,
+        (_, true, _) => palette.accent,
+        _ => palette.highEmphasis,
+      },
+    );
 
     return SizedBox(
       width: geometry.dayCellWidth,
@@ -762,8 +762,8 @@ class _MonthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
     final tokens = context.designTokens;
+    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
     return SizedBox(
       width: geometry.monthButtonWidth,
       height: geometry.monthButtonHeight,

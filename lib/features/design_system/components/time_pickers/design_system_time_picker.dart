@@ -54,7 +54,7 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final materialLocalizations = MaterialLocalizations.of(context);
-    final columnGap =
+    final columnGap = // 27px
         tokens.spacing.step6 + tokens.spacing.step1 + tokens.spacing.step1 / 2;
     final is12h = widget.format == DesignSystemTimeFormat.twelveHour;
     final hourCount = is12h ? 12 : 24;

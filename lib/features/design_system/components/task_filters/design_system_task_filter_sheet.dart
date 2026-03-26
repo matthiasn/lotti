@@ -338,7 +338,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                           style: tokens.typography.styles.heading.heading2
                               .copyWith(color: palette.primaryText),
                         ),
-                        SizedBox(height: spacing.step9 + spacing.step2),
+                        SizedBox(height: spacing.step9 + spacing.step2), // 52px
                         _TaskFilterSectionLabel(
                           text: state.sortLabel,
                           color: palette.secondaryText,
@@ -521,7 +521,8 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                height: spacing.step5 + spacing.step2 + spacing.step1 / 2,
+                height:
+                    spacing.step5 + spacing.step2 + spacing.step1 / 2, // 21px
               ),
             ],
           ),
@@ -572,7 +573,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: spacing.step5,
-                vertical: spacing.step2 + spacing.step1,
+                vertical: spacing.step2 + spacing.step1, // 6px
               ),
               child: Row(
                 children: [
@@ -669,7 +670,7 @@ class _TaskFilterSelectedChip extends StatelessWidget {
               color: palette.primaryText,
             ),
           ),
-          SizedBox(width: spacing.step2 + spacing.step1),
+          SizedBox(width: spacing.step2 + spacing.step1), // 6px
           Material(
             color: Colors.transparent,
             child: Ink(
@@ -740,7 +741,8 @@ class _TaskFilterChoicePill extends StatelessWidget {
               horizontal: leading != null
                   ? spacing.step5
                   : spacing.step5 + spacing.step2,
-              vertical: spacing.step3 + spacing.step1 + spacing.step1 / 2,
+              vertical:
+                  spacing.step3 + spacing.step1 + spacing.step1 / 2, // 11px
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -845,7 +847,8 @@ class _TaskFilterActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
 
     return Material(
       color: Colors.transparent,
@@ -882,11 +885,12 @@ class _TaskFilterActionButton extends StatelessWidget {
                     child: Center(
                       child: Text(
                         '$counter',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: highlighted
-                              ? palette.accentText
-                              : palette.primaryText,
-                        ),
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: highlighted
+                                  ? palette.accentText
+                                  : palette.primaryText,
+                            ),
                       ),
                     ),
                   ),
