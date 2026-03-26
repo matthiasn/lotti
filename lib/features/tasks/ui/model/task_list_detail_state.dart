@@ -17,12 +17,11 @@ class TaskListDetailState {
 
   late final List<TaskRecord> visibleTasks = _computeVisibleTasks();
 
-  TaskRecord? get selectedTask {
-    return visibleTasks
-            .where((task) => task.task.meta.id == selectedTaskId)
-            .firstOrNull ??
-        visibleTasks.firstOrNull;
-  }
+  late final TaskRecord? selectedTask =
+      visibleTasks
+          .where((task) => task.task.meta.id == selectedTaskId)
+          .firstOrNull ??
+      visibleTasks.firstOrNull;
 
   late final List<TaskListSection> visibleSections = _computeVisibleSections();
 

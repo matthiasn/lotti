@@ -5729,6 +5729,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskUntitled => '(sin título)';
 
   @override
+  String get taskShowcaseActiveFilters => 'Filtros activos';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total hecho(s)';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Vence: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Ir a la sección';
+
+  @override
+  String get taskShowcaseLinked => 'Vinculado';
+
+  @override
+  String get taskShowcaseNoResults => 'Ninguna tarea coincide con tu búsqueda.';
+
+  @override
+  String get taskShowcaseReadMore => 'Leer más';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    return '$count grabaciones';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas',
+      one: '1 tarea',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Descripción de la tarea';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Registro de tiempo';
+
+  @override
+  String get taskShowcaseTodo => 'Pendiente';
+
+  @override
+  String get taskShowcaseTodos => 'Pendientes';
+
+  @override
   String get thinkingDisclosureCopied => 'Razonamiento copiado';
 
   @override

@@ -21,11 +21,11 @@ class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
     return Row(
       children: [
         Semantics(
-          button: true,
+          button: onBack != null,
           label: backLabel,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: onBack ?? () {},
+            onTap: onBack,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -2307,6 +2307,51 @@
   "taskStatusRejected": "Rechazado",
   "taskSummaries": "Resúmenes de tareas",
   "taskUntitled": "(sin título)",
+  "taskShowcaseActiveFilters": "Filtros activos",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} hecho(s)",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Vence: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Ir a la sección",
+  "taskShowcaseLinked": "Vinculado",
+  "taskShowcaseNoResults": "Ninguna tarea coincide con tu búsqueda.",
+  "taskShowcaseReadMore": "Leer más",
+  "taskShowcaseRecordingsCount": "{count} grabaciones",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 tarea} other{{count} tareas}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Descripción de la tarea",
+  "taskShowcaseTimeTracker": "Registro de tiempo",
+  "taskShowcaseTodo": "Pendiente",
+  "taskShowcaseTodos": "Pendientes",
   "thinkingDisclosureCopied": "Razonamiento copiado",
   "thinkingDisclosureCopy": "Copiar razonamiento",
   "thinkingDisclosureHide": "Ocultar razonamiento",

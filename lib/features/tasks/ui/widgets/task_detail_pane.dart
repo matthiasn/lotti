@@ -135,7 +135,7 @@ class TaskShowcaseDetailContent extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Jump to section',
+                                context.messages.taskShowcaseJumpToSection,
                                 style: tokens.typography.styles.others.caption
                                     .copyWith(
                                       color: TaskShowcasePalette.mediumText(
@@ -179,12 +179,12 @@ class TaskShowcaseDetailContent extends StatelessWidget {
         true,
       ),
       (
-        'Todo',
+        context.messages.taskShowcaseTodo,
         Icons.check_box_outlined,
         false,
       ),
       (
-        'Audio',
+        context.messages.taskShowcaseAudio,
         Icons.mic_none_rounded,
         false,
       ),
@@ -194,7 +194,7 @@ class TaskShowcaseDetailContent extends StatelessWidget {
         false,
       ),
       (
-        'Linked',
+        context.messages.taskShowcaseLinked,
         Icons.subdirectory_arrow_right_rounded,
         false,
       ),
@@ -240,8 +240,9 @@ class _TaskDetailHeader extends StatelessWidget {
         if (due != null)
           TaskShowcaseMetaChip(
             icon: Icons.watch_later_outlined,
-            label:
-                'Due: ${MaterialLocalizations.of(context).formatShortDate(due)}',
+            label: context.messages.taskShowcaseDueDate(
+              MaterialLocalizations.of(context).formatShortDate(due),
+            ),
           ),
         for (final label in record.labels)
           TaskShowcaseLabelChip(
@@ -416,7 +417,7 @@ class _AiSummaryCard extends StatelessWidget {
                       vertical: tokens.spacing.step2,
                     ),
                     child: Text(
-                      'Read more',
+                      context.messages.taskShowcaseReadMore,
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(
                             color: Colors.white,
@@ -448,7 +449,7 @@ class _DescriptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TaskShowcaseCard(
-      title: 'Task description',
+      title: context.messages.taskShowcaseTaskDescription,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -483,7 +484,7 @@ class _TimeTrackerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return TaskShowcaseCard(
-      title: 'Time Tracker',
+      title: context.messages.taskShowcaseTimeTracker,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -547,12 +548,16 @@ class _TimeEntryTile extends StatelessWidget {
                       color: TaskShowcasePalette.mediumText(context),
                     ),
                     SizedBox(width: tokens.spacing.step1),
-                    Text(
-                      entry.title,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(
-                            color: TaskShowcasePalette.highText(context),
-                          ),
+                    Expanded(
+                      child: Text(
+                        entry.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: TaskShowcasePalette.highText(context),
+                            ),
+                      ),
                     ),
                   ],
                 ),
@@ -612,12 +617,15 @@ class _ChecklistCard extends StatelessWidget {
     final tokens = context.designTokens;
 
     return TaskShowcaseCard(
-      title: 'Todos',
+      title: context.messages.taskShowcaseTodos,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '$completedCount / $totalCount done',
+            context.messages.taskShowcaseCompletedCount(
+              completedCount,
+              totalCount,
+            ),
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: TaskShowcasePalette.mediumText(context),
             ),
@@ -713,7 +721,7 @@ class _AudioCard extends StatelessWidget {
     return TaskShowcaseCard(
       title: context.messages.audioRecordings,
       trailing: Text(
-        '${entries.length} recordings',
+        context.messages.taskShowcaseRecordingsCount(entries.length),
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: TaskShowcasePalette.info(context),
         ),

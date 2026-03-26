@@ -10042,6 +10042,90 @@ abstract class AppLocalizations {
   /// **'(untitled)'**
   String get taskUntitled;
 
+  /// No description provided for @taskShowcaseActiveFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Active filters'**
+  String get taskShowcaseActiveFilters;
+
+  /// No description provided for @taskShowcaseAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get taskShowcaseAudio;
+
+  /// No description provided for @taskShowcaseCompletedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total} done'**
+  String taskShowcaseCompletedCount(int completed, int total);
+
+  /// No description provided for @taskShowcaseDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {date}'**
+  String taskShowcaseDueDate(String date);
+
+  /// No description provided for @taskShowcaseJumpToSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to section'**
+  String get taskShowcaseJumpToSection;
+
+  /// No description provided for @taskShowcaseLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get taskShowcaseLinked;
+
+  /// No description provided for @taskShowcaseNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks match your search.'**
+  String get taskShowcaseNoResults;
+
+  /// No description provided for @taskShowcaseReadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get taskShowcaseReadMore;
+
+  /// No description provided for @taskShowcaseRecordingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} recordings'**
+  String taskShowcaseRecordingsCount(int count);
+
+  /// No description provided for @taskShowcaseTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String taskShowcaseTaskCount(int count);
+
+  /// No description provided for @taskShowcaseTaskDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Task description'**
+  String get taskShowcaseTaskDescription;
+
+  /// No description provided for @taskShowcaseTimeTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Tracker'**
+  String get taskShowcaseTimeTracker;
+
+  /// No description provided for @taskShowcaseTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get taskShowcaseTodo;
+
+  /// No description provided for @taskShowcaseTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get taskShowcaseTodos;
+
   /// No description provided for @thinkingDisclosureCopied.
   ///
   /// In en, this message translates to:

@@ -2078,6 +2078,51 @@
   "taskStatusRejected": "Odmítnuto",
   "taskSummaries": "Souhrny úkolů",
   "taskUntitled": "(bez názvu)",
+  "taskShowcaseActiveFilters": "Aktivní filtry",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} hotovo",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Termín: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Přejít na sekci",
+  "taskShowcaseLinked": "Propojené",
+  "taskShowcaseNoResults": "Žádné úkoly neodpovídají tvému hledání.",
+  "taskShowcaseReadMore": "Číst dále",
+  "taskShowcaseRecordingsCount": "{count} nahrávek",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Popis úkolu",
+  "taskShowcaseTimeTracker": "Sledování času",
+  "taskShowcaseTodo": "Úkol",
+  "taskShowcaseTodos": "Úkoly",
   "thinkingDisclosureCopied": "Úvaha zkopírována",
   "thinkingDisclosureCopy": "Kopírovat úvahu",
   "thinkingDisclosureHide": "Skrýt úvahu",

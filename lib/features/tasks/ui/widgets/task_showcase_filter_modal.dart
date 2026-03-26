@@ -12,6 +12,28 @@ Future<void> showTaskShowcaseFilterModal({
   required ValueChanged<DesignSystemTaskFilterState> onApplied,
   required TaskShowcaseFilterPresentation presentation,
 }) {
+  final showDragHandle = presentation == TaskShowcaseFilterPresentation.mobile;
+
+  Widget buildSheet(
+    StateSetter setState,
+    DesignSystemTaskFilterState draftState,
+    void Function(DesignSystemTaskFilterState) updateDraft,
+  ) {
+    return DesignSystemTaskFilterSheet(
+      state: draftState,
+      onChanged: (nextState) {
+        updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
+      },
+      onApplyPressed: (nextState) {
+        onApplied(nextState.copyWith(showDragHandle: showDragHandle));
+        Navigator.of(context).pop();
+      },
+      onClearAllPressed: (nextState) {
+        updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
+      },
+    );
+  }
+
   return switch (presentation) {
     TaskShowcaseFilterPresentation.desktop => showDialog<void>(
       context: context,
@@ -21,22 +43,10 @@ Future<void> showTaskShowcaseFilterModal({
           builder: (context, setState) => Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.all(24),
-            child: DesignSystemTaskFilterSheet(
-              state: draftState,
-              onChanged: (nextState) {
-                setState(
-                  () => draftState = nextState.copyWith(showDragHandle: false),
-                );
-              },
-              onApplyPressed: (nextState) {
-                onApplied(nextState.copyWith(showDragHandle: false));
-                Navigator.of(context).pop();
-              },
-              onClearAllPressed: (nextState) {
-                setState(
-                  () => draftState = nextState.copyWith(showDragHandle: false),
-                );
-              },
+            child: buildSheet(
+              setState,
+              draftState,
+              (next) => setState(() => draftState = next),
             ),
           ),
         );
@@ -51,22 +61,10 @@ Future<void> showTaskShowcaseFilterModal({
         return StatefulBuilder(
           builder: (context, setState) => SafeArea(
             top: false,
-            child: DesignSystemTaskFilterSheet(
-              state: draftState,
-              onChanged: (nextState) {
-                setState(
-                  () => draftState = nextState.copyWith(showDragHandle: true),
-                );
-              },
-              onApplyPressed: (nextState) {
-                onApplied(nextState.copyWith(showDragHandle: true));
-                Navigator.of(context).pop();
-              },
-              onClearAllPressed: (nextState) {
-                setState(
-                  () => draftState = nextState.copyWith(showDragHandle: true),
-                );
-              },
+            child: buildSheet(
+              setState,
+              draftState,
+              (next) => setState(() => draftState = next),
             ),
           ),
         );

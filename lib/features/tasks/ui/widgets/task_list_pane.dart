@@ -11,7 +11,6 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 
 class TaskListPane extends StatelessWidget {
   const TaskListPane({
@@ -53,8 +52,8 @@ class TaskListPane extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               child: state.visibleSections.isEmpty
-                  ? const _EmptyTaskResults(
-                      message: 'No tasks match your search.',
+                  ? TaskShowcaseEmptyResults(
+                      message: context.messages.taskShowcaseNoResults,
                     )
                   : TaskListSectionsList(
                       sections: state.visibleSections,
@@ -143,7 +142,7 @@ class TaskListActiveFilters extends StatelessWidget {
           runSpacing: 8,
           children: [
             Text(
-              'Active filters',
+              context.messages.taskShowcaseActiveFilters,
               style: tokens.typography.styles.others.caption.copyWith(
                 color: TaskShowcasePalette.mediumText(context),
               ),
@@ -241,7 +240,7 @@ class _TaskSectionCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '${section.tasks.length} tasks',
+                context.messages.taskShowcaseTaskCount(section.tasks.length),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: TaskShowcasePalette.mediumText(context),
                 ),
@@ -308,7 +307,7 @@ class _TaskListRow extends StatelessWidget {
       subtitleSpans: [
         WidgetSpan(
           alignment: PlaceholderAlignment.middle,
-          child: _CompactCategoryChip(
+          child: TaskShowcaseCategoryChip(
             label: category.name,
             colorHex: categoryColor,
             icon: category.icon?.iconData ?? Icons.label_outline,
@@ -357,47 +356,8 @@ class _TaskListRow extends StatelessWidget {
   }
 }
 
-class _CompactCategoryChip extends StatelessWidget {
-  const _CompactCategoryChip({
-    required this.label,
-    required this.colorHex,
-    required this.icon,
-  });
-
-  final String label;
-  final String colorHex;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorFromCssHex(colorHex),
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: Colors.black),
-          const SizedBox(width: 2),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyTaskResults extends StatelessWidget {
-  const _EmptyTaskResults({required this.message});
+class TaskShowcaseEmptyResults extends StatelessWidget {
+  const TaskShowcaseEmptyResults({required this.message, super.key});
 
   final String message;
 
