@@ -2774,13 +2774,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get designSystemMyDailyHikeWithDanielaTitle =>
-      'Senderismo con Daniella';
+      'Senderismo con Daniela';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Pausa para comer';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Reunión con Dammy';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Reunión con Danny';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Reuniones';

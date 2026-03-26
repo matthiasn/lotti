@@ -2713,13 +2713,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Túra s Daniellou';
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Túra s Danielou';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Obědová pauza';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dammym';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dannym';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Schůzky';

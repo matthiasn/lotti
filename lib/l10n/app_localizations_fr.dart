@@ -2759,7 +2759,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get designSystemMyDailyEditPlanLabel => 'Modifier ton plan';
+  String get designSystemMyDailyEditPlanLabel => 'Modifier le plan';
 
   @override
   String get designSystemMyDailyGreetingMorning => 'Bonjour.';
@@ -2771,13 +2771,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemMyDailyHikeWithDanielaTitle =>
-      'Randonnée avec Daniella';
+      'Randonnée avec Daniela';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Pause déjeuner';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Réunion avec Dammy';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Réunion avec Danny';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Réunions';

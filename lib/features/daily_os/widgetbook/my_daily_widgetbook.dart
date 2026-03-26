@@ -621,7 +621,8 @@ class _MyDailyDateHeader extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            DateFormat('EEEE, MMMM d', locale).format(selectedDate),
+            '${DateFormat('EEEE', locale).format(selectedDate)}, '
+            '${DateFormat.yMMMd(locale).format(selectedDate)}',
             key: const Key('my-daily-date-header'),
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: tokens.colors.text.highEmphasis,
@@ -1556,7 +1557,10 @@ class _MyDailyTimelineConnectorPainter extends CustomPainter {
           ..drawCircle(
             Offset(next.left + next.width, nextCenterY),
             _myDailyTimelineConnectorEndpointRadius,
-            Paint()..color = current.badgeColor ?? current.strokeColor,
+            Paint()
+              ..color = (current.badgeColor ?? current.strokeColor).withValues(
+                alpha: opacity,
+              ),
           );
       }
     }
@@ -1922,7 +1926,7 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
     ),
     _MyDailyTimelineBlockSpec(
       id: 'meeting',
-      filterId: _hikingCategoryId,
+      filterId: _meetingsCategoryId,
       style: _MyDailyTimelineBlockStyle.detailed,
       density: MyDailyTimelineBlockDensity.regular,
       left: 88,

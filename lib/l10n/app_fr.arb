@@ -1183,7 +1183,7 @@
       }
     }
   },
-  "designSystemMyDailyEditPlanLabel": "Modifier ton plan",
+  "designSystemMyDailyEditPlanLabel": "Modifier le plan",
   "designSystemMyDailyGreetingMorning": "Bonjour.",
   "designSystemMyDailyGreetingWithName": "Salut, {name}",
   "@designSystemMyDailyGreetingWithName": {
@@ -1193,9 +1193,9 @@
       }
     }
   },
-  "designSystemMyDailyHikeWithDanielaTitle": "Randonnée avec Daniella",
+  "designSystemMyDailyHikeWithDanielaTitle": "Randonnée avec Daniela",
   "designSystemMyDailyLunchBreakTitle": "Pause déjeuner",
-  "designSystemMyDailyMeetingWithDannyTitle": "Réunion avec Dammy",
+  "designSystemMyDailyMeetingWithDannyTitle": "Réunion avec Danny",
   "designSystemMyDailyMeetingsLabel": "Réunions",
   "designSystemMyDailyProfileActionLabel": "Profil",
   "designSystemMyDailySkiWithMattTitle": "Aller skier avec Matt",

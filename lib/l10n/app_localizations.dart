@@ -4926,7 +4926,7 @@ abstract class AppLocalizations {
   /// No description provided for @designSystemMyDailyHikeWithDanielaTitle.
   ///
   /// In en, this message translates to:
-  /// **'Hiking with Daniella'**
+  /// **'Hiking with Daniela'**
   String get designSystemMyDailyHikeWithDanielaTitle;
 
   /// No description provided for @designSystemMyDailyLunchBreakTitle.
@@ -4938,7 +4938,7 @@ abstract class AppLocalizations {
   /// No description provided for @designSystemMyDailyMeetingWithDannyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Meeting with Dammy'**
+  /// **'Meeting with Danny'**
   String get designSystemMyDailyMeetingWithDannyTitle;
 
   /// No description provided for @designSystemMyDailyMeetingsLabel.

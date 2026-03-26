@@ -104,8 +104,8 @@ void main() {
         find.byKey(const Key('my-daily-block-layout-focus-right-regular')),
         findsOneWidget,
       );
-      expect(find.text('Hiking with Daniella'), findsOneWidget);
-      expect(find.text('Meeting with Dammy'), findsOneWidget);
+      expect(find.text('Hiking with Daniela'), findsOneWidget);
+      expect(find.text('Meeting with Danny'), findsOneWidget);
       expect(find.byKey(const Key('my-daily-filter-holiday')), findsNothing);
 
       final holidayOpacity = tester.widget<Opacity>(
@@ -125,14 +125,14 @@ void main() {
 
       _expectNoPendingExceptions(tester);
       expect(find.byKey(const Key('my-daily-date-header')), findsOneWidget);
-      expect(find.text('Tuesday, October 17'), findsOneWidget);
+      expect(find.text('Tuesday, Oct 17, 2023'), findsOneWidget);
       expect(find.byKey(const Key('my-daily-now-indicator')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('my-daily-date-2023-10-19')));
       await _settlePreview(tester);
 
       _expectNoPendingExceptions(tester);
-      expect(find.text('Thursday, October 19'), findsOneWidget);
+      expect(find.text('Thursday, Oct 19, 2023'), findsOneWidget);
       expect(find.byKey(const Key('my-daily-now-indicator')), findsNothing);
     });
 
@@ -239,7 +239,7 @@ void main() {
         find.byKey(const Key('my-daily-block-layout-hiking-regular')),
         findsOneWidget,
       );
-      expect(find.text('Meeting with Dammy'), findsOneWidget);
+      expect(find.text('Meeting with Danny'), findsOneWidget);
     });
   });
 }

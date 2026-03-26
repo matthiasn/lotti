@@ -2733,13 +2733,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Wandern mit Daniella';
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Wandern mit Daniela';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Mittagspause';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting mit Dammy';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting mit Danny';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Meetings';

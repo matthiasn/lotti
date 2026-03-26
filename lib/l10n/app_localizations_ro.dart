@@ -2736,13 +2736,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Drumeție cu Daniella';
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Drumeție cu Daniela';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Pauză de prânz';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Întâlnire cu Dammy';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Întâlnire cu Danny';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Întâlniri';

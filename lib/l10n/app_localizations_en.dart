@@ -2695,13 +2695,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get designSystemMyDailyHikeWithDanielaTitle => 'Hiking with Daniella';
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Hiking with Daniela';
 
   @override
   String get designSystemMyDailyLunchBreakTitle => 'Lunch break';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting with Dammy';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting with Danny';
 
   @override
   String get designSystemMyDailyMeetingsLabel => 'Meetings';
