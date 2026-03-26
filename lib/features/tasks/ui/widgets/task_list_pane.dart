@@ -253,6 +253,7 @@ class _TaskSectionCard extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: TaskShowcasePalette.surface(context),
+              borderRadius: BorderRadius.circular(tokens.radii.l),
               border: Border.all(color: TaskShowcasePalette.border(context)),
             ),
             child: Column(

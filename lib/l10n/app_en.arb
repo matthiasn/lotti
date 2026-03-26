@@ -1213,6 +1213,7 @@
   "designSystemAvatarEnabledLabel": "Enabled",
   "designSystemAvatarSizeMatrixTitle": "Size Matrix",
   "designSystemAvatarStatusMatrixTitle": "Status Matrix",
+  "designSystemBackLabel": "Back",
   "designSystemBreadcrumbCurrentLabel": "Breadcrumbs",
   "designSystemBreadcrumbDesignSystemLabel": "Design System",
   "designSystemBreadcrumbHomeLabel": "Home",
@@ -1293,17 +1294,6 @@
   "designSystemListItemTwoLinesLabel": "Two lines",
   "designSystemListItemVariantsTitle": "List Item Variants",
   "designSystemListItemWithDividerLabel": "With divider",
-  "designSystemTaskListBlockedLabel": "Blocked",
-  "designSystemTaskListDefaultLabel": "Default",
-  "designSystemTaskListHoverLabel": "Hover",
-  "designSystemTaskListItemSectionTitle": "Task List Item Variants",
-  "designSystemTaskListOnHoldLabel": "On Hold",
-  "designSystemTaskListOpenLabel": "Open",
-  "designSystemTaskListPressedLabel": "Pressed",
-  "designSystemTaskListSampleCategory": "Study",
-  "designSystemTaskListSampleTime": "8:00-9:30am",
-  "designSystemTaskListSampleTitle": "User Testing",
-  "designSystemTaskListWithDividerLabel": "With divider",
   "designSystemMediumLabel": "Medium",
   "designSystemNavigationAiAssistantSectionTitle": "AI Assistant",
   "designSystemNavigationCollapsedLabel": "Collapsed",
@@ -1354,6 +1344,17 @@
   "designSystemStateMatrixTitle": "State Matrix",
   "designSystemSuccessLabel": "Success",
   "designSystemTabPendingLabel": "Pending",
+  "designSystemTaskListBlockedLabel": "Blocked",
+  "designSystemTaskListDefaultLabel": "Default",
+  "designSystemTaskListHoverLabel": "Hover",
+  "designSystemTaskListItemSectionTitle": "Task List Item Variants",
+  "designSystemTaskListOnHoldLabel": "On Hold",
+  "designSystemTaskListOpenLabel": "Open",
+  "designSystemTaskListPressedLabel": "Pressed",
+  "designSystemTaskListSampleCategory": "Study",
+  "designSystemTaskListSampleTime": "8:00-9:30am",
+  "designSystemTaskListSampleTitle": "User Testing",
+  "designSystemTaskListWithDividerLabel": "With divider",
   "designSystemTextareaErrorSample": "This field is required",
   "designSystemTextareaHelperSample": "Enter your message here",
   "designSystemTextareaHintSample": "Type something...",
@@ -1752,6 +1753,35 @@
   "projectErrorLoadProjects": "Error loading projects",
   "projectErrorUpdateFailed": "Failed to update project. Please try again.",
   "projectFilterLabel": "Project",
+  "projectHealthBandAtRisk": "At Risk",
+  "projectHealthBandBlocked": "Blocked",
+  "projectHealthBandOnTrack": "On Track",
+  "projectHealthBandSurviving": "Surviving",
+  "projectHealthBandWatch": "Watch",
+  "projectHealthReasonCompleted": "The project is complete.",
+  "projectHealthReasonNoLinkedTasks": "No linked tasks yet.",
+  "projectHealthReasonNoRecentProgress": "No recent progress.",
+  "projectHealthReasonOnHold": "The project is on hold.",
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonSteadyProgress": "The project is moving steadily.",
+  "projectHealthReasonSummaryOutdated": "The project summary is outdated.",
+  "projectHealthReasonTargetDatePassed": "The target date has passed.",
+  "projectHealthSectionTitle": "Project health",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
   "@projectHealthSummary": {
     "placeholders": {
@@ -1764,35 +1794,6 @@
     }
   },
   "projectHealthTitle": "Projects",
-  "projectHealthSectionTitle": "Project health",
-  "projectHealthBandSurviving": "Surviving",
-  "projectHealthBandOnTrack": "On Track",
-  "projectHealthBandWatch": "Watch",
-  "projectHealthBandAtRisk": "At Risk",
-  "projectHealthBandBlocked": "Blocked",
-  "projectHealthReasonCompleted": "The project is complete.",
-  "projectHealthReasonOnHold": "The project is on hold.",
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonTargetDatePassed": "The target date has passed.",
-  "projectHealthReasonNoRecentProgress": "No recent progress.",
-  "projectHealthReasonSummaryOutdated": "The project summary is outdated.",
-  "projectHealthReasonNoLinkedTasks": "No linked tasks yet.",
-  "projectHealthReasonSteadyProgress": "The project is moving steadily.",
   "projectLinkedTaskCount": "{count, plural, one{{count} linked task} other{{count} linked tasks}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
@@ -2431,6 +2432,51 @@
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
   "tasksFilterTitle": "Tasks Filter",
+  "taskShowcaseActiveFilters": "Active filters",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} done",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Due: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Jump to section",
+  "taskShowcaseLinked": "Linked",
+  "taskShowcaseNoResults": "No tasks match your search.",
+  "taskShowcaseReadMore": "Read more",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 recording} other{{count} recordings}}",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Task description",
+  "taskShowcaseTimeTracker": "Time Tracker",
+  "taskShowcaseTodo": "Todo",
+  "taskShowcaseTodos": "Todos",
   "tasksLabelFilterAll": "All",
   "tasksLabelFilterTitle": "Labels",
   "tasksLabelFilterUnlabeled": "Unlabeled",
@@ -2478,51 +2524,6 @@
   "taskStatusRejected": "Rejected",
   "taskSummaries": "Task Summaries",
   "taskUntitled": "(untitled)",
-  "taskShowcaseActiveFilters": "Active filters",
-  "taskShowcaseAudio": "Audio",
-  "taskShowcaseCompletedCount": "{completed} / {total} done",
-  "@taskShowcaseCompletedCount": {
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseDueDate": "Due: {date}",
-  "@taskShowcaseDueDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "taskShowcaseJumpToSection": "Jump to section",
-  "taskShowcaseLinked": "Linked",
-  "taskShowcaseNoResults": "No tasks match your search.",
-  "taskShowcaseReadMore": "Read more",
-  "taskShowcaseRecordingsCount": "{count} recordings",
-  "@taskShowcaseRecordingsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
-  "@taskShowcaseTaskCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskDescription": "Task description",
-  "taskShowcaseTimeTracker": "Time Tracker",
-  "taskShowcaseTodo": "Todo",
-  "taskShowcaseTodos": "Todos",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",
   "thinkingDisclosureHide": "Hide reasoning",

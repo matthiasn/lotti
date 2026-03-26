@@ -1063,6 +1063,7 @@
   "designSystemAvatarEnabledLabel": "Activat",
   "designSystemAvatarSizeMatrixTitle": "Matricea dimensiunilor",
   "designSystemAvatarStatusMatrixTitle": "Matricea stărilor",
+  "designSystemBackLabel": "Înapoi",
   "designSystemBreadcrumbCurrentLabel": "Breadcrumbs",
   "designSystemBreadcrumbDesignSystemLabel": "Design System",
   "designSystemBreadcrumbHomeLabel": "Acasă",
@@ -1143,17 +1144,6 @@
   "designSystemListItemTwoLinesLabel": "Două linii",
   "designSystemListItemVariantsTitle": "Variante element de listă",
   "designSystemListItemWithDividerLabel": "Cu separator",
-  "designSystemTaskListBlockedLabel": "Blocat",
-  "designSystemTaskListDefaultLabel": "Implicit",
-  "designSystemTaskListHoverLabel": "La survolare",
-  "designSystemTaskListItemSectionTitle": "Variante element listă de sarcini",
-  "designSystemTaskListOnHoldLabel": "În așteptare",
-  "designSystemTaskListOpenLabel": "Deschis",
-  "designSystemTaskListPressedLabel": "Apăsat",
-  "designSystemTaskListSampleCategory": "Studiu",
-  "designSystemTaskListSampleTime": "8:00-9:30",
-  "designSystemTaskListSampleTitle": "Testare utilizatori",
-  "designSystemTaskListWithDividerLabel": "Cu separator",
   "designSystemMediumLabel": "Mediu",
   "designSystemNavigationAiAssistantSectionTitle": "Asistent AI",
   "designSystemNavigationCollapsedLabel": "Restrâns",
@@ -1204,6 +1194,17 @@
   "designSystemStateMatrixTitle": "Matrice de stări",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabPendingLabel": "În așteptare",
+  "designSystemTaskListBlockedLabel": "Blocat",
+  "designSystemTaskListDefaultLabel": "Implicit",
+  "designSystemTaskListHoverLabel": "La survolare",
+  "designSystemTaskListItemSectionTitle": "Variante element listă de sarcini",
+  "designSystemTaskListOnHoldLabel": "În așteptare",
+  "designSystemTaskListOpenLabel": "Deschis",
+  "designSystemTaskListPressedLabel": "Apăsat",
+  "designSystemTaskListSampleCategory": "Studiu",
+  "designSystemTaskListSampleTime": "8:00-9:30",
+  "designSystemTaskListSampleTitle": "Testare utilizatori",
+  "designSystemTaskListWithDividerLabel": "Cu separator",
   "designSystemTextareaErrorSample": "Acest câmp este obligatoriu",
   "designSystemTextareaHelperSample": "Introdu mesajul tău aici",
   "designSystemTextareaHintSample": "Scrie ceva...",
@@ -1588,6 +1589,35 @@
   "projectErrorLoadProjects": "Eroare la încărcarea proiectelor",
   "projectErrorUpdateFailed": "Proiectul nu a putut fi actualizat. Încercați din nou.",
   "projectFilterLabel": "Proiect",
+  "projectHealthBandAtRisk": "Cu risc",
+  "projectHealthBandBlocked": "Blocat",
+  "projectHealthBandOnTrack": "Pe drumul bun",
+  "projectHealthBandSurviving": "Se menține",
+  "projectHealthBandWatch": "De urmărit",
+  "projectHealthReasonCompleted": "Proiectul este finalizat.",
+  "projectHealthReasonNoLinkedTasks": "Proiectul nu are încă sarcini asociate.",
+  "projectHealthReasonNoRecentProgress": "Nu a existat progres recent.",
+  "projectHealthReasonOnHold": "Proiectul este pus în așteptare.",
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} sarcină este întârziată} few{{count} sarcini sunt întârziate} other{{count} de sarcini sunt întârziate}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} sarcină este blocată} few{{count} sarcini sunt blocate} other{{count} de sarcini sunt blocate}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonSteadyProgress": "Proiectul avansează constant.",
+  "projectHealthReasonSummaryOutdated": "Rezumatul proiectului nu mai este actualizat.",
+  "projectHealthReasonTargetDatePassed": "Data-țintă a fost depășită.",
+  "projectHealthSectionTitle": "Starea proiectului",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} proiect} few{{projectCount} proiecte} other{{projectCount} de proiecte}}, {taskCount, plural, one{{taskCount} sarcină} few{{taskCount} sarcini} other{{taskCount} de sarcini}}",
   "@projectHealthSummary": {
     "placeholders": {
@@ -1600,35 +1630,6 @@
     }
   },
   "projectHealthTitle": "Proiecte",
-  "projectHealthSectionTitle": "Starea proiectului",
-  "projectHealthBandSurviving": "Se menține",
-  "projectHealthBandOnTrack": "Pe drumul bun",
-  "projectHealthBandWatch": "De urmărit",
-  "projectHealthBandAtRisk": "Cu risc",
-  "projectHealthBandBlocked": "Blocat",
-  "projectHealthReasonCompleted": "Proiectul este finalizat.",
-  "projectHealthReasonOnHold": "Proiectul este pus în așteptare.",
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} sarcină este blocată} few{{count} sarcini sunt blocate} other{{count} de sarcini sunt blocate}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} sarcină este întârziată} few{{count} sarcini sunt întârziate} other{{count} de sarcini sunt întârziate}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonTargetDatePassed": "Data-țintă a fost depășită.",
-  "projectHealthReasonNoRecentProgress": "Nu a existat progres recent.",
-  "projectHealthReasonSummaryOutdated": "Rezumatul proiectului nu mai este actualizat.",
-  "projectHealthReasonNoLinkedTasks": "Proiectul nu are încă sarcini asociate.",
-  "projectHealthReasonSteadyProgress": "Proiectul avansează constant.",
   "projectLinkedTaskCount": "{count, plural, one{{count} sarcină asociată} few{{count} sarcini asociate} other{{count} de sarcini asociate}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
@@ -2260,6 +2261,51 @@
   "tasksFilterApplyTitle": "Aplică filtrul",
   "tasksFilterClearAll": "Șterge tot",
   "tasksFilterTitle": "Filtru sarcini",
+  "taskShowcaseActiveFilters": "Filtre active",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} finalizate",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Termen: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Salt la secțiune",
+  "taskShowcaseLinked": "Legat",
+  "taskShowcaseNoResults": "Nicio sarcină nu corespunde căutării dvs.",
+  "taskShowcaseReadMore": "Citiți mai mult",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 înregistrare} few{{count} înregistrări} other{{count} de înregistrări}}",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} sarcini}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Descrierea sarcinii",
+  "taskShowcaseTimeTracker": "Urmărire timp",
+  "taskShowcaseTodo": "De făcut",
+  "taskShowcaseTodos": "De făcut",
   "tasksLabelFilterAll": "Toate",
   "tasksLabelFilterTitle": "Etichete",
   "tasksLabelFilterUnlabeled": "Fără etichetă",
@@ -2307,51 +2353,6 @@
   "taskStatusRejected": "RESPINS",
   "taskSummaries": "Rezumate sarcini",
   "taskUntitled": "(fără titlu)",
-  "taskShowcaseActiveFilters": "Filtre active",
-  "taskShowcaseAudio": "Audio",
-  "taskShowcaseCompletedCount": "{completed} / {total} finalizate",
-  "@taskShowcaseCompletedCount": {
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseDueDate": "Termen: {date}",
-  "@taskShowcaseDueDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "taskShowcaseJumpToSection": "Salt la secțiune",
-  "taskShowcaseLinked": "Legat",
-  "taskShowcaseNoResults": "Nicio sarcină nu corespunde căutării dvs.",
-  "taskShowcaseReadMore": "Citiți mai mult",
-  "taskShowcaseRecordingsCount": "{count} înregistrări",
-  "@taskShowcaseRecordingsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} sarcini}}",
-  "@taskShowcaseTaskCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskDescription": "Descrierea sarcinii",
-  "taskShowcaseTimeTracker": "Urmărire timp",
-  "taskShowcaseTodo": "De făcut",
-  "taskShowcaseTodos": "De făcut",
   "thinkingDisclosureCopied": "Raționament copiat",
   "thinkingDisclosureCopy": "Copiază raționamentul",
   "thinkingDisclosureHide": "Ascunde raționamentul",

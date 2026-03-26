@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
   const DesignSystemShowcaseMobileDetailHeader({
@@ -16,7 +17,7 @@ class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final backLabel = MaterialLocalizations.of(context).backButtonTooltip;
+    final backLabel = context.messages.designSystemBackLabel;
 
     return Row(
       children: [
