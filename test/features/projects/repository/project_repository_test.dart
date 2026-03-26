@@ -676,5 +676,20 @@ void main() {
 
       expect(result, {'project-001', 'project-002'});
     });
+
+    test('strips PROJECT_ENTITY_UPDATE: prefix before DB lookup', () async {
+      when(
+        () => mockDb.getExistingProjectIds({'project-001'}),
+      ).thenAnswer((_) async => {'project-001'});
+      when(
+        () => mockDb.getProjectIdsForTaskIds({'project-001'}),
+      ).thenAnswer((_) async => {});
+
+      final result = await repository.resolveAffectedProjectIds({
+        projectEntityUpdateNotification('project-001'),
+      });
+
+      expect(result, {'project-001'});
+    });
   });
 }
