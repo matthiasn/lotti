@@ -26,9 +26,9 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
 Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
 forward to 06:00 local time on the next day after creation or after a due
-digest completes. Direct project edits coalesce into a short deferred refresh,
-while task-linked activity marks the current summary as stale and defers the
-automatic refresh to the next scheduled digest.
+digest completes. Direct project edits and task linking changes coalesce into a
+short deferred refresh, while other task-level activity marks the current
+summary as stale and defers the automatic refresh to the next scheduled digest.
 
 ## Module Structure
 
@@ -144,10 +144,10 @@ Form page with three sections:
 - **Agent system**: Project agents are managed through `ProjectAgentService`,
   `ProjectActivityMonitor`, and the agent workflow system. Local task/project
   changes mark pending activity, including task-linked updates such as new or
-  refreshed task summaries. Direct edits to the project itself also schedule a
-  short deferred refresh through the wake orchestrator. Task-driven staleness
-  still rolls into the next 06:00 scheduled digest unless the user refreshes
-  manually sooner.
+  refreshed task summaries. Direct edits to the project and task linking
+  changes also schedule a short deferred refresh through the wake orchestrator.
+  Other task-driven staleness still rolls into the next 06:00 scheduled digest
+  unless the user refreshes manually sooner.
 - **Deferred agent proposals**: Project detail pages now surface project-agent
   change sets so users can confirm or reject proposed status changes, task
   creation, and other reviewed actions in place. Confirmed
