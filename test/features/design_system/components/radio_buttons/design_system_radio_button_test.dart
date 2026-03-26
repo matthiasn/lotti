@@ -135,9 +135,14 @@ void main() {
         ),
       );
 
+      final expectedHoverBg = Color.lerp(
+        dsTokensLight.colors.background.level01,
+        dsTokensLight.colors.surface.hover,
+        0.5,
+      );
       expect(
         _radioDecoration(tester, 20).color,
-        dsTokensLight.colors.surface.hover,
+        expectedHoverBg,
       );
       expect(
         _radioDecoration(tester, 20).border!.top.color,
@@ -180,7 +185,12 @@ void main() {
         final decoration = _radioDecoration(tester, 20);
         final inkWell = tester.widget<InkWell>(find.byType(InkWell));
 
-        expect(decoration.color, dsTokensLight.colors.surface.hover);
+        final expectedHoverBg = Color.lerp(
+          dsTokensLight.colors.background.level01,
+          dsTokensLight.colors.surface.hover,
+          0.5,
+        );
+        expect(decoration.color, expectedHoverBg);
         expect(
           decoration.border!.top.color,
           dsTokensLight.colors.interactive.enabled,

@@ -2848,6 +2848,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Statusmatrix';
 
   @override
+  String get designSystemTabBarTitle => 'Tab-Leiste';
+
+  @override
   String get designSystemSuccessLabel => 'Erfolg';
 
   @override

@@ -1387,6 +1387,7 @@
     }
   },
   "designSystemStateMatrixTitle": "State Matrix",
+  "designSystemTabBarTitle": "Tab Bar",
   "designSystemSuccessLabel": "Success",
   "designSystemTabPendingLabel": "Pending",
   "designSystemTaskListBlockedLabel": "Blocked",

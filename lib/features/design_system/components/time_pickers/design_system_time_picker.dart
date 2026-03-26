@@ -148,8 +148,10 @@ class _SelectionOverlay extends StatelessWidget {
 }
 
 const _kItemExtent = 31.0;
-const _kDiameterRatio = 1.5;
+const _kDiameterRatio = 1.2;
 const _kMagnification = 1.15;
+const _kOverAndUnderCenterOpacity = 0.35;
+const _kSqueeze = 1.1;
 
 class _DrumColumn extends StatefulWidget {
   const _DrumColumn({
@@ -198,6 +200,8 @@ class _DrumColumnState extends State<_DrumColumn> {
         itemExtent: _kItemExtent,
         diameterRatio: _kDiameterRatio,
         magnification: _kMagnification,
+        overAndUnderCenterOpacity: _kOverAndUnderCenterOpacity,
+        squeeze: _kSqueeze,
         useMagnifier: true,
         physics: const FixedExtentScrollPhysics(),
         onSelectedItemChanged: widget.onSelectedItemChanged,

@@ -11,6 +11,10 @@ WidgetbookComponent buildDesignSystemTabWidgetbookComponent() {
         name: 'Overview',
         builder: (context) => const _TabOverviewPage(),
       ),
+      WidgetbookUseCase(
+        name: 'Tab Bar',
+        builder: (context) => const _TabBarPage(),
+      ),
     ],
   );
 }
@@ -204,6 +208,52 @@ String _labelForSize(BuildContext context, DesignSystemTabSize size) {
     DesignSystemTabSize.defaultSize =>
       context.messages.designSystemDefaultLabel,
   };
+}
+
+class _TabBarPage extends StatefulWidget {
+  const _TabBarPage();
+
+  @override
+  State<_TabBarPage> createState() => _TabBarPageState();
+}
+
+class _TabBarPageState extends State<_TabBarPage> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = [
+      context.messages.designSystemTabPendingLabel,
+      context.messages.designSystemDefaultLabel,
+      context.messages.designSystemActivatedLabel,
+    ];
+    final counters = ['3', '12', null];
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.designSystemTabBarTitle,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                DesignSystemTab(
+                  selected: i == _selectedIndex,
+                  label: labels[i],
+                  counter: counters[i],
+                  onPressed: () => setState(() => _selectedIndex = i),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 void _noop() {}

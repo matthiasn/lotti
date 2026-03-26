@@ -2829,6 +2829,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matice stavů';
 
   @override
+  String get designSystemTabBarTitle => 'Panel záložek';
+
+  @override
   String get designSystemSuccessLabel => 'Úspěch';
 
   @override

@@ -2810,6 +2810,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'State Matrix';
 
   @override
+  String get designSystemTabBarTitle => 'Tab Bar';
+
+  @override
   String get designSystemSuccessLabel => 'Success';
 
   @override

@@ -118,6 +118,38 @@ void main() {
       expect(find.text('99+'), findsOneWidget);
     });
 
+    testWidgets('applies horizontal padding for 3+ char number badges', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.number(value: '999+'),
+      );
+
+      final size = _badgeSize(tester);
+      final decoration = _badgeDecoration(tester);
+
+      // Should be a pill shape (wider than tall) with rounded corners
+      expect(size.width, greaterThan(size.height));
+      expect(size.height, 20);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(10), // badgeHeight / 2
+      );
+    });
+
+    testWidgets('compact number badges remain square', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.number(value: '5'),
+      );
+
+      final size = _badgeSize(tester);
+
+      // 1-2 char numbers should be square
+      expect(size.width, size.height);
+    });
+
     testWidgets('renders the filled danger badge from tokens', (tester) async {
       await _pumpBadge(
         tester,

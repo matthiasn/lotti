@@ -1042,6 +1042,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Matice stavů",
+  "designSystemTabBarTitle": "Panel záložek",
   "designSystemSuccessLabel": "Úspěch",
   "designSystemTabPendingLabel": "Čekající",
   "designSystemTaskListBlockedLabel": "Blokováno",

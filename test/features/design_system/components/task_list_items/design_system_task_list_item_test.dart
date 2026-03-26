@@ -225,6 +225,58 @@ void main() {
       expect(decoration.color, dsTokensLight.colors.surface.focusPressed);
     });
 
+    testWidgets('priority P0 uses error color with priority_high icon', (
+      tester,
+    ) async {
+      const key = Key('p0-task');
+
+      await _pumpTaskListItem(
+        tester,
+        DesignSystemTaskListItem(
+          key: key,
+          title: 'Task',
+          priority: DesignSystemTaskPriority.p0,
+          status: DesignSystemTaskStatus.open,
+          statusLabel: 'Open',
+          onTap: () {},
+        ),
+      );
+
+      expect(
+        richTextStyleFor(tester, 'P0')?.color,
+        dsTokensLight.colors.alert.error.defaultColor,
+      );
+      expect(find.byIcon(Icons.priority_high_rounded), findsOneWidget);
+    });
+
+    testWidgets('category badge renders on same line as title', (
+      tester,
+    ) async {
+      const key = Key('category-layout-task');
+
+      await _pumpTaskListItem(
+        tester,
+        const DesignSystemTaskListItem(
+          key: key,
+          title: 'Task Title',
+          category: DesignSystemTaskCategory(
+            label: 'Study',
+            badgeTone: DesignSystemBadgeTone.success,
+          ),
+          priority: DesignSystemTaskPriority.p1,
+          status: DesignSystemTaskStatus.open,
+          statusLabel: 'Open',
+        ),
+      );
+
+      final titleOffset = tester.getTopLeft(find.text('Task Title'));
+      final badgeOffset = tester.getTopLeft(find.text('Study'));
+
+      // Badge should be on the same row (same Y), to the right (higher X)
+      expect(badgeOffset.dy, closeTo(titleOffset.dy, 4));
+      expect(badgeOffset.dx, greaterThan(titleOffset.dx));
+    });
+
     testWidgets('priority P1 uses error color', (tester) async {
       const key = Key('p1-task');
 
@@ -296,7 +348,7 @@ void main() {
       );
     });
 
-    testWidgets('status text uses medium emphasis color for all statuses', (
+    testWidgets('status text uses high emphasis color for all statuses', (
       tester,
     ) async {
       for (final (status, label) in [
@@ -319,8 +371,8 @@ void main() {
 
         expect(
           statusText.style?.color,
-          dsTokensLight.colors.text.mediumEmphasis,
-          reason: '$label status should use medium emphasis',
+          dsTokensLight.colors.text.highEmphasis,
+          reason: '$label status should use high emphasis',
         );
       }
     });
@@ -397,7 +449,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.circle), findsOneWidget);
+      expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
     });
 
     testWidgets('renders warning icon for blocked status', (tester) async {
@@ -412,7 +464,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.warning_amber), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
     testWidgets('renders circle icon for open status', (tester) async {
@@ -442,7 +494,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
     });
 
     testWidgets('resets hover/pressed when forcedState changes', (

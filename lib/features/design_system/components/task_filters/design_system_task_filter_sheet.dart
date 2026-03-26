@@ -470,16 +470,14 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                        SizedBox(height: spacing.step6),
+                        SizedBox(height: spacing.step4),
                         Text(
                           state.title,
                           style: tokens.typography.styles.heading.heading2
                               .copyWith(color: palette.primaryText),
                         ),
                         if (contentSections.isNotEmpty) ...[
-                          SizedBox(
-                            height: spacing.step9 + spacing.step2,
-                          ), // 52px
+                          SizedBox(height: spacing.step6),
                           for (var i = 0; i < contentSections.length; i++) ...[
                             contentSections[i],
                             if (i != contentSections.length - 1)

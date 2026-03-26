@@ -200,6 +200,41 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('uses theme-aware color for cursor', (tester) async {
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(label: 'Caret'),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      expect(
+        textField.cursorColor,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+    });
+
+    testWidgets('content padding gives enough room at top', (tester) async {
+      await _pumpTextarea(
+        tester,
+        const DesignSystemTextarea(label: 'Padded'),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      final contentPadding =
+          textField.decoration!.contentPadding! as EdgeInsets;
+
+      // Top padding should be step4 to avoid squished text
+      expect(
+        contentPadding.top,
+        dsTokensLight.spacing.step4,
+      );
+      expect(
+        contentPadding.bottom,
+        dsTokensLight.spacing.step3,
+      );
+    });
   });
 }
 

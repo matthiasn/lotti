@@ -4,7 +4,10 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Priority level for a task list item.
+///
+/// [p0] is the highest priority (urgent/critical).
 enum DesignSystemTaskPriority {
+  p0,
   p1,
   p2,
   p3,
@@ -145,18 +148,35 @@ List<InlineSpan> _taskMetadataSpans({
   required DsTokens tokens,
   String? timeRange,
 }) {
-  final (priorityColor, priorityLabel) = switch (priority) {
+  final (
+    priorityColor,
+    priorityLabel,
+    priorityIcon,
+    iconSize,
+  ) = switch (priority) {
+    DesignSystemTaskPriority.p0 => (
+      tokens.colors.alert.error.defaultColor,
+      'P0',
+      Icons.priority_high_rounded,
+      spec.metaIconSize,
+    ),
     DesignSystemTaskPriority.p1 => (
       tokens.colors.alert.error.defaultColor,
       'P1',
+      Icons.local_fire_department_rounded,
+      spec.metaIconSize,
     ),
     DesignSystemTaskPriority.p2 => (
       tokens.colors.alert.warning.defaultColor,
       'P2',
+      Icons.circle,
+      spec.priorityDotSize,
     ),
     DesignSystemTaskPriority.p3 => (
       tokens.colors.text.mediumEmphasis,
       'P3',
+      Icons.circle,
+      spec.priorityDotSize,
     ),
   };
 
@@ -164,8 +184,8 @@ List<InlineSpan> _taskMetadataSpans({
     WidgetSpan(
       alignment: PlaceholderAlignment.middle,
       child: Icon(
-        Icons.circle,
-        size: spec.priorityDotSize,
+        priorityIcon,
+        size: iconSize,
         color: priorityColor,
       ),
     ),
@@ -222,8 +242,8 @@ class _StatusIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = switch (status) {
       DesignSystemTaskStatus.open => Icons.circle_outlined,
-      DesignSystemTaskStatus.blocked => Icons.warning_amber,
-      DesignSystemTaskStatus.onHold => Icons.remove_circle_outline,
+      DesignSystemTaskStatus.blocked => Icons.warning_amber_rounded,
+      DesignSystemTaskStatus.onHold => Icons.pause_rounded,
     };
 
     final iconColor = switch (status) {
@@ -236,7 +256,7 @@ class _StatusIndicator extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: spec.statusIconSize, color: iconColor),
-        SizedBox(width: spec.metaIconGap),
+        SizedBox(width: spec.statusIconGap),
         Text(
           statusLabel,
           style: spec.statusStyle,
@@ -257,6 +277,7 @@ class _TaskListItemSpec {
     required this.metaIconSize,
     required this.priorityDotSize,
     required this.statusIconSize,
+    required this.statusIconGap,
     required this.titleStyle,
     required this.metaStyle,
     required this.statusStyle,
@@ -272,15 +293,16 @@ class _TaskListItemSpec {
       metaIconGap: tokens.spacing.step1,
       metaIconSize: tokens.typography.lineHeight.caption,
       priorityDotSize: tokens.spacing.step3,
-      statusIconSize: tokens.typography.lineHeight.caption,
+      statusIconSize: tokens.spacing.step5,
+      statusIconGap: tokens.spacing.step2,
       titleStyle: tokens.typography.styles.subtitle.subtitle2.copyWith(
         color: tokens.colors.text.highEmphasis,
       ),
       metaStyle: tokens.typography.styles.others.caption.copyWith(
         color: tokens.colors.text.mediumEmphasis,
       ),
-      statusStyle: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
+      statusStyle: tokens.typography.styles.body.bodyMedium.copyWith(
+        color: tokens.colors.text.highEmphasis,
       ),
     );
   }
@@ -294,6 +316,7 @@ class _TaskListItemSpec {
   final double metaIconSize;
   final double priorityDotSize;
   final double statusIconSize;
+  final double statusIconGap;
   final TextStyle titleStyle;
   final TextStyle metaStyle;
   final TextStyle statusStyle;

@@ -197,6 +197,87 @@ void main() {
 
       controller.dispose();
     });
+
+    testWidgets('uses medium emphasis color for cursor', (tester) async {
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(label: 'Caret'),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      expect(
+        textField.cursorColor,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
+    testWidgets('medium field height uses step9', (tester) async {
+      const key = Key('medium-height');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          key: key,
+          label: 'Medium',
+        ),
+      );
+
+      final sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.height == dsTokensLight.spacing.step9,
+          ),
+        ),
+      );
+
+      expect(sizedBox.height, dsTokensLight.spacing.step9);
+    });
+
+    testWidgets('small field height uses step8', (tester) async {
+      const key = Key('small-height');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          key: key,
+          label: 'Small',
+          size: DesignSystemTextInputSize.small,
+        ),
+      );
+
+      final sizedBox = tester.widget<SizedBox>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.height == dsTokensLight.spacing.step8,
+          ),
+        ),
+      );
+
+      expect(sizedBox.height, dsTokensLight.spacing.step8);
+    });
+
+    testWidgets('text is vertically centered with icons', (tester) async {
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'With Icons',
+          leadingIcon: Icons.search,
+          trailingIcon: Icons.clear,
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      expect(textField.textAlignVertical, TextAlignVertical.center);
+      expect(textField.decoration?.isDense, isTrue);
+    });
   });
 }
 

@@ -66,6 +66,9 @@ class _TypographyBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeTokens = isDark ? dsTokensDark : dsTokensLight;
+    final heading = isDark ? 'Dark Scale' : 'Light Scale';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -75,41 +78,9 @@ class _TypographyBoard extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step2),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final stacked = constraints.maxWidth < 980;
-            final panels = [
-              const _TypographyPanel(
-                heading: 'Light Scale',
-                tokens: dsTokensLight,
-              ),
-              const _TypographyPanel(
-                heading: 'Dark Scale',
-                tokens: dsTokensDark,
-              ),
-            ];
-
-            if (stacked) {
-              return Column(
-                children: [
-                  panels.first,
-                  SizedBox(height: tokens.spacing.step2),
-                  panels.last,
-                ],
-              );
-            }
-
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: panels.first),
-                  SizedBox(width: tokens.spacing.step2),
-                  Expanded(child: panels.last),
-                ],
-              ),
-            );
-          },
+        child: _TypographyPanel(
+          heading: heading,
+          tokens: activeTokens,
         ),
       ),
     );
@@ -217,6 +188,8 @@ class _TypographyDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeTokens = isDark ? dsTokensDark : dsTokensLight;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,9 +197,9 @@ class _TypographyDetails extends StatelessWidget {
         _TypographyInfoCard(
           title: 'Font Family',
           child: Text(
-            dsTokensLight.typography.family.text,
-            style: dsTokensLight.typography.styles.heading.heading2.copyWith(
-              color: dsTokensLight.colors.text.highEmphasis,
+            activeTokens.typography.family.text,
+            style: activeTokens.typography.styles.heading.heading2.copyWith(
+              color: activeTokens.colors.text.highEmphasis,
             ),
           ),
         ),
@@ -238,25 +211,25 @@ class _TypographyDetails extends StatelessWidget {
             children: [
               Text(
                 'Inter Bold (700)',
-                style: dsTokensLight.typography.styles.subtitle.subtitle1
+                style: activeTokens.typography.styles.subtitle.subtitle1
                     .copyWith(
-                      color: dsTokensLight.colors.text.highEmphasis,
+                      color: activeTokens.colors.text.highEmphasis,
                     ),
               ),
               SizedBox(height: tokens.spacing.step2),
               Text(
                 'Inter SemiBold (600)',
-                style: dsTokensLight.typography.styles.subtitle.subtitle1
+                style: activeTokens.typography.styles.subtitle.subtitle1
                     .copyWith(
-                      fontWeight: dsTokensLight.typography.weight.semiBold,
-                      color: dsTokensLight.colors.text.highEmphasis,
+                      fontWeight: activeTokens.typography.weight.semiBold,
+                      color: activeTokens.colors.text.highEmphasis,
                     ),
               ),
               SizedBox(height: tokens.spacing.step2),
               Text(
                 'Inter Regular (400)',
-                style: dsTokensLight.typography.styles.body.bodyMedium.copyWith(
-                  color: dsTokensLight.colors.text.highEmphasis,
+                style: activeTokens.typography.styles.body.bodyMedium.copyWith(
+                  color: activeTokens.colors.text.highEmphasis,
                 ),
               ),
             ],
@@ -270,23 +243,21 @@ class _TypographyDetails extends StatelessWidget {
             children: [
               Text(
                 '2,946',
-                style: dsTokensLight.typography.styles.display.display2
-                    .copyWith(
-                      color: dsTokensLight.colors.text.highEmphasis,
-                    ),
+                style: activeTokens.typography.styles.display.display2.copyWith(
+                  color: activeTokens.colors.text.highEmphasis,
+                ),
               ),
               Text(
                 '1,830',
-                style: dsTokensLight.typography.styles.heading.heading1
-                    .copyWith(
-                      color: dsTokensLight.colors.text.highEmphasis,
-                    ),
+                style: activeTokens.typography.styles.heading.heading1.copyWith(
+                  color: activeTokens.colors.text.highEmphasis,
+                ),
               ),
               Text(
                 '1,127',
-                style: dsTokensLight.typography.styles.subtitle.subtitle1
+                style: activeTokens.typography.styles.subtitle.subtitle1
                     .copyWith(
-                      color: dsTokensLight.colors.text.highEmphasis,
+                      color: activeTokens.colors.text.highEmphasis,
                     ),
               ),
             ],
@@ -322,7 +293,7 @@ class _TypographyInfoCard extends StatelessWidget {
         SizedBox(height: tokens.spacing.step3),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: dsTokensLight.colors.background.level01,
+            color: tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(tokens.radii.m),
             border: Border.all(color: tokens.colors.decorative.level01),
           ),

@@ -219,6 +219,15 @@ class _TabContent extends StatelessWidget {
       );
     }
 
+    if (counter?.isNotEmpty == true) {
+      primaryChildren.add(
+        DesignSystemBadge.number(
+          value: counter!,
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      );
+    }
+
     if (primaryChildren.isNotEmpty) {
       children.add(
         Row(
@@ -226,15 +235,6 @@ class _TabContent extends StatelessWidget {
           children: primaryChildren
               .intersperse(SizedBox(width: sizeSpec.primaryContentGap))
               .toList(),
-        ),
-      );
-    }
-
-    if (counter?.isNotEmpty == true) {
-      children.add(
-        DesignSystemBadge.number(
-          value: counter!,
-          tone: DesignSystemBadgeTone.secondary,
         ),
       );
     }

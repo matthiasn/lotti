@@ -1237,6 +1237,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Matrice de stări",
+  "designSystemTabBarTitle": "Bara de file",
   "designSystemSuccessLabel": "Succes",
   "designSystemTabPendingLabel": "În așteptare",
   "designSystemTaskListBlockedLabel": "Blocat",

@@ -95,73 +95,71 @@ class _BreadcrumbChipState extends State<_BreadcrumbChip> {
       visualState: visualState,
     );
 
-    final child = SizedBox(
-      height: spec.height,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: style.backgroundColor,
-              borderRadius: BorderRadius.circular(spec.labelRadius),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: spec.horizontalPadding,
-                vertical: spec.verticalPadding,
-              ),
-              child: Text(
-                widget.item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: spec.labelStyle.copyWith(color: style.contentColor),
-              ),
-            ),
-          ),
-          if (widget.item.showChevron)
-            SizedBox(
-              width: spec.iconSlotWidth,
-              height: spec.height,
-              child: Center(
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  size: spec.chevronSize,
-                  color: style.contentColor,
-                ),
-              ),
-            ),
-        ],
+    final isInteractive = widget.item.enabled && widget.item.onPressed != null;
+
+    final label = DecoratedBox(
+      decoration: BoxDecoration(
+        color: style.backgroundColor,
+        borderRadius: BorderRadius.circular(spec.labelRadius),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spec.horizontalPadding,
+          vertical: spec.verticalPadding,
+        ),
+        child: Text(
+          widget.item.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: spec.labelStyle.copyWith(color: style.contentColor),
+        ),
       ),
     );
 
-    if (!widget.item.enabled || widget.item.onPressed == null) {
-      return Semantics(
-        button: widget.item.onPressed != null,
-        selected: widget.item.selected,
-        enabled: widget.item.enabled,
-        label: widget.item.semanticsLabel ?? widget.item.label,
-        child: child,
-      );
-    }
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        label,
+        if (widget.item.showChevron)
+          SizedBox(
+            width: spec.iconSlotWidth,
+            height: spec.height,
+            child: Center(
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: spec.chevronSize,
+                color: style.contentColor,
+              ),
+            ),
+          ),
+      ],
+    );
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(spec.labelRadius),
-        onTap: widget.item.onPressed,
-        onHover: widget.item.forcedState == null
-            ? (value) => setState(() => _hovered = value)
-            : null,
-        onHighlightChanged: widget.item.forcedState == null
-            ? (value) => setState(() => _pressed = value)
-            : null,
-        child: Semantics(
-          button: true,
-          selected: widget.item.selected,
-          enabled: true,
-          label: widget.item.semanticsLabel ?? widget.item.label,
-          child: child,
-        ),
+    final breadcrumb = isInteractive
+        ? Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(spec.labelRadius),
+              onTap: widget.item.onPressed,
+              onHover: widget.item.forcedState == null
+                  ? (value) => setState(() => _hovered = value)
+                  : null,
+              onHighlightChanged: widget.item.forcedState == null
+                  ? (value) => setState(() => _pressed = value)
+                  : null,
+              child: content,
+            ),
+          )
+        : content;
+
+    return Semantics(
+      button: widget.item.onPressed != null,
+      selected: widget.item.selected,
+      enabled: widget.item.enabled,
+      label: widget.item.semanticsLabel ?? widget.item.label,
+      child: SizedBox(
+        height: spec.height,
+        child: breadcrumb,
       ),
     );
   }
