@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -277,33 +278,22 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backLabel = MaterialLocalizations.of(context).backButtonTooltip;
-
+    final tokens = context.designTokens;
     return _MobileScreenShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _MobileStatusBar(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-            child: Row(
-              children: [
-                TextButton.icon(
-                  onPressed: onBack,
-                  style: TextButton.styleFrom(
-                    foregroundColor: ShowcasePalette.highText(context),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                  label: Text(backLabel),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.more_vert_rounded,
-                  size: 24,
-                  color: ShowcasePalette.highText(context),
-                ),
-              ],
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step4,
+              tokens.spacing.step3,
+              tokens.spacing.step4,
+              0,
+            ),
+            child: DesignSystemShowcaseMobileDetailHeader(
+              foregroundColor: ShowcasePalette.highText(context),
+              onBack: onBack,
             ),
           ),
           Expanded(
