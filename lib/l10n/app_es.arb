@@ -1063,6 +1063,7 @@
   "designSystemAvatarEnabledLabel": "Habilitado",
   "designSystemAvatarSizeMatrixTitle": "Matriz de tamaños",
   "designSystemAvatarStatusMatrixTitle": "Matriz de estados",
+  "designSystemBackLabel": "Atrás",
   "designSystemBreadcrumbCurrentLabel": "Breadcrumbs",
   "designSystemBreadcrumbDesignSystemLabel": "Sistema de diseño",
   "designSystemBreadcrumbHomeLabel": "Inicio",
@@ -1143,17 +1144,6 @@
   "designSystemListItemTwoLinesLabel": "Dos líneas",
   "designSystemListItemVariantsTitle": "Variantes de elemento de lista",
   "designSystemListItemWithDividerLabel": "Con separador",
-  "designSystemTaskListBlockedLabel": "Bloqueado",
-  "designSystemTaskListDefaultLabel": "Predeterminado",
-  "designSystemTaskListHoverLabel": "Al pasar",
-  "designSystemTaskListItemSectionTitle": "Variantes de elemento de lista de tareas",
-  "designSystemTaskListOnHoldLabel": "En espera",
-  "designSystemTaskListOpenLabel": "Abierto",
-  "designSystemTaskListPressedLabel": "Presionado",
-  "designSystemTaskListSampleCategory": "Estudio",
-  "designSystemTaskListSampleTime": "8:00-9:30",
-  "designSystemTaskListSampleTitle": "Pruebas de usuario",
-  "designSystemTaskListWithDividerLabel": "Con separador",
   "designSystemMediumLabel": "Mediano",
   "designSystemNavigationAiAssistantSectionTitle": "Asistente de IA",
   "designSystemNavigationCollapsedLabel": "Contraída",
@@ -1204,6 +1194,17 @@
   "designSystemStateMatrixTitle": "Matriz de estados",
   "designSystemSuccessLabel": "Éxito",
   "designSystemTabPendingLabel": "Pendiente",
+  "designSystemTaskListBlockedLabel": "Bloqueado",
+  "designSystemTaskListDefaultLabel": "Predeterminado",
+  "designSystemTaskListHoverLabel": "Al pasar",
+  "designSystemTaskListItemSectionTitle": "Variantes de elemento de lista de tareas",
+  "designSystemTaskListOnHoldLabel": "En espera",
+  "designSystemTaskListOpenLabel": "Abierto",
+  "designSystemTaskListPressedLabel": "Presionado",
+  "designSystemTaskListSampleCategory": "Estudio",
+  "designSystemTaskListSampleTime": "8:00-9:30",
+  "designSystemTaskListSampleTitle": "Pruebas de usuario",
+  "designSystemTaskListWithDividerLabel": "Con separador",
   "designSystemTextareaErrorSample": "Este campo es obligatorio",
   "designSystemTextareaHelperSample": "Introduce tu mensaje aquí",
   "designSystemTextareaHintSample": "Escribe algo...",
@@ -1588,6 +1589,35 @@
   "projectErrorLoadProjects": "Error al cargar los proyectos",
   "projectErrorUpdateFailed": "No se pudo actualizar el proyecto. Inténtalo de nuevo.",
   "projectFilterLabel": "Proyecto",
+  "projectHealthBandAtRisk": "En riesgo",
+  "projectHealthBandBlocked": "Bloqueado",
+  "projectHealthBandOnTrack": "En marcha",
+  "projectHealthBandSurviving": "A flote",
+  "projectHealthBandWatch": "Vigilar",
+  "projectHealthReasonCompleted": "El proyecto está terminado.",
+  "projectHealthReasonNoLinkedTasks": "El proyecto todavía no tiene tareas vinculadas.",
+  "projectHealthReasonNoRecentProgress": "No ha habido progreso reciente.",
+  "projectHealthReasonOnHold": "El proyecto está en pausa.",
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} tarea está vencida} other{{count} tareas están vencidas}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} tarea está atascada} other{{count} tareas están atascadas}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonSteadyProgress": "El proyecto avanza de forma constante.",
+  "projectHealthReasonSummaryOutdated": "El resumen del proyecto está desactualizado.",
+  "projectHealthReasonTargetDatePassed": "La fecha objetivo ya pasó.",
+  "projectHealthSectionTitle": "Salud del proyecto",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} proyecto} other{{projectCount} proyectos}}, {taskCount, plural, one{{taskCount} tarea} other{{taskCount} tareas}}",
   "@projectHealthSummary": {
     "placeholders": {
@@ -1600,35 +1630,6 @@
     }
   },
   "projectHealthTitle": "Proyectos",
-  "projectHealthSectionTitle": "Salud del proyecto",
-  "projectHealthBandSurviving": "A flote",
-  "projectHealthBandOnTrack": "En marcha",
-  "projectHealthBandWatch": "Vigilar",
-  "projectHealthBandAtRisk": "En riesgo",
-  "projectHealthBandBlocked": "Bloqueado",
-  "projectHealthReasonCompleted": "El proyecto está terminado.",
-  "projectHealthReasonOnHold": "El proyecto está en pausa.",
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} tarea está atascada} other{{count} tareas están atascadas}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} tarea está vencida} other{{count} tareas están vencidas}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonTargetDatePassed": "La fecha objetivo ya pasó.",
-  "projectHealthReasonNoRecentProgress": "No ha habido progreso reciente.",
-  "projectHealthReasonSummaryOutdated": "El resumen del proyecto está desactualizado.",
-  "projectHealthReasonNoLinkedTasks": "El proyecto todavía no tiene tareas vinculadas.",
-  "projectHealthReasonSteadyProgress": "El proyecto avanza de forma constante.",
   "projectLinkedTaskCount": "{count, plural, one{{count} tarea vinculada} other{{count} tareas vinculadas}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
@@ -2260,6 +2261,51 @@
   "tasksFilterApplyTitle": "Aplicar filtro",
   "tasksFilterClearAll": "Borrar todo",
   "tasksFilterTitle": "Filtro de tareas",
+  "taskShowcaseActiveFilters": "Filtros activos",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed, plural, =1{1 / {total} hecho} other{{completed} / {total} hechos}}",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Vence: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Ir a la sección",
+  "taskShowcaseLinked": "Vinculado",
+  "taskShowcaseNoResults": "Ninguna tarea coincide con tu búsqueda.",
+  "taskShowcaseReadMore": "Leer más",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 grabación} other{{count} grabaciones}}",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 tarea} other{{count} tareas}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Descripción de la tarea",
+  "taskShowcaseTimeTracker": "Registro de tiempo",
+  "taskShowcaseTodo": "Pendiente",
+  "taskShowcaseTodos": "Pendientes",
   "tasksLabelFilterAll": "Todas",
   "tasksLabelFilterTitle": "Etiquetas",
   "tasksLabelFilterUnlabeled": "Sin etiqueta",
@@ -2307,51 +2353,6 @@
   "taskStatusRejected": "Rechazado",
   "taskSummaries": "Resúmenes de tareas",
   "taskUntitled": "(sin título)",
-  "taskShowcaseActiveFilters": "Filtros activos",
-  "taskShowcaseAudio": "Audio",
-  "taskShowcaseCompletedCount": "{completed} / {total} hecho(s)",
-  "@taskShowcaseCompletedCount": {
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseDueDate": "Vence: {date}",
-  "@taskShowcaseDueDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "taskShowcaseJumpToSection": "Ir a la sección",
-  "taskShowcaseLinked": "Vinculado",
-  "taskShowcaseNoResults": "Ninguna tarea coincide con tu búsqueda.",
-  "taskShowcaseReadMore": "Leer más",
-  "taskShowcaseRecordingsCount": "{count} grabaciones",
-  "@taskShowcaseRecordingsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskCount": "{count, plural, =1{1 tarea} other{{count} tareas}}",
-  "@taskShowcaseTaskCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskDescription": "Descripción de la tarea",
-  "taskShowcaseTimeTracker": "Registro de tiempo",
-  "taskShowcaseTodo": "Pendiente",
-  "taskShowcaseTodos": "Pendientes",
   "thinkingDisclosureCopied": "Razonamiento copiado",
   "thinkingDisclosureCopy": "Copiar razonamiento",
   "thinkingDisclosureHide": "Ocultar razonamiento",

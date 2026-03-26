@@ -2422,6 +2422,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemAvatarStatusMatrixTitle => 'Statusmatrix';
 
   @override
+  String get designSystemBackLabel => 'Zurück';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override
@@ -2665,39 +2668,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'Mit Trennlinie';
 
   @override
-  String get designSystemTaskListBlockedLabel => 'Blockiert';
-
-  @override
-  String get designSystemTaskListDefaultLabel => 'Standard';
-
-  @override
-  String get designSystemTaskListHoverLabel => 'Hover';
-
-  @override
-  String get designSystemTaskListItemSectionTitle => 'Aufgabenlisten-Varianten';
-
-  @override
-  String get designSystemTaskListOnHoldLabel => 'Pausiert';
-
-  @override
-  String get designSystemTaskListOpenLabel => 'Offen';
-
-  @override
-  String get designSystemTaskListPressedLabel => 'Gedrückt';
-
-  @override
-  String get designSystemTaskListSampleCategory => 'Lernen';
-
-  @override
-  String get designSystemTaskListSampleTime => '8:00-9:30';
-
-  @override
-  String get designSystemTaskListSampleTitle => 'Benutzertest';
-
-  @override
-  String get designSystemTaskListWithDividerLabel => 'Mit Trennlinie';
-
-  @override
   String get designSystemMediumLabel => 'Mittel';
 
   @override
@@ -2829,6 +2799,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemTabPendingLabel => 'Ausstehend';
+
+  @override
+  String get designSystemTaskListBlockedLabel => 'Blockiert';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Standard';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Hover';
+
+  @override
+  String get designSystemTaskListItemSectionTitle => 'Aufgabenlisten-Varianten';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'Pausiert';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Offen';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Gedrückt';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Lernen';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Benutzertest';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'Mit Trennlinie';
 
   @override
   String get designSystemTextareaErrorSample => 'Dieses Feld ist erforderlich';
@@ -3818,6 +3821,72 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectFilterLabel => 'Projekt';
 
   @override
+  String get projectHealthBandAtRisk => 'Riskant';
+
+  @override
+  String get projectHealthBandBlocked => 'Blockiert';
+
+  @override
+  String get projectHealthBandOnTrack => 'Im Plan';
+
+  @override
+  String get projectHealthBandSurviving => 'Über Wasser';
+
+  @override
+  String get projectHealthBandWatch => 'Beobachten';
+
+  @override
+  String get projectHealthReasonCompleted => 'Das Projekt ist abgeschlossen.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Dem Projekt sind noch keine Aufgaben zugeordnet.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Zuletzt gab es keinen erkennbaren Fortschritt.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Das Projekt ist pausiert.';
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben sind überfällig',
+      one: '$count Aufgabe ist überfällig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben stecken fest',
+      one: '$count Aufgabe steckt fest',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Das Projekt macht konstant Fortschritt.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Die Projektzusammenfassung ist veraltet.';
+
+  @override
+  String get projectHealthReasonTargetDatePassed =>
+      'Das Zieldatum ist überschritten.';
+
+  @override
+  String get projectHealthSectionTitle => 'Projektgesundheit';
+
+  @override
   String projectHealthSummary(int projectCount, int taskCount) {
     String _temp0 = intl.Intl.pluralLogic(
       projectCount,
@@ -3836,72 +3905,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectHealthTitle => 'Projekte';
-
-  @override
-  String get projectHealthSectionTitle => 'Projektgesundheit';
-
-  @override
-  String get projectHealthBandSurviving => 'Über Wasser';
-
-  @override
-  String get projectHealthBandOnTrack => 'Im Plan';
-
-  @override
-  String get projectHealthBandWatch => 'Beobachten';
-
-  @override
-  String get projectHealthBandAtRisk => 'Riskant';
-
-  @override
-  String get projectHealthBandBlocked => 'Blockiert';
-
-  @override
-  String get projectHealthReasonCompleted => 'Das Projekt ist abgeschlossen.';
-
-  @override
-  String get projectHealthReasonOnHold => 'Das Projekt ist pausiert.';
-
-  @override
-  String projectHealthReasonStalledTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Aufgaben stecken fest',
-      one: '$count Aufgabe steckt fest',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String projectHealthReasonOverdueTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Aufgaben sind überfällig',
-      one: '$count Aufgabe ist überfällig',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get projectHealthReasonTargetDatePassed =>
-      'Das Zieldatum ist überschritten.';
-
-  @override
-  String get projectHealthReasonNoRecentProgress =>
-      'Zuletzt gab es keinen erkennbaren Fortschritt.';
-
-  @override
-  String get projectHealthReasonSummaryOutdated =>
-      'Die Projektzusammenfassung ist veraltet.';
-
-  @override
-  String get projectHealthReasonNoLinkedTasks =>
-      'Dem Projekt sind noch keine Aufgaben zugeordnet.';
-
-  @override
-  String get projectHealthReasonSteadyProgress =>
-      'Das Projekt macht konstant Fortschritt.';
 
   @override
   String projectLinkedTaskCount(int count) {
@@ -5493,6 +5496,69 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksFilterTitle => 'Aufgabenfilter';
 
   @override
+  String get taskShowcaseActiveFilters => 'Aktive Filter';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total erledigt';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Fällig: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Zum Abschnitt springen';
+
+  @override
+  String get taskShowcaseLinked => 'Verknüpft';
+
+  @override
+  String get taskShowcaseNoResults =>
+      'Keine Aufgaben stimmen mit deiner Suche überein.';
+
+  @override
+  String get taskShowcaseReadMore => 'Mehr lesen';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufnahmen',
+      one: '1 Aufnahme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben',
+      one: '1 Aufgabe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Aufgabenbeschreibung';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Zeiterfassung';
+
+  @override
+  String get taskShowcaseTodo => 'Todo';
+
+  @override
+  String get taskShowcaseTodos => 'Todos';
+
+  @override
   String get tasksLabelFilterAll => 'Alle';
 
   @override
@@ -5633,63 +5699,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskUntitled => '(ohne Titel)';
-
-  @override
-  String get taskShowcaseActiveFilters => 'Aktive Filter';
-
-  @override
-  String get taskShowcaseAudio => 'Audio';
-
-  @override
-  String taskShowcaseCompletedCount(int completed, int total) {
-    return '$completed / $total erledigt';
-  }
-
-  @override
-  String taskShowcaseDueDate(String date) {
-    return 'Fällig: $date';
-  }
-
-  @override
-  String get taskShowcaseJumpToSection => 'Zum Abschnitt springen';
-
-  @override
-  String get taskShowcaseLinked => 'Verknüpft';
-
-  @override
-  String get taskShowcaseNoResults =>
-      'Keine Aufgaben stimmen mit deiner Suche überein.';
-
-  @override
-  String get taskShowcaseReadMore => 'Mehr lesen';
-
-  @override
-  String taskShowcaseRecordingsCount(int count) {
-    return '$count Aufnahmen';
-  }
-
-  @override
-  String taskShowcaseTaskCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Aufgaben',
-      one: '1 Aufgabe',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get taskShowcaseTaskDescription => 'Aufgabenbeschreibung';
-
-  @override
-  String get taskShowcaseTimeTracker => 'Zeiterfassung';
-
-  @override
-  String get taskShowcaseTodo => 'Todo';
-
-  @override
-  String get taskShowcaseTodos => 'Todos';
 
   @override
   String get thinkingDisclosureCopied => 'Begründung kopiert';

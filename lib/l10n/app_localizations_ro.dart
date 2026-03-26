@@ -2424,6 +2424,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemAvatarStatusMatrixTitle => 'Matricea stărilor';
 
   @override
+  String get designSystemBackLabel => 'Înapoi';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override
@@ -2668,40 +2671,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'Cu separator';
 
   @override
-  String get designSystemTaskListBlockedLabel => 'Blocat';
-
-  @override
-  String get designSystemTaskListDefaultLabel => 'Implicit';
-
-  @override
-  String get designSystemTaskListHoverLabel => 'La survolare';
-
-  @override
-  String get designSystemTaskListItemSectionTitle =>
-      'Variante element listă de sarcini';
-
-  @override
-  String get designSystemTaskListOnHoldLabel => 'În așteptare';
-
-  @override
-  String get designSystemTaskListOpenLabel => 'Deschis';
-
-  @override
-  String get designSystemTaskListPressedLabel => 'Apăsat';
-
-  @override
-  String get designSystemTaskListSampleCategory => 'Studiu';
-
-  @override
-  String get designSystemTaskListSampleTime => '8:00-9:30';
-
-  @override
-  String get designSystemTaskListSampleTitle => 'Testare utilizatori';
-
-  @override
-  String get designSystemTaskListWithDividerLabel => 'Cu separator';
-
-  @override
   String get designSystemMediumLabel => 'Mediu';
 
   @override
@@ -2834,6 +2803,40 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemTabPendingLabel => 'În așteptare';
+
+  @override
+  String get designSystemTaskListBlockedLabel => 'Blocat';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Variante element listă de sarcini';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'În așteptare';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Deschis';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Apăsat';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Studiu';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Testare utilizatori';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'Cu separator';
 
   @override
   String get designSystemTextareaErrorSample => 'Acest câmp este obligatoriu';
@@ -3835,6 +3838,74 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectFilterLabel => 'Proiect';
 
   @override
+  String get projectHealthBandAtRisk => 'Cu risc';
+
+  @override
+  String get projectHealthBandBlocked => 'Blocat';
+
+  @override
+  String get projectHealthBandOnTrack => 'Pe drumul bun';
+
+  @override
+  String get projectHealthBandSurviving => 'Se menține';
+
+  @override
+  String get projectHealthBandWatch => 'De urmărit';
+
+  @override
+  String get projectHealthReasonCompleted => 'Proiectul este finalizat.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Proiectul nu are încă sarcini asociate.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Nu a existat progres recent.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Proiectul este pus în așteptare.';
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini sunt întârziate',
+      few: '$count sarcini sunt întârziate',
+      one: '$count sarcină este întârziată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini sunt blocate',
+      few: '$count sarcini sunt blocate',
+      one: '$count sarcină este blocată',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Proiectul avansează constant.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Rezumatul proiectului nu mai este actualizat.';
+
+  @override
+  String get projectHealthReasonTargetDatePassed =>
+      'Data-țintă a fost depășită.';
+
+  @override
+  String get projectHealthSectionTitle => 'Starea proiectului';
+
+  @override
   String projectHealthSummary(int projectCount, int taskCount) {
     String _temp0 = intl.Intl.pluralLogic(
       projectCount,
@@ -3855,74 +3926,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectHealthTitle => 'Proiecte';
-
-  @override
-  String get projectHealthSectionTitle => 'Starea proiectului';
-
-  @override
-  String get projectHealthBandSurviving => 'Se menține';
-
-  @override
-  String get projectHealthBandOnTrack => 'Pe drumul bun';
-
-  @override
-  String get projectHealthBandWatch => 'De urmărit';
-
-  @override
-  String get projectHealthBandAtRisk => 'Cu risc';
-
-  @override
-  String get projectHealthBandBlocked => 'Blocat';
-
-  @override
-  String get projectHealthReasonCompleted => 'Proiectul este finalizat.';
-
-  @override
-  String get projectHealthReasonOnHold => 'Proiectul este pus în așteptare.';
-
-  @override
-  String projectHealthReasonStalledTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de sarcini sunt blocate',
-      few: '$count sarcini sunt blocate',
-      one: '$count sarcină este blocată',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String projectHealthReasonOverdueTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de sarcini sunt întârziate',
-      few: '$count sarcini sunt întârziate',
-      one: '$count sarcină este întârziată',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get projectHealthReasonTargetDatePassed =>
-      'Data-țintă a fost depășită.';
-
-  @override
-  String get projectHealthReasonNoRecentProgress =>
-      'Nu a existat progres recent.';
-
-  @override
-  String get projectHealthReasonSummaryOutdated =>
-      'Rezumatul proiectului nu mai este actualizat.';
-
-  @override
-  String get projectHealthReasonNoLinkedTasks =>
-      'Proiectul nu are încă sarcini asociate.';
-
-  @override
-  String get projectHealthReasonSteadyProgress =>
-      'Proiectul avansează constant.';
 
   @override
   String projectLinkedTaskCount(int count) {
@@ -5518,6 +5521,71 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksFilterTitle => 'Filtru sarcini';
 
   @override
+  String get taskShowcaseActiveFilters => 'Filtre active';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total finalizate';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Termen: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Salt la secțiune';
+
+  @override
+  String get taskShowcaseLinked => 'Legat';
+
+  @override
+  String get taskShowcaseNoResults =>
+      'Nicio sarcină nu corespunde căutării dvs.';
+
+  @override
+  String get taskShowcaseReadMore => 'Citiți mai mult';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de înregistrări',
+      few: '$count înregistrări',
+      one: '1 înregistrare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Descrierea sarcinii';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Urmărire timp';
+
+  @override
+  String get taskShowcaseTodo => 'De făcut';
+
+  @override
+  String get taskShowcaseTodos => 'De făcut';
+
+  @override
   String get tasksLabelFilterAll => 'Toate';
 
   @override
@@ -5657,64 +5725,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskUntitled => '(fără titlu)';
-
-  @override
-  String get taskShowcaseActiveFilters => 'Filtre active';
-
-  @override
-  String get taskShowcaseAudio => 'Audio';
-
-  @override
-  String taskShowcaseCompletedCount(int completed, int total) {
-    return '$completed / $total finalizate';
-  }
-
-  @override
-  String taskShowcaseDueDate(String date) {
-    return 'Termen: $date';
-  }
-
-  @override
-  String get taskShowcaseJumpToSection => 'Salt la secțiune';
-
-  @override
-  String get taskShowcaseLinked => 'Legat';
-
-  @override
-  String get taskShowcaseNoResults =>
-      'Nicio sarcină nu corespunde căutării dvs.';
-
-  @override
-  String get taskShowcaseReadMore => 'Citiți mai mult';
-
-  @override
-  String taskShowcaseRecordingsCount(int count) {
-    return '$count înregistrări';
-  }
-
-  @override
-  String taskShowcaseTaskCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count sarcini',
-      few: '$count sarcini',
-      one: '1 sarcină',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get taskShowcaseTaskDescription => 'Descrierea sarcinii';
-
-  @override
-  String get taskShowcaseTimeTracker => 'Urmărire timp';
-
-  @override
-  String get taskShowcaseTodo => 'De făcut';
-
-  @override
-  String get taskShowcaseTodos => 'De făcut';
 
   @override
   String get thinkingDisclosureCopied => 'Raționament copiat';

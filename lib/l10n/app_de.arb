@@ -1063,6 +1063,7 @@
   "designSystemAvatarEnabledLabel": "Aktiviert",
   "designSystemAvatarSizeMatrixTitle": "Größenmatrix",
   "designSystemAvatarStatusMatrixTitle": "Statusmatrix",
+  "designSystemBackLabel": "Zurück",
   "designSystemBreadcrumbCurrentLabel": "Breadcrumbs",
   "designSystemBreadcrumbDesignSystemLabel": "Design System",
   "designSystemBreadcrumbHomeLabel": "Start",
@@ -1143,17 +1144,6 @@
   "designSystemListItemTwoLinesLabel": "Zweizeilig",
   "designSystemListItemVariantsTitle": "Listenelement-Varianten",
   "designSystemListItemWithDividerLabel": "Mit Trennlinie",
-  "designSystemTaskListBlockedLabel": "Blockiert",
-  "designSystemTaskListDefaultLabel": "Standard",
-  "designSystemTaskListHoverLabel": "Hover",
-  "designSystemTaskListItemSectionTitle": "Aufgabenlisten-Varianten",
-  "designSystemTaskListOnHoldLabel": "Pausiert",
-  "designSystemTaskListOpenLabel": "Offen",
-  "designSystemTaskListPressedLabel": "Gedrückt",
-  "designSystemTaskListSampleCategory": "Lernen",
-  "designSystemTaskListSampleTime": "8:00-9:30",
-  "designSystemTaskListSampleTitle": "Benutzertest",
-  "designSystemTaskListWithDividerLabel": "Mit Trennlinie",
   "designSystemMediumLabel": "Mittel",
   "designSystemNavigationAiAssistantSectionTitle": "KI-Assistent",
   "designSystemNavigationCollapsedLabel": "Eingeklappt",
@@ -1204,6 +1194,17 @@
   "designSystemStateMatrixTitle": "Statusmatrix",
   "designSystemSuccessLabel": "Erfolg",
   "designSystemTabPendingLabel": "Ausstehend",
+  "designSystemTaskListBlockedLabel": "Blockiert",
+  "designSystemTaskListDefaultLabel": "Standard",
+  "designSystemTaskListHoverLabel": "Hover",
+  "designSystemTaskListItemSectionTitle": "Aufgabenlisten-Varianten",
+  "designSystemTaskListOnHoldLabel": "Pausiert",
+  "designSystemTaskListOpenLabel": "Offen",
+  "designSystemTaskListPressedLabel": "Gedrückt",
+  "designSystemTaskListSampleCategory": "Lernen",
+  "designSystemTaskListSampleTime": "8:00-9:30",
+  "designSystemTaskListSampleTitle": "Benutzertest",
+  "designSystemTaskListWithDividerLabel": "Mit Trennlinie",
   "designSystemTextareaErrorSample": "Dieses Feld ist erforderlich",
   "designSystemTextareaHelperSample": "Gib deine Nachricht hier ein",
   "designSystemTextareaHintSample": "Etwas eingeben...",
@@ -1588,6 +1589,35 @@
   "projectErrorLoadProjects": "Fehler beim Laden der Projekte",
   "projectErrorUpdateFailed": "Projekt konnte nicht aktualisiert werden. Bitte versuche es erneut.",
   "projectFilterLabel": "Projekt",
+  "projectHealthBandAtRisk": "Riskant",
+  "projectHealthBandBlocked": "Blockiert",
+  "projectHealthBandOnTrack": "Im Plan",
+  "projectHealthBandSurviving": "Über Wasser",
+  "projectHealthBandWatch": "Beobachten",
+  "projectHealthReasonCompleted": "Das Projekt ist abgeschlossen.",
+  "projectHealthReasonNoLinkedTasks": "Dem Projekt sind noch keine Aufgaben zugeordnet.",
+  "projectHealthReasonNoRecentProgress": "Zuletzt gab es keinen erkennbaren Fortschritt.",
+  "projectHealthReasonOnHold": "Das Projekt ist pausiert.",
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} Aufgabe ist überfällig} other{{count} Aufgaben sind überfällig}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} Aufgabe steckt fest} other{{count} Aufgaben stecken fest}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonSteadyProgress": "Das Projekt macht konstant Fortschritt.",
+  "projectHealthReasonSummaryOutdated": "Die Projektzusammenfassung ist veraltet.",
+  "projectHealthReasonTargetDatePassed": "Das Zieldatum ist überschritten.",
+  "projectHealthSectionTitle": "Projektgesundheit",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} Projekt} other{{projectCount} Projekte}}, {taskCount, plural, one{{taskCount} Aufgabe} other{{taskCount} Aufgaben}}",
   "@projectHealthSummary": {
     "placeholders": {
@@ -1600,35 +1630,6 @@
     }
   },
   "projectHealthTitle": "Projekte",
-  "projectHealthSectionTitle": "Projektgesundheit",
-  "projectHealthBandSurviving": "Über Wasser",
-  "projectHealthBandOnTrack": "Im Plan",
-  "projectHealthBandWatch": "Beobachten",
-  "projectHealthBandAtRisk": "Riskant",
-  "projectHealthBandBlocked": "Blockiert",
-  "projectHealthReasonCompleted": "Das Projekt ist abgeschlossen.",
-  "projectHealthReasonOnHold": "Das Projekt ist pausiert.",
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} Aufgabe steckt fest} other{{count} Aufgaben stecken fest}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} Aufgabe ist überfällig} other{{count} Aufgaben sind überfällig}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonTargetDatePassed": "Das Zieldatum ist überschritten.",
-  "projectHealthReasonNoRecentProgress": "Zuletzt gab es keinen erkennbaren Fortschritt.",
-  "projectHealthReasonSummaryOutdated": "Die Projektzusammenfassung ist veraltet.",
-  "projectHealthReasonNoLinkedTasks": "Dem Projekt sind noch keine Aufgaben zugeordnet.",
-  "projectHealthReasonSteadyProgress": "Das Projekt macht konstant Fortschritt.",
   "projectLinkedTaskCount": "{count, plural, one{{count} verknüpfte Aufgabe} other{{count} verknüpfte Aufgaben}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
@@ -2260,6 +2261,51 @@
   "tasksFilterApplyTitle": "Filter anwenden",
   "tasksFilterClearAll": "Alles löschen",
   "tasksFilterTitle": "Aufgabenfilter",
+  "taskShowcaseActiveFilters": "Aktive Filter",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} erledigt",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Fällig: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Zum Abschnitt springen",
+  "taskShowcaseLinked": "Verknüpft",
+  "taskShowcaseNoResults": "Keine Aufgaben stimmen mit deiner Suche überein.",
+  "taskShowcaseReadMore": "Mehr lesen",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 Aufnahme} other{{count} Aufnahmen}}",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Aufgabenbeschreibung",
+  "taskShowcaseTimeTracker": "Zeiterfassung",
+  "taskShowcaseTodo": "Todo",
+  "taskShowcaseTodos": "Todos",
   "tasksLabelFilterAll": "Alle",
   "tasksLabelFilterTitle": "Labels",
   "tasksLabelFilterUnlabeled": "Ohne Label",
@@ -2307,51 +2353,6 @@
   "taskStatusRejected": "Abgelehnt",
   "taskSummaries": "Aufgabenzusammenfassungen",
   "taskUntitled": "(ohne Titel)",
-  "taskShowcaseActiveFilters": "Aktive Filter",
-  "taskShowcaseAudio": "Audio",
-  "taskShowcaseCompletedCount": "{completed} / {total} erledigt",
-  "@taskShowcaseCompletedCount": {
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseDueDate": "Fällig: {date}",
-  "@taskShowcaseDueDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "taskShowcaseJumpToSection": "Zum Abschnitt springen",
-  "taskShowcaseLinked": "Verknüpft",
-  "taskShowcaseNoResults": "Keine Aufgaben stimmen mit deiner Suche überein.",
-  "taskShowcaseReadMore": "Mehr lesen",
-  "taskShowcaseRecordingsCount": "{count} Aufnahmen",
-  "@taskShowcaseRecordingsCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskCount": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",
-  "@taskShowcaseTaskCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "taskShowcaseTaskDescription": "Aufgabenbeschreibung",
-  "taskShowcaseTimeTracker": "Zeiterfassung",
-  "taskShowcaseTodo": "Todo",
-  "taskShowcaseTodos": "Todos",
   "thinkingDisclosureCopied": "Begründung kopiert",
   "thinkingDisclosureCopy": "Begründung kopieren",
   "thinkingDisclosureHide": "Begründung ausblenden",

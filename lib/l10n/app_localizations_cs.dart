@@ -2400,6 +2400,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemAvatarStatusMatrixTitle => 'Matice stavů';
 
   @override
+  String get designSystemBackLabel => 'Zpět';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
 
   @override
@@ -2644,40 +2647,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'S oddělovačem';
 
   @override
-  String get designSystemTaskListBlockedLabel => 'Blokováno';
-
-  @override
-  String get designSystemTaskListDefaultLabel => 'Výchozí';
-
-  @override
-  String get designSystemTaskListHoverLabel => 'Přejetí';
-
-  @override
-  String get designSystemTaskListItemSectionTitle =>
-      'Varianty položky seznamu úkolů';
-
-  @override
-  String get designSystemTaskListOnHoldLabel => 'Pozastaveno';
-
-  @override
-  String get designSystemTaskListOpenLabel => 'Otevřeno';
-
-  @override
-  String get designSystemTaskListPressedLabel => 'Stisknuto';
-
-  @override
-  String get designSystemTaskListSampleCategory => 'Studium';
-
-  @override
-  String get designSystemTaskListSampleTime => '8:00-9:30';
-
-  @override
-  String get designSystemTaskListSampleTitle => 'Testování uživatelů';
-
-  @override
-  String get designSystemTaskListWithDividerLabel => 'S oddělovačem';
-
-  @override
   String get designSystemMediumLabel => 'Střední';
 
   @override
@@ -2811,6 +2780,40 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemTabPendingLabel => 'Čekající';
+
+  @override
+  String get designSystemTaskListBlockedLabel => 'Blokováno';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Výchozí';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Přejetí';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Varianty položky seznamu úkolů';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'Pozastaveno';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Otevřeno';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Stisknuto';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Studium';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Testování uživatelů';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'S oddělovačem';
 
   @override
   String get designSystemTextareaErrorSample => 'Toto pole je povinné';
@@ -3815,6 +3818,73 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectFilterLabel => 'Projekt';
 
   @override
+  String get projectHealthBandAtRisk => 'V ohrožení';
+
+  @override
+  String get projectHealthBandBlocked => 'Blokováno';
+
+  @override
+  String get projectHealthBandOnTrack => 'Na dobré cestě';
+
+  @override
+  String get projectHealthBandSurviving => 'Drží se';
+
+  @override
+  String get projectHealthBandWatch => 'Sledovat';
+
+  @override
+  String get projectHealthReasonCompleted => 'Projekt je dokončený.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Projekt ještě nemá propojené úkoly.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Poslední dobou není vidět žádný posun.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Projekt je pozastavený.';
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů je po termínu',
+      few: '$count úkoly jsou po termínu',
+      one: '$count úkol je po termínu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů stojí na místě',
+      few: '$count úkoly stojí na místě',
+      one: '$count úkol stojí na místě',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Projekt se posouvá stabilně.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Souhrn projektu je zastaralý.';
+
+  @override
+  String get projectHealthReasonTargetDatePassed => 'Cílové datum už uplynulo.';
+
+  @override
+  String get projectHealthSectionTitle => 'Stav projektu';
+
+  @override
   String projectHealthSummary(int projectCount, int taskCount) {
     String _temp0 = intl.Intl.pluralLogic(
       projectCount,
@@ -3835,73 +3905,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectHealthTitle => 'Projekty';
-
-  @override
-  String get projectHealthSectionTitle => 'Stav projektu';
-
-  @override
-  String get projectHealthBandSurviving => 'Drží se';
-
-  @override
-  String get projectHealthBandOnTrack => 'Na dobré cestě';
-
-  @override
-  String get projectHealthBandWatch => 'Sledovat';
-
-  @override
-  String get projectHealthBandAtRisk => 'V ohrožení';
-
-  @override
-  String get projectHealthBandBlocked => 'Blokováno';
-
-  @override
-  String get projectHealthReasonCompleted => 'Projekt je dokončený.';
-
-  @override
-  String get projectHealthReasonOnHold => 'Projekt je pozastavený.';
-
-  @override
-  String projectHealthReasonStalledTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count úkolů stojí na místě',
-      few: '$count úkoly stojí na místě',
-      one: '$count úkol stojí na místě',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String projectHealthReasonOverdueTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count úkolů je po termínu',
-      few: '$count úkoly jsou po termínu',
-      one: '$count úkol je po termínu',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get projectHealthReasonTargetDatePassed => 'Cílové datum už uplynulo.';
-
-  @override
-  String get projectHealthReasonNoRecentProgress =>
-      'Poslední dobou není vidět žádný posun.';
-
-  @override
-  String get projectHealthReasonSummaryOutdated =>
-      'Souhrn projektu je zastaralý.';
-
-  @override
-  String get projectHealthReasonNoLinkedTasks =>
-      'Projekt ještě nemá propojené úkoly.';
-
-  @override
-  String get projectHealthReasonSteadyProgress =>
-      'Projekt se posouvá stabilně.';
 
   @override
   String projectLinkedTaskCount(int count) {
@@ -5489,6 +5492,70 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksFilterTitle => 'Filtr úkolů';
 
   @override
+  String get taskShowcaseActiveFilters => 'Aktivní filtry';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total hotovo';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Termín: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Přejít na sekci';
+
+  @override
+  String get taskShowcaseLinked => 'Propojené';
+
+  @override
+  String get taskShowcaseNoResults => 'Žádné úkoly neodpovídají tvému hledání.';
+
+  @override
+  String get taskShowcaseReadMore => 'Číst dále';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nahrávek',
+      few: '$count nahrávky',
+      one: '1 nahrávka',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Popis úkolu';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Sledování času';
+
+  @override
+  String get taskShowcaseTodo => 'Úkol';
+
+  @override
+  String get taskShowcaseTodos => 'Úkoly';
+
+  @override
   String get tasksLabelFilterAll => 'Vše';
 
   @override
@@ -5628,63 +5695,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskUntitled => '(bez názvu)';
-
-  @override
-  String get taskShowcaseActiveFilters => 'Aktivní filtry';
-
-  @override
-  String get taskShowcaseAudio => 'Audio';
-
-  @override
-  String taskShowcaseCompletedCount(int completed, int total) {
-    return '$completed / $total hotovo';
-  }
-
-  @override
-  String taskShowcaseDueDate(String date) {
-    return 'Termín: $date';
-  }
-
-  @override
-  String get taskShowcaseJumpToSection => 'Přejít na sekci';
-
-  @override
-  String get taskShowcaseLinked => 'Propojené';
-
-  @override
-  String get taskShowcaseNoResults => 'Žádné úkoly neodpovídají tvému hledání.';
-
-  @override
-  String get taskShowcaseReadMore => 'Číst dále';
-
-  @override
-  String taskShowcaseRecordingsCount(int count) {
-    return '$count nahrávek';
-  }
-
-  @override
-  String taskShowcaseTaskCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count úkolů',
-      few: '$count úkoly',
-      one: '1 úkol',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get taskShowcaseTaskDescription => 'Popis úkolu';
-
-  @override
-  String get taskShowcaseTimeTracker => 'Sledování času';
-
-  @override
-  String get taskShowcaseTodo => 'Úkol';
-
-  @override
-  String get taskShowcaseTodos => 'Úkoly';
 
   @override
   String get thinkingDisclosureCopied => 'Úvaha zkopírována';
