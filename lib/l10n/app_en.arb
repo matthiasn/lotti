@@ -2478,6 +2478,51 @@
   "taskStatusRejected": "Rejected",
   "taskSummaries": "Task Summaries",
   "taskUntitled": "(untitled)",
+  "taskShowcaseActiveFilters": "Active filters",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} done",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Due: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Jump to section",
+  "taskShowcaseLinked": "Linked",
+  "taskShowcaseNoResults": "No tasks match your search.",
+  "taskShowcaseReadMore": "Read more",
+  "taskShowcaseRecordingsCount": "{count} recordings",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Task description",
+  "taskShowcaseTimeTracker": "Time Tracker",
+  "taskShowcaseTodo": "Todo",
+  "taskShowcaseTodos": "Todos",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",
   "thinkingDisclosureHide": "Hide reasoning",

@@ -185,8 +185,8 @@ class _TaskMobileListScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: state.visibleSections.isEmpty
-                      ? const Center(
-                          child: Text('No tasks match your search.'),
+                      ? TaskShowcaseEmptyResults(
+                          message: context.messages.taskShowcaseNoResults,
                         )
                       : TaskListSectionsList(
                           sections: state.visibleSections,
@@ -269,6 +269,9 @@ class _TaskMobileDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              SizedBox(height: context.designTokens.spacing.step3),
+              const Center(child: TaskShowcaseMobileHomeIndicator()),
+              SizedBox(height: context.designTokens.spacing.step4),
             ],
           ),
           const Positioned(

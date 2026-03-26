@@ -2307,6 +2307,51 @@
   "taskStatusRejected": "RESPINS",
   "taskSummaries": "Rezumate sarcini",
   "taskUntitled": "(fără titlu)",
+  "taskShowcaseActiveFilters": "Filtre active",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} finalizate",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Termen: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Salt la secțiune",
+  "taskShowcaseLinked": "Legat",
+  "taskShowcaseNoResults": "Nicio sarcină nu corespunde căutării dvs.",
+  "taskShowcaseReadMore": "Citiți mai mult",
+  "taskShowcaseRecordingsCount": "{count} înregistrări",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} sarcini}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Descrierea sarcinii",
+  "taskShowcaseTimeTracker": "Urmărire timp",
+  "taskShowcaseTodo": "De făcut",
+  "taskShowcaseTodos": "De făcut",
   "thinkingDisclosureCopied": "Raționament copiat",
   "thinkingDisclosureCopy": "Copiază raționamentul",
   "thinkingDisclosureHide": "Ascunde raționamentul",

@@ -5630,6 +5630,63 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskUntitled => '(bez názvu)';
 
   @override
+  String get taskShowcaseActiveFilters => 'Aktivní filtry';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total hotovo';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Termín: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Přejít na sekci';
+
+  @override
+  String get taskShowcaseLinked => 'Propojené';
+
+  @override
+  String get taskShowcaseNoResults => 'Žádné úkoly neodpovídají tvému hledání.';
+
+  @override
+  String get taskShowcaseReadMore => 'Číst dále';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    return '$count nahrávek';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Popis úkolu';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Sledování času';
+
+  @override
+  String get taskShowcaseTodo => 'Úkol';
+
+  @override
+  String get taskShowcaseTodos => 'Úkoly';
+
+  @override
   String get thinkingDisclosureCopied => 'Úvaha zkopírována';
 
   @override

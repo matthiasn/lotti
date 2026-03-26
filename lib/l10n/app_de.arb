@@ -2307,6 +2307,51 @@
   "taskStatusRejected": "Abgelehnt",
   "taskSummaries": "Aufgabenzusammenfassungen",
   "taskUntitled": "(ohne Titel)",
+  "taskShowcaseActiveFilters": "Aktive Filter",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} erledigt",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Fällig: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Zum Abschnitt springen",
+  "taskShowcaseLinked": "Verknüpft",
+  "taskShowcaseNoResults": "Keine Aufgaben stimmen mit deiner Suche überein.",
+  "taskShowcaseReadMore": "Mehr lesen",
+  "taskShowcaseRecordingsCount": "{count} Aufnahmen",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Aufgabenbeschreibung",
+  "taskShowcaseTimeTracker": "Zeiterfassung",
+  "taskShowcaseTodo": "Todo",
+  "taskShowcaseTodos": "Todos",
   "thinkingDisclosureCopied": "Begründung kopiert",
   "thinkingDisclosureCopy": "Begründung kopieren",
   "thinkingDisclosureHide": "Begründung ausblenden",

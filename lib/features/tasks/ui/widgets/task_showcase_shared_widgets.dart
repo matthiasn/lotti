@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/branding/design_system_b
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -801,105 +802,11 @@ class _TaskShowcaseRoundAction extends StatelessWidget {
   }
 }
 
-class TaskShowcaseMobileShell extends StatelessWidget {
-  const TaskShowcaseMobileShell({required this.child, super.key});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final frameColor = isLight
-        ? tokens.colors.background.level01
-        : tokens.colors.background.level03;
-
-    return SizedBox(
-      width: 402,
-      height: 874,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: frameColor,
-          borderRadius: BorderRadius.circular(36),
-          border: Border.all(
-            color: isLight
-                ? tokens.colors.decorative.level02
-                : Colors.black.withValues(alpha: 0.6),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.28),
-              blurRadius: 24,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: TaskShowcasePalette.page(context),
-              ),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class TaskShowcaseMobileStatusBar extends StatelessWidget {
-  const TaskShowcaseMobileStatusBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final iconColor = TaskShowcasePalette.highText(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-      child: SizedBox(
-        height: 24,
-        child: Row(
-          children: [
-            Text(
-              '9:41',
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: iconColor,
-              ),
-            ),
-            const Spacer(),
-            Icon(Icons.signal_cellular_alt_rounded, size: 18, color: iconColor),
-            const SizedBox(width: 4),
-            Icon(Icons.wifi_rounded, size: 18, color: iconColor),
-            const SizedBox(width: 4),
-            Icon(Icons.battery_full_rounded, size: 20, color: iconColor),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class TaskShowcaseMobileHomeIndicator extends StatelessWidget {
-  const TaskShowcaseMobileHomeIndicator({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 175,
-      height: 5,
-      decoration: BoxDecoration(
-        color: TaskShowcasePalette.mediumText(context).withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
-}
+/// Re-export shared mobile showcase chrome widgets for convenience.
+typedef TaskShowcaseMobileShell = DesignSystemShowcaseMobileShell;
+typedef TaskShowcaseMobileStatusBar = DesignSystemShowcaseMobileStatusBar;
+typedef TaskShowcaseMobileHomeIndicator =
+    DesignSystemShowcaseMobileHomeIndicator;
 
 class TaskShowcaseProfileButton extends StatelessWidget {
   const TaskShowcaseProfileButton({super.key});
@@ -925,9 +832,10 @@ class TaskShowcaseFloatingAiButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DesignSystemAiAssistantButton(
+    return DesignSystemAiAssistantButton(
       assetName: 'assets/design_system/ai_assistant_variant_1.png',
-      semanticLabel: 'AI assistant',
+      semanticLabel:
+          context.messages.designSystemNavigationAiAssistantSectionTitle,
     );
   }
 }

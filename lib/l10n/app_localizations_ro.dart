@@ -5659,6 +5659,64 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskUntitled => '(fără titlu)';
 
   @override
+  String get taskShowcaseActiveFilters => 'Filtre active';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    return '$completed / $total finalizate';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Termen: $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Salt la secțiune';
+
+  @override
+  String get taskShowcaseLinked => 'Legat';
+
+  @override
+  String get taskShowcaseNoResults =>
+      'Nicio sarcină nu corespunde căutării dvs.';
+
+  @override
+  String get taskShowcaseReadMore => 'Citiți mai mult';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    return '$count înregistrări';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Descrierea sarcinii';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Urmărire timp';
+
+  @override
+  String get taskShowcaseTodo => 'De făcut';
+
+  @override
+  String get taskShowcaseTodos => 'De făcut';
+
+  @override
   String get thinkingDisclosureCopied => 'Raționament copiat';
 
   @override

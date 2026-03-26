@@ -2307,6 +2307,51 @@
   "taskStatusRejected": "REJETÉE",
   "taskSummaries": "Résumés de tâches",
   "taskUntitled": "(sans titre)",
+  "taskShowcaseActiveFilters": "Filtres actifs",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} terminé(s)",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Échéance : {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Aller à la section",
+  "taskShowcaseLinked": "Lié",
+  "taskShowcaseNoResults": "Aucune tâche ne correspond à ta recherche.",
+  "taskShowcaseReadMore": "Lire la suite",
+  "taskShowcaseRecordingsCount": "{count} enregistrements",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 tâche} other{{count} tâches}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Description de la tâche",
+  "taskShowcaseTimeTracker": "Suivi du temps",
+  "taskShowcaseTodo": "À faire",
+  "taskShowcaseTodos": "À faire",
   "thinkingDisclosureCopied": "Raisonnement copié",
   "thinkingDisclosureCopy": "Copier le raisonnement",
   "thinkingDisclosureHide": "Masquer le raisonnement",
