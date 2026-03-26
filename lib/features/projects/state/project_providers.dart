@@ -73,9 +73,11 @@ List<ProjectHealthOverviewEntry> queryProjectHealthOverviewEntries(
     ProjectHealthOverviewEntry left,
     ProjectHealthOverviewEntry right,
   ) {
-    return left.project.data.title.toLowerCase().compareTo(
+    final titleOrder = left.project.data.title.toLowerCase().compareTo(
       right.project.data.title.toLowerCase(),
     );
+    if (titleOrder != 0) return titleOrder;
+    return left.project.meta.id.compareTo(right.project.meta.id);
   }
 
   filtered.sort((left, right) {

@@ -68,12 +68,10 @@ class ProjectRepository {
   /// entry updates that bubble up to their parent task IDs also mark the owning
   /// project as stale.
   Future<Set<String>> resolveAffectedProjectIds(Set<String> affectedIds) async {
-    final directProjectIds = await _journalDb.getExistingProjectIds(
-      affectedIds,
-    );
-    final taskProjectIds = await _journalDb.getProjectIdsForTaskIds(
-      affectedIds,
-    );
+    final (directProjectIds, taskProjectIds) = await (
+      _journalDb.getExistingProjectIds(affectedIds),
+      _journalDb.getProjectIdsForTaskIds(affectedIds),
+    ).wait;
     return {...directProjectIds, ...taskProjectIds};
   }
 

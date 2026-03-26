@@ -546,7 +546,6 @@ void main() {
             snapshot: ProjectHealthSnapshot(
               projectId: 'on-track-zulu',
               metrics: makeTestProjectHealthMetrics(
-                band: ProjectHealthBand.onTrack,
                 rationale: 'Steady delivery.',
               ),
               summary: null,
@@ -578,7 +577,6 @@ void main() {
             snapshot: ProjectHealthSnapshot(
               projectId: 'on-track-alpha',
               metrics: makeTestProjectHealthMetrics(
-                band: ProjectHealthBand.onTrack,
                 rationale: 'Also steady.',
               ),
               summary: null,
@@ -603,7 +601,6 @@ void main() {
         final sorted = queryProjectHealthOverviewEntries(
           entries,
           sort: ProjectHealthOverviewSort.bestBandFirst,
-          includeWithoutHealth: true,
         );
 
         expect(

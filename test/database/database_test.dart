@@ -4687,6 +4687,16 @@ void main() {
             timestamp: base.add(const Duration(minutes: 1)),
             categoryId: 'cat-lookup',
           );
+          final projectDeletedTarget = buildProjectEntry(
+            id: 'proj-deleted-target',
+            timestamp: base.add(const Duration(minutes: 5)),
+            categoryId: 'cat-lookup',
+          );
+          final projectNoteTarget = buildProjectEntry(
+            id: 'proj-note-target',
+            timestamp: base.add(const Duration(minutes: 6)),
+            categoryId: 'cat-lookup',
+          );
           final linkedTaskOne = buildTaskEntry(
             id: 'task-project-one-a',
             timestamp: base,
@@ -4751,6 +4761,8 @@ void main() {
 
           await db!.upsertJournalDbEntity(toDbEntity(projectOne));
           await db!.upsertJournalDbEntity(toDbEntity(projectTwo));
+          await db!.upsertJournalDbEntity(toDbEntity(projectDeletedTarget));
+          await db!.upsertJournalDbEntity(toDbEntity(projectNoteTarget));
           await db!.upsertJournalDbEntity(toDbEntity(linkedTaskOne));
           await db!.upsertJournalDbEntity(toDbEntity(linkedTaskTwo));
           await db!.upsertJournalDbEntity(toDbEntity(linkedTaskThree));
@@ -4785,7 +4797,7 @@ void main() {
           await db!.upsertEntryLink(
             buildProjectLink(
               id: 'pl-project-deleted',
-              fromId: 'proj-task-lookup-2',
+              fromId: 'proj-deleted-target',
               toId: 'task-deleted-project',
               timestamp: base.add(const Duration(minutes: 3)),
             ),
@@ -4793,7 +4805,7 @@ void main() {
           await db!.upsertEntryLink(
             buildProjectLink(
               id: 'pl-project-note',
-              fromId: 'proj-task-lookup-1',
+              fromId: 'proj-note-target',
               toId: 'note-linked-to-project',
               timestamp: base.add(const Duration(minutes: 4)),
             ),

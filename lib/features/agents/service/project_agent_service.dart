@@ -217,10 +217,10 @@ class ProjectAgentService {
           agent.agentId,
           type: AgentLinkTypes.agentProject,
         );
+        await _hydrateThrottleDeadline(agent.agentId);
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
         }
-        await _hydrateThrottleDeadline(agent.agentId);
         count++;
       } catch (e, s) {
         final msg =
