@@ -1,3 +1,4 @@
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 
 /// UI state for the project list/detail layout.
@@ -43,9 +44,9 @@ class ProjectListDetailState {
   }
 
   /// Cached grouped project list. Computed lazily on first access.
-  late final List<ProjectGroup> visibleGroups = _computeVisibleGroups();
+  late final List<ProjectCategoryGroup> visibleGroups = _computeVisibleGroups();
 
-  List<ProjectGroup> _computeVisibleGroups() {
+  List<ProjectCategoryGroup> _computeVisibleGroups() {
     final visible = visibleProjects;
     final byCategory = <String, List<ProjectRecord>>{};
 
@@ -53,7 +54,7 @@ class ProjectListDetailState {
       (byCategory[record.category.id] ??= []).add(record);
     }
 
-    final groups = <ProjectGroup>[];
+    final groups = <ProjectCategoryGroup>[];
 
     for (final category in data.categories) {
       final projects = byCategory[category.id];
@@ -62,9 +63,12 @@ class ProjectListDetailState {
       }
 
       groups.add(
-        ProjectGroup(
-          label: category.name,
-          projects: projects,
+        ProjectCategoryGroup(
+          categoryId: category.id,
+          category: category,
+          projects: projects
+              .map((record) => record.overviewListItem)
+              .toList(growable: false),
         ),
       );
     }

@@ -1361,6 +1361,7 @@
   "navTabTitleHabits": "Zvyky",
   "navTabTitleInsights": "Přehledy",
   "navTabTitleJournal": "Zápisník",
+  "navTabTitleProjects": "Projekty",
   "navTabTitleSettings": "Nastavení",
   "navTabTitleTasks": "Úkoly",
   "nestedAiResponsesTitle": "{count, plural, =1{1 AI odpověď} other{{count} AI odpovědí}}",

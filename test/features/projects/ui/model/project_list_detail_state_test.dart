@@ -87,9 +87,9 @@ void main() {
         final groups = state.visibleGroups;
 
         expect(groups, hasLength(2));
-        expect(groups[0].label, 'Work');
+        expect(groups[0].category?.name, 'Work');
         expect(groups[0].projects, hasLength(1));
-        expect(groups[1].label, 'Study');
+        expect(groups[1].category?.name, 'Study');
         expect(groups[1].projects, hasLength(1));
       });
 
@@ -97,7 +97,7 @@ void main() {
         final filtered = state.copyWith(searchQuery: 'Alpha').visibleGroups;
 
         expect(filtered, hasLength(1));
-        expect(filtered.first.label, 'Work');
+        expect(filtered.first.category?.name, 'Work');
       });
 
       test('returns empty when search matches nothing', () {

@@ -7,6 +7,7 @@ Projects provide a grouping layer between categories and tasks. Each project bel
 The entire projects UI is gated behind the `enableProjects` config flag (default: `false`). When disabled, no project-related UI is visible. Toggle it in Settings > Feature Flags.
 
 Gated integration points:
+- **Top-level navigation**: the `Projects` tab is hidden unless the flag is enabled.
 - **Tasks page**: `ProjectHealthHeader` is hidden.
 - **Category details**: `CategoryProjectsSection` is hidden.
 - **Task metadata row**: `TaskProjectWrapper` chip is hidden.
@@ -24,6 +25,9 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 - **dateFrom** / **dateTo**: time range.
 
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
+The journal table also keeps a denormalized `project_id` column in sync for
+tasks so the top-level projects tab can batch task rollups without repeated
+link-table joins.
 Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
 forward to 06:00 local time on the next day after creation or after a due
 digest completes. Direct project edits and task linking changes coalesce into a
@@ -34,11 +38,13 @@ summary as stale and defers the automatic refresh to the next scheduled digest.
 
 ```
 lib/features/projects/
+├── model/
+│   └── projects_overview_models.dart  # Tab overview DTOs and filter/query state
 ├── repository/
-│   └── project_repository.dart      # CRUD, task linking, query methods
+│   └── project_repository.dart      # CRUD, task linking, and batch overview methods
 ├── state/
 │   ├── project_health_metrics.dart   # Parsing for agent-authored health band/rationale
-│   ├── project_providers.dart        # Project fetchers plus health/recommendation aggregate providers
+│   ├── project_providers.dart        # Detail providers plus projects-tab overview/filter providers
 │   └── project_detail_controller.dart # Detail page state (form tracking, save)
 ├── widgetbook/
 │   ├── project_list_detail_mock_controller.dart # Widgetbook-only mock controller for the list/detail showcase
@@ -46,11 +52,12 @@ lib/features/projects/
 │   └── project_widgetbook.dart                  # Widgetbook registration for desktop + mobile project showcase use cases
 └── ui/
     ├── model/
-    │   ├── project_list_detail_models.dart       # Production presentation models (ProjectRecord, TaskSummary, ReviewSession, etc.)
-    │   └── project_list_detail_state.dart        # UI state with search/filter/selection logic
+    │   ├── project_list_detail_models.dart       # Widgetbook list/detail records plus bridge getters into ProjectListItemData
+    │   └── project_list_detail_state.dart        # Widgetbook search/filter/selection state built on ProjectCategoryGroup
     ├── pages/
     │   ├── project_create_page.dart   # New project form
-    │   └── project_detail_page.dart   # View/edit existing project
+    │   ├── project_detail_page.dart   # View/edit existing project
+    │   └── projects_tab_page.dart     # Top-level grouped projects list page
     └── widgets/
         ├── category_projects_section.dart       # Projects list in category detail
         ├── health_panel.dart                     # Health score panel with progress bar and legends
@@ -58,14 +65,16 @@ lib/features/projects/
         ├── project_detail_pane.dart              # Right-hand detail pane (header, health, report, tasks, reviews)
         ├── project_health_header.dart            # Expandable project overview on tasks page
         ├── project_health_indicator.dart         # Compact health band chip with reason text
+        ├── projects_header.dart                  # Shared DS header used by the production tab and Widgetbook mobile list
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
-        ├── project_list_pane.dart                # Left-hand pane with search and grouped project rows
+        ├── project_list_pane.dart                # Shared DS list/group row widgets plus the desktop/search pane wrapper
         ├── project_mobile_list_detail_showcase.dart # Mobile list/detail showcase with shared mock selection state and adaptive split/stack layout
         ├── project_selection_modal_content.dart  # Project picker modal
         ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
         ├── project_status_chip.dart              # Status badge with icon/color
         ├── project_status_picker.dart            # Interactive status selection bottom sheet
+        ├── projects_overview_list.dart           # Production lazy sliver wrapper around the shared DS project rows
         ├── project_tasks_panel.dart              # Highlighted tasks panel with duration totals
         ├── review_sessions_panel.dart            # Review sessions panel with expandable metric rows
         ├── shared_widgets.dart                   # Reusable widgets: CategoryTag, StatusPill, CountDotBadge, etc.
@@ -85,6 +94,9 @@ lib/features/projects/
 - `projectHealthSnapshotProvider(projectId)` — aggregates the latest health band, stale-summary state, and active `ProjectRecommendationEntity` records for a single project so dashboard UI can consume one project-scoped state object.
 - `projectHealthOverviewEntriesProvider(categoryId)` — prepares category-scoped project health entries, already sorted worst-band-first for future health dashboard list surfaces.
 - `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
+- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected category IDs, text query, and search mode for the top-level tab rollout.
+- `projectsOverviewProvider` — `StreamProvider.autoDispose` exposing the batched grouped snapshot for the top-level projects tab via `ProjectRepository.watchProjectsOverview()`.
+- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. Local text filtering only activates when `searchMode == ProjectsSearchMode.localText`; the live tab currently keeps the search field disabled while vector search is pending.
 
 ### Detail Controller (`project_detail_controller.dart`)
 
@@ -95,6 +107,9 @@ lib/features/projects/
 - Methods: `updateTitle`, `updateTargetDate`, `updateStatus`, `saveChanges`.
 
 ## Routing
+
+Top-level route:
+- `/projects` — grouped list tab, inserted into the main bottom navigation after `Tasks`
 
 Project routes live under the settings location:
 - `/settings/projects/create?categoryId=X` — create page
@@ -116,7 +131,20 @@ Widgetbook-only thin wrapper that composes the production desktop layout widgets
 
 ### ProjectMobileListDetailShowcase
 
-Widgetbook-only mobile showcase that uses the same mock controller/provider as the desktop showcase. On wide canvases it renders list and detail phone frames side by side; on narrow canvases it navigates between the list screen and the selected detail screen while preserving selection state. The mobile screens reuse the same `ProjectListDetailState` data, custom project grouping, project detail panels, and theme-token palette so dark and light mode stay in sync with the Figma references.
+Widgetbook-only mobile showcase that uses the same mock controller/provider as the desktop showcase. On wide canvases it renders list and detail phone frames side by side; on narrow canvases it navigates between the list screen and the selected detail screen while preserving selection state. The mobile screens reuse the shared `ProjectsHeader`, `ProjectGroupSection`, and `ProjectRow` implementations so the Widgetbook list UI and the production projects tab stay visually aligned instead of drifting apart.
+
+### ProjectsTabPage
+
+The top-level projects tab uses the same design-system list primitives as the Widgetbook mobile list, but renders them through a lazy sliver pipeline (`ProjectsOverviewSliverList`) for production scalability. The header is a shared `ProjectsHeader` with the left-aligned title, notification icon, disabled search field, and filter icon shown in the Widgetbook mobile reference.
+
+### Shared List Components
+
+`ProjectCategoryGroup` and `ProjectListItemData` are the production list contracts. The shared UI components that render them are:
+
+- `ProjectsHeader` — shared top section for the Widgetbook mobile list and the live tab.
+- `ProjectGroupSection` — grouped card list used by the desktop/mobile Widgetbook list.
+- `ProjectRow` — shared DS project row with progress ring, task count, due/ongoing label, and compact status label.
+- `ProjectsOverviewSliverList` — production wrapper that keeps the same row visuals but renders lazily with slivers.
 
 ### ProjectStatusPicker
 
@@ -138,6 +166,7 @@ Form page with three sections:
 
 ## Integration Points
 
+- **Main app shell**: a top-level `Projects` tab now appears immediately after `Tasks` when the feature flag is enabled. The tab uses the existing bottom navigation and opens the production grouped list page.
 - **Category detail page**: `CategoryProjectsSection` shows projects and a "New Project" button (gated by `enableProjects` flag).
 - **Task header**: `TaskProjectWrapper` adds a project chip to the task metadata row (gated by `enableProjects` flag).
 - **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
@@ -157,3 +186,15 @@ Form page with three sections:
 ## Task-Project Linking
 
 Each task can belong to at most one project. Linking is done via the project picker modal (`ProjectSelectionModalContent`) accessible from the task header. The repository methods `linkTaskToProject` and `unlinkTaskFromProject` manage the `EntryLink` records, enforcing the single-project constraint.
+
+## Top-Level Tab Data Path
+
+The top-level projects tab does **not** render through per-project providers such as `projectTaskCountProvider` or by looping `projectsForCategoryProvider` over categories.
+
+Instead it uses one batched overview path:
+
+1. `JournalDb.getVisibleProjects()` fetches all visible `ProjectEntry` rows in one query.
+2. `JournalDb.getProjectTaskRollups(projectIds)` fetches task counts for all visible projects in one aggregate query keyed by the denormalized `journal.project_id`.
+3. `ProjectRepository.getProjectsOverview()` resolves category metadata once, groups the result in memory, and returns a `ProjectsOverviewSnapshot`.
+4. `ProjectRepository.watchProjectsOverview()` subscribes to `UpdateNotifications`, refreshing on broad project/task/category/private tokens and on concrete project/category IDs already present in the current snapshot so status changes cannot leave the list stale.
+5. `projectsOverviewProvider` exposes that snapshot stream to the tab, while `visibleProjectGroupsProvider` applies the local filtering model without re-querying per project.

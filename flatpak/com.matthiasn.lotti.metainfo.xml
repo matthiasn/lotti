@@ -31,11 +31,18 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.933" date="2026-03-27">
+      <description>
+          <p>Projects tab: the new top-level Projects tab now ships behind the enableProjects feature flag with the intended design-system mobile layout, grouped category sections, lazy list rendering, and a disabled search field reserved for the later vector-search follow-up.</p>
+          <p>Projects tab reactivity: grouped project snapshots now refresh automatically when relevant project, task, category, or private-visibility updates arrive, so status changes such as Active to Completed are reflected in the UI without reopening the page.</p>
+      </description>
+    </release>
     <release version="0.9.932" date="2026-03-23">
       <description>
           <p>Projects now show a compact health band at a glance in both the tasks-page project header and project detail page based on the latest project-agent report.</p>
           <p>Linked task activity now marks project summaries stale for the next 06:00 local-time digest, while app state also exposes stale status and active project recommendations for upcoming project health dashboard surfaces.</p>
           <p>Direct edits to a project and task linking changes now use the short deferred project-agent wake path, while other task-level activity stays stale-only until the next scheduled digest unless you refresh manually sooner.</p>
+          <p>Projects now also have a top-level tab behind the enableProjects feature flag, reusing the existing bottom navigation and loading grouped project/category data through a single batch overview path.</p>
       </description>
     </release>
     <release version="0.9.931" date="2026-03-23">

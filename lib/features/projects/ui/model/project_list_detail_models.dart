@@ -1,5 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 
 /// Presentation model for a project record displayed in the project
 /// list/detail layout.
@@ -31,6 +32,16 @@ class ProjectRecord {
   final List<TaskSummary> highlightedTaskSummaries;
   final List<ReviewSession> reviewSessions;
   final Duration highlightedTasksTotalDuration;
+
+  ProjectListItemData get overviewListItem => ProjectListItemData(
+    project: project,
+    category: category,
+    taskRollup: ProjectTaskRollupData(
+      totalTaskCount: totalTaskCount,
+      completedTaskCount: completedTaskCount,
+      blockedTaskCount: blockedTaskCount,
+    ),
+  );
 }
 
 /// A task together with its estimated duration for display in project panels.
@@ -80,17 +91,6 @@ class ReviewSession {
   final List<ReviewMetric> metrics;
   final String? note;
   final bool expanded;
-}
-
-/// A named group of projects (typically one per category).
-class ProjectGroup {
-  const ProjectGroup({
-    required this.label,
-    required this.projects,
-  });
-
-  final String label;
-  final List<ProjectRecord> projects;
 }
 
 /// Top-level container for the data powering the project list/detail layout.

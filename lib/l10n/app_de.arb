@@ -1574,6 +1574,7 @@
   "navTabTitleHabits": "Gewohnheiten",
   "navTabTitleInsights": "Dashboards",
   "navTabTitleJournal": "Logbuch",
+  "navTabTitleProjects": "Projekte",
   "navTabTitleSettings": "Einstellungen",
   "navTabTitleTasks": "Aufgaben",
   "nestedAiResponsesTitle": "{count} KI-Antwort{count, plural, =1{} other{en}}",

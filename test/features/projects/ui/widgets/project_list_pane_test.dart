@@ -145,10 +145,16 @@ void main() {
         tester.element(find.byType(ProjectListPane)),
       )!;
       final expectedDate = DateFormat.MMMd('de').format(targetDate);
-      final expectedSummary =
-          '${l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount)} · ${l10n.projectShowcaseDueDate(expectedDate)}';
-
-      expect(findRichTextContaining(expectedSummary), findsOneWidget);
+      expect(
+        findRichTextContaining(
+          l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        findRichTextContaining(l10n.projectShowcaseDueDate(expectedDate)),
+        findsOneWidget,
+      );
     });
   });
 
@@ -178,16 +184,15 @@ void main() {
   });
 
   group('ProjectRow', () {
-    testWidgets('renders title, health score, and status', (tester) async {
-      final record = makeTestProjectRecord();
+    testWidgets('renders title, task progress, and status tag', (tester) async {
+      final item = makeTestProjectListItemData();
 
       await tester.pumpWidget(
         wrap(
           ProjectRow(
-            record: record,
+            item: item,
             selected: false,
-            hovered: false,
-            onHoverChanged: (_) {},
+            showDivider: false,
             onTap: () {},
           ),
         ),
@@ -196,7 +201,9 @@ void main() {
 
       expect(find.text('Test Project'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('project-row-health-ring')),
+        find.byKey(
+          ValueKey('project-row-progress-ring-${item.project.meta.id}'),
+        ),
         findsOneWidget,
       );
       expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
@@ -204,15 +211,14 @@ void main() {
 
     testWidgets('calls onTap when tapped', (tester) async {
       var tapped = false;
-      final record = makeTestProjectRecord();
+      final item = makeTestProjectListItemData();
 
       await tester.pumpWidget(
         wrap(
           ProjectRow(
-            record: record,
+            item: item,
             selected: false,
-            hovered: false,
-            onHoverChanged: (_) {},
+            showDivider: false,
             onTap: () => tapped = true,
           ),
         ),

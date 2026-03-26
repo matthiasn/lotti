@@ -1574,6 +1574,7 @@
   "navTabTitleHabits": "Habitudes",
   "navTabTitleInsights": "Tableaux de bord",
   "navTabTitleJournal": "Journal",
+  "navTabTitleProjects": "Projets",
   "navTabTitleSettings": "Paramètres",
   "navTabTitleTasks": "Tâches",
   "nestedAiResponsesTitle": "{count} réponse{count, plural, =1{} other{s}} AI",

@@ -22,6 +22,22 @@ void main() {
       expect(record.aiSummary, 'Custom summary');
       expect(record.recommendations, ['Do A', 'Do B']);
     });
+
+    test('exposes an overview list item backed by the real list model', () {
+      final record = makeTestProjectRecord(
+        completedTaskCount: 4,
+        totalTaskCount: 6,
+        blockedTaskCount: 2,
+      );
+
+      final item = record.overviewListItem;
+
+      expect(item.project, same(record.project));
+      expect(item.category, same(record.category));
+      expect(item.taskRollup.completedTaskCount, 4);
+      expect(item.taskRollup.totalTaskCount, 6);
+      expect(item.taskRollup.blockedTaskCount, 2);
+    });
   });
 
   group('TaskSummary', () {
@@ -80,19 +96,6 @@ void main() {
           ReviewMetricType.accuracy,
         ]),
       );
-    });
-  });
-
-  group('ProjectGroup', () {
-    test('stores label and projects', () {
-      final record = makeTestProjectRecord();
-      final group = ProjectGroup(
-        label: 'Work',
-        projects: [record],
-      );
-
-      expect(group.label, 'Work');
-      expect(group.projects, hasLength(1));
     });
   });
 

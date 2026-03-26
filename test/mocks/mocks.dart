@@ -74,6 +74,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -176,6 +177,8 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
     return true;
   }
 }
+
+class MockUserActivityService extends Mock implements UserActivityService {}
 
 MockJournalDb mockJournalDbWithMeasurableTypes(
   List<MeasurableDataType> dataTypes,

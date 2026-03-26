@@ -7,7 +7,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -56,12 +56,13 @@ class ProjectListPane extends StatelessWidget {
                       child: ListView.separated(
                         padding: EdgeInsets.zero,
                         itemCount: groups.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        separatorBuilder: (_, _) => const SizedBox(height: 20),
                         itemBuilder: (context, index) {
                           return ProjectGroupSection(
                             group: groups[index],
                             selectedProjectId: selectedId,
-                            onProjectSelected: onProjectSelected,
+                            onProjectSelected: (item) =>
+                                onProjectSelected(item.project.meta.id),
                           );
                         },
                       ),
@@ -125,8 +126,8 @@ class _SearchHeader extends StatelessWidget {
   }
 }
 
-/// A category-labelled section containing grouped [ProjectRow] entries.
-class ProjectGroupSection extends StatefulWidget {
+/// A category-labelled section containing grouped project rows.
+class ProjectGroupSection extends StatelessWidget {
   const ProjectGroupSection({
     required this.group,
     required this.selectedProjectId,
@@ -134,25 +135,15 @@ class ProjectGroupSection extends StatefulWidget {
     super.key,
   });
 
-  final ProjectGroup group;
+  final ProjectCategoryGroup group;
   final String? selectedProjectId;
-  final ValueChanged<String> onProjectSelected;
-
-  @override
-  State<ProjectGroupSection> createState() => _ProjectGroupSectionState();
-}
-
-class _ProjectGroupSectionState extends State<ProjectGroupSection> {
-  String? _hoveredProjectId;
+  final ValueChanged<ProjectListItemData> onProjectSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final category = widget.group.projects.first.category;
-
-    bool isHighlighted(ProjectRecord record) =>
-        record.project.meta.id == widget.selectedProjectId ||
-        record.project.meta.id == _hoveredProjectId;
+    final category = group.category;
+    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,17 +153,15 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
           child: Row(
             children: [
               CategoryTag(
-                label: widget.group.label,
-                icon: category.icon?.iconData ?? Icons.label_outline,
-                color: colorFromCssHex(
-                  category.color ?? defaultCategoryColorHex,
-                ),
+                label:
+                    category?.name ??
+                    context.messages.taskCategoryUnassignedLabel,
+                icon: category?.icon?.iconData ?? Icons.folder_outlined,
+                color: color,
               ),
               const Spacer(),
               Text(
-                context.messages.projectCountSummary(
-                  widget.group.projects.length,
-                ),
+                context.messages.projectCountSummary(group.projectCount),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: ShowcasePalette.mediumText(context),
                 ),
@@ -181,59 +170,26 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
           ),
         ),
         const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: ColoredBox(
+        DecoratedBox(
+          decoration: BoxDecoration(
             color: ShowcasePalette.surface(context),
-            child: SizedBox(
-              width: 370,
-              child: Column(
-                children: [
-                  for (
-                    var index = 0;
-                    index < widget.group.projects.length;
-                    index++
-                  ) ...[
-                    ProjectRow(
-                      record: widget.group.projects[index],
-                      selected:
-                          widget.group.projects[index].project.meta.id ==
-                          widget.selectedProjectId,
-                      hovered:
-                          widget.group.projects[index].project.meta.id ==
-                          _hoveredProjectId,
-                      onHoverChanged: (hovered) {
-                        setState(() {
-                          _hoveredProjectId = hovered
-                              ? widget.group.projects[index].project.meta.id
-                              : _hoveredProjectId ==
-                                    widget.group.projects[index].project.meta.id
-                              ? null
-                              : _hoveredProjectId;
-                        });
-                      },
-                      onTap: () => widget.onProjectSelected(
-                        widget.group.projects[index].project.meta.id,
-                      ),
-                    ),
-                    if (index < widget.group.projects.length - 1)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(
-                          height: 1,
-                          thickness: 1,
-                          color:
-                              isHighlighted(widget.group.projects[index]) ||
-                                  isHighlighted(
-                                    widget.group.projects[index + 1],
-                                  )
-                              ? Colors.transparent
-                              : ShowcasePalette.border(context),
-                        ),
-                      ),
-                  ],
-                ],
-              ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ShowcasePalette.border(context)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              children: [
+                for (var index = 0; index < group.projects.length; index++)
+                  ProjectRow(
+                    item: group.projects[index],
+                    selected:
+                        group.projects[index].project.meta.id ==
+                        selectedProjectId,
+                    showDivider: index < group.projects.length - 1,
+                    onTap: () => onProjectSelected(group.projects[index]),
+                  ),
+              ],
             ),
           ),
         ),
@@ -242,22 +198,20 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
   }
 }
 
-/// A single project row in the list, with title, health ring, task count, and
-/// status label.
+/// A single project row in the list, with task-progress ring, task count,
+/// due label, and status tag.
 class ProjectRow extends StatelessWidget {
   const ProjectRow({
-    required this.record,
+    required this.item,
     required this.selected,
-    required this.hovered,
-    required this.onHoverChanged,
+    required this.showDivider,
     required this.onTap,
     super.key,
   });
 
-  final ProjectRecord record;
+  final ProjectListItemData item;
   final bool selected;
-  final bool hovered;
-  final ValueChanged<bool> onHoverChanged;
+  final bool showDivider;
   final VoidCallback onTap;
 
   @override
@@ -267,78 +221,84 @@ class ProjectRow extends StatelessWidget {
       color: ShowcasePalette.lowText(context),
     );
 
-    return MouseRegion(
-      onEnter: (_) => onHoverChanged(true),
-      onExit: (_) => onHoverChanged(false),
-      child: DesignSystemListItem(
-        title: record.project.data.title,
-        subtitleSpans: _metaSpans(
-          context,
-          metaStyle,
-          record.healthScore,
-          record.totalTaskCount,
-          record.project.data.targetDate,
-        ),
-        trailing: ProjectStatusLabel(status: record.project.data.status),
-        activated: selected,
-        selected: selected,
-        activatedBackgroundColor: ShowcasePalette.selectedRow(context),
-        hoverBackgroundColor: ShowcasePalette.hoverFill(context),
-        onTap: onTap,
-      ),
+    return DesignSystemListItem(
+      key: ValueKey('project-overview-row-${item.project.meta.id}'),
+      title: item.project.data.title,
+      subtitleSpans: _metaSpans(context, metaStyle, item),
+      trailing: ProjectStatusLabel(status: item.status),
+      showDivider: showDivider,
+      activated: selected,
+      selected: selected,
+      activatedBackgroundColor: ShowcasePalette.selectedRow(context),
+      hoverBackgroundColor: ShowcasePalette.hoverFill(context),
+      onTap: onTap,
     );
-  }
-
-  List<InlineSpan> _metaSpans(
-    BuildContext context,
-    TextStyle metaStyle,
-    int score,
-    int count,
-    DateTime? targetDate,
-  ) {
-    final tokens = context.designTokens;
-    final taskCount = context.messages.settingsCategoriesTaskCount(count);
-    final dueLabel = targetDate == null
-        ? context.messages.projectShowcaseOngoing
-        : context.messages.projectShowcaseDueDate(
-            DateFormat.MMMd(
-              Localizations.localeOf(context).toString(),
-            ).format(targetDate),
-          );
-
-    return [
-      WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: Padding(
-          padding: const EdgeInsets.only(right: 3),
-          child: _TinyProgressRing(
-            key: const ValueKey('project-row-health-ring'),
-            score: score,
-          ),
-        ),
-      ),
-      TextSpan(text: '$score · ', style: metaStyle),
-      WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: Icon(
-          Icons.format_list_bulleted_rounded,
-          size: tokens.typography.lineHeight.caption,
-          color: ShowcasePalette.lowText(context),
-        ),
-      ),
-      WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: SizedBox(width: tokens.spacing.step1),
-      ),
-      TextSpan(text: '$taskCount · $dueLabel', style: metaStyle),
-    ];
   }
 }
 
-class _TinyProgressRing extends StatelessWidget {
-  const _TinyProgressRing({required this.score, super.key});
+List<InlineSpan> _metaSpans(
+  BuildContext context,
+  TextStyle metaStyle,
+  ProjectListItemData item,
+) {
+  final tokens = context.designTokens;
+  final taskCount = context.messages.settingsCategoriesTaskCount(
+    item.taskRollup.totalTaskCount,
+  );
+  final dueLabel = item.targetDate == null
+      ? context.messages.projectShowcaseOngoing
+      : context.messages.projectShowcaseDueDate(
+          DateFormat.MMMd(
+            Localizations.localeOf(context).toString(),
+          ).format(item.targetDate!),
+        );
 
-  final int score;
+  return [
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 3),
+        child: _TinyProgressRing(
+          key: ValueKey('project-row-progress-ring-${item.project.meta.id}'),
+          progress: item.taskRollup.completionRatio,
+          progressColor: item.taskRollup.blockedTaskCount > 0
+              ? ShowcasePalette.amber(context)
+              : ShowcasePalette.timeGreen(context),
+          trackColor: ShowcasePalette.lowText(context).withValues(alpha: 0.18),
+        ),
+      ),
+    ),
+    TextSpan(
+      text: '${item.taskRollup.completionPercent} · ',
+      style: metaStyle,
+    ),
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Icon(
+        Icons.format_list_bulleted_rounded,
+        size: tokens.typography.lineHeight.caption,
+        color: ShowcasePalette.lowText(context),
+      ),
+    ),
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: SizedBox(width: tokens.spacing.step1),
+    ),
+    TextSpan(text: '$taskCount · $dueLabel', style: metaStyle),
+  ];
+}
+
+class _TinyProgressRing extends StatelessWidget {
+  const _TinyProgressRing({
+    required this.progress,
+    required this.progressColor,
+    required this.trackColor,
+    super.key,
+  });
+
+  final double progress;
+  final Color progressColor;
+  final Color trackColor;
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +306,9 @@ class _TinyProgressRing extends StatelessWidget {
       dimension: 18,
       child: CustomPaint(
         painter: _TinyProgressRingPainter(
-          progress: score.clamp(0, 100) / 100,
-          trackColor: ShowcasePalette.lowText(
-            context,
-          ).withValues(alpha: 0.18),
-          progressColor: score >= 80
-              ? ShowcasePalette.timeGreen(context)
-              : ShowcasePalette.amber(context),
+          progress: progress,
+          trackColor: trackColor,
+          progressColor: progressColor,
         ),
       ),
     );
