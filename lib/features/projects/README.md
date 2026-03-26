@@ -26,9 +26,9 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
 Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
 forward to 06:00 local time on the next day after creation or after a due
-digest completes. Local project-linked activity no longer triggers an
-immediate report wake; instead it marks the current summary as stale and the
-next scheduled digest decides whether a refresh is needed.
+digest completes. Direct project edits and task linking changes coalesce into a
+short deferred refresh, while other task-level activity marks the current
+summary as stale and defers the automatic refresh to the next scheduled digest.
 
 ## Module Structure
 
@@ -38,7 +38,7 @@ lib/features/projects/
 │   └── project_repository.dart      # CRUD, task linking, query methods
 ├── state/
 │   ├── project_health_metrics.dart   # Parsing for agent-authored health band/rationale
-│   ├── project_providers.dart        # projectsForCategoryProvider, projectForTaskProvider, projectTaskCountProvider
+│   ├── project_providers.dart        # Project fetchers plus health/recommendation aggregate providers
 │   └── project_detail_controller.dart # Detail page state (form tracking, save)
 ├── widgetbook/
 │   ├── project_list_detail_mock_controller.dart # Widgetbook-only mock controller for the list/detail showcase
@@ -82,6 +82,8 @@ lib/features/projects/
 - `projectsForCategoryProvider(categoryId)` — `FutureProvider.autoDispose.family` fetching projects for a category. Auto-invalidates on `projectNotification` updates.
 - `projectTaskCountProvider(projectId)` — `FutureProvider.autoDispose.family` returning the number of tasks linked to a project.
 - `projectHealthMetricsProvider(projectId)` — `FutureProvider.autoDispose.family` reading the latest persisted project-agent report and exposing its agent-authored health band and rationale. If the latest report has no health payload yet, the provider returns `null` and the UI shows no health state.
+- `projectHealthSnapshotProvider(projectId)` — aggregates the latest health band, stale-summary state, and active `ProjectRecommendationEntity` records for a single project so dashboard UI can consume one project-scoped state object.
+- `projectHealthOverviewEntriesProvider(categoryId)` — prepares category-scoped project health entries, already sorted worst-band-first for future health dashboard list surfaces.
 - `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
 
 ### Detail Controller (`project_detail_controller.dart`)
@@ -141,8 +143,11 @@ Form page with three sections:
 - **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
 - **Agent system**: Project agents are managed through `ProjectAgentService`,
   `ProjectActivityMonitor`, and the agent workflow system. Local task/project
-  changes mark pending activity, and only the next 06:00 scheduled digest
-  spends tokens on a refreshed report.
+  changes mark pending activity, including task-linked updates such as new or
+  refreshed task summaries. Direct edits to the project and task linking
+  changes also schedule a short deferred refresh through the wake orchestrator.
+  Other task-driven staleness still rolls into the next 06:00 scheduled digest
+  unless the user refreshes manually sooner.
 - **Deferred agent proposals**: Project detail pages now surface project-agent
   change sets so users can confirm or reject proposed status changes, task
   creation, and other reviewed actions in place. Confirmed

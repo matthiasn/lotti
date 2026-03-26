@@ -82,4 +82,51 @@ void main() {
       );
     });
   });
+
+  group('compareProjectHealthBands', () {
+    test('sorts worse bands first by default and keeps null last', () {
+      final ordered = [
+        ProjectHealthBand.onTrack,
+        null,
+        ProjectHealthBand.blocked,
+        ProjectHealthBand.watch,
+      ]..sort(compareProjectHealthBands);
+
+      expect(
+        ordered,
+        [
+          ProjectHealthBand.blocked,
+          ProjectHealthBand.watch,
+          ProjectHealthBand.onTrack,
+          null,
+        ],
+      );
+    });
+
+    test('can sort healthier bands first while still keeping null last', () {
+      final ordered =
+          [
+            ProjectHealthBand.atRisk,
+            null,
+            ProjectHealthBand.onTrack,
+            ProjectHealthBand.surviving,
+          ]..sort(
+            (left, right) => compareProjectHealthBands(
+              left,
+              right,
+              worstFirst: false,
+            ),
+          );
+
+      expect(
+        ordered,
+        [
+          ProjectHealthBand.onTrack,
+          ProjectHealthBand.surviving,
+          ProjectHealthBand.atRisk,
+          null,
+        ],
+      );
+    });
+  });
 }

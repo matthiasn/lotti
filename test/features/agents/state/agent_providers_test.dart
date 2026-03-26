@@ -36,6 +36,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -321,12 +322,14 @@ void main() {
     test('creates the monitor from injected dependencies', () {
       final mockNotifications = MockUpdateNotifications();
       final mockSyncService = MockAgentSyncService();
+      final mockProjectRepository = MockProjectRepository();
       final logger = DomainLogger(loggingService: LoggingService());
 
       final container = ProviderContainer(
         overrides: [
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           agentRepositoryProvider.overrideWithValue(mockRepository),
+          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           domainLoggerProvider.overrideWithValue(logger),
         ],

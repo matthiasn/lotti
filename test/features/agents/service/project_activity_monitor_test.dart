@@ -20,6 +20,7 @@ void main() {
   final now = DateTime(2026, 3, 22, 14, 5);
   late MockUpdateNotifications notifications;
   late MockAgentRepository repository;
+  late MockProjectRepository projectRepository;
   late MockAgentSyncService syncService;
   late StreamController<Set<String>> updateController;
   late ProjectActivityMonitor monitor;
@@ -27,6 +28,7 @@ void main() {
   setUp(() {
     notifications = MockUpdateNotifications();
     repository = MockAgentRepository();
+    projectRepository = MockProjectRepository();
     syncService = MockAgentSyncService();
     updateController = StreamController<Set<String>>.broadcast();
 
@@ -40,10 +42,17 @@ void main() {
       ),
     ).thenReturn(null);
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(
+      () => projectRepository.resolveAffectedProjectIds(any()),
+    ).thenAnswer((invocation) async {
+      final affectedIds = invocation.positionalArguments.first as Set<String>;
+      return affectedIds.where((id) => id.startsWith('project-')).toSet();
+    });
 
     monitor = ProjectActivityMonitor(
       notifications: notifications,
       agentRepository: repository,
+      projectRepository: projectRepository,
       syncService: syncService,
       clock: Clock.fixed(now),
     );
@@ -100,6 +109,47 @@ void main() {
           fromSync: true,
         ),
       ).called(1);
+    });
+
+    test('resolves project IDs from updated task IDs', () async {
+      final link = AgentLink.agentProject(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'project-1',
+        createdAt: kAgentTestDate,
+        updatedAt: kAgentTestDate,
+        vectorClock: null,
+      );
+      final state = makeTestState(
+        agentId: 'agent-1',
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+
+      when(
+        () => projectRepository.resolveAffectedProjectIds({'task-1'}),
+      ).thenAnswer((_) async => {'project-1'});
+      when(
+        () => repository.getLinksTo(
+          'project-1',
+          type: AgentLinkTypes.agentProject,
+        ),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => repository.getAgentState('agent-1'),
+      ).thenAnswer((_) async => state);
+
+      monitor.start();
+
+      updateController.add({'task-1'});
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final captured =
+          verify(
+                () => syncService.upsertEntity(captureAny()),
+              ).captured.single
+              as AgentStateEntity;
+      expect(captured.slots.pendingProjectActivityAt, now);
     });
 
     test('skips deleted agents', () async {
@@ -234,6 +284,7 @@ void main() {
       final loggedMonitor = ProjectActivityMonitor(
         notifications: notifications,
         agentRepository: repository,
+        projectRepository: projectRepository,
         syncService: syncService,
         domainLogger: mockLogger,
         clock: Clock.fixed(now),
@@ -272,6 +323,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       verifyNever(
+        () => projectRepository.resolveAffectedProjectIds(any()),
+      );
+      verifyNever(
         () => repository.getLinksTo(
           any(),
           type: any(named: 'type'),
@@ -281,11 +335,9 @@ void main() {
 
     test('ignores affected ids that do not map to project agents', () async {
       when(
-        () => repository.getLinksTo(
-          'PROJECT',
-          type: AgentLinkTypes.agentProject,
-        ),
-      ).thenAnswer((_) async => []);
+        () =>
+            projectRepository.resolveAffectedProjectIds({projectNotification}),
+      ).thenAnswer((_) async => {});
 
       monitor.start();
 

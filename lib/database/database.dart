@@ -503,6 +503,42 @@ class JournalDb extends _$JournalDb {
     return rows.map((r) => r.id).toSet();
   }
 
+  /// Returns the subset of [projectIds] that still resolve to live projects.
+  Future<Set<String>> getExistingProjectIds(Set<String> projectIds) async {
+    if (projectIds.isEmpty) return {};
+    final rows =
+        await (selectOnly(journal)
+              ..addColumns([journal.id])
+              ..where(
+                journal.id.isIn(projectIds.toList()) &
+                    journal.type.equals('Project') &
+                    journal.deleted.equals(false),
+              ))
+            .get();
+    return rows.map((row) => row.read(journal.id)).whereType<String>().toSet();
+  }
+
+  /// Returns project IDs for any live task in [taskIds] that is linked to a
+  /// project via the denormalized `project_id` column.
+  Future<Set<String>> getProjectIdsForTaskIds(Set<String> taskIds) async {
+    if (taskIds.isEmpty) return {};
+    final rows =
+        await (selectOnly(journal)
+              ..addColumns([journal.projectId])
+              ..where(
+                journal.id.isIn(taskIds.toList()) &
+                    journal.type.equals('Task') &
+                    journal.task.equals(true) &
+                    journal.deleted.equals(false) &
+                    journal.projectId.isNotNull(),
+              ))
+            .get();
+    return rows
+        .map((row) => row.read(journal.projectId))
+        .whereType<String>()
+        .toSet();
+  }
+
   Future<int> addConflict(Conflict conflict) async {
     return into(conflicts).insertOnConflictUpdate(conflict);
   }

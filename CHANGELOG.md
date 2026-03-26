@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects now expose a user-facing health band (`Surviving`, `On Track`,
   `Watch`, `At Risk`, `Blocked`) in the tasks-page project header and project
   detail page based on the latest project-agent report.
+- Project health tracking now marks project summaries stale when any linked
+  task activity changes, and the app state layer now aggregates health bands,
+  stale-summary state, and active project recommendations for future dashboard
+  surfaces.
+- Direct edits to a project and task linking changes now use the short
+  deferred wake path, while other task-level activity stays stale-only
+  until the next scheduled project digest unless refreshed manually sooner.
 
 ## [0.9.931] - 2026-03-23
 ### Added

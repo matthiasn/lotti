@@ -11,6 +11,17 @@ enum ProjectHealthBand {
   blocked,
 }
 
+extension ProjectHealthBandSeverity on ProjectHealthBand {
+  /// Lower values represent worse health for dashboard sorting.
+  int get severityRank => switch (this) {
+    ProjectHealthBand.blocked => 0,
+    ProjectHealthBand.atRisk => 1,
+    ProjectHealthBand.watch => 2,
+    ProjectHealthBand.surviving => 3,
+    ProjectHealthBand.onTrack => 4,
+  };
+}
+
 @immutable
 class ProjectHealthMetrics {
   const ProjectHealthMetrics({
@@ -79,4 +90,19 @@ double? parseHealthConfidence(Object? value) {
     return null;
   }
   return parsed;
+}
+
+/// Compares health bands for list sorting while keeping missing health last.
+int compareProjectHealthBands(
+  ProjectHealthBand? left,
+  ProjectHealthBand? right, {
+  bool worstFirst = true,
+}) {
+  if (left == null || right == null) {
+    if (left == null && right == null) return 0;
+    return left == null ? 1 : -1;
+  }
+
+  final order = left.severityRank.compareTo(right.severityRank);
+  return worstFirst ? order : -order;
 }

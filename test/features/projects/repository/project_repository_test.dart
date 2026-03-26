@@ -226,6 +226,11 @@ void main() {
 
       expect(result, isTrue);
       verify(() => mockPersistence.updateMetadata(projectMeta)).called(1);
+      verify(
+        () => mockNotifications.notify({
+          projectEntityUpdateNotification(projectEntry.id),
+        }),
+      ).called(1);
     });
 
     test('returns false when persistence fails', () async {
@@ -246,6 +251,7 @@ void main() {
       final result = await repository.updateProject(projectEntry);
 
       expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
     });
   });
 
@@ -288,6 +294,7 @@ void main() {
           'project-001',
           'task-001',
           projectNotification,
+          projectEntityUpdateNotification('project-001'),
         }),
       ).called(1);
 
@@ -469,6 +476,8 @@ void main() {
             'task-001',
             'project-001',
             projectNotification,
+            projectEntityUpdateNotification('project-old'),
+            projectEntityUpdateNotification('project-001'),
           }),
         ).called(1);
       },
@@ -600,6 +609,14 @@ void main() {
       expect(captured.deletedAt, isNotNull);
       expect(captured.hidden, isTrue);
       expect(captured.vectorClock, const VectorClock({'d': 2}));
+      verify(
+        () => mockNotifications.notify({
+          'project-001',
+          'task-001',
+          projectNotification,
+          projectEntityUpdateNotification('project-001'),
+        }),
+      ).called(1);
       // Verify sync was enqueued
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
@@ -640,6 +657,39 @@ void main() {
       ).thenAnswer((_) => stream);
 
       expect(repository.updateStream, stream);
+    });
+  });
+
+  group('resolveAffectedProjectIds', () {
+    test('combines direct project ids with task-derived project ids', () async {
+      when(
+        () => mockDb.getExistingProjectIds({'project-001', 'task-001'}),
+      ).thenAnswer((_) async => {'project-001'});
+      when(
+        () => mockDb.getProjectIdsForTaskIds({'project-001', 'task-001'}),
+      ).thenAnswer((_) async => {'project-002'});
+
+      final result = await repository.resolveAffectedProjectIds({
+        'project-001',
+        'task-001',
+      });
+
+      expect(result, {'project-001', 'project-002'});
+    });
+
+    test('strips PROJECT_ENTITY_UPDATE: prefix before DB lookup', () async {
+      when(
+        () => mockDb.getExistingProjectIds({'project-001'}),
+      ).thenAnswer((_) async => {'project-001'});
+      when(
+        () => mockDb.getProjectIdsForTaskIds({'project-001'}),
+      ).thenAnswer((_) async => {});
+
+      final result = await repository.resolveAffectedProjectIds({
+        projectEntityUpdateNotification('project-001'),
+      });
+
+      expect(result, {'project-001'});
     });
   });
 }
