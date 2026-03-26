@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/features/tasks/widgetbook/task_widgetbook.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -57,6 +58,7 @@ class WidgetbookApp extends StatelessWidget {
       directories: [
         buildDesignSystemWidgetbookFolder(),
         buildProjectsWidgetbookFolder(),
+        buildTasksWidgetbookFolder(),
         WidgetbookFolder(
           name: 'Task Widgets',
           children: [
