@@ -53,8 +53,8 @@ void main() {
       await pumpExamples(tester, examples: examples);
 
       Finder richTextContaining(String text) => find.byWidgetPredicate(
-            (w) => w is RichText && w.text.toPlainText().contains(text),
-          );
+        (w) => w is RichText && w.text.toPlainText().contains(text),
+      );
 
       for (final e in examples) {
         expect(richTextContaining(e.before), findsOneWidget);

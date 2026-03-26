@@ -15,6 +15,7 @@ Future<void> showTaskShowcaseFilterModal({
   final showDragHandle = presentation == TaskShowcaseFilterPresentation.mobile;
 
   Widget buildSheet(
+    BuildContext sheetContext,
     StateSetter setState,
     DesignSystemTaskFilterState draftState,
     void Function(DesignSystemTaskFilterState) updateDraft,
@@ -26,7 +27,7 @@ Future<void> showTaskShowcaseFilterModal({
       },
       onApplyPressed: (nextState) {
         onApplied(nextState.copyWith(showDragHandle: showDragHandle));
-        Navigator.of(context).pop();
+        Navigator.of(sheetContext).pop();
       },
       onClearAllPressed: (nextState) {
         updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
@@ -37,13 +38,14 @@ Future<void> showTaskShowcaseFilterModal({
   return switch (presentation) {
     TaskShowcaseFilterPresentation.desktop => showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (_) {
         var draftState = initialState.copyWith(showDragHandle: false);
         return StatefulBuilder(
-          builder: (context, setState) => Dialog(
+          builder: (dialogContext, setState) => Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.all(24),
             child: buildSheet(
+              dialogContext,
               setState,
               draftState,
               (next) => setState(() => draftState = next),
@@ -56,12 +58,13 @@ Future<void> showTaskShowcaseFilterModal({
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+      builder: (_) {
         var draftState = initialState.copyWith(showDragHandle: true);
         return StatefulBuilder(
-          builder: (context, setState) => SafeArea(
+          builder: (sheetContext, setState) => SafeArea(
             top: false,
             child: buildSheet(
+              sheetContext,
               setState,
               draftState,
               (next) => setState(() => draftState = next),

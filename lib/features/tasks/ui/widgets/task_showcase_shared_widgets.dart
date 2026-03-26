@@ -29,6 +29,10 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final bg = colorFromCssHex(colorHex);
+    final foreground = bg.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
     return Container(
       height: 20,
       padding: EdgeInsets.symmetric(
@@ -36,18 +40,18 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: colorFromCssHex(colorHex),
+        color: bg,
         borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.black),
+          Icon(icon, size: 12, color: foreground),
           SizedBox(width: tokens.spacing.step1),
           Text(
             label,
             style: tokens.typography.styles.others.caption.copyWith(
-              color: Colors.black,
+              color: foreground,
               fontWeight: FontWeight.w600,
             ),
           ),
