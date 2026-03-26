@@ -2572,6 +2572,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemErrorLabel => 'Erreur';
 
   @override
+  String get designSystemFileUploadClickLabel => 'Cliquer pour téléverser';
+
+  @override
+  String get designSystemFileUploadCompleteLabel => 'Terminé';
+
+  @override
+  String get designSystemFileUploadDefaultLabel => 'Par défaut';
+
+  @override
+  String get designSystemFileUploadDragLabel => 'ou glisser-déposer';
+
+  @override
+  String get designSystemFileUploadDropZoneSectionTitle => 'Zone de dépôt';
+
+  @override
+  String get designSystemFileUploadErrorLabel => 'Erreur';
+
+  @override
+  String get designSystemFileUploadFailedText => 'Échec du téléversement';
+
+  @override
+  String get designSystemFileUploadHintText =>
+      'SVG, PNG, JPG ou GIF (max. 800×400px)';
+
+  @override
+  String get designSystemFileUploadHoverLabel => 'Survol';
+
+  @override
+  String get designSystemFileUploadItemSectionTitle => 'Éléments de fichier';
+
+  @override
+  String get designSystemFileUploadRetryLabel => 'Réessayer';
+
+  @override
+  String get designSystemFileUploadUploadingLabel => 'Téléversement';
+
+  @override
   String get designSystemFilledLabel => 'Rempli';
 
   @override

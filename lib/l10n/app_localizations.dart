@@ -4557,6 +4557,78 @@ abstract class AppLocalizations {
   /// **'Error'**
   String get designSystemErrorLabel;
 
+  /// No description provided for @designSystemFileUploadClickLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to upload'**
+  String get designSystemFileUploadClickLabel;
+
+  /// No description provided for @designSystemFileUploadCompleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get designSystemFileUploadCompleteLabel;
+
+  /// No description provided for @designSystemFileUploadDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get designSystemFileUploadDefaultLabel;
+
+  /// No description provided for @designSystemFileUploadDragLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'or drag and drop'**
+  String get designSystemFileUploadDragLabel;
+
+  /// No description provided for @designSystemFileUploadDropZoneSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop Zone'**
+  String get designSystemFileUploadDropZoneSectionTitle;
+
+  /// No description provided for @designSystemFileUploadErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get designSystemFileUploadErrorLabel;
+
+  /// No description provided for @designSystemFileUploadFailedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed'**
+  String get designSystemFileUploadFailedText;
+
+  /// No description provided for @designSystemFileUploadHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'SVG, PNG, JPG or GIF (max. 800×400px)'**
+  String get designSystemFileUploadHintText;
+
+  /// No description provided for @designSystemFileUploadHoverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover'**
+  String get designSystemFileUploadHoverLabel;
+
+  /// No description provided for @designSystemFileUploadItemSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'File Items'**
+  String get designSystemFileUploadItemSectionTitle;
+
+  /// No description provided for @designSystemFileUploadRetryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get designSystemFileUploadRetryLabel;
+
+  /// No description provided for @designSystemFileUploadUploadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get designSystemFileUploadUploadingLabel;
+
   /// No description provided for @designSystemFilledLabel.
   ///
   /// In en, this message translates to:

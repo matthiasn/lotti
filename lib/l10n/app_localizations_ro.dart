@@ -2540,6 +2540,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemErrorLabel => 'Eroare';
 
   @override
+  String get designSystemFileUploadClickLabel => 'Faceți clic pentru a încărca';
+
+  @override
+  String get designSystemFileUploadCompleteLabel => 'Finalizat';
+
+  @override
+  String get designSystemFileUploadDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemFileUploadDragLabel => 'sau trageți și plasați';
+
+  @override
+  String get designSystemFileUploadDropZoneSectionTitle => 'Zona de depunere';
+
+  @override
+  String get designSystemFileUploadErrorLabel => 'Eroare';
+
+  @override
+  String get designSystemFileUploadFailedText => 'Încărcarea a eșuat';
+
+  @override
+  String get designSystemFileUploadHintText =>
+      'SVG, PNG, JPG sau GIF (max. 800×400px)';
+
+  @override
+  String get designSystemFileUploadHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemFileUploadItemSectionTitle => 'Elemente fișier';
+
+  @override
+  String get designSystemFileUploadRetryLabel => 'Reîncercați';
+
+  @override
+  String get designSystemFileUploadUploadingLabel => 'Se încarcă';
+
+  @override
   String get designSystemFilledLabel => 'Completat';
 
   @override
