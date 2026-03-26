@@ -4622,6 +4622,197 @@ void main() {
         expect(resultWithPrivate!.meta.id, 'proj-priv-ft');
       });
 
+      test(
+        'getExistingProjectIds returns only live project ids and handles empty input',
+        () async {
+          expect(await db!.getExistingProjectIds({}), isEmpty);
+
+          final base = DateTime(2024, 7, 10);
+          final activeProject = buildProjectEntry(
+            id: 'proj-existing-live',
+            timestamp: base,
+            categoryId: 'cat-existing',
+          );
+          final deletedProjectBase =
+              buildProjectEntry(
+                    id: 'proj-existing-deleted',
+                    timestamp: base.add(const Duration(minutes: 1)),
+                    categoryId: 'cat-existing',
+                  )
+                  as ProjectEntry;
+          final deletedProject = deletedProjectBase.copyWith(
+            meta: deletedProjectBase.meta.copyWith(
+              deletedAt: base.add(const Duration(minutes: 2)),
+            ),
+          );
+          final task = buildTaskEntry(
+            id: 'task-existing-ignore',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ts-existing-ignore',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-existing',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(activeProject));
+          await db!.upsertJournalDbEntity(toDbEntity(deletedProject));
+          await db!.upsertJournalDbEntity(toDbEntity(task));
+
+          final result = await db!.getExistingProjectIds({
+            'proj-existing-live',
+            'proj-existing-deleted',
+            'task-existing-ignore',
+            'proj-missing',
+          });
+
+          expect(result, {'proj-existing-live'});
+        },
+      );
+
+      test(
+        'getProjectIdsForTaskIds returns distinct live project ids and ignores non-tasks',
+        () async {
+          expect(await db!.getProjectIdsForTaskIds({}), isEmpty);
+
+          final base = DateTime(2024, 7, 11);
+          final projectOne = buildProjectEntry(
+            id: 'proj-task-lookup-1',
+            timestamp: base,
+            categoryId: 'cat-lookup',
+          );
+          final projectTwo = buildProjectEntry(
+            id: 'proj-task-lookup-2',
+            timestamp: base.add(const Duration(minutes: 1)),
+            categoryId: 'cat-lookup',
+          );
+          final linkedTaskOne = buildTaskEntry(
+            id: 'task-project-one-a',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ts-project-one-a',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-lookup',
+          );
+          final linkedTaskTwo = buildTaskEntry(
+            id: 'task-project-one-b',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'ts-project-one-b',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-lookup',
+          );
+          final linkedTaskThree = buildTaskEntry(
+            id: 'task-project-two',
+            timestamp: base.add(const Duration(minutes: 2)),
+            status: TaskStatus.open(
+              id: 'ts-project-two',
+              createdAt: base.add(const Duration(minutes: 2)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-lookup',
+          );
+          final unlinkedTask = buildTaskEntry(
+            id: 'task-without-project',
+            timestamp: base.add(const Duration(minutes: 3)),
+            status: TaskStatus.open(
+              id: 'ts-without-project',
+              createdAt: base.add(const Duration(minutes: 3)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-lookup',
+          );
+          final deletedTaskBase =
+              buildTaskEntry(
+                    id: 'task-deleted-project',
+                    timestamp: base.add(const Duration(minutes: 4)),
+                    status: TaskStatus.open(
+                      id: 'ts-deleted-project',
+                      createdAt: base.add(const Duration(minutes: 4)),
+                      utcOffset: 0,
+                    ),
+                    categoryId: 'cat-lookup',
+                  )
+                  as Task;
+          final deletedTask = deletedTaskBase.copyWith(
+            meta: deletedTaskBase.meta.copyWith(
+              deletedAt: base.add(const Duration(minutes: 5)),
+            ),
+          );
+          final note = createJournalEntry(
+            'linked note body',
+            id: 'note-linked-to-project',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(projectOne));
+          await db!.upsertJournalDbEntity(toDbEntity(projectTwo));
+          await db!.upsertJournalDbEntity(toDbEntity(linkedTaskOne));
+          await db!.upsertJournalDbEntity(toDbEntity(linkedTaskTwo));
+          await db!.upsertJournalDbEntity(toDbEntity(linkedTaskThree));
+          await db!.upsertJournalDbEntity(toDbEntity(unlinkedTask));
+          await db!.upsertJournalDbEntity(toDbEntity(deletedTask));
+          await db!.upsertJournalDbEntity(toDbEntity(note));
+
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-project-one-a',
+              fromId: 'proj-task-lookup-1',
+              toId: 'task-project-one-a',
+              timestamp: base,
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-project-one-b',
+              fromId: 'proj-task-lookup-1',
+              toId: 'task-project-one-b',
+              timestamp: base.add(const Duration(minutes: 1)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-project-two',
+              fromId: 'proj-task-lookup-2',
+              toId: 'task-project-two',
+              timestamp: base.add(const Duration(minutes: 2)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-project-deleted',
+              fromId: 'proj-task-lookup-2',
+              toId: 'task-deleted-project',
+              timestamp: base.add(const Duration(minutes: 3)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-project-note',
+              fromId: 'proj-task-lookup-1',
+              toId: 'note-linked-to-project',
+              timestamp: base.add(const Duration(minutes: 4)),
+            ),
+          );
+
+          final result = await db!.getProjectIdsForTaskIds({
+            'task-project-one-a',
+            'task-project-one-b',
+            'task-project-two',
+            'task-without-project',
+            'task-deleted-project',
+            'note-linked-to-project',
+            'task-missing',
+          });
+
+          expect(result, {'proj-task-lookup-1', 'proj-task-lookup-2'});
+        },
+      );
+
       test('getProjectLinkForTask returns active link', () async {
         final base = DateTime(2024, 7, 10);
         final link = buildProjectLink(

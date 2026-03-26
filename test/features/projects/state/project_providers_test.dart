@@ -356,6 +356,28 @@ void main() {
         expect(result.recommendations, [recommendation]);
       },
     );
+
+    test('exposes null-safe getters when metrics and summary are absent', () {
+      final project = makeTestProject(
+        id: projectId,
+        categoryId: categoryId,
+      );
+      const snapshot = ProjectHealthSnapshot(
+        projectId: projectId,
+        metrics: null,
+        summary: null,
+        recommendations: [],
+      );
+      final entry = ProjectHealthOverviewEntry(
+        project: project,
+        snapshot: snapshot,
+      );
+
+      expect(snapshot.healthBand, isNull);
+      expect(snapshot.isSummaryOutdated, isFalse);
+      expect(snapshot.scheduledWakeAt, isNull);
+      expect(entry.healthBand, isNull);
+    });
   });
 
   group('projectHealthOverviewEntriesProvider', () {
@@ -510,6 +532,86 @@ void main() {
         ['watch', 'blocked'],
       );
     });
+
+    test(
+      'sorts best-band-first, keeps entries without health, and tie-breaks by title',
+      () {
+        final entries = [
+          ProjectHealthOverviewEntry(
+            project: makeTestProject(
+              id: 'on-track-zulu',
+              title: 'Zulu',
+              categoryId: categoryId,
+            ),
+            snapshot: ProjectHealthSnapshot(
+              projectId: 'on-track-zulu',
+              metrics: makeTestProjectHealthMetrics(
+                band: ProjectHealthBand.onTrack,
+                rationale: 'Steady delivery.',
+              ),
+              summary: null,
+              recommendations: const [],
+            ),
+          ),
+          ProjectHealthOverviewEntry(
+            project: makeTestProject(
+              id: 'watch-bravo',
+              title: 'Bravo',
+              categoryId: categoryId,
+            ),
+            snapshot: ProjectHealthSnapshot(
+              projectId: 'watch-bravo',
+              metrics: makeTestProjectHealthMetrics(
+                band: ProjectHealthBand.watch,
+                rationale: 'Needs attention.',
+              ),
+              summary: null,
+              recommendations: const [],
+            ),
+          ),
+          ProjectHealthOverviewEntry(
+            project: makeTestProject(
+              id: 'on-track-alpha',
+              title: 'Alpha',
+              categoryId: categoryId,
+            ),
+            snapshot: ProjectHealthSnapshot(
+              projectId: 'on-track-alpha',
+              metrics: makeTestProjectHealthMetrics(
+                band: ProjectHealthBand.onTrack,
+                rationale: 'Also steady.',
+              ),
+              summary: null,
+              recommendations: const [],
+            ),
+          ),
+          ProjectHealthOverviewEntry(
+            project: makeTestProject(
+              id: 'no-health',
+              title: 'Omega',
+              categoryId: categoryId,
+            ),
+            snapshot: const ProjectHealthSnapshot(
+              projectId: 'no-health',
+              metrics: null,
+              summary: null,
+              recommendations: [],
+            ),
+          ),
+        ];
+
+        final sorted = queryProjectHealthOverviewEntries(
+          entries,
+          sort: ProjectHealthOverviewSort.bestBandFirst,
+          includeWithoutHealth: true,
+        );
+
+        expect(
+          sorted.map((entry) => entry.project.meta.id).toList(),
+          ['on-track-alpha', 'on-track-zulu', 'watch-bravo', 'no-health'],
+        );
+      },
+    );
   });
 }
 
