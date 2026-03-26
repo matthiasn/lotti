@@ -53,6 +53,9 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final columnGap =
+        tokens.spacing.step6 + tokens.spacing.step1 + tokens.spacing.step1 / 2;
     final is12h = widget.format == DesignSystemTimeFormat.twelveHour;
     final hourCount = is12h ? 12 : 24;
 
@@ -81,7 +84,7 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
                     _notifyTimeChanged();
                   },
                 ),
-                const SizedBox(width: 27),
+                SizedBox(width: columnGap),
                 _DrumColumn(
                   itemCount: 60,
                   initialItem: _selectedMinute,
@@ -92,12 +95,14 @@ class _DesignSystemTimePickerState extends State<DesignSystemTimePicker> {
                   },
                 ),
                 if (is12h) ...[
-                  const SizedBox(width: 27),
+                  SizedBox(width: columnGap),
                   _DrumColumn(
                     itemCount: 2,
                     initialItem: _selectedPeriod,
                     looping: false,
-                    labelBuilder: (index) => index == 0 ? 'AM' : 'PM',
+                    labelBuilder: (index) => index == 0
+                        ? materialLocalizations.anteMeridiemAbbreviation
+                        : materialLocalizations.postMeridiemAbbreviation,
                     onSelectedItemChanged: (index) {
                       _selectedPeriod = index;
                       _notifyTimeChanged();

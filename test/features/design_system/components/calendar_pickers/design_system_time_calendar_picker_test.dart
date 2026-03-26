@@ -159,6 +159,36 @@ void main() {
       expect(currentDay.style?.color, dsTokensDark.colors.interactive.enabled);
     });
 
+    testWidgets('uses token typography for header and calendar labels', (
+      tester,
+    ) async {
+      await pumpPicker(
+        tester,
+        presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+        mode: DesignSystemTimeCalendarPickerMode.light,
+      );
+
+      final header = tester.widget<Text>(find.text('April 2025'));
+      final weekday = tester.widget<Text>(find.text('SUN'));
+      final selectedDay = tester.widget<Text>(find.text('17'));
+
+      expectTextStyle(
+        header.style!,
+        dsTokensLight.typography.styles.subtitle.subtitle1,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      expectTextStyle(
+        weekday.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.text.lowEmphasis,
+      );
+      expectTextStyle(
+        selectedDay.style!,
+        dsTokensLight.typography.styles.body.bodyMedium,
+        dsTokensLight.colors.text.onInteractiveAlert,
+      );
+    });
+
     testWidgets('interactive compact picker opens the month dialog', (
       tester,
     ) async {

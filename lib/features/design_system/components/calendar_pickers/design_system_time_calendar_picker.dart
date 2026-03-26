@@ -351,6 +351,7 @@ class _MonthCalendarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = _TimeCalendarPalette.fromMode(mode);
     final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
+    final tokens = context.designTokens;
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final firstDayOfWeek = MaterialLocalizations.of(
       context,
@@ -382,9 +383,7 @@ class _MonthCalendarCard extends StatelessWidget {
                 child: Center(
                   child: Text(
                     label,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
+                    style: tokens.typography.styles.others.caption.copyWith(
                       color: palette.lowEmphasis,
                     ),
                   ),
@@ -582,9 +581,8 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final headerStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
+    final tokens = context.designTokens;
+    final headerStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
       color: palette.highEmphasis,
     );
 
@@ -706,15 +704,14 @@ class _CalendarDayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
-    final baseStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      color: switch ((isSelected, isCurrentDay, palette.mode)) {
-        (true, _, _) => palette.onAccent,
-        (_, true, _) => palette.accent,
-        _ => palette.highEmphasis,
-      },
-    );
+    final baseStyle = context.designTokens.typography.styles.body.bodyMedium
+        .copyWith(
+          color: switch ((isSelected, isCurrentDay, palette.mode)) {
+            (true, _, _) => palette.onAccent,
+            (_, true, _) => palette.accent,
+            _ => palette.highEmphasis,
+          },
+        );
 
     return SizedBox(
       width: geometry.dayCellWidth,
@@ -766,6 +763,7 @@ class _MonthButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
+    final tokens = context.designTokens;
     return SizedBox(
       width: geometry.monthButtonWidth,
       height: geometry.monthButtonHeight,
@@ -777,9 +775,7 @@ class _MonthButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                 color: selected ? palette.accent : palette.highEmphasis,
               ),
             ),

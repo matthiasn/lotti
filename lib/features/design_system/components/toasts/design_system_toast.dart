@@ -62,7 +62,7 @@ class DesignSystemToast extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(tokens.spacing.step3),
                     child: Row(
                       children: [
                         Expanded(
@@ -70,7 +70,9 @@ class DesignSystemToast extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.only(top: 2),
+                                padding: EdgeInsets.only(
+                                  top: tokens.spacing.step1,
+                                ),
                                 child: Icon(
                                   spec.leadingIcon,
                                   size: 20,
@@ -91,7 +93,7 @@ class DesignSystemToast extends StatelessWidget {
                                         color: spec.titleColor,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: tokens.spacing.step2),
                                     Text(
                                       description,
                                       maxLines: 1,
