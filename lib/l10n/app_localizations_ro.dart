@@ -2704,6 +2704,59 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemNavigationMyDailyLabel => 'Ziua mea';
 
   @override
+  String get designSystemMyDailyDeepWorkTitle => 'Muncă concentrată';
+
+  @override
+  String designSystemMyDailyDurationHoursCompact(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String designSystemMyDailyDurationHoursMinutesCompact(
+    int hours,
+    int minutes,
+  ) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String designSystemMyDailyDurationMinutesCompact(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String get designSystemMyDailyEditPlanLabel => 'Editează planul';
+
+  @override
+  String get designSystemMyDailyGreetingMorning => 'Bună dimineața.';
+
+  @override
+  String designSystemMyDailyGreetingWithName(String name) {
+    return 'Bună, $name';
+  }
+
+  @override
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Drumeție cu Daniella';
+
+  @override
+  String get designSystemMyDailyLunchBreakTitle => 'Pauză de prânz';
+
+  @override
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Întâlnire cu Dammy';
+
+  @override
+  String get designSystemMyDailyMeetingsLabel => 'Întâlniri';
+
+  @override
+  String get designSystemMyDailyProfileActionLabel => 'Profil';
+
+  @override
+  String get designSystemMyDailySkiWithMattTitle => 'Mergi la schi cu Matt';
+
+  @override
+  String get designSystemMyDailyTapToExpandLabel => 'Apasă pentru extindere';
+
+  @override
   String get designSystemNavigationNewLabel => 'Nou';
 
   @override

@@ -1305,6 +1305,51 @@
   "designSystemNavigationInsightsLabel": "Insights",
   "designSystemNavigationLottiTasksLabel": "Lotti Tasks",
   "designSystemNavigationMyDailyLabel": "My Daily",
+  "designSystemMyDailyDeepWorkTitle": "Deep work",
+  "designSystemMyDailyDurationHoursCompact": "{count}h",
+  "@designSystemMyDailyDurationHoursCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationHoursMinutesCompact": "{hours}h {minutes}m",
+  "@designSystemMyDailyDurationHoursMinutesCompact": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationMinutesCompact": "{count}m",
+  "@designSystemMyDailyDurationMinutesCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyEditPlanLabel": "Edit plan",
+  "designSystemMyDailyGreetingMorning": "Good morning.",
+  "designSystemMyDailyGreetingWithName": "Hi, {name}",
+  "@designSystemMyDailyGreetingWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemMyDailyHikeWithDanielaTitle": "Hiking with Daniella",
+  "designSystemMyDailyLunchBreakTitle": "Lunch break",
+  "designSystemMyDailyMeetingWithDannyTitle": "Meeting with Dammy",
+  "designSystemMyDailyMeetingsLabel": "Meetings",
+  "designSystemMyDailyProfileActionLabel": "Profile",
+  "designSystemMyDailySkiWithMattTitle": "Go skiing with Matt",
+  "designSystemMyDailyTapToExpandLabel": "Tap to expand",
   "designSystemNavigationNewLabel": "New",
   "designSystemNavigationPlaceholderLabel": "Placeholder",
   "designSystemNavigationSidebarSectionTitle": "Sidebar Variants",

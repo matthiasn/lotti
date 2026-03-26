@@ -2663,6 +2663,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemNavigationMyDailyLabel => 'My Daily';
 
   @override
+  String get designSystemMyDailyDeepWorkTitle => 'Deep work';
+
+  @override
+  String designSystemMyDailyDurationHoursCompact(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String designSystemMyDailyDurationHoursMinutesCompact(
+    int hours,
+    int minutes,
+  ) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String designSystemMyDailyDurationMinutesCompact(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String get designSystemMyDailyEditPlanLabel => 'Edit plan';
+
+  @override
+  String get designSystemMyDailyGreetingMorning => 'Good morning.';
+
+  @override
+  String designSystemMyDailyGreetingWithName(String name) {
+    return 'Hi, $name';
+  }
+
+  @override
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Hiking with Daniella';
+
+  @override
+  String get designSystemMyDailyLunchBreakTitle => 'Lunch break';
+
+  @override
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting with Dammy';
+
+  @override
+  String get designSystemMyDailyMeetingsLabel => 'Meetings';
+
+  @override
+  String get designSystemMyDailyProfileActionLabel => 'Profile';
+
+  @override
+  String get designSystemMyDailySkiWithMattTitle => 'Go skiing with Matt';
+
+  @override
+  String get designSystemMyDailyTapToExpandLabel => 'Tap to expand';
+
+  @override
   String get designSystemNavigationNewLabel => 'New';
 
   @override

@@ -960,6 +960,51 @@
   "designSystemNavigationInsightsLabel": "Přehledy",
   "designSystemNavigationLottiTasksLabel": "Úkoly Lotti",
   "designSystemNavigationMyDailyLabel": "Můj den",
+  "designSystemMyDailyDeepWorkTitle": "Hluboká práce",
+  "designSystemMyDailyDurationHoursCompact": "{count}h",
+  "@designSystemMyDailyDurationHoursCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationHoursMinutesCompact": "{hours}h {minutes}m",
+  "@designSystemMyDailyDurationHoursMinutesCompact": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationMinutesCompact": "{count}m",
+  "@designSystemMyDailyDurationMinutesCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyEditPlanLabel": "Upravit plán",
+  "designSystemMyDailyGreetingMorning": "Dobré ráno.",
+  "designSystemMyDailyGreetingWithName": "Ahoj, {name}",
+  "@designSystemMyDailyGreetingWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemMyDailyHikeWithDanielaTitle": "Túra s Daniellou",
+  "designSystemMyDailyLunchBreakTitle": "Obědová pauza",
+  "designSystemMyDailyMeetingWithDannyTitle": "Schůzka s Dammym",
+  "designSystemMyDailyMeetingsLabel": "Schůzky",
+  "designSystemMyDailyProfileActionLabel": "Profil",
+  "designSystemMyDailySkiWithMattTitle": "Jet lyžovat s Mattem",
+  "designSystemMyDailyTapToExpandLabel": "Klepni pro rozbalení",
   "designSystemNavigationNewLabel": "Nové",
   "designSystemNavigationPlaceholderLabel": "Zástupný text",
   "designSystemNavigationSidebarSectionTitle": "Varianty postranního panelu",
