@@ -1,10 +1,13 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -59,6 +62,10 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+    when(
+      () => mockOrchestrator.setThrottleDeadline(any(), any()),
+    ).thenReturn(null);
 
     service = ProjectAgentService(
       agentService: mockAgentService,
@@ -136,6 +143,17 @@ void main() {
         final projectLink = linkCalls.whereType<AgentProjectLink>().single;
         expect(projectLink.fromId, 'agent-1');
         expect(projectLink.toId, 'project-1');
+
+        final subscription =
+            verify(
+                  () => mockOrchestrator.addSubscription(captureAny()),
+                ).captured.single
+                as AgentSubscription;
+        expect(subscription.agentId, 'agent-1');
+        expect(
+          subscription.matchEntityIds,
+          {projectEntityUpdateNotification('project-1')},
+        );
 
         // Verify creation wake was enqueued.
         verify(
@@ -558,28 +576,63 @@ void main() {
       });
 
       test(
-        'does not touch repository or orchestrator for project agents',
+        're-registers direct project subscriptions for project agents',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-1');
           final otherAgent = makeIdentity(
             agentId: 'other-1',
             kind: 'task_agent',
           );
+          final link = AgentLink.agentProject(
+            id: 'link-1',
+            fromId: 'pa-1',
+            toId: 'project-1',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final nextWakeAt = DateTime(2026, 3, 23, 8);
 
           when(
             () => mockAgentService.listAgents(
               lifecycle: AgentLifecycle.active,
             ),
           ).thenAnswer((_) async => [projectAgent, otherAgent]);
+          when(
+            () => mockRepository.getLinksFrom(
+              'pa-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [link]);
+          when(
+            () => mockRepository.getAgentState('pa-1'),
+          ).thenAnswer(
+            (_) async => makeState(agentId: 'pa-1').copyWith(
+              nextWakeAt: nextWakeAt,
+            ),
+          );
 
           await service.restoreSubscriptions();
 
-          verifyNever(
-            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
+          final subscription =
+              verify(
+                    () => mockOrchestrator.addSubscription(captureAny()),
+                  ).captured.single
+                  as AgentSubscription;
+          expect(subscription.agentId, 'pa-1');
+          expect(
+            subscription.matchEntityIds,
+            {projectEntityUpdateNotification('project-1')},
           );
-          verifyNever(() => mockRepository.getAgentState(any()));
-          verifyNever(() => mockOrchestrator.addSubscription(any()));
-          verifyNever(() => mockOrchestrator.setThrottleDeadline(any(), any()));
+          verify(
+            () => mockOrchestrator.setThrottleDeadline('pa-1', nextWakeAt),
+          ).called(1);
+          verifyNever(
+            () => mockRepository.getLinksFrom(
+              'other-1',
+              type: any(named: 'type'),
+            ),
+          );
         },
       );
 

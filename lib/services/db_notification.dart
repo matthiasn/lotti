@@ -84,3 +84,7 @@ const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+
+String projectEntityUpdateNotification(String projectId) {
+  return 'PROJECT_ENTITY_UPDATE:$projectId';
+}

@@ -37,6 +37,7 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -235,6 +236,7 @@ ProjectActivityMonitor projectActivityMonitor(Ref ref) {
   final monitor = ProjectActivityMonitor(
     notifications: ref.watch(updateNotificationsProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
+    projectRepository: ref.watch(projectRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   );

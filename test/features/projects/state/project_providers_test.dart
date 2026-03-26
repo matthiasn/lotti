@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -304,6 +306,210 @@ void main() {
         expect(result.confidence, 0.91);
       },
     );
+  });
+
+  group('projectHealthSnapshotProvider', () {
+    const projectId = 'proj-snapshot';
+    const agentId = 'agent-snapshot';
+
+    test(
+      'aggregates health metrics, stale state, and recommendations',
+      () async {
+        final recommendation = makeTestProjectRecommendation(
+          agentId: agentId,
+          projectId: projectId,
+          title: 'Escalate the dependency blocker',
+        );
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectHealthMetricsProvider(projectId).overrideWith(
+              (ref) async => makeTestProjectHealthMetrics(
+                band: ProjectHealthBand.atRisk,
+                rationale: 'A critical dependency is slipping again.',
+                confidence: 0.64,
+              ),
+            ),
+            projectAgentSummaryProvider(projectId).overrideWith(
+              (ref) async => ProjectAgentSummaryState(
+                agentId: agentId,
+                hasReport: true,
+                pendingProjectActivityAt: DateTime(2026, 4, 2, 11),
+                scheduledWakeAt: DateTime(2026, 4, 3, 6),
+              ),
+            ),
+            projectRecommendationsProvider(projectId).overrideWith(
+              (ref) async => [recommendation],
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthSnapshotProvider(projectId).future,
+        );
+
+        expect(result.projectId, projectId);
+        expect(result.healthBand, ProjectHealthBand.atRisk);
+        expect(result.isSummaryOutdated, isTrue);
+        expect(result.scheduledWakeAt, DateTime(2026, 4, 3, 6));
+        expect(result.recommendations, [recommendation]);
+      },
+    );
+  });
+
+  group('projectHealthOverviewEntriesProvider', () {
+    test(
+      'prepares category health entries sorted by worst band first',
+      () async {
+        final blockedProject = makeTestProject(
+          id: 'proj-blocked',
+          title: 'Blocked Launch',
+          categoryId: categoryId,
+        );
+        final healthyProject = makeTestProject(
+          id: 'proj-healthy',
+          title: 'Healthy Migration',
+          categoryId: categoryId,
+        );
+        final unscoredProject = makeTestProject(
+          id: 'proj-unscored',
+          title: 'Awaiting First Report',
+          categoryId: categoryId,
+        );
+        final recommendation = makeTestProjectRecommendation(
+          projectId: blockedProject.meta.id,
+          title: 'Unblock the release dependency',
+        );
+
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectsForCategoryProvider(categoryId).overrideWith(
+              (ref) async => [
+                healthyProject,
+                unscoredProject,
+                blockedProject,
+              ],
+            ),
+            projectHealthSnapshotProvider(blockedProject.meta.id).overrideWith(
+              (ref) async => ProjectHealthSnapshot(
+                projectId: blockedProject.meta.id,
+                metrics: makeTestProjectHealthMetrics(
+                  band: ProjectHealthBand.blocked,
+                  rationale: 'Release work is blocked.',
+                ),
+                summary: const ProjectAgentSummaryState(
+                  agentId: 'agent-blocked',
+                  hasReport: true,
+                ),
+                recommendations: [recommendation],
+              ),
+            ),
+            projectHealthSnapshotProvider(healthyProject.meta.id).overrideWith(
+              (ref) async => ProjectHealthSnapshot(
+                projectId: healthyProject.meta.id,
+                metrics: makeTestProjectHealthMetrics(
+                  rationale: 'Delivery is steady.',
+                ),
+                summary: const ProjectAgentSummaryState(
+                  agentId: 'agent-healthy',
+                  hasReport: true,
+                ),
+                recommendations: const [],
+              ),
+            ),
+            projectHealthSnapshotProvider(unscoredProject.meta.id).overrideWith(
+              (ref) async => ProjectHealthSnapshot(
+                projectId: unscoredProject.meta.id,
+                metrics: null,
+                summary: null,
+                recommendations: const [],
+              ),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthOverviewEntriesProvider(categoryId).future,
+        );
+
+        expect(
+          result.map((entry) => entry.project.meta.id).toList(),
+          [
+            blockedProject.meta.id,
+            healthyProject.meta.id,
+            unscoredProject.meta.id,
+          ],
+        );
+        expect(result.first.snapshot.recommendations, [recommendation]);
+      },
+    );
+  });
+
+  group('queryProjectHealthOverviewEntries', () {
+    test('filters by selected health bands and can sort alphabetically', () {
+      final entries = [
+        ProjectHealthOverviewEntry(
+          project: makeTestProject(
+            id: 'blocked',
+            title: 'Zulu',
+            categoryId: categoryId,
+          ),
+          snapshot: ProjectHealthSnapshot(
+            projectId: 'blocked',
+            metrics: makeTestProjectHealthMetrics(
+              band: ProjectHealthBand.blocked,
+              rationale: 'Still blocked.',
+            ),
+            summary: null,
+            recommendations: const [],
+          ),
+        ),
+        ProjectHealthOverviewEntry(
+          project: makeTestProject(
+            id: 'watch',
+            title: 'Alpha',
+            categoryId: categoryId,
+          ),
+          snapshot: ProjectHealthSnapshot(
+            projectId: 'watch',
+            metrics: makeTestProjectHealthMetrics(
+              band: ProjectHealthBand.watch,
+              rationale: 'Needs follow-up.',
+            ),
+            summary: null,
+            recommendations: const [],
+          ),
+        ),
+        ProjectHealthOverviewEntry(
+          project: makeTestProject(
+            id: 'unrated',
+            title: 'Beta',
+            categoryId: categoryId,
+          ),
+          snapshot: const ProjectHealthSnapshot(
+            projectId: 'unrated',
+            metrics: null,
+            summary: null,
+            recommendations: [],
+          ),
+        ),
+      ];
+
+      final filtered = queryProjectHealthOverviewEntries(
+        entries,
+        includedBands: {ProjectHealthBand.watch, ProjectHealthBand.blocked},
+        sort: ProjectHealthOverviewSort.title,
+        includeWithoutHealth: false,
+      );
+
+      expect(
+        filtered.map((entry) => entry.project.meta.id).toList(),
+        ['watch', 'blocked'],
+      );
+    });
   });
 }
 

@@ -34,6 +34,8 @@
     <release version="0.9.932" date="2026-03-23">
       <description>
           <p>Projects now show a compact health band at a glance in both the tasks-page project header and project detail page based on the latest project-agent report.</p>
+          <p>Linked task activity now marks project summaries stale for the next 06:00 digest, while app state also exposes stale status and active project recommendations for upcoming project health dashboard surfaces.</p>
+          <p>Direct edits to a project now use the short deferred project-agent wake path, while linked-task activity stays stale-only until the next scheduled digest unless you refresh manually sooner.</p>
       </description>
     </release>
     <release version="0.9.931" date="2026-03-23">

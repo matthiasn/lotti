@@ -58,6 +58,25 @@ class ProjectRepository {
     return _journalDb.getProjectForTask(taskId);
   }
 
+  /// Resolves project IDs affected by a local update batch.
+  ///
+  /// This includes:
+  /// - project IDs that were updated directly
+  /// - project IDs linked to any updated task IDs
+  ///
+  /// The task lookup relies on the denormalized `project_id` column, so child
+  /// entry updates that bubble up to their parent task IDs also mark the owning
+  /// project as stale.
+  Future<Set<String>> resolveAffectedProjectIds(Set<String> affectedIds) async {
+    final directProjectIds = await _journalDb.getExistingProjectIds(
+      affectedIds,
+    );
+    final taskProjectIds = await _journalDb.getProjectIdsForTaskIds(
+      affectedIds,
+    );
+    return {...directProjectIds, ...taskProjectIds};
+  }
+
   // ── Create ─────────────────────────────────────────────────────────────────
 
   /// Creates a new project entity.
@@ -80,6 +99,11 @@ class ProjectRepository {
     final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
     final updated = project.copyWith(meta: updatedMeta);
     final result = await _persistenceLogic.updateDbEntity(updated);
+    if (result ?? false) {
+      _updateNotifications.notify({
+        projectEntityUpdateNotification(updated.id),
+      });
+    }
     return result ?? false;
   }
 
@@ -133,7 +157,12 @@ class ProjectRepository {
 
     final res = await _journalDb.upsertEntryLink(link);
     if (res != 0) {
-      _updateNotifications.notify({projectId, taskId, projectNotification});
+      _updateNotifications.notify({
+        projectId,
+        taskId,
+        projectNotification,
+        projectEntityUpdateNotification(projectId),
+      });
       await _enqueueLinkSync(link, SyncEntryStatus.initial);
     }
     return res != 0;
@@ -193,6 +222,8 @@ class ProjectRepository {
       projectId,
       taskId,
       projectNotification,
+      projectEntityUpdateNotification(oldLink.fromId),
+      projectEntityUpdateNotification(projectId),
     });
     await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
     await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
@@ -204,7 +235,12 @@ class ProjectRepository {
     final deleted = await _prepareDeletedLink(link, now);
     final res = await _journalDb.upsertEntryLink(deleted);
     if (res == 0) return false;
-    _updateNotifications.notify({link.fromId, link.toId, projectNotification});
+    _updateNotifications.notify({
+      link.fromId,
+      link.toId,
+      projectNotification,
+      projectEntityUpdateNotification(link.fromId),
+    });
     await _enqueueLinkSync(deleted, SyncEntryStatus.update);
     return true;
   }

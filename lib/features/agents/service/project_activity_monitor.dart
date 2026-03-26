@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -20,16 +21,19 @@ class ProjectActivityMonitor {
   ProjectActivityMonitor({
     required UpdateNotifications notifications,
     required AgentRepository agentRepository,
+    required ProjectRepository projectRepository,
     required AgentSyncService syncService,
     this.domainLogger,
     Clock clock = const Clock(),
   }) : _notifications = notifications,
        _agentRepository = agentRepository,
+       _projectRepository = projectRepository,
        _syncService = syncService,
        _clock = clock;
 
   final UpdateNotifications _notifications;
   final AgentRepository _agentRepository;
+  final ProjectRepository _projectRepository;
   final AgentSyncService _syncService;
   final DomainLogger? domainLogger;
   final Clock _clock;
@@ -79,10 +83,15 @@ class ProjectActivityMonitor {
   Future<void> _handleBatch(Set<String> affectedIds) async {
     if (affectedIds.isEmpty) return;
 
-    // Only IDs with an `agent_project` link matter here. Generic
-    // notification tokens such as `PROJECT` simply return no links.
+    final projectIds = await _projectRepository.resolveAffectedProjectIds(
+      affectedIds,
+    );
+    if (projectIds.isEmpty) return;
+
+    // Only project IDs with an `agent_project` link matter here. Generic
+    // notification tokens are filtered out by the project repository.
     await Future.wait(
-      affectedIds.map(_markProjectActivityIfNeeded),
+      projectIds.map(_markProjectActivityIfNeeded),
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -142,6 +143,8 @@ class ProjectAgentService {
       return identity;
     });
 
+    _registerProjectSubscription(identity.agentId, projectId);
+
     // Enqueue the creation wake.
     orchestrator.enqueueManualWake(
       agentId: identity.agentId,
@@ -191,9 +194,9 @@ class ProjectAgentService {
 
   /// Restore project-agent runtime state after app startup.
   ///
-  /// Project agents are schedule-driven: local task/project edits only mark
-  /// the summary as stale, and the actual report runs on the next scheduled
-  /// wake. There are therefore no per-project subscriptions to restore here.
+  /// Project agents restore short-delay subscriptions for direct project edits
+  /// and hydrate any persisted deferred wake deadlines, while task-driven
+  /// activity remains schedule-driven via pending-project-activity markers.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
       LogDomains.agentRuntime,
@@ -210,6 +213,14 @@ class ProjectAgentService {
       if (agent.kind != _agentKind) continue;
 
       try {
+        final links = await repository.getLinksFrom(
+          agent.agentId,
+          type: AgentLinkTypes.agentProject,
+        );
+        for (final link in links) {
+          _registerProjectSubscription(agent.agentId, link.toId);
+        }
+        await _hydrateThrottleDeadline(agent.agentId);
         count++;
       } catch (e, s) {
         final msg =
@@ -238,5 +249,23 @@ class ProjectAgentService {
       'restored $count project agent(s)',
       subDomain: 'restore',
     );
+  }
+
+  void _registerProjectSubscription(String agentId, String projectId) {
+    orchestrator.addSubscription(
+      AgentSubscription(
+        id: '${agentId}_project_direct_$projectId',
+        agentId: agentId,
+        matchEntityIds: {projectEntityUpdateNotification(projectId)},
+      ),
+    );
+  }
+
+  Future<void> _hydrateThrottleDeadline(String agentId) async {
+    final state = await repository.getAgentState(agentId);
+    final deadline = state?.nextWakeAt;
+    if (deadline != null) {
+      orchestrator.setThrottleDeadline(agentId, deadline);
+    }
   }
 }
