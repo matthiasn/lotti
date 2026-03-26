@@ -22,7 +22,7 @@ The codebase already contains several pieces we should build on:
 
 - `enableProjectsFlag` already exists and is initialized in the DB.
 - Project CRUD, linking, and detail editing already exist in `lib/features/projects/repository/project_repository.dart` and `lib/features/projects/state/project_detail_controller.dart`.
-- Settings routes already exist for project create/detail under `lib/beamer/locations/settings_location.dart`.
+- Settings routes already exist for project creation/detail under `lib/beamer/locations/settings_location.dart`.
 - Widgetbook already contains project list/detail UI components under `lib/features/projects/ui/widgets/` and `lib/features/projects/widgetbook/`.
 - The app shell currently gates major tabs in `lib/beamer/beamer_app.dart` and `lib/services/nav_service.dart` by listening directly to config-flag streams from `JournalDb`.
 
@@ -80,7 +80,7 @@ The follow-up should wire the search bar to vector search only after the data mo
 
 ## 4. Architecture Overview
 
-## 4.1 Navigation and Feature Flag Integration
+### 4.1 Navigation and Feature Flag Integration
 
 ### Existing extension points
 
@@ -136,7 +136,7 @@ Do not reuse the Widgetbook navigation chrome in production:
 - Do not mount the Widgetbook bottom tab bar from `project_mobile_list_detail_showcase.dart`
 - The real app already has its shell; the production page should only render the projects content area
 
-## 4.2 UI Integration Strategy
+### 4.2 UI Integration Strategy
 
 ### Desktop
 
@@ -192,7 +192,7 @@ That is the cleanest way to satisfy the step-1 requirement:
 - non-responsive
 - not secretly mutating filter state
 
-## 4.3 Data Model for the Tab
+### 4.3 Data Model for the Tab
 
 The main tab should not fetch directly into the current Widgetbook-shaped models.
 
@@ -223,7 +223,6 @@ class ProjectsOverviewSnapshot {
 class ProjectCategoryGroup {
   final CategoryDefinition category;
   final List<ProjectListItemData> projects;
-  final int projectCount;
 }
 
 class ProjectListItemData {
@@ -243,7 +242,7 @@ Notes:
 
 ## 4.4 Repository and Riverpod Provider Structure
 
-### Repository
+#### Repository
 
 Extend `ProjectRepository` with a batch list method instead of reusing the existing per-project methods:
 
@@ -273,7 +272,7 @@ enum ProjectsSearchMode {
 }
 ```
 
-### Provider graph
+#### Provider graph
 
 Recommended new providers:
 
@@ -283,7 +282,7 @@ Recommended new providers:
 
 - `projectsFilterControllerProvider`
   - new
-  - `@Riverpod(keepAlive: true)` or `NotifierProvider`
+  - `NotifierProvider` with a dedicated `Notifier` class
   - owns:
     - selected category ids
     - text query
@@ -360,7 +359,7 @@ It gives us a stable contract:
 
 ## 6. Mermaid Diagrams
 
-## 6.1 UI Layer to Database
+### 6.1 UI Layer to Database
 
 ```mermaid
 flowchart LR
@@ -380,7 +379,7 @@ flowchart LR
   E --> D
 ```
 
-## 6.2 Data Access Flow and Provider Structure
+### 6.2 Data Access Flow and Provider Structure
 
 ```mermaid
 flowchart TD
@@ -400,7 +399,7 @@ flowchart TD
   G --> J["Mobile list widgets"]
 ```
 
-## 6.3 State Updates and Notifications
+### 6.3 State Updates and Notifications
 
 ```mermaid
 sequenceDiagram
@@ -443,6 +442,8 @@ Those patterns create hidden N+1 behavior and will become expensive as soon as t
 ### 7.2 Recommended batch strategy
 
 Use one batch fetch for projects plus one batch rollup for task counts.
+
+If the Drift/query ergonomics stay manageable and the result mapping remains clear, we can later evaluate collapsing this into a single `LEFT JOIN` + `GROUP BY` query. The two-query version is still the recommended starting point because it is easy to reason about, keeps the aggregation explicit, and already avoids N+1 behavior.
 
 #### Query A: visible projects
 
@@ -525,13 +526,13 @@ Recommendation:
 
 ## 8. Search and Filtering Architecture
 
-## 8.1 Step 1
+### 8.1 Step 1
 
 - Render the search bar disabled
 - Keep `textQuery = ''`
 - Do not mutate filter state from the search control
 
-## 8.2 Step 2
+### 8.2 Step 2
 
 Add a filter model that can outlive the first implementation:
 
@@ -553,7 +554,7 @@ Recommended behavior:
 
 This lets us reuse the existing local search idea already present in `ProjectListDetailState`, but move it into the real state layer instead of the Widgetbook-only controller.
 
-## 8.3 Step 3
+### 8.3 Step 3
 
 Vector search follow-up requirements:
 
