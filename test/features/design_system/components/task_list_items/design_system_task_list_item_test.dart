@@ -244,6 +244,10 @@ void main() {
         richTextStyleFor(tester, 'P1')?.color,
         dsTokensLight.colors.alert.error.defaultColor,
       );
+      expect(
+        richTextStyleFor(tester, 'P1')?.fontWeight,
+        dsTokensLight.typography.weight.semiBold,
+      );
     });
 
     testWidgets('priority P2 uses warning color', (tester) async {
@@ -264,6 +268,10 @@ void main() {
       expect(
         richTextStyleFor(tester, 'P2')?.color,
         dsTokensLight.colors.alert.warning.defaultColor,
+      );
+      expect(
+        richTextStyleFor(tester, 'P2')?.fontWeight,
+        dsTokensLight.typography.weight.semiBold,
       );
     });
 

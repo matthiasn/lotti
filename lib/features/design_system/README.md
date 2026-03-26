@@ -9,6 +9,8 @@ This feature contains the standalone Widgetbook-first design system work.
 - Build a standalone Widgetbook-only theme
 - Build new design-system components without retrofitting existing app widgets
 - Render design-system typography with the bundled local `Inter` variable font
+- Keep component spacing and typography sourced from design-system tokens
+  instead of ad-hoc layout or font literals
 
 ## Accessibility Conventions
 
@@ -21,26 +23,38 @@ This feature contains the standalone Widgetbook-first design system work.
 
 ## Implemented Components
 
+- Avatars
 - Typography showcase
 - Buttons
 - Badges
 - Branding
 - Chips
 - Breadcrumbs
+- Captions
 - Header
 - Search
 - Toast
 - Divider
 - Dropdowns
+- Inputs
+- Lists
+- Context menus
 - Split buttons
 - Tabs
 - Navigation sidebar
 - Tab bar
 - Calendar picker
+- Time picker
 - Progress bar
 - Toggles
 - Radio buttons
 - Checkboxes
+- Scrollbars
+- Spinners
+- Task filter sheet
+- Task list items
+- Textareas
+- Tooltip icons
 
 ## Usage
 

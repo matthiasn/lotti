@@ -137,8 +137,12 @@ class _DesignSystemNavigationTabBarItem extends StatelessWidget {
               minHeight: symbol ? 44 : 52,
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: symbol ? 10 : 12,
-              vertical: symbol ? 10 : 8,
+              horizontal: symbol
+                  ? tokens.spacing.step4 - tokens.spacing.step1
+                  : tokens.spacing.step4,
+              vertical: symbol
+                  ? tokens.spacing.step4 - tokens.spacing.step1
+                  : tokens.spacing.step3,
             ),
             decoration: BoxDecoration(
               color: item.active
@@ -151,13 +155,11 @@ class _DesignSystemNavigationTabBarItem extends StatelessWidget {
               children: [
                 Icon(item.icon, size: 20, color: iconColor),
                 if (!symbol) ...[
-                  const SizedBox(height: 2),
+                  SizedBox(height: tokens.spacing.step1),
                   Text(
                     item.label,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
+                    style: tokens.typography.styles.others.caption.copyWith(
                       color: labelColor,
                     ),
                   ),

@@ -297,6 +297,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final palette = _TaskFilterPalette.fromTokens(tokens);
+    final spacing = tokens.spacing;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(_TaskFilterMetrics.frameRadius),
@@ -309,7 +310,12 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    spacing.step5,
+                    spacing.step4,
+                    spacing.step5,
+                    spacing.step6,
+                  ),
                   child: SizedBox(
                     width: _TaskFilterMetrics.contentWidth,
                     child: Column(
@@ -326,22 +332,22 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: spacing.step6),
                         Text(
                           state.title,
                           style: tokens.typography.styles.heading.heading2
                               .copyWith(color: palette.primaryText),
                         ),
-                        const SizedBox(height: 52),
+                        SizedBox(height: spacing.step9 + spacing.step2), // 52px
                         _TaskFilterSectionLabel(
                           text: state.sortLabel,
                           color: palette.secondaryText,
                           style: tokens.typography.styles.others.caption,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: spacing.step4),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: spacing.step3,
+                          runSpacing: spacing.step3,
                           children: [
                             for (final option in state.sortOptions)
                               _TaskFilterChoicePill(
@@ -358,7 +364,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: spacing.step6),
                         _TaskFilterSelectionField(
                           key: const ValueKey(
                             'design-system-task-filter-field-status',
@@ -377,16 +383,16 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: spacing.step6),
                         _TaskFilterSectionLabel(
                           text: state.priorityLabel,
                           color: palette.secondaryText,
                           style: tokens.typography.styles.others.caption,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: spacing.step4),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: spacing.step3,
+                          runSpacing: spacing.step3,
                           children: [
                             for (final option in state.priorityOptions)
                               _TaskFilterChoicePill(
@@ -411,7 +417,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: spacing.step6),
                         _TaskFilterSelectionField(
                           key: const ValueKey(
                             'design-system-task-filter-field-category',
@@ -430,7 +436,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: spacing.step6),
                         _TaskFilterSelectionField(
                           key: const ValueKey(
                             'design-system-task-filter-field-label',
@@ -456,7 +462,12 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               ),
               Container(height: 1, color: palette.dividerColor),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: EdgeInsets.fromLTRB(
+                  spacing.step5,
+                  spacing.step4,
+                  spacing.step5,
+                  0,
+                ),
                 child: SizedBox(
                   width: _TaskFilterMetrics.contentWidth,
                   child: Row(
@@ -478,7 +489,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: spacing.step5),
                       Expanded(
                         child: _TaskFilterActionButton(
                           key: const ValueKey(
@@ -497,9 +508,9 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: spacing.step4),
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.only(bottom: spacing.step3),
                 child: Container(
                   width: 134,
                   height: 5,
@@ -509,7 +520,10 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 21),
+              SizedBox(
+                height:
+                    spacing.step5 + spacing.step2 + spacing.step1 / 2, // 21px
+              ),
             ],
           ),
         ),
@@ -539,6 +553,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final spacing = tokens.spacing;
 
     return Material(
       color: Colors.transparent,
@@ -556,7 +571,10 @@ class _TaskFilterSelectionField extends StatelessWidget {
               minHeight: _TaskFilterMetrics.fieldHeight,
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.step5,
+                vertical: spacing.step2 + spacing.step1, // 6px
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -569,7 +587,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
                           style: tokens.typography.styles.others.caption
                               .copyWith(color: palette.secondaryText),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: spacing.step2),
                         if (items.isEmpty)
                           Text(
                             ' ',
@@ -589,7 +607,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
                                     onRemove: () => onRemove(items[i].id),
                                   ),
                                   if (i != items.length - 1)
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: spacing.step3),
                                 ],
                               ],
                             ),
@@ -597,7 +615,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: spacing.step3),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: palette.secondaryText,
@@ -629,10 +647,16 @@ class _TaskFilterSelectedChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final spacing = tokens.spacing;
 
     return Container(
       height: 28,
-      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
+      padding: EdgeInsets.fromLTRB(
+        spacing.step4,
+        spacing.step1,
+        spacing.step2,
+        spacing.step1,
+      ),
       decoration: BoxDecoration(
         color: palette.pillFill,
         borderRadius: BorderRadius.circular(16),
@@ -646,7 +670,7 @@ class _TaskFilterSelectedChip extends StatelessWidget {
               color: palette.primaryText,
             ),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: spacing.step2 + spacing.step1), // 6px
           Material(
             color: Colors.transparent,
             child: Ink(
@@ -696,6 +720,8 @@ class _TaskFilterChoicePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
     return Material(
       color: Colors.transparent,
       child: Ink(
@@ -712,15 +738,18 @@ class _TaskFilterChoicePill extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: leading != null ? 16 : 20,
-              vertical: 11,
+              horizontal: leading != null
+                  ? spacing.step5
+                  : spacing.step5 + spacing.step2,
+              vertical:
+                  spacing.step3 + spacing.step1 + spacing.step1 / 2, // 11px
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (leading != null) ...[
                   leading!,
-                  const SizedBox(width: 8),
+                  SizedBox(width: spacing.step3),
                 ],
                 Text(
                   label,
@@ -746,6 +775,8 @@ class _TaskFilterPriorityGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+
     if (glyph == DesignSystemTaskFilterGlyph.priorityP0) {
       return Icon(
         Icons.priority_high_rounded,
@@ -779,7 +810,7 @@ class _TaskFilterPriorityGlyph extends StatelessWidget {
               padding: EdgeInsets.only(
                 right: i == _TaskFilterMetrics.priorityBarHeights.length - 1
                     ? 0
-                    : 1,
+                    : spacing.step1 / 2,
               ),
               child: Container(
                 width: 4,
@@ -816,6 +847,9 @@ class _TaskFilterActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+
     return Material(
       color: Colors.transparent,
       child: Ink(
@@ -840,7 +874,7 @@ class _TaskFilterActionButton extends StatelessWidget {
                   ),
                 ),
                 if (counter != null) ...[
-                  const SizedBox(width: 10),
+                  SizedBox(width: spacing.step4 - spacing.step1),
                   Container(
                     width: 28,
                     height: 28,
@@ -851,11 +885,12 @@ class _TaskFilterActionButton extends StatelessWidget {
                     child: Center(
                       child: Text(
                         '$counter',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: highlighted
-                              ? palette.accentText
-                              : palette.primaryText,
-                        ),
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: highlighted
+                                  ? palette.accentText
+                                  : palette.primaryText,
+                            ),
                       ),
                     ),
                   ),

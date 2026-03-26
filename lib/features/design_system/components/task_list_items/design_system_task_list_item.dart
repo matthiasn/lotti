@@ -177,7 +177,7 @@ List<InlineSpan> _taskMetadataSpans({
       text: priorityLabel,
       style: spec.metaStyle.copyWith(
         color: priorityColor,
-        fontWeight: FontWeight.w600,
+        fontWeight: tokens.typography.weight.semiBold,
       ),
     ),
     if (timeRange != null) ...[
