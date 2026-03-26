@@ -2456,6 +2456,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemAvatarStatusMatrixTitle => 'Matrice des statuts';
 
   @override
+  String get designSystemBackLabel => 'Retour';
+
+  @override
   String get designSystemBreadcrumbCurrentLabel => 'Fil d\'Ariane';
 
   @override
@@ -2701,40 +2704,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemListItemWithDividerLabel => 'Avec séparateur';
 
   @override
-  String get designSystemTaskListBlockedLabel => 'Bloqué';
-
-  @override
-  String get designSystemTaskListDefaultLabel => 'Par défaut';
-
-  @override
-  String get designSystemTaskListHoverLabel => 'Survol';
-
-  @override
-  String get designSystemTaskListItemSectionTitle =>
-      'Variantes d\'élément de liste de tâches';
-
-  @override
-  String get designSystemTaskListOnHoldLabel => 'En attente';
-
-  @override
-  String get designSystemTaskListOpenLabel => 'Ouvert';
-
-  @override
-  String get designSystemTaskListPressedLabel => 'Appuyé';
-
-  @override
-  String get designSystemTaskListSampleCategory => 'Étude';
-
-  @override
-  String get designSystemTaskListSampleTime => '8:00-9:30';
-
-  @override
-  String get designSystemTaskListSampleTitle => 'Tests utilisateurs';
-
-  @override
-  String get designSystemTaskListWithDividerLabel => 'Avec séparateur';
-
-  @override
   String get designSystemMediumLabel => 'Moyen';
 
   @override
@@ -2871,6 +2840,40 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemTabPendingLabel => 'En attente';
+
+  @override
+  String get designSystemTaskListBlockedLabel => 'Bloqué';
+
+  @override
+  String get designSystemTaskListDefaultLabel => 'Par défaut';
+
+  @override
+  String get designSystemTaskListHoverLabel => 'Survol';
+
+  @override
+  String get designSystemTaskListItemSectionTitle =>
+      'Variantes d\'élément de liste de tâches';
+
+  @override
+  String get designSystemTaskListOnHoldLabel => 'En attente';
+
+  @override
+  String get designSystemTaskListOpenLabel => 'Ouvert';
+
+  @override
+  String get designSystemTaskListPressedLabel => 'Appuyé';
+
+  @override
+  String get designSystemTaskListSampleCategory => 'Étude';
+
+  @override
+  String get designSystemTaskListSampleTime => '8:00-9:30';
+
+  @override
+  String get designSystemTaskListSampleTitle => 'Tests utilisateurs';
+
+  @override
+  String get designSystemTaskListWithDividerLabel => 'Avec séparateur';
 
   @override
   String get designSystemTextareaErrorSample => 'Ce champ est obligatoire';
@@ -3891,6 +3894,72 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectFilterLabel => 'Projet';
 
   @override
+  String get projectHealthBandAtRisk => 'À risque';
+
+  @override
+  String get projectHealthBandBlocked => 'Bloqué';
+
+  @override
+  String get projectHealthBandOnTrack => 'Sur la bonne voie';
+
+  @override
+  String get projectHealthBandSurviving => 'Ça tient';
+
+  @override
+  String get projectHealthBandWatch => 'À surveiller';
+
+  @override
+  String get projectHealthReasonCompleted => 'Le projet est terminé.';
+
+  @override
+  String get projectHealthReasonNoLinkedTasks =>
+      'Le projet n’a pas encore de tâches liées.';
+
+  @override
+  String get projectHealthReasonNoRecentProgress =>
+      'Il n’y a pas eu de progrès récent.';
+
+  @override
+  String get projectHealthReasonOnHold => 'Le projet est en pause.';
+
+  @override
+  String projectHealthReasonOverdueTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches sont en retard',
+      one: '$count tâche est en retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectHealthReasonStalledTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches sont bloquées',
+      one: '$count tâche est bloquée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthReasonSteadyProgress =>
+      'Le projet avance régulièrement.';
+
+  @override
+  String get projectHealthReasonSummaryOutdated =>
+      'Le résumé du projet n’est plus à jour.';
+
+  @override
+  String get projectHealthReasonTargetDatePassed =>
+      'La date cible est dépassée.';
+
+  @override
+  String get projectHealthSectionTitle => 'Santé du projet';
+
+  @override
   String projectHealthSummary(int projectCount, int taskCount) {
     String _temp0 = intl.Intl.pluralLogic(
       projectCount,
@@ -3909,72 +3978,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectHealthTitle => 'Projets';
-
-  @override
-  String get projectHealthSectionTitle => 'Santé du projet';
-
-  @override
-  String get projectHealthBandSurviving => 'Ça tient';
-
-  @override
-  String get projectHealthBandOnTrack => 'Sur la bonne voie';
-
-  @override
-  String get projectHealthBandWatch => 'À surveiller';
-
-  @override
-  String get projectHealthBandAtRisk => 'À risque';
-
-  @override
-  String get projectHealthBandBlocked => 'Bloqué';
-
-  @override
-  String get projectHealthReasonCompleted => 'Le projet est terminé.';
-
-  @override
-  String get projectHealthReasonOnHold => 'Le projet est en pause.';
-
-  @override
-  String projectHealthReasonStalledTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tâches sont bloquées',
-      one: '$count tâche est bloquée',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String projectHealthReasonOverdueTasks(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tâches sont en retard',
-      one: '$count tâche est en retard',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get projectHealthReasonTargetDatePassed =>
-      'La date cible est dépassée.';
-
-  @override
-  String get projectHealthReasonNoRecentProgress =>
-      'Il n’y a pas eu de progrès récent.';
-
-  @override
-  String get projectHealthReasonSummaryOutdated =>
-      'Le résumé du projet n’est plus à jour.';
-
-  @override
-  String get projectHealthReasonNoLinkedTasks =>
-      'Le projet n’a pas encore de tâches liées.';
-
-  @override
-  String get projectHealthReasonSteadyProgress =>
-      'Le projet avance régulièrement.';
 
   @override
   String projectLinkedTaskCount(int count) {
@@ -5594,6 +5597,75 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tasksFilterTitle => 'Filtre des tâches';
+
+  @override
+  String get taskShowcaseActiveFilters => 'Filtres actifs';
+
+  @override
+  String get taskShowcaseAudio => 'Audio';
+
+  @override
+  String taskShowcaseCompletedCount(int completed, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      completed,
+      locale: localeName,
+      other: '$completed / $total terminés',
+      one: '1 / $total terminé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskShowcaseDueDate(String date) {
+    return 'Échéance : $date';
+  }
+
+  @override
+  String get taskShowcaseJumpToSection => 'Aller à la section';
+
+  @override
+  String get taskShowcaseLinked => 'Lié';
+
+  @override
+  String get taskShowcaseNoResults =>
+      'Aucune tâche ne correspond à ta recherche.';
+
+  @override
+  String get taskShowcaseReadMore => 'Lire la suite';
+
+  @override
+  String taskShowcaseRecordingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count enregistrements',
+      one: '1 enregistrement',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String taskShowcaseTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '1 tâche',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get taskShowcaseTaskDescription => 'Description de la tâche';
+
+  @override
+  String get taskShowcaseTimeTracker => 'Suivi du temps';
+
+  @override
+  String get taskShowcaseTodo => 'À faire';
+
+  @override
+  String get taskShowcaseTodos => 'À faire';
 
   @override
   String get tasksLabelFilterAll => 'Toutes';

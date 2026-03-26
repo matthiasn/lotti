@@ -4329,6 +4329,12 @@ abstract class AppLocalizations {
   /// **'Status Matrix'**
   String get designSystemAvatarStatusMatrixTitle;
 
+  /// No description provided for @designSystemBackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get designSystemBackLabel;
+
   /// No description provided for @designSystemBreadcrumbCurrentLabel.
   ///
   /// In en, this message translates to:
@@ -4809,72 +4815,6 @@ abstract class AppLocalizations {
   /// **'With divider'**
   String get designSystemListItemWithDividerLabel;
 
-  /// No description provided for @designSystemTaskListBlockedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Blocked'**
-  String get designSystemTaskListBlockedLabel;
-
-  /// No description provided for @designSystemTaskListDefaultLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Default'**
-  String get designSystemTaskListDefaultLabel;
-
-  /// No description provided for @designSystemTaskListHoverLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Hover'**
-  String get designSystemTaskListHoverLabel;
-
-  /// No description provided for @designSystemTaskListItemSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Task List Item Variants'**
-  String get designSystemTaskListItemSectionTitle;
-
-  /// No description provided for @designSystemTaskListOnHoldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'On Hold'**
-  String get designSystemTaskListOnHoldLabel;
-
-  /// No description provided for @designSystemTaskListOpenLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get designSystemTaskListOpenLabel;
-
-  /// No description provided for @designSystemTaskListPressedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Pressed'**
-  String get designSystemTaskListPressedLabel;
-
-  /// No description provided for @designSystemTaskListSampleCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'Study'**
-  String get designSystemTaskListSampleCategory;
-
-  /// No description provided for @designSystemTaskListSampleTime.
-  ///
-  /// In en, this message translates to:
-  /// **'8:00-9:30am'**
-  String get designSystemTaskListSampleTime;
-
-  /// No description provided for @designSystemTaskListSampleTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'User Testing'**
-  String get designSystemTaskListSampleTitle;
-
-  /// No description provided for @designSystemTaskListWithDividerLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'With divider'**
-  String get designSystemTaskListWithDividerLabel;
-
   /// No description provided for @designSystemMediumLabel.
   ///
   /// In en, this message translates to:
@@ -5132,6 +5072,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pending'**
   String get designSystemTabPendingLabel;
+
+  /// No description provided for @designSystemTaskListBlockedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get designSystemTaskListBlockedLabel;
+
+  /// No description provided for @designSystemTaskListDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get designSystemTaskListDefaultLabel;
+
+  /// No description provided for @designSystemTaskListHoverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover'**
+  String get designSystemTaskListHoverLabel;
+
+  /// No description provided for @designSystemTaskListItemSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task List Item Variants'**
+  String get designSystemTaskListItemSectionTitle;
+
+  /// No description provided for @designSystemTaskListOnHoldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On Hold'**
+  String get designSystemTaskListOnHoldLabel;
+
+  /// No description provided for @designSystemTaskListOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get designSystemTaskListOpenLabel;
+
+  /// No description provided for @designSystemTaskListPressedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressed'**
+  String get designSystemTaskListPressedLabel;
+
+  /// No description provided for @designSystemTaskListSampleCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Study'**
+  String get designSystemTaskListSampleCategory;
+
+  /// No description provided for @designSystemTaskListSampleTime.
+  ///
+  /// In en, this message translates to:
+  /// **'8:00-9:30am'**
+  String get designSystemTaskListSampleTime;
+
+  /// No description provided for @designSystemTaskListSampleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'User Testing'**
+  String get designSystemTaskListSampleTitle;
+
+  /// No description provided for @designSystemTaskListWithDividerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'With divider'**
+  String get designSystemTaskListWithDividerLabel;
 
   /// No description provided for @designSystemTextareaErrorSample.
   ///
@@ -6859,42 +6865,6 @@ abstract class AppLocalizations {
   /// **'Project'**
   String get projectFilterLabel;
 
-  /// No description provided for @projectHealthSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
-  String projectHealthSummary(int projectCount, int taskCount);
-
-  /// No description provided for @projectHealthTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Projects'**
-  String get projectHealthTitle;
-
-  /// No description provided for @projectHealthSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Project health'**
-  String get projectHealthSectionTitle;
-
-  /// No description provided for @projectHealthBandSurviving.
-  ///
-  /// In en, this message translates to:
-  /// **'Surviving'**
-  String get projectHealthBandSurviving;
-
-  /// No description provided for @projectHealthBandOnTrack.
-  ///
-  /// In en, this message translates to:
-  /// **'On Track'**
-  String get projectHealthBandOnTrack;
-
-  /// No description provided for @projectHealthBandWatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Watch'**
-  String get projectHealthBandWatch;
-
   /// No description provided for @projectHealthBandAtRisk.
   ///
   /// In en, this message translates to:
@@ -6907,47 +6877,29 @@ abstract class AppLocalizations {
   /// **'Blocked'**
   String get projectHealthBandBlocked;
 
+  /// No description provided for @projectHealthBandOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'On Track'**
+  String get projectHealthBandOnTrack;
+
+  /// No description provided for @projectHealthBandSurviving.
+  ///
+  /// In en, this message translates to:
+  /// **'Surviving'**
+  String get projectHealthBandSurviving;
+
+  /// No description provided for @projectHealthBandWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get projectHealthBandWatch;
+
   /// No description provided for @projectHealthReasonCompleted.
   ///
   /// In en, this message translates to:
   /// **'The project is complete.'**
   String get projectHealthReasonCompleted;
-
-  /// No description provided for @projectHealthReasonOnHold.
-  ///
-  /// In en, this message translates to:
-  /// **'The project is on hold.'**
-  String get projectHealthReasonOnHold;
-
-  /// No description provided for @projectHealthReasonStalledTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}'**
-  String projectHealthReasonStalledTasks(int count);
-
-  /// No description provided for @projectHealthReasonOverdueTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}'**
-  String projectHealthReasonOverdueTasks(int count);
-
-  /// No description provided for @projectHealthReasonTargetDatePassed.
-  ///
-  /// In en, this message translates to:
-  /// **'The target date has passed.'**
-  String get projectHealthReasonTargetDatePassed;
-
-  /// No description provided for @projectHealthReasonNoRecentProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'No recent progress.'**
-  String get projectHealthReasonNoRecentProgress;
-
-  /// No description provided for @projectHealthReasonSummaryOutdated.
-  ///
-  /// In en, this message translates to:
-  /// **'The project summary is outdated.'**
-  String get projectHealthReasonSummaryOutdated;
 
   /// No description provided for @projectHealthReasonNoLinkedTasks.
   ///
@@ -6955,11 +6907,65 @@ abstract class AppLocalizations {
   /// **'No linked tasks yet.'**
   String get projectHealthReasonNoLinkedTasks;
 
+  /// No description provided for @projectHealthReasonNoRecentProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent progress.'**
+  String get projectHealthReasonNoRecentProgress;
+
+  /// No description provided for @projectHealthReasonOnHold.
+  ///
+  /// In en, this message translates to:
+  /// **'The project is on hold.'**
+  String get projectHealthReasonOnHold;
+
+  /// No description provided for @projectHealthReasonOverdueTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}'**
+  String projectHealthReasonOverdueTasks(int count);
+
+  /// No description provided for @projectHealthReasonStalledTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}'**
+  String projectHealthReasonStalledTasks(int count);
+
   /// No description provided for @projectHealthReasonSteadyProgress.
   ///
   /// In en, this message translates to:
   /// **'The project is moving steadily.'**
   String get projectHealthReasonSteadyProgress;
+
+  /// No description provided for @projectHealthReasonSummaryOutdated.
+  ///
+  /// In en, this message translates to:
+  /// **'The project summary is outdated.'**
+  String get projectHealthReasonSummaryOutdated;
+
+  /// No description provided for @projectHealthReasonTargetDatePassed.
+  ///
+  /// In en, this message translates to:
+  /// **'The target date has passed.'**
+  String get projectHealthReasonTargetDatePassed;
+
+  /// No description provided for @projectHealthSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project health'**
+  String get projectHealthSectionTitle;
+
+  /// No description provided for @projectHealthSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
+  String projectHealthSummary(int projectCount, int taskCount);
+
+  /// No description provided for @projectHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectHealthTitle;
 
   /// No description provided for @projectLinkedTaskCount.
   ///
@@ -9759,6 +9765,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasks Filter'**
   String get tasksFilterTitle;
+
+  /// No description provided for @taskShowcaseActiveFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Active filters'**
+  String get taskShowcaseActiveFilters;
+
+  /// No description provided for @taskShowcaseAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get taskShowcaseAudio;
+
+  /// No description provided for @taskShowcaseCompletedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total} done'**
+  String taskShowcaseCompletedCount(int completed, int total);
+
+  /// No description provided for @taskShowcaseDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {date}'**
+  String taskShowcaseDueDate(String date);
+
+  /// No description provided for @taskShowcaseJumpToSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to section'**
+  String get taskShowcaseJumpToSection;
+
+  /// No description provided for @taskShowcaseLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get taskShowcaseLinked;
+
+  /// No description provided for @taskShowcaseNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks match your search.'**
+  String get taskShowcaseNoResults;
+
+  /// No description provided for @taskShowcaseReadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get taskShowcaseReadMore;
+
+  /// No description provided for @taskShowcaseRecordingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
+  String taskShowcaseRecordingsCount(int count);
+
+  /// No description provided for @taskShowcaseTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String taskShowcaseTaskCount(int count);
+
+  /// No description provided for @taskShowcaseTaskDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Task description'**
+  String get taskShowcaseTaskDescription;
+
+  /// No description provided for @taskShowcaseTimeTracker.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Tracker'**
+  String get taskShowcaseTimeTracker;
+
+  /// No description provided for @taskShowcaseTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get taskShowcaseTodo;
+
+  /// No description provided for @taskShowcaseTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get taskShowcaseTodos;
 
   /// No description provided for @tasksLabelFilterAll.
   ///

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -19,7 +21,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
 const _kMobileScreenWidth = 402.0;
-const _kMobileScreenHeight = 874.0;
 const _kMobileScreenGap = 32.0;
 
 class ProjectMobileListDetailShowcase extends ConsumerStatefulWidget {
@@ -115,13 +116,13 @@ class _ProjectMobileListScreen extends StatelessWidget {
     final groups = state.visibleGroups;
     final selectedId = state.selectedProject?.project.meta.id;
 
-    return _MobileScreenShell(
+    return DesignSystemShowcaseMobileShell(
       child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _MobileStatusBar(),
+              const DesignSystemShowcaseMobileStatusBar(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Row(
@@ -254,7 +255,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                const _MobileHomeIndicator(),
+                const DesignSystemShowcaseMobileHomeIndicator(),
               ],
             ),
           ),
@@ -277,33 +278,22 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backLabel = MaterialLocalizations.of(context).backButtonTooltip;
-
-    return _MobileScreenShell(
+    final tokens = context.designTokens;
+    return DesignSystemShowcaseMobileShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _MobileStatusBar(),
+          const DesignSystemShowcaseMobileStatusBar(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-            child: Row(
-              children: [
-                TextButton.icon(
-                  onPressed: onBack,
-                  style: TextButton.styleFrom(
-                    foregroundColor: ShowcasePalette.highText(context),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                  label: Text(backLabel),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.more_vert_rounded,
-                  size: 24,
-                  color: ShowcasePalette.highText(context),
-                ),
-              ],
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step4,
+              tokens.spacing.step3,
+              tokens.spacing.step4,
+              0,
+            ),
+            child: DesignSystemShowcaseMobileDetailHeader(
+              foregroundColor: ShowcasePalette.highText(context),
+              onBack: onBack,
             ),
           ),
           Expanded(
@@ -356,7 +346,7 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Center(child: _MobileHomeIndicator()),
+          const Center(child: DesignSystemShowcaseMobileHomeIndicator()),
           const SizedBox(height: 12),
         ],
       ),
@@ -421,88 +411,6 @@ class _MobileDetailHeader extends StatelessWidget {
   }
 }
 
-class _MobileScreenShell extends StatelessWidget {
-  const _MobileScreenShell({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final frameColor = isLight
-        ? tokens.colors.background.level01
-        : tokens.colors.background.level03;
-    final frameBorderColor = isLight
-        ? tokens.colors.decorative.level02
-        : Colors.black.withValues(alpha: 0.6);
-
-    return SizedBox(
-      width: _kMobileScreenWidth,
-      height: _kMobileScreenHeight,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: frameColor,
-          borderRadius: BorderRadius.circular(36),
-          border: Border.all(color: frameBorderColor, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isLight ? 0.1 : 0.28),
-              blurRadius: 24,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: ShowcasePalette.page(context),
-              ),
-              child: child,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileStatusBar extends StatelessWidget {
-  const _MobileStatusBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final iconColor = ShowcasePalette.highText(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
-      child: SizedBox(
-        height: 24,
-        child: Row(
-          children: [
-            Text(
-              '9:41',
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: iconColor,
-              ),
-            ),
-            const Spacer(),
-            Icon(Icons.signal_cellular_alt_rounded, size: 18, color: iconColor),
-            const SizedBox(width: 4),
-            Icon(Icons.wifi_rounded, size: 18, color: iconColor),
-            const SizedBox(width: 4),
-            Icon(Icons.battery_full_rounded, size: 20, color: iconColor),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _CreateProjectFab extends StatelessWidget {
   const _CreateProjectFab({required this.semanticLabel});
 
@@ -554,22 +462,6 @@ class _ProfileAccessoryButton extends StatelessWidget {
             image: AssetImage('assets/design_system/avatar_placeholder.png'),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MobileHomeIndicator extends StatelessWidget {
-  const _MobileHomeIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 175,
-      height: 5,
-      decoration: BoxDecoration(
-        color: ShowcasePalette.mediumText(context).withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(999),
       ),
     );
   }

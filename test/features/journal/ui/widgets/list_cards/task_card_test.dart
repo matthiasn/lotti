@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -936,46 +937,42 @@ void main() {
     testWidgets(
       'tapping due date toggles between absolute and relative display',
       (tester) async {
-        // Use a date 5 days in the future for testing relative display
-        final now = DateTime.now();
-        final dueDate = DateTime(now.year, now.month, now.day).add(
-          const Duration(days: 5),
-        );
+        final fakeNow = DateTime(2025, 6, 15, 12);
+        final dueDate = DateTime(2025, 6, 20);
         final task = buildTask().copyWith(
           data: buildTask().data.copyWith(due: dueDate),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: ModernTaskCard(task: task),
+        await withClock(Clock(() => fakeNow), () async {
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: ModernTaskCard(task: task),
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // Initially shows absolute date
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        expect(find.text(absoluteText), findsOneWidget);
+          // Initially shows absolute date
+          final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+          expect(find.text(absoluteText), findsOneWidget);
 
-        // Tap to toggle to relative display
-        await tester.tap(find.byIcon(Icons.event_rounded));
-        await tester.pump();
+          // Tap the due-date text directly to avoid card tap hit-testing.
+          await tester.tap(find.text(absoluteText));
+          await tester.pumpAndSettle();
 
-        // Now shows relative date ("Due in 5 days")
-        expect(find.text(absoluteText), findsNothing);
-        expect(find.textContaining('5'), findsOneWidget);
+          expect(find.text(absoluteText), findsNothing);
+          expect(find.text('Due in 5 days'), findsOneWidget);
 
-        // Tap again to toggle back to absolute
-        await tester.tap(find.byIcon(Icons.event_rounded));
-        await tester.pump();
+          await tester.tap(find.text('Due in 5 days'));
+          await tester.pumpAndSettle();
 
-        // Back to absolute
-        expect(find.text(absoluteText), findsOneWidget);
+          expect(find.text(absoluteText), findsOneWidget);
+        });
       },
     );
   });

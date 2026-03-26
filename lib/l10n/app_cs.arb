@@ -868,6 +868,7 @@
   "designSystemAvatarEnabledLabel": "Aktivní",
   "designSystemAvatarSizeMatrixTitle": "Matice velikostí",
   "designSystemAvatarStatusMatrixTitle": "Matice stavů",
+  "designSystemBackLabel": "Zpět",
   "designSystemBreadcrumbCurrentLabel": "Breadcrumbs",
   "designSystemBreadcrumbDesignSystemLabel": "Design System",
   "designSystemBreadcrumbHomeLabel": "Domů",
@@ -948,17 +949,6 @@
   "designSystemListItemTwoLinesLabel": "Dvouřádkový",
   "designSystemListItemVariantsTitle": "Varianty položky seznamu",
   "designSystemListItemWithDividerLabel": "S oddělovačem",
-  "designSystemTaskListBlockedLabel": "Blokováno",
-  "designSystemTaskListDefaultLabel": "Výchozí",
-  "designSystemTaskListHoverLabel": "Přejetí",
-  "designSystemTaskListItemSectionTitle": "Varianty položky seznamu úkolů",
-  "designSystemTaskListOnHoldLabel": "Pozastaveno",
-  "designSystemTaskListOpenLabel": "Otevřeno",
-  "designSystemTaskListPressedLabel": "Stisknuto",
-  "designSystemTaskListSampleCategory": "Studium",
-  "designSystemTaskListSampleTime": "8:00-9:30",
-  "designSystemTaskListSampleTitle": "Testování uživatelů",
-  "designSystemTaskListWithDividerLabel": "S oddělovačem",
   "designSystemMediumLabel": "Střední",
   "designSystemNavigationAiAssistantSectionTitle": "AI asistent",
   "designSystemNavigationCollapsedLabel": "Sbalené",
@@ -1009,6 +999,17 @@
   "designSystemStateMatrixTitle": "Matice stavů",
   "designSystemSuccessLabel": "Úspěch",
   "designSystemTabPendingLabel": "Čekající",
+  "designSystemTaskListBlockedLabel": "Blokováno",
+  "designSystemTaskListDefaultLabel": "Výchozí",
+  "designSystemTaskListHoverLabel": "Přejetí",
+  "designSystemTaskListItemSectionTitle": "Varianty položky seznamu úkolů",
+  "designSystemTaskListOnHoldLabel": "Pozastaveno",
+  "designSystemTaskListOpenLabel": "Otevřeno",
+  "designSystemTaskListPressedLabel": "Stisknuto",
+  "designSystemTaskListSampleCategory": "Studium",
+  "designSystemTaskListSampleTime": "8:00-9:30",
+  "designSystemTaskListSampleTitle": "Testování uživatelů",
+  "designSystemTaskListWithDividerLabel": "S oddělovačem",
   "designSystemTextareaErrorSample": "Toto pole je povinné",
   "designSystemTextareaHelperSample": "Zadej svou zprávu zde",
   "designSystemTextareaHintSample": "Napiš něco...",
@@ -1375,6 +1376,35 @@
   "projectErrorLoadProjects": "Chyba při načítání projektů",
   "projectErrorUpdateFailed": "Nepodařilo se aktualizovat projekt. Zkuste to prosím znovu.",
   "projectFilterLabel": "Projekt",
+  "projectHealthBandAtRisk": "V ohrožení",
+  "projectHealthBandBlocked": "Blokováno",
+  "projectHealthBandOnTrack": "Na dobré cestě",
+  "projectHealthBandSurviving": "Drží se",
+  "projectHealthBandWatch": "Sledovat",
+  "projectHealthReasonCompleted": "Projekt je dokončený.",
+  "projectHealthReasonNoLinkedTasks": "Projekt ještě nemá propojené úkoly.",
+  "projectHealthReasonNoRecentProgress": "Poslední dobou není vidět žádný posun.",
+  "projectHealthReasonOnHold": "Projekt je pozastavený.",
+  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} úkol je po termínu} few{{count} úkoly jsou po termínu} other{{count} úkolů je po termínu}}",
+  "@projectHealthReasonOverdueTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonStalledTasks": "{count, plural, one{{count} úkol stojí na místě} few{{count} úkoly stojí na místě} other{{count} úkolů stojí na místě}}",
+  "@projectHealthReasonStalledTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthReasonSteadyProgress": "Projekt se posouvá stabilně.",
+  "projectHealthReasonSummaryOutdated": "Souhrn projektu je zastaralý.",
+  "projectHealthReasonTargetDatePassed": "Cílové datum už uplynulo.",
+  "projectHealthSectionTitle": "Stav projektu",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} projekt} few{{projectCount} projekty} other{{projectCount} projektů}}, {taskCount, plural, one{{taskCount} úkol} few{{taskCount} úkoly} other{{taskCount} úkolů}}",
   "@projectHealthSummary": {
     "placeholders": {
@@ -1387,35 +1417,6 @@
     }
   },
   "projectHealthTitle": "Projekty",
-  "projectHealthSectionTitle": "Stav projektu",
-  "projectHealthBandSurviving": "Drží se",
-  "projectHealthBandOnTrack": "Na dobré cestě",
-  "projectHealthBandWatch": "Sledovat",
-  "projectHealthBandAtRisk": "V ohrožení",
-  "projectHealthBandBlocked": "Blokováno",
-  "projectHealthReasonCompleted": "Projekt je dokončený.",
-  "projectHealthReasonOnHold": "Projekt je pozastavený.",
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} úkol stojí na místě} few{{count} úkoly stojí na místě} other{{count} úkolů stojí na místě}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} úkol je po termínu} few{{count} úkoly jsou po termínu} other{{count} úkolů je po termínu}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonTargetDatePassed": "Cílové datum už uplynulo.",
-  "projectHealthReasonNoRecentProgress": "Poslední dobou není vidět žádný posun.",
-  "projectHealthReasonSummaryOutdated": "Souhrn projektu je zastaralý.",
-  "projectHealthReasonNoLinkedTasks": "Projekt ještě nemá propojené úkoly.",
-  "projectHealthReasonSteadyProgress": "Projekt se posouvá stabilně.",
   "projectLinkedTaskCount": "{count, plural, one{{count} propojený úkol} few{{count} propojené úkoly} other{{count} propojených úkolů}}",
   "@projectLinkedTaskCount": {
     "placeholders": {
@@ -2031,6 +2032,51 @@
   "tasksFilterApplyTitle": "Použít filtr",
   "tasksFilterClearAll": "Vymazat vše",
   "tasksFilterTitle": "Filtr úkolů",
+  "taskShowcaseActiveFilters": "Aktivní filtry",
+  "taskShowcaseAudio": "Audio",
+  "taskShowcaseCompletedCount": "{completed} / {total} hotovo",
+  "@taskShowcaseCompletedCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseDueDate": "Termín: {date}",
+  "@taskShowcaseDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "taskShowcaseJumpToSection": "Přejít na sekci",
+  "taskShowcaseLinked": "Propojené",
+  "taskShowcaseNoResults": "Žádné úkoly neodpovídají tvému hledání.",
+  "taskShowcaseReadMore": "Číst dále",
+  "taskShowcaseRecordingsCount": "{count, plural, =1{1 nahrávka} few{{count} nahrávky} other{{count} nahrávek}}",
+  "@taskShowcaseRecordingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
+  "@taskShowcaseTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskShowcaseTaskDescription": "Popis úkolu",
+  "taskShowcaseTimeTracker": "Sledování času",
+  "taskShowcaseTodo": "Úkol",
+  "taskShowcaseTodos": "Úkoly",
   "tasksLabelFilterAll": "Vše",
   "tasksLabelFilterTitle": "Štítky",
   "tasksLabelFilterUnlabeled": "Bez štítku",
