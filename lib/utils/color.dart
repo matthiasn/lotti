@@ -33,3 +33,11 @@ String colorToCssHex(Color color, {bool leadingHashSign = true}) {
 String colorHexChannel(double channel) {
   return (channel * 255).round().toRadixString(16).padLeft(2, '0');
 }
+
+/// Default CSS hex colour used when a category has no colour assigned.
+const defaultCategoryColorHex = '#4AB6E8';
+
+/// Returns black or white depending on which contrasts better with [background].
+Color contrastingTextColor(Color background) {
+  return background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+}

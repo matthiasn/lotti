@@ -46,6 +46,9 @@ const _myDailyTimelineHourRowTop = 16.0;
 const _myDailyTimelineHourRowHeight = 52.0;
 const _myDailyTimelineDimmedOpacity = 0.22;
 const _myDailyTimelineConnectorInset = 24.0;
+const _myDailyTimelineConnectorStrokeWidth = 1.5;
+const _myDailyTimelineConnectorEndpointRadius = 3.0;
+const _myDailyDefaultBadgeColor = Color(0xFF46B4FF);
 const _myDailyTimelineNowIndicatorTop = 273.0;
 
 enum _MyDailyPreviewVariant {
@@ -108,6 +111,7 @@ WidgetbookComponent buildMyDailyWidgetbookComponent() {
 class _MyDailyUseCase extends StatelessWidget {
   const _MyDailyUseCase({
     required this.fixture,
+    // ignore: unused_element_parameter
     this.viewportWidth = 470,
   });
 
@@ -365,14 +369,14 @@ class _MyDailyHeader extends StatelessWidget {
             child: _MyDailyStatusBar(now: now),
           ),
         ),
-        SizedBox(
+        const SizedBox(
           height: 64,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               horizontal: _myDailyContentInset,
               vertical: 9,
             ),
-            child: const _MyDailyGreetingRow(
+            child: _MyDailyGreetingRow(
               userName: _previewUserName,
               onNotificationsPressed: widgetbookNoop,
             ),
@@ -415,7 +419,7 @@ class _MyDailyStatusBar extends StatelessWidget {
     return Row(
       children: [
         Text(
-          DateFormat('H:mm').format(now),
+          _formatLocalizedPreviewTime(context, now),
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
@@ -578,8 +582,6 @@ class _MyDailyDateStrip extends ConsumerWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
                     colors: [
                       Colors.transparent,
                       Colors.white.withValues(alpha: 0.85),
@@ -737,21 +739,16 @@ class _MyDailySummaryCard extends StatelessWidget {
                   children: [
                     Text(
                       context.messages.dailyOsDaySummary,
-                      style: const TextStyle(
-                        color: Color.fromRGBO(255, 255, 255, 0.88),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: const Color.fromRGBO(255, 255, 255, 0.88),
+                          ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       context.messages.designSystemMyDailyTapToExpandLabel,
-                      style: const TextStyle(
-                        color: Color.fromRGBO(255, 255, 255, 0.32),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        height: 1.1,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: const Color.fromRGBO(255, 255, 255, 0.32),
                       ),
                     ),
                   ],
@@ -765,10 +762,10 @@ class _MyDailySummaryCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _MyDailyMetricPill(
-                  leading: Icon(
+                  leading: const Icon(
                     Icons.format_list_bulleted_rounded,
                     size: 16,
-                    color: const Color(0xFF4AB6E8),
+                    color: Color(0xFF4AB6E8),
                   ),
                   value: '4',
                   label: ' ${context.messages.dailyOsTasks}',
@@ -1083,14 +1080,17 @@ class _MyDailyTimelineHourRule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final uses24HourClock = _uses24HourClock(context);
+    final labelWidth = uses24HourClock ? 18.0 : _myDailyTimelineLabelLineOffset;
+    final lineInset = _myDailyTimelineLabelLineOffset - labelWidth;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: _myDailyTimelineLabelLineOffset,
+          width: labelWidth,
           child: Text(
-            _formatTimelineHour(hour),
+            _formatTimelineHour(context, hour),
             maxLines: 1,
             softWrap: false,
             textAlign: TextAlign.right,
@@ -1103,7 +1103,7 @@ class _MyDailyTimelineHourRule extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(top: 7),
+            padding: EdgeInsets.only(top: 7, left: lineInset),
             child: Container(
               height: 1,
               color: Colors.white.withValues(alpha: 0.14),
@@ -1127,8 +1127,6 @@ class _MyDailyTimelineSectionPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
           colors: [
             section.color.withValues(alpha: 0.18),
             section.color.withValues(alpha: 0.06),
@@ -1195,8 +1193,6 @@ class _MyDailyTimelineBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final density = block.density;
-
     return Container(
       key: Key('my-daily-block-${block.id}'),
       decoration: BoxDecoration(
@@ -1260,7 +1256,7 @@ class _MyDailyDetailedBlockContent extends StatelessWidget {
                     const SizedBox(width: 4),
                     _TimelineBadge(
                       label: block.badgeLabel!,
-                      tint: block.badgeColor ?? const Color(0xFF46B4FF),
+                      tint: block.badgeColor ?? _myDailyDefaultBadgeColor,
                     ),
                   ],
                 ],
@@ -1544,7 +1540,7 @@ class _MyDailyTimelineConnectorPainter extends CustomPainter {
         final paint = Paint()
           ..color = current.strokeColor.withValues(alpha: opacity)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5;
+          ..strokeWidth = _myDailyTimelineConnectorStrokeWidth;
         final connectorX =
             math.max(current.left + current.width, next.left + next.width) +
             _myDailyTimelineConnectorInset;
@@ -1555,12 +1551,13 @@ class _MyDailyTimelineConnectorPainter extends CustomPainter {
           ..lineTo(connectorX, currentCenterY)
           ..lineTo(connectorX, nextCenterY)
           ..lineTo(next.left + next.width, nextCenterY);
-        canvas.drawPath(path, paint);
-        canvas.drawCircle(
-          Offset(next.left + next.width, nextCenterY),
-          3,
-          Paint()..color = current.badgeColor ?? current.strokeColor,
-        );
+        canvas
+          ..drawPath(path, paint)
+          ..drawCircle(
+            Offset(next.left + next.width, nextCenterY),
+            _myDailyTimelineConnectorEndpointRadius,
+            Paint()..color = current.badgeColor ?? current.strokeColor,
+          );
       }
     }
   }
@@ -1651,6 +1648,7 @@ class _TimelineInlineChipSpec {
   const _TimelineInlineChipSpec({
     required this.color,
     required this.width,
+    // ignore: unused_element_parameter
     this.label,
   });
 
@@ -1728,15 +1726,18 @@ List<_MyDailyTimelineSectionSpec> _buildTimelineSections(BuildContext context) {
 }
 
 List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
-  const holidayFill = Color.fromRGBO(149, 0, 255, 0.16);
-  const holidayStroke = Color.fromRGBO(149, 0, 255, 0.4);
-  const holidayGlow = Color.fromRGBO(149, 0, 255, 0.55);
-  const tasksFill = Color.fromRGBO(0, 219, 253, 0.16);
-  const tasksStroke = Color.fromRGBO(74, 182, 232, 0.8);
-  const tasksGlow = Color.fromRGBO(0, 219, 253, 0.35);
-  const hikingFill = Color.fromRGBO(255, 204, 0, 0.16);
-  const hikingStroke = Color.fromRGBO(255, 204, 0, 0.4);
-  const hikingGlow = Color.fromRGBO(255, 204, 0, 0.55);
+  final holidayBase = _colorForCategory(_holidayCategoryId);
+  final holidayFill = holidayBase.withValues(alpha: 0.16);
+  final holidayStroke = holidayBase.withValues(alpha: 0.4);
+  final holidayGlow = holidayBase.withValues(alpha: 0.55);
+  final tasksBase = _colorForCategory(_tasksCategoryId);
+  final tasksFill = tasksBase.withValues(alpha: 0.16);
+  final tasksStroke = tasksBase.withValues(alpha: 0.8);
+  final tasksGlow = tasksBase.withValues(alpha: 0.35);
+  final hikingBase = _colorForCategory(_hikingCategoryId);
+  final hikingFill = hikingBase.withValues(alpha: 0.16);
+  final hikingStroke = hikingBase.withValues(alpha: 0.4);
+  final hikingGlow = hikingBase.withValues(alpha: 0.55);
   const neutralFill = Color(0xFF2C2C2C);
   const neutralStroke = Color.fromRGBO(255, 255, 255, 0.12);
 
@@ -1752,9 +1753,15 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       height: 87,
       title: context.messages.designSystemMyDailySkiWithMattTitle,
       badgeLabel: 'P1',
-      badgeColor: const Color(0xFF46B4FF),
+      badgeColor: _myDailyDefaultBadgeColor,
       trailingLabel: '1h 35m',
-      subtitle: '8:05-9:40am',
+      subtitle: _formatLocalizedPreviewTimeRange(
+        context,
+        startHour: 8,
+        startMinute: 5,
+        endHour: 9,
+        endMinute: 40,
+      ),
       metaLabel: '4 sessions',
       fillColor: holidayFill,
       strokeColor: holidayStroke,
@@ -1795,7 +1802,7 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       fillColor: tasksFill,
       strokeColor: tasksStroke,
       glowColor: tasksGlow,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       inlineChip: const _TimelineInlineChipSpec(
         color: Color(0xFF2094FF),
         width: 28,
@@ -1848,7 +1855,13 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       top: 439,
       width: 136,
       height: 53,
-      title: '3:00-4:00pm',
+      title: _formatLocalizedPreviewTimeRange(
+        context,
+        startHour: 15,
+        startMinute: 0,
+        endHour: 16,
+        endMinute: 0,
+      ),
       trailingLabel: '1h',
       metaLabel: '3 of 3',
       fillColor: const Color.fromRGBO(52, 68, 65, 0.72),
@@ -1866,7 +1879,13 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       top: 439,
       width: 136,
       height: 53,
-      title: '3:00-4:00pm',
+      title: _formatLocalizedPreviewTimeRange(
+        context,
+        startHour: 15,
+        startMinute: 0,
+        endHour: 16,
+        endMinute: 0,
+      ),
       trailingLabel: '1h',
       metaLabel: '4 of 4',
       fillColor: holidayFill,
@@ -1889,7 +1908,13 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       badgeLabel: 'P2',
       badgeColor: const Color(0xFF2094FF),
       trailingLabel: '1h',
-      subtitle: '4:30-5:30pm',
+      subtitle: _formatLocalizedPreviewTimeRange(
+        context,
+        startHour: 16,
+        startMinute: 30,
+        endHour: 17,
+        endMinute: 30,
+      ),
       fillColor: hikingFill,
       strokeColor: hikingStroke,
       glowColor: hikingGlow,
@@ -1908,7 +1933,13 @@ List<_MyDailyTimelineBlockSpec> _buildTimelineBlockSpecs(BuildContext context) {
       badgeLabel: 'P0',
       badgeColor: const Color(0xFFF06A74),
       trailingLabel: '1h',
-      subtitle: '5:40-6:40pm',
+      subtitle: _formatLocalizedPreviewTimeRange(
+        context,
+        startHour: 17,
+        startMinute: 40,
+        endHour: 18,
+        endMinute: 40,
+      ),
       fillColor: neutralFill,
       strokeColor: neutralStroke,
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
@@ -1939,7 +1970,7 @@ class _NowIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
           ),
           child: Text(
-            DateFormat('H:mm').format(now),
+            _formatLocalizedPreviewTime(context, now),
             style: tokens.typography.styles.others.overline.copyWith(
               color: Colors.white,
             ),
@@ -2688,13 +2719,62 @@ MyDailyTimelineBlockDensity myDailyTimelineBlockDensity({
   return MyDailyTimelineBlockDensity.expanded;
 }
 
-String _formatTimelineHour(int hour) {
-  final displayHour = hour % 24;
-  final normalized = displayHour == 0
-      ? 12
-      : (displayHour > 12 ? displayHour - 12 : displayHour);
-  final suffix = displayHour < 12 ? 'am' : 'pm';
-  return '$normalized$suffix';
+String _formatTimelineHour(BuildContext context, int hour) {
+  return _formatLocalizedPreviewTime(
+    context,
+    _previewClock(hour, 0),
+    includeMinutes: false,
+  );
+}
+
+DateTime _previewClock(int hour, int minute) {
+  final dayOffset = hour >= 24 ? 1 : 0;
+  return DateTime(2023, 10, 17 + dayOffset, hour % 24, minute);
+}
+
+String _formatLocalizedPreviewTime(
+  BuildContext context,
+  DateTime time, {
+  bool includeMinutes = true,
+}) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final pattern = _uses24HourClock(context)
+      ? (includeMinutes ? 'H:mm' : 'H')
+      : (includeMinutes ? 'h:mma' : 'ha');
+
+  return DateFormat(
+    pattern,
+    locale,
+  ).format(time).toLowerCase().replaceAll(RegExp(r'\s+'), '');
+}
+
+String _formatLocalizedPreviewTimeRange(
+  BuildContext context, {
+  required int startHour,
+  required int startMinute,
+  required int endHour,
+  required int endMinute,
+}) {
+  final start = _formatLocalizedPreviewTime(
+    context,
+    _previewClock(startHour, startMinute),
+  );
+  final end = _formatLocalizedPreviewTime(
+    context,
+    _previewClock(endHour, endMinute),
+  );
+  return '$start-$end';
+}
+
+bool _uses24HourClock(BuildContext context) {
+  final mediaQuery = MediaQuery.maybeOf(context);
+  if (mediaQuery?.alwaysUse24HourFormat ?? false) {
+    return true;
+  }
+
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final pattern = DateFormat.jm(locale).pattern?.toLowerCase() ?? '';
+  return !pattern.contains('a');
 }
 
 String _labelForCategory(BuildContext context, String categoryId) {

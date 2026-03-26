@@ -8,7 +8,6 @@ import 'package:lotti/features/design_system/components/branding/design_system_b
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,9 +29,7 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final bg = colorFromCssHex(colorHex);
-    final foreground = bg.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white;
+    final foreground = contrastingTextColor(bg);
     return Container(
       height: 20,
       padding: EdgeInsets.symmetric(
@@ -805,12 +802,6 @@ class _TaskShowcaseRoundAction extends StatelessWidget {
     );
   }
 }
-
-/// Re-export shared mobile showcase chrome widgets for convenience.
-typedef TaskShowcaseMobileShell = DesignSystemShowcaseMobileShell;
-typedef TaskShowcaseMobileStatusBar = DesignSystemShowcaseMobileStatusBar;
-typedef TaskShowcaseMobileHomeIndicator =
-    DesignSystemShowcaseMobileHomeIndicator;
 
 class TaskShowcaseProfileButton extends StatelessWidget {
   const TaskShowcaseProfileButton({super.key});

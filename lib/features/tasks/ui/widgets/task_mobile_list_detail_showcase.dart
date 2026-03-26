@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -119,13 +120,13 @@ class _TaskMobileListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaskShowcaseMobileShell(
+    return DesignSystemShowcaseMobileShell(
       child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const TaskShowcaseMobileStatusBar(),
+              const DesignSystemShowcaseMobileStatusBar(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Row(
@@ -252,12 +253,12 @@ class _TaskMobileDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaskShowcaseMobileShell(
+    return DesignSystemShowcaseMobileShell(
       child: Stack(
         children: [
           Column(
             children: [
-              const TaskShowcaseMobileStatusBar(),
+              const DesignSystemShowcaseMobileStatusBar(),
               Expanded(
                 child: DesignSystemScrollbar(
                   child: SingleChildScrollView(
@@ -270,7 +271,7 @@ class _TaskMobileDetailScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: context.designTokens.spacing.step3),
-              const Center(child: TaskShowcaseMobileHomeIndicator()),
+              const Center(child: DesignSystemShowcaseMobileHomeIndicator()),
               SizedBox(height: context.designTokens.spacing.step4),
             ],
           ),
@@ -339,7 +340,7 @@ class _TaskMobileBottomNavigation extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        const TaskShowcaseMobileHomeIndicator(),
+        const DesignSystemShowcaseMobileHomeIndicator(),
         const SizedBox(height: 12),
       ],
     );

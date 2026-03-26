@@ -96,7 +96,14 @@ void main() {
       expect(find.text('Tap to expand'), findsOneWidget);
       expect(find.text('Go skiing with Matt'), findsOneWidget);
       expect(find.text('Lunch break'), findsOneWidget);
-      expect(find.text('3:00-4:00pm'), findsNWidgets(2));
+      expect(
+        find.byKey(const Key('my-daily-block-layout-focus-left-regular')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('my-daily-block-layout-focus-right-regular')),
+        findsOneWidget,
+      );
       expect(find.text('Hiking with Daniella'), findsOneWidget);
       expect(find.text('Meeting with Dammy'), findsOneWidget);
       expect(find.byKey(const Key('my-daily-filter-holiday')), findsNothing);

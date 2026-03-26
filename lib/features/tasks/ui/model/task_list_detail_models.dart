@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-const defaultTaskCategoryColorHex = '#4AB6E8';
-
 enum TaskShowcaseDetailSection {
   timer,
   todo,
