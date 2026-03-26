@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
+import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 
 TaskListData buildTaskListDetailMockData() {
   final work = _category(
@@ -404,47 +405,59 @@ DesignSystemTaskFilterState buildTaskShowcaseFilterState() {
     sortLabel: 'Sort by',
     sortOptions: const [
       DesignSystemTaskFilterOption(
-        id: 'due-date',
+        id: TaskSortIds.dueDateSort,
         label: 'Due Date',
       ),
       DesignSystemTaskFilterOption(
-        id: 'created-date',
+        id: TaskSortIds.createdDateSort,
         label: 'Created',
       ),
       DesignSystemTaskFilterOption(
-        id: 'priority',
+        id: TaskSortIds.prioritySort,
         label: 'Priority',
       ),
     ],
-    selectedSortId: 'due-date',
+    selectedSortId: TaskSortIds.dueDateSort,
     statusField: const DesignSystemTaskFilterFieldState(
       label: 'Status',
       options: [
-        DesignSystemTaskFilterOption(id: 'open', label: 'Open'),
-        DesignSystemTaskFilterOption(id: 'in-progress', label: 'In Progress'),
-        DesignSystemTaskFilterOption(id: 'blocked', label: 'Blocked'),
-        DesignSystemTaskFilterOption(id: 'on-hold', label: 'On Hold'),
+        DesignSystemTaskFilterOption(
+          id: TaskStatusFilterIds.open,
+          label: 'Open',
+        ),
+        DesignSystemTaskFilterOption(
+          id: TaskStatusFilterIds.inProgress,
+          label: 'In Progress',
+        ),
+        DesignSystemTaskFilterOption(
+          id: TaskStatusFilterIds.blocked,
+          label: 'Blocked',
+        ),
+        DesignSystemTaskFilterOption(
+          id: TaskStatusFilterIds.onHold,
+          label: 'On Hold',
+        ),
       ],
     ),
     priorityLabel: 'Priority',
     priorityOptions: const [
       DesignSystemTaskFilterOption(
-        id: 'p0',
+        id: TaskPriorityFilterIds.p0,
         label: 'P0',
         glyph: DesignSystemTaskFilterGlyph.priorityP0,
       ),
       DesignSystemTaskFilterOption(
-        id: 'p1',
+        id: TaskPriorityFilterIds.p1,
         label: 'P1',
         glyph: DesignSystemTaskFilterGlyph.priorityP1,
       ),
       DesignSystemTaskFilterOption(
-        id: 'p2',
+        id: TaskPriorityFilterIds.p2,
         label: 'P2',
         glyph: DesignSystemTaskFilterGlyph.priorityP2,
       ),
       DesignSystemTaskFilterOption(
-        id: 'p3',
+        id: TaskPriorityFilterIds.p3,
         label: 'P3',
         glyph: DesignSystemTaskFilterGlyph.priorityP3,
       ),

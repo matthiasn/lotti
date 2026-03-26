@@ -2,6 +2,32 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 
+/// Sort option IDs used in [DesignSystemTaskFilterState.selectedSortId].
+abstract final class TaskSortIds {
+  static const dueDateSort = 'due-date';
+  static const createdDateSort = 'created-date';
+  static const prioritySort = 'priority';
+}
+
+/// Status filter IDs used in [DesignSystemTaskFilterFieldState.selectedIds].
+abstract final class TaskStatusFilterIds {
+  static const open = 'open';
+  static const inProgress = 'in-progress';
+  static const groomed = 'groomed';
+  static const blocked = 'blocked';
+  static const onHold = 'on-hold';
+  static const done = 'done';
+  static const rejected = 'rejected';
+}
+
+/// Priority filter IDs used in [DesignSystemTaskFilterState.selectedPriorityId].
+abstract final class TaskPriorityFilterIds {
+  static const p0 = 'p0';
+  static const p1 = 'p1';
+  static const p2 = 'p2';
+  static const p3 = 'p3';
+}
+
 class TaskListDetailState {
   TaskListDetailState({
     required this.data,
@@ -74,14 +100,14 @@ class TaskListDetailState {
           }
 
           final sortId = filterState.selectedSortId;
-          if (sortId == 'priority') {
+          if (sortId == TaskSortIds.prioritySort) {
             final priorityCompare = left.task.data.priority.rank.compareTo(
               right.task.data.priority.rank,
             );
             if (priorityCompare != 0) {
               return priorityCompare;
             }
-          } else if (sortId == 'created-date') {
+          } else if (sortId == TaskSortIds.createdDateSort) {
             final createdCompare = right.task.meta.createdAt.compareTo(
               left.task.meta.createdAt,
             );
@@ -147,21 +173,21 @@ class TaskListDetailState {
 
 String _statusFilterId(TaskStatus status) {
   return switch (status) {
-    TaskOpen() => 'open',
-    TaskInProgress() => 'in-progress',
-    TaskGroomed() => 'groomed',
-    TaskBlocked() => 'blocked',
-    TaskOnHold() => 'on-hold',
-    TaskDone() => 'done',
-    TaskRejected() => 'rejected',
+    TaskOpen() => TaskStatusFilterIds.open,
+    TaskInProgress() => TaskStatusFilterIds.inProgress,
+    TaskGroomed() => TaskStatusFilterIds.groomed,
+    TaskBlocked() => TaskStatusFilterIds.blocked,
+    TaskOnHold() => TaskStatusFilterIds.onHold,
+    TaskDone() => TaskStatusFilterIds.done,
+    TaskRejected() => TaskStatusFilterIds.rejected,
   };
 }
 
 String _priorityFilterId(TaskPriority priority) {
   return switch (priority) {
-    TaskPriority.p0Urgent => 'p0',
-    TaskPriority.p1High => 'p1',
-    TaskPriority.p2Medium => 'p2',
-    TaskPriority.p3Low => 'p3',
+    TaskPriority.p0Urgent => TaskPriorityFilterIds.p0,
+    TaskPriority.p1High => TaskPriorityFilterIds.p1,
+    TaskPriority.p2Medium => TaskPriorityFilterIds.p2,
+    TaskPriority.p3Low => TaskPriorityFilterIds.p3,
   };
 }

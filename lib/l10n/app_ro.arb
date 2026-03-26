@@ -1155,6 +1155,51 @@
   "designSystemNavigationInsightsLabel": "Perspective",
   "designSystemNavigationLottiTasksLabel": "Sarcini Lotti",
   "designSystemNavigationMyDailyLabel": "Ziua mea",
+  "designSystemMyDailyDeepWorkTitle": "Muncă concentrată",
+  "designSystemMyDailyDurationHoursCompact": "{count}h",
+  "@designSystemMyDailyDurationHoursCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationHoursMinutesCompact": "{hours}h {minutes}m",
+  "@designSystemMyDailyDurationHoursMinutesCompact": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyDurationMinutesCompact": "{count}m",
+  "@designSystemMyDailyDurationMinutesCompact": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "designSystemMyDailyEditPlanLabel": "Editează planul",
+  "designSystemMyDailyGreetingMorning": "Bună dimineața.",
+  "designSystemMyDailyGreetingWithName": "Bună, {name}",
+  "@designSystemMyDailyGreetingWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemMyDailyHikeWithDanielaTitle": "Drumeție cu Daniela",
+  "designSystemMyDailyLunchBreakTitle": "Pauză de prânz",
+  "designSystemMyDailyMeetingWithDannyTitle": "Întâlnire cu Danny",
+  "designSystemMyDailyMeetingsLabel": "Întâlniri",
+  "designSystemMyDailyProfileActionLabel": "Profil",
+  "designSystemMyDailySkiWithMattTitle": "Mergi la schi cu Matt",
+  "designSystemMyDailyTapToExpandLabel": "Apasă pentru extindere",
   "designSystemNavigationNewLabel": "Nou",
   "designSystemNavigationPlaceholderLabel": "Substituent",
   "designSystemNavigationSidebarSectionTitle": "Variante pentru bara laterală",

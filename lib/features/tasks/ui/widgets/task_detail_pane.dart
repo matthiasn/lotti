@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/color.dart';
 
 class TaskDetailPane extends StatelessWidget {
   const TaskDetailPane({
@@ -225,7 +226,7 @@ class _TaskDetailHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = record.category;
-    final categoryColor = category.color ?? defaultTaskCategoryColorHex;
+    final categoryColor = category.color ?? defaultCategoryColorHex;
     final due = record.task.data.due;
 
     final metadata = Wrap(

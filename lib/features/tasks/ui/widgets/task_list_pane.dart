@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/color.dart';
 
 class TaskListPane extends StatelessWidget {
   const TaskListPane({
@@ -292,7 +293,7 @@ class _TaskListRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final category = record.category;
-    final categoryColor = category.color ?? defaultTaskCategoryColorHex;
+    final categoryColor = category.color ?? defaultCategoryColorHex;
 
     return DesignSystemListItem(
       titleContent: Text(

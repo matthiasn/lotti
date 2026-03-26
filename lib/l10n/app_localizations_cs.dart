@@ -2681,6 +2681,59 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemNavigationMyDailyLabel => 'Můj den';
 
   @override
+  String get designSystemMyDailyDeepWorkTitle => 'Hluboká práce';
+
+  @override
+  String designSystemMyDailyDurationHoursCompact(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String designSystemMyDailyDurationHoursMinutesCompact(
+    int hours,
+    int minutes,
+  ) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
+  String designSystemMyDailyDurationMinutesCompact(int count) {
+    return '${count}m';
+  }
+
+  @override
+  String get designSystemMyDailyEditPlanLabel => 'Upravit plán';
+
+  @override
+  String get designSystemMyDailyGreetingMorning => 'Dobré ráno.';
+
+  @override
+  String designSystemMyDailyGreetingWithName(String name) {
+    return 'Ahoj, $name';
+  }
+
+  @override
+  String get designSystemMyDailyHikeWithDanielaTitle => 'Túra s Danielou';
+
+  @override
+  String get designSystemMyDailyLunchBreakTitle => 'Obědová pauza';
+
+  @override
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dannym';
+
+  @override
+  String get designSystemMyDailyMeetingsLabel => 'Schůzky';
+
+  @override
+  String get designSystemMyDailyProfileActionLabel => 'Profil';
+
+  @override
+  String get designSystemMyDailySkiWithMattTitle => 'Jet lyžovat s Mattem';
+
+  @override
+  String get designSystemMyDailyTapToExpandLabel => 'Klepni pro rozbalení';
+
+  @override
   String get designSystemNavigationNewLabel => 'Nové';
 
   @override

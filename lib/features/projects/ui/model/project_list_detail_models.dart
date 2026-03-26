@@ -1,9 +1,6 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-/// Default CSS hex colour used when a category has no colour assigned.
-const defaultCategoryColorHex = '#4AB6E8';
-
 /// Presentation model for a project record displayed in the project
 /// list/detail layout.
 class ProjectRecord {
