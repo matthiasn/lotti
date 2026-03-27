@@ -382,7 +382,7 @@ void main() {
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
     });
 
-    testWidgets('sets pageIndexNotifier to 2 on tap', (tester) async {
+    testWidgets('sets pageIndexNotifier to 1 on tap', (tester) async {
       final entry = buildAudioEntry();
       final pageIndexNotifier = ValueNotifier(0);
 
@@ -400,7 +400,7 @@ void main() {
       await tester.tap(find.byType(ActionMenuListItem));
       await tester.pump();
 
-      expect(pageIndexNotifier.value, equals(2));
+      expect(pageIndexNotifier.value, equals(1));
     });
   });
 

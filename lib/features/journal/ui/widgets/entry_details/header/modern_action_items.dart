@@ -236,7 +236,7 @@ class ModernSpeechItem extends ConsumerWidget {
     return ActionMenuListItem(
       icon: Icons.transcribe_rounded,
       title: context.messages.speechModalTitle,
-      onTap: () => pageIndexNotifier.value = 2,
+      onTap: () => pageIndexNotifier.value = 1,
     );
   }
 }

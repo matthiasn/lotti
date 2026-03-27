@@ -75,11 +75,11 @@ void main() {
       expect(find.text('English'), findsOneWidget);
     });
 
-    testWidgets('shows Deutsch when de is selected', (tester) async {
+    testWidgets('shows German when de is selected', (tester) async {
       await tester.pumpWidget(buildSubject(language: 'de'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Deutsch'), findsOneWidget);
+      expect(find.text('German'), findsOneWidget);
     });
 
     testWidgets('calls setLanguage when an item is tapped', (tester) async {

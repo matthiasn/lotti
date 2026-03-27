@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Language codes supported by the speech dropdown.
+/// The empty string represents automatic language detection.
+const _languageCodes = ['', 'en', 'de'];
 
 class LanguageDropdown extends ConsumerWidget {
   const LanguageDropdown({
@@ -25,17 +30,17 @@ class LanguageDropdown extends ConsumerWidget {
     }
 
     final currentLanguage = item.data.language ?? '';
-    final autoLabel = context.messages.speechModalLanguageAuto;
+    final messages = context.messages;
 
     return DesignSystemDropdown(
-      label: context.messages.speechModalSelectLanguage,
-      inputLabel: _labelForLanguage(currentLanguage, autoLabel: autoLabel),
+      label: messages.speechModalSelectLanguage,
+      inputLabel: _labelForLanguage(currentLanguage, messages),
       items: [
-        for (final lang in _languages)
+        for (final code in _languageCodes)
           DesignSystemDropdownItem(
-            id: lang.id,
-            label: lang.id.isEmpty ? autoLabel : lang.label,
-            selected: currentLanguage == lang.id,
+            id: code,
+            label: _labelForLanguage(code, messages),
+            selected: currentLanguage == code,
           ),
       ],
       onItemPressed: (item) {
@@ -43,22 +48,12 @@ class LanguageDropdown extends ConsumerWidget {
       },
     );
   }
-
-  static const List<({String id, String label})> _languages = [
-    (id: '', label: 'auto'),
-    (id: 'en', label: 'English'),
-    (id: 'de', label: 'Deutsch'),
-  ];
-
-  static String _labelForLanguage(
-    String language, {
-    required String autoLabel,
-  }) {
-    for (final lang in _languages) {
-      if (lang.id == language) {
-        return lang.id.isEmpty ? autoLabel : lang.label;
-      }
-    }
-    return autoLabel;
-  }
 }
+
+String _labelForLanguage(String language, AppLocalizations messages) =>
+    switch (language) {
+      '' => messages.speechModalLanguageAuto,
+      'en' => messages.taskLanguageEnglish,
+      'de' => messages.taskLanguageGerman,
+      _ => language,
+    };
