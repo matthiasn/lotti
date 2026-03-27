@@ -5128,6 +5128,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get speechModalAddTranscription => 'Transkription hinzufügen';
 
   @override
+  String get speechModalLanguageAuto => 'automatisch';
+
+  @override
   String get speechModalSelectLanguage => 'Sprache auswählen';
 
   @override

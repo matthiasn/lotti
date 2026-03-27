@@ -18,6 +18,7 @@ class ToggleCallTracker {
   final List<String> togglePrivateCalls = [];
   final List<String> toggleFlaggedCalls = [];
   final List<String> toggleMapVisibleCalls = [];
+  final List<String> setLanguageCalls = [];
 }
 
 /// Fake EntryController that returns a fixed entity state.
@@ -68,6 +69,11 @@ class FakeEntryController extends EntryController {
   @override
   void toggleMapVisible() {
     _tracker?.toggleMapVisibleCalls.add(_entity.id);
+  }
+
+  @override
+  Future<void> setLanguage(String language) async {
+    _tracker?.setLanguageCalls.add(language);
   }
 }
 

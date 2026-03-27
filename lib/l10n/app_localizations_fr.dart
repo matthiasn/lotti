@@ -5231,6 +5231,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get speechModalAddTranscription => 'Ajouter une transcription';
 
   @override
+  String get speechModalLanguageAuto => 'automatique';
+
+  @override
   String get speechModalSelectLanguage => 'Sélectionner la langue';
 
   @override

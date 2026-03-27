@@ -1904,6 +1904,7 @@
   "speechDictionarySectionTitle": "Rozpoznávání řeči",
   "speechDictionaryWarning": "Velký slovník ({count} výrazů) může zvýšit náklady na API",
   "speechModalAddTranscription": "Přidat přepis",
+  "speechModalLanguageAuto": "automaticky",
   "speechModalSelectLanguage": "Vyberte jazyk",
   "speechModalTitle": "Rozpoznávání řeči",
   "speechModalTranscriptionProgress": "Pokrok přepisu",

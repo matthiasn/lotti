@@ -2132,6 +2132,7 @@
   "speechDictionarySectionTitle": "Spracherkennung",
   "speechDictionaryWarning": "Großes Wörterbuch ({count} Begriffe) kann API-Kosten erhöhen",
   "speechModalAddTranscription": "Transkription hinzufügen",
+  "speechModalLanguageAuto": "automatisch",
   "speechModalSelectLanguage": "Sprache auswählen",
   "speechModalTitle": "Spracherkennung",
   "speechModalTranscriptionProgress": "Transkriptionsfortschritt",

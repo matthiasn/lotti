@@ -5057,6 +5057,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speechModalAddTranscription => 'Add Transcription';
 
   @override
+  String get speechModalLanguageAuto => 'auto';
+
+  @override
   String get speechModalSelectLanguage => 'Select Language';
 
   @override

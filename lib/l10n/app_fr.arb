@@ -2132,6 +2132,7 @@
   "speechDictionarySectionTitle": "Reconnaissance vocale",
   "speechDictionaryWarning": "Un grand dictionnaire ({count} termes) peut augmenter les coûts API",
   "speechModalAddTranscription": "Ajouter une transcription",
+  "speechModalLanguageAuto": "automatique",
   "speechModalSelectLanguage": "Sélectionner la langue",
   "speechModalTitle": "Reconnaissance vocale",
   "speechModalTranscriptionProgress": "Progression de la transcription",

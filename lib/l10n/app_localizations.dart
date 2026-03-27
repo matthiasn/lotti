@@ -9094,6 +9094,12 @@ abstract class AppLocalizations {
   /// **'Add Transcription'**
   String get speechModalAddTranscription;
 
+  /// No description provided for @speechModalLanguageAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'auto'**
+  String get speechModalLanguageAuto;
+
   /// No description provided for @speechModalSelectLanguage.
   ///
   /// In en, this message translates to:

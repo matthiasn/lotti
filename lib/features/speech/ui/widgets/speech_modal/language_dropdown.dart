@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 
 class LanguageDropdown extends ConsumerWidget {
   const LanguageDropdown({
@@ -24,35 +24,41 @@ class LanguageDropdown extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(context.messages.speechModalSelectLanguage),
-        const SizedBox(width: 10),
-        DropdownButton(
-          value: item.data.language,
-          iconEnabledColor: context.colorScheme.outline,
-          items: const [
-            DropdownMenuItem(
-              value: '',
-              child: Text('auto'),
-            ),
-            DropdownMenuItem(
-              value: 'en',
-              child: Text('English'),
-            ),
-            DropdownMenuItem(
-              value: 'de',
-              child: Text('Deutsch'),
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              notifier.setLanguage(value);
-            }
-          },
-        ),
+    final currentLanguage = item.data.language ?? '';
+    final autoLabel = context.messages.speechModalLanguageAuto;
+
+    return DesignSystemDropdown(
+      label: context.messages.speechModalSelectLanguage,
+      inputLabel: _labelForLanguage(currentLanguage, autoLabel: autoLabel),
+      items: [
+        for (final lang in _languages)
+          DesignSystemDropdownItem(
+            id: lang.id,
+            label: lang.id.isEmpty ? autoLabel : lang.label,
+            selected: currentLanguage == lang.id,
+          ),
       ],
+      onItemPressed: (item) {
+        notifier.setLanguage(item.id);
+      },
     );
+  }
+
+  static const List<({String id, String label})> _languages = [
+    (id: '', label: 'auto'),
+    (id: 'en', label: 'English'),
+    (id: 'de', label: 'Deutsch'),
+  ];
+
+  static String _labelForLanguage(
+    String language, {
+    required String autoLabel,
+  }) {
+    for (final lang in _languages) {
+      if (lang.id == language) {
+        return lang.id.isEmpty ? autoLabel : lang.label;
+      }
+    }
+    return autoLabel;
   }
 }

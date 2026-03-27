@@ -5125,6 +5125,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechModalAddTranscription => 'Přidat přepis';
 
   @override
+  String get speechModalLanguageAuto => 'automaticky';
+
+  @override
   String get speechModalSelectLanguage => 'Vyberte jazyk';
 
   @override

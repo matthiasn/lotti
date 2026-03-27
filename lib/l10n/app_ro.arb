@@ -2132,6 +2132,7 @@
   "speechDictionarySectionTitle": "Recunoaștere vocală",
   "speechDictionaryWarning": "Un dicționar mare ({count} termeni) poate crește costurile API",
   "speechModalAddTranscription": "Adăugați transcriere",
+  "speechModalLanguageAuto": "automat",
   "speechModalSelectLanguage": "Selectați limba",
   "speechModalTitle": "Recunoaștere vocală",
   "speechModalTranscriptionProgress": "Progresul transcrierii",

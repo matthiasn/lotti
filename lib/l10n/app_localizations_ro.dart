@@ -5153,6 +5153,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get speechModalAddTranscription => 'Adăugați transcriere';
 
   @override
+  String get speechModalLanguageAuto => 'automat';
+
+  @override
   String get speechModalSelectLanguage => 'Selectați limba';
 
   @override

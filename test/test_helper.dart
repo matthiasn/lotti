@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
-import 'widget_test_utils.dart';
+import 'widget_test_utils.dart' show ensureDsTokens, phoneMediaQueryData;
 
 class WidgetTestBench extends StatelessWidget {
   const WidgetTestBench({
@@ -29,7 +29,7 @@ class WidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: theme,
+          theme: ensureDsTokens(theme),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -70,7 +70,7 @@ class DarkWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: ThemeData.dark(),
+          theme: ensureDsTokens(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -114,6 +114,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
+          theme: ensureDsTokens(null),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -157,7 +158,7 @@ class DarkRiverpodWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: ThemeData.dark(),
+          theme: ensureDsTokens(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

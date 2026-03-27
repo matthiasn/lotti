@@ -2303,6 +2303,7 @@
   "speechDictionarySectionTitle": "Speech Recognition",
   "speechDictionaryWarning": "Large dictionary ({count} terms) may increase API costs",
   "speechModalAddTranscription": "Add Transcription",
+  "speechModalLanguageAuto": "auto",
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
   "speechModalTranscriptionProgress": "Transcription Progress",
