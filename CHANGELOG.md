@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.933] - 2026-03-27
 ### Changed
 - Projects tab: the new top-level Projects tab now ships behind the
-  `enableProjects` feature flag with the intended design-system mobile layout,
-  grouped category sections, lazy list rendering, and a disabled search field
-  reserved for the later vector-search follow-up.
+  `enableProjects` feature flag with the intended design-system mobile layout.
+  The live tab and the Widgetbook mobile reference now mount the same
+  sliver-driven header, grouped category sections, and floating create action,
+  while the search field stays disabled pending the later vector-search
+  follow-up.
 - Projects tab reactivity: grouped project snapshots now refresh automatically
   when relevant project, task, category, or private-visibility updates arrive,
   so status changes such as `Active` to `Completed` are reflected in the UI

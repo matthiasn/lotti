@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 
@@ -17,6 +19,30 @@ void main() {
         ),
       ),
       mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
+    );
+  }
+
+  ProjectCategoryGroup makeGroupedProjectsSection() {
+    final workCategory = makeTestProjectListData().categories.first;
+    return ProjectCategoryGroup(
+      categoryId: workCategory.id,
+      category: workCategory,
+      projects: [
+        makeTestProjectListItemData(
+          project: makeTestProject(
+            id: 'p1',
+            title: 'Project Alpha',
+            categoryId: workCategory.id,
+          ),
+        ),
+        makeTestProjectListItemData(
+          project: makeTestProject(
+            id: 'p2',
+            title: 'Project Beta',
+            categoryId: workCategory.id,
+          ),
+        ),
+      ],
     );
   }
 
@@ -69,6 +95,81 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'hides the divider for hovered rows without changing section height',
+      (tester) async {
+        final group = makeGroupedProjectsSection();
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: group,
+              selectedProjectId: null,
+              onProjectSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final sectionFinder = find.byType(ProjectGroupSection);
+        final initialHeight = tester.getSize(sectionFinder).height;
+
+        expect(
+          find.byKey(const ValueKey('project-group-divider-0')),
+          findsOneWidget,
+        );
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer();
+        await gesture.moveTo(
+          tester.getCenter(
+            find.byKey(const ValueKey('project-overview-row-p1')),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('project-group-divider-0')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('project-group-divider-slot-0')),
+          findsOneWidget,
+        );
+        expect(tester.getSize(sectionFinder).height, initialHeight);
+      },
+    );
+
+    testWidgets(
+      'hides the divider for selected rows without changing section height',
+      (tester) async {
+        final group = makeGroupedProjectsSection();
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: group,
+              selectedProjectId: 'p1',
+              onProjectSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const ValueKey('project-group-divider-0')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('project-group-divider-slot-0')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('ProjectRow', () {
@@ -80,7 +181,9 @@ void main() {
           ProjectRow(
             item: item,
             selected: false,
-            showDivider: false,
+            topOverlap: 0,
+            bottomOverlap: 0,
+            onHoverChanged: (_) {},
             onTap: () {},
           ),
         ),
@@ -106,7 +209,9 @@ void main() {
           ProjectRow(
             item: item,
             selected: false,
-            showDivider: false,
+            topOverlap: 0,
+            bottomOverlap: 0,
+            onHoverChanged: (_) {},
             onTap: () => tapped = true,
           ),
         ),

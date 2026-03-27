@@ -38,10 +38,15 @@ class DesignSystemScrollbar extends StatelessWidget {
         mainAxisMargin: _kTrackPadding,
         minThumbLength: spec.minThumbLength,
       ),
-      child: Scrollbar(
-        controller: controller,
-        thumbVisibility: thumbVisibility,
-        child: child,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          scrollbars: false,
+        ),
+        child: Scrollbar(
+          controller: controller,
+          thumbVisibility: thumbVisibility,
+          child: child,
+        ),
       ),
     );
   }

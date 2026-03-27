@@ -120,6 +120,13 @@
 
 ## Implementation discipline
 
+- **Design-system tokens are mandatory.** For colors, spacing, radii, typography, elevation, and other visual styling values, always use the exported design-system tokens or existing design-system abstractions first.
+- **Do not invent ad hoc visual values by default.** Before adding a hard-coded color, spacing value, radius, opacity, or a one-off semantic alias for a visual token, first check the design-system token export and existing design-system components/palettes.
+- **Ask before introducing new visual tokens or hard-coded values.** If no suitable design-system token exists, stop and ask for permission before creating an ad hoc fallback, local palette entry, or other non-token visual value.
+- **Prefer fixing the token source over patching the widget.** If a Figma export flattened or obscured a semantic token name, prefer tracing it back to the exported token set or improving the import/export path instead of hard-coding a widget-level substitute.
+- **Check the token name in the actual Figma node inspect panel first.** Even when the Variables API is incomplete or unavailable, the selected node often shows the bound token name directly under Colors, e.g. `background/02`.
+- **Know the naming path across tools.** A Figma token such as `background/02` appears in `assets/design_system/tokens.json` as `color.background.02`, and in Dart as `tokens.colors.background.level02`. Treat these as the same token with normalized naming, not as different concepts.
+- **Hints for future agents:** When verifying a visual token, inspect the selected node in Figma Desktop Bridge first, then confirm the matching entry in `assets/design_system/tokens.json`, then map it to the generated token in `lib/features/design_system/theme/generated/design_tokens.g.dart`. If the Figma inspect panel already shows the token name, do not assume the name is unavailable just because the Variables API call returned empty data.
 - Always ensure the analyzer has no complaints and everything compiles. Also run the formatter
   frequently.
 - Prefer running commands via the dart-mcp server.

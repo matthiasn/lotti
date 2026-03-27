@@ -452,7 +452,10 @@ void main() {
         final result = await IpGeolocationService.getLocationFromIp(
           httpClient: mockHttpClient,
         );
-        expect(result?.utcOffset, DateTime(2024, 3, 15).timeZoneOffset.inMinutes);
+        expect(
+          result?.utcOffset,
+          DateTime(2024, 3, 15).timeZoneOffset.inMinutes,
+        );
 
         verify(
           () => mockLoggingService.captureException(

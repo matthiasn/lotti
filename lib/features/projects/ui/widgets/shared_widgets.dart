@@ -69,11 +69,15 @@ class ProjectStatusPill extends StatelessWidget {
     final tokens = context.designTokens;
     final statusColor = showcaseProjectStatusColor(context, status);
     final height = large ? 28.0 : 20.0;
-    final horizontalPadding = large ? 8.0 : 4.0;
+    final horizontalPadding = large ? 8.0 : 0.0;
+    final verticalPadding = large ? 4.0 : 0.0;
 
     return Container(
-      height: height,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 4),
+      constraints: BoxConstraints(minHeight: height),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
       decoration: BoxDecoration(
         color: ShowcasePalette.subtleFill(context),
         borderRadius: BorderRadius.circular(20),
@@ -89,6 +93,9 @@ class ProjectStatusPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             showcaseProjectStatusLabel(context, status),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
             style: tokens.typography.styles.subtitle.subtitle2.copyWith(
               color: ShowcasePalette.highText(context),
             ),
@@ -246,6 +253,60 @@ class CountDotBadge extends StatelessWidget {
         '$count',
         style: tokens.typography.styles.others.caption.copyWith(
           color: ShowcasePalette.tagText(context),
+        ),
+      ),
+    );
+  }
+}
+
+/// A floating add-project action matching the Widgetbook mobile reference.
+class ProjectCreateFab extends StatelessWidget {
+  const ProjectCreateFab({
+    required this.semanticLabel,
+    this.onPressed,
+    super.key,
+  });
+
+  final String semanticLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(24);
+
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: semanticLabel,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: borderRadius,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: ShowcasePalette.teal(context),
+            borderRadius: borderRadius,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onPressed,
+            child: const SizedBox.square(
+              dimension: 56,
+              child: Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 24,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

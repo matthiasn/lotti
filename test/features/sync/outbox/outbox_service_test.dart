@@ -217,7 +217,9 @@ void main() {
       () => journalDb.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
     // Ensure activity gate can construct if needed
-    when(() => userActivityService.lastActivity).thenReturn(DateTime(2024, 3, 15, 10, 30));
+    when(
+      () => userActivityService.lastActivity,
+    ).thenReturn(DateTime(2024, 3, 15, 10, 30));
     when(
       () => userActivityService.activityStream,
     ).thenAnswer((_) => const Stream<DateTime>.empty());

@@ -10,9 +10,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
-import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/review_sessions_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -123,45 +122,27 @@ class _ProjectMobileListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const DesignSystemShowcaseMobileStatusBar(),
-              ProjectsHeader(
-                title: context.messages.designSystemBreadcrumbProjectsLabel,
-                query: state.searchQuery,
-                onSearchChanged: onSearchChanged,
-                onSearchCleared: onSearchCleared,
-                onSearchPressed: onSearchChanged,
-                titleTrailing: Icon(
-                  Icons.notifications_none_rounded,
-                  size: 34,
-                  color: ShowcasePalette.highText(context),
-                ),
-                searchTrailing: Icon(
-                  Icons.tune_rounded,
-                  size: 24,
-                  color: ShowcasePalette.teal(context),
-                ),
-              ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: groups.isEmpty
-                      ? const NoResultsPane()
-                      : DesignSystemScrollbar(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 184),
-                            itemCount: groups.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 20),
-                            itemBuilder: (context, index) {
-                              return ProjectGroupSection(
-                                group: groups[index],
-                                selectedProjectId: selectedId,
-                                onProjectSelected: (item) => onProjectOpened(
-                                  item.project.meta.id,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
+                child: ProjectsOverviewContent(
+                  title: context.messages.designSystemBreadcrumbProjectsLabel,
+                  query: state.searchQuery,
+                  groups: groups,
+                  selectedProjectId: selectedId,
+                  onSearchChanged: onSearchChanged,
+                  onSearchCleared: onSearchCleared,
+                  onSearchPressed: onSearchChanged,
+                  onProjectTap: (item) => onProjectOpened(item.project.meta.id),
+                  titleTrailing: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 34,
+                    color: ShowcasePalette.highText(context),
+                  ),
+                  searchTrailing: Icon(
+                    Icons.tune_rounded,
+                    size: 24,
+                    color: ShowcasePalette.teal(context),
+                  ),
+                  listBottomPadding: 184,
                 ),
               ),
             ],
@@ -169,8 +150,9 @@ class _ProjectMobileListScreen extends StatelessWidget {
           Positioned(
             right: 16,
             bottom: 140,
-            child: _CreateProjectFab(
+            child: ProjectCreateFab(
               semanticLabel: context.messages.designSystemNavigationNewLabel,
+              onPressed: () {},
             ),
           ),
           Positioned(
@@ -233,7 +215,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
   }
 }
 
-class _ProjectMobileDetailScreen extends StatelessWidget {
+class _ProjectMobileDetailScreen extends StatefulWidget {
   const _ProjectMobileDetailScreen({
     required this.record,
     required this.currentTime,
@@ -243,6 +225,21 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
   final ProjectRecord record;
   final DateTime currentTime;
   final VoidCallback? onBack;
+
+  @override
+  State<_ProjectMobileDetailScreen> createState() =>
+      _ProjectMobileDetailScreenState();
+}
+
+class _ProjectMobileDetailScreenState
+    extends State<_ProjectMobileDetailScreen> {
+  late final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -261,32 +258,34 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
             ),
             child: DesignSystemShowcaseMobileDetailHeader(
               foregroundColor: ShowcasePalette.highText(context),
-              onBack: onBack,
+              onBack: widget.onBack,
             ),
           ),
           Expanded(
             child: DesignSystemScrollbar(
+              controller: _scrollController,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MobileDetailHeader(record: record),
+                    _MobileDetailHeader(record: widget.record),
                     const SizedBox(height: 16),
-                    HealthPanel(record: record),
+                    HealthPanel(record: widget.record),
                     const SizedBox(height: 24),
                     TextSection(
                       title: context.messages.projectShowcaseDescriptionTitle,
-                      body: record.project.entryText?.plainText ?? '',
+                      body: widget.record.project.entryText?.plainText ?? '',
                     ),
                     const SizedBox(height: 24),
                     TextSection(
                       title: context.messages.projectShowcaseAiReportTitle,
-                      body: record.aiSummary,
+                      body: widget.record.aiSummary,
                       trailingLabel: showcaseUpdatedLabel(
                         context,
-                        updatedAt: record.reportUpdatedAt,
-                        currentTime: currentTime,
+                        updatedAt: widget.record.reportUpdatedAt,
+                        currentTime: widget.currentTime,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -303,11 +302,11 @@ class _ProjectMobileDetailScreen extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 12),
-                    RecommendationsList(items: record.recommendations),
+                    RecommendationsList(items: widget.record.recommendations),
                     const SizedBox(height: 24),
-                    ProjectTasksPanel(record: record),
+                    ProjectTasksPanel(record: widget.record),
                     const SizedBox(height: 24),
-                    ReviewSessionsPanel(record: record),
+                    ReviewSessionsPanel(record: widget.record),
                   ],
                 ),
               ),
@@ -375,43 +374,6 @@ class _MobileDetailHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CreateProjectFab extends StatelessWidget {
-  const _CreateProjectFab({required this.semanticLabel});
-
-  final String semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: ShowcasePalette.teal(context),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.22),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: const SizedBox.square(
-          dimension: 56,
-          child: Center(
-            child: Icon(
-              Icons.add_rounded,
-              size: 24,
-              color: Colors.black,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

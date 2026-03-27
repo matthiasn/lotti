@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -40,114 +38,54 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
   @override
   Widget build(BuildContext context) {
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
-    final isCompact = MediaQuery.sizeOf(context).width < 600;
-    final topPadding = isCompact ? 20.0 : 8.0;
 
     return Scaffold(
       backgroundColor: ShowcasePalette.page(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: visibleGroupsAsync.maybeWhen(
+        data: (_) => ProjectCreateFab(
+          semanticLabel: context.messages.projectCreateButton,
+          onPressed: () => beamToNamed('/settings/projects/create'),
+        ),
+        orElse: () => null,
+      ),
       body: SafeArea(
         bottom: false,
-        child: DesignSystemScrollbar(
-          controller: _scrollController,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: ProjectsHeader(
-                  title: context.messages.navTabTitleProjects,
-                  searchEnabled: false,
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    topPadding,
-                    16,
-                    0,
-                  ),
-                  titleTrailing: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 34,
-                    color: ShowcasePalette.highText(context),
-                  ),
-                  searchTrailing: Icon(
-                    Icons.tune_rounded,
-                    size: 24,
-                    color: ShowcasePalette.teal(context),
-                  ),
-                ),
-              ),
-              ...visibleGroupsAsync.when(
-                data: (groups) => groups.isEmpty
-                    ? [
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          sliver: SliverToBoxAdapter(
-                            child: _ProjectsOverviewMessage(
-                              message:
-                                  context.messages.projectShowcaseNoResults,
-                            ),
-                          ),
-                        ),
-                      ]
-                    : [
-                        ProjectsOverviewSliverList(
-                          groups: groups,
-                          onProjectTap: (project) {
-                            final categoryId = project.project.meta.categoryId;
-                            beamToNamed(
-                              Uri(
-                                path:
-                                    '/settings/projects/${project.project.meta.id}',
-                                queryParameters: categoryId == null
-                                    ? null
-                                    : {'categoryId': categoryId},
-                              ).toString(),
-                            );
-                          },
-                        ),
-                      ],
-                loading: () => const [
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(
-                      child: CircularProgressIndicator.adaptive(),
-                    ),
-                  ),
-                ],
-                error: (error, _) => [
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _ProjectsOverviewMessage(
-                      message: context.messages.commonError,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        child: visibleGroupsAsync.when(
+          data: (groups) => ProjectsOverviewContent(
+            title: context.messages.navTabTitleProjects,
+            groups: groups,
+            searchEnabled: false,
+            scrollController: _scrollController,
+            listBottomPadding: 112,
+            onProjectTap: (project) {
+              final categoryId = project.project.meta.categoryId;
+              beamToNamed(
+                Uri(
+                  path: '/settings/projects/${project.project.meta.id}',
+                  queryParameters: categoryId == null
+                      ? null
+                      : {'categoryId': categoryId},
+                ).toString(),
+              );
+            },
+            titleTrailing: Icon(
+              Icons.notifications_none_rounded,
+              size: 34,
+              color: ShowcasePalette.highText(context),
+            ),
+            searchTrailing: Icon(
+              Icons.tune_rounded,
+              size: 24,
+              color: ShowcasePalette.teal(context),
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProjectsOverviewMessage extends StatelessWidget {
-  const _ProjectsOverviewMessage({
-    required this.message,
-  });
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Center(
-        child: Text(
-          message,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: ShowcasePalette.mediumText(context),
+          loading: () => const Center(
+            child: CircularProgressIndicator.adaptive(),
           ),
-          textAlign: TextAlign.center,
+          error: (error, _) => Center(
+            child: Text(context.messages.commonError),
+          ),
         ),
       ),
     );

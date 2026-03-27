@@ -66,6 +66,7 @@ lib/features/projects/
         ├── project_health_header.dart            # Expandable project overview on tasks page
         ├── project_health_indicator.dart         # Compact health band chip with reason text
         ├── projects_header.dart                  # Shared DS header used by the production tab and Widgetbook mobile list
+        ├── projects_overview_content.dart        # Shared sliver scroll view used by the production tab and Widgetbook mobile list
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
         ├── project_list_pane.dart                # Desktop Widgetbook/search pane wrapper around the shared project list widgets
@@ -136,7 +137,7 @@ Widgetbook-only mobile showcase that uses the same mock controller/provider as t
 
 ### ProjectsTabPage
 
-The top-level projects tab uses the same design-system list primitives as the Widgetbook mobile list, but renders them through a lazy sliver pipeline (`ProjectsOverviewSliverList`) for production scalability. The header is a shared `ProjectsHeader` with the left-aligned title, notification icon, disabled search field, and filter icon shown in the Widgetbook mobile reference.
+The top-level projects tab now mounts the same shared sliver scroll surface as the Widgetbook mobile list via `ProjectsOverviewContent`. That surface owns only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`. `ProjectCreateFab` is mounted alongside this surface by each consumer (`Scaffold.floatingActionButton` in the live tab, `Positioned` in the Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain an external layout responsibility.
 
 ### Shared List Components
 
@@ -146,7 +147,9 @@ The top-level projects tab uses the same design-system list primitives as the Wi
 - `ProjectGroupHeader` — neutral category header row shared across production and Widgetbook.
 - `ProjectGroupSection` — grouped card list used by the desktop/mobile Widgetbook list.
 - `ProjectRow` — shared DS project row with progress ring, task count, due/ongoing label, and compact status label.
-- `ProjectsOverviewSliverList` — production wrapper that keeps the same row visuals but renders lazily with slivers.
+- `ProjectsOverviewSliverList` — sliver wrapper around the shared grouped-card section, used by both the live tab and the Widgetbook mobile list.
+- `ProjectsOverviewContent` — shared sliver scroll view surface that combines the common header and grouped sliver list for the live tab and the Widgetbook mobile list; it does not own FAB placement.
+- `ProjectCreateFab` — shared add-project floating action used by both consumers, mounted as a sibling outside `ProjectsOverviewContent`.
 
 These shared list widgets live in `project_list_shared.dart`, so production and Widgetbook depend on the same neutral module instead of importing showcase-specific pane code.
 

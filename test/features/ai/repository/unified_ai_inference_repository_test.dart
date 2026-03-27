@@ -1205,7 +1205,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -1216,7 +1217,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-3',
@@ -1228,7 +1230,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1365,7 +1368,9 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+                  created:
+                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
+                      1000,
                 ),
                 CreateChatCompletionStreamResponse(
                   choices: [
@@ -1377,7 +1382,9 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+                  created:
+                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
+                      1000,
                 ),
                 CreateChatCompletionStreamResponse(
                   choices: [
@@ -1388,7 +1395,9 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+                  created:
+                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
+                      1000,
                 ),
               ]);
 
@@ -1501,7 +1510,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -1513,7 +1523,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1654,7 +1665,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1786,7 +1798,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2037,7 +2050,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -2049,7 +2063,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2242,7 +2257,8 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -2417,7 +2433,8 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -2578,7 +2595,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2723,7 +2741,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2867,7 +2886,8 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
           when(
@@ -2991,7 +3011,8 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
           when(
@@ -3133,7 +3154,8 @@ If the image IS relevant:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -3312,7 +3334,8 @@ Extract ONLY information from the image that is relevant to this task. Be concis
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -3480,7 +3503,8 @@ be consulted to ensure accuracy.''',
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -3638,7 +3662,8 @@ Take into account the following task context:
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -4458,7 +4483,8 @@ Take into account the following task context:
                   ),
                 ),
               ],
-              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
               model: 'test-model',
               object: 'chat.completion.chunk',
             ),
@@ -5785,7 +5811,8 @@ Take into account the following task context:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         )
         // Continue by index without ID
@@ -5810,7 +5837,8 @@ Take into account the following task context:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
