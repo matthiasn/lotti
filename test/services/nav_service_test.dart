@@ -301,6 +301,12 @@ void main() {
       },
     );
 
+    test('navigating to an unrecognized path falls back to tasks', () {
+      final navService = getIt<NavService>()..beamToNamed('/nonexistent');
+      expect(navService.currentPath, '/tasks');
+      expect(navService.index, 0);
+    });
+
     test('restoreRoute', () async {
       final navService = getIt<NavService>();
       await settingsDb.saveSettingsItem(lastRouteKey, '/settings');

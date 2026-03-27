@@ -44,14 +44,14 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
           : fresh.copyWith(
               selectedSortId: previous.selectedSortId,
               selectedPriorityId: previous.selectedPriorityId,
-              statusField: fresh.statusField.copyWith(
-                selectedIds: previous.statusField.selectedIds,
+              statusField: fresh.statusField?.copyWith(
+                selectedIds: previous.statusField?.selectedIds ?? const {},
               ),
-              categoryField: fresh.categoryField.copyWith(
-                selectedIds: previous.categoryField.selectedIds,
+              categoryField: fresh.categoryField?.copyWith(
+                selectedIds: previous.categoryField?.selectedIds ?? const {},
               ),
-              labelField: fresh.labelField.copyWith(
-                selectedIds: previous.labelField.selectedIds,
+              labelField: fresh.labelField?.copyWith(
+                selectedIds: previous.labelField?.selectedIds ?? const {},
               ),
             );
     }

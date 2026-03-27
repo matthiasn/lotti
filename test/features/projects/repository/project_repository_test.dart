@@ -313,6 +313,116 @@ void main() {
       await expectation;
     });
 
+    test('emits error when getProjectsOverview throws', () async {
+      when(
+        () => mockDb.getVisibleProjects(),
+      ).thenThrow(Exception('database failure'));
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      await expectLater(
+        stream,
+        emitsError(isA<Exception>()),
+      );
+    });
+
+    test(
+      'refreshes on PROJECT_ENTITY_UPDATE:project-001 notification',
+      () async {
+        var repositoryCallCount = 0;
+        final project = makeTestProject(
+          id: 'project-001',
+          title: 'My Project',
+          categoryId: workCategory.id,
+        );
+
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+          repositoryCallCount++;
+          return [project];
+        });
+        when(
+          () => mockDb.getProjectTaskRollups(any()),
+        ).thenAnswer(
+          (_) async => {
+            'project-001': (
+              totalTaskCount: repositoryCallCount,
+              completedTaskCount: 0,
+              blockedTaskCount: 0,
+            ),
+          },
+        );
+
+        final stream = repository.watchProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            isA<ProjectsOverviewSnapshot>().having(
+              (s) => s.groups.single.projects.single.taskRollup.totalTaskCount,
+              'initial totalTaskCount',
+              1,
+            ),
+            isA<ProjectsOverviewSnapshot>().having(
+              (s) => s.groups.single.projects.single.taskRollup.totalTaskCount,
+              'refreshed totalTaskCount',
+              2,
+            ),
+          ]),
+        );
+
+        await Future<void>.microtask(() {});
+        updateStreamController.add({
+          projectEntityUpdateNotification('project-001'),
+        });
+        await expectation;
+      },
+    );
+
+    test('skips refresh for irrelevant notification IDs', () async {
+      when(() => mockDb.getVisibleProjects()).thenAnswer(
+        (_) async => [projectEntry],
+      );
+      when(
+        () => mockDb.getProjectTaskRollups(any()),
+      ).thenAnswer(
+        (_) async => {
+          'project-001': (
+            totalTaskCount: 1,
+            completedTaskCount: 0,
+            blockedTaskCount: 0,
+          ),
+        },
+      );
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      final emissions = <ProjectsOverviewSnapshot>[];
+      final subscription = stream.listen(emissions.add);
+
+      // Wait for initial emission
+      await Future<void>.microtask(() {});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(1));
+
+      // Emit an unrelated ID that is not a project, task token, category,
+      // or private toggle token
+      updateStreamController.add({'unrelated-entity-999'});
+      await Future<void>.microtask(() {});
+      await Future<void>.delayed(Duration.zero);
+
+      // No additional emission should have occurred
+      expect(emissions, hasLength(1));
+
+      await subscription.cancel();
+    });
+
     test('re-fetches when an existing project id changes status', () async {
       var repositoryCallCount = 0;
       final activeProject = makeTestProject(

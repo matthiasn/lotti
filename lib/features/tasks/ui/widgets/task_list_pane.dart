@@ -115,7 +115,9 @@ class TaskListActiveFilters extends StatelessWidget {
     final tokens = context.designTokens;
     final filterState = state.filterState;
     final chips = <String>[
-      ...filterState.statusField.selectedOptions.map((option) => option.label),
+      ...?filterState.statusField?.selectedOptions.map(
+        (option) => option.label,
+      ),
       if (filterState.selectedPriorityId !=
           DesignSystemTaskFilterState.allPriorityId)
         filterState.priorityOptions
@@ -123,10 +125,10 @@ class TaskListActiveFilters extends StatelessWidget {
                 .firstOrNull
                 ?.label ??
             '',
-      ...filterState.categoryField.selectedOptions.map(
+      ...?filterState.categoryField?.selectedOptions.map(
         (option) => option.label,
       ),
-      ...filterState.labelField.selectedOptions.map((option) => option.label),
+      ...?filterState.labelField?.selectedOptions.map((option) => option.label),
     ].where((label) => label.isNotEmpty).toList();
 
     return Padding(

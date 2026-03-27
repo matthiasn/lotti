@@ -193,4 +193,57 @@ void main() {
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
   });
+
+  testWidgets('shows no-results message when groups are empty', (
+    tester,
+  ) async {
+    await pumpPage(tester, groups: []);
+
+    expect(
+      find.text('No projects match your search.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows loading indicator while data is loading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          visibleProjectGroupsProvider.overrideWith(
+            (ref) => const AsyncValue<List<ProjectCategoryGroup>>.loading(),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.byType(CircularProgressIndicator),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows localized error message on failure', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          visibleProjectGroupsProvider.overrideWith(
+            (ref) => AsyncValue<List<ProjectCategoryGroup>>.error(
+              Exception('test'),
+              StackTrace.empty,
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Error'), findsOneWidget);
+  });
 }

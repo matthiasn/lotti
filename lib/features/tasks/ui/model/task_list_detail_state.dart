@@ -53,9 +53,10 @@ class TaskListDetailState {
 
   List<TaskRecord> _computeVisibleTasks() {
     final query = searchQuery.trim().toLowerCase();
-    final selectedStatuses = filterState.statusField.selectedIds;
-    final selectedCategories = filterState.categoryField.selectedIds;
-    final selectedLabels = filterState.labelField.selectedIds;
+    final selectedStatuses = filterState.statusField?.selectedIds ?? const {};
+    final selectedCategories =
+        filterState.categoryField?.selectedIds ?? const {};
+    final selectedLabels = filterState.labelField?.selectedIds ?? const {};
     final selectedPriorityId = filterState.selectedPriorityId;
 
     final visible =

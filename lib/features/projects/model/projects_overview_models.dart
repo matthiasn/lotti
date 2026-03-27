@@ -10,6 +10,14 @@ enum ProjectsSearchMode {
   vector,
 }
 
+abstract final class ProjectStatusFilterIds {
+  static const open = 'open';
+  static const active = 'active';
+  static const onHold = 'on-hold';
+  static const completed = 'completed';
+  static const archived = 'archived';
+}
+
 @immutable
 class ProjectsQuery {
   const ProjectsQuery({
@@ -50,21 +58,25 @@ class ProjectsQuery {
 @immutable
 class ProjectsFilter {
   const ProjectsFilter({
+    this.selectedStatusIds = const <String>{},
     this.selectedCategoryIds = const <String>{},
     this.textQuery = '',
     this.searchMode = ProjectsSearchMode.disabled,
   });
 
+  final Set<String> selectedStatusIds;
   final Set<String> selectedCategoryIds;
   final String textQuery;
   final ProjectsSearchMode searchMode;
 
   ProjectsFilter copyWith({
+    Set<String>? selectedStatusIds,
     Set<String>? selectedCategoryIds,
     String? textQuery,
     ProjectsSearchMode? searchMode,
   }) {
     return ProjectsFilter(
+      selectedStatusIds: selectedStatusIds ?? this.selectedStatusIds,
       selectedCategoryIds: selectedCategoryIds ?? this.selectedCategoryIds,
       textQuery: textQuery ?? this.textQuery,
       searchMode: searchMode ?? this.searchMode,
@@ -76,6 +88,10 @@ class ProjectsFilter {
     return identical(this, other) ||
         other is ProjectsFilter &&
             const SetEquality<String>().equals(
+              other.selectedStatusIds,
+              selectedStatusIds,
+            ) &&
+            const SetEquality<String>().equals(
               other.selectedCategoryIds,
               selectedCategoryIds,
             ) &&
@@ -85,10 +101,21 @@ class ProjectsFilter {
 
   @override
   int get hashCode => Object.hash(
+    const SetEquality<String>().hash(selectedStatusIds),
     const SetEquality<String>().hash(selectedCategoryIds),
     textQuery,
     searchMode,
   );
+}
+
+String projectStatusFilterId(ProjectStatus status) {
+  return switch (status) {
+    ProjectOpen() => ProjectStatusFilterIds.open,
+    ProjectActive() => ProjectStatusFilterIds.active,
+    ProjectOnHold() => ProjectStatusFilterIds.onHold,
+    ProjectCompleted() => ProjectStatusFilterIds.completed,
+    ProjectArchived() => ProjectStatusFilterIds.archived,
+  };
 }
 
 @immutable
@@ -179,4 +206,44 @@ class ProjectsOverviewSnapshot {
   );
 
   bool get isEmpty => totalProjectCount == 0;
+}
+
+List<ProjectCategoryGroup> applyProjectsFilter(
+  ProjectsOverviewSnapshot overview,
+  ProjectsFilter filter,
+) {
+  final selectedStatusIds = filter.selectedStatusIds;
+  final selectedCategoryIds = filter.selectedCategoryIds;
+  final normalizedQuery = filter.textQuery.trim().toLowerCase();
+  final shouldApplyTextQuery =
+      normalizedQuery.isNotEmpty &&
+      filter.searchMode == ProjectsSearchMode.localText;
+
+  return overview.groups
+      .where(
+        (group) =>
+            selectedCategoryIds.isEmpty ||
+            (group.categoryId != null &&
+                selectedCategoryIds.contains(group.categoryId)),
+      )
+      .map((group) {
+        final filteredProjects = group.projects
+            .where((project) {
+              final matchesStatus =
+                  selectedStatusIds.isEmpty ||
+                  selectedStatusIds.contains(
+                    projectStatusFilterId(project.status),
+                  );
+              final matchesQuery =
+                  !shouldApplyTextQuery ||
+                  project.searchableText.toLowerCase().contains(
+                    normalizedQuery,
+                  );
+              return matchesStatus && matchesQuery;
+            })
+            .toList(growable: false);
+        return group.copyWith(projects: filteredProjects);
+      })
+      .where((group) => group.projects.isNotEmpty)
+      .toList(growable: false);
 }

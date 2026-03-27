@@ -4899,6 +4899,218 @@ void main() {
           expect(result!.fromId, 'proj-newer');
         },
       );
+
+      test(
+        'getVisibleProjects returns non-deleted projects ordered by '
+        'dateFrom desc',
+        () async {
+          final base = DateTime(2024, 8, 1);
+          final p1 = buildProjectEntry(
+            id: 'proj-vis-1',
+            timestamp: base,
+            categoryId: 'cat-vis',
+          );
+          final p2 = buildProjectEntry(
+            id: 'proj-vis-2',
+            timestamp: base.add(const Duration(hours: 2)),
+            categoryId: 'cat-vis',
+          );
+          final p3 = buildProjectEntry(
+            id: 'proj-vis-3',
+            timestamp: base.add(const Duration(hours: 1)),
+            categoryId: 'cat-vis-other',
+          );
+          final deletedBase =
+              buildProjectEntry(
+                    id: 'proj-vis-deleted',
+                    timestamp: base.add(const Duration(hours: 3)),
+                    categoryId: 'cat-vis',
+                  )
+                  as ProjectEntry;
+          final deletedProject = deletedBase.copyWith(
+            meta: deletedBase.meta.copyWith(
+              deletedAt: base.add(const Duration(hours: 4)),
+            ),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(p1));
+          await db!.upsertJournalDbEntity(toDbEntity(p2));
+          await db!.upsertJournalDbEntity(toDbEntity(p3));
+          await db!.upsertJournalDbEntity(toDbEntity(deletedProject));
+
+          final result = await db!.getVisibleProjects();
+
+          // Should exclude the deleted project
+          final ids = result.map((p) => p.meta.id).toList();
+          expect(ids, contains('proj-vis-1'));
+          expect(ids, contains('proj-vis-2'));
+          expect(ids, contains('proj-vis-3'));
+          expect(ids, isNot(contains('proj-vis-deleted')));
+
+          // Should be ordered by dateFrom descending
+          final visIds = result
+              .where(
+                (p) => p.meta.id.startsWith('proj-vis-'),
+              )
+              .map((p) => p.meta.id)
+              .toList();
+          final idx1 = visIds.indexOf('proj-vis-2');
+          final idx2 = visIds.indexOf('proj-vis-3');
+          final idx3 = visIds.indexOf('proj-vis-1');
+          expect(idx1, lessThan(idx2));
+          expect(idx2, lessThan(idx3));
+        },
+      );
+
+      test(
+        'getProjectTaskRollups returns empty map for empty input',
+        () async {
+          final result = await db!.getProjectTaskRollups({});
+          expect(result, isEmpty);
+        },
+      );
+
+      test(
+        'getProjectTaskRollups aggregates task counts by project',
+        () async {
+          final base = DateTime(2024, 8, 2);
+          final project1 = buildProjectEntry(
+            id: 'proj-rollup-1',
+            timestamp: base,
+            categoryId: 'cat-rollup',
+          );
+          final project2 = buildProjectEntry(
+            id: 'proj-rollup-2',
+            timestamp: base.add(const Duration(hours: 1)),
+            categoryId: 'cat-rollup',
+          );
+
+          // Project 1 tasks: 1 DONE, 1 BLOCKED, 1 open
+          final task1Done = buildTaskEntry(
+            id: 'task-r1-done',
+            timestamp: base,
+            status: TaskStatus.done(
+              id: 'ts-r1-done',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-rollup',
+          );
+          final task1Blocked = buildTaskEntry(
+            id: 'task-r1-blocked',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.blocked(
+              id: 'ts-r1-blocked',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+              reason: 'waiting on dependency',
+            ),
+            categoryId: 'cat-rollup',
+          );
+          final task1Open = buildTaskEntry(
+            id: 'task-r1-open',
+            timestamp: base.add(const Duration(minutes: 2)),
+            status: TaskStatus.open(
+              id: 'ts-r1-open',
+              createdAt: base.add(const Duration(minutes: 2)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-rollup',
+          );
+
+          // Project 2 tasks: 2 DONE
+          final task2DoneA = buildTaskEntry(
+            id: 'task-r2-done-a',
+            timestamp: base.add(const Duration(minutes: 3)),
+            status: TaskStatus.done(
+              id: 'ts-r2-done-a',
+              createdAt: base.add(const Duration(minutes: 3)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-rollup',
+          );
+          final task2DoneB = buildTaskEntry(
+            id: 'task-r2-done-b',
+            timestamp: base.add(const Duration(minutes: 4)),
+            status: TaskStatus.done(
+              id: 'ts-r2-done-b',
+              createdAt: base.add(const Duration(minutes: 4)),
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-rollup',
+          );
+
+          // Insert all entities
+          await db!.upsertJournalDbEntity(toDbEntity(project1));
+          await db!.upsertJournalDbEntity(toDbEntity(project2));
+          await db!.upsertJournalDbEntity(toDbEntity(task1Done));
+          await db!.upsertJournalDbEntity(toDbEntity(task1Blocked));
+          await db!.upsertJournalDbEntity(toDbEntity(task1Open));
+          await db!.upsertJournalDbEntity(toDbEntity(task2DoneA));
+          await db!.upsertJournalDbEntity(toDbEntity(task2DoneB));
+
+          // Link tasks to projects
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-r1-done',
+              fromId: 'proj-rollup-1',
+              toId: 'task-r1-done',
+              timestamp: base,
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-r1-blocked',
+              fromId: 'proj-rollup-1',
+              toId: 'task-r1-blocked',
+              timestamp: base.add(const Duration(minutes: 1)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-r1-open',
+              fromId: 'proj-rollup-1',
+              toId: 'task-r1-open',
+              timestamp: base.add(const Duration(minutes: 2)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-r2-done-a',
+              fromId: 'proj-rollup-2',
+              toId: 'task-r2-done-a',
+              timestamp: base.add(const Duration(minutes: 3)),
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-r2-done-b',
+              fromId: 'proj-rollup-2',
+              toId: 'task-r2-done-b',
+              timestamp: base.add(const Duration(minutes: 4)),
+            ),
+          );
+
+          final result = await db!.getProjectTaskRollups({
+            'proj-rollup-1',
+            'proj-rollup-2',
+          });
+
+          expect(result, hasLength(2));
+
+          // Project 1: 3 total, 1 completed, 1 blocked
+          final rollup1 = result['proj-rollup-1']!;
+          expect(rollup1.totalTaskCount, 3);
+          expect(rollup1.completedTaskCount, 1);
+          expect(rollup1.blockedTaskCount, 1);
+
+          // Project 2: 2 total, 2 completed, 0 blocked
+          final rollup2 = result['proj-rollup-2']!;
+          expect(rollup2.totalTaskCount, 2);
+          expect(rollup2.completedTaskCount, 2);
+          expect(rollup2.blockedTaskCount, 0);
+        },
+      );
     });
 
     test(

@@ -100,12 +100,15 @@ void main() {
 
       expect(roundTrip.selectedSortId, state.selectedSortId);
       expect(roundTrip.selectedPriorityId, state.selectedPriorityId);
-      expect(roundTrip.statusField.selectedIds, state.statusField.selectedIds);
       expect(
-        roundTrip.categoryField.selectedIds,
-        state.categoryField.selectedIds,
+        roundTrip.statusField!.selectedIds,
+        state.statusField!.selectedIds,
       );
-      expect(roundTrip.labelField.selectedIds, state.labelField.selectedIds);
+      expect(
+        roundTrip.categoryField!.selectedIds,
+        state.categoryField!.selectedIds,
+      );
+      expect(roundTrip.labelField!.selectedIds, state.labelField!.selectedIds);
       expect(defaultHandleState.showDragHandle, isTrue);
       expect(state.selectSort('due-date'), same(state));
       expect(state.selectPriority('p2'), same(state));
@@ -117,9 +120,9 @@ void main() {
         DesignSystemTaskFilterState.allPriorityId,
       );
       expect(prioritized.appliedCount, 6);
-      expect(statusRemoved.statusField.selectedIds, {'in-progress'});
-      expect(categoryRemoved.categoryField.selectedIds, {'study'});
-      expect(labelRemoved.labelField.selectedIds, {'agents'});
+      expect(statusRemoved.statusField!.selectedIds, {'in-progress'});
+      expect(categoryRemoved.categoryField!.selectedIds, {'study'});
+      expect(labelRemoved.labelField!.selectedIds, {'agents'});
     });
 
     test('derives applied count and clears selected filters', () {
@@ -130,13 +133,13 @@ void main() {
       final cleared = state.clearAll();
 
       expect(cleared.selectedSortId, 'due-date');
-      expect(cleared.statusField.selectedIds, isEmpty);
+      expect(cleared.statusField!.selectedIds, isEmpty);
       expect(
         cleared.selectedPriorityId,
         DesignSystemTaskFilterState.allPriorityId,
       );
-      expect(cleared.categoryField.selectedIds, isEmpty);
-      expect(cleared.labelField.selectedIds, isEmpty);
+      expect(cleared.categoryField!.selectedIds, isEmpty);
+      expect(cleared.labelField!.selectedIds, isEmpty);
       expect(cleared.appliedCount, 0);
     });
   });
@@ -219,9 +222,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(state.value.statusField.selectedIds, {'in-progress'});
-        expect(state.value.categoryField.selectedIds, {'study'});
-        expect(state.value.labelField.selectedIds, {'agents'});
+        expect(state.value.statusField!.selectedIds, {'in-progress'});
+        expect(state.value.categoryField!.selectedIds, {'study'});
+        expect(state.value.labelField!.selectedIds, {'agents'});
         expect(state.value.appliedCount, 4);
         expect(find.text('4'), findsOneWidget);
 
