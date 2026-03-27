@@ -13,7 +13,7 @@ import 'package:lotti/utils/color.dart';
 const _kProjectGroupCardRadius = 16.0;
 const _kProjectGroupCardPadding = 8.0;
 const _kProjectRowGap = 16.0;
-const _kProjectRowSegmentPadding = 8.0;
+const _kProjectRowOverlap = 1.0;
 
 /// Shared category header row showing the category tag and project count.
 class ProjectGroupHeader extends StatelessWidget {
@@ -50,7 +50,7 @@ class ProjectGroupHeader extends StatelessWidget {
 }
 
 /// A category-labelled section containing grouped project rows.
-class ProjectGroupSection extends StatelessWidget {
+class ProjectGroupSection extends StatefulWidget {
   const ProjectGroupSection({
     required this.group,
     required this.selectedProjectId,
@@ -63,13 +63,51 @@ class ProjectGroupSection extends StatelessWidget {
   final ValueChanged<ProjectListItemData> onProjectSelected;
 
   @override
+  State<ProjectGroupSection> createState() => _ProjectGroupSectionState();
+}
+
+class _ProjectGroupSectionState extends State<ProjectGroupSection> {
+  String? _hoveredProjectId;
+
+  @override
   Widget build(BuildContext context) {
+    final priorities = widget.group.projects
+        .map(
+          (project) => _interactionPriority(
+            projectId: project.project.meta.id,
+            selectedProjectId: widget.selectedProjectId,
+            hoveredProjectId: _hoveredProjectId,
+          ),
+        )
+        .toList(growable: false);
+    final topOverlaps = List<double>.filled(widget.group.projects.length, 0);
+    final bottomOverlaps = List<double>.filled(widget.group.projects.length, 0);
+    final visibleDividers = List<bool>.filled(
+      math.max(widget.group.projects.length - 1, 0),
+      true,
+    );
+
+    for (var index = 0; index < widget.group.projects.length - 1; index++) {
+      final upperPriority = priorities[index];
+      final lowerPriority = priorities[index + 1];
+      if (upperPriority == 0 && lowerPriority == 0) {
+        continue;
+      }
+
+      visibleDividers[index] = false;
+      if (lowerPriority > upperPriority) {
+        topOverlaps[index + 1] = _kProjectRowOverlap;
+      } else {
+        bottomOverlaps[index] = _kProjectRowOverlap;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: ProjectGroupHeader(group: group),
+          child: ProjectGroupHeader(group: widget.group),
         ),
         const SizedBox(height: 8),
         DecoratedBox(
@@ -82,25 +120,49 @@ class ProjectGroupSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (var index = 0; index < group.projects.length; index++) ...[
+                for (
+                  var index = 0;
+                  index < widget.group.projects.length;
+                  index++
+                ) ...[
                   ProjectRow(
-                    item: group.projects[index],
+                    item: widget.group.projects[index],
                     selected:
-                        group.projects[index].project.meta.id ==
-                        selectedProjectId,
-                    onTap: () => onProjectSelected(group.projects[index]),
+                        widget.group.projects[index].project.meta.id ==
+                        widget.selectedProjectId,
+                    topOverlap: topOverlaps[index],
+                    bottomOverlap: bottomOverlaps[index],
+                    onHoverChanged: (hovered) {
+                      final projectId =
+                          widget.group.projects[index].project.meta.id;
+                      setState(() {
+                        if (hovered) {
+                          _hoveredProjectId = projectId;
+                        } else if (_hoveredProjectId == projectId) {
+                          _hoveredProjectId = null;
+                        }
+                      });
+                    },
+                    onTap: () =>
+                        widget.onProjectSelected(widget.group.projects[index]),
                   ),
-                  if (index < group.projects.length - 1)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: _kProjectGroupCardPadding,
-                      ),
-                      child: Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: ShowcasePalette.border(context),
-                      ),
-                    ),
+                  if (index < widget.group.projects.length - 1)
+                    visibleDividers[index]
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: _kProjectGroupCardPadding,
+                            ),
+                            child: Divider(
+                              key: ValueKey('project-group-divider-$index'),
+                              height: 1,
+                              thickness: 1,
+                              color: ShowcasePalette.border(context),
+                            ),
+                          )
+                        : SizedBox(
+                            key: ValueKey('project-group-divider-slot-$index'),
+                            height: _kProjectRowOverlap,
+                          ),
                 ],
               ],
             ),
@@ -108,6 +170,17 @@ class ProjectGroupSection extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant ProjectGroupSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_hoveredProjectId != null &&
+        widget.group.projects.every(
+          (project) => project.project.meta.id != _hoveredProjectId,
+        )) {
+      _hoveredProjectId = null;
+    }
   }
 }
 
@@ -117,12 +190,18 @@ class ProjectRow extends StatelessWidget {
   const ProjectRow({
     required this.item,
     required this.selected,
+    required this.topOverlap,
+    required this.bottomOverlap,
+    required this.onHoverChanged,
     required this.onTap,
     super.key,
   });
 
   final ProjectListItemData item;
   final bool selected;
+  final double topOverlap;
+  final double bottomOverlap;
+  final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
   @override
@@ -130,6 +209,9 @@ class ProjectRow extends StatelessWidget {
     return _ProjectRowSurface(
       item: item,
       selected: selected,
+      topOverlap: topOverlap,
+      bottomOverlap: bottomOverlap,
+      onHoverChanged: onHoverChanged,
       onTap: onTap,
     );
   }
@@ -139,11 +221,17 @@ class _ProjectRowSurface extends StatefulWidget {
   const _ProjectRowSurface({
     required this.item,
     required this.selected,
+    required this.topOverlap,
+    required this.bottomOverlap,
+    required this.onHoverChanged,
     required this.onTap,
   });
 
   final ProjectListItemData item;
   final bool selected;
+  final double topOverlap;
+  final double bottomOverlap;
+  final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
   @override
@@ -173,17 +261,25 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
             setState(() {
               _hovered = value;
             });
+            widget.onHoverChanged(value);
           }
         },
-        child: Ink(
-          decoration: BoxDecoration(
-            color: backgroundColor,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: _kProjectRowSegmentPadding,
-            ),
-            child: Padding(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (backgroundColor != null)
+              Positioned(
+                top: -widget.topOverlap,
+                right: 0,
+                bottom: -widget.bottomOverlap,
+                left: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                  ),
+                ),
+              ),
+            Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,19 +319,29 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-Color _projectGroupBackgroundColor(BuildContext context) {
-  final brightness = Theme.of(context).brightness;
-  if (brightness == Brightness.dark) {
-    return const Color(0xFF222222);
+int _interactionPriority({
+  required String projectId,
+  required String? selectedProjectId,
+  required String? hoveredProjectId,
+}) {
+  if (projectId == selectedProjectId) {
+    return 2;
   }
-  return ShowcasePalette.surface(context);
+  if (projectId == hoveredProjectId) {
+    return 1;
+  }
+  return 0;
+}
+
+Color _projectGroupBackgroundColor(BuildContext context) {
+  return ShowcasePalette.groupedCardSurface(context);
 }
 
 List<InlineSpan> _metaSpans(

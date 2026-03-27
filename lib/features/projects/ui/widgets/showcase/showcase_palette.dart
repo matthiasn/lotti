@@ -11,6 +11,9 @@ class ShowcasePalette {
   static Color expandedSurface(BuildContext context) =>
       context.designTokens.colors.background.level03;
 
+  static Color groupedCardSurface(BuildContext context) =>
+      context.designTokens.colors.background.level02;
+
   static Color healthSurface(BuildContext context) =>
       context.designTokens.colors.background.alternative01;
 
