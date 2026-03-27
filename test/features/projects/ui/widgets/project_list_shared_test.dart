@@ -80,7 +80,6 @@ void main() {
           ProjectRow(
             item: item,
             selected: false,
-            showDivider: false,
             onTap: () {},
           ),
         ),
@@ -106,7 +105,6 @@ void main() {
           ProjectRow(
             item: item,
             selected: false,
-            showDivider: false,
             onTap: () => tapped = true,
           ),
         ),

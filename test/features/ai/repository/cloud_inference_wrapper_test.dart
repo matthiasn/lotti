@@ -57,7 +57,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -182,7 +183,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -334,7 +336,8 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 

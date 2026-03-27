@@ -13,7 +13,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
 /// The right-hand detail pane showing all information for a selected project.
-class ProjectDetailPane extends StatelessWidget {
+class ProjectDetailPane extends StatefulWidget {
   const ProjectDetailPane({
     required this.record,
     required this.currentTime,
@@ -26,41 +26,56 @@ class ProjectDetailPane extends StatelessWidget {
   final bool showLeadingBorder;
 
   @override
+  State<ProjectDetailPane> createState() => _ProjectDetailPaneState();
+}
+
+class _ProjectDetailPaneState extends State<ProjectDetailPane> {
+  late final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: ShowcasePalette.page(context),
         border: Border(
-          left: showLeadingBorder
+          left: widget.showLeadingBorder
               ? BorderSide(color: ShowcasePalette.border(context))
               : BorderSide.none,
         ),
       ),
       child: DesignSystemScrollbar(
+        controller: _scrollController,
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DetailHeader(record: record),
+              _DetailHeader(record: widget.record),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HealthPanel(record: record),
+                    HealthPanel(record: widget.record),
                     const SizedBox(height: 16),
                     TextSection(
                       title: context.messages.projectShowcaseDescriptionTitle,
-                      body: record.project.entryText?.plainText ?? '',
+                      body: widget.record.project.entryText?.plainText ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextSection(
                       title: context.messages.projectShowcaseAiReportTitle,
-                      body: record.aiSummary,
+                      body: widget.record.aiSummary,
                       trailingLabel: showcaseUpdatedLabel(
                         context,
-                        updatedAt: record.reportUpdatedAt,
-                        currentTime: currentTime,
+                        updatedAt: widget.record.reportUpdatedAt,
+                        currentTime: widget.currentTime,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -77,16 +92,16 @@ class ProjectDetailPane extends StatelessWidget {
                           ),
                     ),
                     const SizedBox(height: 8),
-                    RecommendationsList(items: record.recommendations),
+                    RecommendationsList(items: widget.record.recommendations),
                     const SizedBox(height: 16),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         if (constraints.maxWidth < 720) {
                           return Column(
                             children: [
-                              ProjectTasksPanel(record: record),
+                              ProjectTasksPanel(record: widget.record),
                               const SizedBox(height: 16),
-                              ReviewSessionsPanel(record: record),
+                              ReviewSessionsPanel(record: widget.record),
                             ],
                           );
                         }
@@ -94,10 +109,12 @@ class ProjectDetailPane extends StatelessWidget {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: ProjectTasksPanel(record: record)),
+                            Expanded(
+                              child: ProjectTasksPanel(record: widget.record),
+                            ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: ReviewSessionsPanel(record: record),
+                              child: ReviewSessionsPanel(record: widget.record),
                             ),
                           ],
                         );

@@ -3,13 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+
+const _kProjectGroupCardRadius = 16.0;
+const _kProjectGroupCardPadding = 8.0;
+const _kProjectRowGap = 16.0;
+const _kProjectRowSegmentPadding = 8.0;
 
 /// Shared category header row showing the category tag and project count.
 class ProjectGroupHeader extends StatelessWidget {
@@ -70,23 +74,34 @@ class ProjectGroupSection extends StatelessWidget {
         const SizedBox(height: 8),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: ShowcasePalette.surface(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ShowcasePalette.border(context)),
+            color: _projectGroupBackgroundColor(context),
+            borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (var index = 0; index < group.projects.length; index++)
+                for (var index = 0; index < group.projects.length; index++) ...[
                   ProjectRow(
                     item: group.projects[index],
                     selected:
                         group.projects[index].project.meta.id ==
                         selectedProjectId,
-                    showDivider: index < group.projects.length - 1,
                     onTap: () => onProjectSelected(group.projects[index]),
                   ),
+                  if (index < group.projects.length - 1)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _kProjectGroupCardPadding,
+                      ),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: ShowcasePalette.border(context),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
@@ -102,15 +117,41 @@ class ProjectRow extends StatelessWidget {
   const ProjectRow({
     required this.item,
     required this.selected,
-    required this.showDivider,
     required this.onTap,
     super.key,
   });
 
   final ProjectListItemData item;
   final bool selected;
-  final bool showDivider;
   final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ProjectRowSurface(
+      item: item,
+      selected: selected,
+      onTap: onTap,
+    );
+  }
+}
+
+class _ProjectRowSurface extends StatefulWidget {
+  const _ProjectRowSurface({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ProjectListItemData item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_ProjectRowSurface> createState() => _ProjectRowSurfaceState();
+}
+
+class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -118,20 +159,83 @@ class ProjectRow extends StatelessWidget {
     final metaStyle = tokens.typography.styles.others.caption.copyWith(
       color: ShowcasePalette.lowText(context),
     );
+    final backgroundColor = widget.selected
+        ? ShowcasePalette.selectedRow(context)
+        : (_hovered ? ShowcasePalette.hoverFill(context) : null);
 
-    return DesignSystemListItem(
-      key: ValueKey('project-overview-row-${item.project.meta.id}'),
-      title: item.project.data.title,
-      subtitleSpans: _metaSpans(context, metaStyle, item),
-      trailing: ProjectStatusLabel(status: item.status),
-      showDivider: showDivider,
-      activated: selected,
-      selected: selected,
-      activatedBackgroundColor: ShowcasePalette.selectedRow(context),
-      hoverBackgroundColor: ShowcasePalette.hoverFill(context),
-      onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: ValueKey('project-overview-row-${widget.item.project.meta.id}'),
+        onTap: widget.onTap,
+        onHover: (value) {
+          if (_hovered != value) {
+            setState(() {
+              _hovered = value;
+            });
+          }
+        },
+        child: Ink(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: _kProjectRowSegmentPadding,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.item.project.data.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: ShowcasePalette.highText(context),
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          text: TextSpan(
+                            style: metaStyle,
+                            children: _metaSpans(
+                              context,
+                              metaStyle,
+                              widget.item,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: _kProjectRowGap),
+                  ProjectStatusLabel(status: widget.item.status),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
+}
+
+Color _projectGroupBackgroundColor(BuildContext context) {
+  final brightness = Theme.of(context).brightness;
+  if (brightness == Brightness.dark) {
+    return const Color(0xFF222222);
+  }
+  return ShowcasePalette.surface(context);
 }
 
 List<InlineSpan> _metaSpans(
@@ -154,17 +258,22 @@ List<InlineSpan> _metaSpans(
   return [
     WidgetSpan(
       alignment: PlaceholderAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.only(right: 3),
-        child: _TinyProgressRing(
-          key: ValueKey('project-row-progress-ring-${item.project.meta.id}'),
-          progress: item.taskRollup.completionRatio,
-          progressColor: item.taskRollup.blockedTaskCount > 0
-              ? ShowcasePalette.amber(context)
-              : ShowcasePalette.timeGreen(context),
-          trackColor: ShowcasePalette.lowText(context).withValues(alpha: 0.18),
+      child: _TinyProgressRing(
+        key: ValueKey(
+          'project-row-progress-ring-${item.project.meta.id}',
         ),
+        progress: item.taskRollup.completionRatio,
+        progressColor: item.taskRollup.blockedTaskCount > 0
+            ? ShowcasePalette.amber(context)
+            : ShowcasePalette.timeGreen(context),
+        trackColor: ShowcasePalette.highText(
+          context,
+        ).withValues(alpha: 0.12),
       ),
+    ),
+    WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: SizedBox(width: tokens.spacing.step1),
     ),
     TextSpan(
       text: '${item.taskRollup.completionPercent}% · ',
@@ -201,7 +310,7 @@ class _TinyProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox.square(
-      dimension: 18,
+      dimension: 16,
       child: CustomPaint(
         painter: _TinyProgressRingPainter(
           progress: progress,
@@ -226,7 +335,7 @@ class _TinyProgressRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const strokeWidth = 2.25;
+    const strokeWidth = 2.285714;
     const inset = strokeWidth / 2;
     final rect = Rect.fromLTWH(
       inset,

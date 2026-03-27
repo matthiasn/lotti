@@ -8,7 +8,7 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The left pane showing search + grouped project rows.
-class ProjectListPane extends StatelessWidget {
+class ProjectListPane extends StatefulWidget {
   const ProjectListPane({
     required this.state,
     required this.onProjectSelected,
@@ -23,9 +23,22 @@ class ProjectListPane extends StatelessWidget {
   final VoidCallback onSearchCleared;
 
   @override
+  State<ProjectListPane> createState() => _ProjectListPaneState();
+}
+
+class _ProjectListPaneState extends State<ProjectListPane> {
+  late final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final groups = state.visibleGroups;
-    final selectedId = state.selectedProject?.project.meta.id;
+    final groups = widget.state.visibleGroups;
+    final selectedId = widget.state.selectedProject?.project.meta.id;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -36,9 +49,9 @@ class ProjectListPane extends StatelessWidget {
       child: Column(
         children: [
           _SearchHeader(
-            query: state.searchQuery,
-            onSearchChanged: onSearchChanged,
-            onSearchCleared: onSearchCleared,
+            query: widget.state.searchQuery,
+            onSearchChanged: widget.onSearchChanged,
+            onSearchCleared: widget.onSearchCleared,
           ),
           Expanded(
             child: Padding(
@@ -46,7 +59,9 @@ class ProjectListPane extends StatelessWidget {
               child: groups.isEmpty
                   ? const NoResultsPane()
                   : DesignSystemScrollbar(
+                      controller: _scrollController,
                       child: ListView.separated(
+                        controller: _scrollController,
                         padding: EdgeInsets.zero,
                         itemCount: groups.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 20),
@@ -55,7 +70,7 @@ class ProjectListPane extends StatelessWidget {
                             group: groups[index],
                             selectedProjectId: selectedId,
                             onProjectSelected: (item) =>
-                                onProjectSelected(item.project.meta.id),
+                                widget.onProjectSelected(item.project.meta.id),
                           );
                         },
                       ),

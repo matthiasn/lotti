@@ -147,6 +147,7 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
     expect(findRichTextContaining('5 tasks'), findsOneWidget);
     expect(findRichTextContaining('Due Mar 27'), findsOneWidget);
+    expect(find.bySemanticsLabel('New Project'), findsOneWidget);
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isFalse);
@@ -169,6 +170,26 @@ void main() {
     expect(
       navigatedPath,
       '/settings/projects/project-1?categoryId=work',
+    );
+  });
+
+  testWidgets('create button opens the project create route', (
+    tester,
+  ) async {
+    var navigatedPath = '';
+    beamToNamedOverride = (path) => navigatedPath = path;
+
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup()],
+    );
+
+    await tester.tap(find.bySemanticsLabel('New Project'));
+    await tester.pump();
+
+    expect(
+      navigatedPath,
+      '/settings/projects/create',
     );
   });
 

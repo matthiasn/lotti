@@ -27,6 +27,15 @@ class WidgetbookApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lightTheme = WidgetbookTheme(
+      name: 'Design System Light',
+      data: DesignSystemTheme.light(),
+    );
+    final darkTheme = WidgetbookTheme(
+      name: 'Design System Dark',
+      data: DesignSystemTheme.dark(),
+    );
+
     return Widgetbook.material(
       addons: [
         InspectorAddon(),
@@ -34,16 +43,8 @@ class WidgetbookApp extends StatelessWidget {
         AlignmentAddon(),
         ZoomAddon(),
         MaterialThemeAddon(
-          themes: [
-            WidgetbookTheme(
-              name: 'Design System Light',
-              data: DesignSystemTheme.light(),
-            ),
-            WidgetbookTheme(
-              name: 'Design System Dark',
-              data: DesignSystemTheme.dark(),
-            ),
-          ],
+          themes: [lightTheme, darkTheme],
+          initialTheme: darkTheme,
         ),
       ],
       appBuilder: (context, child) => MaterialApp(
