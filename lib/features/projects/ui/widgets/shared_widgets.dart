@@ -94,7 +94,7 @@ class ProjectStatusPill extends StatelessWidget {
           Text(
             showcaseProjectStatusLabel(context, status),
             maxLines: 1,
-            overflow: TextOverflow.visible,
+            overflow: TextOverflow.ellipsis,
             softWrap: false,
             style: tokens.typography.styles.subtitle.subtitle2.copyWith(
               color: ShowcasePalette.highText(context),

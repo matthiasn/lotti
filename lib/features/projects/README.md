@@ -137,7 +137,7 @@ Widgetbook-only mobile showcase that uses the same mock controller/provider as t
 
 ### ProjectsTabPage
 
-The top-level projects tab now mounts the same shared sliver scroll view as the Widgetbook mobile list via `ProjectsOverviewContent`. That shared surface combines the common `ProjectsHeader`, the lazy `ProjectsOverviewSliverList`, and the shared `ProjectCreateFab`, so the live tab and the Widgetbook reference stay visually locked while still using slivers for production scalability.
+The top-level projects tab now mounts the same shared sliver scroll surface as the Widgetbook mobile list via `ProjectsOverviewContent`. That surface owns only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`. `ProjectCreateFab` is mounted alongside this surface by each consumer (`Scaffold.floatingActionButton` in the live tab, `Positioned` in the Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain an external layout responsibility.
 
 ### Shared List Components
 
@@ -148,8 +148,8 @@ The top-level projects tab now mounts the same shared sliver scroll view as the 
 - `ProjectGroupSection` — grouped card list used by the desktop/mobile Widgetbook list.
 - `ProjectRow` — shared DS project row with progress ring, task count, due/ongoing label, and compact status label.
 - `ProjectsOverviewSliverList` — sliver wrapper around the shared grouped-card section, used by both the live tab and the Widgetbook mobile list.
-- `ProjectsOverviewContent` — shared sliver scroll view that combines the common header and grouped sliver list for the live tab and the Widgetbook mobile list.
-- `ProjectCreateFab` — shared add-project floating action used in the live tab and the Widgetbook mobile list.
+- `ProjectsOverviewContent` — shared sliver scroll view surface that combines the common header and grouped sliver list for the live tab and the Widgetbook mobile list; it does not own FAB placement.
+- `ProjectCreateFab` — shared add-project floating action used by both consumers, mounted as a sibling outside `ProjectsOverviewContent`.
 
 These shared list widgets live in `project_list_shared.dart`, so production and Widgetbook depend on the same neutral module instead of importing showcase-specific pane code.
 

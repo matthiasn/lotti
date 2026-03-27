@@ -207,6 +207,7 @@ class ProjectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ProjectRowSurface(
+      key: key ?? ValueKey('project-row-surface-${item.project.meta.id}'),
       item: item,
       selected: selected,
       topOverlap: topOverlap,
@@ -225,6 +226,7 @@ class _ProjectRowSurface extends StatefulWidget {
     required this.bottomOverlap,
     required this.onHoverChanged,
     required this.onTap,
+    super.key,
   });
 
   final ProjectListItemData item;
@@ -251,75 +253,78 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
         ? ShowcasePalette.selectedRow(context)
         : (_hovered ? ShowcasePalette.hoverFill(context) : null);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: ValueKey('project-overview-row-${widget.item.project.meta.id}'),
-        onTap: widget.onTap,
-        onHover: (value) {
-          if (_hovered != value) {
-            setState(() {
-              _hovered = value;
-            });
-            widget.onHoverChanged(value);
-          }
-        },
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            if (backgroundColor != null)
-              Positioned(
-                top: -widget.topOverlap,
-                right: 0,
-                bottom: -widget.bottomOverlap,
-                left: 0,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: backgroundColor,
-                  ),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.item.project.data.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle2
-                              .copyWith(
-                                color: ShowcasePalette.highText(context),
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        RichText(
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            style: metaStyle,
-                            children: _metaSpans(
-                              context,
-                              metaStyle,
-                              widget.item,
-                            ),
-                          ),
-                        ),
-                      ],
+    return Semantics(
+      selected: widget.selected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('project-overview-row-${widget.item.project.meta.id}'),
+          onTap: widget.onTap,
+          onHover: (value) {
+            if (_hovered != value) {
+              setState(() {
+                _hovered = value;
+              });
+              widget.onHoverChanged(value);
+            }
+          },
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              if (backgroundColor != null)
+                Positioned(
+                  top: -widget.topOverlap,
+                  right: 0,
+                  bottom: -widget.bottomOverlap,
+                  left: 0,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
                     ),
                   ),
-                  const SizedBox(width: _kProjectRowGap),
-                  ProjectStatusLabel(status: widget.item.status),
-                ],
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.item.project.data.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.subtitle.subtitle2
+                                .copyWith(
+                                  color: ShowcasePalette.highText(context),
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          RichText(
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            text: TextSpan(
+                              style: metaStyle,
+                              children: _metaSpans(
+                                context,
+                                metaStyle,
+                                widget.item,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: _kProjectRowGap),
+                    ProjectStatusLabel(status: widget.item.status),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
