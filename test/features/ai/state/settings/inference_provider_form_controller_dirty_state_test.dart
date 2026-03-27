@@ -37,8 +37,8 @@ void main() {
       baseUrl: 'https://api.test.com',
       description: 'Test Description',
       inferenceProviderType: InferenceProviderType.genericOpenAi,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
     );
 
     test(

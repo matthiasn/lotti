@@ -236,7 +236,7 @@ void main() {
     registerFallbackValue(FakeTaskData());
     registerFallbackValue(FakeEventData());
     registerFallbackValue(const AsyncLoading<EntryState?>());
-    registerFallbackValue(DateTime.now());
+    registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
     registerFallbackValue(FakeQuillController());
 
     when(
@@ -559,7 +559,9 @@ void main() {
           deletedAt: any(named: 'deletedAt'),
         ),
       ).thenAnswer(
-        (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
+        (_) async => testTextEntry.meta.copyWith(
+          deletedAt: DateTime(2024, 3, 15, 10, 30),
+        ),
       );
 
       await notifier.delete(beamBack: false);
@@ -617,7 +619,9 @@ void main() {
           deletedAt: any(named: 'deletedAt'),
         ),
       ).thenAnswer(
-        (_) async => testTextEntry.meta.copyWith(deletedAt: DateTime.now()),
+        (_) async => testTextEntry.meta.copyWith(
+          deletedAt: DateTime(2024, 3, 15, 10, 30),
+        ),
       );
 
       await notifier.delete(beamBack: true);

@@ -236,12 +236,13 @@ void main() {
     });
 
     testWidgets('handles long label names with ellipsis', (tester) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final longLabel = LabelDefinition(
         id: 'label-long',
         name: 'Very Long Label Name That Should Be Truncated With Ellipsis',
         color: '#00FF00',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: const VectorClock(<String, int>{}),
         private: false,
       );
@@ -266,12 +267,13 @@ void main() {
     });
 
     testWidgets('handles invalid color with fallback', (tester) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final invalidColorLabel = LabelDefinition(
         id: 'label-invalid',
         name: 'Invalid Color',
         color: 'invalid-hex',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: const VectorClock(<String, int>{}),
         private: false,
       );

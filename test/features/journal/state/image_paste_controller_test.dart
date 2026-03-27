@@ -184,13 +184,13 @@ void main() {
         categoryId: any(named: 'categoryId'),
       ),
     ).thenAnswer((_) async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       return Metadata(
         id: 'meta-id',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       );
     });
 

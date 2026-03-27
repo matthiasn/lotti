@@ -72,10 +72,10 @@ void main() {
   Task makeTask({List<String>? labels}) => Task(
     meta: Metadata(
       id: 'task-1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
+      dateFrom: DateTime(2024, 3, 15, 10, 30),
+      dateTo: DateTime(2024, 3, 15, 10, 30),
       categoryId: 'cat',
       labelIds: labels,
     ),
@@ -83,12 +83,12 @@ void main() {
       title: 'Task',
       status: TaskStatus.open(
         id: 's',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         utcOffset: 0,
       ),
       statusHistory: const [],
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      dateFrom: DateTime(2024, 3, 15, 10, 30),
+      dateTo: DateTime(2024, 3, 15, 10, 30),
     ),
   );
 
@@ -102,11 +102,11 @@ void main() {
     color: '#000000',
     description: null,
     sortOrder: null,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
+    updatedAt: DateTime(2024, 3, 15, 10, 30),
     vectorClock: null,
     private: false,
-    deletedAt: deleted ? DateTime.now() : null,
+    deletedAt: deleted ? DateTime(2024, 3, 15, 10, 30) : null,
   );
 
   ChatCompletionMessageToolCall makeCall(List<String> ids) =>
@@ -160,7 +160,7 @@ void main() {
       final task = makeTask(labels: const []);
 
       // very-high and high-1 in cat; high-2 in other cat (out-of-scope)
-      final now = DateTime.now();
+      final now = DateTime(2024, 3, 15, 10, 30);
       final vh = makeLabel(
         'vh',
       ).copyWith(applicableCategoryIds: const ['cat'], updatedAt: now);

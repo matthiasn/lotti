@@ -23,6 +23,8 @@ import '../../../test_data/test_data.dart';
 class _MockSelectable<T> extends Mock implements Selectable<T> {}
 
 void main() {
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+
   late ChecklistRepository repository;
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
@@ -37,10 +39,10 @@ void main() {
       Checklist(
         meta: Metadata(
           id: 'test',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: const ChecklistData(
           title: 'Test Checklist',
@@ -53,10 +55,10 @@ void main() {
       ChecklistItem(
         meta: Metadata(
           id: 'test',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: const ChecklistItemData(
           title: 'Test Item',
@@ -431,11 +433,11 @@ void main() {
 
       final metadata = Metadata(
         id: 'checklist-item-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         categoryId: categoryId,
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        dateFrom: testDate,
+        dateTo: testDate,
       );
 
       when(
@@ -586,10 +588,10 @@ void main() {
       final checklist = Checklist(
         meta: Metadata(
           id: checklistId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: const ChecklistData(
           title: 'Original Title',
@@ -743,10 +745,10 @@ void main() {
       final checklistItem = ChecklistItem(
         meta: Metadata(
           id: checklistItemId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: const ChecklistItemData(
           title: 'Original Item',
@@ -884,10 +886,10 @@ void main() {
           meta: Metadata(
             id: checklistId,
             categoryId: categoryId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
             starred: false,
             private: false,
             utcOffset: 0,
@@ -904,10 +906,10 @@ void main() {
           meta: Metadata(
             id: 'new-item-id',
             categoryId: categoryId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
             starred: false,
             private: false,
             utcOffset: 0,
@@ -931,7 +933,7 @@ void main() {
         ).thenAnswer((_) async => checklist);
         when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
           (_) async => checklist.meta.copyWith(
-            updatedAt: DateTime.now(),
+            updatedAt: testDate,
           ),
         );
         when(
@@ -976,10 +978,10 @@ void main() {
         meta: Metadata(
           id: 'new-item-id',
           categoryId: categoryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           starred: false,
           private: false,
           utcOffset: 0,
@@ -1040,10 +1042,10 @@ void main() {
         meta: Metadata(
           id: checklistId,
           categoryId: categoryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           starred: false,
           private: false,
           utcOffset: 0,
@@ -1052,13 +1054,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       );
 
@@ -1066,10 +1068,10 @@ void main() {
         meta: Metadata(
           id: 'new-item-id',
           categoryId: categoryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           starred: false,
           private: false,
           utcOffset: 0,

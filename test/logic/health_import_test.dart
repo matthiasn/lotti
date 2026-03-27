@@ -184,7 +184,7 @@ void main() {
 
   group('fetchAndProcessActivityDataForDay', () {
     test('should not fetch data for future dates', () async {
-      final futureDate = DateTime.now().add(const Duration(days: 1));
+      final futureDate = DateTime(2099);
       final stepsByDay = <DateTime, num>{};
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};

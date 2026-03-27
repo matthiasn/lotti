@@ -13,33 +13,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
-
-class FakeJournalPageController extends JournalPageController {
-  FakeJournalPageController(this._testState);
-
-  final JournalPageState _testState;
-  final List<String> toggledLabelIds = [];
-  int clearSelectedLabelIdsCalled = 0;
-
-  @override
-  JournalPageState build(bool showTasks) => _testState;
-
-  @override
-  JournalPageState get state => _testState;
-
-  @override
-  Future<void> toggleSelectedLabelId(String id) async {
-    toggledLabelIds.add(id);
-  }
-
-  @override
-  Future<void> clearSelectedLabelIds() async {
-    clearSelectedLabelIdsCalled++;
-  }
-}
-
-class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 JournalPageState _baseState({
   Set<String> selectedLabelIds = const <String>{},
@@ -75,11 +51,11 @@ LabelDefinition buildTestLabel(int index) {
 
 void main() {
   late FakeJournalPageController fakeController;
-  late _MockEntitiesCacheService cacheService;
+  late MockEntitiesCacheService cacheService;
   late List<LabelDefinition> labels;
 
   setUp(() async {
-    cacheService = _MockEntitiesCacheService();
+    cacheService = MockEntitiesCacheService();
     labels = List.generate(10, buildTestLabel);
 
     await getIt.reset();

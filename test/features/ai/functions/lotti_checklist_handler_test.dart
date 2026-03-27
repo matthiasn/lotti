@@ -30,13 +30,14 @@ void main() {
       // Register mocks
       getIt.registerSingleton<JournalDb>(mockJournalDb);
 
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       testTask = Task(
         meta: Metadata(
           id: 'task-123',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           categoryId: 'test-category',
         ),
         data: TaskData(
@@ -44,11 +45,11 @@ void main() {
           checklistIds: const [],
           status: TaskStatus.open(
             id: 'status-123',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           statusHistory: const [],
         ),
       );

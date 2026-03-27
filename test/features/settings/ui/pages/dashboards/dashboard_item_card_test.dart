@@ -48,11 +48,12 @@ void main() {
           aggregationType: AggregationType.dailySum,
         );
 
+        final testDate = DateTime(2024, 3, 15);
         final measurableTypes = [
           EntityDefinition.measurableDataType(
                 id: 'test-measurement-id',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
+                createdAt: testDate,
+                updatedAt: testDate,
                 displayName: 'Test Measurement',
                 description: 'Test description',
                 unitName: 'kg',
@@ -112,11 +113,12 @@ void main() {
           id: 'test-measurement-id',
         );
 
+        final testDate = DateTime(2024, 3, 15);
         final measurableTypes = [
           EntityDefinition.measurableDataType(
                 id: 'test-measurement-id',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
+                createdAt: testDate,
+                updatedAt: testDate,
                 displayName: 'Test Measurement',
                 description: 'Test description',
                 unitName: 'kg',
@@ -253,11 +255,12 @@ void main() {
           habitId: 'test-habit-id',
         );
 
+        final testDate = DateTime(2024, 3, 15);
         final habitDefinition =
             EntityDefinition.habit(
                   id: 'test-habit-id',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
+                  createdAt: testDate,
+                  updatedAt: testDate,
                   name: 'Daily Exercise',
                   description: 'Exercise for 30 minutes',
                   habitSchedule: const HabitSchedule.daily(

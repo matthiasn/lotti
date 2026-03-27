@@ -17,12 +17,13 @@ void main() {
   // Setup for all tests
   setUpAll(() {
     // Create a fallback AiConfig instance that Mocktail can use
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final fallbackConfig = AiConfig.inferenceProvider(
       id: 'fallback-id',
       baseUrl: 'https://fallback.example.com',
       apiKey: 'fallback-key',
       name: 'Fallback API',
-      createdAt: DateTime.now(),
+      createdAt: testDate,
       inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
@@ -58,12 +59,13 @@ void main() {
 
   group('AiConfigByTypeController Tests', () {
     late MockAiConfigRepository mockRepository;
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',
       name: 'Test API',
-      createdAt: DateTime.now(),
+      createdAt: testDate,
       inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 
@@ -115,12 +117,13 @@ void main() {
 
   group('aiConfigById Tests', () {
     late MockAiConfigRepository mockRepository;
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final testApiConfig = AiConfig.inferenceProvider(
       id: 'test-id',
       baseUrl: 'https://api.example.com',
       apiKey: 'test-api-key',
       name: 'Test API',
-      createdAt: DateTime.now(),
+      createdAt: testDate,
       inferenceProviderType: InferenceProviderType.genericOpenAi,
     );
 

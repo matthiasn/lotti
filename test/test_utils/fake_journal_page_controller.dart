@@ -24,11 +24,18 @@ class FakeJournalPageController extends JournalPageController {
   final List<String> toggledPriorities = [];
   final List<String> toggledEntryTypes = [];
   final List<String> singleEntryTypeCalls = [];
+  final List<String> singleTaskStatusCalls = [];
   final List<TaskSortOption> sortOptionCalls = [];
   final List<bool> showCreationDateCalls = [];
+  final List<bool> showDueDateCalls = [];
+  final List<bool> showCoverArtCalls = [];
+  final List<bool> showDistancesCalls = [];
+  final List<bool> showProjectsHeaderCalls = [];
   final List<Set<DisplayFilter>> filtersCalls = [];
   final List<String> searchStringCalls = [];
   final List<SearchMode> searchModeCalls = [];
+  final List<AgentAssignmentFilter> agentAssignmentFilterCalls = [];
+  final List<String> toggledProjectIds = [];
 
   int selectAllCategoriesCalled = 0;
   int clearSelectedLabelIdsCalled = 0;
@@ -38,10 +45,14 @@ class FakeJournalPageController extends JournalPageController {
   int selectAllEntryTypesCalled = 0;
   List<String>? selectAllEntryTypesParam;
   int clearSelectedEntryTypesCalled = 0;
+  int clearProjectFilterCalled = 0;
   int refreshQueryCalled = 0;
 
   @override
   JournalPageState build(bool showTasks) => _initialState;
+
+  @override
+  JournalPageState get state => _initialState;
 
   /// Update state for testing - this updates Riverpod's internal state
   // ignore: use_setters_to_change_properties
@@ -76,6 +87,11 @@ class FakeJournalPageController extends JournalPageController {
   }
 
   @override
+  Future<void> selectSingleTaskStatus(String taskStatus) async {
+    singleTaskStatusCalls.add(taskStatus);
+  }
+
+  @override
   Future<void> selectAllTaskStatuses() async {
     selectAllTaskStatusesCalled++;
   }
@@ -105,6 +121,43 @@ class FakeJournalPageController extends JournalPageController {
   @override
   Future<void> setShowCreationDate({required bool show}) async {
     showCreationDateCalls.add(show);
+  }
+
+  @override
+  Future<void> setShowDueDate({required bool show}) async {
+    showDueDateCalls.add(show);
+  }
+
+  @override
+  Future<void> setShowCoverArt({required bool show}) async {
+    showCoverArtCalls.add(show);
+  }
+
+  @override
+  Future<void> setShowDistances({required bool show}) async {
+    showDistancesCalls.add(show);
+  }
+
+  @override
+  Future<void> setShowProjectsHeader({required bool show}) async {
+    showProjectsHeaderCalls.add(show);
+  }
+
+  // Agent assignment filter
+  @override
+  Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) async {
+    agentAssignmentFilterCalls.add(filter);
+  }
+
+  // Project filter methods
+  @override
+  Future<void> toggleProjectFilter(String projectId) async {
+    toggledProjectIds.add(projectId);
+  }
+
+  @override
+  Future<void> clearProjectFilter() async {
+    clearProjectFilterCalled++;
   }
 
   // Filter methods
@@ -159,11 +212,18 @@ class FakeJournalPageController extends JournalPageController {
     toggledPriorities.clear();
     toggledEntryTypes.clear();
     singleEntryTypeCalls.clear();
+    singleTaskStatusCalls.clear();
     sortOptionCalls.clear();
     showCreationDateCalls.clear();
+    showDueDateCalls.clear();
+    showCoverArtCalls.clear();
+    showDistancesCalls.clear();
+    showProjectsHeaderCalls.clear();
     filtersCalls.clear();
     searchStringCalls.clear();
     searchModeCalls.clear();
+    agentAssignmentFilterCalls.clear();
+    toggledProjectIds.clear();
     selectAllCategoriesCalled = 0;
     clearSelectedLabelIdsCalled = 0;
     clearSelectedTaskStatusesCalled = 0;
@@ -172,6 +232,7 @@ class FakeJournalPageController extends JournalPageController {
     selectAllEntryTypesCalled = 0;
     selectAllEntryTypesParam = null;
     clearSelectedEntryTypesCalled = 0;
+    clearProjectFilterCalled = 0;
     refreshQueryCalled = 0;
   }
 }

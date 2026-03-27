@@ -4,11 +4,13 @@ import 'package:lotti/classes/task.dart';
 
 void main() {
   group('Task utils test', () {
+    final testDate = DateTime(2024, 3, 15);
+
     test('Expected color is returned', () {
       expect(
         TaskStatus.open(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.orange,
@@ -16,7 +18,7 @@ void main() {
       expect(
         TaskStatus.groomed(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.lightGreenAccent,
@@ -24,7 +26,7 @@ void main() {
       expect(
         TaskStatus.inProgress(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.blue,
@@ -32,7 +34,7 @@ void main() {
       expect(
         TaskStatus.inProgress(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.blue,
@@ -40,7 +42,7 @@ void main() {
       expect(
         TaskStatus.blocked(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
           reason: '',
         ).color,
@@ -49,7 +51,7 @@ void main() {
       expect(
         TaskStatus.onHold(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
           reason: '',
         ).color,
@@ -58,7 +60,7 @@ void main() {
       expect(
         TaskStatus.done(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.green,
@@ -66,7 +68,7 @@ void main() {
       expect(
         TaskStatus.rejected(
           id: 'id',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 120,
         ).color,
         Colors.red,

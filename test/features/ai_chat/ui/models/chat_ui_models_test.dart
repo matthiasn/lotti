@@ -200,7 +200,7 @@ void main() {
             id: 'streaming',
             content: 'Partial...',
             role: ChatMessageRole.assistant,
-            timestamp: DateTime.now(),
+            timestamp: DateTime(2024, 3, 15, 10, 30),
             isStreaming: true,
           ),
         ];

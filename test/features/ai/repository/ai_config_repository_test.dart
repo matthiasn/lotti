@@ -27,7 +27,7 @@ void main() {
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
         name: 'Fallback API',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
     );
@@ -40,7 +40,7 @@ void main() {
           baseUrl: 'https://fallback.example.com',
           apiKey: 'fallback-key',
           name: 'Fallback API',
-          createdAt: DateTime.now(),
+          createdAt: fixedDate,
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         ),
         status: SyncEntryStatus.initial,
@@ -103,7 +103,7 @@ void main() {
           baseUrl: 'https://api.example.com',
           apiKey: 'test-api-key',
           name: 'Test API',
-          createdAt: DateTime.now(),
+          createdAt: fixedDate,
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
 
@@ -136,7 +136,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'Test API',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
       when(() => mockDb.getConfigById(id)).thenAnswer((_) async => config);
@@ -335,7 +335,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'Test API',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
@@ -365,7 +365,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'Test API',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
       await repository.saveConfig(config);
@@ -385,7 +385,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'API Config',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
@@ -502,7 +502,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'API Config',
-        createdAt: DateTime.now(),
+        createdAt: fixedDate,
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 

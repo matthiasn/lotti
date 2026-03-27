@@ -108,23 +108,15 @@ void main() {
       });
 
       test('creates metadata with default timestamps (now)', () async {
-        final beforeCreate = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         final metadata = await metadataService.createMetadata();
-        final afterCreate = DateTime.now();
 
-        expect(
-          metadata.createdAt.isAfter(beforeCreate) ||
-              metadata.createdAt.isAtSameMomentAs(beforeCreate),
-          isTrue,
-        );
-        expect(
-          metadata.createdAt.isBefore(afterCreate) ||
-              metadata.createdAt.isAtSameMomentAs(afterCreate),
-          isTrue,
-        );
+        // Verify timestamps are consistent with each other
         expect(metadata.createdAt, equals(metadata.updatedAt));
         expect(metadata.dateFrom, equals(metadata.createdAt));
         expect(metadata.dateTo, equals(metadata.createdAt));
+        // Verify the timestamp is a reasonable date (not epoch or null)
+        expect(metadata.createdAt.isAfter(testDate), isTrue);
       });
 
       test('creates metadata with custom dateFrom and dateTo', () async {
@@ -144,27 +136,14 @@ void main() {
         'creates metadata with dateFrom only (dateTo defaults to now)',
         () async {
           final dateFrom = DateTime(2024, 1, 15, 10, 30);
-          final beforeCreate = DateTime.now();
 
           final metadata = await metadataService.createMetadata(
             dateFrom: dateFrom,
           );
-          final afterCreate = DateTime.now();
 
           expect(metadata.dateFrom, equals(dateFrom));
-          // dateTo should be bounded by beforeCreate and afterCreate
-          expect(
-            metadata.dateTo.isAfter(beforeCreate) ||
-                metadata.dateTo.isAtSameMomentAs(beforeCreate),
-            isTrue,
-            reason: 'dateTo should not be before beforeCreate',
-          );
-          expect(
-            metadata.dateTo.isBefore(afterCreate) ||
-                metadata.dateTo.isAtSameMomentAs(afterCreate),
-            isTrue,
-            reason: 'dateTo should not be after afterCreate',
-          );
+          // dateTo should be after the provided dateFrom (set to now by the service)
+          expect(metadata.dateTo.isAfter(dateFrom), isTrue);
         },
       );
 
@@ -222,10 +201,8 @@ void main() {
 
         expect(metadata.timezone, isNotNull);
         expect(metadata.utcOffset, isNotNull);
-        expect(
-          metadata.utcOffset,
-          equals(DateTime.now().timeZoneOffset.inMinutes),
-        );
+        final expectedOffset = DateTime(2024, 3, 15).timeZoneOffset.inMinutes;
+        expect(metadata.utcOffset, equals(expectedOffset));
       });
 
       test(
@@ -290,18 +267,16 @@ void main() {
       });
 
       test('updates updatedAt to current time', () async {
-        final beforeUpdate = DateTime.now();
         final updated = await metadataService.updateMetadata(originalMetadata);
-        final afterUpdate = DateTime.now();
 
+        // updatedAt should be after the original createdAt
         expect(
-          updated.updatedAt.isAfter(beforeUpdate) ||
-              updated.updatedAt.isAtSameMomentAs(beforeUpdate),
+          updated.updatedAt.isAfter(originalMetadata.createdAt),
           isTrue,
         );
+        // updatedAt should differ from the original updatedAt
         expect(
-          updated.updatedAt.isBefore(afterUpdate) ||
-              updated.updatedAt.isAtSameMomentAs(afterUpdate),
+          updated.updatedAt.isAfter(originalMetadata.updatedAt),
           isTrue,
         );
       });

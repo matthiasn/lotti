@@ -46,23 +46,24 @@ void main() {
       getIt.reset();
     });
 
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final task = Task(
       meta: Metadata(
         id: 't1',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
         labelIds: const ['a'],
       ),
       data: TaskData(
         status: TaskStatus.open(
           id: 's',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           utcOffset: 0,
         ),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: const [],
         title: 't',
         aiSuppressedLabelIds: const {'x', 'y'},

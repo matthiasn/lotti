@@ -13,13 +13,14 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   late MockEntitiesCacheService mockEntitiesCacheService;
+  final testDate = DateTime(2024, 3, 15);
   final testCategories = [
     CategoryDefinition(
       id: 'cat1',
       name: 'Category 1',
       color: '#FF0000',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
       vectorClock: null,
       private: false,
       active: true,
@@ -29,8 +30,8 @@ void main() {
       id: 'cat2',
       name: 'Category 2',
       color: '#00FF00',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
       vectorClock: null,
       private: false,
       active: true,
@@ -40,8 +41,8 @@ void main() {
       id: 'cat3',
       name: 'Category 3',
       color: '#0000FF',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
       vectorClock: null,
       private: false,
       active: true,
@@ -311,14 +312,13 @@ void main() {
 
     testWidgets('allows selecting many (5+) categories', (tester) async {
       // Override with many categories to select from
-      final now = DateTime.now();
       final many = List<CategoryDefinition>.generate(10, (i) {
         return CategoryDefinition(
           id: 'cat${i + 1}',
           name: 'Category ${i + 1}',
           color: '#${(0x0000FF + i).toRadixString(16).padLeft(6, '0')}',
-          createdAt: now,
-          updatedAt: now,
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           private: false,
           active: true,
@@ -539,14 +539,13 @@ void main() {
 
   group('overflow and scrolling behavior', () {
     List<CategoryDefinition> generateCategories(int count) {
-      final now = DateTime.now();
       return List<CategoryDefinition>.generate(count, (i) {
         return CategoryDefinition(
           id: 'cat${i + 1}',
           name: 'Category ${i + 1}',
           color: '#${(0xFF0000 + i).toRadixString(16).padLeft(6, '0')}',
-          createdAt: now,
-          updatedAt: now,
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           private: false,
           active: true,

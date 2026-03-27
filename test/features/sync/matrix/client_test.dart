@@ -67,7 +67,9 @@ void main() {
     test(
       'builds readable device identifier with timestamp and suffix',
       () async {
-        final nowPrefix = DateTime.now().toIso8601String().substring(0, 10);
+        // The device name includes a date from the production code's
+        // DateTime.now(). We verify the format rather than the exact date.
+        final datePattern = RegExp(r'\d{4}-\d{2}-\d{2}');
         var expectedPrefix = Platform.operatingSystem;
         var plugin = DeviceInfoPlugin.setMockInitialValues();
 
@@ -153,7 +155,7 @@ void main() {
 
         final segments = deviceName.split(' ');
         expect(segments.length, greaterThanOrEqualTo(3));
-        expect(segments[1].startsWith(nowPrefix), isTrue);
+        expect(datePattern.hasMatch(segments[1]), isTrue);
         expect(segments.last.length, 4);
       },
     );

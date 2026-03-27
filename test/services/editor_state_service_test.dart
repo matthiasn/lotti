@@ -64,7 +64,7 @@ void main() {
     });
 
     test('init populates editorStateById with matching drafts', () async {
-      final testTime = DateTime.now();
+      final testTime = DateTime(2024, 3, 15, 10, 30);
       final testEntity = FakeJournalDbEntity(updatedAt: testTime);
 
       final draftEntry = EditorDraftState(

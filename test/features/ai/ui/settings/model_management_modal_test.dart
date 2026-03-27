@@ -38,13 +38,14 @@ void main() {
   late List<AiConfigModel> mockModels;
 
   setUp(() {
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     mockModels = [
       AiConfigModel(
         id: 'model1',
         name: 'GPT-4',
         providerModelId: 'gpt-4',
         inferenceProviderId: 'provider1',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         description: 'Advanced language model',
         inputModalities: [Modality.text],
         outputModalities: [Modality.text],
@@ -55,7 +56,7 @@ void main() {
         name: 'Claude Sonnet',
         providerModelId: 'claude-sonnet',
         inferenceProviderId: 'provider2',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         description: 'Balanced performance',
         inputModalities: [Modality.text],
         outputModalities: [Modality.text],
@@ -66,7 +67,7 @@ void main() {
         name: 'Gemini Pro',
         providerModelId: 'gemini-pro',
         inferenceProviderId: 'provider3',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         inputModalities: [Modality.text],
         outputModalities: [Modality.text],
         isReasoningModel: false,
@@ -635,7 +636,7 @@ void main() {
                 name: 'OpenAI',
                 baseUrl: 'https://api.openai.com',
                 apiKey: 'test-key',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 inferenceProviderType: InferenceProviderType.openAi,
               ),
             ),
@@ -674,13 +675,14 @@ void main() {
     late List<AiConfigInferenceProvider> providers;
 
     setUp(() {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       providers = [
         AiConfigInferenceProvider(
           id: 'provider1',
           name: 'OpenAI',
           baseUrl: 'https://api.openai.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.openAi,
         ),
         AiConfigInferenceProvider(
@@ -688,7 +690,7 @@ void main() {
           name: 'Anthropic',
           baseUrl: 'https://api.anthropic.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.anthropic,
         ),
         AiConfigInferenceProvider(
@@ -696,7 +698,7 @@ void main() {
           name: 'Gemini',
           baseUrl: 'https://api.google.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.gemini,
         ),
       ];
@@ -707,7 +709,7 @@ void main() {
           name: 'GPT-4',
           providerModelId: 'gpt-4',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -717,7 +719,7 @@ void main() {
           name: 'GPT-3.5',
           providerModelId: 'gpt-3.5',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -727,7 +729,7 @@ void main() {
           name: 'Claude Sonnet',
           providerModelId: 'claude-sonnet',
           inferenceProviderId: 'provider2',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -737,7 +739,7 @@ void main() {
           name: 'Gemini Pro',
           providerModelId: 'gemini-pro',
           inferenceProviderId: 'provider3',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -759,13 +761,14 @@ void main() {
     });
 
     test('single provider models extract to one unique ID', () {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final singleProviderModels = [
         AiConfigModel(
           id: 'model1',
           name: 'GPT-4',
           providerModelId: 'gpt-4',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -775,7 +778,7 @@ void main() {
           name: 'GPT-3.5',
           providerModelId: 'gpt-3.5',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -916,13 +919,14 @@ void main() {
     late List<AiConfigInferenceProvider> providers;
 
     setUp(() {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       providers = [
         AiConfigInferenceProvider(
           id: 'provider1',
           name: 'OpenAI',
           baseUrl: 'https://api.openai.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.openAi,
         ),
         AiConfigInferenceProvider(
@@ -930,7 +934,7 @@ void main() {
           name: 'Anthropic',
           baseUrl: 'https://api.anthropic.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.anthropic,
         ),
       ];
@@ -941,7 +945,7 @@ void main() {
           name: 'GPT-4',
           providerModelId: 'gpt-4',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -951,7 +955,7 @@ void main() {
           name: 'Claude Sonnet',
           providerModelId: 'claude-sonnet',
           inferenceProviderId: 'provider2',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -1118,13 +1122,14 @@ void main() {
 
   group('Provider Filter Edge Cases', () {
     testWidgets('empty results when provider has no models', (tester) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final providersWithNoModels = [
         AiConfigInferenceProvider(
           id: 'provider1',
           name: 'Empty Provider',
           baseUrl: 'https://example.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.openAi,
         ),
         AiConfigInferenceProvider(
@@ -1132,7 +1137,7 @@ void main() {
           name: 'OpenAI',
           baseUrl: 'https://api.openai.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.openAi,
         ),
       ];
@@ -1143,7 +1148,7 @@ void main() {
           name: 'GPT-4',
           providerModelId: 'gpt-4',
           inferenceProviderId: 'provider2',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -1192,13 +1197,14 @@ void main() {
     testWidgets('all models from same provider still shows filter', (
       tester,
     ) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final multiProviderConfig = [
         AiConfigInferenceProvider(
           id: 'provider1',
           name: 'OpenAI',
           baseUrl: 'https://api.openai.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.openAi,
         ),
         AiConfigInferenceProvider(
@@ -1206,7 +1212,7 @@ void main() {
           name: 'Anthropic',
           baseUrl: 'https://api.anthropic.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inferenceProviderType: InferenceProviderType.anthropic,
         ),
       ];
@@ -1217,7 +1223,7 @@ void main() {
           name: 'GPT-4',
           providerModelId: 'gpt-4',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,
@@ -1227,7 +1233,7 @@ void main() {
           name: 'GPT-3.5',
           providerModelId: 'gpt-3.5',
           inferenceProviderId: 'provider1',
-          createdAt: DateTime.now(),
+          createdAt: testDate,
           inputModalities: [Modality.text],
           outputModalities: [Modality.text],
           isReasoningModel: false,

@@ -87,7 +87,7 @@ void main() {
                 name: 'Test Provider',
                 baseUrl: baseUrl,
                 apiKey: apiKey,
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15),
                 inferenceProviderType: InferenceProviderType.genericOpenAi,
               )
               as AiConfigInferenceProvider;
@@ -119,7 +119,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -169,7 +169,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-id-2',
@@ -182,7 +182,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ];
 
@@ -230,7 +230,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -292,7 +292,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -353,7 +353,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -405,7 +405,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -459,7 +459,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -514,7 +514,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -563,7 +563,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -605,7 +605,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -646,7 +646,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -683,7 +683,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             // Add an error that matches the Anthropic ping pattern
@@ -702,7 +702,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             ..close();
@@ -749,7 +749,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             // Add a different error
@@ -804,7 +804,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -900,7 +900,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -945,7 +945,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -987,7 +987,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -1023,7 +1023,7 @@ void main() {
                   name: 'OpenAI Whisper',
                   baseUrl: 'http://localhost:8084',
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                   inferenceProviderType: InferenceProviderType.whisper,
                 )
                 as AiConfigInferenceProvider;
@@ -1087,7 +1087,7 @@ void main() {
                 name: 'OpenAI Whisper',
                 baseUrl: 'http://localhost:8084',
                 apiKey: '',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15),
                 inferenceProviderType: InferenceProviderType.whisper,
               )
               as AiConfigInferenceProvider;
@@ -1143,7 +1143,7 @@ void main() {
                   name: 'OpenAI Whisper',
                   baseUrl: 'http://localhost:8084',
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                   inferenceProviderType: InferenceProviderType.whisper,
                 )
                 as AiConfigInferenceProvider;
@@ -1196,7 +1196,7 @@ void main() {
                   name: 'OpenAI Whisper',
                   baseUrl: 'http://localhost:8084',
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                   inferenceProviderType: InferenceProviderType.whisper,
                 )
                 as AiConfigInferenceProvider;
@@ -1249,7 +1249,7 @@ void main() {
                   name: 'OpenAI Whisper',
                   baseUrl: 'http://localhost:8084',
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                   inferenceProviderType: InferenceProviderType.whisper,
                 )
                 as AiConfigInferenceProvider;
@@ -1306,7 +1306,7 @@ void main() {
                 name: 'OpenAI Whisper',
                 baseUrl: 'http://localhost:8084',
                 apiKey: '',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15),
                 inferenceProviderType: InferenceProviderType.whisper,
               )
               as AiConfigInferenceProvider;
@@ -1380,7 +1380,7 @@ void main() {
                   name: 'OpenAI Whisper',
                   baseUrl: 'http://localhost:8084',
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                   inferenceProviderType: InferenceProviderType.whisper,
                 )
                 as AiConfigInferenceProvider;
@@ -1442,7 +1442,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -1493,7 +1493,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -1546,7 +1546,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -1597,7 +1597,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -1656,7 +1656,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -1749,7 +1749,7 @@ void main() {
           (_) => Stream.fromIterable([
             CreateChatCompletionStreamResponse(
               id: 'test-id',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
               choices: [
                 const ChatCompletionStreamResponseChoice(
@@ -2111,7 +2111,7 @@ void main() {
           (_) => Stream.fromIterable([
             CreateChatCompletionStreamResponse(
               id: 'test-id',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
               choices: [
                 const ChatCompletionStreamResponseChoice(
@@ -2716,7 +2716,7 @@ void main() {
           (_) => Stream.fromIterable([
             CreateChatCompletionStreamResponse(
               id: 'test-id',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
               choices: [
                 const ChatCompletionStreamResponseChoice(
@@ -2805,7 +2805,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -2848,7 +2848,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -2901,7 +2901,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -3497,7 +3497,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]),
           );
@@ -3561,7 +3561,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]),
           );
@@ -3622,7 +3622,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );
@@ -3683,7 +3683,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
         );

@@ -679,7 +679,7 @@ void main() {
         () async {
           // Arrange
           final mockAudioNote = AudioNote(
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             audioFile: 'audio.m4a',
             audioDirectory: '/test/path',
             duration: Duration.zero,
@@ -746,7 +746,7 @@ void main() {
       test('should handle successful stop with audioNote and create entry', () async {
         // Arrange
         final mockAudioNote = AudioNote(
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 31),
           audioFile: 'audio.m4a',
           audioDirectory: '/test/path',
           duration: const Duration(seconds: 10),
@@ -757,14 +757,14 @@ void main() {
         /*final mockJournalAudio = JournalAudio(
           meta: Metadata(
             id: 'test-entry-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 31),
+            updatedAt: DateTime(2024, 3, 15, 10, 31),
+            dateFrom: DateTime(2024, 3, 15, 10, 31),
+            dateTo: DateTime(2024, 3, 15, 10, 31),
           ),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 31),
+            dateTo: DateTime(2024, 3, 15, 10, 31),
             audioFile: 'audio.m4a',
             audioDirectory: '/test/path',
             duration: const Duration(seconds: 10),
@@ -1551,10 +1551,10 @@ void main() {
         ).thenAnswer(
           (_) async => Metadata(
             id: 'test-entry-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
         when(

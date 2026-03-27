@@ -16,7 +16,7 @@ void main() {
     baseUrl: 'https://api.example.com',
     apiKey: 'test-api-key',
     name: 'Test API',
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
     inferenceProviderType: InferenceProviderType.genericOpenAi,
   );
 
@@ -25,7 +25,7 @@ void main() {
     baseUrl: 'http://localhost:11434',
     apiKey: '',
     name: 'Ollama Local',
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
     inferenceProviderType: InferenceProviderType.ollama,
   );
 
@@ -128,7 +128,7 @@ void main() {
         baseUrl: 'https://updated.example.com',
         apiKey: 'updated-key',
         name: 'Updated API',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
@@ -156,7 +156,7 @@ void main() {
             name: 'Test Model',
             providerModelId: 'test-model',
             inferenceProviderId: 'test-id',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
             inputModalities: [Modality.text],
             outputModalities: [Modality.text],
             isReasoningModel: false,
@@ -949,7 +949,7 @@ void main() {
         baseUrl: 'https://api.example.com',
         apiKey: 'test-api-key',
         name: 'Test Provider',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
@@ -976,7 +976,7 @@ void main() {
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-gemini-key',
         name: 'Gemini',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 

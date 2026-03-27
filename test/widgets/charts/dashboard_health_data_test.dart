@@ -169,21 +169,21 @@ void main() {
         },
       );
 
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15);
 
       expect(
         colorFromCssHex('#FC100D'),
-        colorByValueAndType(Observation(now, 1000), config),
+        colorByValueAndType(Observation(testDate, 1000), config),
       );
 
       expect(
         colorFromCssHex('#FF5F1F'),
-        colorByValueAndType(Observation(now, 7000), config),
+        colorByValueAndType(Observation(testDate, 7000), config),
       );
 
       expect(
         colorFromCssHex('#4BB543'),
-        colorByValueAndType(Observation(now, 17000), config),
+        colorByValueAndType(Observation(testDate, 17000), config),
       );
     },
   );

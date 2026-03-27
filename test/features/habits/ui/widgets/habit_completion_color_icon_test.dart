@@ -27,13 +27,15 @@ void main() {
     const habitId = 'test-habit-id';
     const categoryId = 'test-category-id';
 
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+
     when(() => mockCacheService.getHabitById(habitId)).thenReturn(
       HabitDefinition(
         id: habitId,
         name: 'Test Habit',
         categoryId: categoryId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         active: true,
@@ -76,13 +78,15 @@ void main() {
     const habitId = 'test-habit-id';
     const customSize = 30.0;
 
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+
     when(() => mockCacheService.getHabitById(habitId)).thenReturn(
       HabitDefinition(
         id: habitId,
         name: 'Test Habit',
         categoryId: 'test-category-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         active: true,

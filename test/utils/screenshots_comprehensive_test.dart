@@ -292,7 +292,7 @@ void main() {
           imageId: 'test-id',
           imageFile: 'test.jpg',
           imageDirectory: '/test/',
-          capturedAt: DateTime.now(),
+          capturedAt: DateTime(2024, 3, 15, 10, 30),
         );
 
         expect(testData.imageFile, endsWith('.jpg'));

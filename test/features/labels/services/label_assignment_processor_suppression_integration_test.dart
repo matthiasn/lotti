@@ -21,24 +21,25 @@ void main() {
 
       // Task context
       const taskId = 't1';
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final task = Task(
         meta: Metadata(
           id: taskId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           categoryId: 'engineering',
           labelIds: const ['A'], // already assigned
         ),
         data: TaskData(
           status: TaskStatus.open(
             id: 's',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           statusHistory: const [],
           title: 'Task',
           aiSuppressedLabelIds: const {'S'},
@@ -52,8 +53,8 @@ void main() {
         id: id,
         name: id,
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
       );
@@ -61,8 +62,8 @@ void main() {
         id: id,
         name: id,
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         applicableCategoryIds: const ['engineering'],
@@ -76,15 +77,15 @@ void main() {
         () => db.getLabelDefinitionById('S'),
       ).thenAnswer((_) async => global('S'));
       when(() => db.getLabelDefinitionById('D')).thenAnswer(
-        (_) async => global('D').copyWith(deletedAt: DateTime.now()),
+        (_) async => global('D').copyWith(deletedAt: testDate),
       );
       when(() => db.getLabelDefinitionById('C')).thenAnswer(
         (_) async => LabelDefinition(
           id: 'C',
           name: 'C',
           color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           private: false,
           applicableCategoryIds: const ['design'], // out of scope
@@ -99,14 +100,14 @@ void main() {
         (_) async => [
           global('A'),
           global('S'),
-          global('D').copyWith(deletedAt: DateTime.now()),
+          global('D').copyWith(deletedAt: testDate),
           engineeringOnly('G'),
           LabelDefinition(
             id: 'C',
             name: 'C',
             color: '#000',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
             vectorClock: null,
             private: false,
             applicableCategoryIds: const ['design'],

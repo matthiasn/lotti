@@ -19,7 +19,7 @@ void main() {
               inferenceProviderType: InferenceProviderType.anthropic,
               apiKey: 'test-key',
               baseUrl: 'https://api.anthropic.com',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
             )
             as AiConfigInferenceProvider,
         AiConfig.inferenceProvider(
@@ -29,7 +29,7 @@ void main() {
               inferenceProviderType: InferenceProviderType.openAi,
               apiKey: 'test-key',
               baseUrl: 'https://api.openai.com',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
             )
             as AiConfigInferenceProvider,
       ];
@@ -41,7 +41,7 @@ void main() {
               description: 'Fast and capable model',
               providerModelId: 'claude-3-5-sonnet-20241022',
               inferenceProviderId: 'anthropic-provider',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
               inputModalities: [Modality.text, Modality.image],
               outputModalities: [Modality.text],
               isReasoningModel: false,
@@ -53,7 +53,7 @@ void main() {
               description: 'Powerful reasoning model',
               providerModelId: 'gpt-4',
               inferenceProviderId: 'openai-provider',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
               inputModalities: [Modality.text],
               outputModalities: [Modality.text],
               isReasoningModel: true,
@@ -65,7 +65,7 @@ void main() {
               description: 'Vision and audio capable',
               providerModelId: 'multimodal-1',
               inferenceProviderId: 'anthropic-provider',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
               inputModalities: [Modality.text, Modality.image, Modality.audio],
               outputModalities: [Modality.text],
               isReasoningModel: false,
@@ -120,7 +120,7 @@ void main() {
                   inferenceProviderType: InferenceProviderType.genericOpenAi,
                   apiKey: 'test-key',
                   baseUrl: 'https://api.test.com',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15),
                 )
                 as AiConfigInferenceProvider;
 

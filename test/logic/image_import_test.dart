@@ -50,7 +50,7 @@ void main() {
     registerFallbackValue(StackTrace.current);
     registerFallbackValue(FakeJournalImage());
     registerFallbackValue(FakeMetadata());
-    registerFallbackValue(DateTime.now());
+    registerFallbackValue(DateTime(2024, 3, 15));
   });
 
   setUp(() async {
@@ -99,10 +99,10 @@ void main() {
     ).thenAnswer(
       (_) async => Metadata(
         id: 'test-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
       ),
     );
 
@@ -386,7 +386,7 @@ void main() {
     test('returns null for empty data', () async {
       final result = await extractGpsCoordinates(
         Uint8List(0),
-        DateTime.now(),
+        DateTime(2024, 3, 15),
       );
       expect(result, isNull);
     });
@@ -394,7 +394,7 @@ void main() {
     test('returns null for non-image data', () async {
       final result = await extractGpsCoordinates(
         Uint8List.fromList([0, 1, 2, 3, 4]),
-        DateTime.now(),
+        DateTime(2024, 3, 15),
       );
       expect(result, isNull);
     });

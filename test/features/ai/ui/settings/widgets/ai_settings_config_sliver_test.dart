@@ -26,7 +26,7 @@ void main() {
               inferenceProviderType: InferenceProviderType.anthropic,
               apiKey: 'key1',
               baseUrl: 'https://api1.com',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
             )
             as AiConfigInferenceProvider,
         AiConfig.inferenceProvider(
@@ -36,7 +36,7 @@ void main() {
               inferenceProviderType: InferenceProviderType.openAi,
               apiKey: 'key2',
               baseUrl: 'https://api2.com',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
             )
             as AiConfigInferenceProvider,
       ];
@@ -48,7 +48,7 @@ void main() {
               description: 'First test model',
               providerModelId: 'model-1-id',
               inferenceProviderId: 'provider-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               inputModalities: [Modality.text, Modality.image],
               outputModalities: [Modality.text],
               isReasoningModel: false,
@@ -60,7 +60,7 @@ void main() {
               description: 'Second test model',
               providerModelId: 'model-2-id',
               inferenceProviderId: 'provider-2',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               inputModalities: [Modality.text],
               outputModalities: [Modality.text],
               isReasoningModel: true,
@@ -77,7 +77,7 @@ void main() {
               userMessage: 'User message 1',
               defaultModelId: 'model-1',
               modelIds: ['model-1'],
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               useReasoning: false,
               requiredInputData: [InputDataType.task],
               // ignore: deprecated_member_use_from_same_package
@@ -92,7 +92,7 @@ void main() {
               userMessage: 'User message 2',
               defaultModelId: 'model-2',
               modelIds: ['model-2'],
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               useReasoning: true,
               requiredInputData: [InputDataType.images],
               aiResponseType: AiResponseType.imageAnalysis,
@@ -453,7 +453,7 @@ void main() {
                     inferenceProviderType: InferenceProviderType.anthropic,
                     apiKey: 'key$index',
                     baseUrl: 'https://api$index.com',
-                    createdAt: DateTime.now(),
+                    createdAt: DateTime(2024, 3, 15, 10, 30),
                   )
                   as AiConfigInferenceProvider,
         );
@@ -526,7 +526,7 @@ void main() {
                   inferenceProviderType: InferenceProviderType.anthropic,
                   apiKey: 'key',
                   baseUrl: 'https://api.com',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15, 10, 30),
                 )
                 as AiConfigInferenceProvider;
 
@@ -555,7 +555,7 @@ void main() {
                   inferenceProviderType: InferenceProviderType.anthropic,
                   apiKey: 'key',
                   baseUrl: 'https://api.com',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15, 10, 30),
                 )
                 as AiConfigInferenceProvider;
 
@@ -625,7 +625,7 @@ void main() {
                     inferenceProviderType: InferenceProviderType.anthropic,
                     apiKey: 'key$index',
                     baseUrl: 'https://api$index.com',
-                    createdAt: DateTime.now(),
+                    createdAt: DateTime(2024, 3, 15, 10, 30),
                   )
                   as AiConfigInferenceProvider,
         );

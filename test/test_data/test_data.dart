@@ -78,7 +78,7 @@ final habitFlossingDueLater = HabitDefinition(
   habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
   active: true,
   private: false,
-  activeFrom: DateTime.now().add(const Duration(minutes: 10)),
+  activeFrom: DateTime(2024, 3, 15, 10, 40),
 );
 
 final measurablePullUps = MeasurableDataType(
@@ -221,7 +221,7 @@ final testImageEntry = JournalImage(
     imageId: '',
     imageFile: '',
     imageDirectory: '',
-    capturedAt: DateTime.now(),
+    capturedAt: DateTime(2024, 3, 15, 10, 30),
   ),
 );
 
@@ -272,19 +272,21 @@ final testAudioEntryWithTranscripts = JournalAudio(
   ),
 );
 
+final _habitCompletionDate = DateTime(2024, 3, 15, 12);
+
 final testHabitCompletionEntry = HabitCompletionEntry(
   meta: Metadata(
     id: '32ea936e-dfc6-43bd-8722-d816c35eb489',
-    createdAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: _habitCompletionDate,
+    dateFrom: _habitCompletionDate,
+    dateTo: _habitCompletionDate,
+    updatedAt: _habitCompletionDate,
     starred: true,
   ),
   entryText: const EntryText(plainText: 'test image entry text'),
   data: HabitCompletionData(
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    dateFrom: _habitCompletionDate,
+    dateTo: _habitCompletionDate,
     habitId: habitFlossing.id,
   ),
 );
@@ -427,8 +429,8 @@ final testWorkoutRunning = WorkoutEntry(
 
 final resolvedConflict = Conflict(
   id: 'id',
-  createdAt: DateTime.now(),
-  updatedAt: DateTime.now(),
+  createdAt: DateTime(2024, 3, 15, 14),
+  updatedAt: DateTime(2024, 3, 15, 14),
   serialized: jsonEncode(testTextEntry.toJson()),
   schemaVersion: 1,
   status: ConflictStatus.resolved.index,
@@ -457,8 +459,8 @@ final testRatingEntry = JournalEntity.rating(
 
 final unresolvedConflict = Conflict(
   id: 'id',
-  createdAt: DateTime.now(),
-  updatedAt: DateTime.now(),
+  createdAt: DateTime(2024, 3, 15, 15),
+  updatedAt: DateTime(2024, 3, 15, 15),
   serialized: jsonEncode(testTextEntry.toJson()),
   schemaVersion: 1,
   status: ConflictStatus.unresolved.index,

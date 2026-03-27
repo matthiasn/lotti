@@ -338,13 +338,14 @@ void main() {
     testWidgets('calls createChecklist when add button is pressed', (
       tester,
     ) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final newChecklist = JournalEntity.checklist(
         meta: Metadata(
           id: 'new-checklist',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           starred: false,
           private: false,
         ),

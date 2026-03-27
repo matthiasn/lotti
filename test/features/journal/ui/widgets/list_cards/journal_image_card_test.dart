@@ -45,13 +45,15 @@ class MockTimeService implements TimeService {
 }
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
+  static final _testDate = DateTime(2024, 3, 15, 10, 30);
+
   @override
   CategoryDefinition? getCategoryById(String? categoryId) {
     return categoryId != null
         ? CategoryDefinition(
             id: 'test-category-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: _testDate,
+            updatedAt: _testDate,
             name: 'Test Category',
             vectorClock: null,
             private: false,
@@ -175,7 +177,7 @@ void main() {
     testWidgets('hides deleted entries', (tester) async {
       final deletedEntry = testImageEntry.copyWith(
         meta: testImageEntry.meta.copyWith(
-          deletedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 10, 30),
         ),
       );
 

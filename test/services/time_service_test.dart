@@ -69,7 +69,7 @@ void main() {
         final entity = testTextEntry;
         final stream = timeService.getStream();
 
-        final startTime = DateTime.now();
+        final startTime = DateTime(2024, 3, 15, 10, 30);
         List<JournalEntity?>? emissions;
         stream.take(2).toList().then((e) => emissions = e);
 

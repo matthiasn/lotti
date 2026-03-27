@@ -39,8 +39,8 @@ void main() {
       inputModalities: [Modality.text],
       outputModalities: [Modality.text],
       isReasoningModel: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
     );
 
     test(

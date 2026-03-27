@@ -38,7 +38,7 @@ Future<Geolocation?> fakeIpGeolocationProvider({
   http.Client? httpClient,
 }) async {
   return Geolocation(
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
     latitude: 40.7128,
     longitude: -74.0060,
     geohashString: 'dr5regw3pb1h',

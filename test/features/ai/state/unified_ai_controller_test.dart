@@ -66,10 +66,10 @@ void main() {
       JournalEntry(
         meta: Metadata(
           id: 'fallback-entry',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
       ),
     );
@@ -296,7 +296,7 @@ void main() {
         userMessage: 'User',
         defaultModelId: 'model-1',
         modelIds: ['model-1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         // ignore: deprecated_member_use_from_same_package
@@ -594,7 +594,7 @@ void main() {
         userMessage: 'User',
         defaultModelId: 'model-1',
         modelIds: ['model-1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         // ignore: deprecated_member_use_from_same_package
@@ -856,8 +856,8 @@ void main() {
       final testCategory = CategoryDefinition(
         id: categoryId,
         name: 'Test Category',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
         private: false,
         active: true,

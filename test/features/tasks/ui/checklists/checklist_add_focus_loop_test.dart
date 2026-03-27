@@ -55,7 +55,7 @@ void main() {
             onTitleSave: _noopSave,
             onCreateChecklistItem: (text) async {
               createCalls++;
-              return 'item-${DateTime.now().microsecondsSinceEpoch}';
+              return 'item-$createCalls';
             },
             updateItemOrder: _noopOrder,
           ),

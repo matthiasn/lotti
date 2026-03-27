@@ -15,12 +15,12 @@ void main() {
   group('insertDraftState Tests', () {
     test('inserts new draft successfully', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const deltaJson = '{"ops":[{"insert":"test"}]}';
 
       final id = await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
@@ -29,19 +29,19 @@ void main() {
 
     test('archives previous DRAFT entries for same entryId', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert first draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
       // Insert second draft - should archive the first
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
@@ -54,17 +54,17 @@ void main() {
     });
 
     test('generates unique UUID for each draft', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       final id1 = await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft1"}]}',
       );
 
       final id2 = await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft2"}]}',
       );
 
@@ -73,12 +73,12 @@ void main() {
 
     test('sets correct status to DRAFT', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const deltaJson = '{"ops":[{"insert":"test"}]}';
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
@@ -89,12 +89,12 @@ void main() {
 
     test('stores delta JSON correctly', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const deltaJson = '{"ops":[{"insert":"test content"}]}';
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
@@ -103,17 +103,17 @@ void main() {
     });
 
     test('handles multiple drafts for different entries', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft1"}]}',
       );
 
       await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft2"}]}',
       );
 
@@ -123,30 +123,30 @@ void main() {
 
     test('only archives DRAFT status entries, not SAVED', () async {
       const entryId = 'test-entry-123';
-      final lastSaved1 = DateTime.now();
+      final testDate1 = DateTime(2024, 3, 15, 10, 30);
 
       // Insert first draft for a different entry
       await db.insertDraftState(
         entryId: 'other-entry',
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
         draftDeltaJson: '{"ops":[{"insert":"other"}]}',
       );
 
       // Insert second draft for our test entry
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
       // Mark the test entry as saved
-      await db.setDraftSaved(entryId: entryId, lastSaved: lastSaved1);
+      await db.setDraftSaved(entryId: entryId, lastSaved: testDate1);
 
       // Insert new draft for same entry with different timestamp
-      final lastSaved2 = lastSaved1.add(const Duration(seconds: 1));
+      final testDate2 = testDate1.add(const Duration(seconds: 1));
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved2,
+        lastSaved: testDate2,
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
@@ -166,27 +166,27 @@ void main() {
     test('stores lastSaved timestamp correctly', () async {
       const entryId = 'test-entry-123';
       // Use a timestamp without milliseconds to match SQLite precision
-      final lastSaved = DateTime(2025, 10, 17, 12, 30, 45);
+      final testDate = DateTime(2025, 10, 17, 12, 30, 45);
       const deltaJson = '{"ops":[{"insert":"test"}]}';
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
       final drafts = await db.allDrafts().get();
-      expect(drafts.first.lastSaved, equals(lastSaved));
+      expect(drafts.first.lastSaved, equals(testDate));
     });
 
     test('stores entryId correctly', () async {
       const entryId = 'test-entry-specific-id';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const deltaJson = '{"ops":[{"insert":"test"}]}';
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
@@ -198,19 +198,19 @@ void main() {
   group('setDraftSaved Tests', () {
     test('updates draft status from DRAFT to SAVED', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
 
       // Mark as saved
       final updateCount = await db.setDraftSaved(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(updateCount, equals(1));
@@ -221,23 +221,23 @@ void main() {
     });
 
     test('only updates drafts with matching entryId', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert two drafts
       await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft1"}]}',
       );
 
       await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft2"}]}',
       );
 
       // Mark only entry-1 as saved
-      await db.setDraftSaved(entryId: 'entry-1', lastSaved: lastSaved);
+      await db.setDraftSaved(entryId: 'entry-1', lastSaved: testDate);
 
       // Verify only entry-2 remains as DRAFT
       final drafts = await db.allDrafts().get();
@@ -247,26 +247,26 @@ void main() {
 
     test('only updates drafts with status=DRAFT', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert first draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
       // Insert second draft (this archives the first)
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved.add(const Duration(seconds: 1)),
+        lastSaved: testDate.add(const Duration(seconds: 1)),
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
       // Mark as saved - should only affect the second draft (which has status DRAFT)
       final updateCount = await db.setDraftSaved(
         entryId: entryId,
-        lastSaved: lastSaved.add(const Duration(seconds: 1)),
+        lastSaved: testDate.add(const Duration(seconds: 1)),
       );
 
       expect(updateCount, equals(1));
@@ -274,17 +274,17 @@ void main() {
 
     test('returns 1 when draft is updated', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
 
       final updateCount = await db.setDraftSaved(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(updateCount, equals(1));
@@ -293,7 +293,7 @@ void main() {
     test('returns 0 when no matching draft found', () async {
       final updateCount = await db.setDraftSaved(
         entryId: 'nonexistent-entry',
-        lastSaved: DateTime.now(),
+        lastSaved: DateTime(2024, 3, 15, 10, 30),
       );
 
       expect(updateCount, equals(0));
@@ -301,20 +301,20 @@ void main() {
 
     test('does not update already SAVED drafts', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert and save a draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
-      await db.setDraftSaved(entryId: entryId, lastSaved: lastSaved);
+      await db.setDraftSaved(entryId: entryId, lastSaved: testDate);
 
       // Try to save again - should return 0 since it's already saved
       final updateCount = await db.setDraftSaved(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(updateCount, equals(0));
@@ -322,30 +322,30 @@ void main() {
 
     test('does not update ARCHIVED drafts', () async {
       const entryId = 'test-entry-123';
-      final lastSaved1 = DateTime.now();
+      final testDate1 = DateTime(2024, 3, 15, 10, 30);
 
       // Insert first draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
       // Insert second draft with different entry ID (so first won't be archived)
       // Then manually mark the first as SAVED
-      await db.setDraftSaved(entryId: entryId, lastSaved: lastSaved1);
+      await db.setDraftSaved(entryId: entryId, lastSaved: testDate1);
 
       // Insert a new draft for a different entry
       await db.insertDraftState(
         entryId: 'different-entry',
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
         draftDeltaJson: '{"ops":[{"insert":"other"}]}',
       );
 
       // Try to save the SAVED draft again - should return 0 since it's no longer DRAFT
       final updateCount = await db.setDraftSaved(
         entryId: entryId,
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
       );
 
       expect(updateCount, equals(0));
@@ -356,7 +356,7 @@ void main() {
     test('returns null when entryId is null', () async {
       final result = await db.getLatestDraft(
         null,
-        lastSaved: DateTime.now(),
+        lastSaved: DateTime(2024, 3, 15, 10, 30),
       );
 
       expect(result, isNull);
@@ -365,7 +365,7 @@ void main() {
     test('returns null when no matching draft exists', () async {
       final result = await db.getLatestDraft(
         'nonexistent-entry',
-        lastSaved: DateTime.now(),
+        lastSaved: DateTime(2024, 3, 15, 10, 30),
       );
 
       expect(result, isNull);
@@ -373,18 +373,18 @@ void main() {
 
     test('returns latest draft when one exists', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const deltaJson = '{"ops":[{"insert":"test content"}]}';
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: deltaJson,
       );
 
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(result, isNotNull);
@@ -394,27 +394,27 @@ void main() {
 
     test('returns correct draft when multiple exist for same entry', () async {
       const entryId = 'test-entry-123';
-      final lastSaved1 = DateTime.now();
-      final lastSaved2 = lastSaved1.add(const Duration(seconds: 1));
+      final testDate1 = DateTime(2024, 3, 15, 10, 30);
+      final testDate2 = testDate1.add(const Duration(seconds: 1));
 
       // Insert first draft
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved1,
+        lastSaved: testDate1,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
       // Insert second draft (archives first)
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved2,
+        lastSaved: testDate2,
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
       // Get the second draft
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved2,
+        lastSaved: testDate2,
       );
 
       expect(result, isNotNull);
@@ -423,18 +423,18 @@ void main() {
 
     test('matches both entryId AND lastSaved timestamp', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
 
       // Query with correct entryId but different lastSaved
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved.add(const Duration(seconds: 1)),
+        lastSaved: testDate.add(const Duration(seconds: 1)),
       );
 
       expect(result, isNull);
@@ -442,18 +442,18 @@ void main() {
 
     test('returns null for mismatched lastSaved', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
 
       // Query with different lastSaved
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved.subtract(const Duration(hours: 1)),
+        lastSaved: testDate.subtract(const Duration(hours: 1)),
       );
 
       expect(result, isNull);
@@ -461,21 +461,21 @@ void main() {
 
     test('only returns drafts with status=DRAFT', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"test"}]}',
       );
 
       // Mark as saved
-      await db.setDraftSaved(entryId: entryId, lastSaved: lastSaved);
+      await db.setDraftSaved(entryId: entryId, lastSaved: testDate);
 
       // Should not find it since it's now SAVED
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(result, isNull);
@@ -483,14 +483,14 @@ void main() {
 
     test('orders by created_at DESC (latest first)', () async {
       const entryId = 'test-entry-123';
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert multiple drafts with same entryId and lastSaved
       // (in reality this shouldn't happen, but testing the ORDER BY clause)
       for (var i = 0; i < 3; i++) {
         await db.insertDraftState(
           entryId: 'other-entry-$i',
-          lastSaved: lastSaved,
+          lastSaved: testDate,
           draftDeltaJson: '{"ops":[{"insert":"draft $i"}]}',
         );
       }
@@ -498,13 +498,13 @@ void main() {
       // Now insert the one we're looking for
       await db.insertDraftState(
         entryId: entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"target draft"}]}',
       );
 
       final result = await db.getLatestDraft(
         entryId,
-        lastSaved: lastSaved,
+        lastSaved: testDate,
       );
 
       expect(result, isNotNull);
@@ -512,22 +512,22 @@ void main() {
     });
 
     test('handles different entries with same lastSaved timestamp', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft1"}]}',
       );
 
       await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft2"}]}',
       );
 
-      final result1 = await db.getLatestDraft('entry-1', lastSaved: lastSaved);
-      final result2 = await db.getLatestDraft('entry-2', lastSaved: lastSaved);
+      final result1 = await db.getLatestDraft('entry-1', lastSaved: testDate);
+      final result2 = await db.getLatestDraft('entry-2', lastSaved: testDate);
 
       expect(result1, isNotNull);
       expect(result2, isNotNull);
@@ -538,23 +538,23 @@ void main() {
 
   group('allDrafts Query Tests', () {
     test('returns only drafts with status DRAFT', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert drafts
       await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft1"}]}',
       );
 
       await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"draft2"}]}',
       );
 
       // Mark one as saved
-      await db.setDraftSaved(entryId: 'entry-1', lastSaved: lastSaved);
+      await db.setDraftSaved(entryId: 'entry-1', lastSaved: testDate);
 
       final drafts = await db.allDrafts().get();
       expect(drafts.length, 1);
@@ -562,12 +562,12 @@ void main() {
     });
 
     test('returns drafts ordered by created_at DESC', () async {
-      final lastSaved = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       // Insert multiple drafts with longer delays to ensure different timestamps
       await db.insertDraftState(
         entryId: 'entry-1',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"first"}]}',
       );
 
@@ -575,7 +575,7 @@ void main() {
 
       await db.insertDraftState(
         entryId: 'entry-2',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"second"}]}',
       );
 
@@ -583,7 +583,7 @@ void main() {
 
       await db.insertDraftState(
         entryId: 'entry-3',
-        lastSaved: lastSaved,
+        lastSaved: testDate,
         draftDeltaJson: '{"ops":[{"insert":"third"}]}',
       );
 

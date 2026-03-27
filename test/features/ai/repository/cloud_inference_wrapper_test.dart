@@ -37,7 +37,7 @@ void main() {
       name: 'Test Provider',
       baseUrl: 'https://api.test.com',
       apiKey: 'test-key',
-      createdAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 30),
       inferenceProviderType: InferenceProviderType.openAi,
     );
   });
@@ -57,7 +57,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -182,7 +182,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -334,7 +334,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -521,7 +521,7 @@ void main() {
           name: 'Gemini Provider',
           baseUrl: 'https://generativelanguage.googleapis.com',
           apiKey: 'gemini-key',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           inferenceProviderType: InferenceProviderType.gemini,
         );
 

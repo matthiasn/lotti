@@ -24,13 +24,13 @@ void main() {
           final expectedImage = JournalImage(
             meta: Metadata(
               id: entityId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: ImageData(
-              capturedAt: DateTime.now(),
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
               imageId: 'img-123',
               imageFile: 'test.jpg',
               imageDirectory: '/images/',
@@ -85,18 +85,18 @@ void main() {
           final task = Task(
             meta: Metadata(
               id: entityId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: TaskData(
               title: 'Test Task',
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               status: TaskStatus.open(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               statusHistory: [],
@@ -149,14 +149,14 @@ void main() {
         final audio = JournalAudio(
           meta: Metadata(
             id: audioId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             duration: const Duration(seconds: 30),
             audioDirectory: '/audio/',
             audioFile: 'test.aac',
@@ -182,18 +182,18 @@ void main() {
         final task = Task(
           meta: Metadata(
             id: taskId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 11),
+            updatedAt: DateTime(2024, 3, 15, 11),
+            dateFrom: DateTime(2024, 3, 15, 11),
+            dateTo: DateTime(2024, 3, 15, 11),
           ),
           data: TaskData(
             title: 'Test Task',
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 11),
+            dateTo: DateTime(2024, 3, 15, 11),
             status: TaskStatus.done(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 11),
               utcOffset: 0,
             ),
             statusHistory: [],
@@ -220,10 +220,10 @@ void main() {
         final journalEntity = JournalEntry(
           meta: Metadata(
             id: entityId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 12),
+            updatedAt: DateTime(2024, 3, 15, 12),
+            dateFrom: DateTime(2024, 3, 15, 12),
+            dateTo: DateTime(2024, 3, 15, 12),
           ),
           entryText: const EntryText(
             plainText: 'Test entry',

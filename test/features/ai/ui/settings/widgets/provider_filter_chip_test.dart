@@ -16,7 +16,7 @@ void main() {
         name: 'Anthropic',
         baseUrl: 'https://api.anthropic.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -71,7 +71,7 @@ void main() {
         name: 'OpenAI',
         baseUrl: 'https://api.openai.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
@@ -109,7 +109,7 @@ void main() {
         name: 'Gemini',
         baseUrl: 'https://api.google.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -144,7 +144,7 @@ void main() {
         name: 'Ollama',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -192,7 +192,7 @@ void main() {
           name: name,
           baseUrl: 'https://example.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           inferenceProviderType: type,
         );
 
@@ -234,7 +234,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -275,7 +275,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -316,7 +316,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -398,7 +398,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -435,7 +435,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -473,7 +473,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -513,7 +513,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 
@@ -561,7 +561,7 @@ void main() {
         name: 'Test Provider',
         baseUrl: 'https://example.com',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.anthropic,
       );
 

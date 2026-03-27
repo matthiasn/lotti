@@ -119,7 +119,7 @@ void main() {
         response: 'test-response',
       ),
     );
-    registerFallbackValue(DateTime.now());
+    registerFallbackValue(DateTime(2024, 3, 15, 10, 30));
     registerFallbackValue(
       Metadata(
         id: 'fake-id',

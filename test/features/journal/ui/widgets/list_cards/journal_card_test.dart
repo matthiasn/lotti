@@ -73,8 +73,8 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
     return categoryId != null
         ? CategoryDefinition(
             id: 'test-category-id',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
             name: 'Test Category',
             vectorClock: null,
             private: false,
@@ -294,7 +294,7 @@ void main() {
     testWidgets('hides deleted entries', (tester) async {
       final deletedEntry = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(
-          deletedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 14),
         ),
       );
 
@@ -462,7 +462,7 @@ void main() {
       final dfShort = DateFormat('yyyy-MM-dd');
 
       setUp(() {
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         const categoryId = 'test-category-id';
         const entryText = EntryText(
           plainText: 'Test Entry',
@@ -473,10 +473,10 @@ void main() {
         testEvent = JournalEvent(
           meta: Metadata(
             id: 'test-event-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: const EventData(
@@ -491,10 +491,10 @@ void main() {
         testChecklist = Checklist(
           meta: Metadata(
             id: 'test-checklist-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: const ChecklistData(
@@ -509,10 +509,10 @@ void main() {
         testChecklistItem = ChecklistItem(
           meta: Metadata(
             id: 'test-checklist-item-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: const ChecklistItemData(
@@ -528,10 +528,10 @@ void main() {
         testUncheckedChecklistItem = ChecklistItem(
           meta: Metadata(
             id: 'unchecked-item-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: const ChecklistItemData(
@@ -547,10 +547,10 @@ void main() {
         testSurvey = SurveyEntry(
           meta: Metadata(
             id: 'test-survey-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: SurveyData(
@@ -571,10 +571,10 @@ void main() {
         testAiResponse = AiResponseEntry(
           meta: Metadata(
             id: 'test-ai-response-id',
-            createdAt: now,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now.add(const Duration(hours: 1)),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(hours: 1)),
             categoryId: categoryId,
           ),
           data: const AiResponseData(
@@ -860,16 +860,16 @@ void main() {
           id: 'label-a',
           name: 'Bug',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
         final labelB = LabelDefinition(
           id: 'label-b',
           name: 'Feature',
           color: '#00FF00',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
 
@@ -910,8 +910,8 @@ void main() {
           id: 'label-a',
           name: 'Bug',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
 
@@ -948,8 +948,8 @@ void main() {
           id: 'label-public',
           name: 'Public',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
           private: false,
         );
@@ -957,8 +957,8 @@ void main() {
           id: 'label-private',
           name: 'Private',
           color: '#00FF00',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
           private: true,
         );
@@ -1000,8 +1000,8 @@ void main() {
           id: 'label-private',
           name: 'Private',
           color: '#00FF00',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
           private: true,
         );
@@ -1036,16 +1036,16 @@ void main() {
           id: 'label-z',
           name: 'Zebra',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
         final labelA = LabelDefinition(
           id: 'label-a',
           name: 'Apple',
           color: '#00FF00',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
 
@@ -1111,8 +1111,8 @@ void main() {
           id: 'label-known',
           name: 'Known',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
           vectorClock: null,
         );
 

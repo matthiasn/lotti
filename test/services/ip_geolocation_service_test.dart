@@ -299,7 +299,7 @@ void main() {
           expect(result, isNotNull);
           expect(
             result!.utcOffset,
-            DateTime.now().timeZoneOffset.inMinutes,
+            DateTime(2024, 3, 15).timeZoneOffset.inMinutes,
             reason: 'Failed for invalid offset: $offset',
           );
         }
@@ -452,7 +452,7 @@ void main() {
         final result = await IpGeolocationService.getLocationFromIp(
           httpClient: mockHttpClient,
         );
-        expect(result?.utcOffset, DateTime.now().timeZoneOffset.inMinutes);
+        expect(result?.utcOffset, DateTime(2024, 3, 15).timeZoneOffset.inMinutes);
 
         verify(
           () => mockLoggingService.captureException(

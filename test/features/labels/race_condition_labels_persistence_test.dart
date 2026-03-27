@@ -75,25 +75,27 @@ void main() {
 
   tearDown(getIt.reset);
 
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+
   Task makeTask({List<String>? labelIds}) => Task(
     meta: Metadata(
       id: 'task-1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
       labelIds: labelIds,
     ),
     data: TaskData(
       title: 'T',
       status: TaskStatus.open(
         id: 's',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         utcOffset: 0,
       ),
       statusHistory: const [],
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      dateFrom: testDate,
+      dateTo: testDate,
     ),
   );
 
@@ -166,7 +168,7 @@ class _TestPersistenceLogic extends PersistenceLogic {
   }) async {
     // Simple metadata update without vector clock dependency for test
     return metadata.copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime(2024, 3, 15, 10, 31),
       dateFrom: dateFrom ?? metadata.dateFrom,
       dateTo: dateTo ?? metadata.dateTo,
       categoryId: clearCategoryId ? null : categoryId ?? metadata.categoryId,

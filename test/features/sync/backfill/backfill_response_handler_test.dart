@@ -1,4 +1,3 @@
-import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -800,29 +799,26 @@ void main() {
       ).called(1);
     });
 
-    test('skips entries within cooldown period', () {
-      fakeAsync((async) {
-        // Pre-populate the cooldown cache with a recent response
-        handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
+    test('skips entries within cooldown period', () async {
+      // Pre-populate the cooldown cache with a recent response (now).
+      // The handler uses DateTime.now() internally, so a real-time "now"
+      // timestamp will be within the 5-minute cooldown window.
+      handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
 
-        const request = SyncBackfillRequest(
-          entries: [
-            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
-          ],
-          requesterId: requesterId,
-        );
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
 
-        handler.handleBackfillRequest(request);
-        async.flushMicrotasks();
+      await handler.handleBackfillRequest(request);
 
-        // Should not call any sequence log or outbox methods
-        verifyNever(
-          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
-        );
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
-
-        // Logging now goes through DomainLogger (not injected in tests)
-      });
+      // Should not call any sequence log or outbox methods
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
     test('records response in cooldown cache after responding', () async {
@@ -849,80 +845,73 @@ void main() {
       );
     });
 
-    test('stops processing when rate limit is reached', () {
-      fakeAsync((async) {
-        // Use a handler with a very short cooldown so cooldowns don't interfere
-        handler =
-            BackfillResponseHandler(
-                journalDb: mockJournalDb,
-                sequenceLogService: mockSequenceService,
-                outboxService: mockOutboxService,
-                loggingService: mockLogging,
-                vectorClockService: mockVcService,
-                responseCooldown: Duration.zero,
-              )
-              // Set window to the fakeAsync clock's "now" so the rate window
-              // is still active when _isRateLimited checks.
-              ..windowStart = DateTime.now()
-              ..responsesInWindow = 500; // At the limit
+    test('stops processing when rate limit is reached', () async {
+      // Use a handler with zero cooldown so cooldowns don't interfere
+      handler =
+          BackfillResponseHandler(
+              journalDb: mockJournalDb,
+              sequenceLogService: mockSequenceService,
+              outboxService: mockOutboxService,
+              loggingService: mockLogging,
+              vectorClockService: mockVcService,
+              responseCooldown: Duration.zero,
+            )
+            // Set window to now so the rate window is still active
+            ..windowStart = DateTime.now()
+            ..responsesInWindow = 500; // At the limit
 
-        const request = SyncBackfillRequest(
-          entries: [
-            BackfillRequestEntry(hostId: aliceHostId, counter: 1),
-            BackfillRequestEntry(hostId: aliceHostId, counter: 2),
-          ],
-          requesterId: requesterId,
-        );
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 1),
+          BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+        ],
+        requesterId: requesterId,
+      );
 
-        handler.handleBackfillRequest(request);
-        async.flushMicrotasks();
+      await handler.handleBackfillRequest(request);
 
-        // Should be rate limited - no processing
-        verifyNever(
-          () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
-        );
-
-        // Logging now goes through DomainLogger (not injected in tests)
-      });
+      // Should be rate limited - no processing
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
     });
 
-    test('cleans expired cooldown entries at batch start', () {
-      fakeAsync((async) {
-        // Add an entry that's already expired
-        handler.recentlyResponded['$aliceHostId:99'] = DateTime.now().subtract(
-          const Duration(hours: 2),
-        );
-        // Add a non-expired entry (within 5-minute cooldown)
-        handler.recentlyResponded['$bobHostId:5'] = DateTime.now().subtract(
-          const Duration(minutes: 2),
-        );
+    test('cleans expired cooldown entries at batch start', () async {
+      final now = DateTime.now();
 
-        // Request for a different counter so processing is independent
-        const request = SyncBackfillRequest(
-          entries: [
-            BackfillRequestEntry(hostId: bobHostId, counter: 10),
-          ],
-          requesterId: requesterId,
-        );
+      // Add an entry that's already expired (well past 5-minute cooldown)
+      handler.recentlyResponded['$aliceHostId:99'] = now.subtract(
+        const Duration(hours: 2),
+      );
+      // Add a non-expired entry (within 5-minute cooldown)
+      handler.recentlyResponded['$bobHostId:5'] = now.subtract(
+        const Duration(minutes: 2),
+      );
 
-        when(
-          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
-        ).thenAnswer((_) async => null);
+      // Request for a different counter so processing is independent
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 10),
+        ],
+        requesterId: requesterId,
+      );
 
-        handler.handleBackfillRequest(request);
-        async.flushMicrotasks();
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
+      ).thenAnswer((_) async => null);
 
-        // Expired entry should be cleaned
-        expect(
-          handler.recentlyResponded.containsKey('$aliceHostId:99'),
-          isFalse,
-        );
-        // Non-expired entry should remain
-        expect(
-          handler.recentlyResponded.containsKey('$bobHostId:5'),
-          isTrue,
-        );
-      });
+      await handler.handleBackfillRequest(request);
+
+      // Expired entry should be cleaned
+      expect(
+        handler.recentlyResponded.containsKey('$aliceHostId:99'),
+        isFalse,
+      );
+      // Non-expired entry should remain
+      expect(
+        handler.recentlyResponded.containsKey('$bobHostId:5'),
+        isTrue,
+      );
     });
   });
 

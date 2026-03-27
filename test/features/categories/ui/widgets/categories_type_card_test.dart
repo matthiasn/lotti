@@ -25,14 +25,15 @@ void main() {
   testWidgets('CategoriesTypeCard displays all elements correctly', (
     WidgetTester tester,
   ) async {
+    final testDate = DateTime(2024, 3, 15);
     final category = CategoryDefinition(
       id: 'test-id',
       name: 'Test Category',
       color: '#FF0000',
       private: true,
       favorite: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
       vectorClock: null,
       active: true,
     );
@@ -74,14 +75,15 @@ void main() {
   testWidgets(
     'CategoriesTypeCard hides private and favorite icons when false',
     (WidgetTester tester) async {
+      final testDate = DateTime(2024, 3, 15);
       final category = CategoryDefinition(
         id: 'test-id',
         name: 'Test Category',
         color: '#FF0000',
         private: false,
         favorite: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         active: true,
       );
@@ -125,12 +127,13 @@ void main() {
     WidgetTester tester,
   ) async {
     const categoryId = 'test-category-id';
+    final testDate = DateTime(2024, 3, 15);
     final category = CategoryDefinition(
       id: categoryId,
       name: 'Test Category',
       color: '#FF0000',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
       vectorClock: null,
       active: true,
       private: false,
