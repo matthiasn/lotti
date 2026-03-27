@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -501,6 +502,357 @@ void main() {
         );
         expect(snapshot.isEmpty, isFalse);
       });
+    });
+  });
+
+  group('projectStatusFilterId', () {
+    test('maps ProjectOpen to open', () {
+      final status = ProjectStatus.open(
+        id: 'status-1',
+        createdAt: DateTime(2024, 3, 15),
+        utcOffset: 0,
+      );
+      expect(projectStatusFilterId(status), ProjectStatusFilterIds.open);
+    });
+
+    test('maps ProjectActive to active', () {
+      final status = ProjectStatus.active(
+        id: 'status-2',
+        createdAt: DateTime(2024, 3, 15),
+        utcOffset: 0,
+      );
+      expect(projectStatusFilterId(status), ProjectStatusFilterIds.active);
+    });
+
+    test('maps ProjectOnHold to on-hold', () {
+      final status = ProjectStatus.onHold(
+        id: 'status-3',
+        createdAt: DateTime(2024, 3, 15),
+        utcOffset: 0,
+        reason: 'Blocked on external dependency',
+      );
+      expect(projectStatusFilterId(status), ProjectStatusFilterIds.onHold);
+    });
+
+    test('maps ProjectCompleted to completed', () {
+      final status = ProjectStatus.completed(
+        id: 'status-4',
+        createdAt: DateTime(2024, 3, 15),
+        utcOffset: 0,
+      );
+      expect(
+        projectStatusFilterId(status),
+        ProjectStatusFilterIds.completed,
+      );
+    });
+
+    test('maps ProjectArchived to archived', () {
+      final status = ProjectStatus.archived(
+        id: 'status-5',
+        createdAt: DateTime(2024, 3, 15),
+        utcOffset: 0,
+      );
+      expect(projectStatusFilterId(status), ProjectStatusFilterIds.archived);
+    });
+  });
+
+  group('applyProjectsFilter', () {
+    final catEngineering = CategoryTestUtils.createTestCategory(
+      id: 'cat-eng',
+      name: 'Engineering',
+      color: '#00FF00',
+    );
+    final catDesign = CategoryTestUtils.createTestCategory(
+      id: 'cat-design',
+      name: 'Design',
+      color: '#FF0000',
+    );
+
+    final openStatus = ProjectStatus.open(
+      id: 'status-open',
+      createdAt: DateTime(2024, 3, 15),
+      utcOffset: 0,
+    );
+    final activeStatus = ProjectStatus.active(
+      id: 'status-active',
+      createdAt: DateTime(2024, 3, 15),
+      utcOffset: 0,
+    );
+    final completedStatus = ProjectStatus.completed(
+      id: 'status-completed',
+      createdAt: DateTime(2024, 3, 15),
+      utcOffset: 0,
+    );
+
+    ProjectListItemData makeItem({
+      required String title,
+      required ProjectStatus status,
+      CategoryDefinition? category,
+      String? categoryId,
+    }) {
+      final project = makeTestProject(
+        title: title,
+        status: status,
+        categoryId: categoryId ?? category?.id,
+      );
+      return ProjectListItemData(
+        project: project,
+        category: category,
+        taskRollup: const ProjectTaskRollupData(),
+      );
+    }
+
+    ProjectsOverviewSnapshot makeSnapshot() {
+      return ProjectsOverviewSnapshot(
+        groups: [
+          ProjectCategoryGroup(
+            categoryId: 'cat-eng',
+            category: catEngineering,
+            projects: [
+              makeItem(
+                title: 'Backend API',
+                status: openStatus,
+                category: catEngineering,
+                categoryId: 'cat-eng',
+              ),
+              makeItem(
+                title: 'CI Pipeline',
+                status: activeStatus,
+                category: catEngineering,
+                categoryId: 'cat-eng',
+              ),
+              makeItem(
+                title: 'Legacy Cleanup',
+                status: completedStatus,
+                category: catEngineering,
+                categoryId: 'cat-eng',
+              ),
+            ],
+          ),
+          ProjectCategoryGroup(
+            categoryId: 'cat-design',
+            category: catDesign,
+            projects: [
+              makeItem(
+                title: 'Brand Refresh',
+                status: openStatus,
+                category: catDesign,
+                categoryId: 'cat-design',
+              ),
+              makeItem(
+                title: 'Icon System',
+                status: activeStatus,
+                category: catDesign,
+                categoryId: 'cat-design',
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    test('no filters returns all groups unchanged', () {
+      final snapshot = makeSnapshot();
+      const filter = ProjectsFilter();
+      final result = applyProjectsFilter(snapshot, filter);
+
+      expect(result, hasLength(2));
+      expect(result[0].projects, hasLength(3));
+      expect(result[1].projects, hasLength(2));
+    });
+
+    test('status filter includes only projects with matching status', () {
+      final snapshot = makeSnapshot();
+      const filter = ProjectsFilter(
+        selectedStatusIds: {ProjectStatusFilterIds.open},
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      expect(result, hasLength(2));
+      // Engineering: only Backend API (open)
+      expect(result[0].projects, hasLength(1));
+      expect(
+        result[0].projects[0].project.data.title,
+        'Backend API',
+      );
+      // Design: only Brand Refresh (open)
+      expect(result[1].projects, hasLength(1));
+      expect(
+        result[1].projects[0].project.data.title,
+        'Brand Refresh',
+      );
+    });
+
+    test('category filter includes only groups with matching categoryId', () {
+      final snapshot = makeSnapshot();
+      const filter = ProjectsFilter(
+        selectedCategoryIds: {'cat-design'},
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      expect(result, hasLength(1));
+      expect(result[0].categoryId, 'cat-design');
+      expect(result[0].projects, hasLength(2));
+    });
+
+    test(
+      'text query with localText mode filters by searchable text',
+      () {
+        final snapshot = makeSnapshot();
+        const filter = ProjectsFilter(
+          textQuery: 'backend',
+          searchMode: ProjectsSearchMode.localText,
+        );
+        final result = applyProjectsFilter(snapshot, filter);
+
+        expect(result, hasLength(1));
+        expect(result[0].categoryId, 'cat-eng');
+        expect(result[0].projects, hasLength(1));
+        expect(
+          result[0].projects[0].project.data.title,
+          'Backend API',
+        );
+      },
+    );
+
+    test(
+      'text query with disabled mode does not filter by text',
+      () {
+        final snapshot = makeSnapshot();
+        const filter = ProjectsFilter(
+          textQuery: 'backend',
+          // ignore: avoid_redundant_argument_values
+          searchMode: ProjectsSearchMode.disabled,
+        );
+        final result = applyProjectsFilter(snapshot, filter);
+
+        // All groups and projects remain because search mode is disabled
+        expect(result, hasLength(2));
+        expect(result[0].projects, hasLength(3));
+        expect(result[1].projects, hasLength(2));
+      },
+    );
+
+    test('empty groups are removed after filtering', () {
+      final snapshot = makeSnapshot();
+      // Completed status only exists in Engineering group
+      const filter = ProjectsFilter(
+        selectedStatusIds: {ProjectStatusFilterIds.completed},
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      // Design group has no completed projects, so it is removed
+      expect(result, hasLength(1));
+      expect(result[0].categoryId, 'cat-eng');
+      expect(result[0].projects, hasLength(1));
+      expect(
+        result[0].projects[0].project.data.title,
+        'Legacy Cleanup',
+      );
+    });
+
+    test('combined status, category, and text query filter', () {
+      final snapshot = makeSnapshot();
+      const filter = ProjectsFilter(
+        selectedStatusIds: {
+          ProjectStatusFilterIds.open,
+          ProjectStatusFilterIds.active,
+        },
+        selectedCategoryIds: {'cat-eng'},
+        textQuery: 'CI',
+        searchMode: ProjectsSearchMode.localText,
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      // Only Engineering group, only active CI Pipeline matches all criteria
+      expect(result, hasLength(1));
+      expect(result[0].categoryId, 'cat-eng');
+      expect(result[0].projects, hasLength(1));
+      expect(
+        result[0].projects[0].project.data.title,
+        'CI Pipeline',
+      );
+    });
+
+    test(
+      'text query is case-insensitive and trims whitespace',
+      () {
+        final snapshot = makeSnapshot();
+        const filter = ProjectsFilter(
+          textQuery: '  BRAND  ',
+          searchMode: ProjectsSearchMode.localText,
+        );
+        final result = applyProjectsFilter(snapshot, filter);
+
+        expect(result, hasLength(1));
+        expect(result[0].categoryId, 'cat-design');
+        expect(result[0].projects, hasLength(1));
+        expect(
+          result[0].projects[0].project.data.title,
+          'Brand Refresh',
+        );
+      },
+    );
+
+    test('category filter excludes groups with null categoryId', () {
+      final uncategorizedItem = makeItem(
+        title: 'Uncategorized Work',
+        status: openStatus,
+      );
+      final snapshot = ProjectsOverviewSnapshot(
+        groups: [
+          ProjectCategoryGroup(
+            categoryId: null,
+            category: null,
+            projects: [uncategorizedItem],
+          ),
+          ProjectCategoryGroup(
+            categoryId: 'cat-eng',
+            category: catEngineering,
+            projects: [
+              makeItem(
+                title: 'Backend API',
+                status: openStatus,
+                category: catEngineering,
+                categoryId: 'cat-eng',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      const filter = ProjectsFilter(
+        selectedCategoryIds: {'cat-eng'},
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      expect(result, hasLength(1));
+      expect(result[0].categoryId, 'cat-eng');
+    });
+
+    test('multiple status filters match any of the selected statuses', () {
+      final snapshot = makeSnapshot();
+      const filter = ProjectsFilter(
+        selectedStatusIds: {
+          ProjectStatusFilterIds.active,
+          ProjectStatusFilterIds.completed,
+        },
+      );
+      final result = applyProjectsFilter(snapshot, filter);
+
+      // Engineering: CI Pipeline (active) + Legacy Cleanup (completed)
+      expect(result, hasLength(2));
+      expect(result[0].projects, hasLength(2));
+      expect(
+        result[0].projects.map((p) => p.project.data.title).toList(),
+        containsAll(['CI Pipeline', 'Legacy Cleanup']),
+      );
+      // Design: Icon System (active)
+      expect(result[1].projects, hasLength(1));
+      expect(
+        result[1].projects[0].project.data.title,
+        'Icon System',
+      );
     });
   });
 }

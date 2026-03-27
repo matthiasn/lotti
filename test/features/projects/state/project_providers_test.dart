@@ -824,6 +824,82 @@ void main() {
         expect(filtered!.single.category?.name, 'Work');
       },
     );
+
+    test(
+      'ProjectsFilterController.clear resets to default filter',
+      () async {
+        final snapshot = makeSnapshot();
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await scopedContainer.read(projectsOverviewProvider.future);
+
+        // Apply a filter, then clear it
+        scopedContainer
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setSelectedCategoryIds({workCategory.id})
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setTextQuery('something')
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setSearchMode(ProjectsSearchMode.localText);
+
+        scopedContainer.read(projectsFilterControllerProvider.notifier).clear();
+
+        final filter = scopedContainer.read(projectsFilterControllerProvider);
+        expect(filter.selectedCategoryIds, isEmpty);
+        expect(filter.textQuery, isEmpty);
+        expect(filter.searchMode, ProjectsSearchMode.disabled);
+
+        // All groups should be visible again
+        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
+        expect(groups, hasLength(2));
+      },
+    );
+
+    test(
+      'visibleProjectGroupsProvider ignores text query when search mode is disabled',
+      () async {
+        final snapshot = makeSnapshot();
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await scopedContainer.read(projectsOverviewProvider.future);
+
+        // Set a text query but leave search mode disabled
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setTextQuery('nonexistent-term');
+
+        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
+        expect(groups, isNotNull);
+        expect(groups, hasLength(2));
+      },
+    );
   });
 }
 

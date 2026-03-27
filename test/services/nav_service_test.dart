@@ -322,5 +322,26 @@ void main() {
       final id = await getIdFromSavedRoute();
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });
+
+    group('global beamToNamed', () {
+      test('uses override when set', () {
+        String? calledPath;
+        beamToNamedOverride = (path) => calledPath = path;
+        addTearDown(() => beamToNamedOverride = null);
+
+        beamToNamed('/test-path');
+
+        expect(calledPath, '/test-path');
+      });
+
+      test('falls back to NavService when override is null', () {
+        beamToNamedOverride = null;
+        final navService = getIt<NavService>();
+
+        beamToNamed('/settings');
+
+        expect(navService.currentPath, '/settings');
+      });
+    });
   });
 }
