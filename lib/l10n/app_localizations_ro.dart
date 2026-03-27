@@ -4578,6 +4578,38 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAiModels => 'Modele AI';
 
   @override
+  String get settingsAiSubtitle =>
+      'Configurați furnizorii AI, modelele și prompturile';
+
+  @override
+  String get settingsAiTitle => 'Setări AI';
+
+  @override
+  String get settingsAdvancedSubtitle => 'Setări avansate și întreținere';
+
+  @override
+  String get settingsCategoriesSubtitle => 'Categorii cu setări AI';
+
+  @override
+  String get settingsDashboardsSubtitle =>
+      'Personalizați vizualizările tabloului de bord';
+
+  @override
+  String get settingsFlagsSubtitle => 'Configurați indicatoarele și opțiunile';
+
+  @override
+  String get settingsHabitsSubtitle =>
+      'Gestionați obiceiurile și rutinele dvs.';
+
+  @override
+  String get settingsMeasurablesSubtitle =>
+      'Configurați tipurile de date măsurabile';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'Personalizați aspectul și temele aplicației';
+
+  @override
   String get settingsCategoriesAddTooltip => 'Adaugă categorie';
 
   @override

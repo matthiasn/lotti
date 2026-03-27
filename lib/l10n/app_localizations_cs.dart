@@ -4555,6 +4555,35 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAiModels => 'AI modely';
 
   @override
+  String get settingsAiSubtitle =>
+      'Konfigurace poskytovatelů AI, modelů a promptů';
+
+  @override
+  String get settingsAiTitle => 'Nastavení AI';
+
+  @override
+  String get settingsAdvancedSubtitle => 'Pokročilá nastavení a údržba';
+
+  @override
+  String get settingsCategoriesSubtitle => 'Kategorie s nastavením AI';
+
+  @override
+  String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
+
+  @override
+  String get settingsFlagsSubtitle => 'Konfigurace příznaků a možností';
+
+  @override
+  String get settingsHabitsSubtitle => 'Spravovat návyky a rutiny';
+
+  @override
+  String get settingsMeasurablesSubtitle =>
+      'Konfigurace měřitelných datových typů';
+
+  @override
+  String get settingsThemingSubtitle => 'Přizpůsobit vzhled a témata aplikace';
+
+  @override
   String get settingsCategoriesAddTooltip => 'Přidat kategorii';
 
   @override

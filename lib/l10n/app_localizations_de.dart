@@ -4557,6 +4557,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAiModels => 'AI-Modelle';
 
   @override
+  String get settingsAiSubtitle =>
+      'AI-Anbieter, Modelle und Prompts konfigurieren';
+
+  @override
+  String get settingsAiTitle => 'AI-Einstellungen';
+
+  @override
+  String get settingsAdvancedSubtitle => 'Erweiterte Einstellungen und Wartung';
+
+  @override
+  String get settingsCategoriesSubtitle => 'Kategorien mit AI-Einstellungen';
+
+  @override
+  String get settingsDashboardsSubtitle => 'Deine Dashboard-Ansichten anpassen';
+
+  @override
+  String get settingsFlagsSubtitle =>
+      'Feature-Flags und Optionen konfigurieren';
+
+  @override
+  String get settingsHabitsSubtitle =>
+      'Deine Gewohnheiten und Routinen verwalten';
+
+  @override
+  String get settingsMeasurablesSubtitle => 'Messbare Datentypen konfigurieren';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'App-Erscheinungsbild und Themes anpassen';
+
+  @override
   String get settingsCategoriesAddTooltip => 'Kategorie hinzufügen';
 
   @override

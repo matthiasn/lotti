@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
+import 'package:lotti/features/settings/widgetbook/settings_widgetbook.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
@@ -61,6 +62,7 @@ class WidgetbookApp extends StatelessWidget {
         buildDesignSystemWidgetbookFolder(),
         buildMyDailyWidgetbookFolder(),
         buildProjectsWidgetbookFolder(),
+        buildSettingsWidgetbookFolder(),
         buildTasksWidgetbookFolder(),
         WidgetbookFolder(
           name: 'Task Widgets',

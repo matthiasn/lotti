@@ -75,8 +75,8 @@ class SettingsPage extends ConsumerWidget {
               onTap: () => WhatsNewModal.show(context, ref),
             ),
           settingsCard(
-            title: 'AI Settings',
-            subtitle: 'Configure AI providers, models, and prompts',
+            title: context.messages.settingsAiTitle,
+            subtitle: context.messages.settingsAiSubtitle,
             icon: Icons.psychology_rounded,
             onTap: () => context.beamToNamed('/settings/ai'),
           ),
@@ -99,19 +99,19 @@ class SettingsPage extends ConsumerWidget {
           if (enableHabits)
             settingsCard(
               title: context.messages.settingsHabitsTitle,
-              subtitle: 'Manage your habits and routines',
+              subtitle: context.messages.settingsHabitsSubtitle,
               icon: Icons.repeat_rounded,
               onTap: () => context.beamToNamed('/settings/habits'),
             ),
           settingsCard(
             title: context.messages.settingsCategoriesTitle,
-            subtitle: 'Categories with AI settings',
+            subtitle: context.messages.settingsCategoriesSubtitle,
             icon: Icons.category_rounded,
             onTap: () => context.beamToNamed('/settings/categories'),
           ),
           settingsCard(
-            title: 'Labels',
-            subtitle: 'Organize tasks with colored labels',
+            title: context.messages.settingsLabelsTitle,
+            subtitle: context.messages.settingsLabelsSubtitle,
             icon: Icons.label_rounded,
             onTap: () => context.beamToNamed('/settings/labels'),
           ),
@@ -132,32 +132,32 @@ class SettingsPage extends ConsumerWidget {
           if (enableDashboards)
             settingsCard(
               title: context.messages.settingsDashboardsTitle,
-              subtitle: 'Customize your dashboard views',
+              subtitle: context.messages.settingsDashboardsSubtitle,
               icon: Icons.dashboard_rounded,
               onTap: () => context.beamToNamed('/settings/dashboards'),
             ),
           if (enableDashboards)
             settingsCard(
               title: context.messages.settingsMeasurablesTitle,
-              subtitle: 'Configure measurable data types',
+              subtitle: context.messages.settingsMeasurablesSubtitle,
               icon: Icons.trending_up_rounded,
               onTap: () => context.beamToNamed('/settings/measurables'),
             ),
           settingsCard(
             title: context.messages.settingsThemingTitle,
-            subtitle: 'Customize app appearance and themes',
+            subtitle: context.messages.settingsThemingSubtitle,
             icon: Icons.palette_rounded,
             onTap: () => context.beamToNamed('/settings/theming'),
           ),
           settingsCard(
             title: context.messages.settingsFlagsTitle,
-            subtitle: 'Configure feature flags and options',
+            subtitle: context.messages.settingsFlagsSubtitle,
             icon: Icons.tune_rounded,
             onTap: () => context.beamToNamed('/settings/flags'),
           ),
           settingsCard(
             title: context.messages.settingsAdvancedTitle,
-            subtitle: 'Advanced settings and maintenance',
+            subtitle: context.messages.settingsAdvancedSubtitle,
             icon: Icons.settings_rounded,
             onTap: () => context.beamToNamed('/settings/advanced'),
           ),
