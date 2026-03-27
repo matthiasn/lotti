@@ -341,11 +341,17 @@ class ProjectRepository {
       return true;
     }
 
+    final normalizedAffectedIds = affectedIds.map((id) {
+      return id.startsWith(projectEntityUpdatePrefix)
+          ? id.substring(projectEntityUpdatePrefix.length)
+          : id;
+    }).toSet();
+
     final projectIds = currentSnapshot.groups
         .expand((group) => group.projects)
         .map((project) => project.project.meta.id)
         .toSet();
-    if (affectedIds.any(projectIds.contains)) {
+    if (normalizedAffectedIds.any(projectIds.contains)) {
       return true;
     }
 
@@ -354,7 +360,7 @@ class ProjectRepository {
         .whereType<String>()
         .toSet();
 
-    return affectedIds.any(categoryIds.contains);
+    return normalizedAffectedIds.any(categoryIds.contains);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────

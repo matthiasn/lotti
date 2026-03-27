@@ -115,7 +115,9 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
                 error: (error, _) => [
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _ProjectsOverviewMessage(message: '$error'),
+                    child: _ProjectsOverviewMessage(
+                      message: context.messages.commonError,
+                    ),
                   ),
                 ],
               ),

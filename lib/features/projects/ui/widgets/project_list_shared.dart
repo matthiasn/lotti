@@ -167,7 +167,7 @@ List<InlineSpan> _metaSpans(
       ),
     ),
     TextSpan(
-      text: '${item.taskRollup.completionPercent} · ',
+      text: '${item.taskRollup.completionPercent}% · ',
       style: metaStyle,
     ),
     WidgetSpan(

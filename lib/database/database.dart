@@ -534,7 +534,6 @@ class JournalDb extends _$JournalDb {
               ..where(
                 journal.id.isIn(taskIds.toList()) &
                     journal.type.equals('Task') &
-                    journal.task.equals(true) &
                     journal.deleted.equals(false) &
                     journal.projectId.isNotNull(),
               ))

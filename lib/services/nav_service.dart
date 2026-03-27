@@ -113,11 +113,15 @@ class NavService {
   Iterable<({bool enabled, String rootPath, BeamerDelegate delegate})>
   get _enabledTabSpecs => _tabSpecs.where((spec) => spec.enabled);
 
+  bool _matchesRootPath(String path, String rootPath) {
+    return path == rootPath || path.startsWith('$rootPath/');
+  }
+
   ({bool enabled, String rootPath, BeamerDelegate delegate})? _specForPath(
     String path,
   ) {
     for (final spec in _enabledTabSpecs) {
-      if (path.startsWith(spec.rootPath)) {
+      if (_matchesRootPath(path, spec.rootPath)) {
         return spec;
       }
     }
