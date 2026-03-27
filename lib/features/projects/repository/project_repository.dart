@@ -75,9 +75,10 @@ class ProjectRepository {
   /// entry updates that bubble up to their parent task IDs also mark the owning
   /// project as stale.
   Future<Set<String>> resolveAffectedProjectIds(Set<String> affectedIds) async {
-    const prefix = 'PROJECT_ENTITY_UPDATE:';
     final normalized = affectedIds.map((id) {
-      return id.startsWith(prefix) ? id.substring(prefix.length) : id;
+      return id.startsWith(projectEntityUpdatePrefix)
+          ? id.substring(projectEntityUpdatePrefix.length)
+          : id;
     }).toSet();
 
     final (directProjectIds, taskProjectIds) = await (

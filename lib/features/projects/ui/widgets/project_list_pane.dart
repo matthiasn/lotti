@@ -126,6 +126,40 @@ class _SearchHeader extends StatelessWidget {
   }
 }
 
+/// Shared category header row showing the category tag and project count.
+class ProjectGroupHeader extends StatelessWidget {
+  const ProjectGroupHeader({
+    required this.group,
+    super.key,
+  });
+
+  final ProjectCategoryGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final category = group.category;
+    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
+
+    return Row(
+      children: [
+        CategoryTag(
+          label: category?.name ?? context.messages.taskCategoryUnassignedLabel,
+          icon: category?.icon?.iconData ?? Icons.folder_outlined,
+          color: color,
+        ),
+        const Spacer(),
+        Text(
+          context.messages.projectCountSummary(group.projectCount),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: ShowcasePalette.mediumText(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// A category-labelled section containing grouped project rows.
 class ProjectGroupSection extends StatelessWidget {
   const ProjectGroupSection({
@@ -141,33 +175,12 @@ class ProjectGroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final category = group.category;
-    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: Row(
-            children: [
-              CategoryTag(
-                label:
-                    category?.name ??
-                    context.messages.taskCategoryUnassignedLabel,
-                icon: category?.icon?.iconData ?? Icons.folder_outlined,
-                color: color,
-              ),
-              const Spacer(),
-              Text(
-                context.messages.projectCountSummary(group.projectCount),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ShowcasePalette.mediumText(context),
-                ),
-              ),
-            ],
-          ),
+          child: ProjectGroupHeader(group: group),
         ),
         const SizedBox(height: 8),
         DecoratedBox(

@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
 
 const _desktopContentMaxWidth = 760.0;
 const _desktopBreakpoint = 960.0;
@@ -53,32 +48,11 @@ class _ProjectCategoryHeaderSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final category = group.category;
-    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
-
     return SliverToBoxAdapter(
       child: _CenteredProjectsContent(
         child: Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: Row(
-            children: [
-              CategoryTag(
-                label:
-                    category?.name ??
-                    context.messages.taskCategoryUnassignedLabel,
-                icon: category?.icon?.iconData ?? Icons.folder_outlined,
-                color: color,
-              ),
-              const Spacer(),
-              Text(
-                context.messages.projectCountSummary(group.projectCount),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ShowcasePalette.mediumText(context),
-                ),
-              ),
-            ],
-          ),
+          child: ProjectGroupHeader(group: group),
         ),
       ),
     );

@@ -81,6 +81,8 @@ class NavService {
   bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
 
+  List<BeamerDelegate>? _cachedBeamerDelegates;
+
   Iterable<({bool enabled, String rootPath, BeamerDelegate delegate})>
   get _tabSpecs sync* {
     yield (enabled: true, rootPath: '/tasks', delegate: tasksDelegate);
@@ -141,6 +143,7 @@ class NavService {
     _isDashboardsPageEnabled = flags.dashboards;
     _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;
+    _cachedBeamerDelegates = null;
 
     final previousPath = currentPath;
     final normalizedPath = _normalizePath(previousPath);
@@ -188,7 +191,7 @@ class NavService {
     _setIndexInternal(beamerDelegates.indexOf(matchingSpec.delegate));
   }
 
-  List<BeamerDelegate> get beamerDelegates =>
+  List<BeamerDelegate> get beamerDelegates => _cachedBeamerDelegates ??=
       _enabledTabSpecs.map((spec) => spec.delegate).toList(growable: false);
 
   BeamerDelegate delegateByIndex(int index) {
