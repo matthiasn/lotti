@@ -151,6 +151,29 @@ void main() {
       expect(changedTime!.hour, greaterThanOrEqualTo(12));
     });
 
+    testWidgets('applies fade-out opacity to non-center items', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          DesignSystemTimePicker(
+            onTimeChanged: (_) {},
+            semanticsLabel: 'Time',
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final scrollView = tester.widget<ListWheelScrollView>(
+        find.byType(ListWheelScrollView).first,
+      );
+
+      expect(scrollView.overAndUnderCenterOpacity, 0.35);
+      expect(scrollView.squeeze, 1.1);
+      expect(scrollView.diameterRatio, 1.2);
+      expect(scrollView.magnification, 1.15);
+    });
+
     testWidgets('disposes without error', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

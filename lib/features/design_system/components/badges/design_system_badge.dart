@@ -185,7 +185,7 @@ class _BadgeSizeSpec {
         squareSize: compactNumber ? badgeHeight : null,
         minWidth: compactNumber ? null : badgeHeight,
         height: badgeHeight,
-        horizontalPadding: 0,
+        horizontalPadding: compactNumber ? 0 : tokens.spacing.step2,
         verticalPadding: 0,
         cornerRadius: badgeHeight / 2,
         iconSize: 0,

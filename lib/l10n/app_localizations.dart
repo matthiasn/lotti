@@ -5145,6 +5145,12 @@ abstract class AppLocalizations {
   /// **'State Matrix'**
   String get designSystemStateMatrixTitle;
 
+  /// No description provided for @designSystemTabBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab Bar'**
+  String get designSystemTabBarTitle;
+
   /// No description provided for @designSystemSuccessLabel.
   ///
   /// In en, this message translates to:

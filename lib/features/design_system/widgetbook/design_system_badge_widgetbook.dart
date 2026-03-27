@@ -74,7 +74,10 @@ class _BadgeTypeScale extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         DesignSystemBadge.dot(),
+        DesignSystemBadge.number(value: '3'),
         DesignSystemBadge.number(value: '10'),
+        DesignSystemBadge.number(value: '99+'),
+        DesignSystemBadge.number(value: '999+'),
         DesignSystemBadge.filled(label: 'Primary'),
         DesignSystemBadge.icon(icon: Icons.check_rounded),
         DesignSystemBadge.outlined(label: 'Outlined'),

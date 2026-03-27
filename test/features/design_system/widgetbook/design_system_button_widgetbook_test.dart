@@ -119,6 +119,7 @@ void main() {
 
       expect(folder.name, 'Design System');
       expect(components.map((component) => component.name), [
+        'AI Icon',
         'Avatars',
         'Badges',
         'Branding',
@@ -166,7 +167,7 @@ void main() {
       expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(fileUploadComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
-      expect(tabsComponent.useCases.single.name, 'Overview');
+      expect(tabsComponent.useCases.first.name, 'Overview');
       expect(taskFilterComponent.useCases.single.name, 'Overview');
       expect(taskListItemComponent.useCases.single.name, 'Overview');
       expect(navigationSidebarComponent.useCases.single.name, 'Overview');

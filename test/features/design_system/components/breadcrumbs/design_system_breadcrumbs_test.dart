@@ -86,5 +86,59 @@ void main() {
       );
       expect(disabledText.style?.color, dsTokensLight.colors.text.lowEmphasis);
     });
+
+    testWidgets('InkWell wraps entire content row including chevron', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 600,
+            child: DesignSystemBreadcrumbs(
+              items: [
+                DesignSystemBreadcrumbItem(
+                  label: 'Home',
+                  onPressed: () {},
+                  forcedState: DesignSystemBreadcrumbVisualState.hover,
+                ),
+              ],
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // The InkWell should wrap the full Row (label + chevron)
+      final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+      expect(inkWell.child, isA<Row>());
+    });
+
+    testWidgets('chevron is inside the interactive InkWell area', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: 600,
+            child: DesignSystemBreadcrumbs(
+              items: [
+                DesignSystemBreadcrumbItem(
+                  label: 'Home',
+                  onPressed: () => tapped = true,
+                ),
+              ],
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // Tapping the chevron should also trigger the callback
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
   });
 }

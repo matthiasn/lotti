@@ -38,6 +38,13 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (widget) =>
+              widget is RichText && widget.text.toPlainText().contains('P0'),
+        ),
+        findsAtLeast(1),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
               widget is RichText && widget.text.toPlainText().contains('P1'),
         ),
         findsAtLeast(1),

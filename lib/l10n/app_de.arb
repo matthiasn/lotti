@@ -1237,6 +1237,7 @@
     }
   },
   "designSystemStateMatrixTitle": "Statusmatrix",
+  "designSystemTabBarTitle": "Tab-Leiste",
   "designSystemSuccessLabel": "Erfolg",
   "designSystemTabPendingLabel": "Ausstehend",
   "designSystemTaskListBlockedLabel": "Blockiert",

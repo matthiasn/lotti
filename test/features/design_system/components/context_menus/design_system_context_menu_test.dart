@@ -101,7 +101,9 @@ void main() {
       );
     });
 
-    testWidgets('applies card decoration with shadow', (tester) async {
+    testWidgets('applies card decoration with shadow and border', (
+      tester,
+    ) async {
       const key = Key('styled-menu');
 
       await _pumpContextMenu(
@@ -128,6 +130,10 @@ void main() {
         BorderRadius.circular(dsTokensLight.radii.s),
       );
       expect(decoration.boxShadow, isNotEmpty);
+      // Border should be present for visibility in light mode
+      expect(decoration.border, isNotNull);
+      final border = decoration.border! as Border;
+      expect(border.top.color, dsTokensLight.colors.decorative.level02);
     });
 
     testWidgets('uses small size spec', (tester) async {

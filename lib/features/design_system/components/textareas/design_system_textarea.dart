@@ -126,6 +126,7 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
                   maxLength: widget.maxLength,
                   onChanged: widget.onChanged,
                   style: spec.textStyle,
+                  cursorColor: tokens.colors.text.highEmphasis,
                   decoration: InputDecoration(
                     hintText: widget.hintText,
                     hintStyle: spec.hintStyle,
@@ -205,9 +206,9 @@ class _TextareaSpec {
       borderRadius: tokens.spacing.step5,
       contentPadding: EdgeInsets.only(
         left: tokens.spacing.step4,
-        right: tokens.spacing.step1,
-        top: tokens.spacing.step3,
-        bottom: tokens.spacing.step1,
+        right: tokens.spacing.step4,
+        top: tokens.spacing.step4,
+        bottom: tokens.spacing.step3,
       ),
       labelGap: tokens.spacing.step2,
       extraInfoGap: tokens.spacing.step2,

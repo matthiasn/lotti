@@ -138,6 +138,28 @@ class _TaskListItemVariants extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // P0 Critical
+          Text(
+            'P0 – Critical',
+            style: descriptionStyle,
+          ),
+          const SizedBox(height: 8),
+          DesignSystemTaskListItem(
+            title: 'Server outage response',
+            category: const DesignSystemTaskCategory(
+              label: 'Ops',
+              badgeTone: DesignSystemBadgeTone.danger,
+            ),
+            priority: DesignSystemTaskPriority.p0,
+            status: DesignSystemTaskStatus.open,
+            statusLabel: messages.designSystemTaskListOpenLabel,
+            timeRange: '08:00-09:00am',
+            showDivider: true,
+            onTap: () {},
+          ),
+
+          const SizedBox(height: 16),
+
           // Open status
           Text(
             messages.designSystemTaskListOpenLabel,

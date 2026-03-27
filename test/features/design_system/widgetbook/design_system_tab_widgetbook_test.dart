@@ -10,14 +10,15 @@ void main() {
   group('buildDesignSystemTabWidgetbookComponent', () {
     testWidgets('builds the tabs overview use case', (tester) async {
       final component = buildDesignSystemTabWidgetbookComponent();
-      final useCase = component.useCases.single;
+      final overviewUseCase = component.useCases.firstWhere(
+        (uc) => uc.name == 'Overview',
+      );
 
       expect(component.name, 'Tabs');
-      expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
+          Builder(builder: overviewUseCase.builder),
           theme: DesignSystemTheme.light(),
         ),
       );
@@ -37,6 +38,37 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('builds the tab bar use case with interactive selection', (
+      tester,
+    ) async {
+      final component = buildDesignSystemTabWidgetbookComponent();
+      final tabBarUseCase = component.useCases.firstWhere(
+        (uc) => uc.name == 'Tab Bar',
+      );
+
+      expect(component.useCases.length, 2);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(builder: tabBarUseCase.builder),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      // Should render 3 tabs
+      expect(find.byType(DesignSystemTab), findsNWidgets(3));
+
+      // Tap second tab to verify selection changes
+      await tester.tap(find.byType(DesignSystemTab).at(1));
+      await tester.pump();
+
+      // Verify the second tab is now selected
+      final secondTab = tester.widget<DesignSystemTab>(
+        find.byType(DesignSystemTab).at(1),
+      );
+      expect(secondTab.selected, isTrue);
     });
   });
 }

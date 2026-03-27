@@ -325,7 +325,11 @@ class _RadioButtonColorSpec {
     return _RadioButtonColorSpec(
       controlBackgroundColor:
           visualState == DesignSystemRadioButtonVisualState.hover
-          ? tokens.colors.surface.hover
+          ? Color.lerp(
+              tokens.colors.background.level01,
+              tokens.colors.surface.hover,
+              0.5,
+            )!
           : tokens.colors.background.level01,
       controlBorderColor: controlBorderColor,
       labelColor: tokens.colors.text.highEmphasis,

@@ -62,6 +62,9 @@ class DesignSystemContextMenu extends StatelessWidget {
           decoration: BoxDecoration(
             color: tokens.colors.surface.enabled,
             borderRadius: BorderRadius.circular(spec.borderRadius),
+            border: Border.all(
+              color: tokens.colors.decorative.level02,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: _kShadowAlpha),

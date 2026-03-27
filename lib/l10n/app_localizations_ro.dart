@@ -2852,6 +2852,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matrice de stări';
 
   @override
+  String get designSystemTabBarTitle => 'Bara de file';
+
+  @override
   String get designSystemSuccessLabel => 'Succes';
 
   @override

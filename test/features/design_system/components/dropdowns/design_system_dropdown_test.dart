@@ -400,6 +400,42 @@ void main() {
       expect(triggerSemantics.properties.label, 'Project picker');
     });
 
+    testWidgets('menu panel shadow uses black-based color in dark mode', (
+      tester,
+    ) async {
+      await _pumpDropdown(
+        tester,
+        SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: 'Label',
+            inputLabel: 'Input',
+            initiallyExpanded: true,
+            items: _items(['Alpha', 'Beta']),
+          ),
+        ),
+        theme: DesignSystemTheme.dark(),
+      );
+
+      final panelDecoratedBox = tester.widget<DecoratedBox>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).boxShadow != null &&
+              (widget.decoration as BoxDecoration).boxShadow!.isNotEmpty,
+        ),
+      );
+      final decoration = panelDecoratedBox.decoration as BoxDecoration;
+      final shadowColor = decoration.boxShadow!.first.color;
+
+      // Shadow should be black-based, not a light decorative token
+      expect(shadowColor.r, 0);
+      expect(shadowColor.g, 0);
+      expect(shadowColor.b, 0);
+      expect(shadowColor.a, closeTo(0.25, 0.01));
+    });
+
     test(
       'asserts when neither a visible label nor semanticsLabel is provided',
       () {

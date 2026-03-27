@@ -2890,6 +2890,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matrice d\'états';
 
   @override
+  String get designSystemTabBarTitle => 'Barre d\'onglets';
+
+  @override
   String get designSystemSuccessLabel => 'Succès';
 
   @override

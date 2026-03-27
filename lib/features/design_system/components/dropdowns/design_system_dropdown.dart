@@ -3,6 +3,8 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
+const _kMenuShadowAlpha = 0.25;
+
 enum DesignSystemDropdownType {
   dropdownList,
   multiselect,
@@ -568,7 +570,7 @@ class _DropdownStyleSpec {
       fieldChevronColor: tokens.colors.text.mediumEmphasis,
       menuBackgroundColor: tokens.colors.background.level01,
       menuItemColor: tokens.colors.text.highEmphasis,
-      menuShadowColor: tokens.colors.decorative.level01,
+      menuShadowColor: Colors.black.withValues(alpha: _kMenuShadowAlpha),
       scrollbarColor: tokens.colors.text.mediumEmphasis,
       checkboxBorderColor: tokens.colors.text.mediumEmphasis,
       checkboxSelectedFillColor: tokens.colors.interactive.enabled,

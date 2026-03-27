@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_ai_icon_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_avatar_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_branding_widgetbook.dart';
@@ -78,6 +79,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemTextInputWidgetbookComponent(),
         buildDesignSystemTooltipIconWidgetbookComponent(),
         buildDesignSystemContextMenuWidgetbookComponent(),
+        buildDesignSystemAiIconWidgetbookComponent(),
       ]..sort(
         (left, right) => left.name.toLowerCase().compareTo(
           right.name.toLowerCase(),

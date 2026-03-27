@@ -2893,6 +2893,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matriz de estados';
 
   @override
+  String get designSystemTabBarTitle => 'Barra de pestañas';
+
+  @override
   String get designSystemSuccessLabel => 'Éxito';
 
   @override
