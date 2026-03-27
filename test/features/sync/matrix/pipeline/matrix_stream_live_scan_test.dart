@@ -114,12 +114,12 @@ void main() {
 
           createController().scheduleRescan(const Duration(seconds: 1));
 
-          // Timer should be scheduled but not yet fired. Elapse past full
-          // duration so scanLiveTimeline fires (returns early since timeline
-          // is null).
-          async
-            ..elapse(const Duration(milliseconds: 500))
-            ..elapse(const Duration(milliseconds: 600));
+          // Before the timer fires, there should be a pending timer
+          expect(async.pendingTimers, hasLength(1));
+
+          // After full duration, the timer fires and is consumed
+          async.elapse(const Duration(seconds: 2));
+          expect(async.pendingTimers, isEmpty);
         });
       });
     });

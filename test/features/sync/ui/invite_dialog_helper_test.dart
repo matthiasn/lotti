@@ -6,6 +6,9 @@ import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  setUp(() => InviteDialogScope.globalListenerActive = false);
+  tearDown(() => InviteDialogScope.globalListenerActive = false);
+
   group('InviteDialogScope', () {
     test('globalListenerActive defaults to false', () {
       expect(InviteDialogScope.globalListenerActive, isFalse);
@@ -13,7 +16,6 @@ void main() {
 
     test('globalListenerActive can be set', () {
       InviteDialogScope.globalListenerActive = true;
-      addTearDown(() => InviteDialogScope.globalListenerActive = false);
 
       expect(InviteDialogScope.globalListenerActive, isTrue);
     });

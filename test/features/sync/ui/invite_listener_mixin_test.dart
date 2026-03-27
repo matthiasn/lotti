@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/ui/invite_dialog_helper.dart';
 
 void main() {
+  setUp(() => InviteDialogScope.globalListenerActive = false);
+  tearDown(() => InviteDialogScope.globalListenerActive = false);
+
   group('InviteListenerMixin', () {
     // InviteListenerMixin requires a ConsumerStatefulWidget environment and
     // real MatrixService with invite stream, making full integration testing
@@ -11,15 +14,10 @@ void main() {
     test(
       'InviteDialogScope.globalListenerActive prevents duplicate listeners',
       () {
-        InviteDialogScope.globalListenerActive = false;
-
         expect(InviteDialogScope.globalListenerActive, isFalse);
 
         InviteDialogScope.globalListenerActive = true;
         expect(InviteDialogScope.globalListenerActive, isTrue);
-
-        // Reset
-        InviteDialogScope.globalListenerActive = false;
       },
     );
   });

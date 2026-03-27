@@ -113,17 +113,18 @@ void main() {
       when(
         () => sessionManager.timelineEvents,
       ).thenAnswer((_) => controller.stream);
-      when(() => roomManager.currentRoomId).thenReturn(null);
+      when(() => roomManager.currentRoomId).thenReturn('!room:s');
       when(() => roomManager.currentRoom).thenReturn(null);
+      when(() => catchUp.handleFirstStreamEvent()).thenReturn(false);
+      when(() => catchUp.handleClientStreamSignal()).thenReturn(true);
 
       await binder.start(lastProcessedEventId: null);
       await binder.dispose();
 
-      // Should not throw after disposal
-      expect(
-        () => controller.add(_createMockEvent('!room:s')),
-        returnsNormally,
-      );
+      // Emit after disposal and verify no binder callbacks are invoked
+      controller.add(_createMockEvent('!room:s'));
+      await Future<void>.delayed(Duration.zero);
+      verifyNever(() => catchUp.handleFirstStreamEvent());
     });
   });
 }

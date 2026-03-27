@@ -90,16 +90,10 @@ void main() {
       test('does not login when shouldAttemptLogin is false', () async {
         sessionManager.matrixConfig = testConfig;
         when(() => gateway.connect(any())).thenAnswer((_) async {});
-        when(() => client.isLogged()).thenReturn(true);
+        when(() => client.isLogged()).thenReturn(false);
         when(
           () => roomManager.initialize(),
         ).thenAnswer((_) async {});
-        when(
-          () => roomManager.hydrateRoomSnapshot(client: any(named: 'client')),
-        ).thenAnswer((_) async {});
-        when(
-          () => roomManager.loadPersistedRoomId(),
-        ).thenAnswer((_) async => null);
 
         await sessionManager.connect(shouldAttemptLogin: false);
 
