@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
@@ -222,7 +223,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.byType(CircularProgressIndicator),
+      find.byType(DesignSystemSpinner),
       findsOneWidget,
     );
   });

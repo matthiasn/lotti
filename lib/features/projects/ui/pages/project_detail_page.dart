@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
@@ -218,7 +219,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
               if (state.isLoading && project == null)
                 const SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: DesignSystemSpinner()),
                 )
               else if (project != null)
                 SliverPadding(

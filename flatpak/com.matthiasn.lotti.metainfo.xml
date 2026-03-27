@@ -33,6 +33,7 @@
   <releases>
     <release version="0.9.933" date="2026-03-27">
       <description>
+          <p>Loading spinners in projects and tasks features now use the design system DesignSystemSpinner component for consistent visual treatment across the app.</p>
           <p>Projects tab: the new top-level Projects tab now ships behind the enableProjects feature flag with the intended design-system mobile layout, grouped category sections, lazy list rendering, and a disabled search field reserved for the later vector-search follow-up.</p>
           <p>Projects tab reactivity: grouped project snapshots now refresh automatically when relevant project, task, category, or private-visibility updates arrive, so status changes such as Active to Completed are reflected in the UI without reopening the page.</p>
       </description>

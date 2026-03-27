@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
@@ -108,7 +109,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
-                      child: CircularProgressIndicator.adaptive(),
+                      child: DesignSystemSpinner(),
                     ),
                   ),
                 ],

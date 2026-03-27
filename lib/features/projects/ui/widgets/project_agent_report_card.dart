@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -163,17 +164,13 @@ class ProjectAgentReportCard extends ConsumerWidget {
                   if (isRunning)
                     Tooltip(
                       message: context.messages.agentRunningIndicator,
-                      child: SizedBox(
+                      child: const SizedBox(
                         width: 32,
                         height: 32,
                         child: Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: context.colorScheme.primary,
-                            ),
+                          child: DesignSystemSpinner(
+                            size: 16,
+                            strokeWidth: 2,
                           ),
                         ),
                       ),
@@ -205,10 +202,9 @@ class ProjectAgentReportCard extends ConsumerWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                  child: DesignSystemSpinner(
+                    size: 20,
+                    strokeWidth: 2,
                   ),
                 ),
               )

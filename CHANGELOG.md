@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.933] - 2026-03-27
 ### Changed
+- Loading spinners in projects and tasks features now use the design system
+  `DesignSystemSpinner` component for consistent visual treatment across the app.
 - Projects tab: the new top-level Projects tab now ships behind the
   `enableProjects` feature flag with the intended design-system mobile layout,
   grouped category sections, lazy list rendering, and a disabled search field

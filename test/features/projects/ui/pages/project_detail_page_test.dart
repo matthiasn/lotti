@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -148,7 +149,7 @@ void main() {
 
   group('ProjectDetailPage', () {
     group('loading state', () {
-      testWidgets('shows CircularProgressIndicator when loading with null '
+      testWidgets('shows DesignSystemSpinner when loading with null '
           'project', (tester) async {
         await pumpPage(
           tester,
@@ -161,7 +162,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DesignSystemSpinner), findsOneWidget);
       });
     });
 
@@ -180,7 +181,7 @@ void main() {
         );
 
         expect(find.text('Project not found'), findsOneWidget);
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byType(DesignSystemSpinner), findsNothing);
       });
     });
 

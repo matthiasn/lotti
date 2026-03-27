@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -34,7 +35,7 @@ class ProjectSelectionModalContent extends ConsumerWidget {
       child: projectsAsync.when(
         loading: () => const Padding(
           padding: EdgeInsets.all(32),
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(child: DesignSystemSpinner()),
         ),
         error: (_, _) => Padding(
           padding: const EdgeInsets.all(24),

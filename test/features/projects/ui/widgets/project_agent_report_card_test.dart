@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart' show AiConfig;
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
@@ -214,7 +215,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
     });
 
     testWidgets('shows report loading spinner while report is loading', (
@@ -239,7 +240,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
     });
 
     testWidgets('shows placeholder when no project report exists', (

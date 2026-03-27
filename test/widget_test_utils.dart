@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -167,6 +168,7 @@ Widget makeTestableWidget2(
   return MediaQuery(
     data: mq,
     child: MaterialApp(
+      theme: ensureDsTokens(null),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         FormBuilderLocalizations.delegate,
@@ -177,6 +179,21 @@ Widget makeTestableWidget2(
       supportedLocales: AppLocalizations.supportedLocales,
       home: child,
     ),
+  );
+}
+
+/// Ensures the provided [ThemeData] includes [DsTokens]. When no theme is
+/// given, a default light theme with design tokens is created so that design
+/// system components can resolve `context.designTokens` without crashing.
+ThemeData ensureDsTokens(ThemeData? theme) {
+  final base = theme ?? ThemeData.light();
+  if (base.extension<DsTokens>() != null) return base;
+  final isDark = base.brightness == Brightness.dark;
+  return base.copyWith(
+    extensions: [
+      ...base.extensions.values,
+      if (isDark) dsTokensDark else dsTokensLight,
+    ],
   );
 }
 
@@ -193,7 +210,7 @@ Widget makeTestableWidgetWithScaffold(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: theme,
+        theme: ensureDsTokens(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -231,7 +248,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: theme,
+        theme: ensureDsTokens(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
