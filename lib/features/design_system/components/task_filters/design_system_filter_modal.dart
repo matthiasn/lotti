@@ -47,7 +47,7 @@ Future<void> showDesignSystemFilterModal({
                 draftState,
                 section,
               );
-              if (nextState == null) {
+              if (!sheetContext.mounted || nextState == null) {
                 return;
               }
 
