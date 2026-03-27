@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -13,6 +16,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
+import '../test_utils.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -21,7 +26,9 @@ void main() {
   late MockPersistenceLogic mockPersistence;
   late MockUpdateNotifications mockNotifications;
   late MockVectorClockService mockVectorClockService;
+  late MockEntitiesCacheService mockEntitiesCacheService;
   late MockOutboxService mockOutboxService;
+  late StreamController<Set<String>> updateStreamController;
   late ProjectRepository repository;
 
   final projectMeta = Metadata(
@@ -71,6 +78,15 @@ void main() {
     ),
   );
 
+  final workCategory = CategoryTestUtils.createTestCategory(
+    id: 'cat-1',
+    name: 'Work',
+  );
+  final studyCategory = CategoryTestUtils.createTestCategory(
+    id: 'cat-2',
+    name: 'Study',
+  );
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
@@ -78,7 +94,9 @@ void main() {
     mockPersistence = MockPersistenceLogic();
     mockNotifications = MockUpdateNotifications();
     mockVectorClockService = MockVectorClockService();
+    mockEntitiesCacheService = MockEntitiesCacheService();
     mockOutboxService = MockOutboxService();
+    updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Register OutboxService in GetIt (used by _enqueueLinkSync)
     await getIt.reset();
@@ -86,9 +104,22 @@ void main() {
     when(
       () => mockOutboxService.enqueueMessage(any()),
     ).thenAnswer((_) async {});
+    when(
+      () => mockNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockEntitiesCacheService.categoriesById,
+    ).thenReturn({
+      workCategory.id: workCategory,
+      studyCategory.id: studyCategory,
+    });
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn([workCategory, studyCategory]);
 
     repository = ProjectRepository(
       journalDb: mockDb,
+      entitiesCacheService: mockEntitiesCacheService,
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
       vectorClockService: mockVectorClockService,
@@ -96,6 +127,7 @@ void main() {
   });
 
   tearDown(() async {
+    await updateStreamController.close();
     await getIt.reset();
   });
 
@@ -170,6 +202,292 @@ void main() {
 
       expect(result, isA<ProjectEntry>());
       expect(result?.data.title, 'Test Project');
+    });
+  });
+
+  group('getProjectsOverview', () {
+    test(
+      'groups visible projects by category and maps batch task rollups',
+      () async {
+        final secondProject = makeTestProject(
+          id: 'project-002',
+          title: 'Study Project',
+          categoryId: studyCategory.id,
+        );
+
+        when(() => mockDb.getVisibleProjects()).thenAnswer(
+          (_) async => [projectEntry, secondProject],
+        );
+        when(
+          () => mockDb.getProjectTaskRollups({'project-001', 'project-002'}),
+        ).thenAnswer(
+          (_) async => {
+            'project-001': (
+              totalTaskCount: 5,
+              completedTaskCount: 3,
+              blockedTaskCount: 1,
+            ),
+            'project-002': (
+              totalTaskCount: 2,
+              completedTaskCount: 1,
+              blockedTaskCount: 0,
+            ),
+          },
+        );
+
+        final result = await repository.getProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+
+        expect(result.groups, hasLength(2));
+        expect(result.groups.first.category?.name, 'Work');
+        expect(
+          result.groups.first.projects.single.taskRollup.totalTaskCount,
+          5,
+        );
+        expect(
+          result.groups[1].projects.single.taskRollup.completedTaskCount,
+          1,
+        );
+        verifyNever(() => mockDb.getProjectsForCategory(any()));
+        verifyNever(() => mockDb.getTasksForProject(any()));
+      },
+    );
+  });
+
+  group('watchProjectsOverview', () {
+    test('re-fetches the grouped snapshot on relevant notifications', () async {
+      var repositoryCallCount = 0;
+      final initialProject = makeTestProject(
+        id: 'project-010',
+        title: 'Initial Project',
+        categoryId: workCategory.id,
+      );
+      final updatedProject = makeTestProject(
+        id: 'project-011',
+        title: 'Updated Project',
+        categoryId: workCategory.id,
+      );
+
+      when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+        return repositoryCallCount++ == 0
+            ? [initialProject]
+            : [initialProject, updatedProject];
+      });
+      when(
+        () => mockDb.getProjectTaskRollups(any()),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return {
+          for (final id in ids)
+            id: (
+              totalTaskCount: id == 'project-011' ? 2 : 1,
+              completedTaskCount: 0,
+              blockedTaskCount: 0,
+            ),
+        };
+      });
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([
+          isA<ProjectsOverviewSnapshot>().having(
+            (snapshot) => snapshot.totalProjectCount,
+            'initial project count',
+            1,
+          ),
+          isA<ProjectsOverviewSnapshot>().having(
+            (snapshot) => snapshot.totalProjectCount,
+            'updated project count',
+            2,
+          ),
+        ]),
+      );
+
+      await Future<void>.microtask(() {});
+      updateStreamController.add({taskNotification});
+      await expectation;
+    });
+
+    test('emits error when getProjectsOverview throws', () async {
+      when(
+        () => mockDb.getVisibleProjects(),
+      ).thenThrow(Exception('database failure'));
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      await expectLater(
+        stream,
+        emitsError(isA<Exception>()),
+      );
+    });
+
+    test(
+      'refreshes on PROJECT_ENTITY_UPDATE:project-001 notification',
+      () async {
+        var repositoryCallCount = 0;
+        final project = makeTestProject(
+          id: 'project-001',
+          title: 'My Project',
+          categoryId: workCategory.id,
+        );
+
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+          repositoryCallCount++;
+          return [project];
+        });
+        when(
+          () => mockDb.getProjectTaskRollups(any()),
+        ).thenAnswer(
+          (_) async => {
+            'project-001': (
+              totalTaskCount: repositoryCallCount,
+              completedTaskCount: 0,
+              blockedTaskCount: 0,
+            ),
+          },
+        );
+
+        final stream = repository.watchProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            isA<ProjectsOverviewSnapshot>().having(
+              (s) => s.groups.single.projects.single.taskRollup.totalTaskCount,
+              'initial totalTaskCount',
+              1,
+            ),
+            isA<ProjectsOverviewSnapshot>().having(
+              (s) => s.groups.single.projects.single.taskRollup.totalTaskCount,
+              'refreshed totalTaskCount',
+              2,
+            ),
+          ]),
+        );
+
+        await Future<void>.microtask(() {});
+        updateStreamController.add({
+          projectEntityUpdateNotification('project-001'),
+        });
+        await expectation;
+      },
+    );
+
+    test('skips refresh for irrelevant notification IDs', () async {
+      when(() => mockDb.getVisibleProjects()).thenAnswer(
+        (_) async => [projectEntry],
+      );
+      when(
+        () => mockDb.getProjectTaskRollups(any()),
+      ).thenAnswer(
+        (_) async => {
+          'project-001': (
+            totalTaskCount: 1,
+            completedTaskCount: 0,
+            blockedTaskCount: 0,
+          ),
+        },
+      );
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      final emissions = <ProjectsOverviewSnapshot>[];
+      final subscription = stream.listen(emissions.add);
+
+      // Wait for initial emission
+      await Future<void>.microtask(() {});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(1));
+
+      // Emit an unrelated ID that is not a project, task token, category,
+      // or private toggle token
+      updateStreamController.add({'unrelated-entity-999'});
+      await Future<void>.microtask(() {});
+      await Future<void>.delayed(Duration.zero);
+
+      // No additional emission should have occurred
+      expect(emissions, hasLength(1));
+
+      await subscription.cancel();
+    });
+
+    test('re-fetches when an existing project id changes status', () async {
+      var repositoryCallCount = 0;
+      final activeProject = makeTestProject(
+        id: 'project-020',
+        title: 'Device Sync',
+        status: ProjectStatus.active(
+          id: 'status-active',
+          createdAt: testDate,
+          utcOffset: 60,
+        ),
+        categoryId: workCategory.id,
+      );
+      final completedProject = makeTestProject(
+        id: 'project-020',
+        title: 'Device Sync',
+        status: ProjectStatus.completed(
+          id: 'status-completed',
+          createdAt: testDate.add(const Duration(hours: 1)),
+          utcOffset: 60,
+        ),
+        categoryId: workCategory.id,
+      );
+
+      when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+        return repositoryCallCount++ == 0
+            ? [activeProject]
+            : [completedProject];
+      });
+      when(
+        () => mockDb.getProjectTaskRollups({'project-020'}),
+      ).thenAnswer(
+        (_) async => {
+          'project-020': (
+            totalTaskCount: 5,
+            completedTaskCount: 5,
+            blockedTaskCount: 0,
+          ),
+        },
+      );
+
+      final stream = repository.watchProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([
+          isA<ProjectsOverviewSnapshot>().having(
+            (snapshot) =>
+                snapshot.groups.single.projects.single.project.data.status,
+            'initial status',
+            isA<ProjectActive>(),
+          ),
+          isA<ProjectsOverviewSnapshot>().having(
+            (snapshot) =>
+                snapshot.groups.single.projects.single.project.data.status,
+            'updated status',
+            isA<ProjectCompleted>(),
+          ),
+        ]),
+      );
+
+      await Future<void>.microtask(() {});
+      updateStreamController.add({'project-020'});
+      await expectation;
     });
   });
 

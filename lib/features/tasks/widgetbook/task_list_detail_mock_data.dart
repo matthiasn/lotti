@@ -466,7 +466,6 @@ DesignSystemTaskFilterState buildTaskShowcaseFilterState() {
         label: 'All',
       ),
     ],
-    selectedPriorityId: DesignSystemTaskFilterState.allPriorityId,
     categoryField: const DesignSystemTaskFilterFieldState(
       label: 'Category',
       options: [

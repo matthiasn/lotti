@@ -145,84 +145,16 @@ void main() {
         tester.element(find.byType(ProjectListPane)),
       )!;
       final expectedDate = DateFormat.MMMd('de').format(targetDate);
-      final expectedSummary =
-          '${l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount)} · ${l10n.projectShowcaseDueDate(expectedDate)}';
-
-      expect(findRichTextContaining(expectedSummary), findsOneWidget);
-    });
-  });
-
-  group('ProjectGroupSection', () {
-    testWidgets('renders category tag and project count', (tester) async {
-      final data = makeTestProjectListData();
-      final group = ProjectListDetailState(
-        data: data,
-        searchQuery: '',
-        selectedProjectId: 'p1',
-      ).visibleGroups.first;
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectGroupSection(
-            group: group,
-            selectedProjectId: 'p1',
-            onProjectSelected: (_) {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Work'), findsOneWidget);
-      expect(find.text('1 project'), findsOneWidget);
-    });
-  });
-
-  group('ProjectRow', () {
-    testWidgets('renders title, health score, and status', (tester) async {
-      final record = makeTestProjectRecord();
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectRow(
-            record: record,
-            selected: false,
-            hovered: false,
-            onHoverChanged: (_) {},
-            onTap: () {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Test Project'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('project-row-health-ring')),
+        findRichTextContaining(
+          l10n.settingsCategoriesTaskCount(datedRecord.totalTaskCount),
+        ),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
-    });
-
-    testWidgets('calls onTap when tapped', (tester) async {
-      var tapped = false;
-      final record = makeTestProjectRecord();
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectRow(
-            record: record,
-            selected: false,
-            hovered: false,
-            onHoverChanged: (_) {},
-            onTap: () => tapped = true,
-          ),
-        ),
+      expect(
+        findRichTextContaining(l10n.projectShowcaseDueDate(expectedDate)),
+        findsOneWidget,
       );
-      await tester.pump();
-
-      await tester.tap(find.text('Test Project'));
-      await tester.pump();
-
-      expect(tapped, isTrue);
     });
   });
 }

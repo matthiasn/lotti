@@ -3726,6 +3726,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navTabTitleJournal => 'Jurnal';
 
   @override
+  String get navTabTitleProjects => 'Proiecte';
+
+  @override
   String get navTabTitleSettings => 'Setări';
 
   @override

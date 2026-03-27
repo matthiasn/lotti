@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
@@ -30,14 +29,12 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
-import 'package:rxdart/rxdart.dart';
 
 class AppScreenConstants {
   const AppScreenConstants._();
@@ -61,9 +58,11 @@ class AppScreen extends ConsumerStatefulWidget {
   const AppScreen({
     super.key,
     this.journalDb,
+    this.enableBottomNavSelectionAnimation = true,
   });
 
   final JournalDb? journalDb;
+  final bool enableBottomNavSelectionAnimation;
 
   @override
   ConsumerState<AppScreen> createState() => _AppScreenState();
@@ -71,52 +70,7 @@ class AppScreen extends ConsumerStatefulWidget {
 
 class _AppScreenState extends ConsumerState<AppScreen> {
   final NavService navService = getIt<NavService>();
-  StreamSubscription<({bool habits, bool dashboards, bool dailyOs})>?
-  _pageFlagsSub;
-
-  bool _isHabitsPageEnabled = true;
-  bool _isDashboardsPageEnabled = true;
-  bool _isDailyOsPageEnabled = true;
   bool _notLoggedInToastShown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final journalDb = widget.journalDb ?? getIt<JournalDb>();
-    _pageFlagsSub =
-        Rx.combineLatest3<
-              bool,
-              bool,
-              bool,
-              ({bool habits, bool dashboards, bool dailyOs})
-            >(
-              journalDb.watchConfigFlag(enableHabitsPageFlag),
-              journalDb.watchConfigFlag(enableDashboardsPageFlag),
-              journalDb.watchConfigFlag(enableDailyOsPageFlag),
-              (habits, dashboards, dailyOs) => (
-                habits: habits,
-                dashboards: dashboards,
-                dailyOs: dailyOs,
-              ),
-            )
-            .listen((flags) {
-              if (!mounted) {
-                return;
-              }
-
-              setState(() {
-                _isHabitsPageEnabled = flags.habits;
-                _isDashboardsPageEnabled = flags.dashboards;
-                _isDailyOsPageEnabled = flags.dailyOs;
-              });
-            });
-  }
-
-  @override
-  void dispose() {
-    unawaited(_pageFlagsSub?.cancel());
-    super.dispose();
-  }
 
   void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
@@ -240,13 +194,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       stream: navService.getIndexStream(),
       builder: (context, snapshot) {
         final rawIndex = snapshot.data ?? 0;
+        final isProjectsPageEnabled = navService.isProjectsPageEnabled;
+        final isDailyOsPageEnabled = navService.isDailyOsPageEnabled;
+        final isHabitsPageEnabled = navService.isHabitsPageEnabled;
+        final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
 
-        // Calculate the number of navigation items based on enabled flags
         final navItems = [
           true, // Tasks
-          _isDailyOsPageEnabled, // DailyOS
-          _isHabitsPageEnabled, // Habits
-          _isDashboardsPageEnabled, // Dashboards
+          isProjectsPageEnabled, // Projects
+          isDailyOsPageEnabled, // DailyOS
+          isHabitsPageEnabled, // Habits
+          isDashboardsPageEnabled, // Dashboards
           true, // Journal
           true, // Settings
         ];
@@ -268,11 +226,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 index: index,
                 children: [
                   Beamer(routerDelegate: navService.tasksDelegate),
-                  if (_isDailyOsPageEnabled)
+                  if (isProjectsPageEnabled)
+                    Beamer(routerDelegate: navService.projectsDelegate),
+                  if (isDailyOsPageEnabled)
                     Beamer(routerDelegate: navService.calendarDelegate),
-                  if (_isHabitsPageEnabled)
+                  if (isHabitsPageEnabled)
                     Beamer(routerDelegate: navService.habitsDelegate),
-                  if (_isDashboardsPageEnabled)
+                  if (isDashboardsPageEnabled)
                     Beamer(routerDelegate: navService.dashboardsDelegate),
                   Beamer(routerDelegate: navService.journalDelegate),
                   Beamer(routerDelegate: navService.settingsDelegate),
@@ -312,6 +272,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             ),
             type: SpotifyStyleBottomNavigationBarType.fixed,
             currentIndex: index,
+            enableSelectionAnimation: widget.enableBottomNavSelectionAnimation,
             items: [
               createNavBarItem(
                 semanticLabel: context.messages.navTabTitleTasks,
@@ -323,21 +284,28 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ),
                 label: context.messages.navTabTitleTasks,
               ),
-              if (_isDailyOsPageEnabled)
+              if (isProjectsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: context.messages.navTabTitleProjects,
+                  icon: const Icon(Ionicons.folder_outline),
+                  activeIcon: const Icon(Ionicons.folder),
+                  label: context.messages.navTabTitleProjects,
+                ),
+              if (isDailyOsPageEnabled)
                 createNavBarItem(
                   semanticLabel: context.messages.navTabTitleCalendar,
                   icon: const Icon(Ionicons.calendar_outline),
                   activeIcon: const Icon(Ionicons.calendar),
                   label: context.messages.navTabTitleCalendar,
                 ),
-              if (_isHabitsPageEnabled)
+              if (isHabitsPageEnabled)
                 createNavBarItem(
                   semanticLabel: context.messages.navTabTitleHabits,
                   icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
                   activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
                   label: context.messages.navTabTitleHabits,
                 ),
-              if (_isDashboardsPageEnabled)
+              if (isDashboardsPageEnabled)
                 createNavBarItem(
                   semanticLabel: context.messages.navTabTitleInsights,
                   icon: const Icon(Ionicons.bar_chart_outline),

@@ -1738,6 +1738,7 @@
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Dashboards",
   "navTabTitleJournal": "Logbook",
+  "navTabTitleProjects": "Projects",
   "navTabTitleSettings": "Settings",
   "navTabTitleTasks": "Tasks",
   "nestedAiResponsesTitle": "{count} AI response{count, plural, =1{} other{s}}",

@@ -6673,6 +6673,12 @@ abstract class AppLocalizations {
   /// **'Logbook'**
   String get navTabTitleJournal;
 
+  /// No description provided for @navTabTitleProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get navTabTitleProjects;
+
   /// No description provided for @navTabTitleSettings.
   ///
   /// In en, this message translates to:

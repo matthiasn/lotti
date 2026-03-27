@@ -35,6 +35,12 @@ typedef LinkedEntityTimeSpan = ({
   DateTime dateTo,
 });
 
+typedef ProjectTaskRollupCounts = ({
+  int totalTaskCount,
+  int completedTaskCount,
+  int blockedTaskCount,
+});
+
 /// SQL subquery that resolves the most-recent active ProjectLink for a task.
 /// Used both during migration back-fill and in [JournalDb.upsertJournalDbEntity]
 /// to keep the denormalized `project_id` column consistent.
@@ -528,7 +534,6 @@ class JournalDb extends _$JournalDb {
               ..where(
                 journal.id.isIn(taskIds.toList()) &
                     journal.type.equals('Task') &
-                    journal.task.equals(true) &
                     journal.deleted.equals(false) &
                     journal.projectId.isNotNull(),
               ))
@@ -537,6 +542,77 @@ class JournalDb extends _$JournalDb {
         .map((row) => row.read(journal.projectId))
         .whereType<String>()
         .toSet();
+  }
+
+  /// Returns all visible, non-deleted projects across categories.
+  Future<List<ProjectEntry>> getVisibleProjects() async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
+
+    var predicate =
+        journal.type.equals('Project') & journal.deleted.equals(false);
+    if (!matchesAllPrivateStates) {
+      predicate = predicate & journal.private.isIn(privateStatuses);
+    }
+
+    final rows =
+        await (select(journal)
+              ..where((_) => predicate)
+              ..orderBy([
+                (table) => OrderingTerm(
+                  expression: table.dateFrom,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+
+    return rows.map(fromDbEntity).whereType<ProjectEntry>().toList();
+  }
+
+  /// Returns aggregate task counts for all [projectIds] in one query.
+  Future<Map<String, ProjectTaskRollupCounts>> getProjectTaskRollups(
+    Set<String> projectIds,
+  ) async {
+    if (projectIds.isEmpty) {
+      return const <String, ProjectTaskRollupCounts>{};
+    }
+
+    final privateStatuses = await _visiblePrivateStatuses();
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
+    final projectPlaceholders = List.filled(projectIds.length, '?').join(', ');
+    final privateClause = matchesAllPrivateStates
+        ? ''
+        : ' AND private IN (${List.filled(privateStatuses.length, '?').join(', ')})';
+
+    final rows = await customSelect(
+      '''
+        SELECT
+          project_id,
+          COUNT(*) AS total_count,
+          SUM(CASE WHEN task_status = 'DONE' THEN 1 ELSE 0 END) AS completed_count,
+          SUM(CASE WHEN task_status = 'BLOCKED' THEN 1 ELSE 0 END) AS blocked_count
+        FROM journal
+        WHERE project_id IN ($projectPlaceholders)
+          AND deleted = FALSE
+          AND type = 'Task'
+          $privateClause
+        GROUP BY project_id
+      ''',
+      variables: [
+        ...projectIds.map(Variable.withString),
+        if (!matchesAllPrivateStates) ...privateStatuses.map(Variable.withBool),
+      ],
+      readsFrom: {journal},
+    ).get();
+
+    return {
+      for (final row in rows)
+        row.read<String>('project_id'): (
+          totalTaskCount: row.read<int>('total_count'),
+          completedTaskCount: row.read<int>('completed_count'),
+          blockedTaskCount: row.read<int>('blocked_count'),
+        ),
+    };
   }
 
   Future<int> addConflict(Conflict conflict) async {

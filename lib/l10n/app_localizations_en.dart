@@ -3660,6 +3660,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabTitleJournal => 'Logbook';
 
   @override
+  String get navTabTitleProjects => 'Projects';
+
+  @override
   String get navTabTitleSettings => 'Settings';
 
   @override

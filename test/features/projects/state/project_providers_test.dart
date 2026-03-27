@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -16,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -117,7 +120,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       updateStreamController.add({taskId});
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       final result = await container.read(
         projectForTaskProvider(taskId).future,
@@ -138,7 +141,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       updateStreamController.add({projectNotification});
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       final result = await container.read(
         projectForTaskProvider(taskId).future,
@@ -187,7 +190,7 @@ void main() {
       ).thenAnswer((_) async => [makeTestTask(), makeTestTask()]);
 
       updateStreamController.add({projectId});
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       final result = await container.read(
         projectTaskCountProvider(projectId).future,
@@ -207,7 +210,7 @@ void main() {
       ).thenAnswer((_) async => []);
 
       updateStreamController.add({projectNotification});
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       final result = await container.read(
         projectTaskCountProvider(projectId).future,
@@ -607,6 +610,294 @@ void main() {
           sorted.map((entry) => entry.project.meta.id).toList(),
           ['on-track-alpha', 'on-track-zulu', 'watch-bravo', 'no-health'],
         );
+      },
+    );
+  });
+
+  group('projects overview providers', () {
+    final workCategory = CategoryTestUtils.createTestCategory(
+      id: 'work',
+      name: 'Work',
+    );
+    final studyCategory = CategoryTestUtils.createTestCategory(
+      id: 'study',
+      name: 'Study',
+    );
+
+    ProjectsOverviewSnapshot makeSnapshot() {
+      return ProjectsOverviewSnapshot(
+        groups: [
+          ProjectCategoryGroup(
+            categoryId: workCategory.id,
+            category: workCategory,
+            projects: [
+              ProjectListItemData(
+                project: makeTestProject(
+                  id: 'project-work',
+                  title: 'Device Sync',
+                  status: ProjectStatus.active(
+                    id: 'status-active',
+                    createdAt: DateTime(2024, 3, 15),
+                    utcOffset: 0,
+                  ),
+                  categoryId: workCategory.id,
+                ),
+                category: workCategory,
+                taskRollup: const ProjectTaskRollupData(totalTaskCount: 5),
+              ),
+            ],
+          ),
+          ProjectCategoryGroup(
+            categoryId: studyCategory.id,
+            category: studyCategory,
+            projects: [
+              ProjectListItemData(
+                project: makeTestProject(
+                  id: 'project-study',
+                  title: 'React Course',
+                  categoryId: studyCategory.id,
+                ),
+                category: studyCategory,
+                taskRollup: const ProjectTaskRollupData(totalTaskCount: 2),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    test(
+      'projectsOverviewProvider exposes the repository watch stream',
+      () async {
+        final snapshot = makeSnapshot();
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(snapshot));
+        final subscription = container.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final result = await container.read(projectsOverviewProvider.future);
+
+        expect(result.totalProjectCount, 2);
+        expect(
+          result.groups.first.projects.first.project.data.title,
+          'Device Sync',
+        );
+      },
+    );
+
+    test(
+      'visibleProjectGroupsProvider reflects updated project status from the overview stream',
+      () async {
+        final controller = StreamController<ProjectsOverviewSnapshot>();
+        addTearDown(controller.close);
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => controller.stream);
+
+        final initialSnapshot = makeSnapshot();
+        final updatedSnapshot = ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: workCategory.id,
+              category: workCategory,
+              projects: [
+                ProjectListItemData(
+                  project: makeTestProject(
+                    id: 'project-work',
+                    title: 'Device Sync',
+                    status: ProjectStatus.completed(
+                      id: 'status-completed',
+                      createdAt: DateTime(2024, 3, 16),
+                      utcOffset: 0,
+                    ),
+                    categoryId: workCategory.id,
+                  ),
+                  category: workCategory,
+                  taskRollup: const ProjectTaskRollupData(
+                    totalTaskCount: 5,
+                    completedTaskCount: 5,
+                  ),
+                ),
+              ],
+            ),
+            initialSnapshot.groups[1],
+          ],
+        );
+
+        final subscription = container.listen(
+          visibleProjectGroupsProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        controller.add(initialSnapshot);
+        await Future<void>.microtask(() {});
+
+        var visibleGroups = container.read(visibleProjectGroupsProvider).value;
+        expect(
+          visibleGroups?.first.projects.single.project.data.status,
+          isA<ProjectActive>(),
+        );
+
+        controller.add(updatedSnapshot);
+        await Future<void>.microtask(() {});
+
+        visibleGroups = container.read(visibleProjectGroupsProvider).value;
+        expect(
+          visibleGroups?.first.projects.single.project.data.status,
+          isA<ProjectCompleted>(),
+        );
+      },
+    );
+
+    test('visibleProjectGroupsProvider filters by local text query', () async {
+      final snapshot = makeSnapshot();
+      final scopedContainer = ProviderContainer(
+        overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(snapshot),
+          ),
+        ],
+      );
+      addTearDown(scopedContainer.dispose);
+      final subscription = scopedContainer.listen(
+        projectsOverviewProvider,
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await scopedContainer.read(projectsOverviewProvider.future);
+      scopedContainer
+        ..read(projectsFilterControllerProvider.notifier).setSearchMode(
+          ProjectsSearchMode.localText,
+        )
+        ..read(projectsFilterControllerProvider.notifier).setTextQuery('react');
+
+      final filtered = scopedContainer.read(visibleProjectGroupsProvider).value;
+
+      expect(filtered, isNotNull);
+      expect(filtered, hasLength(1));
+      expect(filtered!.single.category?.name, 'Study');
+      expect(
+        filtered.single.projects.single.project.data.title,
+        'React Course',
+      );
+    });
+
+    test(
+      'visibleProjectGroupsProvider filters by selected category ids',
+      () async {
+        final snapshot = makeSnapshot();
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await scopedContainer.read(projectsOverviewProvider.future);
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedCategoryIds({workCategory.id});
+
+        final filtered = scopedContainer
+            .read(visibleProjectGroupsProvider)
+            .value;
+
+        expect(filtered, isNotNull);
+        expect(filtered, hasLength(1));
+        expect(filtered!.single.category?.name, 'Work');
+      },
+    );
+
+    test(
+      'ProjectsFilterController.clear resets to default filter',
+      () async {
+        final snapshot = makeSnapshot();
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await scopedContainer.read(projectsOverviewProvider.future);
+
+        // Apply a filter, then clear it
+        scopedContainer
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setSelectedCategoryIds({workCategory.id})
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setTextQuery('something')
+          ..read(
+            projectsFilterControllerProvider.notifier,
+          ).setSearchMode(ProjectsSearchMode.localText);
+
+        scopedContainer.read(projectsFilterControllerProvider.notifier).clear();
+
+        final filter = scopedContainer.read(projectsFilterControllerProvider);
+        expect(filter.selectedCategoryIds, isEmpty);
+        expect(filter.textQuery, isEmpty);
+        expect(filter.searchMode, ProjectsSearchMode.disabled);
+
+        // All groups should be visible again
+        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
+        expect(groups, hasLength(2));
+      },
+    );
+
+    test(
+      'visibleProjectGroupsProvider ignores text query when search mode is disabled',
+      () async {
+        final snapshot = makeSnapshot();
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await scopedContainer.read(projectsOverviewProvider.future);
+
+        // Set a text query but leave search mode disabled
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setTextQuery('nonexistent-term');
+
+        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
+        expect(groups, isNotNull);
+        expect(groups, hasLength(2));
       },
     );
   });

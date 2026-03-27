@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -20,15 +24,18 @@ part 'project_repository.g.dart';
 class ProjectRepository {
   ProjectRepository({
     required JournalDb journalDb,
+    required EntitiesCacheService entitiesCacheService,
     required PersistenceLogic persistenceLogic,
     required UpdateNotifications updateNotifications,
     required VectorClockService vectorClockService,
   }) : _journalDb = journalDb,
+       _entitiesCacheService = entitiesCacheService,
        _persistenceLogic = persistenceLogic,
        _updateNotifications = updateNotifications,
        _vectorClockService = vectorClockService;
 
   final JournalDb _journalDb;
+  final EntitiesCacheService _entitiesCacheService;
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
@@ -68,9 +75,10 @@ class ProjectRepository {
   /// entry updates that bubble up to their parent task IDs also mark the owning
   /// project as stale.
   Future<Set<String>> resolveAffectedProjectIds(Set<String> affectedIds) async {
-    const prefix = 'PROJECT_ENTITY_UPDATE:';
     final normalized = affectedIds.map((id) {
-      return id.startsWith(prefix) ? id.substring(prefix.length) : id;
+      return id.startsWith(projectEntityUpdatePrefix)
+          ? id.substring(projectEntityUpdatePrefix.length)
+          : id;
     }).toSet();
 
     final (directProjectIds, taskProjectIds) = await (
@@ -78,6 +86,144 @@ class ProjectRepository {
       _journalDb.getProjectIdsForTaskIds(normalized),
     ).wait;
     return {...directProjectIds, ...taskProjectIds};
+  }
+
+  /// Returns the grouped overview snapshot used by the top-level projects tab.
+  Future<ProjectsOverviewSnapshot> getProjectsOverview({
+    required ProjectsQuery query,
+  }) async {
+    final projects = await _journalDb.getVisibleProjects();
+    final scopedProjects = projects
+        .where((project) => query.matchesCategory(project.meta.categoryId))
+        .toList();
+    final taskRollups = await _journalDb.getProjectTaskRollups(
+      scopedProjects.map((project) => project.meta.id).toSet(),
+    );
+    final categoriesById = _entitiesCacheService.categoriesById;
+    final sortedCategoryIds = _entitiesCacheService.sortedCategories
+        .map((category) => category.id)
+        .toList(growable: false);
+    final groupedProjects = <String?, List<ProjectListItemData>>{};
+
+    for (final project in scopedProjects) {
+      final categoryId = project.meta.categoryId;
+      groupedProjects
+          .putIfAbsent(categoryId, () => <ProjectListItemData>[])
+          .add(
+            ProjectListItemData(
+              project: project,
+              category: categoriesById[categoryId],
+              taskRollup: switch (taskRollups[project.meta.id]) {
+                final ProjectTaskRollupCounts rollup => ProjectTaskRollupData(
+                  totalTaskCount: rollup.totalTaskCount,
+                  completedTaskCount: rollup.completedTaskCount,
+                  blockedTaskCount: rollup.blockedTaskCount,
+                ),
+                null => const ProjectTaskRollupData(),
+              },
+            ),
+          );
+    }
+
+    final extraCategoryIds =
+        groupedProjects.keys
+            .whereType<String>()
+            .where((categoryId) => !sortedCategoryIds.contains(categoryId))
+            .toList()
+          ..sort((left, right) {
+            final leftName =
+                categoriesById[left]?.name.toLowerCase() ?? left.toLowerCase();
+            final rightName =
+                categoriesById[right]?.name.toLowerCase() ??
+                right.toLowerCase();
+            return leftName.compareTo(rightName);
+          });
+
+    final orderedCategoryIds = <String?>[
+      ...sortedCategoryIds.where(groupedProjects.containsKey),
+      ...extraCategoryIds,
+      if (groupedProjects.containsKey(null)) null,
+    ];
+
+    final groups = orderedCategoryIds
+        .map((categoryId) {
+          final projectsForCategory = groupedProjects[categoryId];
+          if (projectsForCategory == null || projectsForCategory.isEmpty) {
+            return null;
+          }
+
+          return ProjectCategoryGroup(
+            categoryId: categoryId,
+            category: categoriesById[categoryId],
+            projects: List<ProjectListItemData>.unmodifiable(
+              projectsForCategory,
+            ),
+          );
+        })
+        .whereType<ProjectCategoryGroup>()
+        .toList(growable: false);
+
+    return ProjectsOverviewSnapshot(groups: groups);
+  }
+
+  /// Watches the grouped overview snapshot for project-relevant updates.
+  ///
+  /// Refreshes on the broad project/task/category/private notification tokens
+  /// and also on concrete project/category IDs already present in the current
+  /// snapshot so status edits cannot leave the list stale.
+  Stream<ProjectsOverviewSnapshot> watchProjectsOverview({
+    required ProjectsQuery query,
+  }) {
+    late StreamController<ProjectsOverviewSnapshot> controller;
+    StreamSubscription<Set<String>>? subscription;
+    var fetching = false;
+    var pendingRefetch = false;
+    ProjectsOverviewSnapshot? currentSnapshot;
+
+    Future<void> doFetch() async {
+      if (fetching) {
+        pendingRefetch = true;
+        return;
+      }
+
+      fetching = true;
+      try {
+        final snapshot = await getProjectsOverview(query: query);
+        currentSnapshot = snapshot;
+        if (!controller.isClosed) {
+          controller.add(snapshot);
+        }
+      } catch (error, stackTrace) {
+        if (!controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+      } finally {
+        fetching = false;
+        if (pendingRefetch && !controller.isClosed) {
+          pendingRefetch = false;
+          await doFetch();
+        }
+      }
+    }
+
+    controller = StreamController<ProjectsOverviewSnapshot>.broadcast(
+      onListen: () {
+        subscription = _updateNotifications.updateStream.listen((affectedIds) {
+          final snapshot = currentSnapshot;
+          if (snapshot == null ||
+              _projectsOverviewNeedsRefresh(affectedIds, snapshot)) {
+            doFetch();
+          }
+        });
+        doFetch();
+      },
+      onCancel: () async {
+        await subscription?.cancel();
+        subscription = null;
+      },
+    );
+
+    return controller.stream;
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -187,6 +333,36 @@ class ProjectRepository {
   /// to react to project changes.
   Stream<Set<String>> get updateStream => _updateNotifications.updateStream;
 
+  bool _projectsOverviewNeedsRefresh(
+    Set<String> affectedIds,
+    ProjectsOverviewSnapshot currentSnapshot,
+  ) {
+    if (affectedIds.any(_overviewNotificationTokens.contains)) {
+      return true;
+    }
+
+    final normalizedAffectedIds = affectedIds.map((id) {
+      return id.startsWith(projectEntityUpdatePrefix)
+          ? id.substring(projectEntityUpdatePrefix.length)
+          : id;
+    }).toSet();
+
+    final projectIds = currentSnapshot.groups
+        .expand((group) => group.projects)
+        .map((project) => project.project.meta.id)
+        .toSet();
+    if (normalizedAffectedIds.any(projectIds.contains)) {
+      return true;
+    }
+
+    final categoryIds = currentSnapshot.groups
+        .map((group) => group.categoryId)
+        .whereType<String>()
+        .toSet();
+
+    return normalizedAffectedIds.any(categoryIds.contains);
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Atomically soft-deletes an old project link and creates a new one
@@ -270,10 +446,18 @@ class ProjectRepository {
   }
 }
 
+const Set<String> _overviewNotificationTokens = {
+  projectNotification,
+  taskNotification,
+  categoriesNotification,
+  privateToggleNotification,
+};
+
 @Riverpod(keepAlive: true)
 ProjectRepository projectRepository(Ref ref) {
   return ProjectRepository(
     journalDb: getIt<JournalDb>(),
+    entitiesCacheService: getIt<EntitiesCacheService>(),
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
     vectorClockService: getIt<VectorClockService>(),

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.933] - 2026-03-27
+### Changed
+- Projects tab: the new top-level Projects tab now ships behind the
+  `enableProjects` feature flag with the intended design-system mobile layout,
+  grouped category sections, lazy list rendering, and a disabled search field
+  reserved for the later vector-search follow-up.
+- Projects tab reactivity: grouped project snapshots now refresh automatically
+  when relevant project, task, category, or private-visibility updates arrive,
+  so status changes such as `Active` to `Completed` are reflected in the UI
+  without reopening the page.
+
 ## [0.9.932] - 2026-03-23
 ### Changed
 - Projects now expose a user-facing health band (`Surviving`, `On Track`,
@@ -16,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Direct edits to a project and task linking changes now use the short
   deferred wake path, while other task-level activity stays stale-only
   until the next scheduled project digest unless refreshed manually sooner.
+- Projects now also have a top-level tab behind the `enableProjects` feature
+  flag, reusing the existing bottom navigation and loading grouped
+  project/category data through a single batch overview path.
 
 ## [0.9.931] - 2026-03-23
 ### Added

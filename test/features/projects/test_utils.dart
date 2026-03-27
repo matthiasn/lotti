@@ -3,6 +3,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -139,6 +140,24 @@ ProjectRecord makeTestProjectRecord({
     reviewSessions: reviewSessions,
     highlightedTasksTotalDuration: highlightedTasksTotalDuration,
   );
+}
+
+/// Creates a [ProjectListItemData] for the shared projects overview/list UI.
+ProjectListItemData makeTestProjectListItemData({
+  ProjectEntry? project,
+  CategoryDefinition? category,
+  int completedTaskCount = 3,
+  int totalTaskCount = 5,
+  int blockedTaskCount = 1,
+}) {
+  final record = makeTestProjectRecord(
+    project: project,
+    category: category,
+    completedTaskCount: completedTaskCount,
+    totalTaskCount: totalTaskCount,
+    blockedTaskCount: blockedTaskCount,
+  );
+  return record.overviewListItem;
 }
 
 /// Creates a [TaskSummary] for testing.

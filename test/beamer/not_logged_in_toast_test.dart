@@ -169,6 +169,10 @@ void main() {
     );
 
     when(mockNav.getIndexStream).thenAnswer((_) => Stream<int>.value(0));
+    when(() => mockNav.isProjectsPageEnabled).thenReturn(false);
+    when(() => mockNav.isDailyOsPageEnabled).thenReturn(true);
+    when(() => mockNav.isHabitsPageEnabled).thenReturn(true);
+    when(() => mockNav.isDashboardsPageEnabled).thenReturn(true);
     when(() => mockNav.tasksDelegate).thenReturn(tasksDelegate);
     when(() => mockNav.calendarDelegate).thenReturn(calendarDelegate);
     when(() => mockNav.habitsDelegate).thenReturn(habitsDelegate);

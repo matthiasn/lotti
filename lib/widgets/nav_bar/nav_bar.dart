@@ -238,6 +238,7 @@ class SpotifyStyleBottomNavigationBar extends StatefulWidget {
     this.mouseCursor,
     this.enableFeedback,
     this.landscapeLayout,
+    this.enableSelectionAnimation = true,
     this.useLegacyColorScheme = true,
   }) : assert(items.length >= 2),
        assert(
@@ -425,6 +426,7 @@ class SpotifyStyleBottomNavigationBar extends StatefulWidget {
   ///  * [MediaQuery.of] - which can be used to determine the current
   ///    orientation.
   final BottomNavigationBarLandscapeLayout? landscapeLayout;
+  final bool enableSelectionAnimation;
 
   /// This flag is controlling how [BottomNavigationBar] is going to use
   /// the colors provided by the [selectedIconTheme], [unselectedIconTheme],
@@ -461,6 +463,7 @@ class _BottomNavigationTile extends StatelessWidget {
     required this.mouseCursor,
     required this.enableFeedback,
     required this.layout,
+    required this.enableSelectionAnimation,
   });
 
   final SpotifyStyleBottomNavigationBarType type;
@@ -482,6 +485,7 @@ class _BottomNavigationTile extends StatelessWidget {
   final MouseCursor mouseCursor;
   final bool enableFeedback;
   final BottomNavigationBarLandscapeLayout layout;
+  final bool enableSelectionAnimation;
 
   @override
   Widget build(BuildContext context) {
@@ -620,7 +624,7 @@ class _BottomNavigationTile extends StatelessWidget {
       ),
     );
 
-    result = selected
+    result = selected && enableSelectionAnimation
         ? result
               .animate()
               .fadeIn(begin: 0.5)
@@ -1148,6 +1152,7 @@ class _SpotifyStyleBottomNavigationBarState
           unselectedLabelStyle: effectiveUnselectedLabelStyle,
           enableFeedback:
               widget.enableFeedback ?? bottomTheme.enableFeedback ?? true,
+          enableSelectionAnimation: widget.enableSelectionAnimation,
           onTap: () {
             widget.onTap?.call(i);
           },

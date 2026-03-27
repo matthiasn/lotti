@@ -3711,6 +3711,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navTabTitleJournal => 'Logbuch';
 
   @override
+  String get navTabTitleProjects => 'Projekte';
+
+  @override
   String get navTabTitleSettings => 'Einstellungen';
 
   @override

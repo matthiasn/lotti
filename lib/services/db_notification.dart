@@ -85,6 +85,8 @@ const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
 
+const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
+
 String projectEntityUpdateNotification(String projectId) {
-  return 'PROJECT_ENTITY_UPDATE:$projectId';
+  return '$projectEntityUpdatePrefix$projectId';
 }

@@ -19,7 +19,7 @@ void main() {
 
       expect(state.selectedProject?.project.data.title, 'Device Sync');
       expect(
-        state.visibleGroups.map((group) => group.label).toList(),
+        state.visibleGroups.map((group) => group.category?.name).toList(),
         ['Work', 'Meals', 'Study'],
       );
     });
@@ -34,7 +34,7 @@ void main() {
       final state = container.read(projectListDetailShowcaseControllerProvider);
 
       expect(state.visibleGroups, hasLength(1));
-      expect(state.visibleGroups.single.label, 'Meals');
+      expect(state.visibleGroups.single.category?.name, 'Meals');
       expect(state.selectedProject?.project.data.title, 'Weekly Meal Prep');
     });
 

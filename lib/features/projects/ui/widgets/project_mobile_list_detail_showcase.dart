@@ -6,13 +6,13 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
-import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
 import 'package:lotti/features/projects/ui/widgets/review_sessions_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -123,55 +123,21 @@ class _ProjectMobileListScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const DesignSystemShowcaseMobileStatusBar(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.messages.designSystemBreadcrumbProjectsLabel,
-                        style: context
-                            .designTokens
-                            .typography
-                            .styles
-                            .heading
-                            .heading2
-                            .copyWith(
-                              color: ShowcasePalette.highText(context),
-                            ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      size: 34,
-                      color: ShowcasePalette.highText(context),
-                    ),
-                  ],
+              ProjectsHeader(
+                title: context.messages.designSystemBreadcrumbProjectsLabel,
+                query: state.searchQuery,
+                onSearchChanged: onSearchChanged,
+                onSearchCleared: onSearchCleared,
+                onSearchPressed: onSearchChanged,
+                titleTrailing: Icon(
+                  Icons.notifications_none_rounded,
+                  size: 34,
+                  color: ShowcasePalette.highText(context),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: DesignSystemSearch(
-                          hintText: context.messages.projectShowcaseSearchHint,
-                          initialText: state.searchQuery,
-                          onChanged: onSearchChanged,
-                          onClear: onSearchCleared,
-                          onSearchPressed: onSearchChanged,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.tune_rounded,
-                      size: 24,
-                      color: ShowcasePalette.teal(context),
-                    ),
-                  ],
+                searchTrailing: Icon(
+                  Icons.tune_rounded,
+                  size: 24,
+                  color: ShowcasePalette.teal(context),
                 ),
               ),
               Expanded(
@@ -189,7 +155,9 @@ class _ProjectMobileListScreen extends StatelessWidget {
                               return ProjectGroupSection(
                                 group: groups[index],
                                 selectedProjectId: selectedId,
-                                onProjectSelected: onProjectOpened,
+                                onProjectSelected: (item) => onProjectOpened(
+                                  item.project.meta.id,
+                                ),
                               );
                             },
                           ),

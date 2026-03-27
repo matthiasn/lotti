@@ -3708,6 +3708,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navTabTitleJournal => 'Zápisník';
 
   @override
+  String get navTabTitleProjects => 'Projekty';
+
+  @override
   String get navTabTitleSettings => 'Nastavení';
 
   @override

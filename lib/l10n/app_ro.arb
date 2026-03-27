@@ -1574,6 +1574,7 @@
   "navTabTitleHabits": "Obiceiuri",
   "navTabTitleInsights": "Informaţii",
   "navTabTitleJournal": "Jurnal",
+  "navTabTitleProjects": "Proiecte",
   "navTabTitleSettings": "Setări",
   "navTabTitleTasks": "Sarcini",
   "nestedAiResponsesTitle": "{count, plural, =1{1 răspuns AI} other{{count} răspunsuri AI}}",
