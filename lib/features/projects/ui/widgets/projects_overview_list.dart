@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
-import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/themes/theme.dart';
 

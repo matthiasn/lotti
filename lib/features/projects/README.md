@@ -68,7 +68,8 @@ lib/features/projects/
         ├── projects_header.dart                  # Shared DS header used by the production tab and Widgetbook mobile list
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
-        ├── project_list_pane.dart                # Shared DS list/group row widgets plus the desktop/search pane wrapper
+        ├── project_list_pane.dart                # Desktop Widgetbook/search pane wrapper around the shared project list widgets
+        ├── project_list_shared.dart              # Neutral shared group header, grouped section, and project row widgets
         ├── project_mobile_list_detail_showcase.dart # Mobile list/detail showcase with shared mock selection state and adaptive split/stack layout
         ├── project_selection_modal_content.dart  # Project picker modal
         ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
@@ -142,9 +143,12 @@ The top-level projects tab uses the same design-system list primitives as the Wi
 `ProjectCategoryGroup` and `ProjectListItemData` are the production list contracts. The shared UI components that render them are:
 
 - `ProjectsHeader` — shared top section for the Widgetbook mobile list and the live tab.
+- `ProjectGroupHeader` — neutral category header row shared across production and Widgetbook.
 - `ProjectGroupSection` — grouped card list used by the desktop/mobile Widgetbook list.
 - `ProjectRow` — shared DS project row with progress ring, task count, due/ongoing label, and compact status label.
 - `ProjectsOverviewSliverList` — production wrapper that keeps the same row visuals but renders lazily with slivers.
+
+These shared list widgets live in `project_list_shared.dart`, so production and Widgetbook depend on the same neutral module instead of importing showcase-specific pane code.
 
 ### ProjectStatusPicker
 

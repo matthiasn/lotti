@@ -596,7 +596,6 @@ class JournalDb extends _$JournalDb {
         WHERE project_id IN ($projectPlaceholders)
           AND deleted = FALSE
           AND type = 'Task'
-          AND task = 1
           $privateClause
         GROUP BY project_id
       ''',
