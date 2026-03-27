@@ -142,6 +142,44 @@ void main() {
       expect(cleared.labelField!.selectedIds, isEmpty);
       expect(cleared.appliedCount, 0);
     });
+
+    test(
+      'supports project-style sheets with only status and category fields',
+      () {
+        final state = DesignSystemTaskFilterState(
+          title: 'Apply filter',
+          clearAllLabel: 'Clear all',
+          applyLabel: 'Apply',
+          statusField: _buildFieldState(
+            label: 'Status',
+            options: const [
+              DesignSystemTaskFilterOption(id: 'active', label: 'Active'),
+              DesignSystemTaskFilterOption(id: 'completed', label: 'Completed'),
+            ],
+            selectedIds: const {'completed'},
+          ),
+          categoryField: _buildFieldState(
+            label: 'Category',
+            options: const [
+              DesignSystemTaskFilterOption(id: 'work', label: 'Work'),
+              DesignSystemTaskFilterOption(id: 'study', label: 'Study'),
+            ],
+            selectedIds: const {'work'},
+          ),
+        );
+
+        expect(state.hasSortSection, isFalse);
+        expect(state.hasPrioritySection, isFalse);
+        expect(state.hasLabelField, isFalse);
+        expect(state.appliedCount, 2);
+
+        final cleared = state.clearAll();
+
+        expect(cleared.statusField!.selectedIds, isEmpty);
+        expect(cleared.categoryField!.selectedIds, isEmpty);
+        expect(cleared.appliedCount, 0);
+      },
+    );
   });
 
   group('DesignSystemTaskFilterSheet', () {
@@ -292,6 +330,49 @@ void main() {
         expect(find.text('0'), findsOneWidget);
       },
     );
+
+    testWidgets('hides omitted sort, priority, and label sections', (
+      tester,
+    ) async {
+      await _pumpTaskFilterSheet(
+        tester,
+        initialState: DesignSystemTaskFilterState(
+          title: 'Apply filter',
+          clearAllLabel: 'Clear all',
+          applyLabel: 'Apply',
+          statusField: _buildFieldState(
+            label: 'Status',
+            options: const [
+              DesignSystemTaskFilterOption(id: 'active', label: 'Active'),
+            ],
+            selectedIds: const {'active'},
+          ),
+          categoryField: _buildFieldState(
+            label: 'Category',
+            options: const [
+              DesignSystemTaskFilterOption(id: 'work', label: 'Work'),
+            ],
+            selectedIds: const {'work'},
+          ),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('design-system-task-filter-field-status')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('design-system-task-filter-field-category')),
+        findsOneWidget,
+      );
+      expect(find.text('Sort by'), findsNothing);
+      expect(find.text('Priority'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('design-system-task-filter-field-label')),
+        findsNothing,
+      );
+      expect(find.text('2'), findsOneWidget);
+    });
   });
 }
 

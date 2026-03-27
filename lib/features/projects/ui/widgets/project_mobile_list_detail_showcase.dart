@@ -6,11 +6,13 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/review_sessions_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -57,6 +59,13 @@ class _ProjectMobileListDetailShowcaseState
                 state: state,
                 onSearchChanged: controller.updateSearchQuery,
                 onSearchCleared: () => controller.updateSearchQuery(''),
+                onFilterPressed: () => showProjectsFilterModal(
+                  context: context,
+                  initialFilter: state.filter,
+                  categories: state.data.categories,
+                  onApplied: controller.updateFilter,
+                  presentation: DesignSystemFilterPresentation.mobile,
+                ),
                 onProjectOpened: controller.selectProject,
               ),
               const SizedBox(width: _kMobileScreenGap),
@@ -85,6 +94,13 @@ class _ProjectMobileListDetailShowcaseState
           state: state,
           onSearchChanged: controller.updateSearchQuery,
           onSearchCleared: () => controller.updateSearchQuery(''),
+          onFilterPressed: () => showProjectsFilterModal(
+            context: context,
+            initialFilter: state.filter,
+            categories: state.data.categories,
+            onApplied: controller.updateFilter,
+            presentation: DesignSystemFilterPresentation.mobile,
+          ),
           onProjectOpened: (projectId) {
             controller.selectProject(projectId);
             setState(() {
@@ -102,12 +118,14 @@ class _ProjectMobileListScreen extends StatelessWidget {
     required this.state,
     required this.onSearchChanged,
     required this.onSearchCleared,
+    required this.onFilterPressed,
     required this.onProjectOpened,
   });
 
   final ProjectListDetailState state;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
+  final VoidCallback onFilterPressed;
   final ValueChanged<String> onProjectOpened;
 
   @override
@@ -137,10 +155,13 @@ class _ProjectMobileListScreen extends StatelessWidget {
                     size: 34,
                     color: ShowcasePalette.highText(context),
                   ),
-                  searchTrailing: Icon(
-                    Icons.tune_rounded,
-                    size: 24,
-                    color: ShowcasePalette.teal(context),
+                  searchTrailing: IconButton(
+                    onPressed: onFilterPressed,
+                    icon: Icon(
+                      Icons.tune_rounded,
+                      size: 24,
+                      color: ShowcasePalette.teal(context),
+                    ),
                   ),
                   listBottomPadding: 184,
                 ),

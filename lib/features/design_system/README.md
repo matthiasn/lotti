@@ -52,6 +52,7 @@ This feature contains the standalone Widgetbook-first design system work.
 - Scrollbars
 - Spinners
 - Task filter sheet
+- Shared filter field-selection sheet
 - Task list items
 - Textareas
 - Tooltip icons

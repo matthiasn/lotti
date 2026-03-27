@@ -4134,6 +4134,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectStatusChangeTitle => 'Schimbă starea';
 
   @override
+  String get projectsFilterStatusLabel => 'Stare:';
+
+  @override
   String get projectStatusCompleted => 'Finalizat';
 
   @override

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sliver-driven header, grouped category sections, and floating create action,
   while the search field stays disabled pending the later vector-search
   follow-up.
+- Projects filters: the Projects tab and Widgetbook showcase now share the
+  same design-system filter modal, nested field-selection sheet, and state
+  model for project-status and category filtering instead of keeping separate
+  mock-only filter behavior.
 - Projects tab reactivity: grouped project snapshots now refresh automatically
   when relevant project, task, category, or private-visibility updates arrive,
   so status changes such as `Active` to `Completed` are reflected in the UI

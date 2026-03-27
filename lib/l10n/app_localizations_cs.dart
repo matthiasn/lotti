@@ -4113,6 +4113,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectStatusChangeTitle => 'Změnit stav';
 
   @override
+  String get projectsFilterStatusLabel => 'Stav:';
+
+  @override
   String get projectStatusCompleted => 'Dokončený';
 
   @override

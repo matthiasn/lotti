@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/sidebar.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
@@ -76,6 +78,13 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                             onSearchChanged: controller.updateSearchQuery,
                             onSearchCleared: () =>
                                 controller.updateSearchQuery(''),
+                            onFilterPressed: () => showProjectsFilterModal(
+                              context: context,
+                              initialFilter: state.filter,
+                              categories: state.data.categories,
+                              onApplied: controller.updateFilter,
+                              presentation: DesignSystemFilterPresentation.desktop,
+                            ),
                           ),
                         ),
                         Expanded(

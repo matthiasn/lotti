@@ -4058,6 +4058,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectStatusChangeTitle => 'Change Status';
 
   @override
+  String get projectsFilterStatusLabel => 'Status:';
+
+  @override
   String get projectStatusCompleted => 'Completed';
 
   @override

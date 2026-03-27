@@ -1565,6 +1565,7 @@
   "projectStatusActive": "Aktivní",
   "projectStatusArchived": "Archivovaný",
   "projectStatusChangeTitle": "Změnit stav",
+  "projectsFilterStatusLabel": "Stav:",
   "projectStatusCompleted": "Dokončený",
   "projectStatusOnHold": "Pozastavený",
   "projectStatusOpen": "Otevřený",

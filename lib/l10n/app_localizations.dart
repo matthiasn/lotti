@@ -7273,6 +7273,12 @@ abstract class AppLocalizations {
   /// **'Change Status'**
   String get projectStatusChangeTitle;
 
+  /// No description provided for @projectsFilterStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status:'**
+  String get projectsFilterStatusLabel;
+
   /// No description provided for @projectStatusCompleted.
   ///
   /// In en, this message translates to:

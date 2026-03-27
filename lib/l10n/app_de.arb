@@ -1778,6 +1778,7 @@
   "projectStatusActive": "Aktiv",
   "projectStatusArchived": "Archiviert",
   "projectStatusChangeTitle": "Status ändern",
+  "projectsFilterStatusLabel": "Status:",
   "projectStatusCompleted": "Abgeschlossen",
   "projectStatusOnHold": "Pausiert",
   "projectStatusOpen": "Offen",

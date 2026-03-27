@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -72,6 +74,20 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
               child: DesignSystemTaskFilterSheet(
                 state: state,
                 onChanged: (nextState) {
+                  setState(() => _state = nextState);
+                },
+                onFieldPressed: (section) async {
+                  final nextState =
+                      await showDesignSystemTaskFilterFieldSelectionModal(
+                        context: context,
+                        draftState: state,
+                        section: section,
+                        presentation: DesignSystemFilterPresentation.mobile,
+                      );
+                  if (!mounted || nextState == null) {
+                    return;
+                  }
+
                   setState(() => _state = nextState);
                 },
                 onApplyPressed: (nextState) {
@@ -211,5 +227,7 @@ DesignSystemTaskFilterState _buildSampleState(AppLocalizations messages) {
 }
 
 String _stripTrailingColon(String value) {
-  return value.endsWith(':') ? value.substring(0, value.length - 1) : value;
+  return value.endsWith(':')
+      ? value.substring(0, value.length - 1).trimRight()
+      : value;
 }

@@ -51,7 +51,9 @@ void main() {
       final data = makeTestProjectListData();
       final group = ProjectListDetailState(
         data: data,
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       ).visibleGroups.first;
 
@@ -74,7 +76,9 @@ void main() {
       final data = makeTestProjectListData();
       final group = ProjectListDetailState(
         data: data,
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       ).visibleGroups.first;
 

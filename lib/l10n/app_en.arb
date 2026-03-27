@@ -1942,6 +1942,7 @@
   "projectStatusActive": "Active",
   "projectStatusArchived": "Archived",
   "projectStatusChangeTitle": "Change Status",
+  "projectsFilterStatusLabel": "Status:",
   "projectStatusCompleted": "Completed",
   "projectStatusOnHold": "On Hold",
   "projectStatusOpen": "Open",

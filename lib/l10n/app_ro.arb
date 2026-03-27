@@ -1778,6 +1778,7 @@
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
   "projectStatusChangeTitle": "Schimbă starea",
+  "projectsFilterStatusLabel": "Stare:",
   "projectStatusCompleted": "Finalizat",
   "projectStatusOnHold": "În așteptare",
   "projectStatusOpen": "Deschis",

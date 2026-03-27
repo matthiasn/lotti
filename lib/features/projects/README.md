@@ -53,7 +53,8 @@ lib/features/projects/
 └── ui/
     ├── model/
     │   ├── project_list_detail_models.dart       # Widgetbook list/detail records plus bridge getters into ProjectListItemData
-    │   └── project_list_detail_state.dart        # Widgetbook search/filter/selection state built on ProjectCategoryGroup
+    │   ├── project_list_detail_state.dart        # Widgetbook search/filter/selection state built on ProjectsFilter + ProjectCategoryGroup
+    │   └── projects_filter_sheet_state.dart      # Adapter between ProjectsFilter and the shared DS filter sheet state
     ├── pages/
     │   ├── project_create_page.dart   # New project form
     │   ├── project_detail_page.dart   # View/edit existing project
@@ -72,6 +73,7 @@ lib/features/projects/
         ├── project_list_pane.dart                # Desktop Widgetbook/search pane wrapper around the shared project list widgets
         ├── project_list_shared.dart              # Neutral shared group header, grouped section, and project row widgets
         ├── project_mobile_list_detail_showcase.dart # Mobile list/detail showcase with shared mock selection state and adaptive split/stack layout
+        ├── projects_filter_modal.dart            # Projects-specific status/category filter modal built on the shared DS filter scaffold
         ├── project_selection_modal_content.dart  # Project picker modal
         ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
         ├── project_status_chip.dart              # Status badge with icon/color
@@ -96,9 +98,9 @@ lib/features/projects/
 - `projectHealthSnapshotProvider(projectId)` — aggregates the latest health band, stale-summary state, and active `ProjectRecommendationEntity` records for a single project so dashboard UI can consume one project-scoped state object.
 - `projectHealthOverviewEntriesProvider(categoryId)` — prepares category-scoped project health entries, already sorted worst-band-first for future health dashboard list surfaces.
 - `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
-- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected category IDs, text query, and search mode for the top-level tab rollout.
+- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected project statuses, selected category IDs, text query, and search mode for the top-level tab rollout.
 - `projectsOverviewProvider` — `StreamProvider.autoDispose` exposing the batched grouped snapshot for the top-level projects tab via `ProjectRepository.watchProjectsOverview()`.
-- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. Local text filtering only activates when `searchMode == ProjectsSearchMode.localText`; the live tab currently keeps the search field disabled while vector search is pending.
+- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. It currently supports project-status and category filters in production, and local text filtering when `searchMode == ProjectsSearchMode.localText`; the live tab still keeps the search field itself disabled while vector search is pending.
 
 ### Detail Controller (`project_detail_controller.dart`)
 
@@ -137,7 +139,16 @@ Widgetbook-only mobile showcase that uses the same mock controller/provider as t
 
 ### ProjectsTabPage
 
-The top-level projects tab now mounts the same shared sliver scroll surface as the Widgetbook mobile list via `ProjectsOverviewContent`. That surface owns only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`. `ProjectCreateFab` is mounted alongside this surface by each consumer (`Scaffold.floatingActionButton` in the live tab, `Positioned` in the Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain an external layout responsibility.
+The top-level projects tab now mounts the same shared sliver scroll surface as
+the Widgetbook mobile list via `ProjectsOverviewContent`. That surface owns
+only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`.
+`ProjectCreateFab` is mounted alongside this surface by each consumer
+(`Scaffold.floatingActionButton` in the live tab, `Positioned` in the
+Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain
+an external layout responsibility. The header uses the same left-aligned title,
+notification icon, disabled search field, and filter icon shown in the
+Widgetbook mobile reference, and the filter icon opens the shared DS modal
+scaffold with Projects-specific status and category filters.
 
 ### Shared List Components
 
@@ -152,6 +163,21 @@ The top-level projects tab now mounts the same shared sliver scroll surface as t
 - `ProjectCreateFab` — shared add-project floating action used by both consumers, mounted as a sibling outside `ProjectsOverviewContent`.
 
 These shared list widgets live in `project_list_shared.dart`, so production and Widgetbook depend on the same neutral module instead of importing showcase-specific pane code.
+
+### ProjectsFilterModal
+
+Projects reuse the shared design-system filter scaffold from `features/design_system/components/task_filters/`, but adapt it through `projects_filter_sheet_state.dart` and `projects_filter_modal.dart` so only the relevant sections are shown. For now the modal supports:
+
+- project-status filtering (`open`, `active`, `onHold`, `completed`, `archived`)
+- category filtering
+
+Nested multi-select picking for those fields now also goes through the shared
+design-system field-selection sheet, so Projects and the design-system Task
+filter showcase use the same DS checkbox rows and apply action instead of
+separate project-specific picker UIs. The same modal and `ProjectsFilter`
+state model are used by the production tab and the Widgetbook list/detail
+showcase, so there is no drift between the implementation and the showcased
+behavior.
 
 ### ProjectStatusPicker
 
@@ -173,7 +199,7 @@ Form page with three sections:
 
 ## Integration Points
 
-- **Main app shell**: a top-level `Projects` tab now appears immediately after `Tasks` when the feature flag is enabled. The tab uses the existing bottom navigation and opens the production grouped list page.
+- **Main app shell**: a top-level `Projects` tab now appears immediately after `Tasks` when the feature flag is enabled. The tab uses the existing bottom navigation, opens the production grouped list page, and exposes the shared status/category filter modal from its header.
 - **Category detail page**: `CategoryProjectsSection` shows projects and a "New Project" button (gated by `enableProjects` flag).
 - **Task header**: `TaskProjectWrapper` adds a project chip to the task metadata row (gated by `enableProjects` flag).
 - **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
@@ -204,4 +230,4 @@ Instead it uses one batched overview path:
 2. `JournalDb.getProjectTaskRollups(projectIds)` fetches task counts for all visible projects in one aggregate query keyed by the denormalized `journal.project_id`.
 3. `ProjectRepository.getProjectsOverview()` resolves category metadata once, groups the result in memory, and returns a `ProjectsOverviewSnapshot`.
 4. `ProjectRepository.watchProjectsOverview()` subscribes to `UpdateNotifications`, refreshing on broad project/task/category/private tokens and on concrete project/category IDs already present in the current snapshot so status changes cannot leave the list stale.
-5. `projectsOverviewProvider` exposes that snapshot stream to the tab, while `visibleProjectGroupsProvider` applies the local filtering model without re-querying per project.
+5. `projectsOverviewProvider` exposes that snapshot stream to the tab, while `visibleProjectGroupsProvider` applies the local status/category/text filtering model without re-querying per project.

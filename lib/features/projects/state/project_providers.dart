@@ -232,6 +232,16 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
   @override
   ProjectsFilter build() => const ProjectsFilter();
 
+  ProjectsFilter get filter => state;
+
+  set filter(ProjectsFilter filter) {
+    state = filter;
+  }
+
+  void setSelectedStatusIds(Set<String> statusIds) {
+    state = state.copyWith(selectedStatusIds: statusIds);
+  }
+
   void setSelectedCategoryIds(Set<String> categoryIds) {
     state = state.copyWith(selectedCategoryIds: categoryIds);
   }
@@ -263,41 +273,6 @@ final visibleProjectGroupsProvider =
       final filter = ref.watch(projectsFilterControllerProvider);
 
       return overviewAsync.whenData(
-        (overview) => _applyProjectsFilter(overview, filter),
+        (overview) => applyProjectsFilter(overview, filter),
       );
     });
-
-List<ProjectCategoryGroup> _applyProjectsFilter(
-  ProjectsOverviewSnapshot overview,
-  ProjectsFilter filter,
-) {
-  final selectedCategoryIds = filter.selectedCategoryIds;
-  final normalizedQuery = filter.textQuery.trim().toLowerCase();
-  final shouldApplyTextQuery =
-      normalizedQuery.isNotEmpty &&
-      filter.searchMode == ProjectsSearchMode.localText;
-
-  return overview.groups
-      .where(
-        (group) =>
-            selectedCategoryIds.isEmpty ||
-            (group.categoryId != null &&
-                selectedCategoryIds.contains(group.categoryId)),
-      )
-      .map((group) {
-        if (!shouldApplyTextQuery) {
-          return group;
-        }
-
-        final filteredProjects = group.projects
-            .where(
-              (project) => project.searchableText.toLowerCase().contains(
-                normalizedQuery,
-              ),
-            )
-            .toList(growable: false);
-        return group.copyWith(projects: filteredProjects);
-      })
-      .where((group) => group.projects.isNotEmpty)
-      .toList(growable: false);
-}

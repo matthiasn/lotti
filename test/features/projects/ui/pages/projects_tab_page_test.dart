@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
@@ -99,12 +102,16 @@ void main() {
     required List<ProjectCategoryGroup> groups,
     MediaQueryData? mediaQueryData,
   }) async {
+    final snapshot = ProjectsOverviewSnapshot(groups: groups);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(snapshot),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => AsyncValue.data(groups),
           ),
@@ -193,6 +200,45 @@ void main() {
     );
   });
 
+  testWidgets('opens the shared filter modal from the header icon', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+    );
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Apply filter'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Category'), findsOneWidget);
+  });
+
+  testWidgets('opens the shared DS status picker from the filter sheet', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+    );
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final filterSheet = tester.widget<DesignSystemTaskFilterSheet>(
+      find.byType(DesignSystemTaskFilterSheet),
+    );
+    filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+    expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
+    expect(find.byType(CheckboxListTile), findsNothing);
+    expect(find.text('Archived'), findsOneWidget);
+  });
+
   testWidgets('renders the same grouped data on phone and desktop widths', (
     tester,
   ) async {
@@ -234,6 +280,11 @@ void main() {
         const ProjectsTabPage(),
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(
+              ProjectsOverviewSnapshot(groups: [buildWorkGroup()]),
+            ),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => const AsyncValue<List<ProjectCategoryGroup>>.loading(),
           ),
@@ -254,6 +305,11 @@ void main() {
         const ProjectsTabPage(),
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(
+              ProjectsOverviewSnapshot(groups: [buildWorkGroup()]),
+            ),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => AsyncValue<List<ProjectCategoryGroup>>.error(
               Exception('test'),
