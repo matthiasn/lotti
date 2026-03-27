@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+
 import '../mocks/mocks.dart';
 import '../test_utils/retry_fake_time.dart';
 

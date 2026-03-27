@@ -3,9 +3,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 const _kMenuWidth = 320.0;
 const _kMaxVisibleItems = 6;
-const _kShadowAlpha = 0.25;
+const _kShadowColor = Color.fromRGBO(70, 70, 70, 0.25);
 const _kShadowBlurRadius = 4.0;
 const _kShadowOffsetY = 2.0;
+
+@visibleForTesting
+const kSmallItemHeight = 36.0;
 
 class DesignSystemContextMenuItem {
   const DesignSystemContextMenuItem({
@@ -60,15 +63,12 @@ class DesignSystemContextMenu extends StatelessWidget {
               ? BoxConstraints(maxHeight: maxHeight)
               : const BoxConstraints(),
           decoration: BoxDecoration(
-            color: tokens.colors.surface.enabled,
+            color: tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(spec.borderRadius),
-            border: Border.all(
-              color: tokens.colors.decorative.level02,
-            ),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _kShadowAlpha),
-                offset: const Offset(0, _kShadowOffsetY),
+                color: _kShadowColor,
+                offset: Offset(0, _kShadowOffsetY),
                 blurRadius: _kShadowBlurRadius,
               ),
             ],
@@ -160,7 +160,7 @@ class _ContextMenuSpec {
       borderRadius: tokens.radii.s,
       verticalPadding: tokens.spacing.step2,
       horizontalPadding: tokens.spacing.step5,
-      itemHeight: isSmall ? tokens.spacing.step8 : tokens.spacing.step9,
+      itemHeight: isSmall ? kSmallItemHeight : tokens.spacing.step9,
       iconSize: isSmall
           ? tokens.typography.lineHeight.subtitle2
           : tokens.spacing.step6,

@@ -101,7 +101,7 @@ void main() {
       );
     });
 
-    testWidgets('applies card decoration with shadow and border', (
+    testWidgets('applies card decoration with shadow and no border', (
       tester,
     ) async {
       const key = Key('styled-menu');
@@ -124,16 +124,13 @@ void main() {
       );
       final decoration = container.decoration! as BoxDecoration;
 
-      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      expect(decoration.color, dsTokensLight.colors.background.level01);
       expect(
         decoration.borderRadius,
         BorderRadius.circular(dsTokensLight.radii.s),
       );
       expect(decoration.boxShadow, isNotEmpty);
-      // Border should be present for visibility in light mode
-      expect(decoration.border, isNotNull);
-      final border = decoration.border! as Border;
-      expect(border.top.color, dsTokensLight.colors.decorative.level02);
+      expect(decoration.border, isNull);
     });
 
     testWidgets('uses small size spec', (tester) async {
@@ -154,13 +151,11 @@ void main() {
         find.ancestor(
           of: find.text('Small item'),
           matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is SizedBox &&
-                widget.height == dsTokensLight.spacing.step8,
+            (widget) => widget is SizedBox && widget.height == kSmallItemHeight,
           ),
         ),
       );
-      expect(sizedBox.height, dsTokensLight.spacing.step8);
+      expect(sizedBox.height, kSmallItemHeight);
     });
 
     testWidgets('provides semantics label', (tester) async {
