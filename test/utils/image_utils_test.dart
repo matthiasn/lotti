@@ -19,19 +19,19 @@ void main() {
 
   group('getRelativeImagePath', () {
     test('should return the correct relative image path', () {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final imageData = ImageData(
         imageId: '123',
         imageFile: 'image.jpg',
         imageDirectory: '/images/',
-        capturedAt: now,
+        capturedAt: testDate,
       );
       final metadata = Metadata(
         id: '1',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       );
       final journalImage = JournalImage(meta: metadata, data: imageData);
       const expectedPath = '/images/image.jpg';
@@ -41,19 +41,19 @@ void main() {
 
   group('getFullImagePath', () {
     test('should return the correct full image path', () {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final imageData = ImageData(
         imageId: '123',
         imageFile: 'image.jpg',
         imageDirectory: '/images/',
-        capturedAt: now,
+        capturedAt: testDate,
       );
       final metadata = Metadata(
         id: '1',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       );
       final journalImage = JournalImage(meta: metadata, data: imageData);
       const documentsDirectory = '/Users/test/Documents';

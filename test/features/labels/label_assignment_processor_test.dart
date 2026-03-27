@@ -38,6 +38,9 @@ void main() {
     getIt.reset();
   });
 
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+  final testDeletedDate = DateTime(2024, 3, 15, 11);
+
   LabelDefinition makeLabel(String id, {bool deleted = false}) =>
       LabelDefinition(
         id: id,
@@ -45,11 +48,11 @@ void main() {
         color: '#000',
         description: null,
         sortOrder: null,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
-        deletedAt: deleted ? DateTime.now() : null,
+        deletedAt: deleted ? testDeletedDate : null,
       );
 
   test('assigns valid and filters invalid', () async {

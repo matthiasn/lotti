@@ -313,10 +313,10 @@ void main() {
 
     final meta = Metadata(
       id: 'register-file',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 30),
+      updatedAt: DateTime(2024, 3, 15, 10, 30),
+      dateFrom: DateTime(2024, 3, 15, 10, 30),
+      dateTo: DateTime(2024, 3, 15, 10, 30),
     );
     final entity = JournalEntity.journalEntry(
       meta: meta,
@@ -532,10 +532,10 @@ void main() {
 
       final meta = Metadata(
         id: 'no-json-vc',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 31),
+        updatedAt: DateTime(2024, 3, 15, 10, 31),
+        dateFrom: DateTime(2024, 3, 15, 10, 31),
+        dateTo: DateTime(2024, 3, 15, 10, 31),
         vectorClock: null,
       );
       final entity = JournalEntity.journalEntry(
@@ -602,10 +602,10 @@ void main() {
 
       final meta = Metadata(
         id: 'json-vc',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 32),
+        updatedAt: DateTime(2024, 3, 15, 10, 32),
+        dateFrom: DateTime(2024, 3, 15, 10, 32),
+        dateTo: DateTime(2024, 3, 15, 10, 32),
         vectorClock: const VectorClock({'hostA': 7}),
       );
       final entity = JournalEntity.journalEntry(
@@ -673,10 +673,10 @@ void main() {
     const clock = VectorClock({'hostA': 3});
     final meta = Metadata(
       id: 'equal-vc',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15, 10, 33),
+      updatedAt: DateTime(2024, 3, 15, 10, 33),
+      dateFrom: DateTime(2024, 3, 15, 10, 33),
+      dateTo: DateTime(2024, 3, 15, 10, 33),
       vectorClock: clock,
     );
     final entity = JournalEntity.journalEntry(
@@ -743,10 +743,10 @@ void main() {
       const messageClock = VectorClock({'hostA': 8});
       final meta = Metadata(
         id: 'json-newer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 34),
+        updatedAt: DateTime(2024, 3, 15, 10, 34),
+        dateFrom: DateTime(2024, 3, 15, 10, 34),
+        dateTo: DateTime(2024, 3, 15, 10, 34),
         vectorClock: jsonClock,
       );
       final entity = JournalEntity.journalEntry(
@@ -816,10 +816,10 @@ void main() {
 
       final meta = Metadata(
         id: 'null-both',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 35),
+        updatedAt: DateTime(2024, 3, 15, 10, 35),
+        dateFrom: DateTime(2024, 3, 15, 10, 35),
+        dateTo: DateTime(2024, 3, 15, 10, 35),
         vectorClock: null,
       );
       final entity = JournalEntity.journalEntry(

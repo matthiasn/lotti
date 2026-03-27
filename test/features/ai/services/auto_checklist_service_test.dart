@@ -140,10 +140,10 @@ void main() {
           final createdChecklist = JournalEntity.checklist(
             meta: Metadata(
               id: 'checklist-123',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               starred: false,
               flag: EntryFlag.none,
             ),
@@ -411,10 +411,10 @@ void main() {
         final createdChecklist = JournalEntity.checklist(
           meta: Metadata(
             id: 'checklist-456',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             starred: false,
             flag: EntryFlag.none,
           ),
@@ -508,10 +508,10 @@ void main() {
           final createdChecklist = JournalEntity.checklist(
             meta: Metadata(
               id: 'checklist-optimized',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               starred: false,
               flag: EntryFlag.none,
             ),
@@ -649,10 +649,10 @@ void main() {
           final createdChecklist = JournalEntity.checklist(
             meta: Metadata(
               id: 'checklist-ordered',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               starred: false,
               flag: EntryFlag.none,
             ),

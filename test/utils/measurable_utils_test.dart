@@ -37,20 +37,21 @@ void main() {
 }
 
 List<MeasurementEntry> testMeasurements(List<num> values) {
+  final testDate = DateTime(2024, 3, 15, 10, 30);
   return values
       .map(
         (value) => MeasurementEntry(
           meta: Metadata(
             id: 'foo',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           data: MeasurementData(
             value: value,
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             dataTypeId: 'dataTypeId',
           ),
         ),

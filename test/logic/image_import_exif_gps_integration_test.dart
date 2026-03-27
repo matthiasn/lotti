@@ -113,7 +113,7 @@ void main() {
 
       final result = await extractGpsCoordinates(
         invalidData,
-        DateTime.now(),
+        DateTime(2024, 3, 15, 10, 30),
       );
 
       // Should return null (lines 393-401)
@@ -218,7 +218,7 @@ void main() {
 
       final result = await extractGpsCoordinates(
         minimalJpeg,
-        DateTime.now(),
+        DateTime(2024, 3, 15, 10, 30),
       );
 
       expect(result, isNull);

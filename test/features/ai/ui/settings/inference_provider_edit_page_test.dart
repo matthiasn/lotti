@@ -43,7 +43,7 @@ void main() {
         name: 'Fallback Provider',
         baseUrl: 'https://fallback.example.com',
         apiKey: 'fallback-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.openAi,
       ),
     );
@@ -78,7 +78,7 @@ void main() {
       name: 'Test Provider',
       baseUrl: 'https://api.test.com',
       apiKey: 'test-key-123',
-      createdAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
       inferenceProviderType: InferenceProviderType.openAi,
     );
 
@@ -500,7 +500,7 @@ void main() {
           name: 'My Ollama',
           baseUrl: 'http://localhost:11434/v1',
           apiKey: '', // Empty API key for Ollama
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           inferenceProviderType: InferenceProviderType.ollama,
         );
 
@@ -902,7 +902,7 @@ void main() {
           name: 'Existing Gemini',
           baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
           apiKey: 'existing-key',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
@@ -1094,7 +1094,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1147,7 +1147,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1185,7 +1185,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1195,7 +1195,7 @@ void main() {
         name: 'Gemini 3 Pro Image (Nano Banana Pro)',
         providerModelId: 'models/gemini-3-pro-image-preview',
         inferenceProviderId: 'gemini-provider-id',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inputModalities: [Modality.text, Modality.image],
         outputModalities: [Modality.text, Modality.image],
         isReasoningModel: false,
@@ -1231,7 +1231,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1283,7 +1283,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1320,7 +1320,7 @@ void main() {
           name: 'Custom Provider',
           baseUrl: 'https://api.custom.com',
           apiKey: 'test-key',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         );
 
@@ -1354,7 +1354,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1408,7 +1408,7 @@ void main() {
         name: 'My OpenAI',
         baseUrl: 'https://api.openai.com/v1',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
@@ -1456,7 +1456,7 @@ void main() {
         name: 'My Mistral',
         baseUrl: 'https://api.mistral.ai/v1',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.mistral,
       );
 
@@ -1504,7 +1504,7 @@ void main() {
         name: 'My Ollama',
         baseUrl: 'http://localhost:11434/v1',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1558,7 +1558,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1609,7 +1609,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
@@ -1663,7 +1663,7 @@ void main() {
         name: 'My Gemini',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
         apiKey: 'test-key',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         inferenceProviderType: InferenceProviderType.gemini,
       );
 

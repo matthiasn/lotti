@@ -63,7 +63,7 @@ void main() {
                 baseUrl: baseUrl,
                 apiKey: '',
                 // Ollama doesn't use API keys
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 inferenceProviderType: InferenceProviderType.ollama,
               )
               as AiConfigInferenceProvider;
@@ -187,7 +187,7 @@ void main() {
                   name: 'Ollama Provider',
                   baseUrl: baseUrl,
                   apiKey: '',
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15, 10, 30),
                   inferenceProviderType: InferenceProviderType.ollama,
                 )
                 as AiConfigInferenceProvider;

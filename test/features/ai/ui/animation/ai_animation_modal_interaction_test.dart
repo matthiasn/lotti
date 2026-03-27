@@ -80,7 +80,7 @@ void main() {
         userMessage: 'Test user message',
         defaultModelId: 'test-model',
         modelIds: ['test-model'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         useReasoning: false,
         requiredInputData: const [],
         // ignore: deprecated_member_use_from_same_package

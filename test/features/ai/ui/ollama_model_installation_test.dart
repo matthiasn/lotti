@@ -73,7 +73,7 @@ void main() {
                 name: 'Test Ollama',
                 baseUrl: 'http://localhost:11434',
                 apiKey: '',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 inferenceProviderType: InferenceProviderType.ollama,
               )
               as AiConfigInferenceProvider;

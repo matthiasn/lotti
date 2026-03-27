@@ -391,7 +391,7 @@ void main() {
         after: 'after',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
       );
 
       // Set pending with save callback
@@ -418,7 +418,7 @@ void main() {
         after: 'after',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 31),
       );
 
       // Set pending with save callback
@@ -469,7 +469,7 @@ void main() {
         after: 'event',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 32),
       );
 
       // Set first pending
@@ -490,7 +490,7 @@ void main() {
         after: 'event',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 33),
       );
 
       // Set second pending (should replace first)
@@ -555,7 +555,7 @@ void main() {
         after: 'after',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 34),
       );
 
       container
@@ -592,7 +592,7 @@ void main() {
         after: 'after',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 35),
       );
 
       container
@@ -629,7 +629,7 @@ void main() {
         after: 'after1',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 36),
       );
 
       container
@@ -646,7 +646,7 @@ void main() {
         after: 'after2',
         categoryId: 'cat-1',
         categoryName: 'Test',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 37),
       );
 
       // Setting a new pending should replace the first one

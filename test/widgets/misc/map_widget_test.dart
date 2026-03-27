@@ -37,7 +37,7 @@ void main() {
 
     testWidgets('renders empty Center when latitude is 0', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 0,
         longitude: 10,
         geohashString: 'test',
@@ -57,7 +57,7 @@ void main() {
       tester,
     ) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -76,7 +76,7 @@ void main() {
 
     testWidgets('map container has correct height', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -103,7 +103,7 @@ void main() {
       const testLongitude = -122.4194;
 
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: testLatitude,
         longitude: testLongitude,
         geohashString: '9q8yy',
@@ -129,7 +129,7 @@ void main() {
 
     testWidgets('marker displays location pin image', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -152,7 +152,7 @@ void main() {
 
     testWidgets('handles scroll events for zooming', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -198,7 +198,7 @@ void main() {
 
     testWidgets('initializes MapController in initState', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -219,7 +219,7 @@ void main() {
       const testLongitude = -74.0060;
 
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: testLatitude,
         longitude: testLongitude,
         geohashString: 'dr5ru',
@@ -243,7 +243,7 @@ void main() {
 
     testWidgets('uses correct tile provider URL', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',
@@ -264,7 +264,7 @@ void main() {
 
     testWidgets('TileLayer uses CachedTileProvider', (tester) async {
       final geolocation = Geolocation(
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         latitude: 37.7749,
         longitude: -122.4194,
         geohashString: '9q8yy',

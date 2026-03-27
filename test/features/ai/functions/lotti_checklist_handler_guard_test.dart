@@ -16,13 +16,15 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
 const _uuid = Uuid();
 
+final _testDate = DateTime(2024, 3, 15, 10, 30);
+
 Task _task() => Task(
   meta: Metadata(
     id: _uuid.v4(),
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: _testDate,
+    updatedAt: _testDate,
+    dateFrom: _testDate,
+    dateTo: _testDate,
     categoryId: 'cat',
   ),
   data: TaskData(
@@ -30,12 +32,12 @@ Task _task() => Task(
     checklistIds: const [],
     status: TaskStatus.open(
       id: 'status-1',
-      createdAt: DateTime.now(),
+      createdAt: _testDate,
       utcOffset: 0,
     ),
     statusHistory: const [],
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    dateFrom: _testDate,
+    dateTo: _testDate,
   ),
 );
 

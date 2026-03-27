@@ -503,7 +503,7 @@ void main() {
         invocation,
       ) async {
         final meta = invocation.positionalArguments[0] as Metadata;
-        return meta.copyWith(updatedAt: DateTime.now());
+        return meta.copyWith(updatedAt: DateTime(2024, 3, 15, 12));
       });
 
       // Mock updateDbEntity
@@ -578,7 +578,7 @@ void main() {
         invocation,
       ) async {
         final meta = invocation.positionalArguments[0] as Metadata;
-        return meta.copyWith(updatedAt: DateTime.now());
+        return meta.copyWith(updatedAt: DateTime(2024, 3, 15, 12));
       });
 
       when(() => mockPersistenceLogic.updateDbEntity(any())).thenAnswer((

@@ -18,6 +18,19 @@ import 'package:path/path.dart' as p;
 
 import '../mocks/mocks.dart';
 
+/// Finds the first `.log` file matching [prefix] in the logs/ subdirectory.
+/// Returns `null` when no matching file exists yet.
+File? _findLogFile(Directory docsDir, {String prefix = 'lotti-'}) {
+  final logDir = Directory(p.join(docsDir.path, 'logs'));
+  if (!logDir.existsSync()) return null;
+  final matches = logDir
+      .listSync()
+      .whereType<File>()
+      .where((f) => p.basename(f.path).startsWith(prefix))
+      .toList();
+  return matches.isEmpty ? null : matches.first;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -72,14 +85,15 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      final logDir = Directory(p.join(tempDocs.path, 'logs'));
+      if (!logDir.existsSync()) {
+        fail('Log directory not created');
+      }
+      final logFiles = logDir.listSync().whereType<File>().where(
+        (f) => f.path.endsWith('.log'),
       );
-      final file = File(logPath);
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      expect(logFiles, isNotEmpty);
+      final content = logFiles.first.readAsStringSync();
       expect(
         content.contains(' [INFO] TEST sub: hello world'),
         isTrue,
@@ -98,11 +112,12 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+      final logDir = Directory(p.join(tempDocs.path, 'logs'));
+      final logFiles = logDir.listSync().whereType<File>().where(
+        (f) => f.path.endsWith('.log'),
       );
+      expect(logFiles, isNotEmpty);
+      final logPath = logFiles.first.path;
       final content = File(logPath).readAsStringSync();
       expect(
         content.contains(' [ERROR] PIPE liveScan: Exception: boom'),
@@ -132,13 +147,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final content = File(
-        p.join(
-          tempDocs.path,
-          'logs',
-          'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-        ),
-      ).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(content.contains(' [ERROR] DB insert: oops trace'), isTrue);
 
       // Verify DevLogger.error was called for captureException
@@ -160,12 +171,8 @@ void main() {
       svc.captureEvent('disabled', domain: 'TEST');
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      expect(File(logPath).existsSync(), isFalse);
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNull, reason: 'Log file should not exist');
     });
   });
 
@@ -246,12 +253,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(content.contains('[TRACE] TRACE_TEST: trace message'), isTrue);
     });
   });
@@ -266,12 +270,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(content.contains('[WARN] WARN_TEST: warn message'), isTrue);
     });
   });
@@ -285,12 +286,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       // Should not have extra space before colon when no subDomain
       expect(content.contains('[INFO] NOSUB: no subdomain'), isTrue);
       expect(content.contains('NOSUB : '), isFalse); // No trailing space
@@ -317,12 +315,7 @@ void main() {
     svc.captureEvent('should be skipped', domain: 'TOGGLE');
     await Future<void>.delayed(Duration.zero);
 
-    final logPath = p.join(
-      tempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    expect(File(logPath).existsSync(), isFalse);
+    expect(_findLogFile(tempDocs), isNull);
 
     // Enable logging via config flag
     flagController.add(true);
@@ -331,8 +324,9 @@ void main() {
     svc.captureEvent('should be logged', domain: 'TOGGLE');
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(File(logPath).existsSync(), isTrue);
-    final content = File(logPath).readAsStringSync();
+    final logFile = _findLogFile(tempDocs);
+    expect(logFile, isNotNull, reason: 'Log file should exist after enabling');
+    final content = logFile!.readAsStringSync();
     expect(content.contains('TOGGLE: should be logged'), isTrue);
     // The skipped event should NOT be in the file
     expect(content.contains('should be skipped'), isFalse);
@@ -345,7 +339,7 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     // File content should not contain the disabled event
-    final content2 = File(logPath).readAsStringSync();
+    final content2 = logFile.readAsStringSync();
     expect(content2.contains('should be skipped again'), isFalse);
   });
 
@@ -391,12 +385,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(
         content.contains('[ERROR] NULL_STACK: error without stack'),
         isTrue,
@@ -414,12 +405,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(content.contains('EXCEPTION_TYPE: exceptional event'), isTrue);
     });
   });
@@ -434,12 +422,9 @@ void main() {
 
       async.flushMicrotasks();
 
-      final logPath = p.join(
-        tempDocs.path,
-        'logs',
-        'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-      );
-      final content = File(logPath).readAsStringSync();
+      final logFile = _findLogFile(tempDocs);
+      expect(logFile, isNotNull, reason: 'Log file should exist');
+      final content = logFile!.readAsStringSync();
       expect(content.contains('[ERROR] ERROR_TEST: error level event'), isTrue);
     });
   });
@@ -487,16 +472,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
     });
 
-    String logPath0() => p.join(
-      bufferedTempDocs.path,
-      'logs',
-      'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
-    String syncLogPath() => p.join(
-      bufferedTempDocs.path,
-      'logs',
-      'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-    );
+    File? findGeneralLog() => _findLogFile(bufferedTempDocs);
+    File? findSyncLog() => _findLogFile(bufferedTempDocs, prefix: 'sync-');
 
     test('timer flush writes buffered lines after interval', () async {
       bufferedLogging.captureEvent(
@@ -508,14 +485,14 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // File should not exist yet (below threshold, timer not fired)
-      expect(File(logPath0()).existsSync(), isFalse);
+      expect(findGeneralLog(), isNull);
 
       // Wait for the flush timer to fire (500ms interval + margin)
       await Future<void>.delayed(const Duration(milliseconds: 600));
 
-      final file = File(logPath0());
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      final file = findGeneralLog();
+      expect(file, isNotNull, reason: 'Log file should exist after flush');
+      final content = file!.readAsStringSync();
       expect(content, contains('[INFO] BUF_TEST: buffered line'));
     });
 
@@ -529,9 +506,9 @@ void main() {
       // Give the async write chain time to complete
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      final file = File(logPath0());
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      final file = findGeneralLog();
+      expect(file, isNotNull, reason: 'Log file should exist');
+      final content = file!.readAsStringSync();
       expect(content, contains('[ERROR] ERR_FLUSH: error event'));
     });
 
@@ -547,9 +524,9 @@ void main() {
       // Give the async write chain time to complete
       await Future<void>.delayed(const Duration(milliseconds: 500));
 
-      final file = File(logPath0());
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      final file = findGeneralLog();
+      expect(file, isNotNull, reason: 'Log file should exist');
+      final content = file!.readAsStringSync();
       // Verify first and last lines are present
       expect(content, contains('[INFO] THRESHOLD: line 0'));
       expect(content, contains('[INFO] THRESHOLD: line 39'));
@@ -564,9 +541,9 @@ void main() {
       // Give the async write chain time to complete
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      final file = File(logPath0());
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      final file = findGeneralLog();
+      expect(file, isNotNull, reason: 'Log file should exist');
+      final content = file!.readAsStringSync();
       expect(content, contains('[ERROR] EXC_BUF: exc in buffered mode'));
     });
 
@@ -581,7 +558,7 @@ void main() {
         async.flushMicrotasks();
 
         // No log file created since nothing was logged
-        expect(File(logPath0()).existsSync(), isFalse);
+        expect(findGeneralLog(), isNull);
       });
     });
 
@@ -602,9 +579,9 @@ void main() {
       // Give the async write chain time to complete
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
-      final file = File(logPath0());
-      expect(file.existsSync(), isTrue);
-      final content = file.readAsStringSync();
+      final file = findGeneralLog();
+      expect(file, isNotNull, reason: 'Log file should exist');
+      final content = file!.readAsStringSync();
       // Both lines should be flushed together
       expect(content, contains('[INFO] CANCEL_TIMER: queued line'));
       expect(content, contains('[ERROR] CANCEL_TIMER: forced line'));
@@ -619,13 +596,13 @@ void main() {
 
       await bufferedLogging.flushAllForTest();
 
-      final generalFile = File(logPath0());
-      final syncFile = File(syncLogPath());
+      final generalFile = findGeneralLog();
+      final syncFile = findSyncLog();
 
-      expect(generalFile.existsSync(), isFalse);
-      expect(syncFile.existsSync(), isTrue);
+      expect(generalFile, isNull, reason: 'General log should not exist');
+      expect(syncFile, isNotNull, reason: 'Sync log should exist');
       expect(
-        syncFile.readAsStringSync(),
+        syncFile!.readAsStringSync(),
         contains('[INFO] MATRIX_SYNC signal: timeline callback'),
       );
     });
@@ -642,17 +619,17 @@ void main() {
 
         await bufferedLogging.flushAllForTest();
 
-        final generalFile = File(logPath0());
-        final syncFile = File(syncLogPath());
+        final generalFile = findGeneralLog();
+        final syncFile = findSyncLog();
 
-        expect(generalFile.existsSync(), isTrue);
-        expect(syncFile.existsSync(), isTrue);
+        expect(generalFile, isNotNull, reason: 'General log should exist');
+        expect(syncFile, isNotNull, reason: 'Sync log should exist');
         expect(
-          generalFile.readAsStringSync(),
+          generalFile!.readAsStringSync(),
           contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
         );
         expect(
-          syncFile.readAsStringSync(),
+          syncFile!.readAsStringSync(),
           contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
         );
       },

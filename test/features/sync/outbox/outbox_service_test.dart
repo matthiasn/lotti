@@ -217,7 +217,7 @@ void main() {
       () => journalDb.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
     // Ensure activity gate can construct if needed
-    when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
+    when(() => userActivityService.lastActivity).thenReturn(DateTime(2024, 3, 15, 10, 30));
     when(
       () => userActivityService.activityStream,
     ).thenAnswer((_) => const Stream<DateTime>.empty());
@@ -282,8 +282,8 @@ void main() {
         id: 'l1',
         fromId: 'A',
         toId: 'B',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        updatedAt: DateTime(2024, 3, 15, 10, 30),
         vectorClock: null,
       ),
       status: SyncEntryStatus.initial,
@@ -361,13 +361,14 @@ void main() {
     'enqueueMessage logs missing entity when DB lookup returns null',
     () async {
       const id = 'missing-entity';
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final entity = JournalEntity.journalEntry(
         meta: Metadata(
           id: id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
           vectorClock: const VectorClock({'host': 1}),
         ),
         entryText: const EntryText(plainText: 'draft'),
@@ -401,13 +402,14 @@ void main() {
 
   test('continues when saveJson throws during refresh', () async {
     const id = 'save-fails';
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final entity = JournalEntity.journalEntry(
       meta: Metadata(
         id: id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
         vectorClock: const VectorClock({'host': 1}),
       ),
       entryText: const EntryText(plainText: 'draft'),
@@ -478,7 +480,7 @@ void main() {
         baseUrl: 'https://example.org',
         apiKey: 'k',
         name: 'p',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         inferenceProviderType: InferenceProviderType.openAi,
       ),
       status: SyncEntryStatus.initial,
@@ -1793,8 +1795,8 @@ void main() {
           (_) async => [
             OutboxItem(
               id: 1,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
               status: 0,
               retries: 0,
               message: '{}',
@@ -2062,8 +2064,8 @@ void main() {
               subject: 's',
               status: OutboxStatus.pending.index,
               retries: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
               filePath: null,
               priority: OutboxPriority.low.index,
             ),
@@ -2297,8 +2299,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -2397,8 +2399,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -2471,8 +2473,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -2559,8 +2561,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -2669,8 +2671,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -2943,8 +2945,8 @@ void main() {
             subject: 's',
             status: OutboxStatus.pending.index,
             retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
             filePath: null,
             priority: OutboxPriority.low.index,
           ),
@@ -3042,8 +3044,8 @@ void main() {
               subject: 's',
               status: OutboxStatus.pending.index,
               retries: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
               filePath: null,
               priority: OutboxPriority.low.index,
             ),
@@ -3151,8 +3153,8 @@ void main() {
               subject: 's',
               status: OutboxStatus.pending.index,
               retries: 0,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
               filePath: null,
               priority: OutboxPriority.low.index,
             ),
@@ -3225,7 +3227,7 @@ void main() {
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
         status: SyncEntryStatus.update,
       );
 
@@ -3245,7 +3247,7 @@ void main() {
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
         status: SyncEntryStatus.update,
       );
 
@@ -4111,7 +4113,7 @@ void main() {
         lightThemeName: 'Light',
         darkThemeName: 'Dark',
         themeMode: 'system',
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
         status: SyncEntryStatus.update,
       );
 

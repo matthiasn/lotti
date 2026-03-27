@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,10 +142,10 @@ void main() {
     });
 
     testWidgets('shows red color for overdue tasks', (tester) async {
-      // Set due date to yesterday (overdue)
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      // Set due date far in the past (overdue)
+      final overdueDate = DateTime(2020);
       final task = testTask.copyWith(
-        data: testTask.data.copyWith(due: yesterday),
+        data: testTask.data.copyWith(due: overdueDate),
       );
 
       final overrides = <Override>[
@@ -169,9 +170,10 @@ void main() {
     });
 
     testWidgets('shows orange color for tasks due today', (tester) async {
-      final today = DateTime.now();
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
+      final todayDate = DateTime(2024, 3, 15);
       final task = testTask.copyWith(
-        data: testTask.data.copyWith(due: today),
+        data: testTask.data.copyWith(due: todayDate),
       );
 
       final overrides = <Override>[
@@ -180,26 +182,28 @@ void main() {
         ),
       ];
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: overrides,
-          child: TaskDueDateWrapper(taskId: task.meta.id),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskDueDateWrapper(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Verify icon has orange-tinted color (SubtleActionChip applies alpha)
-      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      expect(icon.color?.r, taskStatusOrange.r);
-      expect(icon.color?.g, taskStatusOrange.g);
-      expect(icon.color?.b, taskStatusOrange.b);
+        // Verify icon has orange-tinted color (SubtleActionChip applies alpha)
+        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        expect(icon.color?.r, taskStatusOrange.r);
+        expect(icon.color?.g, taskStatusOrange.g);
+        expect(icon.color?.b, taskStatusOrange.b);
+      });
     });
 
     testWidgets('shows outline color for future due dates', (tester) async {
-      // Set due date to tomorrow (future)
-      final tomorrow = DateTime.now().add(const Duration(days: 2));
+      // Set due date far in the future
+      final futureDate = DateTime(2099);
       final task = testTask.copyWith(
-        data: testTask.data.copyWith(due: tomorrow),
+        data: testTask.data.copyWith(due: futureDate),
       );
 
       final overrides = <Override>[
@@ -354,13 +358,17 @@ void main() {
     testWidgets(
       'shows grayed-out styling for completed tasks with overdue date',
       (tester) async {
-        // Set due date to yesterday (would be overdue for non-completed tasks)
-        final yesterday = DateTime.now().subtract(const Duration(days: 1));
-        final now = DateTime(2025, 6, 10);
+        // Set due date far in the past (would be overdue for non-completed tasks)
+        final overdueDate = DateTime(2020);
+        final statusDate = DateTime(2024, 3, 15);
         final task = testTask.copyWith(
           data: testTask.data.copyWith(
-            due: yesterday,
-            status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+            due: overdueDate,
+            status: TaskStatus.done(
+              id: 's-done',
+              createdAt: statusDate,
+              utcOffset: 0,
+            ),
           ),
         );
 
@@ -388,15 +396,15 @@ void main() {
     testWidgets(
       'shows grayed-out styling for rejected tasks with overdue date',
       (tester) async {
-        // Set due date to yesterday (would be overdue for non-rejected tasks)
-        final yesterday = DateTime.now().subtract(const Duration(days: 1));
-        final now = DateTime(2025, 6, 10);
+        // Set due date far in the past (would be overdue for non-rejected tasks)
+        final overdueDate = DateTime(2020);
+        final statusDate = DateTime(2024, 3, 15);
         final task = testTask.copyWith(
           data: testTask.data.copyWith(
-            due: yesterday,
+            due: overdueDate,
             status: TaskStatus.rejected(
               id: 's-rejected',
-              createdAt: now,
+              createdAt: statusDate,
               utcOffset: 0,
             ),
           ),
@@ -426,12 +434,17 @@ void main() {
     testWidgets('shows grayed-out styling for completed tasks due today', (
       tester,
     ) async {
-      final today = DateTime.now();
-      final now = DateTime(2025, 6, 10);
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
+      final todayDate = DateTime(2024, 3, 15);
+      final statusDate = DateTime(2024, 3, 15);
       final task = testTask.copyWith(
         data: testTask.data.copyWith(
-          due: today,
-          status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
+          due: todayDate,
+          status: TaskStatus.done(
+            id: 's-done',
+            createdAt: statusDate,
+            utcOffset: 0,
+          ),
         ),
       );
 
@@ -441,18 +454,20 @@ void main() {
         ),
       ];
 
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: overrides,
-          child: TaskDueDateWrapper(taskId: task.meta.id),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: overrides,
+            child: TaskDueDateWrapper(taskId: task.meta.id),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Verify icon does NOT have orange color (should be grayed out)
-      final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-      // For completed tasks, urgency is disabled so color should NOT be orange
-      expect(icon.color?.r, isNot(taskStatusOrange.r));
+        // Verify icon does NOT have orange color (should be grayed out)
+        final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
+        // For completed tasks, urgency is disabled so color should NOT be orange
+        expect(icon.color?.r, isNot(taskStatusOrange.r));
+      });
     });
 
     testWidgets('returns empty widget for non-Task entities', (tester) async {

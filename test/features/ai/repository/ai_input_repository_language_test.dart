@@ -60,13 +60,15 @@ void main() {
     }
   });
 
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+
   Metadata createMetadata({String id = 'test-id'}) {
     return Metadata(
       id: id,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      dateFrom: DateTime.now(),
-      dateTo: DateTime.now(),
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
     );
   }
 
@@ -91,13 +93,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           languageCode: 'de',
         ),
       );
@@ -125,13 +127,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       );
 
@@ -160,13 +162,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
         );
 
@@ -174,14 +176,14 @@ void main() {
         final audioEntry = JournalAudio(
           meta: createMetadata(id: 'audio-1'),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             audioFile: 'test.mp3',
             audioDirectory: '/audio',
             duration: const Duration(minutes: 5),
             transcripts: [
               AudioTranscript(
-                created: DateTime.now(),
+                created: testDate,
                 library: 'whisper',
                 model: 'base',
                 detectedLanguage: 'es',
@@ -224,13 +226,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
         );
 
@@ -238,14 +240,14 @@ void main() {
         final audioEntry = JournalAudio(
           meta: createMetadata(id: 'audio-1'),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             audioFile: 'test.mp3',
             audioDirectory: '/audio',
             duration: const Duration(minutes: 5),
             transcripts: [
               AudioTranscript(
-                created: DateTime.now(),
+                created: testDate,
                 library: 'whisper',
                 model: 'base',
                 detectedLanguage: 'es',
@@ -291,13 +293,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
         );
 
@@ -306,14 +308,14 @@ void main() {
         final audioEntry = JournalAudio(
           meta: createMetadata(id: 'audio-1'),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             audioFile: 'test.mp3',
             audioDirectory: '/audio',
             duration: const Duration(minutes: 5),
             transcripts: [
               AudioTranscript(
-                created: DateTime.now(),
+                created: testDate,
                 library: 'whisper',
                 model: 'base',
                 detectedLanguage: 'en',
@@ -357,34 +359,34 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       );
 
       final audioEntry = JournalAudio(
         meta: createMetadata(id: 'audio-1'),
         data: AudioData(
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           audioFile: 'test.mp3',
           audioDirectory: '/audio',
           duration: const Duration(minutes: 5),
           transcripts: [
             AudioTranscript(
-              created: DateTime.now().subtract(const Duration(hours: 1)),
+              created: testDate.subtract(const Duration(hours: 1)),
               library: 'whisper',
               model: 'base',
               detectedLanguage: 'en',
               transcript: 'Old English transcript',
             ),
             AudioTranscript(
-              created: DateTime.now(),
+              created: testDate,
               library: 'whisper',
               model: 'base',
               detectedLanguage: 'de',
@@ -425,13 +427,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       );
 
@@ -443,7 +445,7 @@ void main() {
       final imageEntry = JournalImage(
         meta: createMetadata(id: 'image-1'),
         data: ImageData(
-          capturedAt: DateTime.now(),
+          capturedAt: testDate,
           imageId: 'img-1',
           imageFile: 'test.jpg',
           imageDirectory: '/images',
@@ -453,8 +455,8 @@ void main() {
       final audioEntry = JournalAudio(
         meta: createMetadata(id: 'audio-1'),
         data: AudioData(
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           audioFile: 'test.mp3',
           audioDirectory: '/audio',
           duration: const Duration(minutes: 5),

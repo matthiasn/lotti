@@ -18,20 +18,16 @@ class MockTask extends Mock implements Task {
   @override
   Metadata get meta => Metadata(
     id: 'test-task-id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
+    updatedAt: DateTime(2024, 3, 15, 10, 30),
+    dateFrom: DateTime(2024, 3, 15, 10, 30),
+    dateTo: DateTime(2024, 3, 15, 10, 30),
   );
 }
 
 void main() {
-  late DateTime now;
+  final testDate = DateTime(2024, 3, 15, 10, 30);
   late MockTask mockTask;
-
-  setUp(() {
-    now = DateTime.now();
-  });
 
   // Helper to create a task status for testing
   TaskStatus createTaskStatus(String statusType) {
@@ -39,26 +35,26 @@ void main() {
       case 'OPEN':
         return TaskStatus.open(
           id: 'test-status-id',
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
+          createdAt: testDate,
+          utcOffset: testDate.timeZoneOffset.inMinutes,
         );
       case 'DONE':
         return TaskStatus.done(
           id: 'test-status-id',
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
+          createdAt: testDate,
+          utcOffset: testDate.timeZoneOffset.inMinutes,
         );
       case 'IN PROGRESS':
         return TaskStatus.inProgress(
           id: 'test-status-id',
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
+          createdAt: testDate,
+          utcOffset: testDate.timeZoneOffset.inMinutes,
         );
       default:
         return TaskStatus.open(
           id: 'test-status-id',
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
+          createdAt: testDate,
+          utcOffset: testDate.timeZoneOffset.inMinutes,
         );
     }
   }
@@ -75,8 +71,8 @@ void main() {
       final taskStatus = createTaskStatus('OPEN');
       final taskData = TaskData(
         status: taskStatus,
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: [],
         title: 'Test Task',
       );
@@ -108,8 +104,8 @@ void main() {
       final taskStatus = createTaskStatus('DONE');
       final taskData = TaskData(
         status: taskStatus,
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: [],
         title: 'Test Task',
       );
@@ -150,8 +146,8 @@ void main() {
       final taskStatus = createTaskStatus('OPEN');
       final taskData = TaskData(
         status: taskStatus,
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: [],
         title: 'Test Task',
       );
@@ -195,8 +191,8 @@ void main() {
       final taskStatus = createTaskStatus('OPEN');
       final taskData = TaskData(
         status: taskStatus,
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: [],
         title: 'Test Task',
       );

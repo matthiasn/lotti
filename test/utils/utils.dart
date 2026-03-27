@@ -45,9 +45,9 @@ Future<void> waitUntil(
   }
 
   // Real-time fallback
-  final start = DateTime.now();
+  final stopwatch = Stopwatch()..start();
   while (!condition()) {
-    if (DateTime.now().difference(start) >= timeout) {
+    if (stopwatch.elapsed >= timeout) {
       throw TimeoutException('waitUntil timed out after $timeout');
     }
     await Future<void>.delayed(poll);
@@ -81,9 +81,9 @@ Future<void> waitUntilAsync(
   }
 
   // Real-time fallback
-  final start = DateTime.now();
+  final stopwatch = Stopwatch()..start();
   while (!await condition()) {
-    if (DateTime.now().difference(start) >= timeout) {
+    if (stopwatch.elapsed >= timeout) {
       throw TimeoutException('waitUntilAsync timed out after $timeout');
     }
     await Future<void>.delayed(poll);

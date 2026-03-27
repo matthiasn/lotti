@@ -155,7 +155,7 @@ void main() {
     test('syncMeasurables skips deleted measurables', () async {
       final deletedMeasurable = FakeMeasurableDataType(
         id: '2',
-        deletedAt: DateTime.now(),
+        deletedAt: DateTime(2024, 3, 15, 10, 30),
       );
       final activeMeasurable = FakeMeasurableDataType(id: '3');
 
@@ -226,7 +226,7 @@ void main() {
     test('syncCategories skips deleted categories', () async {
       final deletedCategory = FakeCategoryDefinition(
         id: '2',
-        deletedAt: DateTime.now(),
+        deletedAt: DateTime(2024, 3, 15, 10, 30),
       );
       final activeCategory = FakeCategoryDefinition(id: '3');
 
@@ -297,7 +297,7 @@ void main() {
     test('syncDashboards skips deleted dashboards', () async {
       final deletedDashboard = FakeDashboardDefinition(
         id: '2',
-        deletedAt: DateTime.now(),
+        deletedAt: DateTime(2024, 3, 15, 10, 30),
       );
       final activeDashboard = FakeDashboardDefinition(id: '3');
 
@@ -367,7 +367,7 @@ void main() {
     test('syncHabits skips deleted habits', () async {
       final deletedHabit = FakeHabitDefinition(
         id: '2',
-        deletedAt: DateTime.now(),
+        deletedAt: DateTime(2024, 3, 15, 10, 30),
       );
       final activeHabit = FakeHabitDefinition(id: '3');
 
@@ -405,7 +405,7 @@ void main() {
     });
 
     test('syncAiSettings enqueues active AI configs for sync', () async {
-      final createdAt = DateTime.now();
+      final createdAt = DateTime(2024, 3, 15, 10, 30);
       final provider = AiConfig.inferenceProvider(
         id: 'provider-1',
         baseUrl: 'https://example.com',

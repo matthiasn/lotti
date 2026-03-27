@@ -129,7 +129,7 @@ void main() {
           latitude: 37.7749,
           longitude: -122.4194,
           accuracy: 10,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           geohashString: 'mock-geohash',
         ),
       );
@@ -186,7 +186,7 @@ void main() {
     test(
       'create and retrieve text entry',
       () async {
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         const testText = 'test text';
         const updatedTestText = 'updated test text';
 
@@ -194,7 +194,7 @@ void main() {
         final textEntry = await JournalRepository.createTextEntry(
           const EntryText(plainText: testText),
           id: uuid.v1(),
-          started: now,
+          started: testDate,
         );
 
         // expect to find created entry
@@ -209,7 +209,7 @@ void main() {
         await getIt<PersistenceLogic>().updateJournalEntityText(
           textEntry.meta.id,
           const EntryText(plainText: updatedTestText),
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 35),
         );
 
         // Yield to allow real SQLite I/O to complete
@@ -233,17 +233,17 @@ void main() {
     );
 
     test('create and retrieve task', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 11);
       final taskData = TaskData(
         status: TaskStatus.open(
           id: uuid.v1(),
-          createdAt: now,
+          createdAt: testDate,
           utcOffset: 60,
         ),
         title: 'title',
         statusHistory: [],
-        dateTo: DateTime.now(),
-        dateFrom: DateTime.now(),
+        dateTo: DateTime(2024, 3, 15, 11),
+        dateFrom: DateTime(2024, 3, 15, 11),
         estimate: const Duration(hours: 1),
       );
       const testTaskText = 'testTaskText';
@@ -327,7 +327,7 @@ void main() {
         taskData: taskData.copyWith(
           status: TaskStatus.inProgress(
             id: uuid.v1(),
-            createdAt: now,
+            createdAt: testDate,
             utcOffset: 60,
           ),
         ),
@@ -349,7 +349,7 @@ void main() {
         taskData: taskData.copyWith(
           status: TaskStatus.done(
             id: uuid.v1(),
-            createdAt: now,
+            createdAt: testDate,
             utcOffset: 60,
           ),
         ),
@@ -368,7 +368,7 @@ void main() {
       final comment = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
         linkedId: task.meta.id,
       );
 
@@ -406,7 +406,7 @@ void main() {
       // delete task and expect counts to be updated
       final updatedMeta = await getIt<PersistenceLogic>().updateMetadata(
         task.meta,
-        deletedAt: DateTime.now(),
+        deletedAt: DateTime(2024, 3, 15, 12),
       );
       final updatedTask = task.copyWith(meta: updatedMeta);
       await getIt<PersistenceLogic>().updateDbEntity(updatedTask);
@@ -519,7 +519,7 @@ void main() {
 
       // measurable can be deleted
       await getIt<PersistenceLogic>().upsertEntityDefinition(
-        measurableChocolate.copyWith(deletedAt: DateTime.now()),
+        measurableChocolate.copyWith(deletedAt: DateTime(2024, 3, 15, 12)),
       );
 
       expect(
@@ -565,8 +565,8 @@ void main() {
       await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
 
       final habitCompletionData = HabitCompletionData(
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        dateFrom: DateTime(2024, 3, 15, 11),
+        dateTo: DateTime(2024, 3, 15, 11),
         habitId: habitFlossing.id,
       );
 
@@ -591,7 +591,7 @@ void main() {
 
       // habit can be deleted
       await getIt<PersistenceLogic>().upsertEntityDefinition(
-        habitFlossing.copyWith(deletedAt: DateTime.now()),
+        habitFlossing.copyWith(deletedAt: DateTime(2024, 3, 15, 12)),
       );
 
       expect(
@@ -633,11 +633,11 @@ void main() {
       expect(retrievedResponse?.data.response, '42');
 
       // Test creating with linked ID
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 11, 30);
       final textEntry = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Parent entry'),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
       );
 
       final linkedAiResponse = await getIt<PersistenceLogic>()
@@ -709,18 +709,18 @@ void main() {
     });
 
     test('create link between entities', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 12);
       // Create two entries to link
       final entry1 = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'First entry'),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
       );
 
       final entry2 = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Second entry'),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
       );
 
       // Create link between entries
@@ -749,7 +749,7 @@ void main() {
       final entry = JournalEntity.journalEntry(
         entryText: const EntryText(plainText: 'Entry with geolocation'),
         meta: await persistenceLogic.createMetadata(
-          dateFrom: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 12, 30),
         ),
       );
       await persistenceLogic.createDbEntity(
@@ -800,11 +800,11 @@ void main() {
     test('updateMetadata with clearCategoryId=true', () async {
       // Create entry with category
       const testText = 'Entry with category';
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 13);
       final entry = await JournalRepository.createTextEntry(
         const EntryText(plainText: testText),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
         categoryId: categoryMindfulness.id,
       );
 
@@ -820,10 +820,10 @@ void main() {
     });
 
     test('createQuantitativeEntry handles discrete quantity data', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 13, 30);
       final data = QuantitativeData.discreteQuantityData(
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         value: 100,
         dataType: 'test_type',
         unit: 'test_unit',
@@ -838,10 +838,10 @@ void main() {
     });
 
     test('createWorkoutEntry handles workout data correctly', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 14);
       final workoutData = WorkoutData(
-        dateFrom: now,
-        dateTo: now.add(const Duration(hours: 1)),
+        dateFrom: testDate,
+        dateTo: testDate.add(const Duration(hours: 1)),
         id: 'workout-123',
         workoutType: 'RUNNING',
         energy: 300,
@@ -858,10 +858,10 @@ void main() {
     });
 
     test('createSurveyEntry creates survey with proper data', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 14, 30);
       final taskResult = RPTaskResult(identifier: 'test_survey')
-        ..startDate = now
-        ..endDate = now.add(const Duration(minutes: 5));
+        ..startDate = testDate
+        ..endDate = testDate.add(const Duration(minutes: 5));
 
       final surveyData = SurveyData(
         taskResult: taskResult,
@@ -881,18 +881,18 @@ void main() {
     });
 
     test('createSurveyEntry with linkedId creates linked survey', () async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 15);
 
       // Create parent entry first
       final parent = await JournalRepository.createTextEntry(
         const EntryText(plainText: 'Parent entry'),
         id: uuid.v1(),
-        started: now,
+        started: testDate,
       );
 
       final taskResult = RPTaskResult(identifier: 'linked_survey')
-        ..startDate = now
-        ..endDate = now.add(const Duration(minutes: 3));
+        ..startDate = testDate
+        ..endDate = testDate.add(const Duration(minutes: 3));
 
       final surveyData = SurveyData(
         taskResult: taskResult,
@@ -921,7 +921,7 @@ void main() {
         final result = await getIt<PersistenceLogic>().updateJournalEntityText(
           'non-existent-id',
           newText,
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 30),
         );
 
         expect(result, false);
@@ -936,7 +936,7 @@ void main() {
       'Entity Type Branch Coverage: updateJournalEntityText updates JournalAudio and clears flags',
       () async {
         final audioData = AudioNote(
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           audioFile: 'test.m4a',
           audioDirectory: '/audio/2024-01-01/',
           duration: const Duration(seconds: 60),
@@ -950,7 +950,7 @@ void main() {
         final success = await getIt<PersistenceLogic>().updateJournalEntityText(
           audioEntry!.meta.id,
           newText,
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 35),
         );
 
         // Verifying the update method executes successfully covers the JournalAudio branch
@@ -962,7 +962,7 @@ void main() {
       'Entity Type Branch Coverage: updateJournalEntityText updates JournalImage',
       () async {
         final imageData = ImageData(
-          capturedAt: DateTime.now(),
+          capturedAt: DateTime(2024, 3, 15, 10, 30),
           imageId: 'test-image-id',
           imageFile: 'test.jpg',
           imageDirectory: '/images/2024-01-01/',
@@ -975,7 +975,7 @@ void main() {
         final success = await getIt<PersistenceLogic>().updateJournalEntityText(
           imageEntry!.meta.id,
           newText,
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 35),
         );
 
         // Verifying the update method executes successfully covers the JournalImage branch
@@ -990,8 +990,8 @@ void main() {
         await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
 
         final measurementData = MeasurementData(
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           value: 500,
           dataTypeId: measurableWater.id,
         );
@@ -1007,7 +1007,7 @@ void main() {
         final success = await getIt<PersistenceLogic>().updateJournalEntityText(
           measurementEntry!.meta.id,
           newText,
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 35),
         );
 
         // Verifying the update method executes successfully covers the MeasurementEntry branch
@@ -1022,8 +1022,8 @@ void main() {
         await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
 
         final habitCompletionData = HabitCompletionData(
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           habitId: habitFlossing.id,
         );
 
@@ -1038,7 +1038,7 @@ void main() {
         final success = await getIt<PersistenceLogic>().updateJournalEntityText(
           habitCompletion!.meta.id,
           newText,
-          DateTime.now(),
+          DateTime(2024, 3, 15, 10, 35),
         );
 
         expect(success, true);
@@ -1055,13 +1055,13 @@ void main() {
       final taskData = TaskData(
         status: TaskStatus.open(
           id: uuid.v1(),
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           utcOffset: 60,
         ),
         title: 'test',
         statusHistory: [],
-        dateTo: DateTime.now(),
-        dateFrom: DateTime.now(),
+        dateTo: DateTime(2024, 3, 15, 10, 30),
+        dateFrom: DateTime(2024, 3, 15, 10, 30),
       );
 
       final result = await getIt<PersistenceLogic>().updateTask(
@@ -1168,7 +1168,7 @@ void main() {
         final entry = JournalEntity.journalEntry(
           entryText: const EntryText(plainText: 'Entry for concurrent test'),
           meta: await persistenceLogic.createMetadata(
-            dateFrom: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 15, 30),
           ),
         );
         await persistenceLogic.createDbEntity(
@@ -1203,7 +1203,7 @@ void main() {
             plainText: 'Entry with existing geolocation',
           ),
           meta: await persistenceLogic.createMetadata(
-            dateFrom: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 16),
           ),
         );
         await persistenceLogic.createDbEntity(

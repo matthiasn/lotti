@@ -655,7 +655,7 @@ void main() {
               after: 'TestFlight',
               categoryId: 'cat-1',
               categoryName: 'Dev',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
             ),
             onSave: () async {},
           );
@@ -738,7 +738,7 @@ void main() {
               after: 'TestFlight',
               categoryId: 'cat-1',
               categoryName: 'Dev',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
             ),
             onSave: () async {},
           );

@@ -25,7 +25,7 @@ void main() {
                 inferenceProviderType: InferenceProviderType.anthropic,
                 apiKey: 'test-key',
                 baseUrl: 'https://api.test.com',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
               )
               as AiConfigInferenceProvider;
 
@@ -36,7 +36,7 @@ void main() {
                 description: 'Model description',
                 providerModelId: 'model-id',
                 inferenceProviderId: 'provider-id',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 inputModalities: [Modality.text, Modality.image],
                 outputModalities: [Modality.text],
                 isReasoningModel: false,

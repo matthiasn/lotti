@@ -53,6 +53,8 @@ class TestEntryController extends EntryController {
 }
 
 void main() {
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+
   group('Navigation Tests Setup', () {
     late MockNavService mockNavService;
     late MockPersistenceLogic mockPersistenceLogic;
@@ -73,11 +75,11 @@ void main() {
           title: '',
           status: TaskStatus.open(
             id: 'test-id',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           statusHistory: [],
         ),
       );
@@ -175,20 +177,20 @@ void main() {
         final testTask = Task(
           meta: Metadata(
             id: testTaskId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           data: TaskData(
             title: 'Test Task',
             status: TaskStatus.open(
               id: 'status-id',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             statusHistory: [],
           ),
         );
@@ -245,20 +247,20 @@ void main() {
         final testTask = Task(
           meta: Metadata(
             id: testTaskId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           data: TaskData(
             title: 'Test Task',
             status: TaskStatus.open(
               id: 'status-id',
-              createdAt: DateTime.now(),
+              createdAt: testDate,
               utcOffset: 0,
             ),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: testDate,
+            dateTo: testDate,
             statusHistory: [],
           ),
         );
@@ -355,10 +357,10 @@ void main() {
         final testEvent = JournalEvent(
           meta: Metadata(
             id: testEventId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           data: const EventData(
             title: 'Test Event',
@@ -416,10 +418,10 @@ void main() {
         final testEvent = JournalEvent(
           meta: Metadata(
             id: testEventId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           data: const EventData(
             title: 'Test Event',
@@ -647,10 +649,10 @@ void main() {
         final timerEntry = JournalEntry(
           meta: Metadata(
             id: timerEntryId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           entryText: const EntryText(plainText: ''),
         );
@@ -658,10 +660,10 @@ void main() {
         final linkedEntry = JournalEntry(
           meta: Metadata(
             id: linkedId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
           entryText: const EntryText(plainText: 'Parent entry'),
         );
@@ -703,10 +705,10 @@ void main() {
       final linkedEntry = JournalEntry(
         meta: Metadata(
           id: linkedId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         entryText: const EntryText(plainText: 'Parent entry'),
       );
@@ -1313,20 +1315,20 @@ void main() {
       final testTask = Task(
         meta: Metadata(
           id: 'task-id',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: TaskData(
           title: 'Test Task',
           status: TaskStatus.open(
             id: 'status-id',
-            createdAt: DateTime.now(),
+            createdAt: testDate,
             utcOffset: 0,
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: testDate,
+          dateTo: testDate,
           statusHistory: [],
         ),
       );
@@ -1400,10 +1402,10 @@ void main() {
       final testEvent = JournalEvent(
         meta: Metadata(
           id: 'event-id',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         data: const EventData(
           title: 'Test Event',
@@ -1505,10 +1507,10 @@ void main() {
       final parentEntry = JournalEntry(
         meta: Metadata(
           id: parentId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         entryText: const EntryText(plainText: 'Parent'),
       );
@@ -1516,10 +1518,10 @@ void main() {
       final timerEntry = JournalEntry(
         meta: Metadata(
           id: timerId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         entryText: const EntryText(plainText: ''),
       );
@@ -1584,10 +1586,10 @@ void main() {
       final parentEntry = JournalEntry(
         meta: Metadata(
           id: parentId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         entryText: const EntryText(plainText: 'Parent'),
       );
@@ -1749,10 +1751,10 @@ void main() {
       final textEntry = JournalEntry(
         meta: Metadata(
           id: textEntryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
         entryText: const EntryText(plainText: ''),
       );

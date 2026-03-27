@@ -325,8 +325,8 @@ void main() {
       });
 
       test('creates date-based directory structure', () {
-        final now = DateTime.now();
-        final day = DateFormat(screenshotDateFormat).format(now);
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final day = DateFormat(screenshotDateFormat).format(testDate);
         final path = '$screenshotDirectoryPath$day/';
 
         expect(path, startsWith('images/'));

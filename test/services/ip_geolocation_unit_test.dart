@@ -38,9 +38,9 @@ void main() {
   group('IpGeolocationService Unit Tests', () {
     group('Geolocation Object Validation', () {
       test('Geolocation has required fields', () {
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         final geo = Geolocation(
-          createdAt: now,
+          createdAt: testDate,
           latitude: 37.7749,
           longitude: -122.4194,
           geohashString: 'testgeohash',
@@ -55,13 +55,13 @@ void main() {
         expect(geo.timezone, 'America/Los_Angeles');
         expect(geo.utcOffset, -480);
         expect(geo.accuracy, 50000);
-        expect(geo.createdAt, now);
+        expect(geo.createdAt, testDate);
       });
 
       test('Geolocation handles optional fields', () {
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         final geo = Geolocation(
-          createdAt: now,
+          createdAt: testDate,
           latitude: 0,
           longitude: 0,
           geohashString: 'testgeohash',

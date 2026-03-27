@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -18,34 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class FakeJournalPageController extends JournalPageController {
-  FakeJournalPageController(this._initialState);
-
-  final JournalPageState _initialState;
-  final List<String> toggledCategoryIds = [];
-  int selectAllCategoriesCalled = 0;
-
-  @override
-  JournalPageState build(bool showTasks) => _initialState;
-
-  /// Update state for testing - this updates Riverpod's internal state
-  // ignore: use_setters_to_change_properties
-  void updateState(JournalPageState newState) => state = newState;
-
-  @override
-  Future<void> toggleSelectedCategoryIds(String categoryId) async {
-    toggledCategoryIds.add(categoryId);
-  }
-
-  @override
-  Future<void> selectedAllCategories() async {
-    selectAllCategoriesCalled++;
-  }
-}
-
-class MockPagingController extends Mock
-    implements PagingController<int, JournalEntity> {}
+import '../../../../test_utils/fake_journal_page_controller.dart';
 
 void main() {
   late FakeJournalPageController fakeController;

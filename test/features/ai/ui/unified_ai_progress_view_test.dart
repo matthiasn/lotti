@@ -65,7 +65,7 @@ void main() {
   });
 
   setUp(() {
-    final now = DateTime.now();
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     testPromptConfig =
         AiConfig.prompt(
               id: 'test-prompt-1',
@@ -74,7 +74,7 @@ void main() {
               userMessage: 'Test prompt text',
               defaultModelId: 'model-1',
               modelIds: ['model-1'],
-              createdAt: now,
+              createdAt: testDate,
               useReasoning: false,
               requiredInputData: [InputDataType.task],
               // ignore: deprecated_member_use_from_same_package
@@ -238,7 +238,7 @@ void main() {
         name: 'Test Model',
         providerModelId: 'provider-model-1',
         inferenceProviderId: 'provider-1',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         inputModalities: [Modality.text],
         outputModalities: [Modality.text],
         isReasoningModel: false,
@@ -767,7 +767,7 @@ void main() {
                 userMessage: 'Test prompt text',
                 defaultModelId: 'model-1',
                 modelIds: ['model-1'],
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
                 // ignore: deprecated_member_use_from_same_package
@@ -817,7 +817,7 @@ void main() {
                 userMessage: 'Generate image prompt',
                 defaultModelId: 'model-1',
                 modelIds: ['model-1'],
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
                 aiResponseType: AiResponseType.imagePromptGeneration,
@@ -878,7 +878,7 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
                 userMessage: 'Generate coding prompt',
                 defaultModelId: 'model-1',
                 modelIds: ['model-1'],
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
                 aiResponseType: AiResponseType.promptGeneration,

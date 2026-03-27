@@ -7,6 +7,9 @@ import 'package:mocktail/mocktail.dart';
 class MockJournalDb extends Mock implements JournalDb {}
 
 void main() {
+  final testDate = DateTime(2024, 3, 15);
+  final deletedDate = DateTime(2024, 3, 10);
+
   test('validateForTask separates suppressed from invalid/valid', () async {
     final db = MockJournalDb();
     final validator = LabelValidator(db: db);
@@ -17,8 +20,8 @@ void main() {
         id: 'a',
         name: 'Alpha',
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
       ),
@@ -28,8 +31,8 @@ void main() {
         id: 'e1',
         name: 'Engineering',
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         applicableCategoryIds: const ['engineering'],
@@ -40,8 +43,8 @@ void main() {
         id: 'd1',
         name: 'Design',
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         applicableCategoryIds: const ['design'],
@@ -52,11 +55,11 @@ void main() {
         id: 'z',
         name: 'Zed',
         color: '#000',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
-        deletedAt: DateTime.now(),
+        deletedAt: deletedDate,
       ),
     );
 
@@ -83,11 +86,11 @@ void main() {
           id: 'z',
           name: 'Zed',
           color: '#000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           private: false,
-          deletedAt: DateTime.now(),
+          deletedAt: deletedDate,
         ),
       );
 

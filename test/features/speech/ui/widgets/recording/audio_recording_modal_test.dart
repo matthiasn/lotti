@@ -254,29 +254,30 @@ void main() {
     }
 
     // Create a mock Task entity when linkedTaskId is provided
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final mockTask = linkedTaskId != null
         ? Task(
             meta: Metadata(
               id: linkedTaskId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
               categoryId: 'test-category',
             ),
             data: TaskData(
               title: 'Test Task',
               status: TaskStatus.open(
                 id: const Uuid().v1(),
-                createdAt: DateTime.now(),
+                createdAt: testDate,
                 utcOffset: 0,
               ),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: testDate,
+              dateTo: testDate,
               statusHistory: [
                 TaskStatus.open(
                   id: const Uuid().v1(),
-                  createdAt: DateTime.now(),
+                  createdAt: testDate,
                   utcOffset: 0,
                 ),
               ],
@@ -464,12 +465,13 @@ void main() {
 
   group('AudioRecordingModal - Task Type Detection', () {
     Metadata createMockMetadata(String id) {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       return Metadata(
         id: id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
         categoryId: 'test-category',
       );
     }
@@ -530,11 +532,11 @@ void main() {
     }
 
     testWidgets('shows checkboxes when linked entry is a Task', (tester) async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       const uuid = Uuid();
       final openStatus = TaskStatus.open(
         id: uuid.v1(),
-        createdAt: now,
+        createdAt: testDate,
         utcOffset: 0,
       );
       final mockTask = Task(
@@ -542,8 +544,8 @@ void main() {
         data: TaskData(
           title: 'Test Task',
           status: openStatus,
-          dateFrom: now,
-          dateTo: now,
+          dateFrom: testDate,
+          dateTo: testDate,
           statusHistory: [openStatus],
         ),
       );
@@ -1037,11 +1039,11 @@ void main() {
     testWidgets(
       'shows Task checkboxes even with Task + no category prompts still respects category config',
       (tester) async {
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 10, 30);
         const uuid = Uuid();
         final openStatus = TaskStatus.open(
           id: uuid.v1(),
-          createdAt: now,
+          createdAt: testDate,
           utcOffset: 0,
         );
         final mockTask = Task(
@@ -1049,8 +1051,8 @@ void main() {
           data: TaskData(
             title: 'Test Task',
             status: openStatus,
-            dateFrom: now,
-            dateTo: now,
+            dateFrom: testDate,
+            dateTo: testDate,
             statusHistory: [openStatus],
           ),
         );

@@ -7,31 +7,9 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
+
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
-
-class FakeJournalPageController extends JournalPageController {
-  FakeJournalPageController(this._testState);
-
-  final JournalPageState _testState;
-  final List<String> toggledPriorities = [];
-  int clearSelectedPrioritiesCalled = 0;
-
-  @override
-  JournalPageState build(bool showTasks) => _testState;
-
-  @override
-  JournalPageState get state => _testState;
-
-  @override
-  Future<void> toggleSelectedPriority(String priority) async {
-    toggledPriorities.add(priority);
-  }
-
-  @override
-  Future<void> clearSelectedPriorities() async {
-    clearSelectedPrioritiesCalled++;
-  }
-}
 
 JournalPageState _baseState({
   Set<String> selectedPriorities = const <String>{},

@@ -51,7 +51,7 @@ void main() {
     registerFallbackValue(FakeJournalImage());
     registerFallbackValue(FakeJournalAudio());
     registerFallbackValue(FakeMetadata());
-    registerFallbackValue(DateTime.now());
+    registerFallbackValue(DateTime(2024, 3, 15));
   });
 
   setUp(() async {
@@ -104,10 +104,10 @@ void main() {
     ).thenAnswer(
       (_) async => Metadata(
         id: 'test-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        updatedAt: DateTime(2024, 3, 15, 10, 30),
+        dateFrom: DateTime(2024, 3, 15, 10, 30),
+        dateTo: DateTime(2024, 3, 15, 10, 30),
       ),
     );
 

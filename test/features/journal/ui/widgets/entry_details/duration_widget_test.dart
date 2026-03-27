@@ -159,7 +159,9 @@ void main() {
     testWidgets(
       'does not mark session ended for short sessions (< 1 minute)',
       (tester) async {
-        // Entry with dateFrom < 1 minute ago so the duration check fails
+        // Entry with dateFrom < 1 minute ago so the duration check fails.
+        // Must be relative to real DateTime.now() because the widget checks
+        // DateTime.now().difference(dateFrom).inHours < 12 internally.
         final recentDate = DateTime.now().subtract(const Duration(seconds: 30));
         const shortEntryId = 'short-entry';
         final shortEntry = JournalEntity.journalEntry(
@@ -261,7 +263,9 @@ void main() {
     testWidgets(
       'record button clears session state and starts recording',
       (tester) async {
-        // Use a recent entry so the record button is visible (isRecent check)
+        // Use a recent entry so the record button is visible (isRecent check).
+        // Must be relative to real DateTime.now() because the widget checks
+        // DateTime.now().difference(dateFrom).inHours < 12 internally.
         final recentDate = DateTime.now().subtract(const Duration(hours: 1));
         final recentEntry = JournalEntity.journalEntry(
           meta: Metadata(

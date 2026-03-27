@@ -55,12 +55,13 @@ void main() {
         color: any(named: 'color'),
       ),
     ).thenAnswer((invocation) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final category = CategoryDefinition(
         id: 'test-id',
         name: invocation.namedArguments[const Symbol('name')] as String,
         color: invocation.namedArguments[const Symbol('color')] as String,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         active: true,
@@ -100,12 +101,13 @@ void main() {
         color: any(named: 'color'),
       ),
     ).thenAnswer((invocation) async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       return CategoryDefinition(
         id: 'test-id',
         name: invocation.namedArguments[const Symbol('name')] as String,
         color: invocation.namedArguments[const Symbol('color')] as String,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         private: false,
         active: true,

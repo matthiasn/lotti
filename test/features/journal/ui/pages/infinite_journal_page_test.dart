@@ -587,8 +587,8 @@ void main() {
             id: 'cat1',
             name: 'Work',
             color: '#FF0000',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
             active: true,
             private: false,
             vectorClock: null,
@@ -623,13 +623,14 @@ void main() {
     testWidgets('tasks page with categories shows correct entries', (
       tester,
     ) async {
+      final testDate = DateTime(2024, 3, 15);
       final testCategories = [
         CategoryDefinition(
           id: 'cat1',
           name: 'Work',
           color: '#FF0000',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           active: true,
           private: false,
           vectorClock: null,
@@ -638,8 +639,8 @@ void main() {
           id: 'cat2',
           name: 'Personal',
           color: '#00FF00',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           active: true,
           private: false,
           vectorClock: null,

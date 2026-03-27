@@ -19,35 +19,31 @@ class MockTask extends Mock implements Task {
   @override
   Metadata get meta => Metadata(
     id: 'test-task-id',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
-    dateFrom: DateTime.now(),
-    dateTo: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
+    updatedAt: DateTime(2024, 3, 15, 10, 30),
+    dateFrom: DateTime(2024, 3, 15, 10, 30),
+    dateTo: DateTime(2024, 3, 15, 10, 30),
   );
 }
 
 void main() {
-  late DateTime now;
-
-  setUp(() {
-    now = DateTime.now();
-  });
+  final testDate = DateTime(2024, 3, 15, 10, 30);
 
   TaskStatus createTaskStatus(
     TaskStatus Function(String, DateTime, int) factory,
   ) {
     return factory(
       'test-status-id',
-      now,
-      now.timeZoneOffset.inMinutes,
+      testDate,
+      testDate.timeZoneOffset.inMinutes,
     );
   }
 
   MockTask createMockTask(TaskStatus status) {
     final taskData = TaskData(
       status: status,
-      dateFrom: now,
-      dateTo: now,
+      dateFrom: testDate,
+      dateTo: testDate,
       statusHistory: [],
       title: 'Test Task',
     );
@@ -152,8 +148,8 @@ void main() {
 
       final status = statusFactory(
         'test-status-id',
-        now,
-        now.timeZoneOffset.inMinutes,
+        testDate,
+        testDate.timeZoneOffset.inMinutes,
       );
 
       final mockTask = createMockTask(status);
@@ -239,8 +235,8 @@ void main() {
     // Test that the in progress status uses the correct blue color
     final status = TaskStatus.inProgress(
       id: 'test-status-id',
-      createdAt: now,
-      utcOffset: now.timeZoneOffset.inMinutes,
+      createdAt: testDate,
+      utcOffset: testDate.timeZoneOffset.inMinutes,
     );
     final mockTask = createMockTask(status);
 
@@ -360,8 +356,8 @@ void main() {
 
         final status = statusFactory(
           'test-status-id',
-          now,
-          now.timeZoneOffset.inMinutes,
+          testDate,
+          testDate.timeZoneOffset.inMinutes,
         );
 
         final mockTask = createMockTask(status);
@@ -421,8 +417,8 @@ void main() {
     // Test that the in progress status uses the correct blue color in dark mode
     final status = TaskStatus.inProgress(
       id: 'test-status-id',
-      createdAt: now,
-      utcOffset: now.timeZoneOffset.inMinutes,
+      createdAt: testDate,
+      utcOffset: testDate.timeZoneOffset.inMinutes,
     );
     final mockTask = createMockTask(status);
 

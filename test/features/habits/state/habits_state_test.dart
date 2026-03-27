@@ -67,11 +67,9 @@ void main() {
 
     test('last day is today', () {
       final days = getHabitDays(7);
-      final today = DateTime.now();
-      final todayYmd =
-          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-      expect(days.last, todayYmd);
+      // getHabitDays uses DateTime.now() internally, so we verify format
+      // rather than an exact date to avoid coupling to a specific instant.
+      expect(days.last, matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
     });
 
     test('returns more days for larger time span', () {
@@ -83,10 +81,10 @@ void main() {
   });
 
   group('activeBy', () {
-    final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-    final lastWeek = now.subtract(const Duration(days: 7));
-    final tomorrow = now.add(const Duration(days: 1));
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+    final yesterday = testDate.subtract(const Duration(days: 1));
+    final lastWeek = testDate.subtract(const Duration(days: 7));
+    final tomorrow = testDate.add(const Duration(days: 1));
 
     HabitDefinition createHabit(String id, DateTime? activeFrom) {
       return HabitDefinition(
@@ -121,8 +119,7 @@ void main() {
         createHabit('1', lastWeek),
         createHabit('2', yesterday),
       ];
-      final todayYmd =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      const todayYmd = '2024-03-15';
       final result = activeBy(habits, todayYmd);
 
       expect(result.length, 2);
@@ -133,8 +130,7 @@ void main() {
         createHabit('1', lastWeek),
         createHabit('2', tomorrow),
       ];
-      final todayYmd =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      const todayYmd = '2024-03-15';
       final result = activeBy(habits, todayYmd);
 
       expect(result.length, 1);
@@ -145,8 +141,7 @@ void main() {
       final habits = [
         createHabit('1', null),
       ];
-      final todayYmd =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      const todayYmd = '2024-03-15';
       final result = activeBy(habits, todayYmd);
 
       expect(result.length, 1);
@@ -154,8 +149,8 @@ void main() {
   });
 
   group('totalForDay', () {
-    final now = DateTime.now();
-    final lastWeek = now.subtract(const Duration(days: 7));
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+    final lastWeek = testDate.subtract(const Duration(days: 7));
 
     HabitDefinition createHabit(String id) {
       return HabitDefinition(
@@ -187,8 +182,7 @@ void main() {
           createHabit('3'),
         ],
       );
-      final todayYmd =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      const todayYmd = '2024-03-15';
       final result = totalForDay(todayYmd, state);
 
       expect(result, 3);

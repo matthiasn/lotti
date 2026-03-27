@@ -20,12 +20,14 @@ void main() {
   late MockEntitiesCacheService mockEntitiesCacheService;
   const testCategoryId = 'test-category-id';
 
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+
   final testCategory =
       EntityDefinition.categoryDefinition(
             id: testCategoryId,
             name: 'Test Category',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: testDate,
+            updatedAt: testDate,
             vectorClock: null,
             private: false,
             active: true,
@@ -115,8 +117,8 @@ void main() {
           EntityDefinition.categoryDefinition(
                 id: 'selected-category-id',
                 name: 'Selected Category',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
+                createdAt: testDate,
+                updatedAt: testDate,
                 vectorClock: null,
                 private: false,
                 active: true,

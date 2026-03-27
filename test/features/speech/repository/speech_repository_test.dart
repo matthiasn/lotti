@@ -22,7 +22,7 @@ void main() {
     // Register fakes for any() matchers if needed for complex objects
     registerFallbackValue(FakeJournalAudio());
     registerFallbackValue(FakeMetadata());
-    registerFallbackValue(DateTime.now()); // For date matching
+    registerFallbackValue(DateTime(2024, 3, 15)); // For date matching
   });
 
   setUp(() {
@@ -276,7 +276,7 @@ void main() {
           () => mockPersistenceLogic.updateMetadata(initialMetadata),
         ).thenAnswer(
           (_) async => initialMetadata.copyWith(
-            updatedAt: DateTime.now(),
+            updatedAt: DateTime(2024, 3, 15, 12),
           ),
         ); // Simulate updatedAt change
         when(
@@ -427,7 +427,8 @@ void main() {
         when(
           () => mockPersistenceLogic.updateMetadata(initialMetadata),
         ).thenAnswer(
-          (_) async => initialMetadata.copyWith(updatedAt: DateTime.now()),
+          (_) async =>
+              initialMetadata.copyWith(updatedAt: DateTime(2024, 3, 15, 12)),
         );
         when(
           () => mockPersistenceLogic.updateDbEntity(
@@ -507,7 +508,9 @@ void main() {
           () => mockPersistenceLogic.updateMetadata(any<Metadata>()),
         ).thenAnswer((invocation) async {
           final originalMeta = invocation.positionalArguments[0] as Metadata;
-          return originalMeta.copyWith(updatedAt: DateTime.now());
+          return originalMeta.copyWith(
+            updatedAt: DateTime(2024, 3, 15, 12),
+          );
         });
         when(
           () => mockPersistenceLogic.updateDbEntity(

@@ -14,7 +14,7 @@ void main() {
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
   );
 
   // Reasoning model, supports text and images
@@ -26,7 +26,7 @@ void main() {
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
   );
 
   // Non-reasoning model, supports text, image, audio
@@ -38,7 +38,7 @@ void main() {
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],
     isReasoningModel: false,
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
   );
 
   // Reasoning model, supports text, image, audio
@@ -50,7 +50,7 @@ void main() {
     inputModalities: [Modality.text, Modality.image, Modality.audio],
     outputModalities: [Modality.text, Modality.audio],
     isReasoningModel: true,
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15),
   );
 
   // --- Test Groups ---
@@ -66,7 +66,7 @@ void main() {
         userMessage: '',
         requiredInputData: [],
         useReasoning: false,
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
         // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
@@ -103,7 +103,7 @@ void main() {
           userMessage: '{{input}}',
           requiredInputData: [],
           useReasoning: true,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -133,7 +133,7 @@ void main() {
           userMessage: '{{input}}',
           requiredInputData: [],
           useReasoning: true,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -166,7 +166,7 @@ void main() {
           userMessage: '{{textToSummarize}}',
           requiredInputData: [],
           useReasoning: false,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -196,7 +196,7 @@ void main() {
           userMessage: '{{image}}',
           requiredInputData: [InputDataType.images],
           useReasoning: false,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -219,7 +219,7 @@ void main() {
           userMessage: '{{image}}',
           requiredInputData: [InputDataType.images],
           useReasoning: false,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -252,7 +252,7 @@ void main() {
           userMessage: '{{audio}} {{text}}',
           requiredInputData: [InputDataType.task, InputDataType.audioFiles],
           useReasoning: false,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -287,7 +287,7 @@ void main() {
             InputDataType.tasksList,
           ],
           useReasoning: false,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -323,7 +323,7 @@ void main() {
             InputDataType.images,
           ],
           useReasoning: true,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -354,7 +354,7 @@ void main() {
             InputDataType.images,
           ],
           useReasoning: true,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -395,7 +395,7 @@ void main() {
           userMessage: '{{audio}} {{image}}',
           requiredInputData: [InputDataType.audioFiles, InputDataType.images],
           useReasoning: true,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );

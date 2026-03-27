@@ -178,8 +178,8 @@ void main() {
         id: 'link-id',
         fromId: 'from',
         toId: 'to',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
       ),
     );
@@ -3443,14 +3443,14 @@ void main() {
         await db!.updateJournalEntity(entry);
 
         // Create modified entry with same ID
-        final now = DateTime.now();
+        final testDate = DateTime(2024, 3, 15, 11);
         final updatedEntry = JournalEntity.journalEntry(
           meta: Metadata(
             id: entry.meta.id,
             createdAt: entry.meta.createdAt,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
             starred: true,
             private: false,
           ),
@@ -3473,14 +3473,14 @@ void main() {
           await db!.updateJournalEntity(entry);
 
           // Create modified entry with same ID
-          final now = DateTime.now();
+          final testDate = DateTime(2024, 3, 15, 12);
           final updatedEntry = JournalEntity.journalEntry(
             meta: Metadata(
               id: entry.meta.id,
               createdAt: entry.meta.createdAt,
-              updatedAt: now,
-              dateFrom: now,
-              dateTo: now,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
               starred: true,
               private: false,
             ),
@@ -3597,8 +3597,8 @@ void main() {
 
         final conflict = Conflict(
           id: existingEntry.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10),
+          updatedAt: DateTime(2024, 3, 15, 10),
           serialized: jsonEncode(existingEntry),
           schemaVersion: db!.schemaVersion,
           status: ConflictStatus.unresolved.index,
@@ -3626,8 +3626,8 @@ void main() {
 
         final conflict = Conflict(
           id: appliedEntry.meta.id,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 11),
+          updatedAt: DateTime(2024, 3, 15, 11),
           serialized: jsonEncode(appliedEntry),
           schemaVersion: db!.schemaVersion,
           status: ConflictStatus.unresolved.index,
@@ -3656,8 +3656,8 @@ void main() {
         await db!.upsertLabelDefinition(
           LabelDefinition(
             id: 'alpha',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10),
+            updatedAt: DateTime(2024, 3, 15, 10),
             name: 'alpha',
             color: '#AAAAAA',
             vectorClock: null,
@@ -3666,8 +3666,8 @@ void main() {
         await db!.upsertLabelDefinition(
           LabelDefinition(
             id: 'beta',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10),
+            updatedAt: DateTime(2024, 3, 15, 10),
             name: 'beta',
             color: '#BBBBBB',
             vectorClock: null,
@@ -3676,8 +3676,8 @@ void main() {
         await db!.upsertLabelDefinition(
           LabelDefinition(
             id: 'gamma',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10),
+            updatedAt: DateTime(2024, 3, 15, 10),
             name: 'gamma',
             color: '#CCCCCC',
             vectorClock: null,
@@ -3696,7 +3696,7 @@ void main() {
         final updated = entry.copyWith(
           meta: entry.meta.copyWith(
             labelIds: const ['beta', 'gamma'],
-            updatedAt: DateTime.now().add(const Duration(minutes: 1)),
+            updatedAt: DateTime(2024, 3, 15, 10, 1),
           ),
         );
 
@@ -3708,7 +3708,7 @@ void main() {
         final cleared = updated.copyWith(
           meta: updated.meta.copyWith(
             labelIds: null,
-            updatedAt: DateTime.now().add(const Duration(minutes: 2)),
+            updatedAt: DateTime(2024, 3, 15, 10, 2),
           ),
         );
 
@@ -3723,8 +3723,8 @@ void main() {
         await db!.upsertLabelDefinition(
           LabelDefinition(
             id: 'keep',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10),
+            updatedAt: DateTime(2024, 3, 15, 10),
             name: 'keep',
             color: '#DDDDDD',
             vectorClock: null,
@@ -5131,19 +5131,20 @@ class _PrecheckThrowingJournalDb extends JournalDb {
 }
 
 // Helper functions to create test entities
+final _testDate = DateTime(2024, 3, 15, 10, 30);
+
 JournalEntity createJournalEntry(
   String text, {
   String? id,
   List<String>? labelIds,
 }) {
-  final now = DateTime.now();
   return JournalEntity.journalEntry(
     meta: Metadata(
       id: id ?? UniqueKey().toString(),
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: now,
-      dateTo: now,
+      createdAt: _testDate,
+      updatedAt: _testDate,
+      dateFrom: _testDate,
+      dateTo: _testDate,
       starred: false,
       private: false,
       labelIds: labelIds,
@@ -5157,16 +5158,15 @@ JournalEntity createJournalEntryWithVclock(
   String? id,
   List<String>? labelIds,
 }) {
-  final now = DateTime.now();
   final entryId = id ?? UniqueKey().toString();
 
   return JournalEntity.journalEntry(
     meta: Metadata(
       id: entryId,
-      createdAt: now,
-      updatedAt: now,
-      dateFrom: now,
-      dateTo: now,
+      createdAt: _testDate,
+      updatedAt: _testDate,
+      dateFrom: _testDate,
+      dateTo: _testDate,
       vectorClock: vclock,
       starred: false,
       private: false,

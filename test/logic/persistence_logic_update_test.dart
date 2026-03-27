@@ -116,14 +116,14 @@ void main() {
     String id = 'entry-id',
     VectorClock? clock,
   }) {
-    final now = DateTime.now();
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     return JournalEntity.journalEntry(
       meta: Metadata(
         id: id,
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
         vectorClock: clock ?? const VectorClock({'host': 1}),
       ),
       entryText: const EntryText(plainText: 'text'),

@@ -1437,7 +1437,7 @@ void main() {
       when(() => att.attachmentMimetype).thenReturn('image/jpeg');
       // Use a unique, non-existent path to guarantee a new write occurs
       final uniqueRelPath =
-          '/mct_no_advance_${DateTime.now().microsecondsSinceEpoch}.bin';
+          '/mct_no_advance_${DateTime(2024, 3, 15, 10, 30).microsecondsSinceEpoch}.bin';
       when(
         () => att.content,
       ).thenReturn(<String, dynamic>{'relativePath': uniqueRelPath});

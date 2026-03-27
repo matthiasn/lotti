@@ -130,12 +130,14 @@ void main() {
         mockTimeService.getStream,
       ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
-      final now = DateTime.now();
+      // Must be relative to real time — the widget checks isRecent via
+      // DateTime.now().difference(dateFrom).inHours < 12 internally.
+      final recentDate = DateTime.now(); // ignore: avoid_DateTime_now
 
       final testEntry = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(
-          dateFrom: now,
-          dateTo: now,
+          dateFrom: recentDate,
+          dateTo: recentDate,
         ),
       );
 
@@ -173,12 +175,12 @@ void main() {
     testWidgets('time record stop button is tappable', (
       WidgetTester tester,
     ) async {
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
 
       final testEntry = testTextEntry.copyWith(
         meta: testTextEntry.meta.copyWith(
-          dateFrom: now.subtract(const Duration(seconds: 5)),
-          dateTo: now,
+          dateFrom: testDate.subtract(const Duration(seconds: 5)),
+          dateTo: testDate,
         ),
       );
 

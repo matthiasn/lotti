@@ -27,17 +27,17 @@ void main() {
     getIt.registerSingleton<Directory>(mockDirectory);
 
     // Create test data
-    final now = DateTime.now();
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     testImage = JournalImage(
       meta: Metadata(
         id: 'test-image-id',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       ),
       data: ImageData(
-        capturedAt: now,
+        capturedAt: testDate,
         imageId: 'test-image-id',
         imageFile: 'test_image.jpg',
         imageDirectory: '/images/2023/',

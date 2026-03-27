@@ -100,20 +100,20 @@ void main() {
         final task = Task(
           meta: Metadata(
             id: 't1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             labelIds: ['a'],
           ),
           data: TaskData(
             status: TaskStatus.open(
               id: 's',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             statusHistory: [],
             title: 'x',
           ),

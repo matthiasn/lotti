@@ -7,25 +7,9 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_agent_filter.dart';
+
+import '../../../../test_utils/fake_journal_page_controller.dart';
 import '../../../../widget_test_utils.dart';
-
-class FakeJournalPageController extends JournalPageController {
-  FakeJournalPageController(this._testState);
-
-  final JournalPageState _testState;
-  final List<AgentAssignmentFilter> appliedAgentFilters = [];
-
-  @override
-  JournalPageState build(bool showTasks) => _testState;
-
-  @override
-  JournalPageState get state => _testState;
-
-  @override
-  Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) async {
-    appliedAgentFilters.add(filter);
-  }
-}
 
 JournalPageState _baseState({
   AgentAssignmentFilter agentAssignmentFilter = AgentAssignmentFilter.all,
@@ -82,7 +66,7 @@ void main() {
 
     await tester.tap(find.text('Has Agent'));
 
-    expect(fakeController.appliedAgentFilters, [
+    expect(fakeController.agentAssignmentFilterCalls, [
       AgentAssignmentFilter.hasAgent,
     ]);
   });
@@ -95,7 +79,9 @@ void main() {
 
     await tester.tap(find.text('No Agent'));
 
-    expect(fakeController.appliedAgentFilters, [AgentAssignmentFilter.noAgent]);
+    expect(fakeController.agentAssignmentFilterCalls, [
+      AgentAssignmentFilter.noAgent,
+    ]);
   });
 
   testWidgets('tapping "All" sets all filter', (tester) async {
@@ -109,6 +95,8 @@ void main() {
 
     await tester.tap(find.text('All'));
 
-    expect(fakeController.appliedAgentFilters, [AgentAssignmentFilter.all]);
+    expect(fakeController.agentAssignmentFilterCalls, [
+      AgentAssignmentFilter.all,
+    ]);
   });
 }

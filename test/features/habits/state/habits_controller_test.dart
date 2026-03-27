@@ -242,22 +242,30 @@ void main() {
   });
 
   group('_determineHabitSuccessByDays', () {
-    test('processes completions and updates state fields', () async {
-      final todayYmd = DateTime.now().ymd;
-      final now = DateTime.now();
+    // The controller internally uses DateTime.now() to determine "today",
+    // so completion dates must match the real wall-clock date. We compute
+    // it once here to keep individual tests free of DateTime.now() calls.
+    late DateTime controllerToday;
+    late String controllerTodayYmd;
 
+    setUp(() {
+      controllerToday = DateTime.now(); // ignore: avoid_DateTime_now
+      controllerTodayYmd = controllerToday.ymd;
+    });
+
+    test('processes completions and updates state fields', () async {
       // Setup completions
       final completions = [
         createCompletion(
           id: 'c1',
           habitId: 'habit-1',
-          date: now,
+          date: controllerToday,
           completionType: HabitCompletionType.success,
         ),
         createCompletion(
           id: 'c2',
           habitId: 'habit-2',
-          date: now,
+          date: controllerToday,
           completionType: HabitCompletionType.skip,
         ),
       ];
@@ -287,21 +295,18 @@ void main() {
       expect(state.successfulToday, contains('habit-2'));
 
       // Verify byDay maps
-      expect(state.successfulByDay[todayYmd], contains('habit-1'));
-      expect(state.skippedByDay[todayYmd], contains('habit-2'));
-      expect(state.allByDay[todayYmd], contains('habit-1'));
-      expect(state.allByDay[todayYmd], contains('habit-2'));
+      expect(state.successfulByDay[controllerTodayYmd], contains('habit-1'));
+      expect(state.skippedByDay[controllerTodayYmd], contains('habit-2'));
+      expect(state.allByDay[controllerTodayYmd], contains('habit-1'));
+      expect(state.allByDay[controllerTodayYmd], contains('habit-2'));
     });
 
     test('handles fail completions correctly', () async {
-      final todayYmd = DateTime.now().ymd;
-      final now = DateTime.now();
-
       final completions = [
         createCompletion(
           id: 'c1',
           habitId: 'habit-1',
-          date: now,
+          date: controllerToday,
           completionType: HabitCompletionType.fail,
         ),
       ];
@@ -323,11 +328,10 @@ void main() {
       // Failed completions are tracked in completedToday but not successfulToday
       expect(state.completedToday, contains('habit-1'));
       expect(state.successfulToday, isNot(contains('habit-1')));
-      expect(state.failedByDay[todayYmd], contains('habit-1'));
+      expect(state.failedByDay[controllerTodayYmd], contains('habit-1'));
     });
 
     test('calculates streak counts correctly', () async {
-      final now = DateTime.now();
       // Create completions for 4 consecutive days (qualifies for short streak)
       final completions = <JournalEntity>[];
       for (var i = 0; i <= 3; i++) {
@@ -335,7 +339,7 @@ void main() {
           createCompletion(
             id: 'c$i',
             habitId: 'habit-1',
-            date: now.subtract(Duration(days: i)),
+            date: controllerToday.subtract(Duration(days: i)),
             completionType: HabitCompletionType.success,
           ),
         );
@@ -430,21 +434,21 @@ void main() {
 
   group('setInfoYmd', () {
     test('calculates percentage correctly', () async {
-      final todayYmd = DateTime.now().ymd;
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final testDateYmd = testDate.ymd;
 
       // 2 habits, 1 success, 1 fail = 50% success, 0% skipped, 50% fail
       final completions = [
         createCompletion(
           id: 'c1',
           habitId: 'habit-1',
-          date: now,
+          date: testDate,
           completionType: HabitCompletionType.success,
         ),
         createCompletion(
           id: 'c2',
           habitId: 'habit-2',
-          date: now,
+          date: testDate,
           completionType: HabitCompletionType.fail,
         ),
       ];
@@ -461,25 +465,25 @@ void main() {
       definitionsController.add([testHabit1, testHabit2]);
       await pumpEventQueue();
 
-      controller.setInfoYmd(todayYmd);
+      controller.setInfoYmd(testDateYmd);
 
       final state = container.read(habitsControllerProvider);
-      expect(state.selectedInfoYmd, todayYmd);
+      expect(state.selectedInfoYmd, testDateYmd);
       expect(state.successPercentage, 50);
       expect(state.skippedPercentage, 0);
       expect(state.failedPercentage, 50);
     });
 
     test('clamps failed percentage when total exceeds 100', () async {
-      final todayYmd = DateTime.now().ymd;
-      final now = DateTime.now();
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final testDateYmd = testDate.ymd;
 
       // Edge case: success + skip + fail > 100 (shouldn't happen but test clamp)
       final completions = [
         createCompletion(
           id: 'c1',
           habitId: 'habit-1',
-          date: now,
+          date: testDate,
           completionType: HabitCompletionType.success,
         ),
       ];
@@ -496,7 +500,7 @@ void main() {
       definitionsController.add([testHabit1]);
       await pumpEventQueue();
 
-      controller.setInfoYmd(todayYmd);
+      controller.setInfoYmd(testDateYmd);
 
       final state = container.read(habitsControllerProvider);
       // Total should not exceed 100
@@ -529,6 +533,14 @@ void main() {
   });
 
   group('Category filtering', () {
+    // The controller uses DateTime.now() internally to determine "today",
+    // so completion dates must match the real wall-clock date.
+    late DateTime controllerToday;
+
+    setUp(() {
+      controllerToday = DateTime.now(); // ignore: avoid_DateTime_now
+    });
+
     test('filters openNow by selected category', () async {
       when(
         () => mockRepository.getHabitCompletionsInRange(
@@ -557,20 +569,18 @@ void main() {
     });
 
     test('filters completed by selected category', () async {
-      final now = DateTime.now();
-
       // Both habits completed today
       final completions = [
         createCompletion(
           id: 'c1',
           habitId: 'habit-1',
-          date: now,
+          date: controllerToday,
           completionType: HabitCompletionType.success,
         ),
         createCompletion(
           id: 'c2',
           habitId: 'habit-2',
-          date: now,
+          date: controllerToday,
           completionType: HabitCompletionType.success,
         ),
       ];

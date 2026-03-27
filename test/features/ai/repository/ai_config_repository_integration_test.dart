@@ -23,7 +23,7 @@ void main() {
           baseUrl: 'https://fallback.example.com',
           apiKey: 'fallback-key',
           name: 'Fallback API',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           inferenceProviderType: InferenceProviderType.genericOpenAi,
         ),
         status: SyncEntryStatus.initial,
@@ -68,12 +68,13 @@ void main() {
 
     test('should store and retrieve multiple config types', () async {
       // Create API key config
+      final testDate = DateTime(2024, 3, 15, 10, 30);
       final apiKeyConfig = AiConfig.inferenceProvider(
         id: 'openai-key',
         baseUrl: 'https://api.openai.com/v1',
         apiKey: 'sk-1234567890abcdef',
         name: 'OpenAI API Key',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         description: 'Test API key for OpenAI integration',
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
@@ -84,7 +85,7 @@ void main() {
         name: 'Summarization Template',
         systemMessage: 'Please summarize the following text:',
         userMessage: '{{text}}',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         description: 'Template for text summarization',
         defaultVariables: {'text': 'Enter text to summarize'},
         category: 'Summarization',

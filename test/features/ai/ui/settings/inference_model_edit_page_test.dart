@@ -17,13 +17,14 @@ void main() {
   late AiConfig testProvider;
 
   setUpAll(() {
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     registerFallbackValue(
       AiConfig.model(
         id: 'fallback-id',
         name: 'Fallback Model',
         providerModelId: 'fallback-model-id',
         inferenceProviderId: 'fallback-provider',
-        createdAt: DateTime.now(),
+        createdAt: testDate,
         inputModalities: const [Modality.text],
         outputModalities: const [Modality.text],
         isReasoningModel: false,
@@ -33,13 +34,14 @@ void main() {
 
   setUp(() {
     mockRepository = MockAiConfigRepository();
+    final testDate = DateTime(2024, 3, 15, 10, 30);
 
     testProvider = AiConfig.inferenceProvider(
       id: 'provider-1',
       name: 'Test Provider',
       baseUrl: 'https://api.test.com',
       apiKey: 'test-key',
-      createdAt: DateTime.now(),
+      createdAt: testDate,
       inferenceProviderType: InferenceProviderType.openAi,
     );
 
@@ -48,7 +50,7 @@ void main() {
       name: 'Test Model',
       providerModelId: 'gpt-4',
       inferenceProviderId: 'provider-1',
-      createdAt: DateTime.now(),
+      createdAt: testDate,
       inputModalities: [Modality.text, Modality.image],
       outputModalities: [Modality.text],
       isReasoningModel: false,

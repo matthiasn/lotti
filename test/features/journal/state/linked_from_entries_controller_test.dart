@@ -49,23 +49,24 @@ void main() {
 
   group('LinkedFromEntriesController', () {
     const testId = 'test-entry-id';
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final testEntities = [
       JournalEntity.journalEntry(
         meta: Metadata(
           id: 'linked-from-id-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       ),
       JournalEntity.journalEntry(
         meta: Metadata(
           id: 'linked-from-id-2',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
         ),
       ),
     ];
@@ -109,23 +110,24 @@ void main() {
         () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
       ).thenAnswer((_) async => testEntities);
 
+      final updatedDate = DateTime(2024, 3, 15, 11);
       final updatedEntities = [
         JournalEntity.journalEntry(
           meta: Metadata(
             id: 'linked-from-id-1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: updatedDate,
+            updatedAt: updatedDate,
+            dateFrom: updatedDate,
+            dateTo: updatedDate,
           ),
         ),
         JournalEntity.journalEntry(
           meta: Metadata(
             id: 'linked-from-id-3',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: updatedDate,
+            updatedAt: updatedDate,
+            dateFrom: updatedDate,
+            dateTo: updatedDate,
           ),
         ), // Changed from linked-from-id-2 to linked-from-id-3
       ];
@@ -233,23 +235,24 @@ void main() {
 
     test('can be overridden with a mock controller', () async {
       // Arrange
+      final mockDate = DateTime(2024, 3, 15, 12);
       final mockEntities = [
         JournalEntity.journalEntry(
           meta: Metadata(
             id: 'mock-id-1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: mockDate,
+            updatedAt: mockDate,
+            dateFrom: mockDate,
+            dateTo: mockDate,
           ),
         ),
         JournalEntity.journalEntry(
           meta: Metadata(
             id: 'mock-id-2',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: mockDate,
+            updatedAt: mockDate,
+            dateFrom: mockDate,
+            dateTo: mockDate,
           ),
         ),
       ];

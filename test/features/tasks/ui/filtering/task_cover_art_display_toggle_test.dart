@@ -4,36 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_cover_art_display_toggle.dart';
-import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class FakeJournalPageController extends JournalPageController {
-  FakeJournalPageController(this._testState);
-
-  final JournalPageState _testState;
-  final List<bool> showCoverArtCalls = [];
-
-  @override
-  JournalPageState build(bool showTasks) => _testState;
-
-  @override
-  JournalPageState get state => _testState;
-
-  @override
-  Future<void> setShowCoverArt({required bool show}) async {
-    showCoverArtCalls.add(show);
-  }
-}
-
-class MockPagingController extends Mock
-    implements PagingController<int, JournalEntity> {}
+import '../../../../test_utils/fake_journal_page_controller.dart';
 
 void main() {
   late MockPagingController mockPagingController;

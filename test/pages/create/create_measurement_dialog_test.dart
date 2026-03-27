@@ -382,39 +382,41 @@ void main() {
         getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
         // Create mock measurements with popular values
+        final testDate1 = DateTime(2024, 3, 15, 10, 30);
+        final testDate2 = DateTime(2024, 3, 15, 14, 45);
         final mockMeasurements = [
           MeasurementEntry(
             meta: Metadata(
               id: 'test-1',
-              createdAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: testDate1,
+              dateFrom: testDate1,
+              dateTo: testDate1,
+              updatedAt: testDate1,
               starred: false,
               private: false,
             ),
             data: MeasurementData(
               value: 500,
               dataTypeId: measurableWater.id,
-              dateTo: DateTime.now(),
-              dateFrom: DateTime.now(),
+              dateTo: testDate1,
+              dateFrom: testDate1,
             ),
           ),
           MeasurementEntry(
             meta: Metadata(
               id: 'test-2',
-              createdAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
-              updatedAt: DateTime.now(),
+              createdAt: testDate2,
+              dateFrom: testDate2,
+              dateTo: testDate2,
+              updatedAt: testDate2,
               starred: false,
               private: false,
             ),
             data: MeasurementData(
               value: 500,
               dataTypeId: measurableWater.id,
-              dateTo: DateTime.now(),
-              dateFrom: DateTime.now(),
+              dateTo: testDate2,
+              dateFrom: testDate2,
             ),
           ),
         ];

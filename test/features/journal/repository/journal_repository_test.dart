@@ -174,7 +174,7 @@ void main() {
 
         final updatedMeta = testEntity.meta.copyWith(
           categoryId: categoryId,
-          updatedAt: DateTime.now(),
+          updatedAt: DateTime(2024, 3, 15, 10, 30),
         );
 
         // Mock the journalEntityById call to return our test entity
@@ -270,7 +270,7 @@ void main() {
 
         final updatedMeta = testEntity.meta.copyWith(
           categoryId: null,
-          updatedAt: DateTime.now(),
+          updatedAt: DateTime(2024, 3, 15, 10, 30),
         );
 
         // Mock the journalEntityById call to return our test entity
@@ -366,8 +366,8 @@ void main() {
         );
 
         final updatedMeta = testEntity.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 11),
+          updatedAt: DateTime(2024, 3, 15, 11),
         );
 
         // Mock the journalEntityById call
@@ -460,8 +460,8 @@ void main() {
         );
 
         final updatedMeta = testEntity.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 11),
+          updatedAt: DateTime(2024, 3, 15, 11),
         );
 
         // Mock the journalEntityById call
@@ -555,8 +555,8 @@ void main() {
         );
 
         final updatedMeta = testEntity.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 11),
+          updatedAt: DateTime(2024, 3, 15, 11),
         );
 
         // Mock the journalEntityById call
@@ -632,8 +632,8 @@ void main() {
         );
 
         final updatedMeta = testEntity.meta.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          deletedAt: DateTime(2024, 3, 15, 11),
+          updatedAt: DateTime(2024, 3, 15, 11),
         );
 
         // Mock the journalEntityById call
@@ -715,7 +715,7 @@ void main() {
         final updatedMeta = testEntity.meta.copyWith(
           dateFrom: dateFrom,
           dateTo: dateTo,
-          updatedAt: DateTime.now(),
+          updatedAt: DateTime(2024, 3, 15, 10, 30),
         );
 
         // Mock the journalEntityById call

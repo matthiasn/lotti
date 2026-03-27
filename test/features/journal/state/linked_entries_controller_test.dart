@@ -51,13 +51,14 @@ void main() {
 
   group('LinkedEntriesController', () {
     const testId = 'test-entry-id';
+    final testDate = DateTime(2024, 3, 15, 10, 30);
     final testLinks = [
       EntryLink.basic(
         id: 'link-1',
         fromId: testId,
         toId: 'linked-id-1',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         hidden: false,
       ),
@@ -65,8 +66,8 @@ void main() {
         id: 'link-2',
         fromId: testId,
         toId: 'linked-id-2',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         hidden: false,
       ),
@@ -117,8 +118,8 @@ void main() {
           id: 'link-1',
           fromId: testId,
           toId: 'linked-id-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           hidden: false,
         ),
@@ -126,8 +127,8 @@ void main() {
           id: 'link-3',
           fromId: testId,
           toId: 'linked-id-3', // Changed from linked-id-2 to linked-id-3
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: testDate,
+          updatedAt: testDate,
           vectorClock: null,
           hidden: false,
         ),
@@ -230,8 +231,8 @@ void main() {
         id: 'link-1',
         fromId: testId,
         toId: 'linked-id-1',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: testDate,
+        updatedAt: testDate,
         vectorClock: null,
         hidden: true, // Changed to hidden
       );
@@ -397,13 +398,14 @@ void main() {
 
   group('NewestLinkedIdController', () {
     const testId = 'test-entry-id';
+    final baseDate = DateTime(2024, 3, 15, 10, 30);
     final testLinks = [
       EntryLink.basic(
         id: 'link-1',
         fromId: testId,
         toId: 'linked-id-1',
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        updatedAt: DateTime.now(),
+        createdAt: baseDate.subtract(const Duration(days: 2)),
+        updatedAt: baseDate,
         vectorClock: null,
         hidden: false,
       ),
@@ -411,8 +413,8 @@ void main() {
         id: 'link-2',
         fromId: testId,
         toId: 'linked-id-2',
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now(),
+        createdAt: baseDate.subtract(const Duration(days: 1)),
+        updatedAt: baseDate,
         vectorClock: null,
         hidden: false,
       ),
@@ -420,8 +422,8 @@ void main() {
         id: 'link-3',
         fromId: testId,
         toId: 'linked-id-3',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: baseDate,
+        updatedAt: baseDate,
         vectorClock: null,
         hidden: false,
       ),
@@ -497,24 +499,24 @@ void main() {
 
   group('HasNonTaskLinkedEntriesProvider', () {
     const testId = 'test-entry-id';
-    final now = DateTime(2025, 12, 31, 12);
+    final testDate = DateTime(2025, 12, 31, 12);
 
     Task buildTask(String id) => Task(
       meta: Metadata(
         id: id,
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       ),
       data: TaskData(
         status: TaskStatus.open(
           id: 'status-1',
-          createdAt: now,
+          createdAt: testDate,
           utcOffset: 0,
         ),
-        dateFrom: now,
-        dateTo: now,
+        dateFrom: testDate,
+        dateTo: testDate,
         statusHistory: const [],
         title: 'Test Task',
       ),
@@ -523,10 +525,10 @@ void main() {
     JournalEntry buildJournalEntry(String id) => JournalEntry(
       meta: Metadata(
         id: id,
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
       ),
       entryText: const EntryText(plainText: 'Test entry'),
     );

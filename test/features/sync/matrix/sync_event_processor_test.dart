@@ -194,10 +194,10 @@ void main() {
     JournalEntry buildEntry(VectorClock? vc) => JournalEntry(
       meta: Metadata(
         id: 'entry',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
         vectorClock: vc,
       ),
       entryText: const EntryText(plainText: 'text'),
@@ -369,10 +369,10 @@ void main() {
     JournalEntry buildEntry(VectorClock? vc) => JournalEntry(
       meta: Metadata(
         id: 'entry',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
         vectorClock: vc,
       ),
       entryText: const EntryText(plainText: 'text'),
@@ -565,7 +565,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
     when(() => event.eventId).thenReturn('event-id');
-    when(() => event.originServerTs).thenReturn(DateTime.now());
+    when(() => event.originServerTs).thenReturn(DateTime(2024, 3, 15));
     when(
       () => journalEntityLoader.load(
         jsonPath: '/entity.json',
@@ -727,8 +727,8 @@ void main() {
       id: 'link',
       fromId: 'from',
       toId: 'to',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
     );
     final message = SyncMessage.entryLink(
@@ -757,8 +757,8 @@ void main() {
       id: 'diag-link',
       fromId: 'from',
       toId: 'to',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
     );
     final message = SyncMessage.entryLink(
@@ -782,8 +782,8 @@ void main() {
       id: 'diag-link-throw',
       fromId: 'from',
       toId: 'to',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
     );
     final message = SyncMessage.entryLink(
@@ -2708,10 +2708,10 @@ void main() {
         final entity = JournalEntry(
           meta: Metadata(
             id: 'abc',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
           ),
           entryText: const EntryText(plainText: 'hello'),
         );
@@ -2810,16 +2810,16 @@ void main() {
       final image = JournalImage(
         meta: Metadata(
           id: 'img-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
         data: ImageData(
           imageId: 'img-1',
           imageDirectory: '/images/2024-01-01/',
           imageFile: 'picture.jpg',
-          capturedAt: DateTime.now(),
+          capturedAt: DateTime(2024, 3, 15),
         ),
       );
       final relJson = '${getRelativeImagePath(image)}.json';
@@ -3005,17 +3005,17 @@ void main() {
       final audio = JournalAudio(
         meta: Metadata(
           id: 'aud-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
         data: AudioData(
           audioDirectory: '/audio/2024-01-01/',
           audioFile: 'clip.aac',
           duration: const Duration(seconds: 1),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
       );
       final relJson = '${AudioUtils.getRelativeAudioPath(audio)}.json';
@@ -3062,10 +3062,10 @@ void main() {
       final entity = JournalEntry(
         meta: Metadata(
           id: 'vc-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
           vectorClock: localVc,
         ),
         entryText: const EntryText(plainText: 'local'),
@@ -3148,10 +3148,10 @@ void main() {
       final stale = JournalEntry(
         meta: Metadata(
           id: 'stale-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
           vectorClock: const VectorClock({'n': 1}),
         ),
         entryText: const EntryText(plainText: 'old'),
@@ -3160,7 +3160,7 @@ void main() {
         meta: Metadata(
           id: stale.meta.id,
           createdAt: stale.meta.createdAt,
-          updatedAt: DateTime.now(),
+          updatedAt: DateTime(2024, 3, 15),
           dateFrom: stale.meta.dateFrom,
           dateTo: stale.meta.dateTo,
           vectorClock: const VectorClock({'n': 2}),
@@ -3244,10 +3244,10 @@ void main() {
       final stale = JournalEntry(
         meta: Metadata(
           id: 'stale-2',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
           vectorClock: const VectorClock({'n': 1}),
         ),
         entryText: const EntryText(plainText: 'older'),
@@ -3322,10 +3322,10 @@ void main() {
       final stale = JournalEntry(
         meta: Metadata(
           id: 'stale-loop',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
           vectorClock: const VectorClock({'n': 1}),
         ),
         entryText: const EntryText(plainText: 'stale'),
@@ -3412,10 +3412,10 @@ void main() {
           final staleOne = JournalEntry(
             meta: Metadata(
               id: 'reset',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               vectorClock: const VectorClock({'n': 1}),
             ),
             entryText: const EntryText(plainText: 'stale-1'),
@@ -3424,21 +3424,21 @@ void main() {
             entryText: const EntryText(plainText: 'fresh-1'),
             meta: staleOne.meta.copyWith(
               vectorClock: const VectorClock({'n': 2}),
-              updatedAt: DateTime.now(),
+              updatedAt: DateTime(2024, 3, 15),
             ),
           );
           final staleTwo = staleOne.copyWith(
             entryText: const EntryText(plainText: 'stale-2'),
             meta: staleOne.meta.copyWith(
               vectorClock: const VectorClock({'n': 2}),
-              updatedAt: DateTime.now(),
+              updatedAt: DateTime(2024, 3, 15),
             ),
           );
           final freshTwo = staleOne.copyWith(
             entryText: const EntryText(plainText: 'fresh-2'),
             meta: staleOne.meta.copyWith(
               vectorClock: const VectorClock({'n': 3}),
-              updatedAt: DateTime.now(),
+              updatedAt: DateTime(2024, 3, 15),
             ),
           );
 
@@ -3524,10 +3524,10 @@ void main() {
           return JournalEntry(
             meta: Metadata(
               id: id,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               vectorClock: VectorClock({'n': clock}),
             ),
             entryText: EntryText(plainText: text),
@@ -3612,10 +3612,10 @@ void main() {
         final stale = JournalEntry(
           meta: Metadata(
             id: 'no-mxc',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
             vectorClock: const VectorClock({'n': 1}),
           ),
           entryText: const EntryText(plainText: 'stale'),
@@ -3624,7 +3624,7 @@ void main() {
           entryText: const EntryText(plainText: 'fresh'),
           meta: stale.meta.copyWith(
             vectorClock: const VectorClock({'n': 2}),
-            updatedAt: DateTime.now(),
+            updatedAt: DateTime(2024, 3, 15),
           ),
         );
         var downloads = 0;
@@ -3692,10 +3692,10 @@ void main() {
         final stale = JournalEntry(
           meta: Metadata(
             id: 'delete-error',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
             vectorClock: const VectorClock({'n': 1}),
           ),
           entryText: const EntryText(plainText: 'stale'),
@@ -3704,7 +3704,7 @@ void main() {
           entryText: const EntryText(plainText: 'fresh'),
           meta: stale.meta.copyWith(
             vectorClock: const VectorClock({'n': 2}),
-            updatedAt: DateTime.now(),
+            updatedAt: DateTime(2024, 3, 15),
           ),
         );
         var downloads = 0;
@@ -3757,10 +3757,10 @@ void main() {
           final entry = JournalEntry(
             meta: Metadata(
               id: 'vc-present',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
               vectorClock: const VectorClock({'n': 5}),
             ),
             entryText: const EntryText(plainText: 'descriptor with vc'),
@@ -3796,10 +3796,10 @@ void main() {
           final entry = JournalEntry(
             meta: Metadata(
               id: 'missing-vc',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
             ),
             entryText: const EntryText(plainText: 'descriptor missing vc'),
           );
@@ -3842,10 +3842,10 @@ void main() {
         final entry = JournalEntry(
           meta: Metadata(
             id: 'both-null',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
           ),
           entryText: const EntryText(plainText: 'both null'),
         );
@@ -3891,10 +3891,10 @@ void main() {
         final stale = JournalEntry(
           meta: Metadata(
             id: 'empty-second',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
             vectorClock: const VectorClock({'n': 1}),
           ),
           entryText: const EntryText(plainText: 'stale'),
@@ -3996,10 +3996,10 @@ void main() {
       final entity = JournalEntry(
         meta: Metadata(
           id: 'present-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
         entryText: const EntryText(plainText: 'present'),
       );
@@ -4126,8 +4126,8 @@ void main() {
       id: 'link-log',
       fromId: 'from-id',
       toId: 'to-id',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
     );
     final message = SyncMessage.entryLink(
@@ -4155,8 +4155,8 @@ void main() {
         id: 'link-noop',
         fromId: 'from-id',
         toId: 'to-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
       );
       final message = SyncMessage.entryLink(
@@ -4197,8 +4197,8 @@ void main() {
       id: 'link-fail',
       fromId: 'from',
       toId: 'to',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
       vectorClock: null,
     );
     final message = SyncMessage.entryLink(
@@ -4420,12 +4420,12 @@ void main() {
     }
 
     test('applies incoming theme selection', () async {
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: now,
+        updatedAt: testTimestamp,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);
@@ -4441,7 +4441,10 @@ void main() {
       ).called(1);
       verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
       verify(
-        () => settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'),
+        () => settingsDb.saveSettingsItem(
+          'THEME_PREFS_UPDATED_AT',
+          '$testTimestamp',
+        ),
       ).called(1);
     });
 
@@ -4483,12 +4486,12 @@ void main() {
         () => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'),
       ).thenAnswer((_) async => null);
 
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: now,
+        updatedAt: testTimestamp,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);
@@ -4504,7 +4507,10 @@ void main() {
       ).called(1);
       verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
       verify(
-        () => settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'),
+        () => settingsDb.saveSettingsItem(
+          'THEME_PREFS_UPDATED_AT',
+          '$testTimestamp',
+        ),
       ).called(1);
     });
 
@@ -4514,12 +4520,12 @@ void main() {
         () => settingsDb.itemByKey('THEME_PREFS_UPDATED_AT'),
       ).thenAnswer((_) async => '1000000000000');
 
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: now,
+        updatedAt: testTimestamp,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);
@@ -4535,17 +4541,20 @@ void main() {
       ).called(1);
       verify(() => settingsDb.saveSettingsItem('THEME_MODE', 'dark')).called(1);
       verify(
-        () => settingsDb.saveSettingsItem('THEME_PREFS_UPDATED_AT', '$now'),
+        () => settingsDb.saveSettingsItem(
+          'THEME_PREFS_UPDATED_AT',
+          '$testTimestamp',
+        ),
       ).called(1);
     });
 
     test('normalizes invalid ThemeMode to system', () async {
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'invalid_mode',
-        updatedAt: now,
+        updatedAt: testTimestamp,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);
@@ -4568,7 +4577,7 @@ void main() {
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
+        updatedAt: DateTime(2024, 3, 15).millisecondsSinceEpoch,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);
@@ -4588,12 +4597,12 @@ void main() {
     });
 
     test('logs success on apply', () async {
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final testTimestamp = DateTime(2024, 3, 15).millisecondsSinceEpoch;
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Indigo',
         darkThemeName: 'Shark',
         themeMode: 'dark',
-        updatedAt: now,
+        updatedAt: testTimestamp,
         status: SyncEntryStatus.update,
       );
       final themingEvent = createThemingEvent(message);

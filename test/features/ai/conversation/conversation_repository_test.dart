@@ -133,7 +133,7 @@ void main() {
           name: 'Test Provider',
           baseUrl: 'http://localhost:11434',
           apiKey: '',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15, 10, 30),
           inferenceProviderType: InferenceProviderType.ollama,
         );
       });
@@ -179,10 +179,10 @@ void main() {
 
         // Emit response
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   content: 'Hello, human!',
@@ -190,7 +190,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
         await streamController.close();
@@ -240,10 +240,10 @@ void main() {
 
         // Emit tool call response
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   toolCalls: [
@@ -262,7 +262,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
         await streamController.close();
@@ -327,10 +327,10 @@ void main() {
         // First response with tool call
         streamController
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response-1',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -349,15 +349,15 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           )
           // Second response after continuation
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response-2',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     content: 'Final response',
@@ -365,7 +365,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
 
@@ -426,10 +426,10 @@ void main() {
 
         // Response with tool call
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   toolCalls: [
@@ -448,7 +448,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
 
@@ -495,7 +495,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
         });
@@ -626,10 +626,10 @@ void main() {
           // First chunk with tool call name and partial arguments
           streamController
             ..add(
-              CreateChatCompletionStreamResponse(
+              const CreateChatCompletionStreamResponse(
                 id: 'test-response',
                 choices: [
-                  const ChatCompletionStreamResponseChoice(
+                  ChatCompletionStreamResponseChoice(
                     index: 0,
                     delta: ChatCompletionStreamResponseDelta(
                       toolCalls: [
@@ -648,15 +648,15 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: 1710500000,
               ),
             )
             // Second chunk with more arguments
             ..add(
-              CreateChatCompletionStreamResponse(
+              const CreateChatCompletionStreamResponse(
                 id: 'test-response',
                 choices: [
-                  const ChatCompletionStreamResponseChoice(
+                  ChatCompletionStreamResponseChoice(
                     index: 0,
                     delta: ChatCompletionStreamResponseDelta(
                       toolCalls: [
@@ -674,7 +674,7 @@ void main() {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: 1710500000,
               ),
             );
 
@@ -731,10 +731,10 @@ void main() {
         // First chunk ending mid-UTF8 character (emoji 😀 = F0 9F 98 80)
         streamController
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -753,15 +753,15 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           )
           // Second chunk with emoji and rest
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -779,7 +779,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
 
@@ -828,10 +828,10 @@ void main() {
 
         // Send response with tool call missing function name
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   toolCalls: [
@@ -849,7 +849,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
 
@@ -899,10 +899,10 @@ void main() {
         // First chunk with empty tool call ID
         streamController
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -921,15 +921,15 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           )
           // Second chunk completing the arguments
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -947,7 +947,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
 
@@ -1004,10 +1004,10 @@ void main() {
         // First chunk with two tool calls
         streamController
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -1036,15 +1036,15 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           )
           // Second chunk completing both
           ..add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'test-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -1071,7 +1071,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
 
@@ -1140,10 +1140,10 @@ void main() {
           // Gemini sends multiple complete tool calls in one chunk
           // with empty IDs and null indices
           streamController.add(
-            CreateChatCompletionStreamResponse(
+            const CreateChatCompletionStreamResponse(
               id: 'gemini-response',
               choices: [
-                const ChatCompletionStreamResponseChoice(
+                ChatCompletionStreamResponseChoice(
                   index: 0,
                   delta: ChatCompletionStreamResponseDelta(
                     toolCalls: [
@@ -1174,7 +1174,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: 1710500000,
             ),
           );
 
@@ -1238,10 +1238,10 @@ void main() {
         );
 
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   toolCalls: [
@@ -1260,7 +1260,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
 
@@ -1325,10 +1325,10 @@ void main() {
         );
 
         streamController.add(
-          CreateChatCompletionStreamResponse(
+          const CreateChatCompletionStreamResponse(
             id: 'test-response',
             choices: [
-              const ChatCompletionStreamResponseChoice(
+              ChatCompletionStreamResponseChoice(
                 index: 0,
                 delta: ChatCompletionStreamResponseDelta(
                   toolCalls: [
@@ -1347,7 +1347,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: 1710500000,
           ),
         );
 

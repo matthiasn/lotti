@@ -244,13 +244,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: const [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           aiSuppressedLabelIds: const {'X', 'Y'},
         ),
       );
@@ -341,13 +341,13 @@ void main() {
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: const [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: const ['checklist-1'],
         ),
       );
@@ -383,13 +383,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -422,7 +422,7 @@ void main() {
         final imageEntity = JournalImage(
           meta: _createMetadata(),
           data: ImageData(
-            capturedAt: DateTime.now(),
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
             imageId: 'test-image',
             imageFile: 'test.jpg',
             imageDirectory: '/images/',
@@ -458,8 +458,8 @@ void main() {
         final audioEntity = JournalAudio(
           meta: _createMetadata(),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             audioFile: 'test.mp3',
             audioDirectory: '/audio/',
             duration: const Duration(seconds: 30),
@@ -497,13 +497,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -531,13 +531,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -564,13 +564,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -605,13 +605,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -650,13 +650,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -717,7 +717,7 @@ void main() {
           final imageEntity = JournalImage(
             meta: _createMetadata(),
             data: ImageData(
-              capturedAt: DateTime.now(),
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
               imageId: 'test-image',
               imageFile: 'test.jpg',
               imageDirectory: '/images/',
@@ -729,13 +729,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -793,8 +793,8 @@ void main() {
           final audioEntity = JournalAudio(
             meta: _createMetadata(),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               audioFile: 'test.mp3',
               audioDirectory: '/audio/',
               duration: const Duration(seconds: 30),
@@ -806,13 +806,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -872,13 +872,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -917,13 +917,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -957,13 +957,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1012,13 +1012,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1069,13 +1069,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1109,13 +1109,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1164,13 +1164,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1205,7 +1205,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -1216,7 +1216,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-3',
@@ -1228,7 +1228,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1365,7 +1365,7 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
                 ),
                 CreateChatCompletionStreamResponse(
                   choices: [
@@ -1377,7 +1377,7 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
                 ),
                 CreateChatCompletionStreamResponse(
                   choices: [
@@ -1388,7 +1388,7 @@ void main() {
                     ),
                   ],
                   object: 'chat.completion.chunk',
-                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
                 ),
               ]);
 
@@ -1455,7 +1455,7 @@ void main() {
         final imageEntity = JournalImage(
           meta: _createMetadata(),
           data: ImageData(
-            capturedAt: DateTime.now(),
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
             imageId: 'test-image',
             imageFile: 'test.jpg',
             imageDirectory: '/images/',
@@ -1501,7 +1501,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -1513,7 +1513,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1606,8 +1606,8 @@ void main() {
         final audioEntity = JournalAudio(
           meta: _createMetadata(),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             audioFile: 'test.mp3',
             audioDirectory: '/audio/',
             duration: const Duration(seconds: 30),
@@ -1654,7 +1654,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1742,13 +1742,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -1786,7 +1786,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -1862,13 +1862,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -1920,13 +1920,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -1997,13 +1997,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -2037,7 +2037,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
           CreateChatCompletionStreamResponse(
             id: 'response-2',
@@ -2049,7 +2049,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2108,13 +2108,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.inProgress(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -2193,8 +2193,8 @@ void main() {
           final audioEntity = JournalAudio(
             meta: _createMetadata(),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               audioFile: 'test.mp3',
               audioDirectory: '/audio/',
               duration: const Duration(seconds: 30),
@@ -2242,7 +2242,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -2358,7 +2358,7 @@ void main() {
           when(() => mockDirectory.path).thenReturn(tempDir.path);
 
           final existingTranscript = AudioTranscript(
-            created: DateTime.now().subtract(const Duration(hours: 1)),
+            created: DateTime(2024, 3, 15, 9, 30),
             library: 'Previous Transcription',
             model: 'old-model',
             detectedLanguage: 'en',
@@ -2369,8 +2369,8 @@ void main() {
           final audioEntity = JournalAudio(
             meta: _createMetadata(),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               audioFile: 'test.mp3',
               audioDirectory: '/audio/',
               duration: const Duration(seconds: 30),
@@ -2417,7 +2417,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -2529,7 +2529,7 @@ void main() {
         final imageEntity = JournalImage(
           meta: _createMetadata(),
           data: ImageData(
-            capturedAt: DateTime.now(),
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
             imageId: 'test-image',
             imageFile: 'test.jpg',
             imageDirectory: '/images/',
@@ -2578,7 +2578,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2677,7 +2677,7 @@ void main() {
         final imageEntity = JournalImage(
           meta: _createMetadata(),
           data: ImageData(
-            capturedAt: DateTime.now(),
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
             imageId: 'test-image',
             imageFile: 'test.jpg',
             imageDirectory: '/images/',
@@ -2723,7 +2723,7 @@ void main() {
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -2832,8 +2832,8 @@ void main() {
           final audioEntity = JournalAudio(
             meta: _createMetadata(),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               audioFile: 'test.mp3',
               audioDirectory: '/audio/',
               duration: const Duration(seconds: 30),
@@ -2867,7 +2867,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
           when(
@@ -2954,13 +2954,13 @@ void main() {
             data: TaskData(
               status: TaskStatus.open(
                 id: 'status-1',
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10, 30),
                 utcOffset: 0,
               ),
               title: 'Test Task',
               statusHistory: [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
           );
 
@@ -2991,7 +2991,7 @@ void main() {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
           when(
@@ -3049,7 +3049,7 @@ void main() {
         final imageEntity = JournalImage(
           meta: _createMetadata().copyWith(id: 'test-id'),
           data: ImageData(
-            capturedAt: DateTime.now(),
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
             imageId: 'test-image',
             imageFile: 'test.jpg',
             imageDirectory: '/images/',
@@ -3061,13 +3061,13 @@ void main() {
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Database Migration Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -3133,7 +3133,7 @@ If the image IS relevant:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -3257,7 +3257,7 @@ If the image IS relevant:
           final imageEntity = JournalImage(
             meta: _createMetadata(),
             data: ImageData(
-              capturedAt: DateTime.now(),
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
               imageId: 'test-image',
               imageFile: 'test.jpg',
               imageDirectory: '/images/',
@@ -3312,7 +3312,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -3397,8 +3397,8 @@ Extract ONLY information from the image that is relevant to this task. Be concis
         final audioEntity = JournalAudio(
           meta: _createMetadata().copyWith(id: 'test-id'),
           data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             audioDirectory: '/audio/',
             audioFile: 'test.wav',
             duration: const Duration(seconds: 30),
@@ -3410,13 +3410,13 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           data: TaskData(
             status: TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Interview with John Smith',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -3480,7 +3480,7 @@ be consulted to ensure accuracy.''',
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -3582,8 +3582,8 @@ be consulted to ensure accuracy.''',
           final audioEntity = JournalAudio(
             meta: _createMetadata(),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
               audioDirectory: '/audio/',
               audioFile: 'test.wav',
               duration: const Duration(seconds: 30),
@@ -3638,7 +3638,7 @@ Take into account the following task context:
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
 
@@ -3715,12 +3715,12 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.inProgress(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           statusHistory: [],
         ),
       );
@@ -3772,7 +3772,7 @@ Take into account the following task context:
         (_) => Stream.value(
           CreateChatCompletionStreamResponse(
             id: 'test-id',
-            created: DateTime.now().millisecondsSinceEpoch,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
             choices: [
               const ChatCompletionStreamResponseChoice(
                 index: 0,
@@ -3836,13 +3836,13 @@ Take into account the following task context:
           final image = JournalImage(
             meta: Metadata(
               id: imageId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: ImageData(
-              capturedAt: DateTime.now(),
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
               imageId: 'test-image-id',
               imageFile: 'test-image.jpg',
               imageDirectory: '/images/',
@@ -3964,14 +3964,14 @@ Take into account the following task context:
           final audio = JournalAudio(
             meta: Metadata(
               id: audioId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now().add(const Duration(minutes: 5)),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 35),
               audioFile: 'test-audio.wav',
               audioDirectory: '/audio/',
               duration: const Duration(minutes: 5),
@@ -3982,10 +3982,10 @@ Take into account the following task context:
           final journalEntry = JournalEntity.journalEntry(
             meta: Metadata(
               id: audioId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             entryText: const EntryText(
               plainText: 'This is now a journal entry',
@@ -4108,13 +4108,13 @@ Take into account the following task context:
           final originalImage = JournalImage(
             meta: Metadata(
               id: imageId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: ImageData(
-              capturedAt: DateTime.now(),
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
               imageId: 'test-image-id',
               imageFile: 'test-image.jpg',
               imageDirectory: '/images/',
@@ -4260,14 +4260,14 @@ Take into account the following task context:
           final audio = JournalAudio(
             meta: Metadata(
               id: audioId,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              updatedAt: DateTime(2024, 3, 15, 10, 30),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
             ),
             data: AudioData(
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now().add(const Duration(minutes: 5)),
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 35),
               audioFile: 'test-audio.wav',
               audioDirectory: '/audio/',
               duration: const Duration(minutes: 5),
@@ -4378,13 +4378,13 @@ Take into account the following task context:
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             checklistIds: ['checklist-1'],
           ),
         );
@@ -4458,7 +4458,7 @@ Take into account the following task context:
                   ),
                 ),
               ],
-              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
               model: 'test-model',
               object: 'chat.completion.chunk',
             ),
@@ -4506,13 +4506,13 @@ Take into account the following task context:
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
           ),
         );
 
@@ -4616,13 +4616,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: [],
         ),
       );
@@ -4735,13 +4735,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: [], // No existing checklists
         ),
       );
@@ -4845,13 +4845,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: [existingChecklistId], // Has existing checklist
         ),
       );
@@ -4976,13 +4976,13 @@ Take into account the following task context:
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
-              createdAt: DateTime.now(),
+              createdAt: DateTime(2024, 3, 15, 10, 30),
               utcOffset: 0,
             ),
             title: 'Test Task',
             statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
             checklistIds: [], // No existing checklists
           ),
         );
@@ -5303,13 +5303,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: ['checklist-1'],
         ),
       );
@@ -5403,13 +5403,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.open(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
           checklistIds: ['checklist-1'],
         ),
       );
@@ -5636,13 +5636,13 @@ Take into account the following task context:
         data: TaskData(
           status: TaskStatus.inProgress(
             id: 'status-1',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2024, 3, 15, 10, 30),
             utcOffset: 0,
           ),
           title: 'Test Task',
           statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
         ),
       );
 
@@ -5676,7 +5676,7 @@ Take into account the following task context:
         userMessage: 'User',
         defaultModelId: 'non-existent-model',
         modelIds: ['non-existent-model'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         aiResponseType: AiResponseType.imageAnalysis,
@@ -5716,7 +5716,7 @@ Take into account the following task context:
         userMessage: 'Update checklist',
         defaultModelId: 'model-1',
         modelIds: ['model-1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         aiResponseType: AiResponseType.imageAnalysis,
@@ -5785,7 +5785,7 @@ Take into account the following task context:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         )
         // Continue by index without ID
@@ -5810,7 +5810,7 @@ Take into account the following task context:
               ),
             ],
             object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -5829,7 +5829,7 @@ Take into account the following task context:
         userMessage: 'Update checklist',
         defaultModelId: 'model-1',
         modelIds: ['model-1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         aiResponseType: AiResponseType.imageAnalysis,
@@ -5897,7 +5897,7 @@ Take into account the following task context:
             ),
           ],
           object: 'chat.completion.chunk',
-          created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
         ),
       );
 
@@ -5916,7 +5916,7 @@ Take into account the following task context:
         userMessage: 'Test message',
         defaultModelId: 'model-1',
         modelIds: ['model-1'],
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
         aiResponseType: AiResponseType.imageAnalysis,
@@ -5927,7 +5927,7 @@ Take into account the following task context:
         name: 'Test Model',
         providerModelId: 'test-model',
         inferenceProviderId: 'non-existent-provider',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15, 10, 30),
         inputModalities: [Modality.text],
         outputModalities: [Modality.text],
         isReasoningModel: false,
@@ -6000,7 +6000,7 @@ AiConfigInferenceProvider _createAiProvider({
     name: 'Test Provider',
     baseUrl: 'https://api.test.com',
     apiKey: 'test-key',
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
     inferenceProviderType: type,
   );
 }
@@ -6020,7 +6020,7 @@ AiConfigPrompt _createPrompt({
     userMessage: 'User message',
     defaultModelId: defaultModelId,
     modelIds: [defaultModelId],
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
     useReasoning: false,
     requiredInputData: requiredInputData,
     aiResponseType: aiResponseType,
@@ -6038,7 +6038,7 @@ AiConfigModel _createModel({
     name: 'Test Model',
     providerModelId: providerModelId,
     inferenceProviderId: inferenceProviderId,
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: false,
@@ -6054,7 +6054,7 @@ AiConfigInferenceProvider _createProvider({
     baseUrl: 'https://api.example.com',
     apiKey: 'test-api-key',
     name: 'Test Provider',
-    createdAt: DateTime.now(),
+    createdAt: DateTime(2024, 3, 15, 10, 30),
     inferenceProviderType: inferenceProviderType,
   );
 }
@@ -6068,7 +6068,7 @@ CreateChatCompletionStreamResponse _createStreamChunk(String content) {
         delta: ChatCompletionStreamResponseDelta(content: content),
       ),
     ],
-    created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
     object: 'chat.completion.chunk',
   );
@@ -6087,7 +6087,7 @@ CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(
         ),
       ),
     ],
-    created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
     object: 'chat.completion.chunk',
   );

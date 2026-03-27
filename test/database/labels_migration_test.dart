@@ -546,7 +546,7 @@ void main() {
       }
 
       // Delete the label (soft delete via the proper API)
-      final deletedLabel = label.copyWith(deletedAt: DateTime.now());
+      final deletedLabel = label.copyWith(deletedAt: DateTime(2024, 3, 15, 11));
       await db.upsertLabelDefinition(deletedLabel);
 
       // Hard delete from table (simulating what cascade would do)
