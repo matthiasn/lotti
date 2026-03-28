@@ -1,171 +1,253 @@
 # What's New Feature
 
-The What's New feature displays release notes to users in an editorial magazine-style modal. It shows unseen releases when the user opens the modal from Settings, tracking which releases have been viewed.
+The What's New feature turns release notes into an in-app editorial surface instead of a changelog graveyard nobody opens twice.
 
-## Architecture
+Its runtime job is narrow:
 
+- fetch release metadata and markdown from the docs repository
+- keep only releases that are not newer than the installed app version
+- remember which releases this device has already seen
+- optionally auto-open the modal once per installed app version
+
+This is remote content with local gating. The content lives in `lotti-docs`; the "should this device still show this?" decision lives in app state and `SharedPreferences`.
+
+## High-Level Model
+
+```mermaid
+flowchart TD
+  Launch["App launch"] --> Gate["enable_whats_new flag + version gate"]
+  Gate --> AutoShow["shouldAutoShowWhatsNewProvider"]
+  Launch --> Manual["Settings entry point"]
+  AutoShow --> Controller["WhatsNewController"]
+  Manual --> Controller
+  Controller --> Index["Fetch index.json"]
+  Index --> Filter["Drop releases newer than installed version"]
+  Filter --> Seen["Check seen-state in SharedPreferences"]
+  Seen --> Content["Fetch content.md for unseen releases"]
+  Content --> Parser["Resolve markdown and asset URLs"]
+  Parser --> State["WhatsNewState"]
+  State --> Indicator["WhatsNewIndicator"]
+  State --> Modal["WhatsNewModal"]
 ```
+
+## Directory Shape
+
+```text
 lib/features/whats_new/
 ├── model/
-│   ├── whats_new_content.dart      # Content model (release + markdown + banner URL)
-│   ├── whats_new_release.dart      # Release metadata (version, date, title, folder)
-│   └── whats_new_state.dart        # State model (list of unseen content)
+│   ├── whats_new_release.dart
+│   ├── whats_new_content.dart
+│   └── whats_new_state.dart
 ├── repository/
-│   └── whats_new_service.dart      # Fetches index.json and content.md from remote
+│   └── whats_new_service.dart
 ├── state/
-│   └── whats_new_controller.dart   # Riverpod controller managing state & seen tracking
+│   └── whats_new_controller.dart
 ├── ui/
-│   ├── whats_new_indicator.dart    # Badge showing unseen count (for Settings page)
-│   └── whats_new_modal.dart        # The main modal UI
+│   ├── whats_new_modal.dart
+│   └── whats_new_indicator.dart
 └── util/
-    └── whats_new_markdown_parser.dart  # Parses markdown, resolves relative image URLs
+    └── whats_new_markdown_parser.dart
 ```
 
 ## Content Source
 
-Release content is hosted in the `lotti-docs` repository at:
-```
-https://raw.githubusercontent.com/matthiasn/lotti-docs/main/whats-new/
-```
+Release content is fetched from:
 
-### Content Structure
+`https://raw.githubusercontent.com/matthiasn/lotti-docs/main/whats-new`
 
-```
-lotti-docs/whats-new/
-├── index.json           # List of all releases
+Expected layout:
+
+```text
+whats-new/
+├── index.json
 ├── 0.9.805/
-│   ├── content.md       # Markdown content for this release
-│   └── banner.jpg       # 21:9 hero banner image
-├── 0.9.804/
 │   ├── content.md
 │   └── banner.jpg
 └── ...
 ```
 
-### index.json Format
+Each `index.json` entry maps to `WhatsNewRelease` and must provide:
 
-```json
-{
-  "releases": [
-    {
-      "version": "0.9.805",
-      "date": "2026-01-09T00:00:00.000Z",
-      "title": "What's New Modal",
-      "folder": "0.9.805"
-    }
-  ]
-}
+- `version`
+- `date`
+- `title`
+- `folder`
+
+### Why Remote Content?
+
+Because shipping release notes inside the binary would require an app update just to fix the app update notes. That is a decent joke, but not good architecture.
+
+## Runtime Responsibilities
+
+### `WhatsNewService`
+
+`WhatsNewService` does the network I/O:
+
+- `fetchIndex()` downloads and parses `index.json`
+- `fetchContent(release)` downloads `content.md` and hands it to the parser
+
+It stays deliberately boring:
+
+- no custom cache layer
+- no retry orchestration
+- a fixed 10-second timeout
+- exception logging and `null` on failure
+
+It also sorts releases by `date` descending, so display order is driven by metadata rather than file order in `index.json`.
+
+### `WhatsNewMarkdownParser`
+
+The parser translates editorial markdown into `WhatsNewContent`.
+
+Rules:
+
+- normalize CRLF to LF
+- split content on `\n---\n`
+- treat the first chunk as `headerMarkdown`
+- keep later chunks in `sections`
+- rewrite relative markdown image paths to absolute GitHub raw URLs
+- derive the banner URL as `<baseUrl>/<folder>/banner.jpg`
+
+Important nuance: the split is preserved in the data model, but the current modal renders one scrollable document per release by joining `headerMarkdown` and `sections` back together. Navigation is between releases, not between markdown sections.
+
+### `WhatsNewController`
+
+`WhatsNewController` is the local coordinator. On build it:
+
+1. reads the installed app version from `PackageInfo`
+2. fetches release metadata
+3. skips releases newer than the installed version
+4. checks `SharedPreferences` for per-version seen state
+5. fetches content only for unseen eligible releases
+6. exposes a `WhatsNewState` to the UI
+
+It also owns the mutation side:
+
+- `markAsSeen(version)` removes one loaded release from the unseen set
+- `markAllAsSeen()` clears the current unseen set
+- `resetSeenStatus()` removes all persisted seen markers and invalidates the provider
+
+## Entry Points
+
+There are two ways into the feature:
+
+- `beamer_app.dart` listens to `shouldAutoShowWhatsNewProvider` and schedules the modal after the first frame when startup gating says yes
+- `settings_page.dart` exposes both a dedicated Settings row and a small pulsing indicator in the Settings header
+
+That split keeps "should I auto-open?" separate from "what content exists?" and separate again from "let the user open it manually".
+
+## Auto-Show Logic
+
+`shouldAutoShowWhatsNewProvider` is intentionally not the content loader. Its job is only to decide whether startup should open the modal.
+
+```mermaid
+sequenceDiagram
+  participant App as "App startup"
+  participant Gate as "shouldAutoShowWhatsNewProvider"
+  participant DB as "Config flag"
+  participant Prefs as "SharedPreferences"
+  participant Ctrl as "WhatsNewController"
+
+  App->>Gate: evaluate
+  Gate->>DB: read enable_whats_new
+  alt feature disabled
+    Gate-->>App: false
+  else feature enabled
+    Gate->>Prefs: read last launched version
+    alt same version as last launch
+      Gate-->>App: false
+    else first launch or version changed
+      Gate->>Ctrl: load unseen releases
+      Ctrl-->>Gate: hasUnseenRelease?
+      Gate->>Prefs: persist current version
+      Gate-->>App: hasUnseenRelease
+    end
+  end
 ```
 
-Releases are ordered by date descending (newest first).
+The current version is persisted only after the controller read succeeds. That avoids writing launch state before the feature has even finished its own decision path.
 
-### content.md Format
+## Seen-State Semantics
 
-```markdown
-# Release Title
+Seen tracking is version-based and intentionally simple:
 
-Brief introduction paragraph.
+- `whats_new_seen_<version>` marks a specific release as seen
+- `whats_new_last_launched_version` records which app version last completed startup gating
 
----
+Important behaviors:
 
-## Feature Section
+- dismissing the modal normally marks only the releases the user actually navigated to
+- pressing `Skip` or `Done` marks all currently loaded releases as seen
+- the empty-state modal offers "View past releases", which resets seen markers and reopens the reader
+- if loading fails, the feature degrades to empty state rather than persisting half-baked state
 
-Description with optional images.
+## UI Composition
 
-![screenshot](./screenshot.png)
-```
+### `WhatsNewIndicator`
 
-- First section (before `---`) becomes the header
-- Subsequent sections separated by `---` become the body
-- Relative image paths (`./image.png`) are resolved to full URLs automatically
+`WhatsNewIndicator` is the small pulsing dot in Settings. It watches `whatsNewControllerProvider` and disappears entirely when there is nothing unseen.
 
-## Key Behaviors
+### `WhatsNewModal`
 
-### Version Filtering
+`WhatsNewModal` is one Wolt modal page per unseen release. Each page contains:
 
-Only releases with versions <= the installed app version are shown. This prevents users from seeing notes for features they don't have yet.
+- a 21:9 hero banner with a fallback gradient when the image is missing
+- a version badge, with `NEW` only on the newest loaded release
+- a single scrollable Markdown document for that release
+- a sticky footer with arrows, position dots, and `Skip` or `Done`
+- banner and inline-image precaching for smoother transitions
 
-```dart
-// In whats_new_controller.dart
-if (_isNewerVersion(release.version, currentVersion)) {
-  continue; // Skip releases newer than installed version
-}
-```
+The presentation is deliberately more magazine than changelog. Release notes should not feel like a raw JSON dump wearing a blazer.
 
-### Auto-Show on Version Update
+## Network and Privacy Boundary
 
-The modal automatically displays on app launch when the version changes or on first launch.
+This feature performs plain HTTP GET requests to the public docs repository. It does not send journal entries, tasks, or AI payloads anywhere.
 
-```dart
-// In whats_new_controller.dart
-@riverpod
-Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  final currentVersion = packageInfo.version;
-  final lastLaunchedVersion = prefs.getString('whats_new_last_launched_version');
+What leaves the device:
 
-  // Same version as last launch - don't show
-  if (lastLaunchedVersion == currentVersion) return false;
+- requests for static release-note assets on GitHub raw content
 
-  // First launch OR version changed - check for unseen releases
-  final state = await ref.read(whatsNewControllerProvider.future);
-  final shouldShow = state.hasUnseenRelease;
+What stays local:
 
-  // Only persist after successful read
-  await prefs.setString('whats_new_last_launched_version', currentVersion);
-  return shouldShow;
-}
-```
+- seen-state
+- installed-version comparison
+- auto-show decisions
 
-- Uses SharedPreferences key `whats_new_last_launched_version` to track last launched version
-- On first launch (`lastLaunchedVersion` is null), shows modal if `state.hasUnseenRelease` is true
-- On subsequent launches, only shows when `currentVersion` differs from `lastLaunchedVersion`
-- Version is persisted only after `whatsNewControllerProvider` succeeds (graceful degradation)
-- Triggered in `AppScreen` via `ref.listen(shouldAutoShowWhatsNewProvider, ...)` on startup
+## Failure Model
 
-### Seen Tracking
+Failures degrade to "show nothing" rather than "break startup":
 
-- Uses SharedPreferences with keys like `whats_new_seen_0.9.805`
-- Only marks releases as "seen" that the user actually navigated to
-- Swiping through pages tracks the max viewed index
-- "Skip" button marks ALL releases as seen
-- Dismissing by tap/swipe outside only marks viewed releases
+- timeout
+- network error
+- malformed `index.json`
+- unexpected response payloads
+- missing or broken images
 
-### Image Precaching
+Exceptions are logged. The controller falls back to an empty `WhatsNewState`, and the indicator/modal simply have nothing to show.
 
-All banner images and images in markdown content are precached before the modal opens for smooth page transitions:
+## Authoring Workflow
 
-```dart
-for (final release in releases) {
-  precacheImage(NetworkImage(release.bannerImageUrl), context);
-  // Also precache images extracted from markdown
-}
-```
+To publish a new release note:
 
-## Adding a New Release
+1. create `lotti-docs/whats-new/<version>/`
+2. add `content.md`
+3. add `banner.jpg` if you want the intended hero treatment; the app does have a visual fallback
+4. add the release entry to `index.json`
+5. update the main app changelog and release metadata
 
-1. Create folder in `lotti-docs/whats-new/{version}/`
-2. Add `content.md` with markdown content
-3. Add `banner.jpg` (21:9 aspect ratio, e.g., 2100x900 or 1050x450)
-4. Update `index.json` with the new release entry (add to top of array)
-5. Update `CHANGELOG.md` and metadata in the main lotti repo
+Keeping newest entries first in `index.json` is still sensible for humans, but runtime ordering comes from the `date` field.
 
-## UI Components
+The app will only show that release when the installed version is new enough.
 
-### WhatsNewModal
+## Why The Feature Is Structured This Way
 
-The main modal uses WoltModalSheet with:
-- `heroImage`: 21:9 banner with gradient overlay and version badge
-- `child`: Scrollable markdown content
-- `stickyActionBar`: Navigation footer with Skip, arrows, and indicator dots
+Because release notes are content, not code. The app only needs a reliable local gate, a parser, and a reader that does not insult the content on arrival.
 
-### WhatsNewIndicator
-
-A badge widget for the Settings page showing the count of unseen releases. Returns empty when no unseen releases.
+Everything else is just a civilized way of saying: show the notes, remember that I saw them, and do not spoil features I have not installed yet.
 
 ## Testing
 
-Tests use a mock PackageInfo to simulate a high app version (99.99.99) so all test releases are included.
+Tests use a mock `PackageInfo` to simulate a high app version (99.99.99) so all test releases are included.
 
 ```dart
 TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -173,4 +255,10 @@ TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
   const MethodChannel('dev.fluttercommunity.plus/package_info'),
   (methodCall) async => {'version': '99.99.99', ...},
 );
+```
+
+Run the What's New tests with:
+
+```sh
+fvm flutter test test/features/whats_new/
 ```
