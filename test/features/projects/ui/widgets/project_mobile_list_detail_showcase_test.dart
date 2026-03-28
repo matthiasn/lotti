@@ -150,7 +150,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Projects'), findsAtLeastNWidgets(2));
       expect(find.text('Project Tasks'), findsOneWidget);
-      expect(find.text('One-on-one Reviews'), findsOneWidget);
+      expect(find.text('One-on-one Reviews'), findsNothing);
     });
   });
 }

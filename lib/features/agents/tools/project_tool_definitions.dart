@@ -18,20 +18,22 @@ const projectAgentTools = <AgentToolDefinition>[
     name: ProjectAgentToolNames.updateProjectReport,
     description:
         'Publish the updated project report. You MUST call this tool at '
-        'the end of every wake with the full, updated markdown report. '
+        'the end of every wake with the updated markdown report body. '
         'Include a brief tldr (1-3 sentences) summarizing the most '
         'important change since the last report, plus the user-facing '
         'project health band and a concise rationale. The health band is '
         'shown directly in the UI, so choose the best fit based on your '
         'overall assessment of the project. The tldr is shown in the '
-        'collapsed report view, so it must stand on its own.',
+        'collapsed report view, so it must stand on its own. Do not repeat '
+        'that TLDR inside the markdown body.',
     parameters: {
       'type': 'object',
       'properties': {
         ProjectAgentReportToolArgs.markdown: {
           'type': 'string',
           'description':
-              'The full markdown content of the updated project report.',
+              'The markdown body for the expanded project report only. '
+              'Do not include a TLDR section or repeat the project title.',
         },
         ProjectAgentReportToolArgs.tldr: {
           'type': 'string',

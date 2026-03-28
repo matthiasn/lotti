@@ -77,10 +77,12 @@ class DesignSystemBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final textScaler = MediaQuery.textScalerOf(context);
     final sizeSpec = _BadgeSizeSpec.fromTokens(
       tokens: tokens,
       type: _type,
       label: _label,
+      textScaler: textScaler,
     );
     final styleSpec = _BadgeStyleSpec.fromTokens(
       tokens: tokens,
@@ -133,13 +135,11 @@ class DesignSystemBadge extends StatelessWidget {
         _label!,
         maxLines: 1,
         softWrap: false,
-        textScaler: TextScaler.noScaling,
       ),
       _DesignSystemBadgeType.filled || _DesignSystemBadgeType.outlined => Text(
         _label!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        textScaler: TextScaler.noScaling,
       ),
       _DesignSystemBadgeType.icon => Icon(_icon),
     };
@@ -163,10 +163,14 @@ class _BadgeSizeSpec {
     required DsTokens tokens,
     required _DesignSystemBadgeType type,
     required String? label,
+    required TextScaler textScaler,
   }) {
     final caption = tokens.typography.styles.others.caption;
-    final badgeHeight =
+    final baseBadgeHeight =
         tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2);
+    final textBadgeHeight =
+        textScaler.scale(tokens.typography.lineHeight.caption) +
+        (tokens.spacing.step1 * 2);
     final compactNumber =
         type == _DesignSystemBadgeType.number && (label?.length ?? 0) <= 2;
     return switch (type) {
@@ -182,20 +186,20 @@ class _BadgeSizeSpec {
         borderWidth: tokens.spacing.step1 / 2,
       ),
       _DesignSystemBadgeType.number => _BadgeSizeSpec(
-        squareSize: compactNumber ? badgeHeight : null,
-        minWidth: compactNumber ? null : badgeHeight,
-        height: badgeHeight,
+        squareSize: compactNumber ? textBadgeHeight : null,
+        minWidth: compactNumber ? null : textBadgeHeight,
+        height: textBadgeHeight,
         horizontalPadding: compactNumber ? 0 : tokens.spacing.step2,
         verticalPadding: 0,
-        cornerRadius: badgeHeight / 2,
+        cornerRadius: textBadgeHeight / 2,
         iconSize: 0,
         textStyle: caption,
         borderWidth: tokens.spacing.step1 / 2,
       ),
       _DesignSystemBadgeType.icon => _BadgeSizeSpec(
-        squareSize: badgeHeight,
+        squareSize: baseBadgeHeight,
         minWidth: null,
-        height: badgeHeight,
+        height: baseBadgeHeight,
         horizontalPadding: tokens.spacing.step1,
         verticalPadding: tokens.spacing.step1,
         cornerRadius: tokens.radii.xs,
@@ -207,7 +211,7 @@ class _BadgeSizeSpec {
       _DesignSystemBadgeType.outlined => _BadgeSizeSpec(
         squareSize: null,
         minWidth: null,
-        height: badgeHeight,
+        height: textBadgeHeight,
         horizontalPadding: tokens.spacing.step2,
         verticalPadding: tokens.spacing.step1,
         cornerRadius: tokens.radii.xs,

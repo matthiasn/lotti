@@ -77,7 +77,9 @@ void main() {
       expect(find.text('Project is on track.'), findsOneWidget);
     });
 
-    testWidgets('renders recommendations', (tester) async {
+    testWidgets('does not render recommendations in the report section', (
+      tester,
+    ) async {
       final record = makeTestProjectRecord(
         recommendations: ['Fix bug A', 'Add test B'],
       );
@@ -87,17 +89,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Recommendations'), findsOneWidget);
-      expect(find.text('Fix bug A'), findsOneWidget);
-      expect(find.text('Add test B'), findsOneWidget);
+      expect(find.text('Recommendations'), findsNothing);
+      expect(find.text('Fix bug A'), findsNothing);
+      expect(find.text('Add test B'), findsNothing);
     });
 
-    testWidgets('renders task and review panels', (tester) async {
+    testWidgets('renders project tasks panel', (tester) async {
       final record = makeTestProjectRecord(
         highlightedTaskSummaries: [makeTestTaskSummary()],
-        reviewSessions: [
-          makeTestReviewSession(),
-        ],
       );
 
       await tester.pumpWidget(
@@ -106,7 +105,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Project Tasks'), findsOneWidget);
-      expect(find.text('One-on-one Reviews'), findsOneWidget);
+      expect(find.text('One-on-one Reviews'), findsNothing);
     });
 
     testWidgets('renders updated hours ago label', (tester) async {
@@ -123,7 +122,7 @@ void main() {
         tester.element(find.byType(ProjectDetailPane)),
       )!;
       expect(
-        find.text(l10n.projectShowcaseUpdatedHoursAgo(2)),
+        find.text(l10n.projectShowcaseUpdatedHoursAgo(2).replaceAll(' ↻', '')),
         findsOneWidget,
       );
     });
@@ -144,7 +143,9 @@ void main() {
         tester.element(find.byType(ProjectDetailPane)),
       )!;
       expect(
-        find.text(l10n.projectShowcaseUpdatedMinutesAgo(15)),
+        find.text(
+          l10n.projectShowcaseUpdatedMinutesAgo(15).replaceAll(' ↻', ''),
+        ),
         findsOneWidget,
       );
     });
@@ -218,6 +219,24 @@ void main() {
 
       expect(find.text('Description'), findsOneWidget);
     });
+
+    testWidgets(
+      'does not render AI report recommendations',
+      (tester) async {
+        final record = makeTestProjectRecord(
+          aiSummary: 'Project is on track.',
+          recommendations: const ['Fix bug A'],
+        );
+
+        await tester.pumpWidget(
+          wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
+        );
+        await tester.pump();
+
+        expect(find.text('Fix bug A'), findsNothing);
+        expect(find.text('Recommendations'), findsNothing);
+      },
+    );
 
     testWidgets('does not overflow with long project titles', (tester) async {
       final record = makeTestProjectRecord(

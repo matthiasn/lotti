@@ -43,7 +43,7 @@ void main() {
         expect(result.additional, isNull);
       });
 
-      test('includes content before TLDR heading in tldr portion', () {
+      test('strips a leading h1 headline before the TLDR heading', () {
         const content =
             '# My Report\n'
             'Status: Active\n'
@@ -56,8 +56,8 @@ void main() {
 
         final result = parseReportContent(content);
 
-        // The tldr includes everything up to the next ## heading
-        expect(result.tldr, contains('My Report'));
+        expect(result.tldr, isNot(contains('My Report')));
+        expect(result.tldr, contains('Status: Active'));
         expect(result.tldr, contains('Summary here.'));
         expect(result.tldr, isNot(contains('Achieved')));
         expect(result.additional, contains('Achieved'));

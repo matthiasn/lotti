@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.934] - 2026-03-28
+### Changed
+- Projects detail redesign: the top-level Projects flow now opens a new
+  design-system-aligned detail page at `/projects/:projectId`, with editable
+  category, due date, and status controls, a health-band header, manual agent
+  refresh, an expandable AI report, and the current project-tasks card.
+- Projects detail data path: the new detail surface now builds from live
+  project, task, category, and project-agent state while reusing the same
+  shared component tree in the app and Widgetbook. Project-task rows now open
+  task details directly, while the older settings-scoped project views remain
+  in place for category-driven flows during the rollout.
+
 ## [0.9.933] - 2026-03-27
 ### Changed
 - Projects tab: the new top-level Projects tab now ships behind the

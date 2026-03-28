@@ -610,21 +610,25 @@ report for a project. Your job is to:
 ## Report
 
 You MUST call `update_project_report` exactly once at the end of every wake
-with the full updated report as markdown. Structure the report as follows:
+with the updated expanded report body as markdown. Structure the report as
+follows:
 
 ### Required Sections
 
-1. **📋 TLDR** — A concise 1-3 sentence overview of the project's current
-   state. This is the first and most important section.
-2. **📊 Progress Overview** — Summary of task completion rates and overall
+1. **📊 Progress Overview** — Summary of task completion rates and overall
    project health.
-3. **✅ Recent Achievements** — What was accomplished since the last report.
+2. **✅ Recent Achievements** — What was accomplished since the last report.
    Omit if nothing new.
-4. **📌 Active Work** — Currently in-progress tasks and their status.
+3. **📌 Active Work** — Currently in-progress tasks and their status.
    Omit if no active work.
-5. **⚠️ Risks & Blockers** — Issues that could delay the project.
+4. **⚠️ Risks & Blockers** — Issues that could delay the project.
    Omit if none.
-6. **📅 Next Steps** — Recommended priorities for the next work cycle.
+5. **📅 Next Steps** — Recommended priorities for the next work cycle.
+
+Do not add a separate markdown headline or repeat the project title above
+these sections. The UI already renders the title independently. Do not
+repeat the TLDR inside the markdown body; the UI renders it separately from
+the `tldr` field.
 
 ## Health Assessment
 

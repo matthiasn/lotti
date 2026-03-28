@@ -65,11 +65,11 @@ class HealthPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     healthRing,
-                    const SizedBox(width: 16),
+                    SizedBox(width: tokens.spacing.step5),
                     Expanded(child: summary),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: tokens.spacing.step4),
                 Align(
                   alignment: Alignment.centerRight,
                   child: blockerButton,
@@ -79,19 +79,19 @@ class HealthPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     healthRing,
-                    const SizedBox(width: 16),
+                    SizedBox(width: tokens.spacing.step5),
                     Expanded(child: summary),
-                    const SizedBox(width: 12),
+                    SizedBox(width: tokens.spacing.step4),
                     blockerButton,
                   ],
                 ),
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
               Divider(
                 height: 1,
                 thickness: 1,
                 color: ShowcasePalette.border(context),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
               DesignSystemProgressBar(
                 value: progressValue,
                 label: context.messages.navTabTitleTasks,
@@ -104,10 +104,10 @@ class HealthPanel extends StatelessWidget {
                 fillColor: ShowcasePalette.teal(context),
                 trackColor: ShowcasePalette.border(context),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
               Wrap(
-                spacing: 12,
-                runSpacing: 8,
+                spacing: tokens.spacing.step4,
+                runSpacing: tokens.spacing.step3,
                 children: [
                   _LegendItem(
                     color: ShowcasePalette.teal(context),
@@ -151,19 +151,19 @@ class _HealthSummary extends StatelessWidget {
             color: ShowcasePalette.highText(context),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step3),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
               child: Icon(
                 Icons.info_outline_rounded,
-                size: 16,
+                size: tokens.typography.lineHeight.caption,
                 color: ShowcasePalette.infoBlue(context),
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spacing.step1),
             Expanded(
               child: Text(
                 context.messages.projectShowcaseHealthScoreDescription,
@@ -174,19 +174,19 @@ class _HealthSummary extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step3),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 2),
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
               child: Icon(
                 Icons.warning_amber_rounded,
-                size: 16,
+                size: tokens.typography.lineHeight.caption,
                 color: ShowcasePalette.error(context),
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spacing.step1),
             Expanded(
               child: Text(
                 context.messages.projectShowcaseBlockedTaskCount(
@@ -221,15 +221,14 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 7,
-          height: 7,
+          width: tokens.spacing.step2 + tokens.spacing.step1,
+          height: tokens.spacing.step2 + tokens.spacing.step1,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 5),
+        SizedBox(width: tokens.spacing.step1 + 1),
         Text(
           label,
           style: tokens.typography.styles.others.caption.copyWith(
-            fontSize: 11,
             color: ShowcasePalette.mediumText(context),
           ),
         ),

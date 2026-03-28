@@ -47,9 +47,8 @@ void main() {
       expect(find.text('3 projects'), findsOneWidget);
       expect(find.text('Health Score'), findsOneWidget);
       expect(find.text('Project Tasks'), findsOneWidget);
-      expect(find.text('One-on-one Reviews'), findsOneWidget);
       expect(find.text('11m 38s'), findsOneWidget);
-      expect(find.text('Week 11 · Mar 10'), findsOneWidget);
+      expect(find.text('One-on-one Reviews'), findsNothing);
     });
 
     testWidgets('renders the mobile showcase in light mode', (tester) async {

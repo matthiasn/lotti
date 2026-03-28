@@ -16,7 +16,10 @@ class ProjectHealthIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, icon) = _healthBandAttributes(context, metrics.band);
+    final (label, color, icon) = projectHealthBandAttributes(
+      context,
+      metrics.band,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +44,7 @@ class ProjectHealthIndicator extends StatelessWidget {
   }
 }
 
-(String, Color, IconData) _healthBandAttributes(
+(String, Color, IconData) projectHealthBandAttributes(
   BuildContext context,
   ProjectHealthBand band,
 ) {

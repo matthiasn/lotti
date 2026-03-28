@@ -1,11 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// A small coloured tag displaying a category icon and label.
 class CategoryTag extends StatelessWidget {
@@ -13,41 +20,58 @@ class CategoryTag extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.color,
+    this.onTap,
     super.key,
   });
 
   final String label;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final child = _ShowcaseMetaTag(
+      label: label,
+      icon: icon,
+      backgroundColor: color,
+      foregroundColor: ShowcasePalette.tagText(context),
+    );
 
-    return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(4),
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        onTap: onTap,
+        child: child,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 12,
-            color: ShowcasePalette.tagText(context),
-          ),
-          const SizedBox(width: 2),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: ShowcasePalette.tagText(context),
-            ),
-          ),
-        ],
-      ),
+    );
+  }
+}
+
+class ProjectHealthBandTag extends StatelessWidget {
+  const ProjectHealthBandTag({
+    required this.band,
+    super.key,
+  });
+
+  final ProjectHealthBand band;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = projectHealthBandAttributes(context, band);
+
+    return _ShowcaseMetaTag(
+      label: label,
+      icon: icon,
+      backgroundColor: color.withValues(alpha: 0.24),
+      foregroundColor: color,
+      borderColor: color.withValues(alpha: 0.42),
     );
   }
 }
@@ -58,56 +82,143 @@ class ProjectStatusPill extends StatelessWidget {
   const ProjectStatusPill({
     required this.status,
     this.large = false,
+    this.onTap,
     super.key,
   });
 
   final ProjectStatus status;
   final bool large;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final statusColor = showcaseProjectStatusColor(context, status);
-    final height = large ? 28.0 : 20.0;
-    final horizontalPadding = large ? 8.0 : 0.0;
-    final verticalPadding = large ? 4.0 : 0.0;
-
-    return Container(
-      constraints: BoxConstraints(minHeight: height),
+    final child = Container(
+      constraints: BoxConstraints(
+        minHeight: large
+            ? tokens.typography.lineHeight.subtitle2 + tokens.spacing.step2
+            : tokens.spacing.step5 + tokens.spacing.step1,
+      ),
       padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+        horizontal: large ? tokens.spacing.step3 : tokens.spacing.step2,
+        vertical: large ? tokens.spacing.step2 : tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
         color: ShowcasePalette.subtleFill(context),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _ProjectStatusIcon(
             status: status,
-            size: 16,
+            size: large
+                ? tokens.typography.lineHeight.caption
+                : tokens.typography.size.caption,
             color: statusColor,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: tokens.spacing.step1),
           Text(
             showcaseProjectStatusLabel(context, status),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             softWrap: false,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: ShowcasePalette.highText(context),
-            ),
+            style:
+                (large
+                        ? tokens.typography.styles.subtitle.subtitle2
+                        : tokens.typography.styles.others.caption)
+                    .copyWith(
+                      color: ShowcasePalette.highText(context),
+                      height: 1,
+                    ),
           ),
           if (large) ...[
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spacing.step1),
             Icon(
               Icons.unfold_more_rounded,
-              size: 16,
+              size: tokens.typography.lineHeight.caption,
               color: ShowcasePalette.mediumText(context),
             ),
           ],
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        onTap: onTap,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ShowcaseMetaTag extends StatelessWidget {
+  const _ShowcaseMetaTag({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.icon,
+    this.iconWidget,
+    this.borderColor,
+  }) : assert(
+         icon != null || iconWidget != null,
+         'Either icon or iconWidget must be provided.',
+       );
+
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final IconData? icon;
+  final Widget? iconWidget;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Container(
+      constraints: BoxConstraints(
+        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        border: borderColor == null ? null : Border.all(color: borderColor!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          iconWidget ??
+              Icon(
+                icon,
+                size: tokens.typography.size.caption,
+                color: foregroundColor,
+              ),
+          SizedBox(width: tokens.spacing.step1),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: foregroundColor,
+                height: 1,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -129,10 +240,10 @@ class ProjectStatusLabel extends StatelessWidget {
       children: [
         _ProjectStatusIcon(
           status: status,
-          size: 16,
+          size: tokens.typography.lineHeight.caption,
           color: showcaseProjectStatusColor(context, status),
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: tokens.spacing.step1),
         Text(
           showcaseProjectStatusLabel(context, status),
           style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -202,21 +313,26 @@ class TaskStatePill extends StatelessWidget {
     };
 
     return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      constraints: BoxConstraints(
+        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2 + tokens.spacing.step1,
+        vertical: tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
         color: ShowcasePalette.subtleFill(context),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 16,
+            size: tokens.typography.lineHeight.caption,
             color: ShowcasePalette.mediumText(context),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: tokens.spacing.step1),
           Text(
             label,
             style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -240,8 +356,8 @@ class CountDotBadge extends StatelessWidget {
     final tokens = context.designTokens;
 
     return Container(
-      width: 20,
-      height: 20,
+      width: tokens.spacing.step5 + tokens.spacing.step1,
+      height: tokens.spacing.step5 + tokens.spacing.step1,
       decoration: BoxDecoration(
         color: ShowcasePalette.infoBlue(context),
         shape: BoxShape.circle,
@@ -327,17 +443,24 @@ class ShowcasePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Container(
       decoration: BoxDecoration(
         color: ShowcasePalette.surface(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
         border: Border.all(color: ShowcasePalette.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step3 + tokens.spacing.step1,
+              tokens.spacing.step5,
+              tokens.spacing.step3 + tokens.spacing.step1,
+            ),
             child: header,
           ),
           Divider(
@@ -432,6 +555,355 @@ class TextSection extends StatelessWidget {
   }
 }
 
+class ExpandableReportSection extends StatefulWidget {
+  const ExpandableReportSection({
+    required this.title,
+    required this.body,
+    required this.fullContent,
+    required this.recommendations,
+    this.trailingLabel,
+    this.initiallyExpanded = false,
+    this.nextWakeAt,
+    this.onRefresh,
+    this.isRefreshing = false,
+    super.key,
+  });
+
+  final String title;
+  final String body;
+  final String fullContent;
+  final List<String> recommendations;
+  final String? trailingLabel;
+  final bool initiallyExpanded;
+  final DateTime? nextWakeAt;
+  final VoidCallback? onRefresh;
+  final bool isRefreshing;
+
+  @override
+  State<ExpandableReportSection> createState() =>
+      _ExpandableReportSectionState();
+}
+
+class _ExpandableReportSectionState extends State<ExpandableReportSection> {
+  late bool _expanded = widget.initiallyExpanded;
+  Timer? _countdownTimer;
+  int _countdownSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncCountdown();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExpandableReportSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nextWakeAt != widget.nextWakeAt ||
+        oldWidget.isRefreshing != widget.isRefreshing) {
+      _syncCountdown();
+    }
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  int _remainingSeconds(DateTime? nextWakeAt) {
+    if (nextWakeAt == null) {
+      return 0;
+    }
+
+    final remaining = nextWakeAt.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      return 0;
+    }
+
+    return remaining.inSeconds;
+  }
+
+  void _syncCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+
+    if (widget.isRefreshing) {
+      if (mounted) {
+        setState(() => _countdownSeconds = 0);
+      } else {
+        _countdownSeconds = 0;
+      }
+      return;
+    }
+
+    final remaining = _remainingSeconds(widget.nextWakeAt);
+    if (remaining <= 0) {
+      if (mounted) {
+        setState(() => _countdownSeconds = 0);
+      } else {
+        _countdownSeconds = 0;
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _countdownSeconds = remaining);
+    } else {
+      _countdownSeconds = remaining;
+    }
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final updated = _remainingSeconds(widget.nextWakeAt);
+      setState(() => _countdownSeconds = updated);
+      if (updated <= 0) {
+        timer.cancel();
+      }
+    });
+  }
+
+  ({String tldr, String? additional}) _parseContent() {
+    final body = widget.body.trim();
+    final content = widget.fullContent.trim();
+    if (content.isEmpty) {
+      return (
+        tldr: body,
+        additional: null,
+      );
+    }
+
+    final parsed = parseReportContent(content);
+    final hasExplicitTldr = body.isNotEmpty && body != content;
+    final explicitTldr = hasExplicitTldr ? body : parsed.tldr.trim();
+    if (explicitTldr.isEmpty) {
+      return (
+        tldr: parsed.tldr.trim(),
+        additional: parsed.additional,
+      );
+    }
+
+    if (hasExplicitTldr) {
+      final additional = _expandedBody(content, parsed.additional);
+      return (
+        tldr: explicitTldr,
+        additional: additional,
+      );
+    }
+
+    return (
+      tldr: explicitTldr,
+      additional: parsed.additional,
+    );
+  }
+
+  String? _expandedBody(String content, String? parsedAdditional) {
+    final trimmedContent = content.trim();
+    if (trimmedContent.isEmpty) {
+      return null;
+    }
+
+    final containsTldrSection =
+        RegExp(
+          r'(^|\n)## 📋 TLDR\b',
+          multiLine: true,
+        ).hasMatch(trimmedContent) ||
+        RegExp(r'^\*\*TLDR:\*\*', multiLine: true).hasMatch(trimmedContent);
+    if (!containsTldrSection) {
+      return trimmedContent;
+    }
+
+    final trimmedAdditional = parsedAdditional?.trim();
+    return trimmedAdditional == null || trimmedAdditional.isEmpty
+        ? null
+        : trimmedAdditional;
+  }
+
+  Future<void> _handleLinkTap(String url, String title) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildLink(
+    BuildContext context,
+    InlineSpan text,
+    String url,
+    TextStyle style,
+  ) {
+    final linkColor = ShowcasePalette.teal(context);
+    return Semantics(
+      link: true,
+      child: InkWell(
+        onTap: () => _handleLinkTap(url, ''),
+        mouseCursor: SystemMouseCursors.click,
+        child: Text.rich(
+          TextSpan(
+            children: [text],
+            style: style.copyWith(
+              color: linkColor,
+              decoration: TextDecoration.underline,
+              decorationColor: linkColor,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final parsed = _parseContent();
+    final hasAdditionalContent =
+        parsed.additional != null && parsed.additional!.trim().isNotEmpty;
+    final canExpand = hasAdditionalContent;
+    final showCountdown = !widget.isRefreshing && _countdownSeconds > 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          onTap: canExpand
+              ? () => setState(() => _expanded = !_expanded)
+              : null,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: ShowcasePalette.highText(context),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.trailingLabel case final trailingLabel?)
+                      Padding(
+                        padding: EdgeInsets.only(right: tokens.spacing.step2),
+                        child: Text(
+                          trailingLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: ShowcasePalette.mediumText(context),
+                              ),
+                        ),
+                      ),
+                    if (showCountdown)
+                      Padding(
+                        padding: EdgeInsets.only(right: tokens.spacing.step2),
+                        child: Tooltip(
+                          message: context.messages.taskAgentCountdownTooltip(
+                            _formatCountdown(_countdownSeconds),
+                          ),
+                          child: ShowcaseCountdownPill(
+                            countdownText: _formatCountdown(_countdownSeconds),
+                          ),
+                        ),
+                      ),
+                    if (widget.onRefresh != null)
+                      Padding(
+                        padding: EdgeInsets.only(right: tokens.spacing.step1),
+                        child: widget.isRefreshing
+                            ? SizedBox.square(
+                                dimension:
+                                    tokens.typography.lineHeight.subtitle2,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: ShowcasePalette.mediumText(context),
+                                ),
+                              )
+                            : IconButton(
+                                icon: Icon(
+                                  Icons.refresh_rounded,
+                                  size: tokens.typography.lineHeight.subtitle2,
+                                  color: ShowcasePalette.mediumText(context),
+                                ),
+                                tooltip:
+                                    context.messages.taskAgentRunNowTooltip,
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(
+                                  minWidth: tokens.spacing.step6,
+                                  minHeight: tokens.spacing.step6,
+                                ),
+                                onPressed: widget.onRefresh,
+                              ),
+                      ),
+                    if (canExpand)
+                      Padding(
+                        padding: EdgeInsets.only(left: tokens.spacing.step2),
+                        child: Icon(
+                          _expanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: tokens.typography.lineHeight.bodySmall,
+                          color: ShowcasePalette.mediumText(context),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topLeft,
+          child: _expanded || !canExpand
+              ? Column(
+                  key: const ValueKey('expanded-report'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SelectionArea(
+                      child: GptMarkdown(
+                        parsed.tldr,
+                        onLinkTap: _handleLinkTap,
+                        linkBuilder: _buildLink,
+                      ),
+                    ),
+                    if (hasAdditionalContent) ...[
+                      SizedBox(height: tokens.spacing.step4),
+                      SelectionArea(
+                        child: GptMarkdown(
+                          parsed.additional!,
+                          onLinkTap: _handleLinkTap,
+                          linkBuilder: _buildLink,
+                        ),
+                      ),
+                    ],
+                  ],
+                )
+              : SelectionArea(
+                  key: const ValueKey('collapsed-report'),
+                  child: GptMarkdown(
+                    parsed.tldr,
+                    onLinkTap: _handleLinkTap,
+                    linkBuilder: _buildLink,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Formats a relative "Updated X ago" label from a pair of timestamps.
 String showcaseUpdatedLabel(
   BuildContext context, {
@@ -442,10 +914,57 @@ String showcaseUpdatedLabel(
 
   if (difference.isNegative || difference.inHours < 1) {
     final minutes = difference.inMinutes < 1 ? 1 : difference.inMinutes;
-    return context.messages.projectShowcaseUpdatedMinutesAgo(minutes);
+    return context.messages
+        .projectShowcaseUpdatedMinutesAgo(minutes)
+        .replaceAll(
+          ' ↻',
+          '',
+        );
   }
 
-  return context.messages.projectShowcaseUpdatedHoursAgo(difference.inHours);
+  return context.messages
+      .projectShowcaseUpdatedHoursAgo(difference.inHours)
+      .replaceAll(' ↻', '');
+}
+
+String _formatCountdown(int totalSeconds) {
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
+}
+
+class ShowcaseCountdownPill extends StatelessWidget {
+  const ShowcaseCountdownPill({
+    required this.countdownText,
+    super.key,
+  });
+
+  final String countdownText;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 52),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: ShowcasePalette.subtleFill(context),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      ),
+      child: Text(
+        countdownText,
+        textAlign: TextAlign.center,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: ShowcasePalette.mediumText(context),
+          height: 1,
+        ),
+      ),
+    );
+  }
 }
 
 /// A bullet-point list of recommendation strings.
@@ -463,7 +982,7 @@ class RecommendationsList extends StatelessWidget {
       children: items
           .map(
             (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -473,7 +992,7 @@ class RecommendationsList extends StatelessWidget {
                       color: ShowcasePalette.teal(context),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spacing.step3),
                   Expanded(
                     child: Text(
                       item,

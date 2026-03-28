@@ -44,6 +44,7 @@ lib/features/projects/
 │   └── project_repository.dart      # CRUD, task linking, and batch overview methods
 ├── state/
 │   ├── project_health_metrics.dart   # Parsing for agent-authored health band/rationale
+│   ├── project_detail_record_provider.dart # Live adapter from project/task/agent state into shared detail presentation data
 │   ├── project_providers.dart        # Detail providers plus projects-tab overview/filter providers
 │   └── project_detail_controller.dart # Detail page state (form tracking, save)
 ├── widgetbook/
@@ -57,6 +58,7 @@ lib/features/projects/
     │   └── projects_filter_sheet_state.dart      # Adapter between ProjectsFilter and the shared DS filter sheet state
     ├── pages/
     │   ├── project_create_page.dart   # New project form
+    │   ├── project_details_page.dart  # New top-level projects-tab detail page
     │   ├── project_detail_page.dart   # View/edit existing project
     │   └── projects_tab_page.dart     # Top-level grouped projects list page
     └── widgets/
@@ -67,6 +69,7 @@ lib/features/projects/
         ├── project_health_header.dart            # Expandable project overview on tasks page
         ├── project_health_indicator.dart         # Compact health band chip with reason text
         ├── projects_header.dart                  # Shared DS header used by the production tab and Widgetbook mobile list
+        ├── project_mobile_detail_content.dart    # Shared mobile detail surface used by the app route and Widgetbook
         ├── projects_overview_content.dart        # Shared sliver scroll view used by the production tab and Widgetbook mobile list
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
@@ -108,18 +111,43 @@ lib/features/projects/
 
 - Watches the repository update stream for live reload.
 - Tracks `hasChanges` by comparing pending vs original project data.
-- Methods: `updateTitle`, `updateTargetDate`, `updateStatus`, `saveChanges`.
+- Methods: `updateTitle`, `updateCategoryId`, `updateTargetDate`,
+  `updateStatus`, `saveChanges`.
+
+### Live Detail Adapter (`project_detail_record_provider.dart`)
+
+The new top-level detail route does not rely on Widgetbook-only mock models.
+Instead `projectDetailRecordProvider(projectId)` assembles the detail UI from
+live app state:
+
+- `projectDetailControllerProvider(projectId)` for the current project and its
+  linked tasks
+- `projectHealthMetricsProvider(projectId)` for the agent-authored health band
+- `projectAgentProvider(projectId)` and `agentReportProvider(agentId)` for the
+  latest summary/report content
+- `projectRecommendationsProvider(projectId)` for active recommendations
+- `EntitiesCacheService` for category metadata lookup
+
+This keeps the app and Widgetbook aligned on the same presentation contracts
+(`ProjectRecord`, `TaskSummary`) while still allowing Widgetbook to drive the
+shared UI with its own mock controller.
 
 ## Routing
 
 Top-level route:
 - `/projects` — grouped list tab, inserted into the main bottom navigation after `Tasks`
+- `/projects/:projectId` — design-system-aligned project details page used by
+  the top-level projects flow
 
 Project routes live under the settings location:
 - `/settings/projects/create?categoryId=X` — create page
 - `/settings/projects/:projectId` — detail page
 - `/settings/projects/:projectId?categoryId=X` — detail page with category
   return context preserved for back navigation
+
+The older settings-scoped project detail page remains reachable for now so
+category-driven project flows can keep working while the top-level projects tab
+uses the new route.
 
 ## Key Widgets
 
@@ -137,6 +165,13 @@ Widgetbook-only thin wrapper that composes the production desktop layout widgets
 
 Widgetbook-only mobile showcase that uses the same mock controller/provider as the desktop showcase. On wide canvases it renders list and detail phone frames side by side; on narrow canvases it navigates between the list screen and the selected detail screen while preserving selection state. The mobile screens reuse the shared `ProjectsHeader`, `ProjectGroupSection`, and `ProjectRow` implementations so the Widgetbook list UI and the production projects tab stay visually aligned instead of drifting apart.
 
+### ProjectMobileDetailContent
+
+Shared mobile project-detail surface used by both the new `/projects/:projectId`
+app route and the Widgetbook mobile showcase. It reuses the same header,
+health, expandable AI report, and project-tasks sections so the production app
+and the design reference render the same component tree.
+
 ### ProjectsTabPage
 
 The top-level projects tab now mounts the same shared sliver scroll surface as
@@ -149,6 +184,9 @@ an external layout responsibility. The header uses the same left-aligned title,
 notification icon, disabled search field, and filter icon shown in the
 Widgetbook mobile reference, and the filter icon opens the shared DS modal
 scaffold with Projects-specific status and category filters.
+
+Tapping a project row in the tab now navigates to `/projects/:projectId`
+instead of opening the older settings-scoped detail route.
 
 ### Shared List Components
 
@@ -196,6 +234,25 @@ Form page with three sections:
    that supersede any older active set and can be resolved or dismissed from
    this section.
 5. **Linked Tasks** — list of tasks in this project.
+
+### ProjectDetailsPage
+
+The top-level projects-tab detail page uses the shared mobile detail surface and
+live project state instead of Widgetbook-only data. It currently includes:
+
+1. **Interactive header chips** — tappable category selector, due-date picker,
+   and status selector.
+2. **Health header + panel** — user-facing health band (`At Risk`, etc.) in
+   the header plus the numeric score ring and blocker/task summary card.
+3. **Expandable AI report** — latest project-agent report with manual refresh,
+   TLDR-first expansion, and recommendations.
+4. **Project Tasks** — grouped task card section matching the new design, with
+   task rows linking through to `/tasks/:taskId`.
+
+The top-level detail intentionally omits the old "total time" and
+"one-on-one review" sections, and it also leaves out the plain description
+block for now; those will return later once the new design path is ready for
+them.
 
 ## Integration Points
 

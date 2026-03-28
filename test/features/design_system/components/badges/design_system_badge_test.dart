@@ -338,7 +338,7 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('keeps badge geometry fixed when text scaling is increased', (
+    testWidgets('lets text badges grow when text scaling is increased', (
       tester,
     ) async {
       await _pumpBadge(
@@ -351,8 +351,8 @@ void main() {
 
       final richText = _findTextNode(tester, 'Scaled');
 
-      expect(_badgeSize(tester).height, 20);
-      expect(richText.textScaler, TextScaler.noScaling);
+      expect(_badgeSize(tester).height, greaterThan(20));
+      expect(richText.textScaler, isNot(TextScaler.noScaling));
     });
 
     testWidgets('uses the active dark theme tokens', (tester) async {

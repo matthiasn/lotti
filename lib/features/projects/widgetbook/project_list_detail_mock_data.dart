@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 
 ProjectListData buildProjectListDetailMockData() {
@@ -95,11 +96,32 @@ ProjectListData buildProjectListDetailMockData() {
         project: deviceSync,
         category: workCategory,
         healthScore: 78,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.watch,
+          rationale:
+              'Offline mode implementation is behind and one critical task is blocked.',
+        ),
+        reportNextWakeAt: currentTime.add(
+          const Duration(minutes: 2, seconds: 15),
+        ),
         completedTaskCount: 3,
         totalTaskCount: 5,
         blockedTaskCount: 1,
         aiSummary:
             'Device Sync is progressing well. The sync engine core is complete and conflict resolution is in testing. Main risk: offline mode implementation is behind by ~3 days. Recommend prioritizing the offline cache task this week.',
+        reportContent: '''
+## 📋 TLDR
+Device Sync is progressing well. The sync engine core is complete and conflict resolution is in testing. Main risk: offline mode implementation is behind by ~3 days.
+
+## Risks
+- Offline cache parity remains blocked by conflict merge edge cases.
+- Release confidence depends on additional integration coverage.
+
+## Next steps
+- Prioritize offline cache implementation.
+- Schedule sync protocol review with the backend team.
+- Add integration tests for conflict resolution.
+''',
         recommendations: const [
           'Prioritize offline cache implementation',
           'Schedule sync protocol review with backend team',
@@ -164,11 +186,24 @@ ProjectListData buildProjectListDetailMockData() {
         project: apiMigration,
         category: workCategory,
         healthScore: 89,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.onTrack,
+          rationale:
+              'The auth adapter landed and the migration is back on plan.',
+        ),
+        reportNextWakeAt: null,
         completedTaskCount: 2,
         totalTaskCount: 3,
         blockedTaskCount: 0,
         aiSummary:
             'API Migration is on track after the auth adapter landed. The biggest remaining work is deprecating the legacy webhook bridge.',
+        reportContent: '''
+## 📋 TLDR
+API Migration is on track after the auth adapter landed.
+
+## Focus
+- Deprecate the legacy webhook bridge.
+''',
         recommendations: const [
           'Finalize the webhook bridge migration plan',
         ],
@@ -181,10 +216,17 @@ ProjectListData buildProjectListDetailMockData() {
         project: ciCdPipeline,
         category: workCategory,
         healthScore: 95,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.onTrack,
+          rationale: 'The refreshed pipeline is stable and fully automated.',
+        ),
+        reportNextWakeAt: null,
         completedTaskCount: 8,
         totalTaskCount: 8,
         blockedTaskCount: 0,
         aiSummary:
+            'The refreshed pipeline is stable. Release signing, smoke tests, and notarization all run automatically now.',
+        reportContent:
             'The refreshed pipeline is stable. Release signing, smoke tests, and notarization all run automatically now.',
         recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 20, 18),
@@ -196,10 +238,18 @@ ProjectListData buildProjectListDetailMockData() {
         project: weeklyMealPrep,
         category: mealsCategory,
         healthScore: 62,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.surviving,
+          rationale:
+              'The work is active, but shopping and prep windows keep slipping.',
+        ),
+        reportNextWakeAt: null,
         completedTaskCount: 1,
         totalTaskCount: 4,
         blockedTaskCount: 0,
         aiSummary:
+            'Weekly Meal Prep is active but drifting because shopping and prep windows keep slipping into evenings.',
+        reportContent:
             'Weekly Meal Prep is active but drifting because shopping and prep windows keep slipping into evenings.',
         recommendations: const [
           'Lock the shopping list 24 hours earlier',
@@ -213,10 +263,18 @@ ProjectListData buildProjectListDetailMockData() {
         project: reactCourse,
         category: studyCategory,
         healthScore: 45,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.atRisk,
+          rationale:
+              'The course is archived after priorities shifted elsewhere.',
+        ),
+        reportNextWakeAt: null,
         completedTaskCount: 1,
         totalTaskCount: 6,
         blockedTaskCount: 0,
         aiSummary:
+            'React Course is archived after priorities shifted to delivery work.',
+        reportContent:
             'React Course is archived after priorities shifted to delivery work.',
         recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 30, 21),
@@ -228,10 +286,18 @@ ProjectListData buildProjectListDetailMockData() {
         project: designSystemBook,
         category: studyCategory,
         healthScore: 88,
+        healthMetrics: const ProjectHealthMetrics(
+          band: ProjectHealthBand.onTrack,
+          rationale:
+              'The project is complete and the takeaways are already in use.',
+        ),
+        reportNextWakeAt: null,
         completedTaskCount: 2,
         totalTaskCount: 2,
         blockedTaskCount: 0,
         aiSummary:
+            'Design System Book is complete and the main takeaways have already been folded into current UI work.',
+        reportContent:
             'Design System Book is complete and the main takeaways have already been folded into current UI work.',
         recommendations: const [],
         reportUpdatedAt: DateTime(2026, 3, 28, 21),
