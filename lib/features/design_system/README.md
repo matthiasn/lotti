@@ -146,11 +146,17 @@ That split matters:
 
 ```dart
 extension DesignTokensBuildContextExtension on BuildContext {
-  DsTokens get designTokens => Theme.of(this).extension<DsTokens>()!;
+  DsTokens get designTokens {
+    final tokens = Theme.of(this).extension<DsTokens>();
+    if (tokens == null) {
+      throw StateError('DsTokens extension is missing from the active theme.');
+    }
+    return tokens;
+  }
 }
 ```
 
-In actual code it throws a `StateError` if the extension is missing, which is deliberate. Missing token injection is a wiring bug, not something the widget should quietly improvise around.
+The explicit null check and `StateError` is deliberate. Missing token injection is a wiring bug, not something the widget should quietly improvise around.
 
 ## Component Surface
 
@@ -258,6 +264,18 @@ Artifacts are exported under:
 
 - `build/widgetbook_macos_export/Lotti_Widgetbook.app`
 - `build/widgetbook_macos_export/Lotti_Widgetbook.app.zip`
+
+After unzipping, you can open the app bundle from Finder:
+
+```sh
+open "build/widgetbook_macos_export/Lotti_Widgetbook.app"
+```
+
+Because the app is unsigned, macOS may warn on first launch. In that case, use Finder's right-click `Open` action, or remove the quarantine attribute from the command line:
+
+```sh
+xattr -dr com.apple.quarantine "build/widgetbook_macos_export/Lotti_Widgetbook.app"
+```
 
 ## Production Adoption
 

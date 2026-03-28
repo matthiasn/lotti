@@ -392,3 +392,11 @@ This feature does that by splitting:
 - task-specific AI assignment and suppression
 
 instead of pretending everything is just "some chips on a card."
+
+## Testing
+
+Run the label-related tests with:
+
+```sh
+fvm flutter test test/features/labels/
+```

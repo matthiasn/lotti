@@ -193,7 +193,7 @@ Important behaviors:
 
 - a 21:9 hero banner with a fallback gradient when the image is missing
 - a version badge, with `NEW` only on the newest loaded release
-- a single scrollable markdown document for that release
+- a single scrollable Markdown document for that release
 - a sticky footer with arrows, position dots, and `Skip` or `Done`
 - banner and inline-image precaching for smoother transitions
 
@@ -244,3 +244,21 @@ The app will only show that release when the installed version is new enough.
 Because release notes are content, not code. The app only needs a reliable local gate, a parser, and a reader that does not insult the content on arrival.
 
 Everything else is just a civilized way of saying: show the notes, remember that I saw them, and do not spoil features I have not installed yet.
+
+## Testing
+
+Tests use a mock `PackageInfo` to simulate a high app version (99.99.99) so all test releases are included.
+
+```dart
+TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+    .setMockMethodCallHandler(
+  const MethodChannel('dev.fluttercommunity.plus/package_info'),
+  (methodCall) async => {'version': '99.99.99', ...},
+);
+```
+
+Run the What's New tests with:
+
+```sh
+fvm flutter test test/features/whats_new/
+```

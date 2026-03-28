@@ -33,14 +33,48 @@ That last point is important: `ChatRepository` currently stores sessions and mes
 ```text
 lib/features/ai_chat/
 ├── models/
+│   ├── chat_exceptions.dart            # Typed exceptions for chat failures
+│   ├── chat_message.dart               # Core message model (freezed)
+│   ├── chat_session.dart               # Domain model for chat sessions (freezed)
+│   └── task_summary_tool.dart          # OpenAI function calling schema (freezed)
 ├── repository/
+│   ├── chat_message_processor.dart     # Testable message processing
+│   ├── chat_repository.dart            # Core business logic orchestrator
+│   └── task_summary_repository.dart    # Task data retrieval for tool calls
 ├── services/
+│   ├── audio_transcription_service.dart    # Batch audio transcription
+│   ├── realtime_transcription_service.dart # Real-time transcription via WebSocket
+│   └── system_message_service.dart        # System prompt construction
 ├── ui/
 │   ├── controllers/
+│   │   ├── chat_recorder_controller.dart    # Audio recording state machine
+│   │   ├── chat_session_controller.dart     # Active conversation state
+│   │   ├── chat_sessions_controller.dart    # Session list management
+│   │   ├── chat_stream_parser.dart          # Stream content/reasoning separator
+│   │   └── chat_stream_utils.dart           # Stream processing utilities
 │   ├── models/
+│   │   └── chat_ui_models.dart              # UI-specific models
 │   ├── pages/
+│   │   └── chat_modal_page.dart             # Modal integration
 │   ├── providers/
+│   │   └── chat_model_providers.dart        # Model selection providers
 │   └── widgets/
+│       ├── ai_chat_icon.dart                # Chat icon widget
+│       ├── chat_interface.dart              # Main chat UI
+│       ├── chat_interface/                  # Chat interface sub-widgets
+│       │   ├── assistant_settings_sheet.dart
+│       │   ├── bubble_corner_action.dart
+│       │   ├── chat_header.dart
+│       │   ├── error_banner.dart
+│       │   ├── input_area.dart
+│       │   ├── message_bubble.dart
+│       │   ├── message_timestamp.dart
+│       │   ├── messages_area.dart
+│       │   ├── streaming_content.dart
+│       │   ├── thinking_disclosure.dart
+│       │   └── typing_indicator.dart
+│       ├── thinking_parser.dart             # Streaming reasoning parser
+│       └── waveform_bars.dart               # Live waveform visualization
 └── README.md
 ```
 

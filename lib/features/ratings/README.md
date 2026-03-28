@@ -6,9 +6,9 @@ Right now the shipped catalog is session-focused, but the feature is already bui
 
 ## What This Feature Owns
 
-- The rating catalog registry in [`rating_catalogs.dart`](/Users/mn/github/lotti/lib/features/ratings/data/rating_catalogs.dart)
+- The rating catalog registry in [`rating_catalogs.dart`](data/rating_catalogs.dart)
 - The modal used to create, review, and re-open a rating
-- Persistence of `RatingEntry` records through [`rating_repository.dart`](/Users/mn/github/lotti/lib/features/ratings/repository/rating_repository.dart)
+- Persistence of `RatingEntry` records through [`rating_repository.dart`](repository/rating_repository.dart)
 - The `EntryLink.rating` that connects a rating back to its target entry
 - The "session just ended" prompt state used by the timer UI
 - Read-only rendering for ratings whose catalog is not known on the current client
@@ -37,7 +37,7 @@ This is a small feature, but it crosses more boundaries than it first appears to
 
 ### `RatingQuestion`
 
-Defined in [`rating_question.dart`](/Users/mn/github/lotti/lib/classes/rating_question.dart), a `RatingQuestion` is catalog schema, not stored rating data.
+Defined in [`rating_question.dart`](../../classes/rating_question.dart), a `RatingQuestion` is catalog schema, not stored rating data.
 
 It contains:
 
@@ -49,7 +49,7 @@ It contains:
 
 ### `RatingData`
 
-Defined in [`rating_data.dart`](/Users/mn/github/lotti/lib/classes/rating_data.dart), this is the payload stored inside a `RatingEntry`.
+Defined in [`rating_data.dart`](../../classes/rating_data.dart), this is the payload stored inside a `RatingEntry`.
 
 It contains:
 
@@ -75,7 +75,7 @@ That snapshotting is the feature's main architectural decision. A synced rating 
 
 ## Catalog Registry
 
-[`rating_catalogs.dart`](/Users/mn/github/lotti/lib/features/ratings/data/rating_catalogs.dart) maps `catalogId` values to localized factory functions.
+[`rating_catalogs.dart`](data/rating_catalogs.dart) maps `catalogId` values to localized factory functions.
 
 At the moment the registry contains a single catalog:
 
@@ -122,7 +122,7 @@ sequenceDiagram
 
 ## Repository Guarantees
 
-[`rating_repository.dart`](/Users/mn/github/lotti/lib/features/ratings/repository/rating_repository.dart) is where the feature stops being just "some modal" and starts behaving like proper journal data.
+[`rating_repository.dart`](repository/rating_repository.dart) is where the feature stops being just "some modal" and starts behaving like proper journal data.
 
 - Existing ratings are looked up by `(targetId, catalogId)`.
 - New ratings are stored as `JournalEntity.rating`.
@@ -136,7 +136,7 @@ sequenceDiagram
 
 ### `RatingModal`
 
-[`session_rating_modal.dart`](/Users/mn/github/lotti/lib/features/ratings/ui/session_rating_modal.dart) resolves the catalog at build time and then chooses between two modes.
+[`session_rating_modal.dart`](ui/session_rating_modal.dart) resolves the catalog at build time and then chooses between two modes.
 
 - Known catalog: editable form, pre-populated from any existing rating
 - Unknown catalog: read-only rendering of the stored dimensions
@@ -147,7 +147,7 @@ Save is only enabled when every question in the active catalog has an answer.
 
 ### `RatingSummary`
 
-[`rating_summary.dart`](/Users/mn/github/lotti/lib/features/ratings/ui/rating_summary.dart) is the compact renderer for persisted ratings in entry details.
+[`rating_summary.dart`](ui/rating_summary.dart) is the compact renderer for persisted ratings in entry details.
 
 For labels it uses this fallback chain:
 
@@ -165,7 +165,7 @@ The summary always exposes the modal action. If the catalog is known, reopening 
 
 ### Input Widgets
 
-[`rating_input_widgets.dart`](/Users/mn/github/lotti/lib/features/ratings/ui/rating_input_widgets.dart) currently implements the two interaction primitives the shipped catalog actually uses:
+[`rating_input_widgets.dart`](ui/rating_input_widgets.dart) currently implements the two interaction primitives the shipped catalog actually uses:
 
 - `RatingTapBar`: continuous `0.0` to `1.0` capture with drag support
 - `RatingSegmentedInput`: fixed labeled options mapped to normalized values
@@ -191,9 +191,9 @@ stateDiagram-v2
 
 The concrete pieces are:
 
-- [`DurationWidget`](/Users/mn/github/lotti/lib/features/journal/ui/widgets/entry_details/duration_widget.dart) listens to `TimeService` and detects the recording-to-stopped transition
-- [`SessionEndedController`](/Users/mn/github/lotti/lib/features/ratings/state/session_ended_controller.dart) persists the set of entry IDs whose sessions have just ended
-- [`PulsatingRateButton`](/Users/mn/github/lotti/lib/features/ratings/ui/pulsating_rate_button.dart) shows the prompt, pulses for five cycles, then stays visible until a rating is saved or recording restarts
+- [`DurationWidget`](../journal/ui/widgets/entry_details/duration_widget.dart) listens to `TimeService` and detects the recording-to-stopped transition
+- [`SessionEndedController`](state/session_ended_controller.dart) persists the set of entry IDs whose sessions have just ended
+- [`PulsatingRateButton`](ui/pulsating_rate_button.dart) shows the prompt, pulses for five cycles, then stays visible until a rating is saved or recording restarts
 
 There are two deliberate cleanup paths:
 
@@ -202,9 +202,9 @@ There are two deliberate cleanup paths:
 
 ## Integration Points Outside `features/ratings`
 
-- [`duration_widget.dart`](/Users/mn/github/lotti/lib/features/journal/ui/widgets/entry_details/duration_widget.dart) triggers the post-session prompt flow
-- [`modern_action_items.dart`](/Users/mn/github/lotti/lib/features/journal/ui/widgets/entry_details/header/modern_action_items.dart) adds a menu action that says either "Rate session" or "View rating"
-- [`entry_details_widget.dart`](/Users/mn/github/lotti/lib/features/journal/ui/widgets/entry_details_widget.dart) renders `RatingSummary` for `RatingEntry`
+- [`duration_widget.dart`](../journal/ui/widgets/entry_details/duration_widget.dart) triggers the post-session prompt flow
+- [`modern_action_items.dart`](../journal/ui/widgets/entry_details/header/modern_action_items.dart) adds a menu action that says either "Rate session" or "View rating"
+- [`entry_details_widget.dart`](../journal/ui/widgets/entry_details_widget.dart) renders `RatingSummary` for `RatingEntry`
 
 The prompt button and action-menu entry are both gated by the `enable_session_ratings` config flag.
 
@@ -225,7 +225,7 @@ That tradeoff is deliberate. Editable unknown data sounds flexible right up unti
 
 Adding a new catalog is mostly configuration work, as long as the new question set still fits the existing interaction model.
 
-1. Add a catalog factory to [`rating_catalogs.dart`](/Users/mn/github/lotti/lib/features/ratings/data/rating_catalogs.dart)
+1. Add a catalog factory to [`rating_catalogs.dart`](data/rating_catalogs.dart)
 2. Register it under a stable `catalogId`
 3. Add the localized question strings
 4. Open `RatingModal` with that `catalogId`

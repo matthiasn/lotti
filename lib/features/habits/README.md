@@ -3,7 +3,7 @@
 The `habits` feature sits on top of two different records:
 
 - `HabitDefinition`, which describes the recurring thing
-- `HabitCompletionEntry`, which records what happened on a concrete day
+- `HabitCompletionEntry`, a `JournalEntity` variant that wraps a `HabitCompletionData` payload to record what happened on a concrete day
 
 Most of the feature exists to reconcile those two streams into "what should the user see right now?" That is why the code is much more about derivation than about CRUD.
 
@@ -32,15 +32,24 @@ That split is deliberate. Habits get a focused read model, but writes still pass
 ```text
 lib/features/habits/
 ├── repository/
-│   └── habits_repository.dart
+│   └── habits_repository.dart                 # Repository interface and implementation
 ├── state/
-│   ├── habit_completion_controller.dart
-│   ├── habit_settings_controller.dart
-│   ├── habits_controller.dart
-│   └── habits_state.dart
+│   ├── habit_completion_controller.dart        # Per-habit completion history controller
+│   ├── habit_settings_controller.dart          # Habit settings form state (freezed)
+│   ├── habits_controller.dart                  # Main habits page state controller
+│   └── habits_state.dart                       # Freezed state class with helpers
 └── ui/
-    ├── habits_page.dart
+    ├── habits_page.dart                        # Main habits list page
     └── widgets/
+        ├── habit_category.dart                 # Category display widget
+        ├── habit_completion_card.dart           # Habit completion UI card
+        ├── habit_completion_color_icon.dart     # Completion status icon
+        ├── habit_dashboard.dart                 # Dashboard integration widget
+        ├── habit_page_app_bar.dart              # Habits page app bar
+        ├── habit_streaks.dart                   # Streak tracking display
+        ├── habits_filter.dart                   # Habit filtering controls
+        ├── habits_search.dart                   # Habit search
+        └── status_segmented_control.dart        # Status filter segmented control
 
 Related code outside this folder:
 lib/features/settings/ui/pages/habits/
@@ -90,7 +99,7 @@ That keeps the tab state coherent without turning every card refresh into a full
 - `categoryId` and `dashboardId`
 - optional `autoCompleteRule`
 
-`HabitCompletionData` carries the event-side record:
+`HabitCompletionData` is the data payload inside a `HabitCompletionEntry`. It carries the event-side record:
 
 - `habitId`
 - `dateFrom` / `dateTo`

@@ -164,6 +164,22 @@ sequenceDiagram
   end
 ```
 
+The page has a simple two-state lifecycle driven by `EntitiesCacheService.getDashboardById()`, which is a synchronous cache lookup:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Lookup: open /dashboards/:id
+  Lookup --> Viewing: dashboard found
+  Lookup --> Redirect: dashboard == null
+  Redirect --> [*]: beamToNamed('/dashboards')
+
+  state Viewing {
+    [*] --> Rendering
+    Rendering --> Rendering: timeSpanDays changed
+    Rendering --> Rendering: pan/zoom updates BarWidthController
+  }
+```
+
 Important reality checks:
 
 - the page title comes from `EntitiesCacheService.getDashboardById()`
