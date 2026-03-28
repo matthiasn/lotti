@@ -219,6 +219,33 @@ class AgentRepository {
     return result;
   }
 
+  /// Fetch the latest usable current-scope project report for [projectId].
+  ///
+  /// A project can have multiple historical `agent_project` links. The newest
+  /// link wins, using the shared primary-selection order (`createdAt DESC`,
+  /// then `id DESC`). If that linked agent has no current report or its report
+  /// body is empty, older linked project agents are tried in order.
+  Future<AgentReportEntity?> getLatestProjectReportForProjectId(
+    String projectId,
+  ) async {
+    final links = (await getLinksTo(
+      projectId,
+      type: AgentLinkTypes.agentProject,
+    )).orderedPrimaryFirst();
+
+    for (final link in links) {
+      final report = await getLatestReport(
+        link.fromId,
+        AgentReportScopes.current,
+      );
+      if (report != null && report.content.trim().isNotEmpty) {
+        return report;
+      }
+    }
+
+    return null;
+  }
+
   /// Fetch the [AgentReportHeadEntity] for [agentId] in [scope], or `null` if
   /// none exists.
   Future<AgentReportHeadEntity?> getReportHead(

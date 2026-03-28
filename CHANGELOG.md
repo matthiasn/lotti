@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.935] - 2026-03-28
+## [0.9.936] - 2026-03-28
 ### Changed
 - Projects detail redesign: the top-level Projects flow now opens a new
   design-system-aligned detail page at `/projects/:projectId`, with editable
@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   substring search against the grouped list, and the shared design-system
   search field keeps typed text stable across rebuilds while centering the
   search text correctly on mobile and desktop surfaces.
+- Task agents now receive parent-project context on wake when a task belongs
+  to a project, including the latest project-agent TLDR and full report body
+  so task recommendations can align with project-level priorities and
+  blockers.
 
 ## [0.9.933] - 2026-03-27
 ### Changed

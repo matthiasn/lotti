@@ -190,11 +190,13 @@ class TaskAgentWorkflow {
       AgentMessageKind.observation,
     );
 
-    // 2. Build task context from journal domain.
-    final taskDetailsJson = await aiInputRepository.buildTaskDetailsJson(
-      id: taskId,
-    );
-    final linkedTasksJson = await _buildLinkedTasksContextJson(taskId);
+    // 2. Build task context from journal domain (independent fetches in
+    //    parallel).
+    final (taskDetailsJson, projectContextJson, linkedTasksJson) = await (
+      aiInputRepository.buildTaskDetailsJson(id: taskId),
+      aiInputRepository.buildProjectContextJsonForTask(taskId),
+      _buildLinkedTasksContextJson(taskId),
+    ).wait;
 
     if (taskDetailsJson == null) {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
@@ -256,6 +258,7 @@ class TaskAgentWorkflow {
       lastReport: lastReport,
       journalObservations: journalObservations,
       taskDetailsJson: taskDetailsJson,
+      projectContextJson: projectContextJson,
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
       taskId: taskId,
@@ -776,7 +779,9 @@ class TaskAgentWorkflow {
         buf.write(taskAgentScaffoldReport);
       }
 
-      buf.write(taskAgentScaffoldTrailing);
+      buf
+        ..write(taskAgentScaffoldProjectContext)
+        ..write(taskAgentScaffoldTrailing);
 
       final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
           ? trimmedGeneralDirective
@@ -804,7 +809,10 @@ class TaskAgentWorkflow {
   /// Used as a single constant for legacy templates that have no split
   /// directives. New templates use the three sub-constants below.
   static const taskAgentScaffold =
-      '$taskAgentScaffoldCore$taskAgentScaffoldReport$taskAgentScaffoldTrailing';
+      '$taskAgentScaffoldCore'
+      '$taskAgentScaffoldReport'
+      '$taskAgentScaffoldProjectContext'
+      '$taskAgentScaffoldTrailing';
 
   /// Core scaffold: role description and job responsibilities.
   static const taskAgentScaffoldCore = '''
@@ -898,6 +906,25 @@ The report MUST NOT contain:
 
 Use `record_observations` for ALL internal notes. Observations are private
 and never shown to the user. They persist as your memory across wakes.''';
+
+  /// Parent-project context guidance for task agents.
+  static const taskAgentScaffoldProjectContext = '''
+
+
+## Parent Project Context
+
+When a task belongs to a project, the wake payload may include a
+`Parent Project Context` JSON block. This contains the parent project's
+identity/metadata plus the latest project-agent report with both:
+- `tldr`: the concise project summary
+- `content`: the full project report body
+
+Use this as high-level planning context:
+- align task recommendations with project priorities, blockers, and sequencing
+- look for project-level dependencies or risks that change what matters next
+- prefer direct evidence from the current task when it conflicts with older,
+  broader project context
+''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
   static const taskAgentScaffoldTrailing = '''
@@ -1017,6 +1044,7 @@ and never shown to the user. They persist as your memory across wakes.''';
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> journalObservations,
     required String taskDetailsJson,
+    required String projectContextJson,
     required String linkedTasksJson,
     required Set<String> triggerTokens,
     required String taskId,
@@ -1081,6 +1109,15 @@ and never shown to the user. They persist as your memory across wakes.''';
       ..writeln(taskDetailsJson)
       ..writeln('```')
       ..writeln();
+
+    if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
+      buffer
+        ..writeln('## Parent Project Context')
+        ..writeln('```json')
+        ..writeln(projectContextJson)
+        ..writeln('```')
+        ..writeln();
+    }
 
     if (linkedTasksJson.isNotEmpty && linkedTasksJson != '{}') {
       buffer

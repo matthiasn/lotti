@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -12,9 +13,11 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -39,11 +42,20 @@ class AiInputRepository {
   AiInputRepository(
     this.ref, {
     required TaskSummaryResolver taskSummaryResolver,
-  }) : _taskSummaryResolver = taskSummaryResolver;
+    ProjectRepository? projectRepository,
+    AgentRepository? agentRepository,
+    DomainLogger? domainLogger,
+  }) : _taskSummaryResolver = taskSummaryResolver,
+       _projectRepository = projectRepository ?? getIt<ProjectRepository>(),
+       _agentRepository = agentRepository,
+       _domainLogger = domainLogger;
 
   final JournalDb _db = getIt<JournalDb>();
   final Ref ref;
   final TaskSummaryResolver _taskSummaryResolver;
+  final ProjectRepository _projectRepository;
+  final AgentRepository? _agentRepository;
+  final DomainLogger? _domainLogger;
 
   Future<JournalEntity?> getEntity(String id) async {
     return _db.journalEntityById(id);
@@ -217,6 +229,50 @@ class AiInputRepository {
     return jsonString;
   }
 
+  /// Build parent project context for a task-agent wake.
+  ///
+  /// Returns `{}` when the task is not linked to a project or when no usable
+  /// current project-agent report exists.
+  Future<String> buildProjectContextJsonForTask(String taskId) async {
+    try {
+      final project = await _projectRepository.getProjectForTask(taskId);
+      if (project == null) return '{}';
+
+      final report = await _agentRepository?.getLatestProjectReportForProjectId(
+        project.id,
+      );
+      if (report == null) return '{}';
+
+      final data = <String, dynamic>{
+        'project': <String, dynamic>{
+          'id': project.id,
+          'title': project.data.title,
+          'status': project.data.status.toDbString,
+          'targetDate': project.data.targetDate?.toIso8601String(),
+          'categoryId': project.meta.categoryId,
+        },
+        'latestProjectAgentReport': <String, dynamic>{
+          'agentId': report.agentId,
+          'createdAt': report.createdAt.toIso8601String(),
+          'tldr': report.tldr,
+          'content': report.content,
+        },
+      };
+
+      const encoder = JsonEncoder.withIndent('    ');
+      return encoder.convert(data);
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomains.ai,
+        'buildProjectContextJsonForTask failed',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: 'AiInputRepository',
+      );
+      return '{}';
+    }
+  }
+
   /// Build label tuples from the cache service.
   ///
   /// Uses [EntitiesCacheService] for O(1) lookups per label, avoiding
@@ -388,12 +444,16 @@ class AiInputRepository {
 
 @Riverpod(keepAlive: true)
 AiInputRepository aiInputRepository(Ref ref) {
+  final agentRepository = getIt.isRegistered<AgentDatabase>()
+      ? AgentRepository(getIt<AgentDatabase>())
+      : null;
   return AiInputRepository(
     ref,
-    taskSummaryResolver: TaskSummaryResolver(
-      getIt.isRegistered<AgentDatabase>()
-          ? AgentRepository(getIt<AgentDatabase>())
-          : null,
-    ),
+    taskSummaryResolver: TaskSummaryResolver(agentRepository),
+    projectRepository: getIt<ProjectRepository>(),
+    agentRepository: agentRepository,
+    domainLogger: getIt.isRegistered<DomainLogger>()
+        ? getIt<DomainLogger>()
+        : null,
   );
 }
