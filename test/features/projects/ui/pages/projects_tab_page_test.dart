@@ -177,7 +177,7 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
   });
 
-  testWidgets('row tap opens the existing settings project detail route', (
+  testWidgets('row tap opens the top-level project detail route', (
     tester,
   ) async {
     var navigatedPath = '';
@@ -193,7 +193,7 @@ void main() {
 
     expect(
       navigatedPath,
-      '/settings/projects/project-1?categoryId=work',
+      '/projects/project-1',
     );
   });
 

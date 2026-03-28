@@ -344,5 +344,25 @@ void main() {
       );
       expect(state.project!.data.title, 'Updated via stream');
     });
+
+    test('updateCategoryId marks hasChanges true', () async {
+      final container = await createLoadedContainer();
+      container
+          .read(projectDetailControllerProvider(projectId).notifier)
+          .updateCategoryId('new-category-id');
+      final state = container.read(projectDetailControllerProvider(projectId));
+      expect(state.hasChanges, isTrue);
+      expect(state.project!.meta.categoryId, 'new-category-id');
+    });
+
+    test('no changes when setting same categoryId', () async {
+      // The default test project has null categoryId
+      final container = await createLoadedContainer();
+      container
+          .read(projectDetailControllerProvider(projectId).notifier)
+          .updateCategoryId(null);
+      final state = container.read(projectDetailControllerProvider(projectId));
+      expect(state.hasChanges, isFalse);
+    });
   });
 }

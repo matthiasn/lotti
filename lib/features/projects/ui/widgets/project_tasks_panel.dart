@@ -8,9 +8,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A panel listing highlighted tasks for a project with total duration.
 class ProjectTasksPanel extends StatelessWidget {
-  const ProjectTasksPanel({required this.record, super.key});
+  const ProjectTasksPanel({
+    required this.record,
+    this.onTaskTap,
+    super.key,
+  });
 
   final ProjectRecord record;
+  final ValueChanged<TaskSummary>? onTaskTap;
 
   @override
   Widget build(BuildContext context) {
@@ -33,20 +38,20 @@ class ProjectTasksPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: tokens.spacing.step3),
                 CountDotBadge(
                   count: record.highlightedTaskSummaries.length,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: tokens.spacing.step3),
           Icon(
             Icons.timer_outlined,
-            size: 20,
+            size: tokens.typography.lineHeight.subtitle2,
             color: ShowcasePalette.timeGreen(context),
           ),
-          const SizedBox(width: 2),
+          SizedBox(width: tokens.spacing.step1),
           Text(
             showcaseFormatDuration(
               record.highlightedTasksTotalDuration,
@@ -58,24 +63,33 @@ class ProjectTasksPanel extends StatelessWidget {
         ],
       ),
       itemCount: record.highlightedTaskSummaries.length,
-      itemBuilder: (_, index) =>
-          TaskSummaryRow(summary: record.highlightedTaskSummaries[index]),
+      itemBuilder: (_, index) => TaskSummaryRow(
+        summary: record.highlightedTaskSummaries[index],
+        onTap: onTaskTap,
+      ),
     );
   }
 }
 
 /// A row displaying a single task's title, estimated duration, and status.
 class TaskSummaryRow extends StatelessWidget {
-  const TaskSummaryRow({required this.summary, super.key});
+  const TaskSummaryRow({
+    required this.summary,
+    this.onTap,
+    super.key,
+  });
 
   final TaskSummary summary;
+  final ValueChanged<TaskSummary>? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    final child = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step3,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -91,16 +105,16 @@ class TaskSummaryRow extends StatelessWidget {
                     color: ShowcasePalette.highText(context),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: tokens.spacing.step1),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.timer_outlined,
-                      size: 14,
+                      size: tokens.typography.size.caption,
                       color: ShowcasePalette.lowText(context),
                     ),
-                    const SizedBox(width: 2),
+                    SizedBox(width: tokens.spacing.step1),
                     Text(
                       showcaseFormatDuration(summary.estimatedDuration),
                       style: tokens.typography.styles.others.caption.copyWith(
@@ -112,15 +126,27 @@ class TaskSummaryRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: tokens.spacing.step4),
           TaskStatePill(status: summary.task.data.status),
-          const SizedBox(width: 8),
+          SizedBox(width: tokens.spacing.step3),
           Icon(
             Icons.arrow_forward_ios_rounded,
-            size: 16,
+            size: tokens.typography.lineHeight.caption,
             color: ShowcasePalette.mediumText(context),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTap!(summary),
+        child: child,
       ),
     );
   }

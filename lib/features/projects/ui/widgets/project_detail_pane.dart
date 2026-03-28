@@ -6,7 +6,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
-import 'package:lotti/features/projects/ui/widgets/review_sessions_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -18,12 +17,18 @@ class ProjectDetailPane extends StatefulWidget {
     required this.record,
     required this.currentTime,
     this.showLeadingBorder = true,
+    this.onCategoryTap,
+    this.onTargetDateTap,
+    this.onStatusTap,
     super.key,
   });
 
   final ProjectRecord record;
   final DateTime currentTime;
   final bool showLeadingBorder;
+  final VoidCallback? onCategoryTap;
+  final VoidCallback? onTargetDateTap;
+  final VoidCallback? onStatusTap;
 
   @override
   State<ProjectDetailPane> createState() => _ProjectDetailPaneState();
@@ -40,6 +45,8 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: ShowcasePalette.page(context),
@@ -56,70 +63,46 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DetailHeader(record: widget.record),
+              _DetailHeader(
+                record: widget.record,
+                onCategoryTap: widget.onCategoryTap,
+                onTargetDateTap: widget.onTargetDateTap,
+                onStatusTap: widget.onStatusTap,
+              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spacing.step5,
+                  tokens.spacing.step5,
+                  tokens.spacing.step5,
+                  tokens.spacing.step8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     HealthPanel(record: widget.record),
-                    const SizedBox(height: 16),
+                    SizedBox(height: tokens.spacing.step5),
                     TextSection(
                       title: context.messages.projectShowcaseDescriptionTitle,
                       body: widget.record.project.entryText?.plainText ?? '',
                     ),
-                    const SizedBox(height: 16),
-                    TextSection(
+                    SizedBox(height: tokens.spacing.step5),
+                    ExpandableReportSection(
                       title: context.messages.projectShowcaseAiReportTitle,
-                      body: widget.record.aiSummary,
+                      body:
+                          widget.record.aiSummary.isEmpty &&
+                              widget.record.reportContent.isEmpty
+                          ? context.messages.agentReportNone
+                          : widget.record.aiSummary,
+                      fullContent: widget.record.reportContent,
+                      recommendations: widget.record.recommendations,
                       trailingLabel: showcaseUpdatedLabel(
                         context,
                         updatedAt: widget.record.reportUpdatedAt,
                         currentTime: widget.currentTime,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      context.messages.projectShowcaseRecommendationsTitle,
-                      style: context
-                          .designTokens
-                          .typography
-                          .styles
-                          .subtitle
-                          .subtitle2
-                          .copyWith(
-                            color: ShowcasePalette.highText(context),
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    RecommendationsList(items: widget.record.recommendations),
-                    const SizedBox(height: 16),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (constraints.maxWidth < 720) {
-                          return Column(
-                            children: [
-                              ProjectTasksPanel(record: widget.record),
-                              const SizedBox(height: 16),
-                              ReviewSessionsPanel(record: widget.record),
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: ProjectTasksPanel(record: widget.record),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ReviewSessionsPanel(record: widget.record),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                    SizedBox(height: tokens.spacing.step5),
+                    ProjectTasksPanel(record: widget.record),
                   ],
                 ),
               ),
@@ -132,9 +115,17 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
 }
 
 class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({required this.record});
+  const _DetailHeader({
+    required this.record,
+    this.onCategoryTap,
+    this.onTargetDateTap,
+    this.onStatusTap,
+  });
 
   final ProjectRecord record;
+  final VoidCallback? onCategoryTap;
+  final VoidCallback? onTargetDateTap;
+  final VoidCallback? onStatusTap;
 
   @override
   Widget build(BuildContext context) {
@@ -168,26 +159,37 @@ class _DetailHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              CategoryTag(
-                label: record.category.name,
-                icon: record.category.icon?.iconData ?? Icons.label_outline,
-                color: colorFromCssHex(
-                  record.category.color ?? defaultCategoryColorHex,
+              if (record.category case final category?)
+                CategoryTag(
+                  label: category.name,
+                  icon: category.icon?.iconData ?? Icons.label_outline,
+                  color: colorFromCssHex(
+                    category.color ?? defaultCategoryColorHex,
+                  ),
+                  onTap: onCategoryTap,
                 ),
-              ),
               if (record.project.data.targetDate case final targetDate?) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: tokens.spacing.step3),
                 _OutlinedMetaTag(
                   icon: Icons.calendar_today_outlined,
                   label: DateFormat.yMMMd(
                     Localizations.localeOf(context).toString(),
                   ).format(targetDate),
+                  onTap: onTargetDateTap,
+                ),
+              ] else if (onTargetDateTap != null) ...[
+                SizedBox(width: tokens.spacing.step3),
+                _OutlinedMetaTag(
+                  icon: Icons.calendar_today_outlined,
+                  label: context.messages.projectTargetDateLabel,
+                  onTap: onTargetDateTap,
                 ),
               ],
               const Spacer(),
               ProjectStatusPill(
                 status: record.project.data.status,
                 large: true,
+                onTap: onStatusTap,
               ),
             ],
           ),
@@ -201,20 +203,27 @@ class _OutlinedMetaTag extends StatelessWidget {
   const _OutlinedMetaTag({
     required this.icon,
     required this.label,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+    final child = Container(
+      constraints: BoxConstraints(
+        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
         border: Border.all(color: ShowcasePalette.lowText(context)),
       ),
       child: Row(
@@ -222,10 +231,10 @@ class _OutlinedMetaTag extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 12,
+            size: tokens.typography.size.caption,
             color: ShowcasePalette.lowText(context),
           ),
-          const SizedBox(width: 2),
+          SizedBox(width: tokens.spacing.step1),
           Text(
             label,
             style: tokens.typography.styles.others.caption.copyWith(
@@ -233,6 +242,19 @@ class _OutlinedMetaTag extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        onTap: onTap,
+        child: child,
       ),
     );
   }

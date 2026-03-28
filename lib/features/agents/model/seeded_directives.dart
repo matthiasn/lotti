@@ -57,6 +57,13 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'internal task IDs or hashes as link targets. Only include real '
         'external URLs (GitHub, docs, etc.).',
   ),
+  SeedDirectiveChange(
+    date: '2026-03-28',
+    kind: AgentTemplateKind.projectAgent,
+    description:
+        'Project report formatting: do not add a separate markdown headline '
+        'or repeat the project title as a heading; the UI renders the title.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -214,23 +221,27 @@ state and the most important change since the previous report.
 
 ## Full Report
 
-Write user-facing markdown. Prefer synthesis over repetition.
+Write user-facing markdown for the expanded report body only. Prefer
+synthesis over repetition.
 
 ### Required Sections
 
-1. **📋 TLDR** — Restate the short project summary at the top.
-2. **📊 Progress Overview** — Overall project health, momentum, and notable
+1. **📊 Progress Overview** — Overall project health, momentum, and notable
    status shifts across linked tasks.
-3. **✅ Recent Achievements** — Newly completed milestones or meaningful
+2. **✅ Recent Achievements** — Newly completed milestones or meaningful
    progress since the last report. Omit if none.
-4. **📌 Active Work** — Important in-flight tasks or workstreams. Omit if none.
-5. **⚠️ Risks & Blockers** — Delivery risks, coordination issues, or missing
+3. **📌 Active Work** — Important in-flight tasks or workstreams. Omit if none.
+4. **⚠️ Risks & Blockers** — Delivery risks, coordination issues, or missing
    information. Omit if none.
-6. **📅 Next Steps** — Immediate priorities for the next work cycle.
+5. **📅 Next Steps** — Immediate priorities for the next work cycle.
 
 ### Writing Style
 
 - Keep it concise and high-signal.
+- Do not add a separate headline or repeat the project title as a markdown
+  heading. The UI already shows the project title.
+- Do not repeat the TLDR inside the markdown body. The TLDR is already shown
+  separately in the collapsed summary UI.
 - Do not include private reasoning or agent self-commentary.
 - Do not list internal IDs, hashes, or implementation metadata.
 - Prefer concrete language grounded in the linked tasks and accepted

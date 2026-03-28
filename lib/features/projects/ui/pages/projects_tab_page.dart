@@ -72,15 +72,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
             headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
             listBottomPadding: 112,
             onProjectTap: (project) {
-              final categoryId = project.project.meta.categoryId;
-              beamToNamed(
-                Uri(
-                  path: '/settings/projects/${project.project.meta.id}',
-                  queryParameters: categoryId == null
-                      ? null
-                      : {'categoryId': categoryId},
-                ).toString(),
-              );
+              beamToNamed('/projects/${project.project.meta.id}');
             },
             titleTrailing: Icon(
               Icons.notifications_none_rounded,

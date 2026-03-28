@@ -76,6 +76,30 @@ Future<Set<String>?> showDesignSystemFilterSelectionModal({
   DesignSystemFilterOptionAppearanceResolver? appearanceResolver,
   String? applyLabel,
 }) {
+  Widget sheetBuilder(
+    BuildContext innerContext,
+    StateSetter setState,
+    Set<String> selectedIds, {
+    required bool showDragHandle,
+  }) {
+    return DesignSystemFilterSelectionSheet(
+      title: title,
+      options: options,
+      selectedIds: selectedIds,
+      showDragHandle: showDragHandle,
+      appearanceResolver: appearanceResolver,
+      applyLabel: applyLabel ?? innerContext.messages.doneButton,
+      onOptionToggled: (optionId) {
+        setState(() {
+          if (!selectedIds.add(optionId)) {
+            selectedIds.remove(optionId);
+          }
+        });
+      },
+      onApplyPressed: () => Navigator.of(innerContext).pop(selectedIds),
+    );
+  }
+
   return switch (presentation) {
     DesignSystemFilterPresentation.desktop => showDialog<Set<String>>(
       context: context,
@@ -85,22 +109,11 @@ Future<Set<String>?> showDesignSystemFilterSelectionModal({
           builder: (dialogContext, setState) => Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.all(24),
-            child: DesignSystemFilterSelectionSheet(
-              title: title,
-              options: options,
-              selectedIds: selectedIds,
+            child: sheetBuilder(
+              dialogContext,
+              setState,
+              selectedIds,
               showDragHandle: false,
-              appearanceResolver: appearanceResolver,
-              applyLabel: applyLabel ?? dialogContext.messages.doneButton,
-              onOptionToggled: (optionId) {
-                setState(() {
-                  if (!selectedIds.add(optionId)) {
-                    selectedIds.remove(optionId);
-                  }
-                });
-              },
-              onApplyPressed: () =>
-                  Navigator.of(dialogContext).pop(selectedIds),
             ),
           ),
         );
@@ -115,21 +128,11 @@ Future<Set<String>?> showDesignSystemFilterSelectionModal({
         return StatefulBuilder(
           builder: (sheetContext, setState) => SafeArea(
             top: false,
-            child: DesignSystemFilterSelectionSheet(
-              title: title,
-              options: options,
-              selectedIds: selectedIds,
+            child: sheetBuilder(
+              sheetContext,
+              setState,
+              selectedIds,
               showDragHandle: true,
-              appearanceResolver: appearanceResolver,
-              applyLabel: applyLabel ?? sheetContext.messages.doneButton,
-              onOptionToggled: (optionId) {
-                setState(() {
-                  if (!selectedIds.add(optionId)) {
-                    selectedIds.remove(optionId);
-                  }
-                });
-              },
-              onApplyPressed: () => Navigator.of(sheetContext).pop(selectedIds),
             ),
           ),
         );

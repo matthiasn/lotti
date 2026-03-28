@@ -94,5 +94,27 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('calls onTap when the row is tapped', (tester) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 't1', title: 'Build feature'),
+      );
+      Object? tappedSummary;
+
+      await tester.pumpWidget(
+        wrap(
+          TaskSummaryRow(
+            summary: summary,
+            onTap: (value) => tappedSummary = value,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Build feature'));
+      await tester.pump();
+
+      expect(tappedSummary, same(summary));
+    });
   });
 }

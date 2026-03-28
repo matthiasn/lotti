@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
@@ -212,7 +213,7 @@ class _TaskAgentReportSectionState
 
     final showCountdown = !isRunning && _countdownSeconds > 0;
     final countdownText = showCountdown
-        ? _formatCountdown(_countdownSeconds)
+        ? formatCountdown(_countdownSeconds)
         : null;
 
     return Padding(
@@ -409,13 +410,6 @@ class _TaskAgentReportSectionState
       }
     }
   }
-}
-
-/// Formats a countdown as `m:ss` for display.
-String _formatCountdown(int totalSeconds) {
-  final m = totalSeconds ~/ 60;
-  final s = totalSeconds % 60;
-  return '$m:${s.toString().padLeft(2, '0')}';
 }
 
 /// Fixed-width pill that displays the agent wake countdown timer.

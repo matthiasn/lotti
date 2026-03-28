@@ -1,6 +1,7 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 
 /// Presentation model for a project record displayed in the project
 /// list/detail layout.
@@ -9,10 +10,13 @@ class ProjectRecord {
     required this.project,
     required this.category,
     required this.healthScore,
+    required this.healthMetrics,
+    required this.reportNextWakeAt,
     required this.completedTaskCount,
     required this.totalTaskCount,
     required this.blockedTaskCount,
     required this.aiSummary,
+    required this.reportContent,
     required this.recommendations,
     required this.reportUpdatedAt,
     required this.highlightedTaskSummaries,
@@ -21,12 +25,15 @@ class ProjectRecord {
   });
 
   final ProjectEntry project;
-  final CategoryDefinition category;
+  final CategoryDefinition? category;
   final int healthScore;
+  final ProjectHealthMetrics? healthMetrics;
+  final DateTime? reportNextWakeAt;
   final int completedTaskCount;
   final int totalTaskCount;
   final int blockedTaskCount;
   final String aiSummary;
+  final String reportContent;
   final List<String> recommendations;
   final DateTime reportUpdatedAt;
   final List<TaskSummary> highlightedTaskSummaries;
@@ -108,7 +115,9 @@ class ProjectListData {
   ProjectsOverviewSnapshot get overviewSnapshot {
     final recordsByCategory = <String, List<ProjectRecord>>{};
     for (final record in projects) {
-      (recordsByCategory[record.category.id] ??= <ProjectRecord>[]).add(record);
+      final categoryId = record.category?.id;
+      if (categoryId == null) continue;
+      (recordsByCategory[categoryId] ??= <ProjectRecord>[]).add(record);
     }
 
     return ProjectsOverviewSnapshot(

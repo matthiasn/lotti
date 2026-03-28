@@ -113,6 +113,7 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   bool _hasChanges() {
     if (_pendingProject == null || _originalProject == null) return false;
     return _pendingProject!.data.title != _originalProject!.data.title ||
+        _pendingProject!.meta.categoryId != _originalProject!.meta.categoryId ||
         _pendingProject!.data.targetDate != _originalProject!.data.targetDate ||
         _pendingProject!.data.status != _originalProject!.data.status;
   }
@@ -135,6 +136,19 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     if (_pendingProject == null) return;
     _pendingProject = _pendingProject!.copyWith(
       data: _pendingProject!.data.copyWith(targetDate: targetDate),
+    );
+    state = state.copyWith(
+      project: _pendingProject,
+      hasChanges: _hasChanges(),
+      error: null,
+    );
+  }
+
+  /// Updates the pending project category.
+  void updateCategoryId(String? categoryId) {
+    if (_pendingProject == null) return;
+    _pendingProject = _pendingProject!.copyWith(
+      meta: _pendingProject!.meta.copyWith(categoryId: categoryId),
     );
     state = state.copyWith(
       project: _pendingProject,
