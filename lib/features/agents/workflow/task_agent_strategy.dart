@@ -461,12 +461,21 @@ class TaskAgentStrategy extends ConversationStrategy {
     }
 
     final resolver = resolveRelatedTaskDetails;
-    final response = resolver != null ? await resolver(requestedTaskId) : null;
+    String? response;
+    try {
+      response = resolver != null ? await resolver(requestedTaskId) : null;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve related task details for $requestedTaskId',
+        name: 'TaskAgentStrategy',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     if (response == null || response.trim().isEmpty) {
       final toolError =
           'Error: related task details could not be resolved for '
-          '"$requestedTaskId". Only sibling tasks from the same parent '
-          'project are allowed.';
+          '"$requestedTaskId".';
       manager.addToolResponse(toolCallId: callId, response: toolError);
       await _recordToolResultMessage(
         toolName: relatedTaskDetailsToolName,

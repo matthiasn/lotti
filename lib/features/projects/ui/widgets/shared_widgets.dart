@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -12,7 +13,7 @@ import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 
 /// A small coloured tag displaying a category icon and label.
 class CategoryTag extends StatelessWidget {
@@ -681,7 +682,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
       return 0;
     }
 
-    final remaining = nextWakeAt.difference(DateTime.now());
+    final remaining = nextWakeAt.difference(clock.now());
     if (remaining <= Duration.zero) {
       return 0;
     }
@@ -791,38 +792,18 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
         : trimmedAdditional;
   }
 
-  Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   Widget _buildLink(
     BuildContext context,
     InlineSpan text,
     String url,
     TextStyle style,
-  ) {
-    final linkColor = ShowcasePalette.teal(context);
-    return Semantics(
-      link: true,
-      child: InkWell(
-        onTap: () => _handleLinkTap(url, ''),
-        mouseCursor: SystemMouseCursors.click,
-        child: Text.rich(
-          TextSpan(
-            children: [text],
-            style: style.copyWith(
-              color: linkColor,
-              decoration: TextDecoration.underline,
-              decorationColor: linkColor,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  ) => buildMarkdownLink(
+    context,
+    text,
+    url,
+    style,
+    linkColor: ShowcasePalette.teal(context),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -943,7 +924,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                     SelectionArea(
                       child: GptMarkdown(
                         parsed.tldr,
-                        onLinkTap: _handleLinkTap,
+                        onLinkTap: handleMarkdownLinkTap,
                         linkBuilder: _buildLink,
                       ),
                     ),
@@ -952,7 +933,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                       SelectionArea(
                         child: GptMarkdown(
                           parsed.additional!,
-                          onLinkTap: _handleLinkTap,
+                          onLinkTap: handleMarkdownLinkTap,
                           linkBuilder: _buildLink,
                         ),
                       ),
@@ -963,7 +944,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                   key: const ValueKey('collapsed-report'),
                   child: GptMarkdown(
                     parsed.tldr,
-                    onLinkTap: _handleLinkTap,
+                    onLinkTap: handleMarkdownLinkTap,
                     linkBuilder: _buildLink,
                   ),
                 ),

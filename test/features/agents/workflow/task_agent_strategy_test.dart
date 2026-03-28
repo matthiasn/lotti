@@ -415,6 +415,52 @@ void main() {
         },
       );
 
+      test(
+        'returns tool error when related-task resolver throws',
+        () async {
+          final throwingStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            resolveRelatedTaskDetails: (_) async =>
+                throw Exception('DB connection lost'),
+            allowedRelatedTaskIds: const {'task-002'},
+          );
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-throw',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.getRelatedTaskDetails,
+                arguments: jsonEncode({'taskId': 'task-002'}),
+              ),
+            ),
+          ];
+
+          await throwingStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final capturedResponse =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-throw',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(capturedResponse, contains('could not be resolved'));
+        },
+      );
+
       test('records error and continues on invalid JSON arguments', () async {
         final toolCalls = [
           const ChatCompletionMessageToolCall(

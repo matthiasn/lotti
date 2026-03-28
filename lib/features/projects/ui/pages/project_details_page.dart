@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -124,8 +125,8 @@ class ProjectDetailsPage extends ConsumerWidget {
   ) async {
     final currentDate = project.data.targetDate;
     final firstDate = DateTime(2020);
-    final lastDate = DateTime.now().add(const Duration(days: 365 * 5));
-    final initialDate = currentDate ?? DateTime.now();
+    final lastDate = clock.now().add(const Duration(days: 365 * 5));
+    final initialDate = currentDate ?? clock.now();
     final clampedInitial = initialDate.isBefore(firstDate)
         ? firstDate
         : initialDate.isAfter(lastDate)
@@ -154,14 +155,6 @@ class ProjectDetailsPage extends ConsumerWidget {
     WidgetRef ref,
     ProjectEntry project,
   ) async {
-    const statusKinds = [
-      _ProjectStatusKind.open,
-      _ProjectStatusKind.active,
-      _ProjectStatusKind.onHold,
-      _ProjectStatusKind.completed,
-      _ProjectStatusKind.archived,
-    ];
-
     final selected = await showModalBottomSheet<ProjectStatus>(
       context: context,
       builder: (sheetContext) {
@@ -176,10 +169,10 @@ class ProjectDetailsPage extends ConsumerWidget {
                   style: Theme.of(sheetContext).textTheme.titleMedium,
                 ),
               ),
-              for (final kind in statusKinds)
+              for (final kind in allProjectStatusKinds)
                 Builder(
                   builder: (_) {
-                    final option = _buildStatus(kind, DateTime(2000));
+                    final option = buildProjectStatus(kind, DateTime(2000));
                     final isSelected =
                         option.runtimeType == project.data.status.runtimeType;
                     final (label, color, icon) = projectStatusAttributes(
@@ -206,9 +199,9 @@ class ProjectDetailsPage extends ConsumerWidget {
                           Navigator.of(sheetContext).pop();
                           return;
                         }
-                        Navigator.of(
-                          sheetContext,
-                        ).pop(_buildStatus(kind, DateTime.now()));
+                        Navigator.of(sheetContext).pop(
+                          buildProjectStatus(kind, clock.now()),
+                        );
                       },
                     );
                   },
@@ -240,38 +233,3 @@ class ProjectDetailsPage extends ConsumerWidget {
     beamToNamed('/projects');
   }
 }
-
-ProjectStatus _buildStatus(_ProjectStatusKind kind, DateTime at) {
-  final utcOffset = at.timeZoneOffset.inMinutes;
-
-  return switch (kind) {
-    _ProjectStatusKind.open => ProjectStatus.open(
-      id: 'project-status-open',
-      createdAt: at,
-      utcOffset: utcOffset,
-    ),
-    _ProjectStatusKind.active => ProjectStatus.active(
-      id: 'project-status-active',
-      createdAt: at,
-      utcOffset: utcOffset,
-    ),
-    _ProjectStatusKind.onHold => ProjectStatus.onHold(
-      id: 'project-status-on-hold',
-      createdAt: at,
-      utcOffset: utcOffset,
-      reason: '',
-    ),
-    _ProjectStatusKind.completed => ProjectStatus.completed(
-      id: 'project-status-completed',
-      createdAt: at,
-      utcOffset: utcOffset,
-    ),
-    _ProjectStatusKind.archived => ProjectStatus.archived(
-      id: 'project-status-archived',
-      createdAt: at,
-      utcOffset: utcOffset,
-    ),
-  };
-}
-
-enum _ProjectStatusKind { open, active, onHold, completed, archived }

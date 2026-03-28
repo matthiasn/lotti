@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
@@ -41,7 +40,8 @@ Future<void> showProjectsFilterModal({
             section: section,
             presentation: presentation,
             appearanceResolver: (optionId) {
-              final status = _representativeStatus(optionId);
+              final kind = projectStatusKindFromFilterId(optionId);
+              final status = buildProjectStatus(kind, DateTime(2000));
               final (_, color, icon) = projectStatusAttributes(
                 sheetContext,
                 status,
@@ -64,41 +64,4 @@ Future<void> showProjectsFilterModal({
       }
     },
   );
-}
-
-ProjectStatus _representativeStatus(String statusId) {
-  final timestamp = DateTime(2000);
-  return switch (statusId) {
-    ProjectStatusFilterIds.open => ProjectStatus.open(
-      id: 'filter-open',
-      createdAt: timestamp,
-      utcOffset: 0,
-    ),
-    ProjectStatusFilterIds.active => ProjectStatus.active(
-      id: 'filter-active',
-      createdAt: timestamp,
-      utcOffset: 0,
-    ),
-    ProjectStatusFilterIds.onHold => ProjectStatus.onHold(
-      id: 'filter-on-hold',
-      createdAt: timestamp,
-      utcOffset: 0,
-      reason: '',
-    ),
-    ProjectStatusFilterIds.completed => ProjectStatus.completed(
-      id: 'filter-completed',
-      createdAt: timestamp,
-      utcOffset: 0,
-    ),
-    ProjectStatusFilterIds.archived => ProjectStatus.archived(
-      id: 'filter-archived',
-      createdAt: timestamp,
-      utcOffset: 0,
-    ),
-    _ => ProjectStatus.open(
-      id: 'filter-open',
-      createdAt: timestamp,
-      utcOffset: 0,
-    ),
-  };
 }
