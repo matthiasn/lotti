@@ -989,33 +989,33 @@ void main() {
     );
 
     test(
-      'visibleProjectGroupsProvider ignores text query when search mode is disabled',
-      () async {
-        final snapshot = makeSnapshot();
+      'ProjectsFilterController.setTextQuery toggles local text search mode',
+      () {
         final scopedContainer = ProviderContainer(
           overrides: [
             projectsOverviewProvider.overrideWith(
-              (ref) => Stream.value(snapshot),
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
             ),
           ],
         );
         addTearDown(scopedContainer.dispose);
-        final subscription = scopedContainer.listen(
-          projectsOverviewProvider,
-          (previous, next) {},
-          fireImmediately: true,
+
+        final notifier = scopedContainer.read(
+          projectsFilterControllerProvider.notifier,
+        )..setTextQuery('nonexistent-term');
+        expect(
+          scopedContainer.read(projectsFilterControllerProvider),
+          const ProjectsFilter(
+            textQuery: 'nonexistent-term',
+            searchMode: ProjectsSearchMode.localText,
+          ),
         );
-        addTearDown(subscription.close);
-        await scopedContainer.read(projectsOverviewProvider.future);
 
-        // Set a text query but leave search mode disabled
-        scopedContainer
-            .read(projectsFilterControllerProvider.notifier)
-            .setTextQuery('nonexistent-term');
-
-        final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
-        expect(groups, isNotNull);
-        expect(groups, hasLength(2));
+        notifier.setTextQuery('');
+        expect(
+          scopedContainer.read(projectsFilterControllerProvider),
+          const ProjectsFilter(),
+        );
       },
     );
 

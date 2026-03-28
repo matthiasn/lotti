@@ -44,6 +44,8 @@ class DesignSystemTextarea extends StatefulWidget {
 }
 
 class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
+  static const InputBorder _noBorder = InputBorder.none;
+
   late final TextEditingController _controller;
   bool _ownsController = false;
   bool _focused = false;
@@ -131,7 +133,12 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
                     hintText: widget.hintText,
                     hintStyle: spec.hintStyle,
                     contentPadding: spec.contentPadding,
-                    border: InputBorder.none,
+                    border: _noBorder,
+                    enabledBorder: _noBorder,
+                    disabledBorder: _noBorder,
+                    focusedBorder: _noBorder,
+                    errorBorder: _noBorder,
+                    focusedErrorBorder: _noBorder,
                     counterText: '',
                   ),
                 ),

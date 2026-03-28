@@ -213,6 +213,12 @@ void main() {
         textField.cursorColor,
         dsTokensLight.colors.text.highEmphasis,
       );
+      expect(textField.decoration!.border, InputBorder.none);
+      expect(textField.decoration!.enabledBorder, InputBorder.none);
+      expect(textField.decoration!.disabledBorder, InputBorder.none);
+      expect(textField.decoration!.focusedBorder, InputBorder.none);
+      expect(textField.decoration!.errorBorder, InputBorder.none);
+      expect(textField.decoration!.focusedErrorBorder, InputBorder.none);
     });
 
     testWidgets('content padding gives enough room at top', (tester) async {

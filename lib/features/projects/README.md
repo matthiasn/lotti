@@ -101,9 +101,9 @@ lib/features/projects/
 - `projectHealthSnapshotProvider(projectId)` — aggregates the latest health band, stale-summary state, and active `ProjectRecommendationEntity` records for a single project so dashboard UI can consume one project-scoped state object.
 - `projectHealthOverviewEntriesProvider(categoryId)` — prepares category-scoped project health entries, already sorted worst-band-first for future health dashboard list surfaces.
 - `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
-- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected project statuses, selected category IDs, text query, and search mode for the top-level tab rollout.
+- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected project statuses, selected category IDs, text query, and search mode for the top-level tab rollout. Setting a non-empty text query promotes the search mode to `localText`; clearing it disables text filtering again without disturbing the other filter sections.
 - `projectsOverviewProvider` — `StreamProvider.autoDispose` exposing the batched grouped snapshot for the top-level projects tab via `ProjectRepository.watchProjectsOverview()`.
-- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. It currently supports project-status and category filters in production, and local text filtering when `searchMode == ProjectsSearchMode.localText`; the live tab still keeps the search field itself disabled while vector search is pending.
+- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. It supports project-status and category filters in production, and now also powers the live tab's local substring search when `searchMode == ProjectsSearchMode.localText`. Vector search remains a separate future integration.
 
 ### Detail Controller (`project_detail_controller.dart`)
 
@@ -181,9 +181,11 @@ only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`.
 (`Scaffold.floatingActionButton` in the live tab, `Positioned` in the
 Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain
 an external layout responsibility. The header uses the same left-aligned title,
-notification icon, disabled search field, and filter icon shown in the
-Widgetbook mobile reference, and the filter icon opens the shared DS modal
-scaffold with Projects-specific status and category filters.
+notification icon, design-system search field, and filter icon shown in the
+Widgetbook mobile reference. In production that search field now performs local
+substring filtering against the already-loaded grouped projects, while the
+filter icon opens the shared DS modal scaffold with Projects-specific status
+and category filters.
 
 Tapping a project row in the tab now navigates to `/projects/:projectId`
 instead of opening the older settings-scoped detail route.

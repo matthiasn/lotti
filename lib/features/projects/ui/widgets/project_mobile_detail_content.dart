@@ -149,7 +149,7 @@ class _ProjectMobileHeader extends StatelessWidget {
     final tokens = context.designTokens;
     final category = record.category;
     final healthMetrics = record.healthMetrics;
-    final titleStyle = tokens.typography.styles.heading.heading2.copyWith(
+    final titleStyle = tokens.typography.styles.heading.heading3.copyWith(
       color: ShowcasePalette.highText(context),
     );
     final statusPill = ProjectStatusPill(
