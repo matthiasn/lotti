@@ -259,6 +259,30 @@ void main() {
       expect(find.text('Blocked'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
+
+    testWidgets('renders plain icon-plus-label styling without a filled pill', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          TaskStatePill(
+            status: TaskStatus.open(
+              id: 't',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('Open'));
+
+      expect(find.byType(Container), findsNothing);
+      expect(label.style?.fontSize, 14);
+      expect(label.style?.fontWeight, FontWeight.w400);
+      expect(label.style?.height, closeTo(1.4286, 0.0001));
+    });
   });
 
   group('CountDotBadge', () {

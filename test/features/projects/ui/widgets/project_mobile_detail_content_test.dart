@@ -76,6 +76,32 @@ void main() {
       expect(statusTop.dx, greaterThan(categoryTop.dx));
     });
 
+    testWidgets('uses the heading 3 title size from Figma', (tester) async {
+      final record = makeTestProjectRecord(
+        project: makeTestProject(
+          id: 'project-1',
+          title: 'Design system',
+          categoryId: 'cat-1',
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final title = tester.widget<Text>(find.text('Design system'));
+
+      expect(title.style?.fontSize, 20);
+      expect(title.style?.fontWeight, FontWeight.w700);
+      expect(title.style?.height, closeTo(1.4, 0.0001));
+    });
+
     testWidgets(
       'moves the status pill to its own right-aligned line when the title is too wide',
       (

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   even when no value is set, the empty-state report copy only appears when
   both summary and full content are absent, and expanded reports strip the
   leading H1 title that the UI already renders above the report section.
+- Projects visual polish: grouped project rows, progress rings, and project
+  task rows now match the linked Figma spacing more closely, with progress
+  colors driven by completion level and the mobile detail title reduced to the
+  intended heading size.
 
 ## [0.9.933] - 2026-03-27
 ### Changed

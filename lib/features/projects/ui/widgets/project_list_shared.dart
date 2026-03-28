@@ -13,6 +13,7 @@ import 'package:lotti/utils/color.dart';
 const _kProjectGroupCardRadius = 16.0;
 const _kProjectGroupCardPadding = 8.0;
 const _kProjectRowGap = 16.0;
+const _kProjectRowVerticalPadding = 6.0;
 const _kProjectRowOverlap = 1.0;
 
 /// Shared category header row showing the category tag and project count.
@@ -120,6 +121,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: _kProjectGroupCardPadding),
                 for (
                   var index = 0;
                   index < widget.group.projects.length;
@@ -132,6 +134,8 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                         widget.selectedProjectId,
                     topOverlap: topOverlaps[index],
                     bottomOverlap: bottomOverlaps[index],
+                    backgroundTopInset: _kProjectGroupCardPadding,
+                    backgroundBottomInset: _kProjectGroupCardPadding,
                     onHoverChanged: (hovered) {
                       final projectId =
                           widget.group.projects[index].project.meta.id;
@@ -147,26 +151,31 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                       widget.group.projects[index],
                     ),
                   ),
-                  if (index < widget.group.projects.length - 1)
-                    visibleDividers[index]
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: _kProjectGroupCardPadding,
-                            ),
-                            child: Divider(
-                              key: ValueKey('project-group-divider-$index'),
-                              height: 1,
-                              thickness: 1,
-                              color: ShowcasePalette.border(context),
-                            ),
-                          )
-                        : SizedBox(
-                            key: ValueKey(
-                              'project-group-divider-slot-$index',
-                            ),
-                            height: _kProjectRowOverlap,
-                          ),
+                  if (index < widget.group.projects.length - 1) ...[
+                    const SizedBox(height: _kProjectGroupCardPadding),
+                    if (visibleDividers[index])
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: _kProjectGroupCardPadding,
+                        ),
+                        child: Divider(
+                          key: ValueKey('project-group-divider-$index'),
+                          height: 1,
+                          thickness: 1,
+                          color: ShowcasePalette.border(context),
+                        ),
+                      )
+                    else
+                      SizedBox(
+                        key: ValueKey(
+                          'project-group-divider-slot-$index',
+                        ),
+                        height: _kProjectRowOverlap,
+                      ),
+                    const SizedBox(height: _kProjectGroupCardPadding),
+                  ],
                 ],
+                const SizedBox(height: _kProjectGroupCardPadding),
               ],
             ),
           ),
@@ -197,6 +206,9 @@ class ProjectRow extends StatelessWidget {
     required this.bottomOverlap,
     required this.onHoverChanged,
     required this.onTap,
+    this.backgroundTopInset = 0,
+    this.backgroundBottomInset = 0,
+    this.contentHorizontalPadding = 8,
     super.key,
   });
 
@@ -204,6 +216,9 @@ class ProjectRow extends StatelessWidget {
   final bool selected;
   final double topOverlap;
   final double bottomOverlap;
+  final double backgroundTopInset;
+  final double backgroundBottomInset;
+  final double contentHorizontalPadding;
   final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
@@ -215,6 +230,9 @@ class ProjectRow extends StatelessWidget {
       selected: selected,
       topOverlap: topOverlap,
       bottomOverlap: bottomOverlap,
+      backgroundTopInset: backgroundTopInset,
+      backgroundBottomInset: backgroundBottomInset,
+      contentHorizontalPadding: contentHorizontalPadding,
       onHoverChanged: onHoverChanged,
       onTap: onTap,
     );
@@ -229,6 +247,9 @@ class _ProjectRowSurface extends StatefulWidget {
     required this.bottomOverlap,
     required this.onHoverChanged,
     required this.onTap,
+    this.backgroundTopInset = 0,
+    this.backgroundBottomInset = 0,
+    this.contentHorizontalPadding = 8,
     super.key,
   });
 
@@ -236,6 +257,9 @@ class _ProjectRowSurface extends StatefulWidget {
   final bool selected;
   final double topOverlap;
   final double bottomOverlap;
+  final double backgroundTopInset;
+  final double backgroundBottomInset;
+  final double contentHorizontalPadding;
   final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
@@ -263,6 +287,10 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
         child: InkWell(
           key: ValueKey('project-overview-row-${widget.item.project.meta.id}'),
           onTap: widget.onTap,
+          hoverColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          focusColor: Colors.transparent,
           onHover: (value) {
             if (_hovered != value) {
               setState(() {
@@ -276,18 +304,27 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
             children: [
               if (backgroundColor != null)
                 Positioned(
-                  top: -widget.topOverlap,
+                  top: -(widget.backgroundTopInset + widget.topOverlap),
                   right: 0,
-                  bottom: -widget.bottomOverlap,
+                  bottom:
+                      -(widget.backgroundBottomInset + widget.bottomOverlap),
                   left: 0,
                   child: DecoratedBox(
+                    key: ValueKey(
+                      'project-row-background-${widget.item.project.meta.id}',
+                    ),
                     decoration: BoxDecoration(
                       color: backgroundColor,
                     ),
                   ),
                 ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                padding: EdgeInsets.fromLTRB(
+                  widget.contentHorizontalPadding,
+                  _kProjectRowVerticalPadding,
+                  widget.contentHorizontalPadding,
+                  _kProjectRowVerticalPadding,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -377,9 +414,7 @@ List<InlineSpan> _metaSpans(
           'project-row-progress-ring-${item.project.meta.id}',
         ),
         progress: item.taskRollup.completionRatio,
-        progressColor: item.taskRollup.blockedTaskCount > 0
-            ? ShowcasePalette.amber(context)
-            : ShowcasePalette.timeGreen(context),
+        progressColor: _progressRingColor(context, item.taskRollup),
         trackColor: ShowcasePalette.highText(
           context,
         ).withValues(alpha: 0.12),
@@ -407,6 +442,21 @@ List<InlineSpan> _metaSpans(
     ),
     TextSpan(text: '$taskCount · $dueLabel', style: metaStyle),
   ];
+}
+
+Color _progressRingColor(
+  BuildContext context,
+  ProjectTaskRollupData taskRollup,
+) {
+  final completionPercent = taskRollup.completionPercent;
+
+  if (completionPercent >= 80) {
+    return ShowcasePalette.timeGreen(context);
+  }
+  if (completionPercent >= 50) {
+    return ShowcasePalette.amber(context);
+  }
+  return ShowcasePalette.error(context);
 }
 
 class _TinyProgressRing extends StatelessWidget {

@@ -101,7 +101,7 @@ void main() {
     });
 
     testWidgets(
-      'keeps row surfaces full width while insetting the row content',
+      'keeps row backgrounds full-width while leaving row content inset',
       (tester) async {
         final group = makeGroupedProjectsSection();
 
@@ -125,6 +125,68 @@ void main() {
 
         expect(rowTopLeft.dx, cardTopLeft.dx);
         expect(titleTopLeft.dx - rowTopLeft.dx, 8);
+      },
+    );
+
+    testWidgets(
+      'expands hovered row backgrounds to the full card segment',
+      (
+        tester,
+      ) async {
+        final group = makeGroupedProjectsSection();
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: group,
+              selectedProjectId: null,
+              onProjectSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer();
+        await gesture.moveTo(
+          tester.getCenter(
+            find.byKey(const ValueKey('project-overview-row-p1')),
+          ),
+        );
+        await tester.pump();
+
+        final cardFinder = find.byType(ClipRRect);
+        final backgroundFinder = find.byKey(
+          const ValueKey('project-row-background-p1'),
+        );
+        final cardRect = tester.getRect(cardFinder);
+        final backgroundRect = tester.getRect(backgroundFinder);
+
+        expect(backgroundRect.left, cardRect.left);
+        expect(backgroundRect.right, cardRect.right);
+        expect(
+          backgroundRect.top,
+          lessThan(
+            tester
+                .getTopLeft(
+                  find.byKey(const ValueKey('project-overview-row-p1')),
+                )
+                .dy,
+          ),
+        );
+        expect(
+          backgroundRect.bottom,
+          greaterThan(
+            tester
+                .getBottomLeft(
+                  find.byKey(const ValueKey('project-overview-row-p1')),
+                )
+                .dy,
+          ),
+        );
       },
     );
 

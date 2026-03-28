@@ -312,35 +312,22 @@ class TaskStatePill extends StatelessWidget {
       TaskRejected() => Icons.cancel_outlined,
     };
 
-    return Container(
-      constraints: BoxConstraints(
-        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2 + tokens.spacing.step1,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: ShowcasePalette.subtleFill(context),
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: tokens.typography.lineHeight.caption,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: tokens.typography.lineHeight.caption,
+          color: ShowcasePalette.mediumText(context),
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        Text(
+          label,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: ShowcasePalette.mediumText(context),
           ),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            label,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: ShowcasePalette.mediumText(context),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -457,9 +444,9 @@ class ShowcasePanel extends StatelessWidget {
           Padding(
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step5,
-              tokens.spacing.step3 + tokens.spacing.step1,
+              tokens.spacing.step2,
               tokens.spacing.step5,
-              tokens.spacing.step3 + tokens.spacing.step1,
+              tokens.spacing.step2,
             ),
             child: header,
           ),
@@ -468,14 +455,18 @@ class ShowcasePanel extends StatelessWidget {
             thickness: 1,
             color: ShowcasePalette.border(context),
           ),
+          if (itemCount > 0) const SizedBox(height: 4),
           for (var index = 0; index < itemCount; index++) ...[
             itemBuilder(context, index),
-            if (index < itemCount - 1)
+            if (index < itemCount - 1) ...[
+              const SizedBox(height: 4),
               Divider(
                 height: 1,
                 thickness: 1,
                 color: ShowcasePalette.border(context),
               ),
+              const SizedBox(height: 4),
+            ],
           ],
         ],
       ),

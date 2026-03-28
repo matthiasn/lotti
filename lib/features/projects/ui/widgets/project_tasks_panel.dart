@@ -38,14 +38,14 @@ class ProjectTasksPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: tokens.spacing.step3),
+                SizedBox(width: tokens.spacing.step2),
                 CountDotBadge(
                   count: record.highlightedTaskSummaries.length,
                 ),
               ],
             ),
           ),
-          SizedBox(width: tokens.spacing.step3),
+          SizedBox(width: tokens.spacing.step2),
           Icon(
             Icons.timer_outlined,
             size: tokens.typography.lineHeight.subtitle2,
@@ -63,10 +63,17 @@ class ProjectTasksPanel extends StatelessWidget {
         ],
       ),
       itemCount: record.highlightedTaskSummaries.length,
-      itemBuilder: (_, index) => TaskSummaryRow(
-        summary: record.highlightedTaskSummaries[index],
-        onTap: onTaskTap,
-      ),
+      itemBuilder: (_, index) {
+        final summary = record.highlightedTaskSummaries[index];
+        return TaskSummaryRow(
+          summary: summary,
+          topInset: 4,
+          bottomInset: index == record.highlightedTaskSummaries.length - 1
+              ? 0
+              : 4,
+          onTap: onTaskTap,
+        );
+      },
     );
   }
 }
@@ -75,77 +82,149 @@ class ProjectTasksPanel extends StatelessWidget {
 class TaskSummaryRow extends StatelessWidget {
   const TaskSummaryRow({
     required this.summary,
+    this.topInset = 0,
+    this.bottomInset = 0,
     this.onTap,
     super.key,
   });
 
   final TaskSummary summary;
+  final double topInset;
+  final double bottomInset;
   final ValueChanged<TaskSummary>? onTap;
 
   @override
   Widget build(BuildContext context) {
+    return _TaskSummaryRowSurface(
+      summary: summary,
+      topInset: topInset,
+      bottomInset: bottomInset,
+      onTap: onTap,
+    );
+  }
+}
+
+class _TaskSummaryRowSurface extends StatefulWidget {
+  const _TaskSummaryRowSurface({
+    required this.summary,
+    required this.topInset,
+    required this.bottomInset,
+    this.onTap,
+  });
+
+  final TaskSummary summary;
+  final double topInset;
+  final double bottomInset;
+  final ValueChanged<TaskSummary>? onTap;
+
+  @override
+  State<_TaskSummaryRowSurface> createState() => _TaskSummaryRowSurfaceState();
+}
+
+class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
+  var _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final child = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step5,
-        vertical: tokens.spacing.step3,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  summary.task.data.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: ShowcasePalette.highText(context),
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step1),
-                Row(
+    final backgroundColor = _hovered
+        ? ShowcasePalette.hoverFill(context)
+        : null;
+
+    final child = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (backgroundColor != null)
+          Positioned(
+            top: -widget.topInset,
+            right: 0,
+            bottom: -widget.bottomInset,
+            left: 0,
+            child: DecoratedBox(
+              key: ValueKey(
+                'task-summary-row-background-${widget.summary.task.meta.id}',
+              ),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+              ),
+            ),
+          ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: tokens.typography.size.caption,
-                      color: ShowcasePalette.lowText(context),
-                    ),
-                    SizedBox(width: tokens.spacing.step1),
                     Text(
-                      showcaseFormatDuration(summary.estimatedDuration),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: ShowcasePalette.lowText(context),
+                      widget.summary.task.data.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: ShowcasePalette.highText(context),
                       ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: tokens.typography.size.caption,
+                          color: ShowcasePalette.lowText(context),
+                        ),
+                        SizedBox(width: tokens.spacing.step1),
+                        Text(
+                          showcaseFormatDuration(
+                            widget.summary.estimatedDuration,
+                          ),
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: ShowcasePalette.lowText(context),
+                              ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              TaskStatePill(status: widget.summary.task.data.status),
+              SizedBox(width: tokens.spacing.step2),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: tokens.typography.lineHeight.caption,
+                color: ShowcasePalette.mediumText(context),
+              ),
+            ],
           ),
-          SizedBox(width: tokens.spacing.step4),
-          TaskStatePill(status: summary.task.data.status),
-          SizedBox(width: tokens.spacing.step3),
-          Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: tokens.typography.lineHeight.caption,
-            color: ShowcasePalette.mediumText(context),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
 
-    if (onTap == null) {
+    if (widget.onTap == null) {
       return child;
     }
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onTap!(summary),
+        onTap: () => widget.onTap!(widget.summary),
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        onHover: (value) {
+          if (_hovered != value) {
+            setState(() {
+              _hovered = value;
+            });
+          }
+        },
         child: child,
       ),
     );

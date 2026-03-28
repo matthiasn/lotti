@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -115,6 +116,68 @@ void main() {
       await tester.pump();
 
       expect(tappedSummary, same(summary));
+    });
+
+    testWidgets('uses the lighter Figma body-small task title style', (
+      tester,
+    ) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 't1', title: 'Build feature'),
+      );
+
+      await tester.pumpWidget(
+        wrap(TaskSummaryRow(summary: summary)),
+      );
+      await tester.pump();
+
+      final title = tester.widget<Text>(find.text('Build feature'));
+
+      expect(title.style?.fontSize, 14);
+      expect(title.style?.fontWeight, FontWeight.w400);
+      expect(title.style?.height, closeTo(1.4286, 0.0001));
+    });
+
+    testWidgets('extends hover fill to the full task row segment', (
+      tester,
+    ) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 't1', title: 'Build feature'),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: makeTestProjectRecord(
+              highlightedTaskSummaries: [
+                summary,
+                makeTestTaskSummary(
+                  task: makeTestTask(id: 't2', title: 'Second task'),
+                ),
+              ],
+            ),
+            onTaskTap: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final rowFinder = find.text('Build feature');
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer();
+      await gesture.moveTo(tester.getCenter(rowFinder));
+      await tester.pump();
+
+      final backgroundFinder = find.byKey(
+        const ValueKey('task-summary-row-background-t1'),
+      );
+      final backgroundRect = tester.getRect(backgroundFinder);
+      final rowRect = tester.getRect(find.byType(TaskSummaryRow).first);
+
+      expect(backgroundRect.left, rowRect.left);
+      expect(backgroundRect.right, rowRect.right);
+      expect(backgroundRect.top, lessThan(rowRect.top));
+      expect(backgroundRect.bottom, greaterThan(rowRect.bottom));
     });
   });
 }
