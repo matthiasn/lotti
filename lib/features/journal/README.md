@@ -1,332 +1,390 @@
 # Journal Feature
 
-This module provides the core journaling functionality for Lotti, managing entries, tasks, checklists, and various entity types with full-text search and synchronization capabilities.
+The `journal` feature is Lotti's entry workspace layer.
 
-## Overview
+Most other product features eventually end up depending on it, because this is where entries are loaded, created, edited, paged, filtered, linked, highlighted, and deleted. Even when another feature owns the domain-specific widget, the journal feature usually still owns the surrounding runtime: the page shell, the controller, the repository facade, the linked-entry plumbing, or the list/browse substrate.
 
-The Journal feature is the heart of Lotti, providing:
+It is not the whole app, but it is the closest thing the app has to a canonical entry surface.
 
-1. **Entry Management**: Create, edit, and organize journal entries of various types
-2. **Task System**: Comprehensive task tracking with status management and checklists
-3. **Rich Text Editing**: Quill-based editor with markdown support
-4. **Entity Types**: Support for text, tasks, events, audio, images, and measurements
-5. **Search & Filter**: Full-text search and advanced filtering capabilities
-6. **Synchronization**: Cross-device sync with conflict resolution
+## What This Feature Owns
 
-## Architecture
+At runtime, the journal feature owns:
 
-### Core Components
+- single-entry detail pages and the shared detail controller
+- the paged journal/tasks browse controller and its persisted filter state
+- full-text and vector-search orchestration for journal-style pages
+- create/import entry surfaces, including clipboard and drag-and-drop entry points
+- linked-entry rendering, link mutation, focus intents, and scroll highlighting
+- repository helpers for common entry and link mutations
 
-#### Models (`model/`)
-- **`entry_state.dart`**: State management for individual entries (saved/dirty states)
-- **`editor_mode_enum.dart`**: Enumeration for editor states (edit, view, etc.)
-- **`entry_sort_action.dart`**: Sorting options for entry lists
+It does not own every entity-specific summary or form. Tasks, ratings, speech, AI, measurements, and projects all plug their own UI into the journal surface. The journal feature is the switchboard they plug into.
 
-#### State Management (`state/`)
-- **`entry_controller.dart`**: Main controller for individual journal entries
-  - Manages entry lifecycle (load, edit, save)
-  - Handles focus states and editor toolbar visibility
-  - Coordinates with persistence layer
-- **`filtered_timeline_controller.dart`**: Manages filtered views of entries
-- **`entry_filter_controller.dart`**: Handles search and filter states
-- **`timeline_search_controller.dart`**: Powers the search functionality
+## Directory Shape
 
-#### Repository (`repository/`)
-- **`journal_repository.dart`**: Main data access layer for journal operations
-  - CRUD operations for all entity types
-  - Query and search functionality
-  - Synchronization support
-  - Reverse-linked entry reads now go through visibility-aware `JournalDb`
-    helpers instead of direct generated Drift queries
-  - Repeated browse queries now reuse an in-memory `JournalDb` snapshot for the
-    same filter/page combination, and browse/task result rows seed the shared
-    entity cache for follow-up detail hydration
-
-#### UI Components (`ui/`)
-
-##### Pages
-- **`entry_detail_page.dart`**: Full-screen entry view and editor
-- **`infinite_journal_page.dart`**: Main journal timeline with infinite scrolling
-- **`empty_scaffold.dart`**: Placeholder for empty states
-
-##### Widgets
-- **`editor/`**: Rich text editor components
-  - `editor_widget.dart`: Main Quill editor implementation
-  - `editor_toolbar.dart`: Formatting toolbar
-  - `editor_tools.dart`: Utility functions for editor operations
-  - `checklist_item_modal.dart`: Checklist management
-
-- **`list_cards/`**: Entry card components for timeline
-  - `journal_card.dart`: Main card wrapper
-  - `entry_details.dart`: Entry metadata display
-  - `entry_card_header.dart`: Header with title and status
-  - `task_card_checklist.dart`: Checklist preview for tasks
-
-- **`modals/`**: Modal dialogs
-  - `save_dialog.dart`: Confirmation for unsaved changes
-  - `entry_menu.dart`: Context menu for entries
-
-## How Journal Entries Work
-
-### 1. Entry Types
-
-Lotti supports multiple entry types, each extending the base `JournalEntity`:
-
-```dart
-abstract class JournalEntity {
-  final Metadata meta;
-  final EntryText? entryText;
-  final Geolocation? geolocation;
-}
+```text
+lib/features/journal/
+├── model/
+├── repository/
+├── state/
+├── ui/
+│   ├── mixins/
+│   ├── pages/
+│   └── widgets/
+├── util/
+└── utils/
 ```
 
-Entry types include:
-- **JournalEntry**: Basic text entries
-- **Task**: Entries with status, estimates, and checklists
-- **JournalEvent**: Events with ratings and completion status
-- **JournalAudio**: Audio recordings with transcripts
-- **JournalImage**: Images with captions
-- **MeasurementEntry**: Quantified data entries
-- **SurveyEntry**: Survey responses
-- **ChecklistItem**: Individual checklist items within tasks
+## Runtime Centers
 
-### 2. Entry Controller State Management
+```mermaid
+flowchart LR
+  DB["JournalDb"] --> Repo["JournalRepository"]
+  DB --> PageCtl["JournalPageController"]
+  FTS["Fts5Db"] --> PageCtl
+  Settings["SettingsDb"] --> PageCtl
+  Persist["PersistenceLogic"] --> Repo
+  Persist --> EntryCtl["EntryController"]
+  Notify["UpdateNotifications"] --> EntryCtl
+  Notify --> PageCtl
+  Editor["EditorStateService"] --> EntryCtl
+  Time["TimeService"] --> EntryCtl
+  Cache["EntitiesCacheService"] --> PageCtl
+  Vector["VectorSearchRepository"] --> PageCtl
 
-The `EntryController` manages individual entry states using Riverpod:
+  Detail["EntryDetailsPage"] --> EntryCtl
+  Detail --> Focus["JournalFocusController"]
+  Focus --> Highlight["HighlightScrollMixin"]
+  Detail --> Linked["LinkedEntriesWidget / LinkedFromEntriesWidget"]
 
-```dart
-@riverpod
-class EntryController extends _$EntryController {
-  // State includes:
-  // - Entry data (loaded from database)
-  // - Edit state (saved/dirty)
-  // - UI state (focus, toolbar visibility)
-  // - Form state (for structured data)
-}
+  Browse["InfiniteJournalPage"] --> PageCtl
+  Browse --> Create["CreateEntryModal / FAB flows"]
 ```
 
-Key behaviors:
-- **Auto-save drafts**: Changes are saved to temporary storage as you type
-- **Dirty state tracking**: UI indicates unsaved changes
-- **Focus management**: Editor toolbar appears on focus
-- **Toolbar persistence**: Recent change - toolbar remains visible after losing focus
+The feature has two real controller centers:
 
-### 3. Rich Text Editing
+- [`EntryController`](state/entry_controller.dart) for one entry detail surface
+- [`JournalPageController`](state/journal_page_controller.dart) for paged browse and search surfaces
 
-The journal uses Flutter Quill for rich text editing:
+Everything else is mostly glue around those two: entry-type dispatch, linked-entry composition, create/import actions, and scroll/focus behavior.
 
-```dart
-// Editor state is managed through QuillController
-controller = makeController(
-  serializedQuill: entry.entryText?.quill,
-  selection: _editorStateService.getSelection(id),
-);
+## The Core Model Boundary
 
-// Changes trigger auto-save to draft storage
-controller.changes.listen((DocChange event) {
-  _editorStateService.saveTempState(...);
-  setDirty(value: true);
-});
+The journal layer operates on `JournalEntity` variants, not on one canonical entry type.
+
+That includes, among others:
+
+- `JournalEntry`
+- `Task`
+- `JournalEvent`
+- `JournalAudio`
+- `JournalImage`
+- `MeasurementEntry`
+- `SurveyEntry`
+- `WorkoutEntry`
+- `HabitCompletionEntry`
+- `Checklist`
+- `ChecklistItem`
+- `AiResponseEntry`
+- `RatingEntry`
+
+That breadth is why this feature feels large. It is not "the text note feature". It is the shared create/edit/browse substrate for a whole family of entry types.
+
+## Detail Surface
+
+[`entry_details_page.dart`](ui/pages/entry_details_page.dart) is the outer detail-page shell.
+
+It composes:
+
+- [`EntryDetailsWidget`](ui/widgets/entry_details_widget.dart) for the main entry body
+- [`LinkedEntriesWithTimer`](ui/widgets/linked_entries_with_timer.dart) for outgoing linked entries
+- [`LinkedFromEntriesWidget`](ui/widgets/entry_detail_linked_from.dart) for reverse links
+- checklist-specific linked-from widgets when the current item is a checklist or checklist item
+- a floating add action button scoped to the current entry and category
+- a drag-and-drop target for media import
+- an AI-running overlay card at the bottom of the page
+
+`EntryDetailsWidget` is the central type dispatcher. It renders the shared header, labels, editor, footer, and then switches into the right feature-specific summary or form for the current `JournalEntity`.
+
+That is the real boundary: the journal feature owns the page frame and the switching logic, while other features supply some of the per-type payload UI.
+
+## Entry Controller
+
+[`entry_controller.dart`](state/entry_controller.dart) is the detail-side brain for one entry.
+
+It:
+
+- loads the current `JournalEntity`
+- restores editor content from draft state when available
+- listens to unsaved-draft state from `EditorStateService`
+- listens to `UpdateNotifications` for external DB changes touching the same entry
+- keeps focus and editor-toolbar visibility in sync with the active editor
+- registers desktop `Cmd+S` hotkeys while the relevant focus nodes are active
+- routes save operations to the correct persistence path
+- exposes focused mutations such as task status/priority, event stars, checklist ordering, cover art, privacy, starring, flagging, copying, and deletion
+
+### Detail State Machine
+
+`EntryState` is a sealed union with only two real states:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Saved: entry loaded
+  Saved --> Dirty: editor draft or local mutation
+  Dirty --> Saved: save succeeds
+  Saved --> Saved: external update while clean
+  Dirty --> Dirty: external update while unsaved
 ```
 
-Features:
-- **Rich formatting**: Bold, italic, lists, headers, etc.
-- **Markdown support**: Import/export markdown text
-- **Delta format**: Quill's JSON-based document format
-- **Undo/redo**: Built-in history management
-- **Embeds**: Default image/video embeds plus horizontal rules (`divider`)
-- **Error resilience**: Unknown embed types render a warning block instead of crashing the editor
+Deletion does not produce a third `EntryState`. The controller clears its async state to `null`, which is an exit from the state machine rather than another node inside it.
 
-### 4. Task Management
+### Save Path
 
-Tasks extend journal entries with additional functionality:
+```mermaid
+sequenceDiagram
+  participant UI as "Entry UI"
+  participant Ctl as "EntryController"
+  participant Draft as "EditorStateService"
+  participant Persist as "PersistenceLogic"
+  participant Notify as "UpdateNotifications"
 
-```dart
-class Task extends JournalEntity {
-  final TaskData data;
-  // Includes: status, estimate, checklistIds, statusHistory
-}
+  UI->>Ctl: edit content / metadata
+  Ctl->>Draft: saveTempState(...)
+  Draft-->>Ctl: unsaved stream -> dirty
+  UI->>Ctl: save(...)
+  alt Task
+    Ctl->>Persist: updateTask(...)
+  else JournalEvent
+    Ctl->>Persist: updateEvent(...)
+  else Other journal entity
+    Ctl->>Persist: updateJournalEntityText(...)
+  end
+  Persist-->>Notify: affected IDs
+  Ctl->>Draft: entryWasSaved(...)
+  Ctl-->>UI: saved state + haptic feedback
 ```
 
-Task features:
-- **Status tracking**: Open, In Progress, Done, Cancelled, etc.
-- **Time estimates**: Duration estimates for planning
-- **Checklists**: Linked checklist items with completion tracking
-- **Status history**: Full audit trail of status changes
+The branching is intentionally boring:
 
-### 5. Search and Filtering
+- tasks save through `updateTask`
+- events save through `updateEvent`
+- everything else uses `updateJournalEntityText`
 
-The journal provides powerful search capabilities:
+That is a good thing. The controller is not trying to invent a second write model on top of the persistence layer.
 
-- **Full-text search**: SQLite FTS5 for fast text search
-- **Entity filtering**: Filter by type, status, tags, date range
-- **Smart queries**: Natural language date parsing
-- **Saved filters**: Store and reuse complex filters
+A few detail-level behaviors are worth calling out because they are easy to miss:
 
-## Key Features
-### Entry Highlighting (Scroll + Timer)
+- updating a category from the detail controller also propagates that category to currently linked outgoing entries
+- saving with `stopRecording: true` updates the text first and then stops the timer after a short delay
+- when an external update arrives and the entry is not dirty, the editor controller is rebuilt from the saved value
+- when the entry is dirty, the controller keeps the user's unsaved editor state instead of bluntly resetting it
 
-The journal surfaces two entry-level highlights to improve navigation and time tracking awareness:
+## Browse Surface
 
-- Temporary scroll highlight: When the app scrolls to a specific linked entry (e.g., from a focus intent), the target entry briefly glows to confirm focus.
-- Active timer highlight: If a running timer points to a linked entry, that entry shows a persistent red glow until the timer stops or changes.
+[`infinite_journal_page.dart`](ui/pages/infinite_journal_page.dart) is the shared browse page used for both the journal tab and the tasks tab.
 
-Implementation details:
-- Logic is centralized in `HighlightScrollMixin`, which handles scroll-to-entry with retry/backoff and temporary highlight timing.
-- Pages use `LinkedEntriesWithTimer` to listen for timer changes and rebuild only the linked entries section.
-- Tunables: highlight duration, scroll duration, retry count, and retry delay can be overridden by the host State if needed.
+Its job is mostly composition. The heavy lifting sits in [`journal_page_controller.dart`](state/journal_page_controller.dart).
 
-### Entry Link Updates
+The controller owns:
 
-- Link updates only emit sync events when link state changes (e.g., hidden or deleted), avoiding no-op vector clock churn.
-- `JournalDb` now batches same-turn `journalEntityById()` lookups and seeds an
-  in-memory entity cache from upserts and bulk reads, which reduces repeated
-  primary-key fan-out in detail views and linked-entry sections.
+- the `PagingController`
+- filter state
+- search mode
+- feature-flag gating for entry types and vector search
+- private-entry visibility
+- persisted filter state in `SettingsDb`
+- update-driven refresh behavior
+- vector-search timing and distance metadata for the UI
 
-### Editor Toolbar Behavior
+### Browse and Search Flow
 
-Recent improvement to editor toolbar visibility:
-- Previously: Toolbar would hide when editor lost focus and entry wasn't dirty
-- Now: Toolbar remains visible once shown, improving user experience
-- Implementation: Removed conditional hiding in `focusNodeListener()`
+```mermaid
+flowchart TD
+  Open["Open journal/tasks page"] --> Build["JournalPageController.build(showTasks)"]
+  Build --> Persisted["Load persisted filters and entry types"]
+  Build --> Flags["Subscribe to feature flags and private flag"]
+  Build --> Paging["Create PagingController and fetch first page"]
 
-### Auto-Save System
+  Paging --> Mode{"Search mode"}
+  Mode -->|fullText| FTS["FTS5 match IDs + JournalDb query"]
+  Mode -->|vector| Vec["VectorSearchRepository\n(first page only)"]
 
-The journal implements a sophisticated auto-save system:
-1. **Draft storage**: Changes saved to EditorStateService immediately
-2. **Persistence**: Explicit save commits to database
-3. **Conflict detection**: Vector clocks track concurrent edits
-4. **Recovery**: Unsaved changes restored on app restart
-
-### Checklist Management
-
-Tasks can have associated checklists:
-- **Drag-and-drop**: Reorder checklist items
-- **Completion tracking**: Check off completed items
-  - “All” view shows both open and completed items; checking an item applies a subtle completion
-    highlight but keeps it visible.
-  - “Open only” view hides completed items, but newly completed items remain visible briefly with a
-    success highlight before fading and collapsing out of the list.
-- **Nested checklists**: Checklist items can have sub-checklists
-- **AI integration**: Automatic checklist creation from AI suggestions and completion suggestions for
-  existing items
-
-### Category System
-
-Entries can be organized by categories:
-- **Hierarchical**: Categories support parent-child relationships
-- **Color coding**: Visual distinction in timeline
-- **Inheritance**: Linked entries can inherit categories
-- **Batch operations**: Update categories for multiple entries
-
-#### Category Filter Persistence
-
-The journal tab maintains its own independent category filter state:
-- **Tab-Specific Storage**: Category selections are saved separately for the journal tab
-- **Independent Restoration**: When you restart the app, the journal tab restores its own category filters
-- **No Task Status Data**: The journal tab never reads or writes task status filters (Open, In Progress, Done, etc.)
-- **Storage Key**: Uses `JOURNAL_CATEGORY_FILTERS` for persistence
-- **Migration Support**: Automatically migrates from legacy shared filters on first use
-
-## Testing
-
-The journal feature has comprehensive test coverage:
-
-### Unit Tests (`test/features/journal/`)
-- **State Tests**: Entry controller state management
-- **Repository Tests**: Data access layer functionality
-- **Model Tests**: Entity serialization and validation
-
-### Widget Tests
-- **Editor Tests**: Rich text editor functionality
-- **Card Tests**: Entry card rendering and interactions
-- **Modal Tests**: Dialog behavior and validation
-
-### Integration Tests
-- **Save Flow**: End-to-end entry creation and saving
-- **Search Tests**: Full-text search functionality
-- **Sync Tests**: Cross-device synchronization
-
-## Usage Examples
-
-### Creating a New Entry
-
-```dart
-// Navigate to entry creation
-await beamToNamed(
-  '/journal/${newId}',
-  data: {'editMode': true},
-);
-
-// Entry controller automatically initializes
-final controller = ref.read(
-  entryControllerProvider(id: newId).notifier,
-);
+  FTS --> Post["Optional post-filters:\nprojects / agent assignment"]
+  Vec --> Emit["Store elapsed time,\nresult count, distances"]
+  Post --> Page["Append page to controller"]
+  Emit --> Page
+  Updates["Throttled UpdateNotifications"] --> Refresh["Refresh if page is visible\nand affected IDs matter"]
+  Refresh --> Paging
 ```
 
-### Saving an Entry
+### What The Page Controller Persists
 
-```dart
-// Save with optional parameters
-await controller.save(
-  title: 'Updated Title',       // For tasks
-  estimate: Duration(hours: 2), // For tasks
-  stopRecording: true,          // Stop time tracking
-);
+The controller persists more than a plain search string. It stores:
+
+- selected entry types
+- category filters
+- task status filters
+- project filters
+- label filters
+- priority filters
+- task sort option
+- visual toggles such as creation date, due date, cover art, projects header, and vector distances
+- agent-assignment filter
+
+Tasks filter persistence is tab-aware. The controller writes to per-tab settings keys and still mirrors the tasks tab state to the legacy `TASK_FILTERS` key while that migration remains in place.
+
+### Search Modes
+
+The controller supports two modes:
+
+- `fullText`
+- `vector`
+
+Vector mode is feature-gated. If the vector-search flag is disabled while the controller is in vector mode, it falls back to full-text mode instead of leaving the UI in a dead state.
+
+Vector search also behaves differently from normal paging:
+
+- it bypasses the DB paging pipeline
+- it only runs on the first page
+- it stores elapsed time, result count, and per-entry distance values in `JournalPageState`
+
+### Post-Filter Pagination
+
+Two filters are not pushed directly into the main task query:
+
+- selected projects
+- agent assignment filter
+
+When those are active, the controller fetches raw task pages from `JournalDb`, filters them in memory, and tracks a separate raw offset so pagination does not repeat or skip rows.
+
+That is a small implementation detail with a large bug-prevention payoff.
+
+### Sorting Constraint
+
+Due-date sorting is also a practical compromise:
+
+- due dates are stored inside serialized task data rather than an indexed DB column
+- tasks are therefore fetched in a simpler DB order and sorted by due date in memory
+- ordering is correct within each loaded page, but not guaranteed globally across page boundaries
+
+That is the current behavior.
+
+## Linked Entries, Focus, and Highlighting
+
+The journal feature owns the generic linked-entry machinery used in detail pages.
+
+That includes:
+
+- outgoing link lookup via [`LinkedEntriesController`](state/linked_entries_controller.dart)
+- reverse-link lookup via [`LinkedFromEntriesController`](state/linked_from_entries_controller.dart)
+- hidden-link and AI-entry visibility toggles
+- timer-aware highlighting of active linked entries
+- scroll-to-entry focus intents and temporary highlight pulses
+
+```mermaid
+flowchart LR
+  Intent["JournalFocusController"] --> Mixin["HighlightScrollMixin"]
+  Mixin --> Scroll["Scrollable.ensureVisible with retry"]
+  Scroll --> Target["EntryDetailsWidget key"]
+  Target --> Temp["Temporary highlight pulse"]
+
+  Links["LinkedEntriesController"] --> Outgoing["LinkedEntriesWidget"]
+  Reverse["LinkedFromEntriesController"] --> Incoming["LinkedFromEntriesWidget"]
+  Timer["TimeService active entry ID"] --> Outgoing
 ```
 
-### Updating Task Status
+The important runtime details are:
 
-```dart
-// Update task status
-await controller.updateTaskStatus('DONE');
+- outgoing links are fetched from `JournalRepository.getLinksFromId(...)`
+- hidden links can be included or excluded without changing the rest of the page
+- outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time
+- `LinkedEntriesWithTimer` only reacts to active timer entry ID changes, not every timer tick
+- `HighlightScrollMixin` retries scroll-to-entry until the target widget is actually mounted, then applies a temporary highlight pulse
 
-// Status history is automatically maintained
-```
+This is one of those features that feels trivial until it breaks. Then it immediately becomes obvious why it exists.
 
-### Managing Checklists
+## Create, Import, and Paste Paths
 
-```dart
-// Update checklist order
-await controller.updateChecklistOrder([
-  'checklist_id_1',
-  'checklist_id_2',
-  'checklist_id_3',
-]);
-```
+The journal feature also owns the generic entry-creation surfaces that sit above domain-specific creation logic.
 
-## Common Questions
+The main pieces are:
 
-### Q: How is entry data structured?
-A: Each entry has metadata (timestamps, IDs, sync info) and type-specific data. Text content is stored in the EntryText object supporting plain text, markdown, and Quill delta formats.
+- [`CreateEntryModal`](ui/widgets/create/create_entry_action_modal.dart)
+- [`FloatingAddActionButton`](ui/widgets/create/create_entry_action_button.dart)
+- [`create_entry_items.dart`](ui/widgets/create/create_entry_items.dart)
+- [`ImagePasteController`](state/image_paste_controller.dart)
 
-### Q: How does the dirty state work?
-A: The controller tracks changes through the Quill controller. Any document change sets dirty=true. Saving clears the dirty state and updates the last saved timestamp.
+Supported entry points include:
 
-### Q: What happens to unsaved changes?
-A: Unsaved changes are stored in the EditorStateService (SQLite). If the app crashes or is closed, changes are restored when the entry is reopened.
+- create text entries
+- create tasks
+- create events
+- start audio recordings
+- create timer entries when already inside a parent entry
+- import images
+- create screenshots
+- paste images from the clipboard
+- drag and drop media onto the detail page
 
-### Q: How does category inheritance work?
-A: When updating an entry's category, linked entries without a category automatically inherit the parent's category. This is useful for grouping related entries.
+Two integration details are worth documenting because they are easy to miss:
 
-### Q: How does the timeline handle large datasets?
-A: The InfiniteJournalPage uses lazy loading with pagination. Entries are loaded in batches as the user scrolls, with configurable page sizes.
+- image import and paste flows can trigger automatic image-analysis callbacks supplied by the AI feature
+- creating a timer from a linked context polls for the new linked entry and then publishes a focus intent so the page scrolls to the freshly created timer entry
 
-### Q: What's the difference between starred and flagged?
-A: Starred entries are user favorites for quick access. Flagged entries use the import flag for special processing or review.
+## Repository Responsibilities
 
-## Performance Considerations
+[`journal_repository.dart`](repository/journal_repository.dart) is intentionally an app-facing facade, not a second persistence layer.
 
-- **Lazy loading**: Entries loaded on demand in timeline
-- **Text indexing**: FTS5 indexes for fast search
-- **Delta compression**: Quill deltas are compact JSON
-- **Image optimization**: Thumbnails generated for timeline
-- **Debounced saves**: Auto-save throttled to prevent excessive writes
+It handles:
 
-## Security & Privacy
+- loading entries by ID
+- updating category IDs
+- updating entry dates
+- soft-deleting journal entities
+- updating full entities
+- creating text entries
+- creating image entries
+- updating links
+- removing links
+- fetching outgoing linked entities, reverse-linked entities, and linked images for tasks
 
-- **Local first**: All data stored locally by default
-- **At rest (today)**: SQLite stored unencrypted; enable device encryption (e.g., FileVault, BitLocker) for protection
-- **Private entries**: Flag for sensitive content
-- **Selective sync**: Private entries can be excluded from sync
-- **Audit trail**: Vector clocks track all modifications
+It delegates the actual storage and sync work to:
+
+- `JournalDb`
+- `PersistenceLogic`
+- `VectorClockService`
+- `OutboxService`
+- `NotificationService`
+- `TimeService`
+
+## Side Effects That Matter
+
+The journal feature looks like basic CRUD until you follow the side effects.
+
+Some of the important ones already wired here are:
+
+- deleting an image clears any task `coverArtId` that references it
+- deleting a currently running entry stops the timer
+- deleting an entry updates the badge through `NotificationService`
+- updating a link emits `UpdateNotifications`
+- updating a link also writes a sync outbox message with a fresh vector clock
+- creating image entries can invoke higher-level callbacks such as automatic analysis
+
+That is normal for this feature. It is the app's entry hub. Quiet side effects would be stranger than visible ones.
+
+## Current Constraints
+
+- the journal feature owns the shared surface, not every per-entity widget
+- browse state for journal and tasks still lives in one controller because the underlying pagination and search substrate is shared
+- vector search depends on the embedding stack being available and only runs as a first-page search mode
+- due-date sorting is page-local rather than globally stable across all pages
+- some cross-feature behaviors, especially AI, ratings, tasks, and speech, are layered onto journal surfaces rather than reimplemented elsewhere
+
+## Relationship To Other Features
+
+- `tasks` adds task-specific forms, checklists, labels, priorities, and progress behavior
+- `speech` adds recording and playback around `JournalAudio`
+- `ratings` plugs `RatingSummary` and post-session prompts into journal detail surfaces
+- `ai` adds analysis, automatic image handling, nested AI responses, and vector search infrastructure
+- `sync` propagates entry and link mutations across devices
+
+If you want to understand where an entry is created, loaded, edited, searched, linked, or deleted, start here first. Even when another feature owns the headline behavior, there is a good chance the journal feature is still holding the floorboards together.
