@@ -145,6 +145,8 @@
   no reason to mention that bug in the CHANGELOG.
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
+- Feature READMEs must use an architecture-first documentation style: explain the actual runtime behavior, keep the docs concrete and implementation-backed, prefer code-backed terminology over product fluff, and use Mermaid diagrams generously for flows, architecture, data movement, and lifecycles.
+- If the code contains a real lifecycle or state machine, the feature README must include a Mermaid diagram for it. Prefer `stateDiagram-v2` for real state transitions and do not guess states that are not implemented.
 - In most cases we prefer one test file for one implementation file.
 - Maintain READMEs for product features and keep them up-to-date and relevant as you change code.
 - Don't report that you've successfully implemented anything unless you've actually verified that the code compiles and tests succeed. Do not be overly confident without checking.

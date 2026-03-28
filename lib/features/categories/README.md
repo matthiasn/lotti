@@ -1,329 +1,245 @@
 # Categories Feature
 
-This module provides a comprehensive category management system for organizing journal entries with support for AI-powered automation and content filtering.
+Categories are persisted `CategoryDefinition` entities. In the current codebase they do three concrete jobs:
 
-## Overview
+1. power the settings UI for creating, editing, and browsing categories
+2. provide reusable category-picking UI used by other features
+3. store category-scoped defaults and vocabulary that downstream task, AI, and speech code consumes
 
-The Categories feature allows users to create, manage, and assign categories to their journal entries. Categories provide organizational structure and enable powerful features like AI prompt filtering and automatic content processing.
+## What This Feature Owns
 
-### Key Features
+- `CategoryRepository` for create, update, soft delete, stream reads, and task counts
+- Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
+- Reusable picker surfaces: `CategoryField`, `CategorySelectionModalContent`, and `CategoryCreateModal`
+- Category presentation metadata: `name`, `color`, `icon`
+- Category flags: `private`, `active`, `favorite`
+- Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`
+- Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
 
-1. **Category Management**: Create, edit, and delete categories with custom names, colors, and icons
-2. **Visual Organization**: Choose from 100 curated icons and assign colors for easy visual identification
-3. **Privacy Controls**: Mark categories as private to hide them when private mode is enabled
-4. **Favorites**: Mark frequently used categories as favorites for quick access
-5. **AI Integration**: Configure which AI prompts are available per category
-6. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
-7. **Correction Examples**: Learn from user corrections to improve AI suggestions over time
+## Current Model Boundaries
 
-## Architecture
+- `CategoryDefinition` does not currently contain prompt allowlists such as `allowedPromptIds`.
+- The old `automaticPrompts` concept is not part of the current category model.
+- In this code sweep, `defaultLanguageCode` is referenced by the categories model, controller, and UI, but I did not find a downstream consumer outside this feature.
 
-### Core Components
+## Runtime Architecture
 
-#### Models (`model/`)
-- **`category_definition.dart`**: Main category data model with AI settings
-- **`categories_filter.dart`**: Filtering options for category lists
+```mermaid
+flowchart TD
+  UI["Settings pages and picker widgets"] --> Repo["CategoryRepository"]
+  Repo --> Persist["PersistenceLogic"]
+  Repo --> DB["JournalDb"]
+  Repo --> CacheRead["EntitiesCacheService.getCategoryById()"]
 
-#### Database (`database/`)
-- **`categories_db.drift`**: Drift database schema for categories
-- **`categories_repository.dart`**: Repository for CRUD operations
+  Notify["UpdateNotifications"] --> RepoStreams["notificationDrivenStream()"]
+  Notify --> Cache["EntitiesCacheService"]
+  DB --> Notify
 
-#### State Management (`state/`)
-- **`categories_list_controller.dart`**: Manages the list of all categories
-- **`category_details_controller.dart`**: Handles individual category editing
-- **`categories_filter_controller.dart`**: Controls category list filtering
-
-#### UI Components (`ui/`)
-- **Pages**: List view and detail/edit pages
-- **Widgets**: Reusable components for category management
-  - `CategoryNameField`: Name input with validation
-  - `CategoryColorPicker`: Color selection widget
-  - `CategorySwitchTiles`: Privacy, active, and favorite toggles
-  - `CategoryLanguageDropdown`: Language preference selector
-  - `CategoryPromptSelection`: AI prompt configuration
-  - `CategorySpeechDictionary`: Speech recognition dictionary editor
-  - `CategoryCorrectionExamples`: Correction examples viewer with swipe-to-delete
-
-## AI-Powered Category Settings
-
-### Overview
-
-Categories can now be configured with AI settings that control which prompts are available and which prompts should run automatically when certain types of content are added to entries in that category.
-
-### Allowed AI Prompts
-
-Each category can specify which AI prompts are available when viewing entries in that category:
-
-```dart
-class CategoryDefinition {
-  // null = no prompts allowed (secure by default)
-  // [] = no prompts allowed (explicit)
-  // ['prompt-id-1', 'prompt-id-2'] = only specified prompts allowed
-  final List<String>? allowedPromptIds;
-}
+  RepoStreams --> List["CategoriesListPage / CategoryDetailsController"]
+  Cache --> Pickers["CategorySelectionModalContent / CategoryField"]
+  Cache --> Create["createTask() / autoAssignCategoryAgent()"]
+  Cache --> ProjectTools["ProjectToolDispatcher / FollowUpTaskHandler"]
+  Cache --> Prompts["PromptBuilderHelper"]
 ```
 
-**Use Cases:**
-- **Work Category**: Only allow professional prompts (task summaries, action items)
-- **Personal Category**: Allow specific personal prompts (journaling, reflection)
-- **Sensitive Category**: Disable all AI processing for privacy (null or [])
-- **Project Category**: Focus on specific project-related prompts
+Two read paths matter here:
 
-### Automatic Processing (Legacy)
+- repository streams are notification-driven and back the settings pages
+- cache lookups are used for synchronous reads in task creation, picker widgets, and prompt-building helpers
 
-The `automaticPrompts` field on `CategoryDefinition` is retained in the data model for backward
-compatibility and is no longer configurable in the category detail UI. New automation setup is
-profile/skill-driven on the task's agent, while legacy `automaticPrompts` data may still be read
-for backward-compatibility paths. See the
-[Agents README](../agents/README.md#skill-assignments) for details.
+## Directory Shape
 
-## AI Defaults (Profile & Agent Template Inheritance)
-
-Categories can define default AI settings that are automatically inherited by new tasks created
-within the category. This provides a single configuration point for teams or workflows where every
-task should use the same AI profile and/or agent template.
-
-### Default Inference Profile (`defaultProfileId`)
-
-When set, new tasks created in the category inherit this profile ID on `TaskData.profileId`.
-This immediately enables profile-driven automation (speech-to-text, image analysis) without
-requiring an agent to be assigned first. The profile automation system falls back to the task's
-inherited profile when no agent is present.
-
-### Default Agent Template (`defaultTemplateId`)
-
-When set, an agent is automatically created for new tasks in the category using this template.
-The auto-assigned agent enters an `awaitingContent` state and will not execute until the task
-has meaningful content: a non-empty title, non-empty body text, or at least one linked entry
-with non-empty text. This prevents premature agent runs on blank tasks while still
-pre-assigning the agent so it activates as soon as the user adds content.
-
-### Configuration
-
-Both defaults are configured in the category detail page under the **AI Defaults** section.
-The profile picker uses `ProfileSelector` and the template picker uses `TemplateSelector`
-(filtered to `taskAgent` templates only).
-
-### Implementation
-
-- `createTask()` in `create_entry.dart` looks up the category's `defaultProfileId` via
-  `EntitiesCacheService` and sets it on `TaskData.profileId`.
-- `autoAssignCategoryAgent()` is called from widget contexts (with `WidgetRef`) after task
-  creation. It looks up `defaultTemplateId` and creates an agent via `TaskAgentService`.
-- `ProfileAutomationResolver.resolveForTask()` falls back to `task.data.profileId` when
-  agent-based resolution fails (via `TaskProfileLookup` callback).
-- `WakeOrchestrator._shouldSkipForAwaitingContent()` checks the `awaitingContent` flag and
-  skips the wake if the task has no content yet.
-
-## Speech Dictionary
-
-Categories can store a speech dictionary of domain-specific terms to improve transcription accuracy.
-
-### Overview
-
-The speech dictionary helps with:
-- **Proper nouns**: Names like "Sigurðsson" or places like "Kirkjubæjarklaustur"
-- **Technical terms**: Product names like "macOS", "iPhone", or "Claude Code"
-- **Domain jargon**: Industry-specific terminology unique to each category
-
-### Data Model
-
-```dart
-class CategoryDefinition {
-  // List of correct spellings for speech recognition
-  final List<String>? speechDictionary;
-  // Example: ['macOS', 'Kirkjubæjarklaustur', 'Claude Code']
-}
+```text
+lib/features/categories/
+├── domain/
+│   └── category_icon.dart
+├── repository/
+│   └── categories_repository.dart
+├── state/
+│   ├── categories_list_controller.dart
+│   ├── category_details_controller.dart
+│   └── category_task_count_provider.dart
+└── ui/
+    ├── pages/
+    │   ├── categories_list_page.dart
+    │   └── category_details_page.dart
+    └── widgets/
+        ├── category_create_modal.dart
+        ├── category_field.dart
+        ├── category_selection_modal_content.dart
+        ├── category_color_picker.dart
+        ├── category_icon_picker.dart
+        ├── category_language_dropdown.dart
+        ├── category_speech_dictionary.dart
+        └── category_correction_examples.dart
 ```
 
-### How It Works
+## Data Model
 
-1. **Storage**: Terms stored as a list of strings per category
-2. **Prompt Injection**: `{{speech_dictionary}}` placeholder injects terms into AI prompts
-3. **Context**: Dictionary is fetched from task's category (or linked task for audio/images)
-4. **Sync**: Dictionaries sync across devices via existing category sync
+`CategoryDefinition` lives in `lib/classes/entity_definitions.dart`.
 
-### Adding Terms
+The fields with verified runtime consumers are:
 
-**From Category Settings:**
-- Edit category → Speech Dictionary field
-- Enter semicolon-separated terms: `macOS; iPhone; Claude Code`
+- `name`, `color`, `icon`
+  Used throughout list, detail, and picker widgets. `category_icon.dart` centralizes the icon catalog and display constants.
+- `private`, `active`, `favorite`
+  Used by settings tiles and picker behavior. `EntitiesCacheService.sortedCategories` returns only active categories, while favorite categories are surfaced first in the selection modal.
+- `defaultProfileId`
+  Copied into `TaskData.profileId` when tasks are created from category-aware entry points.
+- `defaultTemplateId`
+  Used to auto-create a task agent in content-awaiting mode for new tasks.
+- `speechDictionary`
+  Editable in the details page, appendable via `SpeechDictionaryService`, and injected into AI/speech flows by `PromptBuilderHelper`.
+- `correctionExamples`
+  Written by `CorrectionCaptureService`, displayed and deletable in the details page, and formatted back into prompt context later.
+- `defaultLanguageCode`
+  Persisted and editable in the details page. Current references are inside the categories feature itself.
 
-**From Text Editor (Context Menu):**
-- Select corrected text in QuillEditor
-- Right-click or long-press → "Add to Speech Dictionary"
-- Term is added to the current task's category
+## Repository and Cache Semantics
 
-### Implementation
+`CategoryRepository` is intentionally small:
 
-- **Widget**: `CategorySpeechDictionary` - semicolon-separated text field
-- **Service**: `SpeechDictionaryService` - handles term addition with validation
-- **Prompt Helper**: `PromptBuilderHelper` - injects dictionary into AI prompts
-- **Context Menu**: Custom `contextMenuBuilder` in QuillEditor
+- `watchCategories()` and `watchCategory()` rebuild on `categoriesNotification` and `privateToggleNotification`
+- `getCategoryById()` reads from `EntitiesCacheService`, not directly from the database
+- `createCategory()` creates a `CategoryDefinition` with:
+  - `private: false`
+  - `active: true`
+  - `favorite: null`
+- `deleteCategory()` is a soft delete that sets `deletedAt` and `updatedAt`
+- `getTaskCountsByCategory()` is a batch query used by the list UI
 
-### Validation
+The cache matters because several category consumers need synchronous access:
 
-- Empty terms are rejected
-- Terms are trimmed of whitespace
-- Maximum term length: 50 characters
-- Duplicates are allowed (user's responsibility)
+- `EntitiesCacheService.getCategoryById()` is used by task creation and prompt-building helpers
+- `EntitiesCacheService.sortedCategories` is used by picker widgets and returns active categories sorted by lowercase name
 
-## Checklist Correction Examples
+## Settings UI
 
-Categories can store correction examples learned from user's manual edits to improve AI accuracy.
+### Categories list
 
-### Overview
+`CategoriesListPage` currently watches `categoriesStreamProvider` directly. The page does not use `CategoriesListController`, even though the controller exists and has its own tests.
 
-When users manually correct a checklist item title (e.g., "test flight" → "TestFlight"), the correction is captured and stored on the category. These examples are then injected into AI prompts to teach the model domain-specific terminology and preferences.
+The list page behavior is:
 
-### Data Model
+- sorts categories alphabetically in the UI layer
+- renders a task count per row through `categoryTaskCountProvider`
+- batches those counts through `categoryTaskCountsProvider` so tiles share one database query
+- shows `private`, `favorite`, and inactive status indicators
+- keeps inactive categories visible in settings, even though pickers exclude them
 
-```dart
-class ChecklistCorrectionExample {
-  final String before;     // Original text before correction
-  final String after;      // Corrected text after user edit
-  final DateTime? capturedAt;  // When the correction was captured
-}
+### Category details and create mode
 
-class CategoryDefinition {
-  // List of correction examples for AI learning
-  final List<ChecklistCorrectionExample>? correctionExamples;
-}
+`CategoryDetailsPage` has two distinct modes:
+
+- create mode
+  Writes directly through `CategoryRepository.createCategory()` and only captures `name`, `color`, and `icon`. The private and active switches are shown disabled to communicate the default values applied on creation.
+- edit mode
+  Uses `CategoryDetailsController` and exposes sections for:
+  - basic settings
+  - default language
+  - AI defaults via `ProfileSelector` and `TemplateSelector`
+  - optional `CategoryProjectsSection` when `enableProjectsFlag` is enabled
+  - speech dictionary
+  - checklist correction examples
+
+`CategoryDetailsController` keeps `_originalCategory` and `_pendingCategory` so stream updates do not clobber local form edits.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Loading
+  Loading --> Ready : watchCategory emits category
+  Loading --> Error : stream error
+  Ready --> Dirty : updateFormField / setDefault* / updateSpeechDictionary / deleteCorrectionExampleAt
+  Dirty --> Saving : saveChanges()
+  Saving --> Ready : updateCategory succeeds
+  Saving --> Dirty : updateCategory fails
 ```
 
-### How It Works
+The non-trivial save behavior is the correction example merge:
 
-1. **Capture**: When a user edits a checklist item title, the before/after pair is captured
-2. **Filtering**: Trivial changes (whitespace-only, case-only on short text, duplicates) are skipped
-3. **Storage**: Valid corrections are appended to the category's `correctionExamples` list
-4. **Prompt Injection**: `{{correction_examples}}` placeholder injects examples into AI prompts
-5. **Token Budget**: Maximum 500 examples injected; warning shown at 400+
-6. **Sync**: Corrections sync across devices via existing category sync
+- the controller re-fetches the latest category from cache before saving
+- remote additions are preserved
+- examples explicitly deleted in the UI stay deleted
 
-### Smart Filtering
+That protects delayed background writes from `CorrectionCaptureService`.
 
-Not all edits are worth capturing. The service filters out:
-- **No change**: Edits that result in identical text after whitespace normalization
-- **Trivial case changes**: Single letter or very short texts with only case changes
-- **Duplicates**: Corrections already present in the category
+## Picker and Inline Creation Flow
 
-### Adding Corrections
+The categories feature also provides reusable picker UI that other features call into.
 
-Corrections are captured automatically when:
-- User edits a checklist item title
-- The edit represents a meaningful change
-- The task is assigned to a category
-
-### UI Components
-
-- **Widget**: `CategoryCorrectionExamples` in category settings
-- **Display**: List of before→after pairs with timestamps
-- **Delete**: Swipe-to-delete individual examples
-- **Warning**: Yellow banner when approaching token limit (400+ examples)
-
-### Implementation
-
-- **Service**: `CorrectionCaptureService` - handles capture with smart filtering
-- **Notifier**: `CorrectionCaptureNotifier` - emits events for snackbar feedback
-- **Controller**: `ChecklistItemController.updateTitle()` - triggers capture via `unawaited()`
-- **Prompt Helper**: `PromptBuilderHelper` - injects examples into AI prompts
-
-### Prompt Integration
-
-Examples are injected into prompts for:
-- `AiResponseType.audioTranscription` - Helps with domain-specific transcription
-
-Format in prompt:
-```
-The user has made the following corrections to checklist items in this category.
-Use these as guidance for correct terminology and formatting:
-
-- "test flight" → "TestFlight"
-- "mac OS" → "macOS"
-- "i Phone" → "iPhone"
+```mermaid
+flowchart LR
+  Field["CategoryField / selection button"] --> Modal["CategorySelectionModalContent"]
+  Modal --> Cache["EntitiesCacheService.sortedCategories"]
+  Modal --> Create["CategoryCreateModal"]
+  Create --> Repo["CategoryRepository.createCategory()"]
 ```
 
-## Usage Examples
+Important implementation details:
 
-### Creating a Work Category with Limited AI Access
+- the selection modal reads from cache, not a repository stream
+- it groups favorites before non-favorites
+- it supports both single-select and multi-select
+- when search has no match, it can open `CategoryCreateModal` with the search text prefilled
+- because it uses `sortedCategories`, inactive categories are not offered in picker flows
 
-```dart
-// Create a category for work entries
-final workCategory = CategoryDefinition(
-  id: 'work-123',
-  name: 'Work',
-  color: Colors.blue,
-  isPrivate: false,
-  allowedPromptIds: [
-    'action-item-suggestions',
-    'meeting-notes'
-  ],
-);
+This picker is reused outside the settings area, including tasks, projects, labels, AI backfill, and Daily OS widgets.
+
+## Downstream Consumers
+
+### Task defaults and agent assignment
+
+Category defaults are consumed by more than one task creation path.
+
+```mermaid
+flowchart LR
+  Category["CategoryDefinition"] --> Profile["defaultProfileId"]
+  Category --> Template["defaultTemplateId"]
+  Profile --> Task["TaskData.profileId"]
+  Template --> Agent["TaskAgentService.createTaskAgent(awaitContent: true)"]
 ```
 
-### Creating a Private Category with No AI
+Verified call sites:
 
-```dart
-// Create a private category with no AI processing
-final privateCategory = CategoryDefinition(
-  id: 'private-789',
-  name: 'Personal Thoughts',
-  color: Colors.purple,
-  isPrivate: true, // Hidden in private mode
-  allowedPromptIds: [], // No AI prompts allowed (same as null)
-);
-```
+- `lib/logic/create/create_entry.dart`
+  - `createTask()` copies `defaultProfileId`
+  - `autoAssignCategoryAgentWith()` uses `defaultTemplateId`
+- `lib/features/agents/workflow/project_tool_dispatcher.dart`
+  - project-created tasks inherit `defaultProfileId`
+  - auto-assignment uses `defaultTemplateId`
+- `lib/features/agents/tools/follow_up_task_handler.dart`
+  - follow-up tasks use the same default-template agent assignment logic
 
-## Benefits
+### Speech dictionary
 
-### For Privacy-Conscious Users
-- Complete control over which categories allow AI processing
-- Ability to create AI-free zones for sensitive content
-- Private mode integration for additional privacy
+`speechDictionary` is an actively used field.
 
-### For Productivity Users
-- AI prompt filtering per category saves time
-- Consistent content organization across entries
-- Speech dictionaries improve transcription accuracy
+- `SpeechDictionaryService.addTermForEntry()` resolves a category from a task, audio entry, or image entry, rejects empty and duplicate terms, and appends new terms to the category
+- `PromptBuilderHelper.getSpeechDictionaryTerms()` reads category dictionary terms from cache
+- `UnifiedAiInferenceRepository` forwards those terms to inference repositories as speech context
+- `CloudInferenceRepository` maps them to `contextBias`
 
-### For Organization
-- Visual categorization with colors
-- Quick filtering by favorites or active status
-- Language-specific processing per category
+### Checklist correction examples
 
-## Future Enhancements
+`correctionExamples` is also a live integration point.
 
-1. **Category Templates**: Pre-configured categories for common use cases
-2. **Category Analytics**: Insights into category usage
-3. **Sharing**: Export/import category configurations
-4. **Smart Suggestions**: AI-powered category assignment suggestions
+- `CorrectionCaptureService` normalizes edits, rejects trivial or duplicate corrections, delays persistence behind a pending-correction workflow, and appends `ChecklistCorrectionExample` values to the category
+- `PromptBuilderHelper` sorts examples by `capturedAt`, caps the number injected, and formats them for prompt text
+- `features/agents/tools/correction_examples_builder.dart` also formats category examples for agent-facing workflows
+- `CategoryDetailsController.deleteCorrectionExampleAt()` uses index-based deletion so duplicate examples can be removed one at a time
 
-## Technical Details
+## Tests That Define the Contract
 
-### Database Schema
+The strongest contracts in this feature are covered under `test/features/categories/`:
 
-Categories are stored in the `categories` table with the following key fields:
-- `id`: Unique identifier
-- `name`: Category name
-- `color`: Hex color code
-- `private`: Boolean for private mode
-- `active`: Boolean for visibility in lists
-- `favorite`: Boolean for quick access
-- `allowed_prompt_ids`: JSON array of allowed prompt IDs
-- `automatic_prompts`: JSON object mapping response types to prompt IDs (legacy — no longer exposed in UI)
-- `language_code`: ISO 639-1 language code for content processing
+- repository notification behavior and soft-delete semantics
+- `CategoryDetailsController` change tracking and correction-example merge behavior
+- task-count batching via `category_task_count_provider.dart`
+- list/detail page rendering
+- picker, icon, color, language, switch, and speech-dictionary widget behavior
 
-### State Management
+If the implementation changes, this README should be updated together with:
 
-The feature uses Riverpod for state management with:
-- `categoriesProvider`: Provides filtered list of categories
-- `categoryDetailsControllerProvider`: Manages individual category editing
-- `categoriesFilterControllerProvider`: Controls list filtering options
-
-### Integration Points
-
-1. **Journal Entries**: Categories can be assigned to any journal entry
-2. **AI System**: Categories control AI prompt availability and automation
-3. **Task Management**: Tasks can be categorized for better organization
-4. **Search**: Categories are searchable and filterable
-
+- the controller state machine
+- the set of downstream consumers listed above
+- the distinction between repository-stream reads and cache-backed reads

@@ -1,337 +1,346 @@
 # Speech Feature
 
-This feature provides comprehensive audio recording and speech-to-text capabilities for the Lotti journaling app. It allows users to create audio journal entries with automatic transcription support.
+The `speech` feature owns audio capture, audio playback, waveform extraction,
+and transcript-adjacent tools for `JournalAudio` entries.
 
-## Architecture Overview
+In the current implementation it does three concrete jobs:
 
-The speech feature follows clean architecture principles with clear separation of concerns:
+1. capture audio and persist it as `JournalAudio`
+2. play back `JournalAudio` entries with progress, speed, and waveform scrubbing
+3. maintain speech-specific metadata around audio entries, including language,
+   transcripts, and category speech dictionaries
 
-```
-speech/
-├── repository/           # Data layer - External service integration
-├── state/               # State management layer
-├── ui/                  # Presentation layer
-└── README.md           # This file
-```
+It does not own provider configuration or the general AI inference stack.
+Whenever realtime transcription or linked-task automation is involved, it calls
+into AI-side services.
 
-## Core Components
+## Directory Shape
 
-### State Management
-
-#### AudioRecorderController (`state/recorder_controller.dart`)
-The main Riverpod controller managing the recording lifecycle and state.
-
-**Responsibilities:**
-- Controls recording operations (start, stop, pause, resume)
-- Manages recording state including progress, audio levels, and status
-- Handles UI state (modal visibility, indicator visibility)
-- Integrates with audio player to pause playback when recording starts
-- Creates audio entries through SpeechRepository
-
-**Key Methods:**
-```dart
-// Start or toggle recording
-Future<void> record({String? linkedId})
-
-// Stop recording and create audio entry
-Future<String?> stop()
-
-// Pause/resume recording
-Future<void> pause()
-Future<void> resume()
-
-// UI state management
-void setModalVisible({required bool modalVisible})
-void setIndicatorVisible({required bool showIndicator})
-void setLanguage(String language)
-void setCategoryId(String? categoryId)
+```text
+lib/features/speech/
+├── helpers/
+├── model/
+├── repository/
+├── services/
+├── state/
+├── ui/
+└── README.md
 ```
 
-#### AudioRecorderState (`state/recorder_state.dart`)
-Immutable state model using Freezed for the recording feature.
+## Runtime Architecture
 
-**Properties:**
-- `status`: Recording status (initializing, initialized, recording, paused, stopped)
-- `decibels`: Current audio level for VU meter display
-- `progress`: Recording duration
-- `showIndicator`: Whether to show the floating indicator
-- `modalVisible`: Whether the recording modal is open
-- `language`: Selected language for transcription
-- `linkedId`: Optional ID to link recording to existing entry
+```mermaid
+flowchart LR
+  User["User"] --> RecordingUI["AudioRecordingModal / AudioRecordingIndicator"]
+  User --> PlaybackUI["AudioPlayerWidget"]
+  User --> TranscriptUI["SpeechModalContent"]
+  User --> EditorUI["Editor context menu"]
 
-#### AudioPlayerController (`state/audio_player_controller.dart`)
-Riverpod controller wrapping `media_kit` playback. It keeps audio progress, buffering, speed, and play state
-in sync with the UI.
+  RecordingUI --> RecorderCtl["AudioRecorderController"]
+  RecorderCtl --> RecorderRepo["AudioRecorderRepository"]
+  RecorderCtl --> RtTx["RealtimeTranscriptionService"]
+  RecorderCtl --> SpeechRepo["SpeechRepository"]
+  RecorderCtl --> AutoPrompt["AutomaticPromptTrigger"]
 
-**Responsibilities:**
-- Loads audio files via `setAudioNote()` and manages playback lifecycle
-- Drives playback (`play`, `pause`, `seek`, `setSpeed`) while clamping progress updates
-- Exposes buffer progress for the custom progress bar
-- Uses `PlayerFactory` provider for dependency injection, enabling testability
-- Emits robust error logging through `LoggingService`
+  PlaybackUI --> PlayerCtl["AudioPlayerController"]
+  PlaybackUI --> WaveformProvider["audioWaveformProvider"]
+  WaveformProvider --> WaveformSvc["AudioWaveformService"]
 
-**Key Methods:**
-```dart
-// Load an audio file for playback
-Future<void> setAudioNote(JournalAudio? audio)
+  TranscriptUI --> EntryCtl["EntryController.setLanguage()"]
+  TranscriptUI --> SpeechRepo
+  EditorUI --> DictSvc["SpeechDictionaryService"]
 
-// Playback controls
-Future<void> play()
-Future<void> pause()
-Future<void> seek(Duration position)
-Future<void> setSpeed(double speed)
+  SpeechRepo --> Persist["PersistenceLogic + JournalDb"]
+  DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
+  RtTx --> AiConfig["AI config + Mistral realtime repository"]
+  Persist --> JournalAudio["JournalAudio"]
 ```
 
-### Repositories
+The feature is not only a recorder. It also owns the app-wide playback
+controller, waveform cache, transcript maintenance UI, and the category speech
+dictionary helper used from the editor.
 
-#### AudioRecorderRepository (`repository/audio_recorder_repository.dart`)
-Encapsulates all interactions with the `record` package.
+## Recording
 
-**Features:**
-- Permission management
-- Recording lifecycle management
-- Audio file creation and directory management
-- Real-time amplitude monitoring
-- Error handling and logging
+### Standard recording path
 
-**Key Methods:**
-```dart
-Future<bool> hasPermission()
-Future<bool> isRecording()
-Future<bool> isPaused()
-Future<AudioNote?> startRecording()
-Future<void> stopRecording()
-Future<void> pauseRecording()
-Future<void> resumeRecording()
-Stream<Amplitude> get amplitudeStream
+Standard recording goes through `AudioRecorderRepository`, which wraps the
+`record` package and is responsible for:
+
+- permission checks
+- starting file-backed recording at `48kHz`
+- pause and resume
+- stop and dispose
+- amplitude sampling every `20ms`
+
+`AudioRecorderController` sits above that repository and adds:
+
+- Riverpod state for recording UI
+- VU calculation from dBFS samples
+- linked-entry and category context
+- coordination with app-wide playback
+- persistence through `SpeechRepository`
+- optional hand-off to profile-driven transcription automation
+
+`record()` is a toggle-style entry point:
+
+- if the repository is paused, it resumes
+- if the repository is already recording, it stops and saves
+- otherwise it starts a new recording
+
+The current recording modal exposes `record` and `stop`. The controller also
+has `pause()` and `resume()`, but that branch is not surfaced by the current
+modal UI.
+
+### Recorder state
+
+`AudioRecorderState` currently carries:
+
+- `status`
+- `progress`
+- `vu`
+- `dBFS`
+- `modalVisible`
+- `linkedId`
+- `enableSpeechRecognition`
+- `partialTranscript`
+- `isRealtimeMode`
+
+The enum still includes `AudioRecorderStatus.initializing`, but
+`AudioRecorderController.build()` returns `stopped` immediately and uses the
+asynchronous initialization step only for permission probing and logging.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Stopped
+  Stopped --> Recording: record() starts a file recording
+  Recording --> Paused: pause()
+  Paused --> Recording: resume()
+  Recording --> Stopped: record() or stop()
+  Paused --> Stopped: stop()
 ```
 
-#### SpeechRepository (`repository/speech_repository.dart`)
-Handles audio entry persistence and transcription management.
+One implementation detail worth calling out: the state object still has
+`showIndicator`, but the current `AudioRecordingIndicator` widget derives
+visibility from `status == recording && !modalVisible` rather than that field.
 
-**Features:**
-- Creates journal entries for audio recordings
-- Manages transcription operations
-- Updates language preferences
-- Integrates with ASR (Automatic Speech Recognition) service
+### Standard recording flow
 
-### UI Components
+```mermaid
+sequenceDiagram
+  participant User as "User"
+  participant Modal as "AudioRecordingModal"
+  participant Ctl as "AudioRecorderController"
+  participant Repo as "AudioRecorderRepository"
+  participant Speech as "SpeechRepository"
+  participant Persist as "PersistenceLogic"
 
-For detailed documentation of UI components, see [recording/README.md](ui/widgets/recording/README.md).
-
-**Key Components:**
-- `AudioRecordingModal`: Main recording interface with VU meter
-- `AudioRecordingIndicator`: Floating indicator for active recordings
-- `AnalogVuMeter`: Visual audio level display
-- `AudioPlayerWidget`: Minimal playback card with play/pause ring, progress bar, and speed toggle
-
-#### AudioPlayerWidget (`ui/widgets/audio_player.dart`)
-The compact playback card focuses on a single row of controls:
-
-- Circular play/pause button with animated progress ring
-- Custom `AudioProgressBar` showing buffered vs. played segments and supporting scrubbing
-- Tabular progress/total timestamps plus an inline speed toggle pill
-
-The layout keeps the same structure below 360 px with tightened spacing. Supporting painter logic
-remains in `ui/widgets/progress/audio_progress_bar.dart`.
-
-The progress bar resolves its palette through `resolveAudioProgressColors`, which aligns the scrub
-fill and thumb with contrast-adjusted variants of `ColorScheme.primary`, and removes the scrubbing
-glow for better contrast in high-contrast palettes. In light mode the player card renders on a flat
-surface color instead of the dark-mode gradient to keep the card feeling clean.
-
-## Integration Points
-
-### Dependencies
-- **GetIt**: Service locator for dependency injection
-- **Riverpod**: State management (both recorder and player use Riverpod)
-- **record**: Audio recording functionality
-- **media_kit**: Audio playback (via AudioPlayerController)
-
-### Services Used
-- `LoggingService`: Error and event logging
-- `AudioPlayerController`: Pauses playback when recording starts (via `ref.read()`)
-- `AsrService`: Automatic speech recognition
-- `PersistenceLogic`: Journal entry persistence
-
-## Recording Flow
-
-1. **Initiation**: User taps audio recording option
-2. **Modal Display**: `AudioRecordingModal.show()` opens the recording interface
-3. **Permission Check**: Repository verifies microphone permissions
-4. **Audio Pause**: Any playing audio is automatically paused
-5. **Recording Start**: Audio capture begins, VU meter shows levels
-6. **Progress Tracking**: Duration updates in real-time
-7. **Modal Dismissal**: If user navigates away, floating indicator appears
-8. **Recording Stop**: User taps stop button
-9. **Entry Creation**: Audio file is saved and journal entry created
-10. **Transcription**: If enabled, profile-driven automation triggers transcription via the task's agent profile skill assignment
-11. **Linked Entity Support**: If recording is linked to a task, both entities track the transcription progress
-12. **Provider Selection**: The model is determined by the profile's transcription model slot
-
-## Testing
-
-The feature has comprehensive test coverage with Riverpod best practices.
-
-### Testing Architecture
-
-**Dependency Injection for Testability:**
-The `AudioPlayerController` uses a `PlayerFactory` provider for dependency injection, allowing tests to mock the underlying `media_kit` `Player` instance:
-
-```dart
-// In production: creates real Player
-@Riverpod(keepAlive: true)
-PlayerFactory playerFactory(Ref ref) => Player.new;
-
-// In tests: override with mock
-container = ProviderContainer(
-  overrides: [
-    playerFactoryProvider.overrideWithValue(() => mockPlayer),
-  ],
-);
+  User->>Modal: tap record
+  Modal->>Ctl: record(linkedId)
+  Ctl->>Ctl: pause active AudioPlayerController if needed
+  Ctl->>Repo: hasPermission()
+  Ctl->>Repo: startRecording()
+  Repo-->>Ctl: AudioNote + amplitude stream
+  Ctl->>Ctl: update dBFS, RMS-based VU, progress
+  User->>Modal: tap stop
+  Modal->>Ctl: stop()
+  Ctl->>Repo: stopRecording()
+  Ctl->>Speech: createAudioEntry(audioNote, linkedId, categoryId)
+  Speech->>Persist: createDbEntity(JournalAudio)
+  Ctl->>Ctl: reset recorder state
 ```
 
-This approach:
-- Tests the **actual production controller**, not a test double
-- Mocks at the **dependency level** (Player), not the controller level
-- Follows Riverpod best practices for provider testing
-- Enables verification of real controller behavior
+The persisted `JournalAudio` is created from `AudioData` and stored through
+`PersistenceLogic`. The audio file lives under `/audio/YYYY-MM-DD/`.
 
-### Unit Tests
-- `audio_player_controller_test.dart`: Player state management, playback controls, speed adjustment
-- `recorder_controller_test.dart`: Recording lifecycle, audio player integration
-- `audio_checkbox_settings_test.dart`: Speech recognition and task summary preferences
-- `audio_recorder_repository_test.dart`: Repository functionality
-- `speech_repository_test.dart`: Data persistence and transcription
-- `audio_waveform_service_test.dart`: Waveform extraction, caching lifecycle, cache pruning, and filesystem resilience
+## Realtime Recording
 
-### Widget Tests
-- `audio_recording_modal_test.dart`: Modal UI and interactions
-- `audio_recording_modal_coverage_test.dart`: Additional coverage for buttons and callbacks
-- `audio_recording_indicator_test.dart`: Indicator behavior
-- `analog_vu_meter_test.dart`: VU meter rendering and animations
-- `audio_player_widget_test.dart`: Compact/wide layout, semantics, speed cycling, and scrub-to-seek
-- `audio_waveform_scrubber_test.dart`: Scrubbing gestures, throttled seeking, semantics, and painter edge cases
+Realtime recording is a separate transport path. It does not reuse
+`AudioRecorderRepository`.
 
-### Test Execution
-```bash
-# Run all speech feature tests
-flutter test test/features/speech/
+`AudioRecorderController.recordRealtime()`:
 
-# Run specific test categories
-flutter test test/features/speech/state/
-flutter test test/features/speech/repository/
-flutter test test/features/speech/ui/
+- creates a raw `record.AudioRecorder`
+- starts `pcm16bits`, `16kHz`, mono streaming
+- resolves realtime configuration through `RealtimeTranscriptionService`
+- currently requires a configured Mistral realtime model/provider pair
+- subscribes to the realtime amplitude stream for the same VU meter
+- accumulates transcript deltas into `partialTranscript`
+
+The realtime toggle in `AudioRecordingModal` is only shown when
+`realtimeAvailableProvider` resolves to `true`.
+
+```mermaid
+sequenceDiagram
+  participant User as "User"
+  participant Modal as "AudioRecordingModal"
+  participant Ctl as "AudioRecorderController"
+  participant RT as "RealtimeTranscriptionService"
+  participant Speech as "SpeechRepository"
+  participant Persist as "PersistenceLogic"
+
+  User->>Modal: enable realtime and tap record
+  Modal->>Ctl: recordRealtime(linkedId)
+  Ctl->>Ctl: pause active AudioPlayerController if needed
+  Ctl->>RT: resolveRealtimeConfig()
+  Ctl->>RT: startRealtimeTranscription(pcmStream)
+  RT-->>Ctl: amplitudeStream dBFS updates
+  RT-->>Ctl: transcript deltas
+  Ctl->>Ctl: update partialTranscript
+  User->>Modal: tap stop
+  Modal->>Ctl: stopRealtime()
+  Ctl->>RT: stop(stopRecorder, outputPath)
+  RT-->>Ctl: transcript + detectedLanguage + saved audio file path
+  Ctl->>Speech: createAudioEntry(...)
+  Ctl->>Ctl: save transcript onto JournalAudio and entryText
+  Ctl->>Ctl: reset recorder state
 ```
 
-## Error Handling
+Two important implementation details:
 
-The feature implements robust error handling:
-- Permission denied scenarios
-- Recording failures
-- File system errors
-- Transcription failures
+1. `stopRealtime()` only creates a `JournalAudio` entry if the realtime service
+   actually produced an audio file. Very short recordings can still return
+   transcript text from the service, but the controller does not persist
+   anything unless an audio artifact exists.
+2. When a realtime transcript exists, the controller appends an
+   `AudioTranscript` to `JournalAudio.data.transcripts` and also mirrors the
+   transcript into `entryText`.
 
-All errors are logged through `LoggingService` with appropriate domain tags for debugging.
+`cancelRealtime()` is a real third path. It tears down the recorder and
+realtime service without creating or updating a `JournalAudio` entry.
 
-## Performance Considerations
+## Playback And Waveforms
 
-- VU meter updates at 100ms intervals to balance responsiveness and performance
-- Amplitude stream is properly disposed to prevent memory leaks
-- File operations use async methods to avoid blocking UI
-- Modal visibility state prevents unnecessary widget rebuilds
+`AudioPlayerController` is a keep-alive Riverpod notifier backed by
+`media_kit.Player`.
 
-## Linked Entity Transcription
+It owns:
 
-When an audio recording is linked to another entity (e.g., a task), the speech feature integrates with the AI system to provide context-aware transcription:
+- the active `JournalAudio`
+- playback progress
+- buffered progress
+- playback speed
+- pause position
+- native player setup and cleanup
 
-### Features
-- **Task Context**: When linked to a task, the transcription uses task context for better accuracy with names and concepts
-- **Dual Progress Tracking**: Both the audio entry and the linked task show transcription progress indicators
-- **Automatic Inference**: Profile-driven automation triggers transcription when the task's agent profile has a transcription skill with `automate: true`
-- **Visual Indicators**: Both entities display inference animations (Siri waveform) during transcription, driven by `InferenceStatusController` updates from `SkillInferenceRunner`
+The controller subscribes to `media_kit` position, buffer, and completion
+streams. It also exposes `disposeActivePlayer()` so `WindowService` can shut
+the native player down before process exit.
 
-### Implementation
-The speech feature coordinates with the AI system's linked entity tracking:
-- Creates audio entry with `linkedId` parameter
-- `AutomaticPromptTrigger` invokes `ProfileAutomationService.tryTranscribe()` to resolve the profile and run the skill
-- `SkillInferenceRunner` updates `InferenceStatusController` so both entities show the waveform animation
-- Both entities receive status updates (running, complete, error)
-- UI components on both entities show appropriate indicators
+### Actual player state transitions
 
-## Transcription Providers
+The player state is simpler than the README used to claim. In the current
+implementation:
 
-The speech feature supports multiple transcription providers:
+- `build()` returns `AudioPlayerStatus.initializing`
+- `setAudioNote()` moves the state to `stopped`
+- `play()` moves it to `playing`
+- `pause()` moves it to `paused`
+- completion updates `progress` to the clip duration after a short delay, but
+  does not flip `status` back to `stopped`
 
-### Whisper
-- Locally running Whisper server for privacy
-- High accuracy with various audio formats
-- Context-aware transcription when linked to tasks
-
-### Voxtral (Local)
-- Local Voxtral model with audio transcription capabilities
-- No API key required - runs entirely locally
-- Provides high-quality transcription with streaming support
-- Supports up to 30 minutes of audio transcription
-- Automatically selected when configured as a provider
-
-## Speech Dictionary Service
-
-The speech feature includes a dictionary service for improving transcription accuracy with domain-specific terms.
-
-### Overview
-
-`SpeechDictionaryService` (`services/speech_dictionary_service.dart`) manages adding terms to category speech dictionaries from various contexts (e.g., text editor context menus).
-
-### Key Features
-
-- **Term Addition**: Add corrected spellings to the category's speech dictionary
-- **Entry Resolution**: Resolves category from tasks, linked audio, or linked images
-- **Validation**: Rejects empty terms, trims whitespace, enforces max length (50 chars)
-- **Result Feedback**: Returns detailed result enum for UI feedback
-
-### API
-
-```dart
-// Add a term to the dictionary for an entry's category
-final result = await speechDictionaryService.addTermForEntry(
-  entryId: 'task-123',
-  term: 'macOS',
-);
-
-// Check if term can be added (entry has a category)
-final canAdd = await speechDictionaryService.canAddTermForEntry('audio-456');
+```mermaid
+stateDiagram-v2
+  [*] --> Initializing
+  Initializing --> Stopped: setAudioNote(audio)
+  Stopped --> Playing: play()
+  Playing --> Paused: pause()
+  Paused --> Playing: play()
+  Playing --> Stopped: setAudioNote(new audio)
+  Paused --> Stopped: setAudioNote(new audio)
+  Playing --> Playing: completion event sets progress = duration
 ```
 
-### Result Types
+That last transition is deliberate in this diagram because it reflects the
+code as written, not an idealized player state machine.
 
-```dart
-enum SpeechDictionaryResult {
-  success,          // Term was added successfully
-  emptyTerm,        // Term was empty after trimming
-  termTooLong,      // Term exceeds 50 characters
-  entryNotFound,    // Entry doesn't exist
-  noCategory,       // Entry has no associated category
-  categoryNotFound, // Category was deleted
-  duplicate,        // Term already exists (case-insensitive)
-  saveFailed,       // Failed to save category update
-}
-```
+### Waveform extraction
 
-### Integration with Prompts
+`AudioPlayerWidget` uses `audioWaveformProvider`, which delegates to
+`AudioWaveformService`.
 
-Dictionary terms are injected into AI transcription prompts via the `{{speech_dictionary}}` placeholder in `PromptBuilderHelper`. The prompt text guides the AI to use exact spellings when encountering similar-sounding words.
+`AudioWaveformService`:
 
-### Testing
+- resolves the local audio file path
+- extracts waveform data with `just_waveform`
+- downsamples it into UI bucket counts
+- caches normalized waveform payloads on disk
+- prunes the cache when it grows beyond the configured limit
 
-- `test/features/speech/services/speech_dictionary_service_test.dart`: 25 unit tests covering all result types and edge cases
+The cache key includes the audio entry ID and requested bucket count, and the
+cache payload is validated against file path, file size, and modified time.
 
-## Future Enhancements
+## Transcript Tools
 
-Potential improvements to consider:
-- Waveform visualization during playback
-- Multiple language support for simultaneous transcription
-- Voice activity detection for auto-stop
-- Audio enhancement filters
-- Export capabilities for audio files
-- Global speech dictionary (cross-category terms)
+The feature also owns the small speech-specific tools around an existing audio
+entry.
+
+### Speech modal
+
+`SpeechModalContent` is a thin composition of:
+
+- `LanguageDropdown`
+- `TranscriptsList`
+
+`LanguageDropdown` does not talk to `SpeechRepository` directly. It calls
+`EntryController.setLanguage()`, which delegates to
+`SpeechRepository.updateLanguage()`.
+
+`TranscriptsList` renders existing `AudioTranscript` entries from
+`JournalAudio.data.transcripts`. Each `TranscriptListItem` can remove one
+transcript through `SpeechRepository.removeAudioTranscript()`.
+
+Today the language dropdown is hard-coded to:
+
+- `auto`
+- `en`
+- `de`
+
+That is worth documenting because it is a product constraint in the current UI,
+not just a placeholder detail.
+
+### Speech dictionary service
+
+`SpeechDictionaryService` is a separate path from recording and playback.
+
+It supports adding a selected term to a category speech dictionary by:
+
+- looking up the entry from `JournalRepository`
+- resolving the category from the task itself or from a task linked to a
+  `JournalAudio` or `JournalImage`
+- updating the category through `CategoryRepository`
+
+This is why the `speech` feature is wider than "audio recording". It also owns
+the category-level speech vocabulary helper used from the editor.
+
+## Automatic Transcription Hand-Off
+
+The helper is still named `AutomaticPromptTrigger`, but the current behavior is
+more specific than that name suggests.
+
+What it actually does today:
+
+- only runs when a recording is linked to a task
+- asks `profileAutomationServiceProvider` whether that task has an automated
+  transcription skill
+- optionally forwards the saved audio entry to `SkillInferenceRunner`
+
+What it does not do:
+
+- it does not run for unlinked recordings
+- it does not expose a general menu of prompt automations in the modal
+- it does not batch-transcribe a realtime recording that already produced its
+  own transcript
+
+The checkbox UI in `AudioRecordingModal` is consistent with that behavior:
+`checkboxVisibilityProvider` only exposes a speech-recognition checkbox when
+the linked task has profile-driven transcription available.
+
+## Boundaries
+
+- `journal` owns entry detail surfaces and supplies `JournalAudio`
+- `ai_chat` owns realtime transcription transport and Mistral WebSocket access
+- `ai` owns profile automation and skill execution
+- `categories` owns the speech dictionary persistence target
+- `speech` owns the audio-specific runtime, playback, waveform cache, and
+  transcript maintenance layer that connects those systems
