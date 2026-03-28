@@ -277,6 +277,9 @@ void main() {
     when(
       () => mockAiInputRepository.buildLinkedToContext(any()),
     ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+    when(
+      () => mockAiInputRepository.buildProjectContextJsonForTask(any()),
+    ).thenAnswer((_) async => '{}');
 
     // Default template stubs — tests that need different behavior override.
     when(
@@ -624,6 +627,11 @@ void main() {
         // Scaffold content.
         expect(capturedSystemMessage, contains('You are a Task Agent'));
         expect(capturedSystemMessage, contains('update_report'));
+        // Parent project context scaffold section.
+        expect(
+          capturedSystemMessage,
+          contains('## Parent Project Context'),
+        );
         // Template directives appended.
         expect(
           capturedSystemMessage,
@@ -674,6 +682,11 @@ void main() {
           expect(capturedSystemMessage, isNotNull);
           // Core scaffold present.
           expect(capturedSystemMessage, contains('You are a Task Agent'));
+          // Parent project context scaffold section.
+          expect(
+            capturedSystemMessage,
+            contains('## Parent Project Context'),
+          );
           // General directive injected.
           expect(
             capturedSystemMessage,
@@ -735,6 +748,11 @@ void main() {
           expect(
             capturedSystemMessage,
             contains('Write reports in bullet points only.'),
+          );
+          // Parent project context scaffold section.
+          expect(
+            capturedSystemMessage,
+            contains('## Parent Project Context'),
           );
           // General directive present.
           expect(capturedSystemMessage, contains('Be concise.'));
@@ -1770,6 +1788,7 @@ void main() {
       Future<String?> executeAndCaptureMessage({
         AgentReportEntity? lastReport,
         List<AgentMessageEntity> observations = const [],
+        String projectContextJson = '{}',
         String linkedTasksJson = '{}',
         Set<String> triggerTokens = const {},
         bool throwOnLinkedContextBuild = false,
@@ -1819,6 +1838,9 @@ void main() {
         when(
           () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
         ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
+        ).thenAnswer((_) async => projectContextJson);
         if (throwOnLinkedContextBuild) {
           when(
             () => mockAiInputRepository.buildLinkedFromContext(taskId),
@@ -1887,6 +1909,31 @@ void main() {
         expect(message, contains('# My Report'));
         expect(message, contains('All good.'));
       });
+
+      test(
+        'includes parent project context with project report tldr and full content',
+        () async {
+          final message = await executeAndCaptureMessage(
+            projectContextJson: jsonEncode({
+              'project': {
+                'id': 'project-1',
+                'title': 'Parent Project',
+                'status': 'ACTIVE',
+              },
+              'latestProjectAgentReport': {
+                'tldr': 'Project TLDR',
+                'content': '## Project Report\nFull project report body.',
+              },
+            }),
+          );
+
+          expect(message, isNotNull);
+          expect(message, contains('## Parent Project Context'));
+          expect(message, contains('Parent Project'));
+          expect(message, contains('Project TLDR'));
+          expect(message, contains('Full project report body.'));
+        },
+      );
 
       test('includes first wake message when no report exists', () async {
         final message = await executeAndCaptureMessage();
@@ -2108,6 +2155,13 @@ void main() {
 
         expect(message, isNotNull);
         expect(message, isNot(contains('## Linked Tasks')));
+      });
+
+      test('omits parent project context section when empty', () async {
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, isNot(contains('## Parent Project Context')));
       });
 
       test('includes trigger tokens when non-empty', () async {

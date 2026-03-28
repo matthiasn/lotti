@@ -34,6 +34,22 @@ When the flag is enabled, startup does this:
 When the flag is switched off, the provider is disposed and the orchestrator is
 stopped again.
 
+- Task agent wake prompts include:
+  - current task JSON context
+  - current report + recent observations
+  - parent project context with the latest project-agent `tldr` and full
+    report body when the task belongs to a project
+  - linked task context
+- Linked task context for agents is built directly in
+  `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
+  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
+  `latestTaskAgentReport` from each linked task's associated task agent (via
+  `agent_task` links + `agentReportHead`).
+- Linked-task `latestSummary` payloads are stripped before prompt submission
+  and are not used for Task Agent execution.
+- MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
+  avoid repeated journal lookups for shared task links.
+
 ```mermaid
 flowchart TD
   Flag{"enableAgentsFlag"} -->|off| Off["Agent runtime stays offline"]

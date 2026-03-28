@@ -12,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -27,11 +28,13 @@ void main() {
   late ProviderContainer container;
   late MockTaskProgressRepository mockTaskProgressRepo;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockProjectRepository mockProjectRepository;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockTaskProgressRepo = MockTaskProgressRepository();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockProjectRepository = MockProjectRepository();
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
@@ -47,6 +50,7 @@ void main() {
     repository = AiInputRepository(
       ref,
       taskSummaryResolver: TaskSummaryResolver(null),
+      projectRepository: mockProjectRepository,
     );
   });
 

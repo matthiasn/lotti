@@ -11,12 +11,15 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
@@ -310,6 +313,7 @@ void main() {
     late MockTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
     late MockEntitiesCacheService mockCacheService;
+    late MockProjectRepository mockProjectRepository;
     late ProviderContainer container;
     late AiInputRepository repository;
 
@@ -324,11 +328,13 @@ void main() {
       mockTaskProgressRepository = MockTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
       mockCacheService = MockEntitiesCacheService();
+      mockProjectRepository = MockProjectRepository();
       container = ProviderContainer(
         overrides: [
           taskProgressRepositoryProvider.overrideWithValue(
             mockTaskProgressRepository,
           ),
+          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         ],
       );
 
@@ -356,6 +362,9 @@ void main() {
         () => mockDb.getAllLabelDefinitions(),
       ).thenAnswer((_) async => <LabelDefinition>[]);
       when(() => mockCacheService.getLabelById(any())).thenReturn(null);
+      when(
+        () => mockProjectRepository.getProjectForTask(any()),
+      ).thenAnswer((_) async => null);
     });
 
     tearDown(() {

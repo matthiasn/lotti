@@ -9,8 +9,10 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
@@ -151,6 +153,8 @@ void main() {
     late MockJournalDb mockDb;
     late MockTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
+    late MockProjectRepository mockProjectRepository;
+    late MockAgentRepository mockAgentRepository;
     late TestContainerBuilder containerBuilder;
     late ProviderContainer container;
     late AiInputRepository repository;
@@ -159,6 +163,8 @@ void main() {
       mockDb = MockJournalDb();
       mockTaskProgressRepository = MockTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
+      mockProjectRepository = MockProjectRepository();
+      mockAgentRepository = MockAgentRepository();
       containerBuilder = TestContainerBuilder(mockTaskProgressRepository);
 
       // Register function for service locator
@@ -175,6 +181,8 @@ void main() {
       repository = AiInputRepository(
         ref,
         taskSummaryResolver: TaskSummaryResolver(null),
+        projectRepository: mockProjectRepository,
+        agentRepository: mockAgentRepository,
       );
 
       // Set default mock for taskProgressRepository if not overridden in tests
@@ -189,6 +197,12 @@ void main() {
       when(
         () => mockDb.getLinkedEntities(any()),
       ).thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockProjectRepository.getProjectForTask(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAgentRepository.getLatestProjectReportForProjectId(any()),
+      ).thenAnswer((_) async => null);
     });
 
     tearDown(() {
@@ -219,6 +233,141 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(() => mockDb.journalEntityById(taskId)).called(1);
+    });
+
+    group('buildProjectContextJsonForTask', () {
+      final projectDate = DateTime(2024, 3, 15, 10, 30);
+      final project =
+          JournalEntity.project(
+                meta: Metadata(
+                  id: 'project-123',
+                  createdAt: projectDate,
+                  updatedAt: projectDate,
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                  categoryId: 'cat-123',
+                ),
+                data: ProjectData(
+                  title: 'Agentic Architecture',
+                  status: ProjectStatus.active(
+                    id: 'project-status-1',
+                    createdAt: projectDate,
+                    utcOffset: 60,
+                  ),
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                  targetDate: projectDate.add(const Duration(days: 7)),
+                ),
+              )
+              as ProjectEntry;
+
+      test(
+        'returns project metadata plus latest full project report',
+        () async {
+          final report =
+              AgentDomainEntity.agentReport(
+                    id: 'project-report-1',
+                    agentId: 'project-agent-1',
+                    scope: 'current',
+                    createdAt: projectDate,
+                    vectorClock: null,
+                    tldr: 'Project is focused on wake-cycle context quality.',
+                    content:
+                        '## Project Report\nFull project context goes here.',
+                  )
+                  as AgentReportEntity;
+          when(
+            () => mockProjectRepository.getProjectForTask(taskId),
+          ).thenAnswer((_) async => project);
+          when(
+            () => mockAgentRepository.getLatestProjectReportForProjectId(
+              'project-123',
+            ),
+          ).thenAnswer((_) async => report);
+
+          final result = await repository.buildProjectContextJsonForTask(
+            taskId,
+          );
+          final decoded = jsonDecode(result) as Map<String, dynamic>;
+
+          expect(decoded['project'], isA<Map<String, dynamic>>());
+          expect(
+            decoded['project'],
+            containsPair('title', 'Agentic Architecture'),
+          );
+          expect(decoded['project'], containsPair('status', 'ACTIVE'));
+          expect(decoded['project'], containsPair('categoryId', 'cat-123'));
+          expect(
+            decoded['latestProjectAgentReport'],
+            containsPair(
+              'tldr',
+              'Project is focused on wake-cycle context quality.',
+            ),
+          );
+          expect(
+            decoded['latestProjectAgentReport'],
+            containsPair(
+              'content',
+              '## Project Report\nFull project context goes here.',
+            ),
+          );
+        },
+      );
+
+      test('returns empty object when task has no parent project', () async {
+        final result = await repository.buildProjectContextJsonForTask(taskId);
+
+        expect(result, '{}');
+        verify(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).called(1);
+        verifyNever(
+          () => mockAgentRepository.getLatestProjectReportForProjectId(any()),
+        );
+      });
+
+      test('returns empty object when project has no current report', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => project);
+
+        final result = await repository.buildProjectContextJsonForTask(taskId);
+
+        expect(result, '{}');
+        verify(
+          () => mockAgentRepository.getLatestProjectReportForProjectId(
+            'project-123',
+          ),
+        ).called(1);
+      });
+
+      test('returns empty object when project lookup throws', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenThrow(Exception('boom'));
+
+        final result = await repository.buildProjectContextJsonForTask(taskId);
+
+        expect(result, '{}');
+      });
+
+      test('returns empty object when agentRepository is null', () async {
+        final ref = container.read(testRefProvider);
+        final repoWithoutAgent = AiInputRepository(
+          ref,
+          taskSummaryResolver: TaskSummaryResolver(null),
+          projectRepository: mockProjectRepository,
+        );
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => project);
+
+        final result = await repoWithoutAgent.buildProjectContextJsonForTask(
+          taskId,
+        );
+
+        expect(result, '{}');
+      });
     });
 
     test(

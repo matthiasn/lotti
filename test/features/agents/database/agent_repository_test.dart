@@ -132,6 +132,23 @@ void main() {
     );
   }
 
+  model.AgentLink makeProjectLink({
+    String id = 'project-link-001',
+    String fromId = testAgentId,
+    String toId = 'project-001',
+    DateTime? createdAt,
+  }) {
+    final timestamp = createdAt ?? testDate;
+    return model.AgentLink.agentProject(
+      id: id,
+      fromId: fromId,
+      toId: toId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      vectorClock: const VectorClock({'node-1': 1}),
+    );
+  }
+
   WakeRunLogData makeWakeRun({
     String runKey = 'run-key-001',
     String agentId = testAgentId,
@@ -795,6 +812,253 @@ void main() {
         expect(singleResult?.reportId, 'report-new');
         expect(batchResult[testAgentId]?.id, 'report-new');
       });
+    });
+
+    group('getLatestProjectReportForProjectId', () {
+      test('returns null when no project-agent links exist', () async {
+        final result = await repo.getLatestProjectReportForProjectId(
+          'project-001',
+        );
+
+        expect(result, isNull);
+      });
+
+      test(
+        'returns latest current report for newest project-agent link',
+        () async {
+          final olderLink = makeProjectLink(
+            id: 'project-link-old',
+            fromId: 'project-agent-old',
+            createdAt: testDate,
+          );
+          final newerLink = makeProjectLink(
+            id: 'project-link-new',
+            fromId: 'project-agent-new',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+          );
+          final olderReport =
+              AgentDomainEntity.agentReport(
+                    id: 'project-report-old',
+                    agentId: 'project-agent-old',
+                    scope: AgentReportScopes.current,
+                    createdAt: testDate,
+                    vectorClock: null,
+                    content: 'Older project report',
+                  )
+                  as AgentReportEntity;
+          final newerReport =
+              AgentDomainEntity.agentReport(
+                    id: 'project-report-new',
+                    agentId: 'project-agent-new',
+                    scope: AgentReportScopes.current,
+                    createdAt: testDate.add(const Duration(minutes: 1)),
+                    vectorClock: null,
+                    content: 'Newer project report',
+                  )
+                  as AgentReportEntity;
+
+          await repo.upsertLink(olderLink);
+          await repo.upsertLink(newerLink);
+          await repo.upsertEntity(olderReport);
+          await repo.upsertEntity(newerReport);
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'project-head-old',
+              agentId: 'project-agent-old',
+              scope: AgentReportScopes.current,
+              reportId: 'project-report-old',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'project-head-new',
+              agentId: 'project-agent-new',
+              scope: AgentReportScopes.current,
+              reportId: 'project-report-new',
+            ),
+          );
+
+          final result = await repo.getLatestProjectReportForProjectId(
+            'project-001',
+          );
+
+          expect(result?.id, 'project-report-new');
+        },
+      );
+
+      test('uses link id descending as deterministic tie-breaker', () async {
+        final timestamp = DateTime(2026, 2, 20, 8);
+        await repo.upsertLink(
+          makeProjectLink(
+            id: 'project-link-b',
+            fromId: 'project-agent-b',
+            createdAt: timestamp,
+          ),
+        );
+        await repo.upsertLink(
+          makeProjectLink(
+            id: 'project-link-a',
+            fromId: 'project-agent-a',
+            createdAt: timestamp,
+          ),
+        );
+
+        await repo.upsertEntity(
+          AgentDomainEntity.agentReport(
+            id: 'project-report-b',
+            agentId: 'project-agent-b',
+            scope: AgentReportScopes.current,
+            createdAt: timestamp,
+            vectorClock: null,
+            content: 'Report B',
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentReport(
+            id: 'project-report-a',
+            agentId: 'project-agent-a',
+            scope: AgentReportScopes.current,
+            createdAt: timestamp,
+            vectorClock: null,
+            content: 'Report A',
+          ),
+        );
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'project-head-b',
+            agentId: 'project-agent-b',
+            scope: AgentReportScopes.current,
+            reportId: 'project-report-b',
+          ),
+        );
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'project-head-a',
+            agentId: 'project-agent-a',
+            scope: AgentReportScopes.current,
+            reportId: 'project-report-a',
+          ),
+        );
+
+        final result = await repo.getLatestProjectReportForProjectId(
+          'project-001',
+        );
+
+        // Both agents have valid reports; link-b wins via id DESC tie-breaker.
+        expect(result?.agentId, 'project-agent-b');
+      });
+
+      test(
+        'skips link whose agent has no report head and falls back to next',
+        () async {
+          // Newest link's agent has no report head at all (getLatestReport
+          // returns null), so the method should fall through to the older
+          // link that does have a usable report.
+          await repo.upsertLink(
+            makeProjectLink(
+              id: 'project-link-new',
+              fromId: 'project-agent-no-head',
+              createdAt: testDate.add(const Duration(minutes: 1)),
+            ),
+          );
+          await repo.upsertLink(
+            makeProjectLink(
+              id: 'project-link-old',
+              fromId: 'project-agent-old',
+              createdAt: testDate,
+            ),
+          );
+
+          // Only the older agent gets a report + head.
+          await repo.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: 'project-report-old',
+              agentId: 'project-agent-old',
+              scope: AgentReportScopes.current,
+              createdAt: testDate,
+              vectorClock: null,
+              content: 'Usable fallback report',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'project-head-old',
+              agentId: 'project-agent-old',
+              scope: AgentReportScopes.current,
+              reportId: 'project-report-old',
+            ),
+          );
+
+          final result = await repo.getLatestProjectReportForProjectId(
+            'project-001',
+          );
+
+          expect(result?.id, 'project-report-old');
+        },
+      );
+
+      test(
+        'skips empty report content and falls back to next usable link',
+        () async {
+          await repo.upsertLink(
+            makeProjectLink(
+              id: 'project-link-new',
+              fromId: 'project-agent-new',
+              createdAt: testDate.add(const Duration(minutes: 1)),
+            ),
+          );
+          await repo.upsertLink(
+            makeProjectLink(
+              id: 'project-link-old',
+              fromId: 'project-agent-old',
+              createdAt: testDate,
+            ),
+          );
+
+          await repo.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: 'project-report-empty',
+              agentId: 'project-agent-new',
+              scope: AgentReportScopes.current,
+              createdAt: testDate.add(const Duration(minutes: 1)),
+              vectorClock: null,
+              content: '   ',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'project-head-empty',
+              agentId: 'project-agent-new',
+              scope: AgentReportScopes.current,
+              reportId: 'project-report-empty',
+            ),
+          );
+          await repo.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: 'project-report-usable',
+              agentId: 'project-agent-old',
+              scope: AgentReportScopes.current,
+              createdAt: testDate,
+              vectorClock: null,
+              content: 'Usable project report',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'project-head-usable',
+              agentId: 'project-agent-old',
+              scope: AgentReportScopes.current,
+              reportId: 'project-report-usable',
+            ),
+          );
+
+          final result = await repo.getLatestProjectReportForProjectId(
+            'project-001',
+          );
+
+          expect(result?.id, 'project-report-usable');
+        },
+      );
     });
   });
 

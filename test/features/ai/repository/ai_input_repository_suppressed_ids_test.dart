@@ -11,12 +11,13 @@ import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockJournalDb extends Mock implements JournalDb {}
 
 class TestAiInputRepo extends AiInputRepository {
-  TestAiInputRepo(super.ref)
+  TestAiInputRepo(super.ref, {required super.projectRepository})
     : super(taskSummaryResolver: TaskSummaryResolver(null));
 
   @override
@@ -39,6 +40,7 @@ class TestAiInputRepo extends AiInputRepository {
 void main() {
   test('buildTaskDetailsJson includes aiSuppressedLabelIds', () async {
     final db = MockJournalDb();
+    final mockProjectRepository = MockProjectRepository();
     getIt.registerSingleton<JournalDb>(db);
     final container = ProviderContainer();
     addTearDown(() {
@@ -72,7 +74,10 @@ void main() {
     when(() => db.journalEntityById('t1')).thenAnswer((_) async => task);
     when(db.getAllLabelDefinitions).thenAnswer((_) async => const []);
 
-    final repo = TestAiInputRepo(container.read(testRefProvider));
+    final repo = TestAiInputRepo(
+      container.read(testRefProvider),
+      projectRepository: mockProjectRepository,
+    );
     final jsonStr = await repo.buildTaskDetailsJson(id: 't1');
     expect(jsonStr, isNotNull);
     final map = jsonDecode(jsonStr!) as Map<String, dynamic>;
