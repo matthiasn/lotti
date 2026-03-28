@@ -2671,36 +2671,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemMediumLabel => 'Mittel';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'KI-Assistent';
-
-  @override
-  String get designSystemNavigationCollapsedLabel => 'Eingeklappt';
-
-  @override
-  String get designSystemNavigationDailyFilterSectionTitle => 'Tagesfilter';
-
-  @override
-  String get designSystemNavigationExpandedLabel => 'Ausgeklappt';
-
-  @override
-  String get designSystemNavigationFilterByBlockLabel => 'Nach Block filtern';
-
-  @override
-  String get designSystemNavigationHikingLabel => 'Wandern';
-
-  @override
-  String get designSystemNavigationHolidayLabel => 'Urlaub';
-
-  @override
-  String get designSystemNavigationInsightsLabel => 'Einblicke';
-
-  @override
-  String get designSystemNavigationLottiTasksLabel => 'Lotti-Aufgaben';
-
-  @override
-  String get designSystemNavigationMyDailyLabel => 'Mein Tag';
-
-  @override
   String get designSystemMyDailyDeepWorkTitle => 'Fokusarbeit';
 
   @override
@@ -2739,10 +2709,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemMyDailyLunchBreakTitle => 'Mittagspause';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting mit Danny';
+  String get designSystemMyDailyMeetingsLabel => 'Meetings';
 
   @override
-  String get designSystemMyDailyMeetingsLabel => 'Meetings';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Meeting mit Danny';
 
   @override
   String get designSystemMyDailyProfileActionLabel => 'Profil';
@@ -2752,6 +2722,36 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemMyDailyTapToExpandLabel => 'Zum Aufklappen tippen';
+
+  @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'KI-Assistent';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Eingeklappt';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Tagesfilter';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Ausgeklappt';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel => 'Nach Block filtern';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Wandern';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Urlaub';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Einblicke';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Lotti-Aufgaben';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Mein Tag';
 
   @override
   String get designSystemNavigationNewLabel => 'Neu';
@@ -2848,10 +2848,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Statusmatrix';
 
   @override
-  String get designSystemTabBarTitle => 'Tab-Leiste';
+  String get designSystemSuccessLabel => 'Erfolg';
 
   @override
-  String get designSystemSuccessLabel => 'Erfolg';
+  String get designSystemTabBarTitle => 'Tab-Leiste';
 
   @override
   String get designSystemTabPendingLabel => 'Ausstehend';
@@ -4009,6 +4009,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Die Empfehlung konnte nicht aktualisiert werden. Bitte versuche es erneut.';
+
+  @override
+  String get projectsFilterStatusLabel => 'Status:';
+
+  @override
+  String get projectsFilterTooltip => 'Projekte filtern';
 
   @override
   String get projectShowcaseAiReportTitle => 'AI-Bericht';

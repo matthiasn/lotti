@@ -113,6 +113,29 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('uses the Figma body-small status typography', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectStatusLabel(
+            status: ProjectStatus.active(
+              id: 'a',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('Active'));
+
+      expect(label.style?.fontSize, 14);
+      expect(label.style?.fontWeight, FontWeight.w400);
+      expect(label.style?.height, closeTo(1.4286, 0.0001));
+    });
   });
 
   group('TaskStatePill', () {

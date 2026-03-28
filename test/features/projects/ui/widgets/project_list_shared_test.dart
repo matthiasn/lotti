@@ -51,7 +51,9 @@ void main() {
       final data = makeTestProjectListData();
       final group = ProjectListDetailState(
         data: data,
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       ).visibleGroups.first;
 
@@ -74,7 +76,9 @@ void main() {
       final data = makeTestProjectListData();
       final group = ProjectListDetailState(
         data: data,
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       ).visibleGroups.first;
 
@@ -95,6 +99,34 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'keeps row surfaces full width while insetting the row content',
+      (tester) async {
+        final group = makeGroupedProjectsSection();
+
+        await tester.pumpWidget(
+          wrap(
+            ProjectGroupSection(
+              group: group,
+              selectedProjectId: null,
+              onProjectSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final cardFinder = find.byType(ClipRRect);
+        final rowFinder = find.byKey(const ValueKey('project-overview-row-p1'));
+        final titleFinder = find.text('Project Alpha');
+        final cardTopLeft = tester.getTopLeft(cardFinder);
+        final rowTopLeft = tester.getTopLeft(rowFinder);
+        final titleTopLeft = tester.getTopLeft(titleFinder);
+
+        expect(rowTopLeft.dx, cardTopLeft.dx);
+        expect(titleTopLeft.dx - rowTopLeft.dx, 8);
+      },
+    );
 
     testWidgets(
       'hides the divider for hovered rows without changing section height',

@@ -871,6 +871,124 @@ void main() {
     );
 
     test(
+      'ProjectsFilterController.filter getter returns the current state',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final notifier = scopedContainer.read(
+          projectsFilterControllerProvider.notifier,
+        );
+
+        // Initially returns the default filter
+        expect(notifier.filter, const ProjectsFilter());
+
+        // After mutation, getter reflects the updated state
+        notifier
+          ..setSelectedCategoryIds({'cat-a', 'cat-b'})
+          ..setSelectedStatusIds(
+            {ProjectStatusFilterIds.active},
+          );
+
+        final current = notifier.filter;
+        expect(current.selectedCategoryIds, {'cat-a', 'cat-b'});
+        expect(
+          current.selectedStatusIds,
+          {ProjectStatusFilterIds.active},
+        );
+      },
+    );
+
+    test(
+      'ProjectsFilterController.filter setter replaces the entire filter state',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final notifier = scopedContainer.read(
+          projectsFilterControllerProvider.notifier,
+        );
+
+        const replacement = ProjectsFilter(
+          selectedStatusIds: {
+            ProjectStatusFilterIds.completed,
+            ProjectStatusFilterIds.archived,
+          },
+          selectedCategoryIds: {'cat-x'},
+          textQuery: 'hello',
+          searchMode: ProjectsSearchMode.localText,
+        );
+
+        notifier.filter = replacement;
+
+        final state = scopedContainer.read(
+          projectsFilterControllerProvider,
+        );
+        expect(state, replacement);
+        expect(
+          state.selectedStatusIds,
+          {
+            ProjectStatusFilterIds.completed,
+            ProjectStatusFilterIds.archived,
+          },
+        );
+        expect(state.selectedCategoryIds, {'cat-x'});
+        expect(state.textQuery, 'hello');
+        expect(state.searchMode, ProjectsSearchMode.localText);
+      },
+    );
+
+    test(
+      'ProjectsFilterController.setSelectedStatusIds updates only status ids',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        // Set up some pre-existing filter state, then update only status ids
+        scopedContainer.read(projectsFilterControllerProvider.notifier)
+          ..filter = const ProjectsFilter(
+            selectedCategoryIds: {'cat-keep'},
+            textQuery: 'preserved',
+            searchMode: ProjectsSearchMode.localText,
+          )
+          ..setSelectedStatusIds({
+            ProjectStatusFilterIds.onHold,
+            ProjectStatusFilterIds.open,
+          });
+
+        final state = scopedContainer.read(
+          projectsFilterControllerProvider,
+        );
+        expect(
+          state.selectedStatusIds,
+          {ProjectStatusFilterIds.onHold, ProjectStatusFilterIds.open},
+        );
+        // Other fields remain unchanged
+        expect(state.selectedCategoryIds, {'cat-keep'});
+        expect(state.textQuery, 'preserved');
+        expect(state.searchMode, ProjectsSearchMode.localText);
+      },
+    );
+
+    test(
       'visibleProjectGroupsProvider ignores text query when search mode is disabled',
       () async {
         final snapshot = makeSnapshot();
@@ -898,6 +1016,86 @@ void main() {
         final groups = scopedContainer.read(visibleProjectGroupsProvider).value;
         expect(groups, isNotNull);
         expect(groups, hasLength(2));
+      },
+    );
+
+    test(
+      'visibleProjectGroupsProvider filters by selected project statuses',
+      () async {
+        final snapshot = ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: workCategory.id,
+              category: workCategory,
+              projects: [
+                ProjectListItemData(
+                  project: makeTestProject(
+                    id: 'project-work',
+                    title: 'Device Sync',
+                    status: ProjectStatus.active(
+                      id: 'status-active',
+                      createdAt: DateTime(2024, 3, 15),
+                      utcOffset: 0,
+                    ),
+                    categoryId: workCategory.id,
+                  ),
+                  category: workCategory,
+                  taskRollup: const ProjectTaskRollupData(totalTaskCount: 5),
+                ),
+              ],
+            ),
+            ProjectCategoryGroup(
+              categoryId: studyCategory.id,
+              category: studyCategory,
+              projects: [
+                ProjectListItemData(
+                  project: makeTestProject(
+                    id: 'project-study',
+                    title: 'API Migration',
+                    status: ProjectStatus.completed(
+                      id: 'status-completed',
+                      createdAt: DateTime(2024, 3, 16),
+                      utcOffset: 0,
+                    ),
+                    categoryId: studyCategory.id,
+                  ),
+                  category: studyCategory,
+                  taskRollup: const ProjectTaskRollupData(totalTaskCount: 2),
+                ),
+              ],
+            ),
+          ],
+        );
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => Stream.value(snapshot),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await scopedContainer.read(projectsOverviewProvider.future);
+        scopedContainer
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds({ProjectStatusFilterIds.completed});
+
+        final filtered = scopedContainer
+            .read(visibleProjectGroupsProvider)
+            .value;
+
+        expect(filtered, isNotNull);
+        expect(filtered, hasLength(1));
+        expect(
+          filtered!.single.projects.single.project.data.title,
+          'API Migration',
+        );
       },
     );
   });

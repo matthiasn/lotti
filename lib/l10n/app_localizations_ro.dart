@@ -2674,36 +2674,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemMediumLabel => 'Mediu';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'Asistent AI';
-
-  @override
-  String get designSystemNavigationCollapsedLabel => 'Restrâns';
-
-  @override
-  String get designSystemNavigationDailyFilterSectionTitle => 'Filtru zilnic';
-
-  @override
-  String get designSystemNavigationExpandedLabel => 'Extins';
-
-  @override
-  String get designSystemNavigationFilterByBlockLabel => 'Filtrează după bloc';
-
-  @override
-  String get designSystemNavigationHikingLabel => 'Drumeție';
-
-  @override
-  String get designSystemNavigationHolidayLabel => 'Concediu';
-
-  @override
-  String get designSystemNavigationInsightsLabel => 'Perspective';
-
-  @override
-  String get designSystemNavigationLottiTasksLabel => 'Sarcini Lotti';
-
-  @override
-  String get designSystemNavigationMyDailyLabel => 'Ziua mea';
-
-  @override
   String get designSystemMyDailyDeepWorkTitle => 'Muncă concentrată';
 
   @override
@@ -2742,10 +2712,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemMyDailyLunchBreakTitle => 'Pauză de prânz';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Întâlnire cu Danny';
+  String get designSystemMyDailyMeetingsLabel => 'Întâlniri';
 
   @override
-  String get designSystemMyDailyMeetingsLabel => 'Întâlniri';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Întâlnire cu Danny';
 
   @override
   String get designSystemMyDailyProfileActionLabel => 'Profil';
@@ -2755,6 +2725,36 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemMyDailyTapToExpandLabel => 'Apasă pentru extindere';
+
+  @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'Asistent AI';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Restrâns';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Filtru zilnic';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Extins';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel => 'Filtrează după bloc';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Drumeție';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Concediu';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Perspective';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Sarcini Lotti';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Ziua mea';
 
   @override
   String get designSystemNavigationNewLabel => 'Nou';
@@ -2852,10 +2852,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matrice de stări';
 
   @override
-  String get designSystemTabBarTitle => 'Bara de file';
+  String get designSystemSuccessLabel => 'Succes';
 
   @override
-  String get designSystemSuccessLabel => 'Succes';
+  String get designSystemTabBarTitle => 'Bara de file';
 
   @override
   String get designSystemTabPendingLabel => 'În așteptare';
@@ -4031,6 +4031,12 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.';
+
+  @override
+  String get projectsFilterStatusLabel => 'Stare:';
+
+  @override
+  String get projectsFilterTooltip => 'Filtrați proiectele';
 
   @override
   String get projectShowcaseAiReportTitle => 'Raport AI';

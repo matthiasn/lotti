@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -37,7 +41,15 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
 
   @override
   Widget build(BuildContext context) {
+    final overviewAsync = ref.watch(projectsOverviewProvider);
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
+    final filter = ref.watch(projectsFilterControllerProvider);
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+    final topPadding = isCompact ? 20.0 : 8.0;
+    final categories = overviewAsync.maybeWhen(
+      data: (overview) => _filterCategoriesFromOverview(overview.groups),
+      orElse: () => const <CategoryDefinition>[],
+    );
 
     return Scaffold(
       backgroundColor: ShowcasePalette.page(context),
@@ -57,6 +69,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
             groups: groups,
             searchEnabled: false,
             scrollController: _scrollController,
+            headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
             listBottomPadding: 112,
             onProjectTap: (project) {
               final categoryId = project.project.meta.categoryId;
@@ -74,10 +87,25 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
               size: 34,
               color: ShowcasePalette.highText(context),
             ),
-            searchTrailing: Icon(
-              Icons.tune_rounded,
-              size: 24,
-              color: ShowcasePalette.teal(context),
+            searchTrailing: IconButton(
+              tooltip: context.messages.projectsFilterTooltip,
+              onPressed: () => showProjectsFilterModal(
+                context: context,
+                initialFilter: filter,
+                categories: categories,
+                onApplied: (nextFilter) {
+                  ref.read(projectsFilterControllerProvider.notifier).filter =
+                      nextFilter;
+                },
+                presentation: isCompact
+                    ? DesignSystemFilterPresentation.mobile
+                    : DesignSystemFilterPresentation.desktop,
+              ),
+              icon: Icon(
+                Icons.tune_rounded,
+                size: 24,
+                color: ShowcasePalette.teal(context),
+              ),
             ),
           ),
           loading: () => const Center(
@@ -90,4 +118,13 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
       ),
     );
   }
+}
+
+List<CategoryDefinition> _filterCategoriesFromOverview(
+  List<ProjectCategoryGroup> groups,
+) {
+  return groups
+      .map((group) => group.category)
+      .whereType<CategoryDefinition>()
+      .toList(growable: false);
 }

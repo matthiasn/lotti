@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 
 enum TaskShowcaseFilterPresentation {
@@ -22,6 +23,19 @@ Future<void> showTaskShowcaseFilterModal({
         DesignSystemFilterPresentation.desktop,
       TaskShowcaseFilterPresentation.mobile =>
         DesignSystemFilterPresentation.mobile,
+    },
+    onFieldPressed: (sheetContext, draftState, section) {
+      return showDesignSystemTaskFilterFieldSelectionModal(
+        context: sheetContext,
+        draftState: draftState,
+        section: section,
+        presentation: switch (presentation) {
+          TaskShowcaseFilterPresentation.desktop =>
+            DesignSystemFilterPresentation.desktop,
+          TaskShowcaseFilterPresentation.mobile =>
+            DesignSystemFilterPresentation.mobile,
+        },
+      );
     },
   );
 }

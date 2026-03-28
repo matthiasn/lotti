@@ -14,6 +14,7 @@ class ProjectListPane extends StatefulWidget {
     required this.onProjectSelected,
     required this.onSearchChanged,
     required this.onSearchCleared,
+    required this.onFilterPressed,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class ProjectListPane extends StatefulWidget {
   final ValueChanged<String> onProjectSelected;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
+  final VoidCallback onFilterPressed;
 
   @override
   State<ProjectListPane> createState() => _ProjectListPaneState();
@@ -52,6 +54,7 @@ class _ProjectListPaneState extends State<ProjectListPane> {
             query: widget.state.searchQuery,
             onSearchChanged: widget.onSearchChanged,
             onSearchCleared: widget.onSearchCleared,
+            onFilterPressed: widget.onFilterPressed,
           ),
           Expanded(
             child: Padding(
@@ -88,11 +91,13 @@ class _SearchHeader extends StatelessWidget {
     required this.query,
     required this.onSearchChanged,
     required this.onSearchCleared,
+    required this.onFilterPressed,
   });
 
   final String query;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
+  final VoidCallback onFilterPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +125,14 @@ class _SearchHeader extends StatelessWidget {
               width: 36,
               height: 36,
               child: Center(
-                child: Icon(
-                  Icons.filter_list_rounded,
-                  size: 18,
-                  color: ShowcasePalette.teal(context),
+                child: IconButton(
+                  tooltip: context.messages.projectsFilterTooltip,
+                  onPressed: onFilterPressed,
+                  icon: Icon(
+                    Icons.tune_rounded,
+                    size: 18,
+                    color: ShowcasePalette.teal(context),
+                  ),
                 ),
               ),
             ),

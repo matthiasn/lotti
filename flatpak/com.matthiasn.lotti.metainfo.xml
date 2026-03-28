@@ -34,6 +34,7 @@
     <release version="0.9.933" date="2026-03-27">
       <description>
           <p>Projects tab: the new top-level Projects tab now ships behind the enableProjects feature flag with the intended design-system mobile layout. The live tab and the Widgetbook mobile reference now mount the same sliver-driven header, grouped category sections, and floating create action, while the search field stays disabled pending the later vector-search follow-up.</p>
+          <p>Projects filters: the Projects tab and Widgetbook showcase now share the same design-system filter modal, nested field-selection sheet, and state model for project-status and category filtering instead of keeping separate mock-only filter behavior.</p>
           <p>Projects tab reactivity: grouped project snapshots now refresh automatically when relevant project, task, category, or private-visibility updates arrive, so status changes such as Active to Completed are reflected in the UI without reopening the page.</p>
       </description>
     </release>

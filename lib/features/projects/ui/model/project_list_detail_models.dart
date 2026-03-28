@@ -104,4 +104,25 @@ class ProjectListData {
   final List<CategoryDefinition> categories;
   final List<ProjectRecord> projects;
   final DateTime currentTime;
+
+  ProjectsOverviewSnapshot get overviewSnapshot {
+    final recordsByCategory = <String, List<ProjectRecord>>{};
+    for (final record in projects) {
+      (recordsByCategory[record.category.id] ??= <ProjectRecord>[]).add(record);
+    }
+
+    return ProjectsOverviewSnapshot(
+      groups: [
+        for (final category in categories)
+          if (recordsByCategory[category.id]?.isNotEmpty ?? false)
+            ProjectCategoryGroup(
+              categoryId: category.id,
+              category: category,
+              projects: recordsByCategory[category.id]!
+                  .map((record) => record.overviewListItem)
+                  .toList(growable: false),
+            ),
+      ],
+    );
+  }
 }

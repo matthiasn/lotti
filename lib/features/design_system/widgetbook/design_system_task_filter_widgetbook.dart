@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -74,6 +77,20 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
                 onChanged: (nextState) {
                   setState(() => _state = nextState);
                 },
+                onFieldPressed: (section) async {
+                  final nextState =
+                      await showDesignSystemTaskFilterFieldSelectionModal(
+                        context: context,
+                        draftState: state,
+                        section: section,
+                        presentation: DesignSystemFilterPresentation.mobile,
+                      );
+                  if (!mounted || nextState == null) {
+                    return;
+                  }
+
+                  setState(() => _state = nextState);
+                },
                 onApplyPressed: (nextState) {
                   setState(() => _state = nextState);
                 },
@@ -144,7 +161,7 @@ DesignSystemTaskFilterState _buildSampleState(AppLocalizations messages) {
     ],
     selectedSortId: 'due-date',
     statusField: DesignSystemTaskFilterFieldState(
-      label: _stripTrailingColon(messages.taskStatusLabel),
+      label: stripTrailingColon(messages.taskStatusLabel),
       options: [
         DesignSystemTaskFilterOption(
           id: 'open',
@@ -190,7 +207,7 @@ DesignSystemTaskFilterState _buildSampleState(AppLocalizations messages) {
     ],
     selectedPriorityId: 'p2',
     categoryField: DesignSystemTaskFilterFieldState(
-      label: _stripTrailingColon(messages.taskCategoryLabel),
+      label: stripTrailingColon(messages.taskCategoryLabel),
       options: const [
         DesignSystemTaskFilterOption(id: 'learn', label: 'Learn'),
         DesignSystemTaskFilterOption(id: 'study', label: 'Study'),
@@ -208,8 +225,4 @@ DesignSystemTaskFilterState _buildSampleState(AppLocalizations messages) {
       selectedIds: const {'ai-coding', 'agents'},
     ),
   );
-}
-
-String _stripTrailingColon(String value) {
-  return value.endsWith(':') ? value.substring(0, value.length - 1) : value;
 }

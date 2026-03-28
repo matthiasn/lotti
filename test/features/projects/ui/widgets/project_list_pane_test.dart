@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -40,7 +41,9 @@ void main() {
     setUp(() {
       state = ProjectListDetailState(
         data: makeTestProjectListData(),
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       );
       lastSelectedProjectId = null;
@@ -54,6 +57,7 @@ void main() {
             onProjectSelected: (id) => lastSelectedProjectId = id,
             onSearchChanged: (_) {},
             onSearchCleared: () {},
+            onFilterPressed: () {},
           ),
         ),
       );
@@ -68,7 +72,9 @@ void main() {
     testWidgets('shows no-results pane when search filters everything', (
       tester,
     ) async {
-      final filteredState = state.copyWith(searchQuery: 'zzz');
+      final filteredState = state.copyWith(
+        filter: state.filter.copyWith(textQuery: 'zzz'),
+      );
 
       await tester.pumpWidget(
         wrap(
@@ -77,6 +83,7 @@ void main() {
             onProjectSelected: (_) {},
             onSearchChanged: (_) {},
             onSearchCleared: () {},
+            onFilterPressed: () {},
           ),
         ),
       );
@@ -93,6 +100,7 @@ void main() {
             onProjectSelected: (id) => lastSelectedProjectId = id,
             onSearchChanged: (_) {},
             onSearchCleared: () {},
+            onFilterPressed: () {},
           ),
         ),
       );
@@ -124,7 +132,9 @@ void main() {
           projects: [datedRecord],
           currentTime: baseData.currentTime,
         ),
-        searchQuery: '',
+        filter: const ProjectsFilter(
+          searchMode: ProjectsSearchMode.localText,
+        ),
         selectedProjectId: 'p1',
       );
 
@@ -135,6 +145,7 @@ void main() {
             onProjectSelected: (_) {},
             onSearchChanged: (_) {},
             onSearchCleared: () {},
+            onFilterPressed: () {},
           ),
           locale: const Locale('de'),
         ),

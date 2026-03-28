@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_task_filter_widgetbook.dart';
 
@@ -90,6 +93,55 @@ void main() {
       expect(find.text('0'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'opens the shared DS field selection modal and updates the serialized state',
+      (tester) async {
+        final useCase =
+            buildDesignSystemTaskFilterWidgetbookComponent().useCases.single;
+        await tester.binding.setSurfaceSize(const Size(1100, 1900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: Scaffold(
+                body: SizedBox(
+                  width: 900,
+                  height: 1800,
+                  child: Builder(builder: useCase.builder),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1100, 1900)),
+          ),
+        );
+        await tester.pump();
+
+        final filterSheet = tester.widget<DesignSystemTaskFilterSheet>(
+          find.byType(DesignSystemTaskFilterSheet),
+        );
+        filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+        expect(find.byType(DesignSystemCheckbox), findsNWidgets(3));
+        expect(find.byType(CheckboxListTile), findsNothing);
+
+        final selectionSheet = tester.widget<DesignSystemFilterSelectionSheet>(
+          find.byType(DesignSystemFilterSelectionSheet),
+        );
+        selectionSheet.onOptionToggled('blocked');
+        await tester.pump();
+
+        selectionSheet.onApplyPressed();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.byType(DesignSystemFilterSelectionSheet), findsNothing);
+        expect(_serializedState(tester), contains('"blocked"'));
+      },
+    );
   });
 }
 

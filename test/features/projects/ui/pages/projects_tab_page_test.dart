@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
@@ -98,13 +100,18 @@ void main() {
     WidgetTester tester, {
     required List<ProjectCategoryGroup> groups,
     MediaQueryData? mediaQueryData,
+    ThemeData? theme,
   }) async {
+    final snapshot = ProjectsOverviewSnapshot(groups: groups);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
-        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(snapshot),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => AsyncValue.data(groups),
           ),
@@ -153,6 +160,23 @@ void main() {
     expect(textField.enabled, isFalse);
   });
 
+  testWidgets('renders the grouped projects page in light theme', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+      theme: withOverrides(ThemeData.light(useMaterial3: true)),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Projects'), findsOneWidget);
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('2 projects'), findsOneWidget);
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
+  });
+
   testWidgets('row tap opens the existing settings project detail route', (
     tester,
   ) async {
@@ -191,6 +215,47 @@ void main() {
       navigatedPath,
       '/settings/projects/create',
     );
+  });
+
+  testWidgets('opens the shared filter modal from the header icon', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+    );
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Apply filter'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Category'), findsOneWidget);
+  });
+
+  testWidgets('opens the shared DS status picker from the filter sheet', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+    );
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final statusField = find.byKey(
+      const ValueKey('design-system-task-filter-field-status'),
+    );
+    await tester.ensureVisible(statusField);
+    await tester.pumpAndSettle();
+    await tester.tap(statusField);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+    expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
+    expect(find.byType(CheckboxListTile), findsNothing);
+    expect(find.text('Archived'), findsOneWidget);
   });
 
   testWidgets('renders the same grouped data on phone and desktop widths', (
@@ -234,6 +299,11 @@ void main() {
         const ProjectsTabPage(),
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(
+              ProjectsOverviewSnapshot(groups: [buildWorkGroup()]),
+            ),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => const AsyncValue<List<ProjectCategoryGroup>>.loading(),
           ),
@@ -254,6 +324,11 @@ void main() {
         const ProjectsTabPage(),
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(
+              ProjectsOverviewSnapshot(groups: [buildWorkGroup()]),
+            ),
+          ),
           visibleProjectGroupsProvider.overrideWith(
             (ref) => AsyncValue<List<ProjectCategoryGroup>>.error(
               Exception('test'),
@@ -267,4 +342,32 @@ void main() {
 
     expect(find.text('Error'), findsOneWidget);
   });
+
+  testWidgets(
+    'applies filter state when apply button is tapped in the filter modal',
+    (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup(), buildStudyGroup()],
+      );
+
+      // Open the filter modal
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Apply filter'), findsOneWidget);
+
+      // Tap the apply button
+      final applyButton = find.byKey(
+        const ValueKey('design-system-task-filter-apply'),
+      );
+      await tester.ensureVisible(applyButton);
+      await tester.pumpAndSettle();
+      await tester.tap(applyButton);
+      await tester.pumpAndSettle();
+
+      // Verify the filter modal has closed
+      expect(find.text('Apply filter'), findsNothing);
+    },
+  );
 }

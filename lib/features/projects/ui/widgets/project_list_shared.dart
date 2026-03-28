@@ -143,8 +143,9 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                         }
                       });
                     },
-                    onTap: () =>
-                        widget.onProjectSelected(widget.group.projects[index]),
+                    onTap: () => widget.onProjectSelected(
+                      widget.group.projects[index],
+                    ),
                   ),
                   if (index < widget.group.projects.length - 1)
                     visibleDividers[index]
@@ -160,7 +161,9 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                             ),
                           )
                         : SizedBox(
-                            key: ValueKey('project-group-divider-slot-$index'),
+                            key: ValueKey(
+                              'project-group-divider-slot-$index',
+                            ),
                             height: _kProjectRowOverlap,
                           ),
                 ],

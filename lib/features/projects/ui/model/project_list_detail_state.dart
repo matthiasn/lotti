@@ -3,22 +3,32 @@ import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart
 
 /// UI state for the project list/detail layout.
 ///
-/// Holds the backing data, the current search query, and the selected project
-/// ID. Computed getters derive the visible projects and groups from these
-/// values.
+/// Holds the backing data, the shared projects filter state, and the selected
+/// project ID. Computed getters derive the visible projects and groups from
+/// these values.
 class ProjectListDetailState {
   ProjectListDetailState({
     required this.data,
-    required this.searchQuery,
+    required this.filter,
     required this.selectedProjectId,
   });
 
   final ProjectListData data;
-  final String searchQuery;
+  final ProjectsFilter filter;
   final String selectedProjectId;
 
+  String get searchQuery => filter.textQuery;
+
+  late final ProjectsOverviewSnapshot overviewSnapshot = data.overviewSnapshot;
+
+  /// Cached grouped project list. Computed lazily on first access.
+  late final List<ProjectCategoryGroup> visibleGroups = applyProjectsFilter(
+    overviewSnapshot,
+    filter,
+  );
+
   /// Cached filtered project list. Computed lazily on first access and reused
-  /// by [selectedProject] and [visibleGroups].
+  /// by [selectedProject].
   late final List<ProjectRecord> visibleProjects = _computeVisibleProjects();
 
   ProjectRecord? get selectedProject {
@@ -29,61 +39,24 @@ class ProjectListDetailState {
   }
 
   List<ProjectRecord> _computeVisibleProjects() {
-    final query = searchQuery.trim().toLowerCase();
-    if (query.isEmpty) {
-      return data.projects;
-    }
+    final visibleIds = visibleGroups
+        .expand((group) => group.projects)
+        .map((project) => project.project.meta.id)
+        .toSet();
 
-    return data.projects.where((record) {
-      final titleMatch = record.project.data.title.toLowerCase().contains(
-        query,
-      );
-      final categoryMatch = record.category.name.toLowerCase().contains(query);
-      return titleMatch || categoryMatch;
-    }).toList();
-  }
-
-  /// Cached grouped project list. Computed lazily on first access.
-  late final List<ProjectCategoryGroup> visibleGroups = _computeVisibleGroups();
-
-  List<ProjectCategoryGroup> _computeVisibleGroups() {
-    final visible = visibleProjects;
-    final byCategory = <String, List<ProjectRecord>>{};
-
-    for (final record in visible) {
-      (byCategory[record.category.id] ??= []).add(record);
-    }
-
-    final groups = <ProjectCategoryGroup>[];
-
-    for (final category in data.categories) {
-      final projects = byCategory[category.id];
-      if (projects == null || projects.isEmpty) {
-        continue;
-      }
-
-      groups.add(
-        ProjectCategoryGroup(
-          categoryId: category.id,
-          category: category,
-          projects: projects
-              .map((record) => record.overviewListItem)
-              .toList(growable: false),
-        ),
-      );
-    }
-
-    return groups;
+    return data.projects
+        .where((record) => visibleIds.contains(record.project.meta.id))
+        .toList(growable: false);
   }
 
   ProjectListDetailState copyWith({
     ProjectListData? data,
-    String? searchQuery,
+    ProjectsFilter? filter,
     String? selectedProjectId,
   }) {
     return ProjectListDetailState(
       data: data ?? this.data,
-      searchQuery: searchQuery ?? this.searchQuery,
+      filter: filter ?? this.filter,
       selectedProjectId: selectedProjectId ?? this.selectedProjectId,
     );
   }
