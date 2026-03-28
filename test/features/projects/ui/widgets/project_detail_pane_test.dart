@@ -257,5 +257,51 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'renders due date placeholder when no target date and '
+      'onTargetDateTap is provided',
+      (tester) async {
+        final record = makeTestProjectRecord(
+          project: makeTestProject(
+            id: 'p1',
+            title: 'No Date',
+            categoryId: 'cat-1',
+          ),
+        );
+        await tester.pumpWidget(
+          wrap(
+            ProjectDetailPane(
+              record: record,
+              currentTime: testCurrentTime,
+              onTargetDateTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+        // Should show the calendar icon from the placeholder tag
+        expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not render date placeholder when onTargetDateTap is null',
+      (tester) async {
+        final record = makeTestProjectRecord(
+          project: makeTestProject(
+            id: 'p1',
+            title: 'No Date',
+            categoryId: 'cat-1',
+          ),
+        );
+        await tester.pumpWidget(
+          wrap(
+            ProjectDetailPane(record: record, currentTime: testCurrentTime),
+          ),
+        );
+        await tester.pump();
+        expect(find.byIcon(Icons.calendar_today_outlined), findsNothing);
+      },
+    );
   });
 }

@@ -468,7 +468,9 @@ void main() {
             hasChanges: false,
           ),
           healthMetrics: makeTestProjectHealthMetrics(
-            confidence: 1,
+            // confidence 2.0 → adjustment = ((2.0 - 0.5) * 12).round() = 18
+            // base 90 + 18 = 108 → clamped to 100
+            confidence: 2,
           ),
         );
 
@@ -476,11 +478,7 @@ void main() {
           projectDetailRecordProvider(projectId).future,
         );
 
-        // base 90 + ((1.0 - 0.5) * 12).round() = 90 + 6 = 96
-        // Could go higher with different base. Let's verify clamping
-        // with a confidence that would overshoot.
-        expect(result!.healthScore, 96);
-        expect(result.healthScore, lessThanOrEqualTo(100));
+        expect(result!.healthScore, 100);
       });
 
       test('clamps score to 0 when confidence pushes it under', () async {
@@ -496,7 +494,9 @@ void main() {
           ),
           healthMetrics: makeTestProjectHealthMetrics(
             band: ProjectHealthBand.blocked,
-            confidence: 0,
+            // confidence -2.0 → adjustment = ((-2.0 - 0.5) * 12).round() = -30
+            // base 18 + (-30) = -12 → clamped to 0
+            confidence: -2,
           ),
         );
 
@@ -504,9 +504,7 @@ void main() {
           projectDetailRecordProvider(projectId).future,
         );
 
-        // base 18 + ((0.0 - 0.5) * 12).round() = 18 + (-6) = 12
-        expect(result!.healthScore, 12);
-        expect(result.healthScore, greaterThanOrEqualTo(0));
+        expect(result!.healthScore, 0);
       });
     });
 

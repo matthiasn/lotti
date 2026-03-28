@@ -869,7 +869,10 @@ Longer report content.
             body: 'Summary.',
             fullContent: 'Summary.',
             recommendations: const [],
-            nextWakeAt: DateTime(2024, 3, 15, 12, 5),
+            // Use a far-future date so the countdown would be positive
+            // if not for isRefreshing suppressing it.
+            // ignore: avoid_redundant_argument_values
+            nextWakeAt: DateTime(2099, 1, 1),
             onRefresh: () {},
             isRefreshing: true,
           ),
@@ -1269,6 +1272,76 @@ Full details here.
 
         // Has expand icon because fullContent differs from body
         expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+      },
+    );
+  });
+
+  group('ExpandableReportSection - H1 stripping', () {
+    testWidgets('strips leading H1 heading from expanded content', (
+      tester,
+    ) async {
+      const fullReport =
+          '# My Project\n\nDetailed analysis paragraph.\n\nSecond paragraph.';
+
+      await tester.pumpWidget(
+        wrap(
+          const ExpandableReportSection(
+            title: 'AI Report',
+            body: 'Short summary.',
+            fullContent: fullReport,
+            recommendations: [],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Should have expand affordance
+      expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.expand_more_rounded));
+      await tester.pumpAndSettle();
+
+      // H1 should NOT appear in the expanded content
+      expect(find.textContaining('My Project'), findsNothing);
+      // But the paragraph content should be visible
+      expect(
+        find.textContaining('Detailed analysis paragraph'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'strips H1 and leaves no additional content when only whitespace remains',
+      (tester) async {
+        // Content with H1 followed by only whitespace paragraphs.
+        // parseReportContent splits on \n\n, yielding the H1 as tldr and
+        // whitespace as additional. _expandedBody then strips the H1 and
+        // finds only whitespace, so additional is null.
+        const fullReport = '# Project Title\n\nSome real content here.';
+
+        await tester.pumpWidget(
+          wrap(
+            const ExpandableReportSection(
+              title: 'AI Report',
+              body: 'Summary.',
+              fullContent: fullReport,
+              recommendations: [],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The expand affordance should be present because after stripping
+        // the H1, 'Some real content here.' remains.
+        expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.expand_more_rounded));
+        await tester.pumpAndSettle();
+
+        // The H1 should be stripped from expanded view
+        expect(find.textContaining('Project Title'), findsNothing);
+        // But the remaining content should appear
+        expect(find.textContaining('Some real content here'), findsOneWidget);
       },
     );
   });

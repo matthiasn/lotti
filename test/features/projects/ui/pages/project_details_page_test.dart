@@ -7,15 +7,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -406,15 +411,14 @@ void main() {
           );
 
           // Tap the back button rendered in the detail header.
-          final backButton = find.byIcon(Icons.arrow_back_rounded);
-          if (backButton.evaluate().isNotEmpty) {
-            await tester.tap(backButton.first);
-            await tester.pumpAndSettle();
+          final backButton = find.byIcon(Icons.arrow_back_ios);
+          expect(backButton, findsOneWidget);
+          await tester.tap(backButton.first);
+          await tester.pumpAndSettle();
 
-            // Should have popped back to the initial route.
-            expect(find.text('Go'), findsOneWidget);
-            expect(find.byType(ProjectDetailsPage), findsNothing);
-          }
+          // Should have popped back to the initial route.
+          expect(find.text('Go'), findsOneWidget);
+          expect(find.byType(ProjectDetailsPage), findsNothing);
         },
       );
     });
@@ -566,6 +570,213 @@ void main() {
           expect(find.text('On Hold'), findsOneWidget);
           expect(find.text('Completed'), findsOneWidget);
           expect(find.text('Archived'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'tapping a non-selected status option dismisses the sheet and saves',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // Open the status picker bottom sheet.
+          content.onStatusTap!();
+          await tester.pumpAndSettle();
+
+          // The default test project has status 'Open'. Tap 'Active' which
+          // is a different status to trigger the selection path.
+          await tester.tap(find.text('Active'));
+          await tester.pumpAndSettle();
+
+          // The sheet should be dismissed — status options are no longer
+          // visible.
+          expect(find.text('Archived'), findsNothing);
+          expect(find.text('On Hold'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'tapping the already-selected status dismisses without saving',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // Open the status picker bottom sheet.
+          content.onStatusTap!();
+          await tester.pumpAndSettle();
+
+          // The default test project has status 'Open'. The 'Open' option
+          // should have a check mark (Icons.check_rounded) indicating it is
+          // the currently selected status.
+          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+          // Tap the already-selected 'Open' status. Because the status chip
+          // text 'Open' also appears in the underlying page, use the ListTile
+          // that contains the check icon to tap the correct one.
+          final openTile = find.ancestor(
+            of: find.byIcon(Icons.check_rounded),
+            matching: find.byType(ListTile),
+          );
+          await tester.tap(openTile);
+          await tester.pumpAndSettle();
+
+          // The sheet should be dismissed without triggering a save.
+          expect(find.text('Archived'), findsNothing);
+          expect(find.text('On Hold'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'displays all five status variants with correct icons',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          content.onStatusTap!();
+          await tester.pumpAndSettle();
+
+          // Verify each status variant renders with its expected icon.
+          expect(
+            find.byIcon(Icons.radio_button_unchecked),
+            findsOneWidget,
+            reason: 'Open status icon',
+          );
+          expect(
+            find.byIcon(Icons.play_circle_outline),
+            findsOneWidget,
+            reason: 'Active status icon',
+          );
+          expect(
+            find.byIcon(Icons.pause_circle_outline),
+            findsOneWidget,
+            reason: 'On Hold status icon',
+          );
+          expect(
+            find.byIcon(Icons.check_circle_outline),
+            findsOneWidget,
+            reason: 'Completed status icon',
+          );
+          expect(
+            find.byIcon(Icons.archive_outlined),
+            findsOneWidget,
+            reason: 'Archived status icon',
+          );
+
+          // Only the current status ('Open') should show the selection
+          // check mark.
+          expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        },
+      );
+    });
+
+    group('category picker modal', () {
+      testWidgets(
+        'tapping onCategoryTap opens the category selection modal',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          // CategorySelectionModalContent requires EntitiesCacheService
+          // from GetIt.
+          final mockCache = MockEntitiesCacheService();
+          when(() => mockCache.sortedCategories).thenReturn([]);
+          getIt.registerSingleton<EntitiesCacheService>(mockCache);
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // Invoke the onCategoryTap callback to open the modal.
+          content.onCategoryTap!();
+          await tester.pumpAndSettle();
+
+          // The modal should contain the CategorySelectionModalContent
+          // widget and display the 'Category:' title.
+          expect(
+            find.byType(CategorySelectionModalContent),
+            findsOneWidget,
+          );
+          expect(find.text('Category:'), findsOneWidget);
         },
       );
     });
