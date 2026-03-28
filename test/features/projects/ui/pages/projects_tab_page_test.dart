@@ -342,4 +342,32 @@ void main() {
 
     expect(find.text('Error'), findsOneWidget);
   });
+
+  testWidgets(
+    'applies filter state when apply button is tapped in the filter modal',
+    (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup(), buildStudyGroup()],
+      );
+
+      // Open the filter modal
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Apply filter'), findsOneWidget);
+
+      // Tap the apply button
+      final applyButton = find.byKey(
+        const ValueKey('design-system-task-filter-apply'),
+      );
+      await tester.ensureVisible(applyButton);
+      await tester.pumpAndSettle();
+      await tester.tap(applyButton);
+      await tester.pumpAndSettle();
+
+      // Verify the filter modal has closed
+      expect(find.text('Apply filter'), findsNothing);
+    },
+  );
 }

@@ -312,4 +312,178 @@ void main() {
       expect(result, {'open', 'closed'});
     },
   );
+
+  testWidgets(
+    'mobile bottom sheet toggles options and returns result via UI taps',
+    (tester) async {
+      Set<String>? result;
+
+      // Use a sufficiently large surface so the bottom sheet content
+      // is within hit-testable bounds.
+      await tester.binding.setSurfaceSize(const Size(400, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: DesignSystemTheme.dark(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  key: const ValueKey('open-mobile-ui-modal'),
+                  onPressed: () async {
+                    result = await showDesignSystemFilterSelectionModal(
+                      context: context,
+                      title: 'Status',
+                      options: const [
+                        DesignSystemTaskFilterOption(
+                          id: 'open',
+                          label: 'Open',
+                        ),
+                        DesignSystemTaskFilterOption(
+                          id: 'closed',
+                          label: 'Closed',
+                        ),
+                        DesignSystemTaskFilterOption(
+                          id: 'blocked',
+                          label: 'Blocked',
+                        ),
+                      ],
+                      initialSelectedIds: const {'open'},
+                      presentation: DesignSystemFilterPresentation.mobile,
+                      applyLabel: 'Apply',
+                    );
+                  },
+                  child: const Text('Open'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Open the mobile bottom sheet
+      await tester.tap(find.byKey(const ValueKey('open-mobile-ui-modal')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+
+      // Verify showDragHandle is true for mobile presentation
+      final sheet = tester.widget<DesignSystemFilterSelectionSheet>(
+        find.byType(DesignSystemFilterSelectionSheet),
+      );
+      expect(sheet.showDragHandle, isTrue);
+
+      // Toggle 'closed' on via actual tap
+      final closedOption = find.byKey(
+        const ValueKey('design-system-filter-selection-option-closed'),
+      );
+      await tester.ensureVisible(closedOption);
+      await tester.tap(closedOption);
+      await tester.pump();
+
+      // Verify StatefulBuilder rebuilt with the updated selection
+      final sheetAfterToggle = tester.widget<DesignSystemFilterSelectionSheet>(
+        find.byType(DesignSystemFilterSelectionSheet),
+      );
+      expect(sheetAfterToggle.selectedIds, {'open', 'closed'});
+
+      // Toggle 'open' off (deselect) via actual tap
+      final openOption = find.byKey(
+        const ValueKey('design-system-filter-selection-option-open'),
+      );
+      await tester.ensureVisible(openOption);
+      await tester.tap(openOption);
+      await tester.pump();
+
+      final sheetAfterDeselect = tester
+          .widget<DesignSystemFilterSelectionSheet>(
+            find.byType(DesignSystemFilterSelectionSheet),
+          );
+      expect(sheetAfterDeselect.selectedIds, {'closed'});
+
+      // Tap apply button to close the sheet and return the result
+      final applyButton = find.byKey(
+        const ValueKey('design-system-filter-selection-apply'),
+      );
+      await tester.ensureVisible(applyButton);
+      await tester.tap(applyButton);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Verify the returned set reflects both the add and the remove
+      expect(result, {'closed'});
+    },
+  );
+
+  testWidgets(
+    'renders selection modal with light theme palette',
+    (tester) async {
+      Set<String>? result;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.light(),
+            child: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    key: const ValueKey('open-light-selection-modal'),
+                    onPressed: () async {
+                      result = await showDesignSystemFilterSelectionModal(
+                        context: context,
+                        title: 'Category',
+                        options: const [
+                          DesignSystemTaskFilterOption(
+                            id: 'work',
+                            label: 'Work',
+                          ),
+                          DesignSystemTaskFilterOption(
+                            id: 'personal',
+                            label: 'Personal',
+                          ),
+                        ],
+                        initialSelectedIds: const {'work'},
+                        presentation: DesignSystemFilterPresentation.desktop,
+                        applyLabel: 'Done',
+                      );
+                    },
+                    child: const Text('Open'),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const ValueKey('open-light-selection-modal')),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+
+      // Toggle the 'personal' option on
+      final personalOption = find.byKey(
+        const ValueKey('design-system-filter-selection-option-personal'),
+      );
+      await tester.ensureVisible(personalOption);
+      await tester.tap(personalOption);
+      await tester.pump();
+
+      // Apply the selection
+      final doneButton = find.byKey(
+        const ValueKey('design-system-filter-selection-apply'),
+      );
+      await tester.ensureVisible(doneButton);
+      await tester.tap(doneButton);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(result, {'work', 'personal'});
+    },
+  );
 }
