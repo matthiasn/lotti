@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.934] - 2026-03-28
+## [0.9.935] - 2026-03-28
 ### Changed
 - Projects detail redesign: the top-level Projects flow now opens a new
   design-system-aligned detail page at `/projects/:projectId`, with editable
@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shared component tree in the app and Widgetbook. Project-task rows now open
   task details directly, while the older settings-scoped project views remain
   in place for category-driven flows during the rollout.
+- Projects detail UX polish: category and due-date pickers are now reachable
+  even when no value is set, the empty-state report copy only appears when
+  both summary and full content are absent, and expanded reports strip the
+  leading H1 title that the UI already renders above the report section.
 
 ## [0.9.933] - 2026-03-27
 ### Changed
