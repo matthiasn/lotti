@@ -1,280 +1,591 @@
-# Agents Architecture
+# Agents Feature
 
-This feature provides persistent, sync-aware agents for Lotti, centered on:
+The agents feature owns Lotti's persisted agent runtime. It does not implement
+model inference itself. Instead, it combines the `ai` feature's conversation
+and profile infrastructure with agent-specific state, wake scheduling, sync,
+and human review gates.
 
-1. Task Agents (production path): wake on task changes, run tool calls, and keep a durable report.
-2. Project Agents: provisioned during project creation when a matching `projectAgent` template is available, with a manual create fallback on the project detail page. They provide project-level analysis, reporting, and lifecycle-managed project recommendations. See [`lib/features/projects/README.md`](../projects/README.md) for the projects feature.
-3. Template Evolution Sessions: chat-driven directive evolution with versioned template history.
-4. Improver Agents: scheduled weekly rituals that extract feedback from agent instances and propose directive improvements.
-5. Meta-Improver: recursive self-improvement that evaluates and improves the improver agents themselves on a monthly cadence, with recursion depth governed by the policy cap (max depth 2 per ADR 0012).
+At runtime, the journal database remains the source of truth for tasks,
+projects, checklist items, labels, and time entries. The agents database stores
+agent state and outputs: reports, observations, change proposals, evolution
+sessions, token usage, and wake history.
 
-The system is enabled only when `enableAgents` is true.
-When enabled, app startup keeps `agentInitializationProvider` alive so sync can
-apply incoming agent payloads before the first entry or agent screen is opened.
+## Runtime Boundary
 
-## Runtime Scope
+The feature is gated by `enableAgentsFlag` and initialized by
+`agentInitializationProvider`.
 
-- Journal domain (`db.sqlite`): source-of-truth task/checklist/time data.
-- Agent domain (`agent.sqlite`): agent identities, state, messages, reports, template versions, wake runs.
-  The agent database uses a small Drift read pool plus targeted indexes for
-  wake-run thread lookups, pending saga ordering, and active
-  `template_assignment` joins.
-- Inference path: profile-based or template-selected model, resolved via `ProfileResolver` (agent config → template version → template → legacy `modelId` fallback).
+When the flag is enabled, startup does this:
 
-### Task Context Assembly (Current)
+1. marks stale `running` wake runs as `abandoned`
+2. wires `WakeOrchestrator.wakeExecutor` to the correct workflow for each
+   agent kind
+3. starts `WakeOrchestrator` on `UpdateNotifications.localUpdateStream`
+4. starts `ScheduledWakeManager`, which polls hourly for due
+   `scheduledWakeAt` values
+5. starts `ProjectActivityMonitor`
+6. seeds default agent templates
+7. seeds default inference profiles and default skills, then upgrades older
+   default profiles with skill assignments
+8. restores persisted task-agent subscriptions, project-agent direct-edit
+   subscriptions, and persisted throttle deadlines
+9. wires the sync event processor if one is registered in `GetIt`
 
-- Task agent wake prompts include:
-  - current task JSON context
-  - current report + recent observations
-  - linked task context
-- Linked task context for agents is built directly in
-  `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
-  `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
-  `latestTaskAgentReport` from each linked task's associated task agent (via
-  `agent_task` links + `agentReportHead`).
-- Linked-task `latestSummary` payloads are stripped before prompt submission
-  and are not used for Task Agent execution.
-- MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
-  avoid repeated journal lookups for shared task links.
+When the flag is switched off, the provider is disposed and the orchestrator is
+stopped again.
 
-## High-Level Architecture
+```mermaid
+flowchart TD
+  Flag{"enableAgentsFlag"} -->|off| Off["Agent runtime stays offline"]
+  Flag -->|on| Init["agentInitializationProvider"]
+
+  Init --> Abandon["AgentRepository.abandonOrphanedWakeRuns()"]
+  Init --> Wire["Assign WakeOrchestrator.wakeExecutor"]
+  Init --> Start["WakeOrchestrator.start(localUpdateStream)"]
+  Init --> Sched["ScheduledWakeManager.start()"]
+  Init --> Activity["ProjectActivityMonitor.start()"]
+  Init --> Seed["Seed templates, profiles, and skills"]
+  Init --> Restore["Restore subscriptions and throttle deadlines"]
+  Init --> Sync["Wire SyncEventProcessor (if available)"]
+```
+
+## Persistence Model
+
+Agent persistence lives in `agent.sqlite` via Drift
+([agent_database.dart](./database/agent_database.dart)). The syncable domain
+objects are modeled as `AgentDomainEntity` variants and `AgentLink` variants.
+Wake-run history lives in the dedicated `wake_run_log` table.
+
+Persisted agent-side entities include:
+
+- `AgentIdentityEntity` and `AgentStateEntity`
+- `AgentMessageEntity` and `AgentMessagePayloadEntity`
+- `AgentReportEntity` and `AgentReportHeadEntity`
+- `AgentTemplateEntity`, `AgentTemplateVersionEntity`, and
+  `AgentTemplateHeadEntity`
+- `EvolutionSessionEntity` and `EvolutionNoteEntity`
+- `ChangeSetEntity` and `ChangeDecisionEntity`
+- `ProjectRecommendationEntity`
+- `WakeTokenUsageEntity`
+
+Persisted links include:
+
+- `agent_state`
+- `agent_task`
+- `agent_project`
+- `template_assignment`
+- `improver_target`
+
+The journal database is read on demand during wakes. The agents feature does
+not mirror full task or project state into `agent.sqlite`; it persists the
+agent's own interpretation and review state.
 
 ```mermaid
 flowchart LR
-  UI["Task/UI Surfaces"] --> INIT["agentInitializationProvider"]
-  INIT --> ORCH["WakeOrchestrator"]
-  ORCH --> WF["TaskAgentWorkflow"]
-  WF --> CONV["ConversationRepository"]
-  CONV --> MODEL["Inference Provider (Gemini/OpenAI compatible)"]
-  MODEL --> STRAT["TaskAgentStrategy"]
-  STRAT --> EXEC["AgentToolExecutor"]
-  EXEC --> TOOLS["Task Tool Handlers"]
-  TOOLS --> JOURNAL["Journal Repository/DB"]
+  subgraph Journal["Journal DB"]
+    Task["Tasks and linked entries"]
+    Project["Projects and task links"]
+    Meta["Checklist, labels, time entries"]
+  end
 
-  STRAT --> CSB["ChangeSetBuilder"]
-  CSB --> SYNC["AgentSyncService"]
-  SYNC --> AGENTDB["AgentRepository -> agent.sqlite"]
-  SYNC --> OUTBOX["Sync Outbox"]
+  subgraph AgentDB["agent.sqlite"]
+    Agent["Agent identity + state"]
+    Msg["Messages + payloads"]
+    Report["Reports + report heads"]
+    Change["Change sets + decisions"]
+    Template["Templates + versions + heads"]
+    Evo["Evolution sessions + notes"]
+    Reco["Project recommendations"]
+    Usage["Wake token usage"]
+    Wake["wake_run_log"]
+  end
 
-  WF --> SYNC
-
-  CSUI["ChangeSetSummaryCard"] --> CSSVC["ConfirmationService"]
-  CSSVC --> DISP["TaskToolDispatcher"]
-  DISP --> TOOLS
-  CSSVC --> SYNC
-
-  TEMPLATEUI["Template UI"] --> EVO["TemplateEvolutionWorkflow"]
-  EVO --> MODEL
-  EVO --> AGENTDB
+  Task --> Agent
+  Project --> Agent
+  Meta --> Agent
+  Agent --> Msg
+  Agent --> Report
+  Agent --> Change
+  Agent --> Wake
+  Template --> Agent
+  Template --> Evo
+  Change --> Reco
+  Wake --> Usage
 ```
 
-## Call Trees
+## Memory Model
 
-### 1) Subscription Wake (Task Change -> Agent Run)
+The feature does not have a hidden memory blob. Memory is split across durable
+agent-side records, live journal context, and a small amount of wake-time
+derived context.
+
+### Durable memory in `agent.sqlite`
+
+The persisted memory surface includes:
+
+- identity and lifecycle in `AgentIdentityEntity`
+- runtime state in `AgentStateEntity`
+- slots such as `activeTaskId`, `activeProjectId`, `activeTemplateId`,
+  `lastFeedbackScanAt`, `lastOneOnOneAt`, `pendingProjectActivityAt`, and
+  scheduling/throttle markers
+- the immutable message log: user messages, thoughts, tool actions, and tool
+  results
+- structured observations, stored as observation messages plus payloads
+- reports and report-head pointers
+- change sets, decisions, and project recommendations
+- template versions, evolution sessions, and evolution notes
+- wake token usage and wake-run history
+
+### Live context pulled from the journal domain
+
+The workflows still rebuild fresh operational context on each wake from the
+journal-side repositories. Depending on the agent kind, that includes:
+
+- current task or project data
+- linked tasks and linked entries
+- checklist state
+- labels
+- time-entry information
+- project-to-task relationships
+
+### Retrieval memory
+
+Task-agent reports can also become retrieval memory. When both optional
+embedding dependencies are available, `TaskAgentWorkflow` embeds newly
+persisted reports after the wake commits so later semantic retrieval can use
+the report text.
+
+### Memory compaction: prepared, not active
+
+There is scaffolding for message-span summaries, but no active compaction
+pipeline yet.
+
+Prepared model fields include:
+
+- `AgentMessageKind.summary`
+- `summaryStartMessageId`
+- `summaryEndMessageId`
+- `summaryDepth`
+- `AgentStateEntity.recentHeadMessageId`
+- `AgentStateEntity.latestSummaryMessageId`
+
+Current state:
+
+- task, project, and improver workflows do not write summary messages
+- the runtime does not currently compact old message spans into summaries
+- the UI can render summary messages if they ever exist, but the production
+  wake path still relies on the raw persisted message and report records
+
+## Agent Kinds and Lifecycle
+
+The current persisted agent kinds are:
+
+| Kind | Slot | Primary workflow | Trigger shape |
+| --- | --- | --- | --- |
+| `task_agent` | `activeTaskId` | `TaskAgentWorkflow` | task notifications, creation, reanalysis |
+| `project_agent` | `activeProjectId` | `ProjectAgentWorkflow` | creation, direct project edits, daily scheduled digest |
+| `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
+
+There is no separate persisted `meta_improver` kind. A meta-improver is a
+`template_improver` whose `recursionDepth > 0`.
+
+The lifecycle enum exposes `created`, `active`, `dormant`, and `destroyed`.
+Current creation services instantiate agents directly in `active` state, so the
+`created` enum value is available in the model but is not the normal service
+path today.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Active: AgentService.createAgent()
+  Active --> Dormant: pauseAgent()
+  Dormant --> Active: resumeAgent() + restoreSubscriptions()
+  Active --> Destroyed: destroyAgent()
+  Dormant --> Destroyed: destroyAgent()
+  Destroyed --> [*]: optional local-only deleteAgent()
+```
+
+## Wake Orchestration
+
+`WakeOrchestrator` is the central runtime component. It:
+
+- matches notification batches against `AgentSubscription`s
+- deduplicates jobs by run key in `WakeQueue`
+- merges trigger tokens for already-queued jobs of the same agent
+- enforces single-flight execution per agent through `WakeRunner`
+- persists wake-run entries before execution
+- suppresses self-notifications using vector clocks
+- persists and restores subscription-throttle deadlines through
+  `AgentStateEntity.nextWakeAt`
+
+The persisted wake reasons are:
+
+- `subscription`
+- `creation`
+- `reanalysis`
+- `scheduled`
+
+Subscription-driven wakes are throttled with a 120 second window. Manual wakes
+(`creation`, `reanalysis`, and scheduled jobs enqueued manually by
+`ScheduledWakeManager`) bypass subscription matching and that throttle path.
+
+Task agents that were auto-provisioned from category defaults can start with
+`awaitingContent = true`. In that mode, the orchestrator skips the wake until
+the task or one of its linked entries has meaningful text, then clears the flag
+and lets the wake proceed normally.
 
 ```mermaid
 flowchart TD
-  A["UpdateNotifications.localUpdateStream"] --> B["WakeOrchestrator._onBatch(tokens)"]
-  B --> C["match subscriptions + suppression + throttle"]
-  C --> D["WakeQueue.enqueue/mergeTokens"]
-  D --> E["WakeOrchestrator.processNext()"]
-  E --> F["WakeOrchestrator._drain()"]
-  F --> G["WakeOrchestrator._executeJob(job)"]
-  G --> H["wakeExecutor callback (_wireWakeExecutor)"]
-  H --> I["TaskAgentWorkflow.execute(...)"]
-  I --> J["ConversationRepository.sendMessage(...)"]
-  J --> K["TaskAgentStrategy.processToolCalls(...)"]
-  K --> L{"Tool deferred?"}
-  L -->|No| M["AgentToolExecutor.execute(...)"]
-  M --> N["Task handlers + Journal writes"]
-  L -->|Yes| O{"Redundant?"}
-  O -->|Yes| P2["Respond: 'Skipped: already X'"]
-  O -->|No| Q2["ChangeSetBuilder.addItem(...)"]
-  Q2 --> P["Respond: 'Proposal queued'"]
-  I --> Q["ChangeSetBuilder.build() → persist ChangeSetEntity"]
-  I --> R["persist report/messages/state via AgentSyncService"]
-  R --> S["WakeOrchestrator marks wake_run status"]
-  S --> T["Persisted throttle update -> UpdateNotifications.notify(fromSync: true)"]
+  Update["localUpdateStream batch"] --> Match["Match AgentSubscription tokens"]
+  Match --> Suppress{"Suppressed by vector-clock tracking?"}
+  Suppress -->|yes| Drop["Drop wake"]
+  Suppress -->|no| Merge{"Queued job for same agent?"}
+  Merge -->|yes| Coalesce["Merge trigger tokens"]
+  Merge -->|no| Queue["WakeQueue.enqueue(runKey)"]
+  Queue --> Drain["WakeOrchestrator.processNext()"]
+  Drain --> Busy{"WakeRunner lock available?"}
+  Busy -->|no| Requeue["Requeue job"]
+  Busy -->|yes| Content{"awaitingContent gate?"}
+  Content -->|skip| Wait["Leave agent dormant until content exists"]
+  Content -->|run| Persist["Persist wake_run_log row"]
+  Persist --> Exec["Dispatch workflow by agent kind"]
 ```
 
-### 1b) Change Set Confirmation (User -> Tool Dispatch)
+### Why the wake design is this defensive
 
-Deferred `create_time_entry` confirmations enrich the dispatch args with the
-originating `ChangeSetEntity.createdAt` timestamp. That lets completed sessions
-validate against the wake that produced the proposal instead of the later human
-approval time, which avoids false rejections after midnight.
+The implementation is explicitly shaped around three background-agent failure
+modes:
 
-```mermaid
-flowchart TD
-  A["ChangeSetSummaryCard"] --> B{"Confirm or Reject?"}
-  B -->|Confirm| C["ConfirmationService.confirmItem()"]
-  C --> D["Re-read fresh ChangeSetEntity"]
-  D --> E["TaskToolDispatcher.dispatch()"]
-  E --> F["Task handler executes + Journal write"]
-  F --> G["Persist ChangeDecisionEntity"]
-  G --> H["Update item status → confirmed"]
-  B -->|Reject| I["ConfirmationService.rejectItem()"]
-  I --> J["Persist ChangeDecisionEntity"]
-  J --> K["Update item status → rejected"]
-  H --> L["UpdateNotifications.notify()"]
-  K --> L
-  L --> M["Provider rebuild → UI refreshes"]
-```
+1. wake storms after rapid local edits
+2. self-trigger loops after an agent writes to the same entities it watches
+3. duplicate execution when an agent is already running
 
-### 2) Manual Reanalysis (Agent Detail -> Immediate Run)
+Current mitigations are:
 
-```mermaid
-flowchart TD
-  A["AgentControls._triggerReanalysis()"] --> B["TaskAgentService.triggerReanalysis(agentId)"]
-  B --> C["WakeOrchestrator.enqueueManualWake(reason: reanalysis)"]
-  C --> D["clearThrottle + remove queued subscription jobs for agent"]
-  D --> E["WakeQueue.enqueue(manual job)"]
-  E --> F["WakeOrchestrator.processNext()"]
-  F --> G["TaskAgentWorkflow.execute(...)"]
-```
+- `WakeQueue` deduplicates by run key and merges trigger tokens
+- `WakeRunner` enforces single-flight execution per agent
+- `WakeOrchestrator` persists and restores throttle deadlines through
+  `nextWakeAt`
+- suppression is pre-registered before execution starts, then replaced with the
+  actual mutated-entity vector clocks after execution
 
-## Sequence Diagrams
+That pre-registration step matters because it closes the race window between
+"the agent already wrote to the DB" and "the suppression tracker has recorded
+the write."
 
-### A) Task Edit -> Orchestrated AI Run (with deferred tool confirmation)
+## Task Agents
+
+`TaskAgentService.createTaskAgent()` runs inside an agent-sync transaction and:
+
+1. validates that the task does not already have a task agent
+2. resolves a template, defaulting to the seeded Laura template when present
+3. creates the agent identity and state
+4. sets `slots.activeTaskId`
+5. creates `agent_task` and `template_assignment` links
+6. registers a task subscription
+7. enqueues a creation wake
+
+### Wake Flow
+
+`TaskAgentWorkflow.execute()` is the main production path:
+
+1. load the agent state and resolve `activeTaskId`
+2. load the latest report and prior observation messages
+3. build task JSON through `AiInputRepository`
+4. build linked-task context
+5. resolve the assigned template and active version
+6. resolve the effective inference profile with `ProfileResolver`
+7. fetch pending change sets for the task
+8. build the system prompt and user message
+9. create a conversation and persist the user message into the agent log
+10. run the conversation with `TaskAgentStrategy`
+11. persist wake token usage
+12. persist the final thought, report, observations, change set, and updated
+    agent state
+13. optionally embed the persisted report when both embedding dependencies are
+    available
+
+The task wake prompt is assembled from:
+
+- current task JSON
+- the latest persisted task-agent report, if one exists
+- prior observation messages
+- linked-task context
+- pending change sets for the same task
+
+The linked-task context is not only raw task metadata. The workflow also pulls
+in the latest task-agent report for linked tasks when available, so one task
+agent can consume another task agent's distilled report.
+
+### Tool Policy
+
+Task agents have two immediate local tools:
+
+- `update_report`
+- `record_observations`
+
+The current deferred task tools are:
+
+- `set_task_title`
+- `update_task_estimate`
+- `update_task_due_date`
+- `update_task_priority`
+- `set_task_status`
+- `set_task_language`
+- `add_multiple_checklist_items`
+- `update_checklist_items`
+- `assign_task_labels`
+- `create_follow_up_task`
+- `migrate_checklist_items`
+- `create_time_entry`
+
+There are no other immediate task-mutating tools today. Non-local task writes
+go through `AgentToolExecutor`, which enforces the agent's allowed category set,
+captures post-write vector clocks, and persists audit messages for tool actions
+and tool results.
+
+`ChangeSetBuilder` is responsible for the deferred path. It:
+
+- explodes batch tools into individually reviewable items
+- deduplicates identical proposals within the same wake
+- suppresses redundant proposals when they would not change current state
+
+### Confirmation Path
+
+`ChangeSetConfirmationService` applies one change item at a time:
+
+1. re-read the persisted change set to avoid stale UI snapshots
+2. persist the user's decision first
+3. mark the item confirmed
+4. dispatch the tool
+5. revert the item to `pending` if dispatch fails
+
+It also resolves follow-up-task placeholder IDs across later migration items
+and suppresses rejected label assignments so the same label is not proposed
+again immediately.
 
 ```mermaid
 sequenceDiagram
-  participant U as User
-  participant T as Task UI
-  participant N as UpdateNotifications
-  participant O as WakeOrchestrator
-  participant W as TaskAgentWorkflow
-  participant C as ConversationRepository
-  participant M as Model Provider
-  participant CSB as ChangeSetBuilder
-  participant ADB as Agent Repository
+  participant Agent as TaskAgentStrategy
+  participant Builder as ChangeSetBuilder
+  participant Store as agent.sqlite
+  participant User as User
+  participant Confirm as ChangeSetConfirmationService
+  participant Dispatch as TaskToolDispatcher
+  participant Journal as Journal DB
 
-  U->>T: Edit task/checklist
-  T->>N: Emit changed entity tokens
-  N->>O: _onBatch(tokens)
-  O->>O: Match subscription, apply suppression/throttle
-  O->>O: Enqueue/merge wake job
-  O->>O: processNext -> _executeJob
-  O->>W: wakeExecutor(agentId, runKey, triggers, threadId)
-  W->>C: sendMessage(system+context+tools)
-  C->>M: LLM request
-  M-->>C: tool calls / final assistant content
-  C->>CSB: Deferred tool → addItem(toolName, args)
-  CSB-->>C: "Proposal queued for user review."
-  Note over W,CSB: End of wake
-  W->>CSB: build(syncService)
-  CSB->>ADB: Persist ChangeSetEntity (pending)
-  W->>ADB: Persist thought/report/observations/state
-  W-->>O: WakeResult
-  O->>ADB: Update wake_run status
-  O->>N: notify({agentId}, fromSync: true)
+  Agent->>Builder: queue deferred tool proposals
+  Builder->>Store: persist ChangeSetEntity(pending)
+  User->>Confirm: confirm or reject one item
+  Confirm->>Store: reload persisted change set
+  Confirm->>Store: persist ChangeDecisionEntity first
+  Confirm->>Dispatch: dispatch confirmed tool
+  Dispatch->>Journal: apply mutation
+  Journal-->>Confirm: ToolExecutionResult
+  Confirm->>Store: finalize item status
 ```
 
-### A2) User Confirms Change Set
+## Project Agents
+
+`ProjectAgentService.createProjectAgent()`:
+
+1. enforces one project agent per project
+2. validates the assigned template is a project-agent template
+3. creates the agent identity and state
+4. sets `slots.activeProjectId`
+5. schedules the first digest for the next local 06:00
+6. creates `agent_project` and `template_assignment` links
+7. registers a direct project-edit subscription
+8. enqueues a creation wake
+
+Project agents do not wake on every linked task edit. Task and project-linked
+activity is funneled through `ProjectActivityMonitor`, which listens to
+`localUpdateStream`, resolves affected project IDs, and sets
+`slots.pendingProjectActivityAt` on the corresponding project agent state.
+
+Direct project edits are different: the service registers a direct project
+notification token, so explicit project-entity edits can still wake the agent
+immediately through the orchestrator.
+
+### Wake Behavior
+
+`ProjectAgentWorkflow.execute()`:
+
+1. loads the agent state and resolves `activeProjectId`
+2. checks whether a due scheduled wake can be skipped cheaply
+3. loads the project entity
+4. loads prior observation messages
+5. resolves template/version and inference profile
+6. builds linked-task context, including task-agent reports
+7. runs the conversation with `ProjectAgentStrategy`
+8. persists token usage, final thought, report, observations, deferred
+   change set, and updated state
+
+If a scheduled digest is due, a report already exists, and
+`pendingProjectActivityAt` is still `null`, the workflow rolls
+`scheduledWakeAt` forward and skips the model call. That is how project agents
+stay digest-shaped instead of waking on every piece of project-linked traffic.
+
+### Project Tools and Recommendations
+
+Project agents have two immediate local tools:
+
+- `update_project_report`
+- `record_observations`
+
+The current deferred project tools are:
+
+- `recommend_next_steps`
+- `update_project_status`
+- `create_task`
+
+Confirmed `recommend_next_steps` decisions are converted into
+`ProjectRecommendationEntity` rows by `ProjectRecommendationService`. Existing
+active recommendations for that project are superseded first. Recommendations
+then move through `active`, `resolved`, `dismissed`, and `superseded`.
 
 ```mermaid
-sequenceDiagram
-  participant U as User
-  participant Card as ChangeSetSummaryCard
-  participant Svc as ConfirmationService
-  participant Disp as TaskToolDispatcher
-  participant J as Journal Repository
-  participant ADB as Agent Repository
-  participant N as UpdateNotifications
-
-  U->>Card: Tap "Confirm all" or per-item ✓
-  Card->>Svc: confirmItem(changeSet, index)
-  Svc->>ADB: Re-read fresh ChangeSetEntity
-  Svc->>Disp: dispatch(toolName, args, taskId)
-  Disp->>J: Execute handler (persist mutation)
-  J-->>Disp: ToolExecutionResult
-  Disp-->>Svc: success
-  Svc->>ADB: Persist ChangeDecisionEntity
-  Svc->>ADB: Update item status → confirmed
-  Svc-->>Card: result
-  Card->>N: notify({agentId})
-  N-->>Card: Provider rebuild → UI refreshes
+stateDiagram-v2
+  [*] --> Scheduled: project agent created
+  Scheduled --> WakingNow: creation wake
+  Scheduled --> WakingNow: manual reanalysis
+  Scheduled --> WakingNow: direct project edit
+  Scheduled --> PendingActivity: linked task or project activity
+  PendingActivity --> WakingNow: scheduled digest becomes due
+  Scheduled --> SkipAndReschedule: scheduled digest due with no pending activity
+  SkipAndReschedule --> Scheduled
+  WakingNow --> Scheduled: state updated after wake
 ```
 
-### B) Template Evolution Chat (UI -> LLM -> Versioning)
+During that final transition, `pendingProjectActivityAt` is cleared only when
+no newer project activity arrived during the wake. If fresh activity lands
+mid-run, the newer timestamp is retained so the next digest still knows the
+summary is stale again.
 
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant EUI as EvolutionChatPage
-  participant S as EvolutionChatState
-  participant EW as TemplateEvolutionWorkflow
-  participant C as ConversationRepository
-  participant M as Model Provider
-  participant TS as AgentTemplateService
-  participant ADB as Agent Repository
+## Templates, Evolution, and Improvers
 
-  U->>EUI: Open evolve template
-  EUI->>S: build(templateId)
-  S->>EW: startSession(templateId)
-  EW->>TS: load template/version/metrics/history/context inputs
-  EW->>C: createConversation + initial sendMessage
-  C->>M: LLM call (tools: propose_directives, record_evolution_note)
-  M-->>EW: proposal + notes via strategy
-  EW->>ADB: persist evolution session + notes
-  U->>EUI: Approve proposal
-  EUI->>S: approveProposal()
-  S->>EW: approveProposal(sessionId)
-  EW->>TS: createVersion(...)
-  EW->>ADB: mark session completed
-```
+Templates are first-class persisted entities with a template row, version rows,
+and a head pointer.
 
-## Module Responsibilities
+`AgentTemplateService.seedDefaults()` currently seeds five named templates:
 
-- `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
-- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`, `ProjectToolDispatcher`).
-- `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
-- `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
-- `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.
-- `state/`: Riverpod DI + read models + initialization wiring + change set providers.
-- `ui/`: settings/templates/instances/detail/evolution screens, profile selector, agent creation modal.
+- `Laura`
+- `Tom`
+- `Project Analyst`
+- `Template Improver`
+- `Meta Improver`
 
-## Inference Profiles
+`TemplateEvolutionWorkflow` is a multi-turn, user-visible session. It:
 
-Inference Profiles bundle model assignments per capability slot into named configurations:
+1. gathers template context and metrics
+2. creates an `EvolutionSessionEntity`
+3. starts a conversation with `EvolutionStrategy`
+4. records evolution notes and proposal state
+5. creates a new template version only after approval
 
-- **Thinking** (required): the primary LLM for reasoning and tool calls.
-- **Image Recognition** (optional): model for analysing images.
-- **Transcription** (optional): model for speech-to-text.
-- **Image Generation** (optional): model for generating images.
+Only one active evolution session per template is allowed at a time.
 
-Profiles live as `AiConfig.inferenceProfile` variants in the AI config repository and are resolved
-at wake time via `ProfileResolver` with the following precedence:
+Improver agents are scheduled agents whose job is to open those evolution
+sessions with richer context. `ImproverAgentWorkflow`:
 
-1. `agentConfig.profileId` (per-instance override)
-2. `templateVersion.profileId` (snapshotted at version creation)
-3. `template.profileId` (template-level default)
-4. Legacy `modelId` fallback (backward compatibility)
+1. loads `activeTemplateId`
+2. extracts classified feedback since the last watermark
+3. skips the ritual when fewer than `3` feedback items are available
+4. builds ritual context from feedback, reports, observations, versions, and
+   metrics
+5. starts `TemplateEvolutionWorkflow.startSession(...)`
+6. updates feedback scan watermarks and schedules the next ritual
 
-Six default profiles are seeded on startup (Gemini Flash, Gemini Pro, OpenAI, Mistral EU, Alibaba, Local).
-The `desktopOnly` flag on a profile hides it from mobile device selection.
+Meta-improvers reuse the same workflow. They are distinguished only by the
+state slot `recursionDepth > 0`.
 
-### Skill Assignments
+## Sync and Privacy
 
-Profiles carry a `List<SkillAssignment>` that controls which skills auto-trigger when matching assets
-are added to a task:
+`AgentSyncService` wraps local agent writes. It stamps vector clocks and buffers
+outbox messages until the outermost transaction commits. Nested transactions use
+the same zone-local buffer, so rolled-back inner savepoints do not leak sync
+messages for writes that never committed.
 
-- Each `SkillAssignment` references a skill by ID and has an `automate` toggle.
-- The model is determined by the profile's model slot matching the skill's type (e.g., transcription
-  skills use `transcriptionModelId`, image analysis skills use `imageRecognitionModelId`).
-- Seven preconfigured skills are seeded on first launch (see `SkillSeedingService.defaultSkills`),
-  covering all `SkillType` enum values: `transcription`, `imageAnalysis`, `imageGeneration`,
-  `promptGeneration`, and `imagePromptGeneration`.
-- The profile editing UI exposes toggles for `transcription` and `imageAnalysis` skill types;
-  other types are seeded but not yet exposed in the UI.
-- When a skill is toggled on in the profile and an asset (audio recording, image) is added to a
-  task whose agent uses that profile, `ProfileAutomationService` fires the skill automatically.
-  The legacy `category.automaticPrompts` fallback has been removed — only profile-driven
-  automation runs automatically.
+Incoming sync writes do not pass back through `AgentSyncService`; they write to
+`AgentRepository` directly to avoid echo loops. Startup wiring attaches the
+sync event processor when the app has one registered.
 
-## Architecture Decision Records
+The wake workflows resolve an inference profile at run time. That means the
+same template can be routed through different providers without changing the
+agent persistence model. The core wake flows in this feature are text-prompt
+flows: task, project, and improver wakes build text context and send it through
+the resolved provider.
 
-Current-state architecture stays in this README. Decision rationale and
-evolution history live in ADRs:
+Local-only data includes:
 
-- [`docs/adr/README.md`](../../../docs/adr/README.md)
+- `wake_run_log` rows and other runtime bookkeeping that is not modeled as a
+  sync entity
+
+Synced agent data includes:
+
+- agent identities and state
+- reports, observations, change sets, decisions, recommendations, and token
+  usage entities
+- template versions and evolution sessions
+
+Provider-facing data includes only:
+
+- the prompt payload assembled for that specific wake
+
+For provider selection and residency details, see [../ai/README.md](../ai/README.md).
+
+## Planned Improvements
+
+One future direction is still worth tracking explicitly: splitting persona from
+operational directives into a dedicated `SOUL.md`-style artifact.
+
+Current state:
+
+- personality, posture, and operating contract still live together inside the
+  template directive stack
+
+Why that is still on the roadmap:
+
+- it would make identity changes easier to review
+- it would allow one persona to be reused across multiple templates
+- it would reduce churn when only tone or persona changes but the task contract
+  does not
+
+Another planned improvement is activating message-memory compaction on top of
+the summary scaffolding that already exists in the model.
+
+Current state:
+
+- summary message fields exist, but the production wake flows do not compact
+  message spans yet
+
+Why that is still on the roadmap:
+
+- it would let long-lived agents retain distilled conversation history instead
+  of depending only on raw message logs, reports, and observations
+- it would make the existing summary-related entity fields earn their keep
+- it would give the runtime a cleaner long-horizon memory path for persistent
+  agents
+
+This is not implemented today. The current runtime still resolves behavior from
+the existing template and version directive fields, and message history is not
+yet compacted into summary messages.
+
+## Code Reading Guide
+
+For the implementation path with the best signal-to-noise ratio, read these in
+order:
+
+1. `state/agent_providers.dart`
+2. `wake/wake_orchestrator.dart`
+3. `wake/wake_queue.dart`
+4. `wake/wake_runner.dart`
+5. `workflow/task_agent_workflow.dart`
+6. `workflow/task_agent_strategy.dart`
+7. `service/change_set_confirmation_service.dart`
+8. `workflow/project_agent_workflow.dart`
+9. `workflow/template_evolution_workflow.dart`
+10. `workflow/improver_agent_workflow.dart`
+11. `sync/agent_sync_service.dart`
+
+If you need the inference stack that these workflows call into, continue with
+[../ai/README.md](../ai/README.md).
