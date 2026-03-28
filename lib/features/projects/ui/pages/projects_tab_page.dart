@@ -67,10 +67,27 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
           data: (groups) => ProjectsOverviewContent(
             title: context.messages.navTabTitleProjects,
             groups: groups,
-            searchEnabled: false,
+            query: filter.textQuery,
             scrollController: _scrollController,
             headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
             listBottomPadding: 112,
+            onSearchChanged: (value) {
+              ref
+                  .read(projectsFilterControllerProvider.notifier)
+                  .setTextQuery(value);
+            },
+            onSearchCleared: () {
+              ref
+                  .read(projectsFilterControllerProvider.notifier)
+                  .setTextQuery(
+                    '',
+                  );
+            },
+            onSearchPressed: (value) {
+              ref
+                  .read(projectsFilterControllerProvider.notifier)
+                  .setTextQuery(value);
+            },
             onProjectTap: (project) {
               beamToNamed('/projects/${project.project.meta.id}');
             },

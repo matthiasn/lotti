@@ -210,6 +210,12 @@ void main() {
         textField.cursorColor,
         dsTokensLight.colors.text.mediumEmphasis,
       );
+      expect(textField.decoration!.border, InputBorder.none);
+      expect(textField.decoration!.enabledBorder, InputBorder.none);
+      expect(textField.decoration!.disabledBorder, InputBorder.none);
+      expect(textField.decoration!.focusedBorder, InputBorder.none);
+      expect(textField.decoration!.errorBorder, InputBorder.none);
+      expect(textField.decoration!.focusedErrorBorder, InputBorder.none);
     });
 
     testWidgets('medium field height uses step9', (tester) async {

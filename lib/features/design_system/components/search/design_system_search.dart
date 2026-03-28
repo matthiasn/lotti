@@ -42,7 +42,7 @@ class DesignSystemSearch extends StatefulWidget {
 }
 
 class _DesignSystemSearchState extends State<DesignSystemSearch> {
-  static const _textAlignVertical = TextAlignVertical(y: -0.25);
+  static const InputBorder _noBorder = InputBorder.none;
 
   TextEditingController? _internalController;
   TextEditingController get _controller =>
@@ -71,7 +71,7 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
       _controller.addListener(_handleControllerChanged);
     } else if (widget.controller == null &&
         oldWidget.initialText != widget.initialText) {
-      _internalController?.text = widget.initialText ?? '';
+      _syncInternalControllerText(widget.initialText ?? '');
     }
   }
 
@@ -136,12 +136,17 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
                       forceStrutHeight: true,
                     ),
                     style: textStyle,
-                    textAlignVertical: _textAlignVertical,
+                    textAlignVertical: TextAlignVertical.center,
                     cursorHeight: spec.contentHeight,
                     decoration: InputDecoration(
                       hintText: widget.hintText,
                       hintStyle: hintStyle,
-                      border: InputBorder.none,
+                      border: _noBorder,
+                      enabledBorder: _noBorder,
+                      disabledBorder: _noBorder,
+                      focusedBorder: _noBorder,
+                      errorBorder: _noBorder,
+                      focusedErrorBorder: _noBorder,
                       contentPadding: EdgeInsets.zero,
                       isDense: true,
                       isCollapsed: true,
@@ -176,6 +181,19 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
 
   void _handleSearchPressed() {
     widget.onSearchPressed?.call(_controller.text);
+  }
+
+  void _syncInternalControllerText(String nextText) {
+    final controller = _internalController;
+    if (controller == null || controller.text == nextText) {
+      return;
+    }
+
+    controller.value = controller.value.copyWith(
+      text: nextText,
+      selection: TextSelection.collapsed(offset: nextText.length),
+      composing: TextRange.empty,
+    );
   }
 
   void _handleClearPressed() {

@@ -247,7 +247,13 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
   }
 
   void setTextQuery(String textQuery) {
-    state = state.copyWith(textQuery: textQuery);
+    final normalizedQuery = textQuery.trim();
+    state = state.copyWith(
+      textQuery: textQuery,
+      searchMode: normalizedQuery.isEmpty
+          ? ProjectsSearchMode.disabled
+          : ProjectsSearchMode.localText,
+    );
   }
 
   void setSearchMode(ProjectsSearchMode searchMode) {
