@@ -88,6 +88,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
               color: ShowcasePalette.highText(context),
             ),
             searchTrailing: IconButton(
+              tooltip: context.messages.projectsFilterTooltip,
               onPressed: () => showProjectsFilterModal(
                 context: context,
                 initialFilter: filter,

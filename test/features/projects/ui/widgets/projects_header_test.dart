@@ -1,72 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
-import 'package:lotti/themes/theme.dart';
 
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  Widget pumpHeader({
-    String title = 'Projects',
-    bool centerTitle = false,
-    Widget? titleTrailing,
-    Widget? searchTrailing,
+  Widget wrap(
+    Widget child, {
+    required Size size,
   }) {
-    return makeTestableWidgetWithScaffold(
-      ProjectsHeader(
-        title: title,
-        centerTitle: centerTitle,
-        titleTrailing: titleTrailing,
-        searchTrailing: searchTrailing,
+    return makeTestableWidget2(
+      Theme(
+        data: DesignSystemTheme.dark(),
+        child: Scaffold(body: child),
       ),
-      theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+      mediaQueryData: MediaQueryData(size: size),
     );
   }
 
-  group('ProjectsHeader', () {
-    testWidgets('renders title text and search field', (tester) async {
-      await tester.pumpWidget(pumpHeader());
-      await tester.pump();
-
-      expect(find.text('Projects'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-    });
-
-    testWidgets(
-      'renders centered heading1 text when centerTitle is true '
-      'and titleTrailing is null',
-      (tester) async {
-        await tester.pumpWidget(
-          pumpHeader(title: 'Centered Title', centerTitle: true),
-        );
-        await tester.pump();
-
-        expect(find.text('Centered Title'), findsOneWidget);
-        expect(find.byType(Center), findsWidgets);
-
-        // The title should be inside a Center widget, not inside a Row
-        final centerFinder = find.ancestor(
-          of: find.text('Centered Title'),
-          matching: find.byType(Center),
-        );
-        expect(centerFinder, findsWidgets);
-      },
-    );
-
-    testWidgets('renders searchTrailing widget when provided', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        pumpHeader(
-          searchTrailing: const Icon(
-            Icons.tune_rounded,
-            key: Key('search-trailing'),
-          ),
+  testWidgets('uses the compact Figma title scale on mobile widths', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        const ProjectsHeader(
+          title: 'Projects',
+          searchEnabled: false,
         ),
-      );
-      await tester.pump();
+        size: const Size(402, 874),
+      ),
+    );
+    await tester.pump();
 
-      expect(find.byKey(const Key('search-trailing')), findsOneWidget);
-    });
+    final title = tester.widget<Text>(find.text('Projects'));
+
+    expect(title.style?.fontSize, 20);
+    expect(title.style?.height, 1.4);
+  });
+
+  testWidgets('keeps the larger title scale on wider layouts', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        const ProjectsHeader(
+          title: 'Projects',
+          searchEnabled: false,
+        ),
+        size: const Size(1024, 874),
+      ),
+    );
+    await tester.pump();
+
+    final title = tester.widget<Text>(find.text('Projects'));
+
+    expect(title.style?.fontSize, 25);
+    expect(title.style?.height, 1.28);
   });
 }

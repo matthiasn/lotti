@@ -137,8 +137,6 @@ class ProjectStatusLabel extends StatelessWidget {
           showcaseProjectStatusLabel(context, status),
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: ShowcasePalette.highText(context),
-            fontWeight: FontWeight.w500,
-            height: 1,
           ),
         ),
       ],

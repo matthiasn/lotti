@@ -83,7 +83,8 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                               initialFilter: state.filter,
                               categories: state.data.categories,
                               onApplied: controller.updateFilter,
-                              presentation: DesignSystemFilterPresentation.desktop,
+                              presentation:
+                                  DesignSystemFilterPresentation.desktop,
                             ),
                           ),
                         ),

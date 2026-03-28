@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
@@ -101,13 +100,14 @@ void main() {
     WidgetTester tester, {
     required List<ProjectCategoryGroup> groups,
     MediaQueryData? mediaQueryData,
+    ThemeData? theme,
   }) async {
     final snapshot = ProjectsOverviewSnapshot(groups: groups);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
-        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(snapshot),
@@ -158,6 +158,23 @@ void main() {
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isFalse);
+  });
+
+  testWidgets('renders the grouped projects page in light theme', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+      theme: withOverrides(ThemeData.light(useMaterial3: true)),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Projects'), findsOneWidget);
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('2 projects'), findsOneWidget);
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
   });
 
   testWidgets('row tap opens the existing settings project detail route', (
@@ -227,10 +244,12 @@ void main() {
     await tester.tap(find.byIcon(Icons.tune_rounded));
     await tester.pump(const Duration(milliseconds: 300));
 
-    final filterSheet = tester.widget<DesignSystemTaskFilterSheet>(
-      find.byType(DesignSystemTaskFilterSheet),
+    final statusField = find.byKey(
+      const ValueKey('design-system-task-filter-field-status'),
     );
-    filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
+    await tester.ensureVisible(statusField);
+    await tester.pumpAndSettle();
+    await tester.tap(statusField);
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);

@@ -35,6 +35,10 @@ class ProjectsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+    final compactTitleStyle = tokens.typography.styles.heading.heading3;
+    final defaultTitleStyle = tokens.typography.styles.heading.heading2;
+    final titleStyle = isCompact ? compactTitleStyle : defaultTitleStyle;
 
     return Padding(
       padding: padding,
@@ -58,7 +62,7 @@ class ProjectsHeader extends StatelessWidget {
                   child: Text(
                     title,
                     textAlign: centerTitle ? TextAlign.center : TextAlign.start,
-                    style: tokens.typography.styles.heading.heading2.copyWith(
+                    style: titleStyle.copyWith(
                       color: ShowcasePalette.highText(context),
                     ),
                   ),

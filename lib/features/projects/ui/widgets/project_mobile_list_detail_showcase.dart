@@ -156,6 +156,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
                     color: ShowcasePalette.highText(context),
                   ),
                   searchTrailing: IconButton(
+                    tooltip: context.messages.projectsFilterTooltip,
                     onPressed: onFilterPressed,
                     icon: Icon(
                       Icons.tune_rounded,

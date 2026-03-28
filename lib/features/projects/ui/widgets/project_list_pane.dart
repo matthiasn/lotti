@@ -126,6 +126,7 @@ class _SearchHeader extends StatelessWidget {
               height: 36,
               child: Center(
                 child: IconButton(
+                  tooltip: context.messages.projectsFilterTooltip,
                   onPressed: onFilterPressed,
                   icon: Icon(
                     Icons.tune_rounded,

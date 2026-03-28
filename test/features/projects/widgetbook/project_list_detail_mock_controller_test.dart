@@ -71,9 +71,11 @@ void main() {
       final state = container.read(projectListDetailShowcaseControllerProvider);
 
       expect(
-        state.visibleGroups.expand((group) => group.projects).map(
-          (project) => project.project.data.title,
-        ),
+        state.visibleGroups
+            .expand((group) => group.projects)
+            .map(
+              (project) => project.project.data.title,
+            ),
         ['CI/CD Pipeline', 'Design System Book'],
       );
       expect(state.selectedProject?.project.data.title, 'CI/CD Pipeline');

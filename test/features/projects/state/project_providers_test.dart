@@ -871,6 +871,124 @@ void main() {
     );
 
     test(
+      'ProjectsFilterController.filter getter returns the current state',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final notifier = scopedContainer.read(
+          projectsFilterControllerProvider.notifier,
+        );
+
+        // Initially returns the default filter
+        expect(notifier.filter, const ProjectsFilter());
+
+        // After mutation, getter reflects the updated state
+        notifier
+          ..setSelectedCategoryIds({'cat-a', 'cat-b'})
+          ..setSelectedStatusIds(
+            {ProjectStatusFilterIds.active},
+          );
+
+        final current = notifier.filter;
+        expect(current.selectedCategoryIds, {'cat-a', 'cat-b'});
+        expect(
+          current.selectedStatusIds,
+          {ProjectStatusFilterIds.active},
+        );
+      },
+    );
+
+    test(
+      'ProjectsFilterController.filter setter replaces the entire filter state',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final notifier = scopedContainer.read(
+          projectsFilterControllerProvider.notifier,
+        );
+
+        const replacement = ProjectsFilter(
+          selectedStatusIds: {
+            ProjectStatusFilterIds.completed,
+            ProjectStatusFilterIds.archived,
+          },
+          selectedCategoryIds: {'cat-x'},
+          textQuery: 'hello',
+          searchMode: ProjectsSearchMode.localText,
+        );
+
+        notifier.filter = replacement;
+
+        final state = scopedContainer.read(
+          projectsFilterControllerProvider,
+        );
+        expect(state, replacement);
+        expect(
+          state.selectedStatusIds,
+          {
+            ProjectStatusFilterIds.completed,
+            ProjectStatusFilterIds.archived,
+          },
+        );
+        expect(state.selectedCategoryIds, {'cat-x'});
+        expect(state.textQuery, 'hello');
+        expect(state.searchMode, ProjectsSearchMode.localText);
+      },
+    );
+
+    test(
+      'ProjectsFilterController.setSelectedStatusIds updates only status ids',
+      () {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectsOverviewProvider.overrideWith(
+              (ref) => const Stream<ProjectsOverviewSnapshot>.empty(),
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        // Set up some pre-existing filter state, then update only status ids
+        scopedContainer.read(projectsFilterControllerProvider.notifier)
+          ..filter = const ProjectsFilter(
+            selectedCategoryIds: {'cat-keep'},
+            textQuery: 'preserved',
+            searchMode: ProjectsSearchMode.localText,
+          )
+          ..setSelectedStatusIds({
+            ProjectStatusFilterIds.onHold,
+            ProjectStatusFilterIds.open,
+          });
+
+        final state = scopedContainer.read(
+          projectsFilterControllerProvider,
+        );
+        expect(
+          state.selectedStatusIds,
+          {ProjectStatusFilterIds.onHold, ProjectStatusFilterIds.open},
+        );
+        // Other fields remain unchanged
+        expect(state.selectedCategoryIds, {'cat-keep'});
+        expect(state.textQuery, 'preserved');
+        expect(state.searchMode, ProjectsSearchMode.localText);
+      },
+    );
+
+    test(
       'visibleProjectGroupsProvider ignores text query when search mode is disabled',
       () async {
         final snapshot = makeSnapshot();

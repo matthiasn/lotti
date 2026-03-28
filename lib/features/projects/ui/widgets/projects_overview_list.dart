@@ -37,7 +37,7 @@ class ProjectsOverviewSliverList extends StatelessWidget {
               ),
             ),
             if (index < groups.length - 1)
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
           ],
         ],
       ),

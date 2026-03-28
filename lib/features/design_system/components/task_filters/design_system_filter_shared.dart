@@ -9,6 +9,16 @@ abstract final class DesignSystemFilterMetrics {
   static const actionRadius = 26.0;
 }
 
+/// Strips a trailing colon and any whitespace before it from a label string.
+///
+/// Some locales append a colon to field labels (e.g. "Status:" or "Statut :").
+/// Filter headers display the bare word, so this helper removes the suffix.
+String stripTrailingColon(String value) {
+  return value.endsWith(':')
+      ? value.substring(0, value.length - 1).trimRight()
+      : value;
+}
+
 @immutable
 class DesignSystemFilterPalette {
   const DesignSystemFilterPalette({

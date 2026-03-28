@@ -2650,37 +2650,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemMediumLabel => 'Střední';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'AI asistent';
-
-  @override
-  String get designSystemNavigationCollapsedLabel => 'Sbalené';
-
-  @override
-  String get designSystemNavigationDailyFilterSectionTitle => 'Denní filtr';
-
-  @override
-  String get designSystemNavigationExpandedLabel => 'Rozbalené';
-
-  @override
-  String get designSystemNavigationFilterByBlockLabel =>
-      'Filtrovat podle bloku';
-
-  @override
-  String get designSystemNavigationHikingLabel => 'Turistika';
-
-  @override
-  String get designSystemNavigationHolidayLabel => 'Dovolená';
-
-  @override
-  String get designSystemNavigationInsightsLabel => 'Přehledy';
-
-  @override
-  String get designSystemNavigationLottiTasksLabel => 'Úkoly Lotti';
-
-  @override
-  String get designSystemNavigationMyDailyLabel => 'Můj den';
-
-  @override
   String get designSystemMyDailyDeepWorkTitle => 'Hluboká práce';
 
   @override
@@ -2719,10 +2688,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemMyDailyLunchBreakTitle => 'Obědová pauza';
 
   @override
-  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dannym';
+  String get designSystemMyDailyMeetingsLabel => 'Schůzky';
 
   @override
-  String get designSystemMyDailyMeetingsLabel => 'Schůzky';
+  String get designSystemMyDailyMeetingWithDannyTitle => 'Schůzka s Dannym';
 
   @override
   String get designSystemMyDailyProfileActionLabel => 'Profil';
@@ -2732,6 +2701,37 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemMyDailyTapToExpandLabel => 'Klepni pro rozbalení';
+
+  @override
+  String get designSystemNavigationAiAssistantSectionTitle => 'AI asistent';
+
+  @override
+  String get designSystemNavigationCollapsedLabel => 'Sbalené';
+
+  @override
+  String get designSystemNavigationDailyFilterSectionTitle => 'Denní filtr';
+
+  @override
+  String get designSystemNavigationExpandedLabel => 'Rozbalené';
+
+  @override
+  String get designSystemNavigationFilterByBlockLabel =>
+      'Filtrovat podle bloku';
+
+  @override
+  String get designSystemNavigationHikingLabel => 'Turistika';
+
+  @override
+  String get designSystemNavigationHolidayLabel => 'Dovolená';
+
+  @override
+  String get designSystemNavigationInsightsLabel => 'Přehledy';
+
+  @override
+  String get designSystemNavigationLottiTasksLabel => 'Úkoly Lotti';
+
+  @override
+  String get designSystemNavigationMyDailyLabel => 'Můj den';
 
   @override
   String get designSystemNavigationNewLabel => 'Nové';
@@ -2829,10 +2829,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matice stavů';
 
   @override
-  String get designSystemTabBarTitle => 'Panel záložek';
+  String get designSystemSuccessLabel => 'Úspěch';
 
   @override
-  String get designSystemSuccessLabel => 'Úspěch';
+  String get designSystemTabBarTitle => 'Panel záložek';
 
   @override
   String get designSystemTabPendingLabel => 'Čekající';
@@ -4012,6 +4012,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.';
 
   @override
+  String get projectsFilterStatusLabel => 'Stav:';
+
+  @override
+  String get projectsFilterTooltip => 'Filtrovat projekty';
+
+  @override
   String get projectShowcaseAiReportTitle => 'AI report';
 
   @override
@@ -4111,9 +4117,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectStatusChangeTitle => 'Změnit stav';
-
-  @override
-  String get projectsFilterStatusLabel => 'Stav:';
 
   @override
   String get projectStatusCompleted => 'Dokončený';

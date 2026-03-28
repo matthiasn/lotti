@@ -146,8 +146,8 @@ class DesignSystemFilterSelectionSheet extends StatelessWidget {
     required this.showDragHandle,
     required this.onOptionToggled,
     required this.onApplyPressed,
+    required this.applyLabel,
     this.appearanceResolver,
-    this.applyLabel = 'Done',
     super.key,
   });
 
@@ -244,16 +244,19 @@ class DesignSystemFilterSelectionSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: spacing.step4),
-              Padding(
-                padding: EdgeInsets.only(bottom: spacing.step3),
-                child: DesignSystemFilterDragHandle(
-                  color: palette.handleColor,
+              if (showDragHandle) ...[
+                SizedBox(height: spacing.step4),
+                Padding(
+                  padding: EdgeInsets.only(bottom: spacing.step3),
+                  child: DesignSystemFilterDragHandle(
+                    color: palette.handleColor,
+                  ),
                 ),
-              ),
-              SizedBox(
-                height: spacing.step5 + spacing.step2 + spacing.step1 / 2,
-              ),
+                // Home-indicator safe-area padding
+                SizedBox(
+                  height: spacing.step5 + spacing.step2 + spacing.step1 / 2,
+                ),
+              ],
             ],
           ),
         ),

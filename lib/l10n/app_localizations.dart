@@ -4821,6 +4821,90 @@ abstract class AppLocalizations {
   /// **'Medium'**
   String get designSystemMediumLabel;
 
+  /// No description provided for @designSystemMyDailyDeepWorkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep work'**
+  String get designSystemMyDailyDeepWorkTitle;
+
+  /// No description provided for @designSystemMyDailyDurationHoursCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String designSystemMyDailyDurationHoursCompact(int count);
+
+  /// No description provided for @designSystemMyDailyDurationHoursMinutesCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h {minutes}m'**
+  String designSystemMyDailyDurationHoursMinutesCompact(int hours, int minutes);
+
+  /// No description provided for @designSystemMyDailyDurationMinutesCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m'**
+  String designSystemMyDailyDurationMinutesCompact(int count);
+
+  /// No description provided for @designSystemMyDailyEditPlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit plan'**
+  String get designSystemMyDailyEditPlanLabel;
+
+  /// No description provided for @designSystemMyDailyGreetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning.'**
+  String get designSystemMyDailyGreetingMorning;
+
+  /// No description provided for @designSystemMyDailyGreetingWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}'**
+  String designSystemMyDailyGreetingWithName(String name);
+
+  /// No description provided for @designSystemMyDailyHikeWithDanielaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking with Daniela'**
+  String get designSystemMyDailyHikeWithDanielaTitle;
+
+  /// No description provided for @designSystemMyDailyLunchBreakTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch break'**
+  String get designSystemMyDailyLunchBreakTitle;
+
+  /// No description provided for @designSystemMyDailyMeetingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Meetings'**
+  String get designSystemMyDailyMeetingsLabel;
+
+  /// No description provided for @designSystemMyDailyMeetingWithDannyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting with Danny'**
+  String get designSystemMyDailyMeetingWithDannyTitle;
+
+  /// No description provided for @designSystemMyDailyProfileActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get designSystemMyDailyProfileActionLabel;
+
+  /// No description provided for @designSystemMyDailySkiWithMattTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Go skiing with Matt'**
+  String get designSystemMyDailySkiWithMattTitle;
+
+  /// No description provided for @designSystemMyDailyTapToExpandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to expand'**
+  String get designSystemMyDailyTapToExpandLabel;
+
   /// No description provided for @designSystemNavigationAiAssistantSectionTitle.
   ///
   /// In en, this message translates to:
@@ -4880,90 +4964,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'My Daily'**
   String get designSystemNavigationMyDailyLabel;
-
-  /// No description provided for @designSystemMyDailyDeepWorkTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Deep work'**
-  String get designSystemMyDailyDeepWorkTitle;
-
-  /// No description provided for @designSystemMyDailyDurationHoursCompact.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}h'**
-  String designSystemMyDailyDurationHoursCompact(int count);
-
-  /// No description provided for @designSystemMyDailyDurationHoursMinutesCompact.
-  ///
-  /// In en, this message translates to:
-  /// **'{hours}h {minutes}m'**
-  String designSystemMyDailyDurationHoursMinutesCompact(int hours, int minutes);
-
-  /// No description provided for @designSystemMyDailyDurationMinutesCompact.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}m'**
-  String designSystemMyDailyDurationMinutesCompact(int count);
-
-  /// No description provided for @designSystemMyDailyEditPlanLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit plan'**
-  String get designSystemMyDailyEditPlanLabel;
-
-  /// No description provided for @designSystemMyDailyGreetingMorning.
-  ///
-  /// In en, this message translates to:
-  /// **'Good morning.'**
-  String get designSystemMyDailyGreetingMorning;
-
-  /// No description provided for @designSystemMyDailyGreetingWithName.
-  ///
-  /// In en, this message translates to:
-  /// **'Hi, {name}'**
-  String designSystemMyDailyGreetingWithName(String name);
-
-  /// No description provided for @designSystemMyDailyHikeWithDanielaTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Hiking with Daniela'**
-  String get designSystemMyDailyHikeWithDanielaTitle;
-
-  /// No description provided for @designSystemMyDailyLunchBreakTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Lunch break'**
-  String get designSystemMyDailyLunchBreakTitle;
-
-  /// No description provided for @designSystemMyDailyMeetingWithDannyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Meeting with Danny'**
-  String get designSystemMyDailyMeetingWithDannyTitle;
-
-  /// No description provided for @designSystemMyDailyMeetingsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Meetings'**
-  String get designSystemMyDailyMeetingsLabel;
-
-  /// No description provided for @designSystemMyDailyProfileActionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get designSystemMyDailyProfileActionLabel;
-
-  /// No description provided for @designSystemMyDailySkiWithMattTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Go skiing with Matt'**
-  String get designSystemMyDailySkiWithMattTitle;
-
-  /// No description provided for @designSystemMyDailyTapToExpandLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to expand'**
-  String get designSystemMyDailyTapToExpandLabel;
 
   /// No description provided for @designSystemNavigationNewLabel.
   ///
@@ -5145,17 +5145,17 @@ abstract class AppLocalizations {
   /// **'State Matrix'**
   String get designSystemStateMatrixTitle;
 
-  /// No description provided for @designSystemTabBarTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tab Bar'**
-  String get designSystemTabBarTitle;
-
   /// No description provided for @designSystemSuccessLabel.
   ///
   /// In en, this message translates to:
   /// **'Success'**
   String get designSystemSuccessLabel;
+
+  /// No description provided for @designSystemTabBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tab Bar'**
+  String get designSystemTabBarTitle;
 
   /// No description provided for @designSystemTabPendingLabel.
   ///
@@ -7135,6 +7135,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update the recommendation. Please try again.'**
   String get projectRecommendationUpdateError;
 
+  /// No description provided for @projectsFilterStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status:'**
+  String get projectsFilterStatusLabel;
+
+  /// No description provided for @projectsFilterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter projects'**
+  String get projectsFilterTooltip;
+
   /// No description provided for @projectShowcaseAiReportTitle.
   ///
   /// In en, this message translates to:
@@ -7272,12 +7284,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change Status'**
   String get projectStatusChangeTitle;
-
-  /// No description provided for @projectsFilterStatusLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Status:'**
-  String get projectsFilterStatusLabel;
 
   /// No description provided for @projectStatusCompleted.
   ///
