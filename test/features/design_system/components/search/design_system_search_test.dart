@@ -35,16 +35,8 @@ void main() {
         closeTo(12, 0.1),
       );
       expect(
-        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dy,
-        closeTo(16, 0.1),
-      );
-      expect(
         tester.getTopLeft(find.text('Type user')).dx,
         closeTo(44, 0.1),
-      );
-      expect(
-        tester.getTopLeft(find.text('Type user')).dy,
-        closeTo(16, 0.1),
       );
       expect(find.byIcon(Icons.cancel_rounded), findsNothing);
 
@@ -53,9 +45,25 @@ void main() {
       );
       final mediumTextField = tester.widget<TextField>(find.byType(TextField));
       expect(mediumEditableText.style.height, 1);
+      expect(mediumTextField.textAlignVertical, TextAlignVertical.center);
+      expect(mediumTextField.decoration!.border, InputBorder.none);
+      expect(mediumTextField.decoration!.enabledBorder, InputBorder.none);
+      expect(mediumTextField.decoration!.disabledBorder, InputBorder.none);
+      expect(mediumTextField.decoration!.focusedBorder, InputBorder.none);
+      expect(mediumTextField.decoration!.errorBorder, InputBorder.none);
       expect(
-        mediumTextField.textAlignVertical,
-        const TextAlignVertical(y: -0.25),
+        mediumTextField.decoration!.focusedErrorBorder,
+        InputBorder.none,
+      );
+      expect(
+        (tester.getCenter(find.text('Type user')).dy -
+                tester
+                    .getCenter(
+                      find.byKey(const Key('design-system-search-shell')),
+                    )
+                    .dy)
+            .abs(),
+        lessThanOrEqualTo(4),
       );
 
       await tester.enterText(find.byType(TextField), 'Lotti search');
@@ -115,7 +123,6 @@ void main() {
         dsTokensLight.typography.size.bodySmall,
       );
       expect(editableText.style.height, 1);
-      expect(textField.textAlignVertical, const TextAlignVertical(y: -0.25));
       expect(
         tester.getSize(find.byKey(const Key('design-system-search-shell'))),
         const Size(244, 48),
@@ -125,21 +132,84 @@ void main() {
         closeTo(12, 0.1),
       );
       expect(
-        tester.getTopLeft(find.byIcon(Icons.search_rounded)).dy,
-        closeTo(14, 0.1),
-      );
-      expect(
         tester.getTopLeft(find.text('Lotti search')).dx,
         closeTo(40, 0.1),
       );
+      expect(textField.textAlignVertical, TextAlignVertical.center);
       expect(
-        tester.getTopLeft(find.text('Lotti search')).dy,
-        closeTo(14, 0.1),
+        (tester.getCenter(find.text('Lotti search')).dy -
+                tester
+                    .getCenter(
+                      find.byKey(const Key('design-system-search-shell')),
+                    )
+                    .dy)
+            .abs(),
+        lessThanOrEqualTo(4),
       );
       await tester.tap(find.byIcon(Icons.search_rounded));
       await tester.pump();
 
       expect(searched, 'Lotti search');
     });
+
+    testWidgets('preserves typed text across external-state rebuilds', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 244,
+            child: _SearchRebuildHarness(),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      await tester.showKeyboard(find.byType(TextField));
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: 'a',
+          selection: TextSelection.collapsed(offset: 1),
+        ),
+      );
+      await tester.pump();
+      tester.testTextInput.updateEditingValue(
+        const TextEditingValue(
+          text: 'ab',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+      );
+      await tester.pump();
+
+      final editableText = tester.widget<EditableText>(
+        find.byType(EditableText),
+      );
+      expect(editableText.controller.text, 'ab');
+      expect(find.text('ab'), findsOneWidget);
+    });
   });
+}
+
+class _SearchRebuildHarness extends StatefulWidget {
+  const _SearchRebuildHarness();
+
+  @override
+  State<_SearchRebuildHarness> createState() => _SearchRebuildHarnessState();
+}
+
+class _SearchRebuildHarnessState extends State<_SearchRebuildHarness> {
+  String query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return DesignSystemSearch(
+      hintText: 'Type user',
+      initialText: query,
+      onChanged: (value) {
+        setState(() {
+          query = value;
+        });
+      },
+    );
+  }
 }

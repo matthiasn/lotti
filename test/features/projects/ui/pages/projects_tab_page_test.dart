@@ -101,21 +101,25 @@ void main() {
     required List<ProjectCategoryGroup> groups,
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
+    bool overrideVisibleGroups = true,
   }) async {
     final snapshot = ProjectsOverviewSnapshot(groups: groups);
+    final overrides = [
+      projectsOverviewProvider.overrideWith(
+        (ref) => Stream.value(snapshot),
+      ),
+      if (overrideVisibleGroups)
+        visibleProjectGroupsProvider.overrideWith(
+          (ref) => AsyncValue.data(groups),
+        ),
+    ];
+
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
         theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
-        overrides: [
-          projectsOverviewProvider.overrideWith(
-            (ref) => Stream.value(snapshot),
-          ),
-          visibleProjectGroupsProvider.overrideWith(
-            (ref) => AsyncValue.data(groups),
-          ),
-        ],
+        overrides: overrides,
       ),
     );
     await tester.pump();
@@ -137,7 +141,7 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  testWidgets('renders grouped projects with a disabled search bar', (
+  testWidgets('renders grouped projects with an enabled search bar', (
     tester,
   ) async {
     await pumpPage(
@@ -157,7 +161,7 @@ void main() {
     expect(find.bySemanticsLabel('New Project'), findsOneWidget);
 
     final textField = tester.widget<TextField>(find.byType(TextField));
-    expect(textField.enabled, isFalse);
+    expect(textField.enabled, isTrue);
   });
 
   testWidgets('renders the grouped projects page in light theme', (
@@ -289,6 +293,24 @@ void main() {
       find.text('No projects match your search.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('filters visible projects by substring search', (tester) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+      overrideVisibleGroups: false,
+    );
+
+    await tester.enterText(find.byType(TextField), 'sync');
+    await tester.pump();
+
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.text('API Migration'), findsNothing);
+    expect(find.text('React Course'), findsNothing);
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('Study'), findsNothing);
+    expect(find.text('1 project'), findsOneWidget);
   });
 
   testWidgets('shows loading indicator while data is loading', (

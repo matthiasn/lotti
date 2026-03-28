@@ -81,6 +81,7 @@ class ProjectsHeader extends StatelessWidget {
                   height: 48,
                   child: DesignSystemSearch(
                     hintText: context.messages.projectShowcaseSearchHint,
+                    size: DesignSystemSearchSize.small,
                     initialText: query,
                     enabled: searchEnabled,
                     onChanged: onSearchChanged,

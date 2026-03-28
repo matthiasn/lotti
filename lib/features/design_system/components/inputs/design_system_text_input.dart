@@ -48,6 +48,8 @@ class DesignSystemTextInput extends StatefulWidget {
 }
 
 class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
+  static const InputBorder _noBorder = InputBorder.none;
+
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _ownsController = false;
@@ -140,7 +142,12 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                       hintStyle: spec.hintStyle,
                       contentPadding: spec.contentPadding,
                       isDense: true,
-                      border: InputBorder.none,
+                      border: _noBorder,
+                      enabledBorder: _noBorder,
+                      disabledBorder: _noBorder,
+                      focusedBorder: _noBorder,
+                      errorBorder: _noBorder,
+                      focusedErrorBorder: _noBorder,
                       prefixIcon: widget.leadingIcon != null
                           ? Icon(
                               widget.leadingIcon,

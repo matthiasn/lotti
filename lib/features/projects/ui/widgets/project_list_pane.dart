@@ -113,6 +113,7 @@ class _SearchHeader extends StatelessWidget {
                 height: 48,
                 child: DesignSystemSearch(
                   hintText: context.messages.projectShowcaseSearchHint,
+                  size: DesignSystemSearchSize.small,
                   initialText: query,
                   onChanged: onSearchChanged,
                   onClear: onSearchCleared,

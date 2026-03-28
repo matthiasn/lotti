@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   even when no value is set, the empty-state report copy only appears when
   both summary and full content are absent, and expanded reports strip the
   leading H1 title that the UI already renders above the report section.
+- Projects tab search: the live top-level Projects page now enables local
+  substring search against the grouped list, and the shared design-system
+  search field keeps typed text stable across rebuilds while centering the
+  search text correctly on mobile and desktop surfaces.
 
 ## [0.9.933] - 2026-03-27
 ### Changed
