@@ -208,8 +208,7 @@ The tool must reject:
 ### Objective
 
 Provide the task agent with the latest report from the agent assigned to the
-task's parent project, including both the short `tldr` and the full report
-`content`.
+task's parent project, including both the short `tldr` and the full report `content`.
 
 ### Why Phase 1 Is Small
 
@@ -620,7 +619,7 @@ The new context paths should follow the same failure-tolerant philosophy as the 
 - if project lookup fails: omit the section
 - if project agent/report lookup fails: omit the section
 - if related-task list build fails: omit the section
-- if one sibling task summary fails inside the batch: skip that row's TLDR, keep the row if the rest of the metadata is valid
+- if one sibling task summary fails inside the batch: skip that sibling row entirely (do not include rows without a stored `tldr`)
 - if the read-only tool is called with an invalid ID: return a tool error to the model, do not throw
 
 No failure in these new context paths should abort the wake.

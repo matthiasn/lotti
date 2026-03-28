@@ -42,11 +42,11 @@ class AiInputRepository {
   AiInputRepository(
     this.ref, {
     required TaskSummaryResolver taskSummaryResolver,
-    ProjectRepository? projectRepository,
+    required ProjectRepository projectRepository,
     AgentRepository? agentRepository,
     DomainLogger? domainLogger,
   }) : _taskSummaryResolver = taskSummaryResolver,
-       _projectRepository = projectRepository ?? getIt<ProjectRepository>(),
+       _projectRepository = projectRepository,
        _agentRepository = agentRepository,
        _domainLogger = domainLogger;
 
@@ -450,7 +450,7 @@ AiInputRepository aiInputRepository(Ref ref) {
   return AiInputRepository(
     ref,
     taskSummaryResolver: TaskSummaryResolver(agentRepository),
-    projectRepository: getIt<ProjectRepository>(),
+    projectRepository: ref.read(projectRepositoryProvider),
     agentRepository: agentRepository,
     domainLogger: getIt.isRegistered<DomainLogger>()
         ? getIt<DomainLogger>()

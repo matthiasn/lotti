@@ -334,13 +334,13 @@ void main() {
           taskProgressRepositoryProvider.overrideWithValue(
             mockTaskProgressRepository,
           ),
+          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         ],
       );
 
       getIt
         ..registerSingleton<JournalDb>(mockDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<ProjectRepository>(mockProjectRepository)
         ..registerSingleton<EntitiesCacheService>(mockCacheService);
 
       repository = container.read(aiInputRepositoryProvider);
@@ -372,7 +372,6 @@ void main() {
       getIt
         ..unregister<JournalDb>()
         ..unregister<PersistenceLogic>()
-        ..unregister<ProjectRepository>()
         ..unregister<EntitiesCacheService>();
     });
 

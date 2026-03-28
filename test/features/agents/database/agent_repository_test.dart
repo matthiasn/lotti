@@ -914,6 +914,16 @@ void main() {
           ),
         );
         await repo.upsertEntity(
+          AgentDomainEntity.agentReport(
+            id: 'project-report-a',
+            agentId: 'project-agent-a',
+            scope: AgentReportScopes.current,
+            createdAt: timestamp,
+            vectorClock: null,
+            content: 'Report A',
+          ),
+        );
+        await repo.upsertEntity(
           makeReportHead(
             id: 'project-head-b',
             agentId: 'project-agent-b',
@@ -921,11 +931,20 @@ void main() {
             reportId: 'project-report-b',
           ),
         );
+        await repo.upsertEntity(
+          makeReportHead(
+            id: 'project-head-a',
+            agentId: 'project-agent-a',
+            scope: AgentReportScopes.current,
+            reportId: 'project-report-a',
+          ),
+        );
 
         final result = await repo.getLatestProjectReportForProjectId(
           'project-001',
         );
 
+        // Both agents have valid reports; link-b wins via id DESC tie-breaker.
         expect(result?.agentId, 'project-agent-b');
       });
 
