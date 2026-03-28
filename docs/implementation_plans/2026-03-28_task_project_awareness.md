@@ -208,8 +208,7 @@ The tool must reject:
 ### Objective
 
 Provide the task agent with the latest report from the agent assigned to the
-task's parent project, including both the short `tldr` and the full report
-`content`.
+task's parent project, including both the short `tldr` and the full report `content`.
 
 ### Why Phase 1 Is Small
 
