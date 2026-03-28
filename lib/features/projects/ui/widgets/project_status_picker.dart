@@ -1,8 +1,8 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/file_utils.dart';
 
 /// A tappable widget that shows the current project status and opens a
 /// bottom sheet to choose from all five status variants.
@@ -62,16 +62,6 @@ class ProjectStatusPicker extends StatelessWidget {
   void _showStatusSheet(BuildContext context) {
     final messages = context.messages;
 
-    // Status kind options — actual instances are created at tap time so that
-    // the timestamp and utcOffset are captured when the user confirms.
-    const statusKinds = [
-      _StatusKind.open,
-      _StatusKind.active,
-      _StatusKind.onHold,
-      _StatusKind.completed,
-      _StatusKind.archived,
-    ];
-
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) {
@@ -87,9 +77,11 @@ class ProjectStatusPicker extends StatelessWidget {
                     style: Theme.of(sheetContext).textTheme.titleMedium,
                   ),
                 ),
-                ...statusKinds.map((kind) {
-                  // Build a representative instance for label/color/icon only.
-                  final representative = _buildStatus(kind, DateTime(2000));
+                ...allProjectStatusKinds.map((kind) {
+                  final representative = buildProjectStatus(
+                    kind,
+                    DateTime(2000),
+                  );
                   final (label, color, icon) = projectStatusAttributes(
                     context,
                     representative,
@@ -114,9 +106,7 @@ class ProjectStatusPicker extends StatelessWidget {
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       if (!isSelected) {
-                        // Create the status at tap time with the real offset.
-                        final now = DateTime.now();
-                        onStatusChanged(_buildStatus(kind, now));
+                        onStatusChanged(buildProjectStatus(kind, clock.now()));
                       }
                     },
                   );
@@ -129,39 +119,4 @@ class ProjectStatusPicker extends StatelessWidget {
       },
     );
   }
-
-  /// Builds a [ProjectStatus] of the given [kind] with the supplied timestamp.
-  ProjectStatus _buildStatus(_StatusKind kind, DateTime at) {
-    final utcOffset = at.timeZoneOffset.inMinutes;
-    return switch (kind) {
-      _StatusKind.open => ProjectStatus.open(
-        id: uuid.v1(),
-        createdAt: at,
-        utcOffset: utcOffset,
-      ),
-      _StatusKind.active => ProjectStatus.active(
-        id: uuid.v1(),
-        createdAt: at,
-        utcOffset: utcOffset,
-      ),
-      _StatusKind.onHold => ProjectStatus.onHold(
-        id: uuid.v1(),
-        createdAt: at,
-        utcOffset: utcOffset,
-        reason: '',
-      ),
-      _StatusKind.completed => ProjectStatus.completed(
-        id: uuid.v1(),
-        createdAt: at,
-        utcOffset: utcOffset,
-      ),
-      _StatusKind.archived => ProjectStatus.archived(
-        id: uuid.v1(),
-        createdAt: at,
-        utcOffset: utcOffset,
-      ),
-    };
-  }
 }
-
-enum _StatusKind { open, active, onHold, completed, archived }

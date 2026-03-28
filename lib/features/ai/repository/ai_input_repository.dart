@@ -9,6 +9,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -273,6 +274,146 @@ class AiInputRepository {
     }
   }
 
+  /// Build a bounded sibling-task directory for task-agent wakes.
+  ///
+  /// Returns `{}` when the task is not linked to a project or when no related
+  /// task has a stored task-agent TLDR.
+  Future<String> buildRelatedProjectTasksJson({
+    required String taskId,
+    int limit = 50,
+  }) async {
+    try {
+      final project = await _projectRepository.getProjectForTask(taskId);
+      if (project == null) return '{}';
+
+      final siblingTasks =
+          (await _projectRepository.getTasksForProject(
+              project.id,
+            )).where((task) => task.id != taskId).toList()
+            ..sort(_compareRelatedProjectTasks);
+
+      if (siblingTasks.isEmpty) return '{}';
+
+      final siblingTaskIds = siblingTasks.map((task) => task.id).toList();
+      final bulkLinkedEntities = await _db.getBulkLinkedEntities(
+        siblingTaskIds.toSet(),
+      );
+      final reportsByTaskId =
+          await _agentRepository?.getLatestTaskReportsForTaskIds(
+            siblingTaskIds,
+          ) ??
+          const <String, AgentReportEntity>{};
+
+      final rows = <Map<String, dynamic>>[];
+      for (final siblingTask in siblingTasks) {
+        final report = reportsByTaskId[siblingTask.id];
+        final tldr = report?.tldr?.trim();
+        if (tldr == null || tldr.isEmpty) {
+          continue;
+        }
+
+        rows.add(<String, dynamic>{
+          'id': siblingTask.id,
+          'title': siblingTask.data.title,
+          'status': siblingTask.data.status.toDbString,
+          'timeSpent': formatHhMm(
+            _calculateTimeSpentFromEntities(
+              bulkLinkedEntities[siblingTask.id] ?? const <JournalEntity>[],
+            ),
+          ),
+          'tldr': tldr,
+        });
+
+        if (rows.length >= limit) {
+          break;
+        }
+      }
+
+      if (rows.isEmpty) return '{}';
+
+      return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
+        'projectId': project.id,
+        'tasks': rows,
+      });
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomains.ai,
+        'buildRelatedProjectTasksJson failed',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: 'AiInputRepository',
+      );
+      return '{}';
+    }
+  }
+
+  /// Build a full, read-only related-task details payload for one sibling task.
+  ///
+  /// Returns `null` when the requested task is not another task in the current
+  /// task's parent project or when the requested task has no current agent
+  /// report to attach.
+  Future<String?> buildRelatedTaskDetailsJson({
+    required String currentTaskId,
+    required String requestedTaskId,
+  }) async {
+    if (requestedTaskId == currentTaskId) {
+      return null;
+    }
+
+    try {
+      final (currentProject, requestedProject) = await (
+        _projectRepository.getProjectForTask(currentTaskId),
+        _projectRepository.getProjectForTask(requestedTaskId),
+      ).wait;
+
+      if (currentProject == null ||
+          requestedProject == null ||
+          currentProject.id != requestedProject.id) {
+        return null;
+      }
+
+      final taskDetailsJson = await buildTaskDetailsJson(id: requestedTaskId);
+      if (taskDetailsJson == null) {
+        return null;
+      }
+
+      final taskDetails = jsonDecode(taskDetailsJson);
+      if (taskDetails is! Map<String, dynamic>) {
+        return null;
+      }
+
+      final report = (await _agentRepository?.getLatestTaskReportsForTaskIds([
+        requestedTaskId,
+      ]))?[requestedTaskId];
+      if (report == null) {
+        return null;
+      }
+
+      return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
+        'task': taskDetails,
+        'latestTaskAgentReport': <String, dynamic>{
+          'agentId': report.agentId,
+          'createdAt': report.createdAt.toIso8601String(),
+          'tldr': report.tldr,
+          'content': report.content,
+        },
+        'projectContext': <String, dynamic>{
+          'projectId': currentProject.id,
+          'projectTitle': currentProject.data.title,
+        },
+      });
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomains.ai,
+        'buildRelatedTaskDetailsJson failed',
+        error: error,
+        stackTrace: stackTrace,
+        subDomain: 'AiInputRepository',
+      );
+      return null;
+    }
+  }
+
   /// Build label tuples from the cache service.
   ///
   /// Uses [EntitiesCacheService] for O(1) lookups per label, avoiding
@@ -413,6 +554,25 @@ class AiInputRepository {
   /// the canonical implementation of time-spent calculation logic.
   Duration _calculateTimeSpentFromEntities(List<JournalEntity> entities) {
     return TaskProgressRepository.sumTimeSpentFromEntities(entities);
+  }
+
+  int _compareRelatedProjectTasks(Task left, Task right) {
+    final byUpdatedAt = right.meta.updatedAt.compareTo(left.meta.updatedAt);
+    if (byUpdatedAt != 0) {
+      return byUpdatedAt;
+    }
+
+    final byDateFrom = right.meta.dateFrom.compareTo(left.meta.dateFrom);
+    if (byDateFrom != 0) {
+      return byDateFrom;
+    }
+
+    final byCreatedAt = right.meta.createdAt.compareTo(left.meta.createdAt);
+    if (byCreatedAt != 0) {
+      return byCreatedAt;
+    }
+
+    return right.id.compareTo(left.id);
   }
 
   // Legacy `_getLatestSummaryFromEntities` removed — summary resolution

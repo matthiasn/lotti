@@ -246,6 +246,57 @@ class AgentRepository {
     return null;
   }
 
+  /// Batch-fetch the latest current-scope task-agent report for each task in
+  /// [taskIds], keyed by journal task ID.
+  ///
+  /// The task selection path is:
+  /// 1. batch-resolve all `agent_task` links for the task IDs
+  /// 2. pick the primary link per task using the shared canonical ordering
+  /// 3. batch-fetch the current report for those agent IDs
+  ///
+  /// Tasks without an assigned agent or current report are omitted.
+  Future<Map<String, AgentReportEntity>> getLatestTaskReportsForTaskIds(
+    List<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) return {};
+
+    final linksByTaskId = await getLinksToMultiple(
+      taskIds,
+      type: AgentLinkTypes.agentTask,
+    );
+
+    final agentIdsByTaskId = <String, String>{};
+    final agentIds = <String>{};
+
+    for (final entry in linksByTaskId.entries) {
+      final links = entry.value;
+      if (links.isEmpty) {
+        continue;
+      }
+
+      final primaryLink = links.selectPrimary();
+      agentIdsByTaskId[entry.key] = primaryLink.fromId;
+      agentIds.add(primaryLink.fromId);
+    }
+
+    if (agentIds.isEmpty) return {};
+
+    final reportsByAgentId = await getLatestReportsByAgentIds(
+      agentIds.toList(),
+      AgentReportScopes.current,
+    );
+
+    final result = <String, AgentReportEntity>{};
+    for (final entry in agentIdsByTaskId.entries) {
+      final report = reportsByAgentId[entry.value];
+      if (report != null) {
+        result[entry.key] = report;
+      }
+    }
+
+    return result;
+  }
+
   /// Fetch the [AgentReportHeadEntity] for [agentId] in [scope], or `null` if
   /// none exists.
   Future<AgentReportHeadEntity?> getReportHead(

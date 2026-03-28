@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 14 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(14));
+    test('contains exactly 15 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(15));
     });
 
     test('all tools have non-empty name and description', () {
@@ -379,11 +379,41 @@ void main() {
       });
     });
 
+    group('get_related_task_details', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == TaskAgentToolNames.getRelatedTaskDetails,
+        );
+      });
+
+      test('has correct name and description', () {
+        expect(tool.name, equals(TaskAgentToolNames.getRelatedTaskDetails));
+        expect(tool.description, contains('related task'));
+        expect(tool.description, contains('same parent project'));
+      });
+
+      test('requires a string taskId parameter', () {
+        final properties = tool.parameters['properties'] as Map;
+        final taskIdProp = properties['taskId'] as Map;
+        expect(taskIdProp['type'], equals('string'));
+        expect(tool.parameters['required'], contains('taskId'));
+      });
+    });
+
     group('TaskAgentToolNames constants', () {
       test('assignTaskLabel singular alias exists', () {
         expect(
           TaskAgentToolNames.assignTaskLabel,
           equals('assign_task_label'),
+        );
+      });
+
+      test('getRelatedTaskDetails constant exists', () {
+        expect(
+          TaskAgentToolNames.getRelatedTaskDetails,
+          equals('get_related_task_details'),
         );
       });
     });

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -12,7 +13,7 @@ import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 
 /// A small coloured tag displaying a category icon and label.
 class CategoryTag extends StatelessWidget {
@@ -220,6 +221,81 @@ class _ShowcaseMetaTag extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// An outlined pill with an icon and label, used for project metadata (target
+/// date, category, status). Supports an optional `isPlaceholder` style that
+/// uses muted text and an optional `onTap` that wraps the pill in an InkWell.
+class OutlinedMetaTag extends StatelessWidget {
+  const OutlinedMetaTag({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isPlaceholder = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isPlaceholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final textColor = isPlaceholder
+        ? ShowcasePalette.mediumText(context)
+        : ShowcasePalette.lowText(context);
+
+    final child = Container(
+      constraints: BoxConstraints(
+        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        border: Border.all(color: ShowcasePalette.border(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: tokens.typography.size.caption,
+            color: textColor,
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: textColor,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        onTap: onTap,
+        child: child,
       ),
     );
   }
@@ -606,7 +682,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
       return 0;
     }
 
-    final remaining = nextWakeAt.difference(DateTime.now());
+    final remaining = nextWakeAt.difference(clock.now());
     if (remaining <= Duration.zero) {
       return 0;
     }
@@ -706,10 +782,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
     if (!containsTldrSection) {
       // Strip a leading H1 heading (the project title) that the UI already
       // renders, but preserve the rest of the content for the expanded view.
-      final stripped = trimmedContent.replaceFirst(
-        RegExp(r'^\s*# [^\n]+\n+'),
-        '',
-      );
+      final stripped = stripLeadingH1(trimmedContent);
       return stripped.trim().isEmpty ? null : stripped.trim();
     }
 
@@ -719,38 +792,18 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
         : trimmedAdditional;
   }
 
-  Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   Widget _buildLink(
     BuildContext context,
     InlineSpan text,
     String url,
     TextStyle style,
-  ) {
-    final linkColor = ShowcasePalette.teal(context);
-    return Semantics(
-      link: true,
-      child: InkWell(
-        onTap: () => _handleLinkTap(url, ''),
-        mouseCursor: SystemMouseCursors.click,
-        child: Text.rich(
-          TextSpan(
-            children: [text],
-            style: style.copyWith(
-              color: linkColor,
-              decoration: TextDecoration.underline,
-              decorationColor: linkColor,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  ) => buildMarkdownLink(
+    context,
+    text,
+    url,
+    style,
+    linkColor: ShowcasePalette.teal(context),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -871,7 +924,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                     SelectionArea(
                       child: GptMarkdown(
                         parsed.tldr,
-                        onLinkTap: _handleLinkTap,
+                        onLinkTap: handleMarkdownLinkTap,
                         linkBuilder: _buildLink,
                       ),
                     ),
@@ -880,7 +933,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                       SelectionArea(
                         child: GptMarkdown(
                           parsed.additional!,
-                          onLinkTap: _handleLinkTap,
+                          onLinkTap: handleMarkdownLinkTap,
                           linkBuilder: _buildLink,
                         ),
                       ),
@@ -891,7 +944,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                   key: const ValueKey('collapsed-report'),
                   child: GptMarkdown(
                     parsed.tldr,
-                    onLinkTap: _handleLinkTap,
+                    onLinkTap: handleMarkdownLinkTap,
                     linkBuilder: _buildLink,
                   ),
                 ),

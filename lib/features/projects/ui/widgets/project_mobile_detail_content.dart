@@ -212,14 +212,14 @@ class _ProjectMobileHeader extends StatelessWidget {
                     onTap: onCategoryTap,
                   )
                 else if (onCategoryTap != null)
-                  _OutlinedMetaTag(
+                  OutlinedMetaTag(
                     icon: Icons.label_outline,
                     label: context.messages.habitCategoryLabel,
                     onTap: onCategoryTap,
                     isPlaceholder: true,
                   ),
                 if (record.project.data.targetDate case final targetDate?)
-                  _OutlinedMetaTag(
+                  OutlinedMetaTag(
                     icon: Icons.watch_later_outlined,
                     label: DateFormat.yMMMd(
                       Localizations.localeOf(context).toString(),
@@ -227,7 +227,7 @@ class _ProjectMobileHeader extends StatelessWidget {
                     onTap: onTargetDateTap,
                   )
                 else if (onTargetDateTap != null)
-                  _OutlinedMetaTag(
+                  OutlinedMetaTag(
                     icon: Icons.watch_later_outlined,
                     label: context.messages.projectTargetDateLabel,
                     onTap: onTargetDateTap,
@@ -281,74 +281,4 @@ bool _shouldWrapStatusPill(
       tokens.spacing.step3;
 
   return titlePainter.width + tokens.spacing.step4 + statusWidth > maxWidth;
-}
-
-class _OutlinedMetaTag extends StatelessWidget {
-  const _OutlinedMetaTag({
-    required this.icon,
-    required this.label,
-    this.onTap,
-    this.isPlaceholder = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool isPlaceholder;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final textColor = isPlaceholder
-        ? ShowcasePalette.mediumText(context)
-        : ShowcasePalette.lowText(context);
-    final child = Container(
-      constraints: BoxConstraints(
-        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: ShowcasePalette.border(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: tokens.typography.size.caption,
-            color: textColor,
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: textColor,
-                height: 1,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) {
-      return child;
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: child,
-      ),
-    );
-  }
 }

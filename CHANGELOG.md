@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to a project, including the latest project-agent TLDR and full report body
   so task recommendations can align with project-level priorities and
   blockers.
+- Task agents now also receive a bounded directory of related tasks from the
+  same project, using stored sibling task-agent TLDRs plus logged time spent,
+  and can inspect one of those sibling tasks on demand through a new
+  read-only drill-down tool scoped to the current wake context.
 
 ## [0.9.933] - 2026-03-27
 ### Changed

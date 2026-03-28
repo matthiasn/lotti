@@ -39,7 +39,13 @@ stopped again.
   - current report + recent observations
   - parent project context with the latest project-agent `tldr` and full
     report body when the task belongs to a project
+  - related tasks in the same parent project, capped to a lightweight
+    sibling-task directory with stored task-agent `tldr` values only
   - linked task context
+- Task agents also expose a read-only `get_related_task_details` tool for
+  on-demand drill-down into a sibling task that was included in the current
+  related-task directory. The tool is scoped to the current wake's allowlist;
+  it cannot browse arbitrary tasks or other projects.
 - Linked task context for agents is built directly in
   `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
   `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects
@@ -47,8 +53,22 @@ stopped again.
   `agent_task` links + `agentReportHead`).
 - Linked-task `latestSummary` payloads are stripped before prompt submission
   and are not used for Task Agent execution.
+- Related-task directory rows are built in `AiInputRepository` from the
+  current task's parent project, sorted by latest task metadata updates,
+  enriched with batched time-spent totals from `JournalDb.getBulkLinkedEntities`,
+  and filtered to siblings that have a real stored task-agent `tldr`.
 - MTTR chart inputs resolve linked tasks with de-duplicated task fetches to
   avoid repeated journal lookups for shared task links.
+
+```mermaid
+flowchart LR
+  Task["Current task"] --> Wake["TaskAgentWorkflow wake"]
+  Project["Parent project"] --> Wake
+  Siblings["Sibling tasks in same project"] --> Directory["Related-task directory (max 50, stored TLDR only)"]
+  Directory --> Wake
+  Wake --> Drill["get_related_task_details"]
+  Drill --> FullSibling["Full sibling task JSON + latest task-agent report"]
+```
 
 ```mermaid
 flowchart TD

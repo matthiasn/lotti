@@ -1060,6 +1060,118 @@ void main() {
         },
       );
     });
+
+    group('getLatestTaskReportsForTaskIds', () {
+      test('returns empty map when no task ids are requested', () async {
+        final result = await repo.getLatestTaskReportsForTaskIds(const []);
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'returns reports keyed by task id using the primary agent_task link',
+        () async {
+          final timestamp = DateTime(2026, 2, 20, 8);
+
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'task-link-b',
+              fromId: 'task-agent-b',
+              toId: 'task-001',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'task-link-a',
+              fromId: 'task-agent-a',
+              toId: 'task-001',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'task-link-c',
+              fromId: 'task-agent-c',
+              toId: 'task-002',
+              createdAt: timestamp.add(const Duration(minutes: 1)),
+              updatedAt: timestamp.add(const Duration(minutes: 1)),
+              vectorClock: null,
+            ),
+          );
+
+          await repo.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: 'task-report-b',
+              agentId: 'task-agent-b',
+              scope: AgentReportScopes.current,
+              createdAt: timestamp,
+              vectorClock: null,
+              tldr: 'Task B TLDR',
+              content: 'Task B report',
+            ),
+          );
+          await repo.upsertEntity(
+            AgentDomainEntity.agentReport(
+              id: 'task-report-c',
+              agentId: 'task-agent-c',
+              scope: AgentReportScopes.current,
+              createdAt: timestamp.add(const Duration(minutes: 1)),
+              vectorClock: null,
+              tldr: 'Task C TLDR',
+              content: 'Task C report',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'task-head-b',
+              agentId: 'task-agent-b',
+              scope: AgentReportScopes.current,
+              reportId: 'task-report-b',
+            ),
+          );
+          await repo.upsertEntity(
+            makeReportHead(
+              id: 'task-head-c',
+              agentId: 'task-agent-c',
+              scope: AgentReportScopes.current,
+              reportId: 'task-report-c',
+            ),
+          );
+
+          final result = await repo.getLatestTaskReportsForTaskIds([
+            'task-001',
+            'task-002',
+          ]);
+
+          expect(result['task-001']?.agentId, 'task-agent-b');
+          expect(result['task-001']?.id, 'task-report-b');
+          expect(result['task-002']?.agentId, 'task-agent-c');
+          expect(result['task-002']?.id, 'task-report-c');
+        },
+      );
+
+      test('omits tasks whose primary agent has no current report', () async {
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'task-link-1',
+            fromId: 'task-agent-1',
+            toId: 'task-001',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        final result = await repo.getLatestTaskReportsForTaskIds(['task-001']);
+
+        expect(result, isEmpty);
+      });
+    });
   });
 
   group('getAllAgentIdentities', () {

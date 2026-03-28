@@ -71,6 +71,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     required this.executeToolHandler,
     this.changeSetBuilder,
     this.resolveTaskMetadata,
+    this.resolveRelatedTaskDetails,
+    this.allowedRelatedTaskIds = const <String>{},
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -114,6 +116,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// the value it already has).
   final ResolveTaskMetadata? resolveTaskMetadata;
 
+  /// Optional read-only resolver for sibling-task drill-down context.
+  final Future<String?> Function(String requestedTaskId)?
+  resolveRelatedTaskDetails;
+
+  /// Allowlist of sibling task IDs exposed in the current wake payload.
+  final Set<String> allowedRelatedTaskIds;
+
   String? _reportContent;
   String? _reportTldr;
   String? _finalResponse;
@@ -134,6 +143,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Tool name for the observation recording tool.
   static const String observationToolName =
       TaskAgentToolNames.recordObservations;
+
+  /// Tool name for the read-only related-task drill-down tool.
+  static const String relatedTaskDetailsToolName =
+      TaskAgentToolNames.getRelatedTaskDetails;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -183,6 +196,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == observationToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+      if (toolName == relatedTaskDetailsToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleRelatedTaskDetails(args, call.id, manager);
         continue;
       }
 
@@ -408,6 +426,66 @@ class TaskAgentStrategy extends ConversationStrategy {
         errorMessage: errorMsg,
       );
     }
+  }
+
+  /// Handles the read-only related-task drill-down tool.
+  Future<void> _handleRelatedTaskDetails(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final rawTaskId = args['taskId'];
+    final requestedTaskId = rawTaskId is String ? rawTaskId.trim() : '';
+
+    String? errorMessage;
+    if (requestedTaskId.isEmpty) {
+      errorMessage = 'Error: "taskId" must be a non-empty string.';
+    } else if (requestedTaskId == taskId) {
+      errorMessage =
+          'Error: get_related_task_details cannot be used for the current '
+          'task. Choose another task from the related-tasks directory.';
+    } else if (!allowedRelatedTaskIds.contains(requestedTaskId)) {
+      errorMessage =
+          'Error: taskId "$requestedTaskId" is not available in the current '
+          'related-tasks directory. Only inspect sibling task IDs that were '
+          'included in this wake context.';
+    }
+
+    if (errorMessage != null) {
+      manager.addToolResponse(toolCallId: callId, response: errorMessage);
+      await _recordToolResultMessage(
+        toolName: relatedTaskDetailsToolName,
+        errorMessage: errorMessage,
+      );
+      return;
+    }
+
+    final resolver = resolveRelatedTaskDetails;
+    String? response;
+    try {
+      response = resolver != null ? await resolver(requestedTaskId) : null;
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve related task details for $requestedTaskId',
+        name: 'TaskAgentStrategy',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    if (response == null || response.trim().isEmpty) {
+      final toolError =
+          'Error: related task details could not be resolved for '
+          '"$requestedTaskId".';
+      manager.addToolResponse(toolCallId: callId, response: toolError);
+      await _recordToolResultMessage(
+        toolName: relatedTaskDetailsToolName,
+        errorMessage: toolError,
+      );
+      return;
+    }
+
+    manager.addToolResponse(toolCallId: callId, response: response);
+    await _recordToolResultMessage(toolName: relatedTaskDetailsToolName);
   }
 
   /// Parses a single observation item from the tool call arguments.

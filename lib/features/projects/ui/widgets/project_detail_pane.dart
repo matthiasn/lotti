@@ -170,7 +170,7 @@ class _DetailHeader extends StatelessWidget {
                 ),
               if (record.project.data.targetDate case final targetDate?) ...[
                 SizedBox(width: tokens.spacing.step3),
-                _OutlinedMetaTag(
+                OutlinedMetaTag(
                   icon: Icons.calendar_today_outlined,
                   label: DateFormat.yMMMd(
                     Localizations.localeOf(context).toString(),
@@ -179,7 +179,7 @@ class _DetailHeader extends StatelessWidget {
                 ),
               ] else if (onTargetDateTap != null) ...[
                 SizedBox(width: tokens.spacing.step3),
-                _OutlinedMetaTag(
+                OutlinedMetaTag(
                   icon: Icons.calendar_today_outlined,
                   label: context.messages.projectTargetDateLabel,
                   onTap: onTargetDateTap,
@@ -194,67 +194,6 @@ class _DetailHeader extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _OutlinedMetaTag extends StatelessWidget {
-  const _OutlinedMetaTag({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    final child = Container(
-      constraints: BoxConstraints(
-        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: ShowcasePalette.lowText(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: tokens.typography.size.caption,
-            color: ShowcasePalette.lowText(context),
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: ShowcasePalette.lowText(context),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) {
-      return child;
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: child,
       ),
     );
   }

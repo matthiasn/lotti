@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
@@ -224,6 +225,241 @@ void main() {
           ),
         ).called(2);
       });
+
+      test(
+        'handles get_related_task_details locally for allowlisted sibling tasks',
+        () async {
+          final relatedStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(
+                  success: true,
+                  output: 'executor should not run',
+                ),
+            resolveRelatedTaskDetails: (requestedTaskId) async {
+              return '{"task":{"id":"$requestedTaskId"}}';
+            },
+            allowedRelatedTaskIds: const {'task-002'},
+          );
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-related',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.getRelatedTaskDetails,
+                arguments: jsonEncode({'taskId': 'task-002'}),
+              ),
+            ),
+          ];
+
+          await relatedStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-related',
+              response: '{"task":{"id":"task-002"}}',
+            ),
+          ).called(1);
+        },
+      );
+
+      test('rejects get_related_task_details for the current task', () async {
+        final relatedStrategy = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(success: true, output: 'unused'),
+          resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
+          allowedRelatedTaskIds: {taskId},
+        );
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-current',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: TaskAgentToolNames.getRelatedTaskDetails,
+              arguments: jsonEncode({'taskId': taskId}),
+            ),
+          ),
+        ];
+
+        await relatedStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final capturedResponse =
+            verify(
+                  () => mockManager.addToolResponse(
+                    toolCallId: 'call-current',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          capturedResponse,
+          contains('cannot be used for the current task'),
+        );
+      });
+
+      test('rejects get_related_task_details outside the allowlist', () async {
+        final relatedStrategy = TaskAgentStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          taskId: taskId,
+          resolveCategoryId: (_) async => 'cat-001',
+          readVectorClock: (_) async => null,
+          executeToolHandler: (toolName, args, manager) async =>
+              const ToolExecutionResult(success: true, output: 'unused'),
+          resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
+          allowedRelatedTaskIds: const {'task-002'},
+        );
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-outside',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: TaskAgentToolNames.getRelatedTaskDetails,
+              arguments: jsonEncode({'taskId': 'task-999'}),
+            ),
+          ),
+        ];
+
+        await relatedStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final capturedResponse =
+            verify(
+                  () => mockManager.addToolResponse(
+                    toolCallId: 'call-outside',
+                    response: captureAny(named: 'response'),
+                  ),
+                ).captured.single
+                as String;
+        expect(capturedResponse, contains('not available in the current'));
+      });
+
+      test(
+        'returns tool error when related-task resolver returns null',
+        () async {
+          final relatedStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            resolveRelatedTaskDetails: (_) async => null,
+            allowedRelatedTaskIds: const {'task-002'},
+          );
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-null',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.getRelatedTaskDetails,
+                arguments: jsonEncode({'taskId': 'task-002'}),
+              ),
+            ),
+          ];
+
+          await relatedStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final capturedResponse =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-null',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(capturedResponse, contains('could not be resolved'));
+        },
+      );
+
+      test(
+        'returns tool error when related-task resolver throws',
+        () async {
+          final throwingStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            resolveRelatedTaskDetails: (_) async =>
+                throw Exception('DB connection lost'),
+            allowedRelatedTaskIds: const {'task-002'},
+          );
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-throw',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.getRelatedTaskDetails,
+                arguments: jsonEncode({'taskId': 'task-002'}),
+              ),
+            ),
+          ];
+
+          await throwingStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final capturedResponse =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-throw',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(capturedResponse, contains('could not be resolved'));
+        },
+      );
 
       test('records error and continues on invalid JSON arguments', () async {
         final toolCalls = [
