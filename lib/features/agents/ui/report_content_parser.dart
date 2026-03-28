@@ -5,7 +5,7 @@
 ({String tldr, String? additional}) parseReportContent(String content) {
   if (content.isEmpty) return (tldr: '', additional: null);
 
-  final normalizedContent = _stripLeadingH1(content);
+  final normalizedContent = stripLeadingH1(content);
 
   // Try to find the TLDR section heading: ## 📋 TLDR
   final tldrHeadingRegex = RegExp(
@@ -59,7 +59,11 @@
   return (tldr: tldr, additional: additional);
 }
 
-String _stripLeadingH1(String content) {
+/// Removes a leading `# …` H1 heading line from Markdown content.
+///
+/// Useful when the UI already renders the project/task title, so the H1 inside
+/// the report body would be redundant.
+String stripLeadingH1(String content) {
   final leadingHeadingRegex = RegExp(r'^\s*# [^\n]+\n+');
   final match = leadingHeadingRegex.firstMatch(content);
   if (match == null) {

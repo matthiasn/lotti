@@ -225,6 +225,81 @@ class _ShowcaseMetaTag extends StatelessWidget {
   }
 }
 
+/// An outlined pill with an icon and label, used for project metadata (target
+/// date, category, status). Supports an optional `isPlaceholder` style that
+/// uses muted text and an optional `onTap` that wraps the pill in an InkWell.
+class OutlinedMetaTag extends StatelessWidget {
+  const OutlinedMetaTag({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isPlaceholder = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isPlaceholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final textColor = isPlaceholder
+        ? ShowcasePalette.mediumText(context)
+        : ShowcasePalette.lowText(context);
+
+    final child = Container(
+      constraints: BoxConstraints(
+        minHeight: tokens.spacing.step5 + tokens.spacing.step1,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        border: Border.all(color: ShowcasePalette.border(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: tokens.typography.size.caption,
+            color: textColor,
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: textColor,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        onTap: onTap,
+        child: child,
+      ),
+    );
+  }
+}
+
 /// A compact status icon + label used in the project list row.
 class ProjectStatusLabel extends StatelessWidget {
   const ProjectStatusLabel({required this.status, super.key});
@@ -706,10 +781,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
     if (!containsTldrSection) {
       // Strip a leading H1 heading (the project title) that the UI already
       // renders, but preserve the rest of the content for the expanded view.
-      final stripped = trimmedContent.replaceFirst(
-        RegExp(r'^\s*# [^\n]+\n+'),
-        '',
-      );
+      final stripped = stripLeadingH1(trimmedContent);
       return stripped.trim().isEmpty ? null : stripped.trim();
     }
 

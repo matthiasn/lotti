@@ -110,6 +110,8 @@ void main() {
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(FakeId());
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(<String>{});
     registerFallbackValue(<String, TimeRange>{});
     registerFallbackValue(Duration.zero);
     registerFallbackValue(
@@ -201,8 +203,17 @@ void main() {
         () => mockProjectRepository.getProjectForTask(any()),
       ).thenAnswer((_) async => null);
       when(
+        () => mockProjectRepository.getTasksForProject(any()),
+      ).thenAnswer((_) async => <Task>[]);
+      when(
         () => mockAgentRepository.getLatestProjectReportForProjectId(any()),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+      ).thenAnswer((_) async => <String, AgentReportEntity>{});
+      when(
+        () => mockDb.getBulkLinkedEntities(any()),
+      ).thenAnswer((_) async => <String, List<JournalEntity>>{});
     });
 
     tearDown(() {
@@ -367,6 +378,656 @@ void main() {
         );
 
         expect(result, '{}');
+      });
+    });
+
+    group('buildRelatedProjectTasksJson', () {
+      final projectDate = DateTime(2024, 3, 15, 10, 30);
+      final project =
+          JournalEntity.project(
+                meta: Metadata(
+                  id: 'project-123',
+                  createdAt: projectDate,
+                  updatedAt: projectDate,
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+                data: ProjectData(
+                  title: 'Agentic Architecture',
+                  status: ProjectStatus.active(
+                    id: 'project-status-1',
+                    createdAt: projectDate,
+                    utcOffset: 60,
+                  ),
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+              )
+              as ProjectEntry;
+
+      Task makeTask({
+        required String id,
+        required String title,
+        required DateTime updatedAt,
+      }) {
+        return JournalEntity.task(
+              meta: Metadata(
+                id: id,
+                createdAt: projectDate,
+                updatedAt: updatedAt,
+                dateFrom: projectDate,
+                dateTo: projectDate,
+              ),
+              data: TaskData(
+                title: title,
+                status: TaskStatus.inProgress(
+                  id: 'status-$id',
+                  createdAt: updatedAt,
+                  utcOffset: 0,
+                ),
+                statusHistory: const [],
+                dateFrom: projectDate,
+                dateTo: projectDate,
+              ),
+            )
+            as Task;
+      }
+
+      test(
+        'returns bounded sibling rows with stored tldrs and derived time spent',
+        () async {
+          final currentTask = makeTask(
+            id: taskId,
+            title: 'Current Task',
+            updatedAt: DateTime(2024, 3, 16, 8),
+          );
+          final siblingOlder = makeTask(
+            id: 'task-older',
+            title: 'Older Sibling',
+            updatedAt: DateTime(2024, 3, 16, 9),
+          );
+          final siblingNewer = makeTask(
+            id: 'task-newer',
+            title: 'Newer Sibling',
+            updatedAt: DateTime(2024, 3, 16, 10),
+          );
+          final siblingWithoutTldr = makeTask(
+            id: 'task-no-tldr',
+            title: 'No TLDR',
+            updatedAt: DateTime(2024, 3, 16, 11),
+          );
+
+          when(
+            () => mockProjectRepository.getProjectForTask(taskId),
+          ).thenAnswer((_) async => project);
+          when(
+            () => mockProjectRepository.getTasksForProject('project-123'),
+          ).thenAnswer(
+            (_) async => [
+              currentTask,
+              siblingOlder,
+              siblingNewer,
+              siblingWithoutTldr,
+            ],
+          );
+          when(
+            () => mockDb.getBulkLinkedEntities(any()),
+          ).thenAnswer(
+            (_) async => <String, List<JournalEntity>>{
+              'task-older': [
+                JournalEntity.journalEntry(
+                  meta: Metadata(
+                    id: 'entry-older',
+                    createdAt: projectDate,
+                    updatedAt: projectDate,
+                    dateFrom: projectDate,
+                    dateTo: projectDate.add(const Duration(minutes: 15)),
+                  ),
+                  entryText: const EntryText(plainText: 'Older work'),
+                ),
+              ],
+              'task-newer': [
+                JournalEntity.journalEntry(
+                  meta: Metadata(
+                    id: 'entry-newer',
+                    createdAt: projectDate,
+                    updatedAt: projectDate,
+                    dateFrom: projectDate,
+                    dateTo: projectDate.add(const Duration(minutes: 30)),
+                  ),
+                  entryText: const EntryText(plainText: 'Newer work'),
+                ),
+              ],
+            },
+          );
+          when(
+            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+          ).thenAnswer(
+            (_) async => <String, AgentReportEntity>{
+              'task-older':
+                  AgentDomainEntity.agentReport(
+                        id: 'report-older',
+                        agentId: 'agent-older',
+                        scope: 'current',
+                        createdAt: projectDate,
+                        vectorClock: null,
+                        tldr: 'Older sibling TLDR',
+                        content: 'Older sibling report',
+                      )
+                      as AgentReportEntity,
+              'task-newer':
+                  AgentDomainEntity.agentReport(
+                        id: 'report-newer',
+                        agentId: 'agent-newer',
+                        scope: 'current',
+                        createdAt: projectDate,
+                        vectorClock: null,
+                        tldr: 'Newer sibling TLDR',
+                        content: 'Newer sibling report',
+                      )
+                      as AgentReportEntity,
+              'task-no-tldr':
+                  AgentDomainEntity.agentReport(
+                        id: 'report-no-tldr',
+                        agentId: 'agent-no-tldr',
+                        scope: 'current',
+                        createdAt: projectDate,
+                        vectorClock: null,
+                        content: 'Missing TLDR should be omitted',
+                      )
+                      as AgentReportEntity,
+            },
+          );
+
+          final result = await repository.buildRelatedProjectTasksJson(
+            taskId: taskId,
+            limit: 2,
+          );
+          final decoded = jsonDecode(result) as Map<String, dynamic>;
+          final tasks = decoded['tasks'] as List<dynamic>;
+
+          expect(decoded['projectId'], 'project-123');
+          expect(tasks, hasLength(2));
+          expect(tasks[0], containsPair('id', 'task-newer'));
+          expect(tasks[0], containsPair('timeSpent', '00:30'));
+          expect(tasks[0], containsPair('tldr', 'Newer sibling TLDR'));
+          expect(tasks[1], containsPair('id', 'task-older'));
+          expect(tasks[1], containsPair('timeSpent', '00:15'));
+          expect(
+            tasks.where((row) => (row as Map<String, dynamic>)['id'] == taskId),
+            isEmpty,
+          );
+        },
+      );
+
+      test('returns empty object when no sibling has a stored tldr', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockProjectRepository.getTasksForProject('project-123'),
+        ).thenAnswer(
+          (_) async => [
+            makeTask(
+              id: taskId,
+              title: 'Current Task',
+              updatedAt: DateTime(2024, 3, 16, 8),
+            ),
+            makeTask(
+              id: 'task-sibling',
+              title: 'Sibling',
+              updatedAt: DateTime(2024, 3, 16, 9),
+            ),
+          ],
+        );
+        when(
+          () => mockDb.getBulkLinkedEntities(any()),
+        ).thenAnswer((_) async => <String, List<JournalEntity>>{});
+        when(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+        ).thenAnswer(
+          (_) async => <String, AgentReportEntity>{
+            'task-sibling':
+                AgentDomainEntity.agentReport(
+                      id: 'report-sibling',
+                      agentId: 'agent-sibling',
+                      scope: 'current',
+                      createdAt: projectDate,
+                      vectorClock: null,
+                      content: 'No tldr field',
+                    )
+                    as AgentReportEntity,
+          },
+        );
+
+        final result = await repository.buildRelatedProjectTasksJson(
+          taskId: taskId,
+        );
+
+        expect(result, '{}');
+      });
+
+      test('returns empty object when sibling-task lookup throws', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenThrow(Exception('boom'));
+
+        final result = await repository.buildRelatedProjectTasksJson(
+          taskId: taskId,
+        );
+
+        expect(result, '{}');
+      });
+
+      test('orders siblings by dateFrom when updatedAt ties', () async {
+        Task makeTask({
+          required String id,
+          required String title,
+          required DateTime updatedAt,
+          required DateTime dateFrom,
+        }) {
+          return JournalEntity.task(
+                meta: Metadata(
+                  id: id,
+                  createdAt: DateTime(2024, 3, 15, 8),
+                  updatedAt: updatedAt,
+                  dateFrom: dateFrom,
+                  dateTo: dateFrom,
+                ),
+                data: TaskData(
+                  title: title,
+                  status: TaskStatus.open(
+                    id: 'status-$id',
+                    createdAt: updatedAt,
+                    utcOffset: 0,
+                  ),
+                  statusHistory: const [],
+                  dateFrom: dateFrom,
+                  dateTo: dateFrom,
+                ),
+              )
+              as Task;
+        }
+
+        final project =
+            JournalEntity.project(
+                  meta: Metadata(
+                    id: 'project-123',
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                    dateFrom: DateTime(2024, 3, 15),
+                    dateTo: DateTime(2024, 3, 15),
+                  ),
+                  data: ProjectData(
+                    title: 'Project',
+                    status: ProjectStatus.active(
+                      id: 'project-status',
+                      createdAt: DateTime(2024, 3, 15),
+                      utcOffset: 60,
+                    ),
+                    dateFrom: DateTime(2024, 3, 15),
+                    dateTo: DateTime(2024, 3, 15),
+                  ),
+                )
+                as ProjectEntry;
+
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockProjectRepository.getTasksForProject('project-123'),
+        ).thenAnswer(
+          (_) async => [
+            makeTask(
+              id: taskId,
+              title: 'Current',
+              updatedAt: DateTime(2024, 3, 16, 9),
+              dateFrom: DateTime(2024, 3, 16, 9),
+            ),
+            makeTask(
+              id: 'task-late-date',
+              title: 'Late Date',
+              updatedAt: DateTime(2024, 3, 16, 12),
+              dateFrom: DateTime(2024, 3, 16, 12),
+            ),
+            makeTask(
+              id: 'task-early-date',
+              title: 'Early Date',
+              updatedAt: DateTime(2024, 3, 16, 12),
+              dateFrom: DateTime(2024, 3, 16, 10),
+            ),
+          ],
+        );
+        when(
+          () => mockDb.getBulkLinkedEntities(any()),
+        ).thenAnswer((_) async => <String, List<JournalEntity>>{});
+        when(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+        ).thenAnswer(
+          (_) async => <String, AgentReportEntity>{
+            'task-late-date':
+                AgentDomainEntity.agentReport(
+                      id: 'report-late-date',
+                      agentId: 'agent-late-date',
+                      scope: 'current',
+                      createdAt: DateTime(2024, 3, 16, 12),
+                      vectorClock: null,
+                      tldr: 'Late Date TLDR',
+                      content: 'Late Date report',
+                    )
+                    as AgentReportEntity,
+            'task-early-date':
+                AgentDomainEntity.agentReport(
+                      id: 'report-early-date',
+                      agentId: 'agent-early-date',
+                      scope: 'current',
+                      createdAt: DateTime(2024, 3, 16, 12),
+                      vectorClock: null,
+                      tldr: 'Early Date TLDR',
+                      content: 'Early Date report',
+                    )
+                    as AgentReportEntity,
+          },
+        );
+
+        final result = await repository.buildRelatedProjectTasksJson(
+          taskId: taskId,
+        );
+        final tasks =
+            (jsonDecode(result) as Map<String, dynamic>)['tasks'] as List;
+
+        expect((tasks[0] as Map<String, dynamic>)['id'], 'task-late-date');
+        expect((tasks[1] as Map<String, dynamic>)['id'], 'task-early-date');
+      });
+
+      test(
+        'orders siblings by createdAt then id when updatedAt/dateFrom tie',
+        () async {
+          Task makeTask({
+            required String id,
+            required String title,
+            required DateTime createdAt,
+          }) {
+            final sharedUpdatedAt = DateTime(2024, 3, 16, 12);
+            final sharedDateFrom = DateTime(2024, 3, 16, 10);
+            return JournalEntity.task(
+                  meta: Metadata(
+                    id: id,
+                    createdAt: createdAt,
+                    updatedAt: sharedUpdatedAt,
+                    dateFrom: sharedDateFrom,
+                    dateTo: sharedDateFrom,
+                  ),
+                  data: TaskData(
+                    title: title,
+                    status: TaskStatus.open(
+                      id: 'status-$id',
+                      createdAt: sharedUpdatedAt,
+                      utcOffset: 0,
+                    ),
+                    statusHistory: const [],
+                    dateFrom: sharedDateFrom,
+                    dateTo: sharedDateFrom,
+                  ),
+                )
+                as Task;
+          }
+
+          final project =
+              JournalEntity.project(
+                    meta: Metadata(
+                      id: 'project-123',
+                      createdAt: DateTime(2024, 3, 15),
+                      updatedAt: DateTime(2024, 3, 15),
+                      dateFrom: DateTime(2024, 3, 15),
+                      dateTo: DateTime(2024, 3, 15),
+                    ),
+                    data: ProjectData(
+                      title: 'Project',
+                      status: ProjectStatus.active(
+                        id: 'project-status',
+                        createdAt: DateTime(2024, 3, 15),
+                        utcOffset: 60,
+                      ),
+                      dateFrom: DateTime(2024, 3, 15),
+                      dateTo: DateTime(2024, 3, 15),
+                    ),
+                  )
+                  as ProjectEntry;
+
+          when(
+            () => mockProjectRepository.getProjectForTask(taskId),
+          ).thenAnswer((_) async => project);
+          when(
+            () => mockProjectRepository.getTasksForProject('project-123'),
+          ).thenAnswer(
+            (_) async => [
+              makeTask(
+                id: taskId,
+                title: 'Current',
+                createdAt: DateTime(2024, 3, 15, 8),
+              ),
+              makeTask(
+                id: 'task-new-created',
+                title: 'New Created',
+                createdAt: DateTime(2024, 3, 15, 11),
+              ),
+              makeTask(
+                id: 'task-old-created',
+                title: 'Old Created',
+                createdAt: DateTime(2024, 3, 15, 9),
+              ),
+              makeTask(
+                id: 'task-id-b',
+                title: 'ID B',
+                createdAt: DateTime(2024, 3, 15, 7),
+              ),
+              makeTask(
+                id: 'task-id-a',
+                title: 'ID A',
+                createdAt: DateTime(2024, 3, 15, 7),
+              ),
+            ],
+          );
+          when(
+            () => mockDb.getBulkLinkedEntities(any()),
+          ).thenAnswer((_) async => <String, List<JournalEntity>>{});
+          when(
+            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+          ).thenAnswer(
+            (_) async => <String, AgentReportEntity>{
+              for (final id in [
+                'task-new-created',
+                'task-old-created',
+                'task-id-b',
+                'task-id-a',
+              ])
+                id:
+                    AgentDomainEntity.agentReport(
+                          id: 'report-$id',
+                          agentId: 'agent-$id',
+                          scope: 'current',
+                          createdAt: DateTime(2024, 3, 16, 12),
+                          vectorClock: null,
+                          tldr: '$id TLDR',
+                          content: '$id report',
+                        )
+                        as AgentReportEntity,
+            },
+          );
+
+          final result = await repository.buildRelatedProjectTasksJson(
+            taskId: taskId,
+          );
+          final tasks =
+              (jsonDecode(result) as Map<String, dynamic>)['tasks'] as List;
+          final ids = tasks
+              .map((task) => (task as Map<String, dynamic>)['id'] as String)
+              .toList();
+
+          expect(
+            ids,
+            containsAllInOrder([
+              'task-new-created',
+              'task-old-created',
+              'task-id-b',
+              'task-id-a',
+            ]),
+          );
+        },
+      );
+    });
+
+    group('buildRelatedTaskDetailsJson', () {
+      final projectDate = DateTime(2024, 3, 15, 10, 30);
+      final sharedProject =
+          JournalEntity.project(
+                meta: Metadata(
+                  id: 'project-123',
+                  createdAt: projectDate,
+                  updatedAt: projectDate,
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+                data: ProjectData(
+                  title: 'Agentic Architecture',
+                  status: ProjectStatus.active(
+                    id: 'project-status-1',
+                    createdAt: projectDate,
+                    utcOffset: 60,
+                  ),
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+              )
+              as ProjectEntry;
+      final otherProject =
+          JournalEntity.project(
+                meta: Metadata(
+                  id: 'project-999',
+                  createdAt: projectDate,
+                  updatedAt: projectDate,
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+                data: ProjectData(
+                  title: 'Other Project',
+                  status: ProjectStatus.active(
+                    id: 'project-status-2',
+                    createdAt: projectDate,
+                    utcOffset: 60,
+                  ),
+                  dateFrom: projectDate,
+                  dateTo: projectDate,
+                ),
+              )
+              as ProjectEntry;
+
+      test(
+        'returns task payload, latest report, and project context',
+        () async {
+          final siblingTask =
+              JournalEntity.task(
+                    meta: Metadata(
+                      id: 'task-sibling',
+                      createdAt: projectDate,
+                      updatedAt: projectDate,
+                      dateFrom: projectDate,
+                      dateTo: projectDate,
+                    ),
+                    data: TaskData(
+                      title: 'Sibling Task',
+                      status: TaskStatus.open(
+                        id: 'status-sibling',
+                        createdAt: projectDate,
+                        utcOffset: 0,
+                      ),
+                      statusHistory: const [],
+                      dateFrom: projectDate,
+                      dateTo: projectDate,
+                    ),
+                  )
+                  as Task;
+
+          when(
+            () => mockProjectRepository.getProjectForTask(taskId),
+          ).thenAnswer((_) async => sharedProject);
+          when(
+            () => mockProjectRepository.getProjectForTask('task-sibling'),
+          ).thenAnswer((_) async => sharedProject);
+          when(
+            () => mockDb.journalEntityById('task-sibling'),
+          ).thenAnswer((_) async => siblingTask);
+          when(
+            () => mockDb.getLinkedEntities('task-sibling'),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+          when(
+            () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+          ).thenAnswer(
+            (_) async => <String, AgentReportEntity>{
+              'task-sibling':
+                  AgentDomainEntity.agentReport(
+                        id: 'report-sibling',
+                        agentId: 'agent-sibling',
+                        scope: 'current',
+                        createdAt: projectDate,
+                        vectorClock: null,
+                        tldr: 'Sibling TLDR',
+                        content: '## Sibling Report\nFull details.',
+                      )
+                      as AgentReportEntity,
+            },
+          );
+
+          final result = await repository.buildRelatedTaskDetailsJson(
+            currentTaskId: taskId,
+            requestedTaskId: 'task-sibling',
+          );
+          final decoded = jsonDecode(result!) as Map<String, dynamic>;
+
+          expect(decoded['task'], containsPair('title', 'Sibling Task'));
+          expect(
+            decoded['latestTaskAgentReport'],
+            containsPair('tldr', 'Sibling TLDR'),
+          );
+          expect(
+            decoded['latestTaskAgentReport'],
+            containsPair('content', '## Sibling Report\nFull details.'),
+          );
+          expect(
+            decoded['projectContext'],
+            containsPair('projectTitle', 'Agentic Architecture'),
+          );
+        },
+      );
+
+      test('returns null when requested task is outside the project', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => sharedProject);
+        when(
+          () => mockProjectRepository.getProjectForTask('task-sibling'),
+        ).thenAnswer((_) async => otherProject);
+
+        final result = await repository.buildRelatedTaskDetailsJson(
+          currentTaskId: taskId,
+          requestedTaskId: 'task-sibling',
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when related-task resolution throws', () async {
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenThrow(Exception('boom'));
+
+        final result = await repository.buildRelatedTaskDetailsJson(
+          currentTaskId: taskId,
+          requestedTaskId: 'task-sibling',
+        );
+
+        expect(result, isNull);
       });
     });
 

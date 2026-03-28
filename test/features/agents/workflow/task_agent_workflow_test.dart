@@ -280,6 +280,12 @@ void main() {
     when(
       () => mockAiInputRepository.buildProjectContextJsonForTask(any()),
     ).thenAnswer((_) async => '{}');
+    when(
+      () => mockAiInputRepository.buildRelatedProjectTasksJson(
+        taskId: any(named: 'taskId'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => '{}');
 
     // Default template stubs — tests that need different behavior override.
     when(
@@ -632,6 +638,10 @@ void main() {
           capturedSystemMessage,
           contains('## Parent Project Context'),
         );
+        expect(
+          capturedSystemMessage,
+          contains('## Related Tasks In This Project'),
+        );
         // Template directives appended.
         expect(
           capturedSystemMessage,
@@ -686,6 +696,10 @@ void main() {
           expect(
             capturedSystemMessage,
             contains('## Parent Project Context'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('## Related Tasks In This Project'),
           );
           // General directive injected.
           expect(
@@ -753,6 +767,10 @@ void main() {
           expect(
             capturedSystemMessage,
             contains('## Parent Project Context'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('## Related Tasks In This Project'),
           );
           // General directive present.
           expect(capturedSystemMessage, contains('Be concise.'));
@@ -1780,6 +1798,52 @@ void main() {
           expect(result.success, isTrue);
         },
       );
+
+      test(
+        'get_related_task_details delegates to aiInputRepository for allowlisted siblings',
+        () async {
+          when(
+            () => mockAiInputRepository.buildRelatedProjectTasksJson(
+              taskId: taskId,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => jsonEncode({
+              'projectId': 'project-1',
+              'tasks': [
+                {
+                  'id': 'task-sibling',
+                  'title': 'Sibling Task',
+                  'status': 'OPEN',
+                  'timeSpent': '00:10',
+                  'tldr': 'Sibling TLDR',
+                },
+              ],
+            }),
+          );
+          when(
+            () => mockAiInputRepository.buildRelatedTaskDetailsJson(
+              currentTaskId: taskId,
+              requestedTaskId: 'task-sibling',
+            ),
+          ).thenAnswer(
+            (_) async => '{"task":{"id":"task-sibling"}}',
+          );
+
+          final result = await executeWithToolCall(
+            'get_related_task_details',
+            '{"taskId":"task-sibling"}',
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockAiInputRepository.buildRelatedTaskDetailsJson(
+              currentTaskId: taskId,
+              requestedTaskId: 'task-sibling',
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('_buildUserMessage context', () {
@@ -1789,6 +1853,7 @@ void main() {
         AgentReportEntity? lastReport,
         List<AgentMessageEntity> observations = const [],
         String projectContextJson = '{}',
+        String relatedProjectTasksJson = '{}',
         String linkedTasksJson = '{}',
         Set<String> triggerTokens = const {},
         bool throwOnLinkedContextBuild = false,
@@ -1841,6 +1906,12 @@ void main() {
         when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async => projectContextJson);
+        when(
+          () => mockAiInputRepository.buildRelatedProjectTasksJson(
+            taskId: taskId,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => relatedProjectTasksJson);
         if (throwOnLinkedContextBuild) {
           when(
             () => mockAiInputRepository.buildLinkedFromContext(taskId),
@@ -1932,6 +2003,31 @@ void main() {
           expect(message, contains('Parent Project'));
           expect(message, contains('Project TLDR'));
           expect(message, contains('Full project report body.'));
+        },
+      );
+
+      test(
+        'includes related-task directory when sibling tasks are available',
+        () async {
+          final message = await executeAndCaptureMessage(
+            relatedProjectTasksJson: jsonEncode({
+              'projectId': 'project-1',
+              'tasks': [
+                {
+                  'id': 'task-2',
+                  'title': 'Replay Queue',
+                  'status': 'IN PROGRESS',
+                  'timeSpent': '00:45',
+                  'tldr': 'Investigating offline replay failures.',
+                },
+              ],
+            }),
+          );
+
+          expect(message, isNotNull);
+          expect(message, contains('## Related Tasks In This Project'));
+          expect(message, contains('Replay Queue'));
+          expect(message, contains('Investigating offline replay failures.'));
         },
       );
 
@@ -2162,6 +2258,13 @@ void main() {
 
         expect(message, isNotNull);
         expect(message, isNot(contains('## Parent Project Context')));
+      });
+
+      test('omits related tasks section when empty', () async {
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, isNot(contains('## Related Tasks In This Project')));
       });
 
       test('includes trigger tokens when non-empty', () async {

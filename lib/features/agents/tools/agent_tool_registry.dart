@@ -37,6 +37,7 @@ abstract final class TaskAgentToolNames {
   static const assignTaskLabels = 'assign_task_labels';
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
+  static const getRelatedTaskDetails = 'get_related_task_details';
 
   // Task splitting tools.
   static const createFollowUpTask = 'create_follow_up_task';
@@ -375,6 +376,26 @@ class AgentToolRegistry {
           },
         },
         'required': ['startTime', 'summary'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.getRelatedTaskDetails,
+      description:
+          'Fetch full details for one related task in the same parent '
+          'project. Use only when a task from the related-tasks directory is '
+          'directly relevant to the current task. Use sparingly.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'taskId': {
+            'type': 'string',
+            'description':
+                "The ID of a task listed in the current wake's related-tasks "
+                'directory.',
+          },
+        },
+        'required': ['taskId'],
         'additionalProperties': false,
       },
     ),

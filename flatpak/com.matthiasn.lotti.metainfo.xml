@@ -39,6 +39,7 @@
           <p>Projects visual polish: grouped project rows, progress rings, and project-task rows now match the linked Figma spacing more closely, with progress colors driven by completion level and the mobile detail title reduced to the intended heading size.</p>
           <p>Projects tab search: the live top-level Projects page now supports local substring search over the grouped list, and the shared design-system search field keeps typed text stable across rebuilds while centering the search text correctly on mobile and desktop surfaces.</p>
           <p>Task agents now receive parent-project context on wake when a task belongs to a project, including the latest project-agent TLDR and full report body so task recommendations can align with project-level priorities and blockers.</p>
+          <p>Task agents now also receive a bounded directory of related tasks from the same project, using stored sibling task-agent TLDRs plus logged time spent, and can inspect one of those sibling tasks on demand through a new read-only drill-down tool scoped to the current wake context.</p>
       </description>
     </release>
     <release version="0.9.933" date="2026-03-27">
