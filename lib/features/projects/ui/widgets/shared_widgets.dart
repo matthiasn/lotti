@@ -713,7 +713,13 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
         ).hasMatch(trimmedContent) ||
         RegExp(r'^\*\*TLDR:\*\*', multiLine: true).hasMatch(trimmedContent);
     if (!containsTldrSection) {
-      return trimmedContent;
+      // Strip a leading H1 heading (the project title) that the UI already
+      // renders, but preserve the rest of the content for the expanded view.
+      final stripped = trimmedContent.replaceFirst(
+        RegExp(r'^\s*# [^\n]+\n+'),
+        '',
+      );
+      return stripped.trim().isEmpty ? null : stripped.trim();
     }
 
     final trimmedAdditional = parsedAdditional?.trim();

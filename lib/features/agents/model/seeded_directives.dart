@@ -57,6 +57,13 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'internal task IDs or hashes as link targets. Only include real '
         'external URLs (GitHub, docs, etc.).',
   ),
+  SeedDirectiveChange(
+    date: '2026-03-28',
+    kind: AgentTemplateKind.projectAgent,
+    description:
+        'Project report formatting: do not add a separate markdown headline '
+        'or repeat the project title as a heading; the UI renders the title.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────

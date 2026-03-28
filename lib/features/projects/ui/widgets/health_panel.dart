@@ -225,7 +225,7 @@ class _LegendItem extends StatelessWidget {
           height: tokens.spacing.step2 + tokens.spacing.step1,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        SizedBox(width: tokens.spacing.step1 + 1),
+        SizedBox(width: tokens.spacing.step2),
         Text(
           label,
           style: tokens.typography.styles.others.caption.copyWith(

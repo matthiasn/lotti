@@ -478,7 +478,10 @@ Longer report content.
             body: 'TLDR only.',
             fullContent: 'TLDR only.',
             recommendations: const [],
-            nextWakeAt: DateTime.now().add(const Duration(minutes: 2)),
+            // Must be in the future relative to DateTime.now() because
+            // _remainingSeconds() computes against the real clock.
+            // ignore: avoid_redundant_argument_values
+            nextWakeAt: DateTime(2099, 1, 1),
             onRefresh: () {},
           ),
         ),

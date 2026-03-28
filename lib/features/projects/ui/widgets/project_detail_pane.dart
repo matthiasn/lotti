@@ -88,7 +88,9 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
                     SizedBox(height: tokens.spacing.step5),
                     ExpandableReportSection(
                       title: context.messages.projectShowcaseAiReportTitle,
-                      body: widget.record.aiSummary.isEmpty
+                      body:
+                          widget.record.aiSummary.isEmpty &&
+                              widget.record.reportContent.isEmpty
                           ? context.messages.agentReportNone
                           : widget.record.aiSummary,
                       fullContent: widget.record.reportContent,
@@ -173,6 +175,13 @@ class _DetailHeader extends StatelessWidget {
                   label: DateFormat.yMMMd(
                     Localizations.localeOf(context).toString(),
                   ).format(targetDate),
+                  onTap: onTargetDateTap,
+                ),
+              ] else if (onTargetDateTap != null) ...[
+                SizedBox(width: tokens.spacing.step3),
+                _OutlinedMetaTag(
+                  icon: Icons.calendar_today_outlined,
+                  label: context.messages.projectTargetDateLabel,
                   onTap: onTargetDateTap,
                 ),
               ],

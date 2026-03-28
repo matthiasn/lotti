@@ -123,7 +123,10 @@ void main() {
       ) async {
         final record = makeTestProjectRecord(
           reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-          reportNextWakeAt: DateTime.now().add(const Duration(minutes: 2)),
+          // Must be in the future relative to DateTime.now() because the
+          // widget's _remainingSeconds() computes against the real clock.
+          // ignore: avoid_redundant_argument_values
+          reportNextWakeAt: DateTime(2099, 1, 1),
         );
 
         await tester.pumpWidget(

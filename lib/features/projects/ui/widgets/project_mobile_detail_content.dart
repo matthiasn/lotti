@@ -99,7 +99,9 @@ class _ProjectMobileDetailContentState
                     SizedBox(height: tokens.spacing.step6),
                     ExpandableReportSection(
                       title: context.messages.projectShowcaseAiReportTitle,
-                      body: widget.record.aiSummary.isEmpty
+                      body:
+                          widget.record.aiSummary.isEmpty &&
+                              widget.record.reportContent.isEmpty
                           ? context.messages.agentReportNone
                           : widget.record.aiSummary,
                       fullContent: widget.record.reportContent,
@@ -208,6 +210,13 @@ class _ProjectMobileHeader extends StatelessWidget {
                       category.color ?? defaultCategoryColorHex,
                     ),
                     onTap: onCategoryTap,
+                  )
+                else if (onCategoryTap != null)
+                  _OutlinedMetaTag(
+                    icon: Icons.label_outline,
+                    label: context.messages.habitCategoryLabel,
+                    onTap: onCategoryTap,
+                    isPlaceholder: true,
                   ),
                 if (record.project.data.targetDate case final targetDate?)
                   _OutlinedMetaTag(
