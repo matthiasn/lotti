@@ -6,8 +6,8 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
-import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';

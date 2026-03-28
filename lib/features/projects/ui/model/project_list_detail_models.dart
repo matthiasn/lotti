@@ -115,7 +115,9 @@ class ProjectListData {
   ProjectsOverviewSnapshot get overviewSnapshot {
     final recordsByCategory = <String, List<ProjectRecord>>{};
     for (final record in projects) {
-      (recordsByCategory[record.category.id] ??= <ProjectRecord>[]).add(record);
+      final categoryId = record.category?.id;
+      if (categoryId == null) continue;
+      (recordsByCategory[categoryId] ??= <ProjectRecord>[]).add(record);
     }
 
     return ProjectsOverviewSnapshot(

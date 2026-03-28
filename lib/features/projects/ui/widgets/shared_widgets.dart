@@ -808,10 +808,10 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                         padding: EdgeInsets.only(right: tokens.spacing.step2),
                         child: Tooltip(
                           message: context.messages.taskAgentCountdownTooltip(
-                            _formatCountdown(_countdownSeconds),
+                            formatCountdown(_countdownSeconds),
                           ),
                           child: ShowcaseCountdownPill(
-                            countdownText: _formatCountdown(_countdownSeconds),
+                            countdownText: formatCountdown(_countdownSeconds),
                           ),
                         ),
                       ),
@@ -927,7 +927,8 @@ String showcaseUpdatedLabel(
       .replaceAll(' ↻', '');
 }
 
-String _formatCountdown(int totalSeconds) {
+/// Formats a countdown as `m:ss` for display.
+String formatCountdown(int totalSeconds) {
   final minutes = totalSeconds ~/ 60;
   final seconds = totalSeconds % 60;
   return '$minutes:${seconds.toString().padLeft(2, '0')}';

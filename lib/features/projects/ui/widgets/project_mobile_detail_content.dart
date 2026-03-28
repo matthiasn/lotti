@@ -274,8 +274,6 @@ bool _shouldWrapStatusPill(
   return titlePainter.width + tokens.spacing.step4 + statusWidth > maxWidth;
 }
 
-class DesignTokens {}
-
 class _OutlinedMetaTag extends StatelessWidget {
   const _OutlinedMetaTag({
     required this.icon,
