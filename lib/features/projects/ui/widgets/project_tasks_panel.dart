@@ -67,10 +67,10 @@ class ProjectTasksPanel extends StatelessWidget {
         final summary = record.highlightedTaskSummaries[index];
         return TaskSummaryRow(
           summary: summary,
-          topInset: 4,
+          topInset: tokens.spacing.step2,
           bottomInset: index == record.highlightedTaskSummaries.length - 1
               ? 0
-              : 4,
+              : tokens.spacing.step2,
           onTap: onTaskTap,
         );
       },

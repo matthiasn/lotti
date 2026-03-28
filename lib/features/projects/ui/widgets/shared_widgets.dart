@@ -455,17 +455,17 @@ class ShowcasePanel extends StatelessWidget {
             thickness: 1,
             color: ShowcasePalette.border(context),
           ),
-          if (itemCount > 0) const SizedBox(height: 4),
+          if (itemCount > 0) SizedBox(height: tokens.spacing.step2),
           for (var index = 0; index < itemCount; index++) ...[
             itemBuilder(context, index),
             if (index < itemCount - 1) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: tokens.spacing.step2),
               Divider(
                 height: 1,
                 thickness: 1,
                 color: ShowcasePalette.border(context),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: tokens.spacing.step2),
             ],
           ],
         ],

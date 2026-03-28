@@ -290,7 +290,6 @@ class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
           hoverColor: Colors.transparent,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
-          focusColor: Colors.transparent,
           onHover: (value) {
             if (_hovered != value) {
               setState(() {
