@@ -1,338 +1,326 @@
 # AI Chat Feature
 
-An intelligent conversational interface for querying and interacting with Lotti tasks and productivity data. Users can ask questions about their task history, analyze patterns, and get AI‑powered insights through natural language.
+The `ai_chat` feature is Lotti's interactive question-and-answer surface over task history.
 
-## 🎯 Overview
+It is not the agent runtime, and it is not the general provider stack. It sits above the `ai` feature and below the chat UI, giving the user a session-scoped way to ask things like:
 
-The AI Chat feature enables users to:
-- Query task summaries by date range using natural language
-- Analyze productivity patterns and achievements
-- Get AI-powered insights from their task history
-- Interact through a streamlined chat interface with real-time streaming
-- Speak instead of typing with built‑in voice input and transcription
+- what did I finish last week?
+- what patterns show up in this category?
+- what did I actually spend time on?
 
-## 🏗️ Architecture
+And, because typing is not always the mood, it also owns the chat-specific voice input path.
 
-The feature follows a clean, modular architecture with clear separation of concerns:
+## What This Feature Owns
 
-```
+At runtime, the feature owns five concrete jobs:
+
+1. session and message state for the chat UI
+2. explicit model selection for each chat session
+3. streaming assistant output, including tool-calling turns
+4. the task-summary retrieval tool used by the assistant
+5. batch and realtime transcription for chat input
+
+It does not own:
+
+- provider configuration and routing policy
+- agent wake cycles or memory
+- durable long-term chat persistence
+
+That last point is important: `ChatRepository` currently stores sessions and messages in memory. This feature behaves like an interactive workbench, not like a durable knowledge base.
+
+## Directory Shape
+
+```text
 lib/features/ai_chat/
 ├── models/
-│   ├── chat_message.dart               # Core message model
-│   ├── chat_session.dart               # Domain model for chat sessions
-│   └── task_summary_tool.dart          # OpenAI function calling schema
 ├── repository/
-│   ├── chat_repository.dart            # Core business logic orchestrator
-│   ├── chat_message_processor.dart     # Testable message processing
-│   └── task_summary_repository.dart    # Task data retrieval
-└── ui/
-    ├── controllers/                    # Riverpod state management
-    │   └── chat_recorder_controller.dart # Audio recording + state machine
-    ├── models/chat_ui_models.dart      # UI-specific models
-    ├── pages/chat_modal_page.dart      # Modal integration
-    └── widgets/
-        ├── chat_interface.dart         # Main chat UI with reasoning disclosure + voice controls
-        ├── waveform_bars.dart          # Live waveform visualization of mic input
-        └── thinking_parser.dart        # Streaming-friendly reasoning parser
 ├── services/
-│   ├── audio_transcription_service.dart  # Batch audio transcription (Gemini, etc.)
-│   └── realtime_transcription_service.dart # Real-time WebSocket transcription orchestrator
+├── ui/
+│   ├── controllers/
+│   ├── models/
+│   ├── pages/
+│   ├── providers/
+│   └── widgets/
+└── README.md
 ```
 
-## 💡 Key Features
+## Architecture
 
-### ✅ Intelligent Task Querying
-- **Natural Language Processing**: Ask questions like "What did I work on last week?" or "Show me my achievements this month"
-- **Date Range Intelligence**: Automatically interprets time periods (today, yesterday, last week, etc.)
-- **Context Awareness**: Filters results by the selected category from the tasks page
+```mermaid
+flowchart LR
+  User["User"] --> UI["ChatInterface / ChatModalPage"]
+  UI --> Sessions["ChatSessionsController"]
+  UI --> Session["ChatSessionController"]
+  UI --> Recorder["ChatRecorderController"]
 
-### ✅ Advanced AI Capabilities
-- **Model Selection**: Users must explicitly select an AI model from configured providers (e.g., Ollama, OpenAI-compatible, Gemini, etc.) per chat session - no automatic fallback
-- **Function Calling**: Uses the `get_task_summaries` tool to retrieve relevant data
-- **Streaming Markdown**: Tokens stream from providers and render incrementally as Markdown with a typing indicator
-- **Collapsible Reasoning**: Hidden “thinking” blocks are parsed and shown behind a collapsed disclosure. Multiple segments are aggregated with a subtle divider and rendered with the same Markdown widget for consistent typography. For Gemini providers, non‑flash models may include a single consolidated thinking block before the visible answer (when enabled); flash models never surface thinking.
-- **Copy Behavior**: Copying assistant messages strips hidden thinking by default.
+  Sessions --> Repo["ChatRepository"]
+  Session --> Repo
+  Recorder --> BatchTx["AudioTranscriptionService"]
+  Recorder --> RtTx["RealtimeTranscriptionService"]
 
-### ✅ Voice Input & Transcription
-- **One‑tap Recording**: Tap the mic to start recording; see a live waveform
-- **Accessible Controls**: Cancel (Esc shortcut) or Stop and transcribe
-- **Smart Transcription**: Uses Gemini 2.5 Flash when available; falls back to the first audio‑capable model for the configured Gemini provider
-- **Flexible Send**: If a model is selected, the transcript auto‑sends; otherwise it's inserted into the input field for review
-- **Real‑Time Mode**: When both batch and realtime transcription models are configured, a mode toggle appears next to the mic button. In live mode, transcription text appears with ~2s latency while recording. Audio is saved as M4A via native platform channel conversion (iOS/macOS). App backgrounding gracefully stops the session.
+  Repo --> Processor["ChatMessageProcessor"]
+  Repo --> System["SystemMessageService"]
+  Processor --> ToolRepo["TaskSummaryRepository"]
+  Processor --> Cloud["CloudInferenceRepository"]
+  BatchTx --> Cloud
+  RtTx --> RtProvider["Mistral realtime WebSocket path"]
 
-### ✅ Sophisticated Data Processing
-- **Complex Query Engine**: 4-step process to find work entries, resolve task relationships, and retrieve AI summaries
-- **Duration Filtering**: Only includes meaningful work entries (15+ seconds for text entries, all audio entries)
-- **Relationship Resolution**: Traces links between tasks and work entries through database relationships
-- **Fallback Handling**: Provides basic summaries for tasks without AI-generated summaries
-
-### ✅ Modern UI/UX
-- **Material Design 3**: Consistent with app design language
-- **Responsive Chat Interface**: Custom-built Flutter widgets with proper accessibility
-- **Markdown Support**: Rich text rendering for AI responses with code syntax highlighting
-- **Real-time Streaming**: Live token-by-token rendering; spacing tuned for readability
-- **Session Management**: Create new chats, manage conversation history
-- **Error Resilience**: Graceful error handling with retry and dismiss actions
-- **Accessibility**: Disclosure is keyboard-accessible (Enter/Space) and exposed to screen readers. Avatars removed; user vs. assistant differentiated via asymmetric margins.
-
-## 🔧 Core Components
-
-### ChatRepository
-Central orchestrator handling:
-- Session CRUD operations (in-memory storage)
-- Real-time streaming: forwards content deltas to the UI while accumulating tool calls
-- AI service integration through CloudInferenceRepository (provider‑aware routing)
-- Tool calling orchestration for task summaries and streaming of final responses
-
-### ChatMessageProcessor
-Extracted testable logic for:
-- AI configuration management (provider + model resolution with caching for specific models)
-- Message format conversion (internal ↔ OpenAI formats)
-- Stream processing: accumulate tool calls; expose streaming of final responses after tools
-- Tool call processing and response handling
-- Prompt building from conversation history
-- No fallback mechanism - requires explicit model selection
-
-### Reasoning & Copy Behavior
-
-- Hidden reasoning is never rendered inline. The UI provides a single collapsed
-  disclosure per assistant message. Multiple reasoning segments are concatenated
-  with a Markdown horizontal rule (---) for readability.
-- Copying assistant messages strips reasoning by default (only visible answer is
-  copied). Copying from the reasoning disclosure copies the reasoning text.
-- Gemini mapping: For non‑flash models (when enabled), at most one consolidated
-  `<thinking>` block may appear before the visible answer; flash models never
-  surface thinking. See `thinking_parser.dart` for the exact patterns supported
-  and streaming/open‑ended handling.
-
-### TaskSummaryRepository
-Complex data retrieval engine:
-- Multi-step query process: Work Entries → Links → Tasks → AI Summaries
-- Date range filtering with ISO 8601 timestamp precision
-- Duration-based work entry validation
-- Task relationship resolution through EntryLink database relations
-- AI summary extraction from AiResponseEntry records
-
-
-## 🚀 Integration Points
-
-### Main App Integration
-- **Entry Point**: Psychology icon (🧠) in tasks page app bar
-- **Modal Design**: Bottom sheet taking ~80% of screen height
-- **Category Context**: Inherits selected category from tasks page for filtering
-- **Model Selection**: Required dropdown in the chat header; users must explicitly select a model before sending messages - no automatic fallback
-- **State Management**: Reactive integration with Riverpod providers
-- **Microphone UI**: Input area shows a mic button when empty; switches to waveform + Cancel/Stop controls while recording
-
-### Permissions & Platform Notes
-- **Microphone Access**: Requires microphone permission on supported platforms
-- **Temporary Files**: Audio is recorded into an app‑scoped temp directory and removed after processing or cancel
-- **Keyboard Shortcuts**: Escape key cancels recording (focus requested when controls are visible)
-
-### Data Layer Integration
-- **JournalDb**: Direct database access for task and work entry retrieval
-- **CloudInferenceRepository**: Leverages existing AI provider abstraction
-- **AiConfigRepository**: Uses configured Gemini Flash model settings
-- **LoggingService**: Comprehensive error tracking and debugging support
-
-### AI Infrastructure Integration
-- **Providers**: Unified interface for multiple providers (Ollama, OpenAI-compatible, Gemini, etc.)
-- **Function Calling**: OpenAI-compatible tool definitions
-- **Streaming**: Provider streams are forwarded as deltas to the UI
-- **Error Handling**: Consistent with existing AI error patterns
-
-### Provider Integration
-
-The chat feature is provider‑agnostic at the UI layer and routes inference via a shared orchestration layer:
-
-- `CloudInferenceRepository` selects the appropriate adapter per provider:
-  - Gemini → `GeminiInferenceRepository` (native REST) with a robust streaming parser that handles SSE `data:` lines, NDJSON, and array framing. Emits OpenAI‑compatible deltas and enforces the thinking visibility policy (non‑flash may include a single consolidated `<thinking>` block before visible content; flash models never include thinking).
-  - Ollama → `OllamaInferenceRepository` using the `/api/chat` endpoint for streaming and function calling.
-  - OpenAI‑compatible → direct `openai_dart` streaming.
-- The chat UI consumes OpenAI‑compatible content deltas and uses `thinking_parser.dart` to hide/show reasoning without altering provider semantics.
-
-## 📊 Technical Specifications
-
-### Performance Characteristics
-- **Response Initiation**: Fast first-token latency where supported by the provider
-- **Streaming Updates**: Real-time content delivery as tokens arrive
-- **Memory Efficiency**: Minimal overhead with proper stream disposal
-- **Database Optimization**: Efficient queries with proper relationship traversal
-
-### Data Processing Flow
-1. **Work Entry Filtering**: Date range → Duration validation → Category filtering
-2. **Link Resolution**: EntryLink relationships to find connected tasks
-3. **Task Batch Retrieval**: Efficient bulk loading of related task entities
-4. **AI Summary Extraction**: Latest AI responses with metadata preservation
-
-### Model Integration
-- **Model Selection**: Explicit selection required - select an eligible model per session (function-calling + text input required)
-- **No Fallback**: System enforces model selection before sending messages - no automatic defaults
-- **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config)
- - **Providers**: Works with Ollama (local), OpenAI-compatible APIs, Gemini, and more (via unified config and provider‑aware adapters)
-- **Function Calling**: OpenAI-compatible tool definitions
-- **Context Management**: Prompt includes prior conversation context
-- **Token Efficiency**: Optimized prompts for cost-effective usage
-
-## 🧪 Testing
-
-Comprehensive test suite covering all components:
-
-### Repository Tests
-- **ChatRepository**: Integration tests for session management and message handling
-- **ChatMessageProcessor**: Unit tests for message processing logic  
-- **TaskSummaryRepository**: Complex data retrieval scenarios
-
-### UI Tests
-- **ChatInterface**: Widget testing for UI components
-- **Voice Controls**: Chat input mic → waveform → cancel/stop flow with tooltips, keyboard handling, and disabled states while processing
-- **WaveformBars**: Robust rendering tests (empty, large sets, bounds, sizing, theming)
-- **ChatModalPage**: Page-level integration tests
-- **Controllers**: State management validation
-
-### Service Tests
-- **UI Models**: Data model validation and conversion
-- **AudioTranscriptionService**: Stream aggregation, model fallback, and error conditions
-
-### Controller Tests
-- **ChatRecorderController**: Permission handling, concurrent starts, temp file lifecycle, cleanup on cancel/dispose, timeout and error surfacing, amplitude normalization
-
-### Test Coverage Highlights
-- ✅ All business logic paths covered
-- ✅ Error conditions and edge cases tested
-- ✅ UI state management validation
-- ✅ Database integration scenarios
-- ✅ AI service integration mocking
-- ✅ Complex data transformation testing
-
-## 📱 User Experience
-
-### Chat Flow
-1. **Initiation**: Tap brain icon (🧠) in tasks page app bar
-2. **Context Setup**: Chat automatically inherits selected category context
-3. **Model Selection**: Required - must pick a model in the chat header before sending any messages
-4. **Natural Queries**: Ask questions in natural language about tasks
-5. **Real-time Responses**: Watch AI responses stream as formatted Markdown
-6. **Session Management**: Continue conversations or start new chats
-
-### Voice Flow (Batch)
-1. **Start**: Tap the mic when the input is empty
-2. **Recording**: Waveform appears; use Cancel (or Esc) or Stop
-3. **Processing**: Spinner shows while transcribing; input disabled
-4. **Result**: Transcript is auto‑sent if a model is selected, otherwise it's inserted into the input field
-
-### Voice Flow (Real-Time)
-1. **Toggle**: When both batch and realtime models are configured, tap the mode toggle (waveform icon) next to the mic button
-2. **Start**: Tap the filled mic/waveform button to begin live transcription
-3. **Recording**: Waveform + live transcript text appear simultaneously; text updates with ~2s latency
-4. **Stop/Cancel**: Stop finalizes the transcript (waits for `transcription.done`); Cancel discards everything
-5. **Result**: Same as batch — auto-sends or inserts into the input field
-
-### Example Interactions
-```
-User: "What did I work on yesterday?"
-AI: *Analyzes date range, retrieves work entries, finds linked tasks*
-Response: "Yesterday you focused on [specific tasks with summaries]..."
-
-User: "Show me my achievements this week"
-AI: *Processes weekly timeframe, analyzes completed tasks*  
-Response: "This week you accomplished [categorized achievements]..."
-
-User: "What patterns do you see in my work?"
-AI: *Analyzes productivity patterns*
-Response: "Looking at your work patterns, I notice [insights]..."
+  ToolRepo --> Journal["JournalDb / task + work-entry reads"]
+  Cloud --> Providers["Configured provider adapters"]
 ```
 
-## 🔮 Future Enhancements
+The structure is intentionally split:
 
-### Planned Improvements
+- controllers own UI-facing state
+- `ChatRepository` orchestrates a chat turn
+- `ChatMessageProcessor` holds the testable prompt, tool, and stream logic
+- task retrieval stays in `TaskSummaryRepository`
+- transcription paths are separated into batch and realtime services
 
-#### **High Priority - Persistence**
-- **Database Persistence**: Replace in-memory session storage with SQLite persistence
-  - **Current Limitation**: Chat sessions are lost when the app restarts
-  - **Implementation Needed**: 
-    - Create database schema for chat sessions and messages
-    - Implement ChatRepository persistence layer
-    - Add migration scripts for existing database
-    - Maintain backward compatibility with current in-memory implementation
-  - **Benefits**: Persistent chat history, better user experience, ability to resume conversations
+## Runtime Model
 
-#### **Performance Optimizations Completed** ✅
+### Session layer
 
-The AI Chat feature has been optimized for production use with several key performance improvements:
+There are two controllers, and they do different jobs:
 
-- **✅ AI Configuration Caching**: Efficient caching of AI provider and model configurations in `ChatMessageProcessor` (5‑minute cache)
-- **✅ Reduced DB Roundtrips**: Batch relationship lookups and bulk queries in `TaskSummaryRepository`
-- **✅ Session Search Performance**: Optimized in-memory filtering and null‑safe guards in session controllers
+- `ChatSessionsController` manages the session list, recent sessions, creation, deletion, and switching
+- `ChatSessionController` manages one active conversation, including streaming flags, selected model, visible messages, and errors
 
-#### **Remaining Performance Considerations**
+`ChatRepository` sits underneath both and currently stores:
 
-- **Task Query Volume**: Current implementation uses `limit: 10000` for work entry processing
-  - **Current Status**: Acceptable for typical usage patterns, no immediate performance issues reported
-  - **Future Enhancement**: Consider pagination if large datasets become problematic
-  - **Monitoring**: Performance metrics show acceptable response times under normal load
+- `_sessions`
+- `_messages`
 
-#### **Feature Enhancements**
-- **External Library Integration**: Consider migrating to `flutter_gen_ai_chat_ui` to reduce maintenance while keeping customization options
-  
-- **Multi-Category Support**: Enable querying across multiple categories simultaneously  
-- **Export Functionality**: Export chat conversations as markdown or PDF
-- **Text‑to‑Speech**: Add read‑back for assistant responses
-- **Advanced Analytics**: Pattern recognition and productivity insights
-- **Task Modification**: Enable task creation and editing through chat commands
+in memory only.
 
-### Technical Enhancements
-- **Caching Layer**: Implement query result caching for improved performance
-- **Pagination**: Add pagination for large task result sets
-- **Search Integration**: Connect with existing app search functionality
-- **Offline Support**: Basic chat functionality when offline
-- **Push Notifications**: Proactive insights and reminders
+That means:
 
-### UI/UX Improvements
-- **Theme Customization**: Additional chat theme options
-- **Message Search**: Search within chat conversation history
-- **Quick Actions**: Predefined query templates for common questions
-- **Accessibility**: Enhanced screen reader support and keyboard navigation
-- **Mobile Optimization**: Improved responsive design for smaller screens
+- recent sessions survive only for the current app lifetime
+- there is no database-backed transcript history yet
+- deleting or switching sessions is cheap because there is no persistence layer to migrate
 
-## 🛠️ Development
+### Chat turn flow
 
-### Key Dependencies
-- **openai_dart**: OpenAI-compatible streaming, function calling
-- **freezed_annotation**: Immutable data models with JSON serialization
-- **flutter_riverpod**: State management and dependency injection
-- **gpt_markdown**: Rich text rendering for AI responses
-- **mocktail**: Comprehensive testing framework
-- **record**: Cross‑platform audio capture
-- **path_provider**: App‑scoped temporary directories for audio files
+```mermaid
+sequenceDiagram
+  participant User as "User"
+  participant UI as "ChatSessionController"
+  participant Repo as "ChatRepository"
+  participant Proc as "ChatMessageProcessor"
+  participant Tool as "TaskSummaryRepository"
+  participant Cloud as "CloudInferenceRepository"
 
-### Architecture Principles
-- **Clean Architecture**: Clear separation between domain, data, and presentation layers
-- **SOLID Principles**: Single responsibility, dependency inversion, interface segregation
-- **Testability**: All business logic is unit testable with dependency injection
-- **Type Safety**: Full null safety with Freezed immutable models
-- **Error Handling**: Comprehensive error boundaries with proper logging
+  User->>UI: send message
+  UI->>UI: require explicit model selection
+  UI->>Repo: sendMessage(message, history, modelId, categoryId)
+  Repo->>Proc: resolve model + provider config
+  Repo->>Proc: convert history + build prompt
+  Repo->>Cloud: generate(...)
+  Cloud-->>UI: stream visible content deltas
+  Cloud-->>Repo: stream tool call deltas
+  Repo->>Proc: accumulate tool calls
 
-### Code Quality Standards
-- **Test Coverage**: Comprehensive test suite ensuring robust functionality across all components
-- **Static Analysis**: Strict linting rules
-- **Documentation**: Inline documentation for public APIs
-- **Formatting**: Consistent code formatting with `dart format`
-- **Modularity**: Loosely coupled components with clear interfaces
+  alt tool calls present
+    Proc->>Tool: fetch task summaries for requested range
+    Tool-->>Proc: structured task summary payload
+    Proc->>Cloud: generate final answer with tool results
+    Cloud-->>UI: stream final answer deltas
+  end
 
-## 🔧 How To Use
-1. Configure at least one AI provider and add eligible models (function calling + text input) in settings.
-2. Open the AI chat via the brain icon (🧠) in the tasks page.
-3. **Required**: Select a model from the header dropdown before sending any messages - there is no automatic fallback.
-4. Ask a question in natural language; responses stream in as Markdown. If a response contains hidden reasoning, a collapsed “Show reasoning” toggle appears above the message. Clicking it reveals the reasoning rendered as Markdown; multiple segments are separated by a subtle divider.
+  UI->>UI: finalize assistant messages
+  UI->>Repo: save updated session in memory
+```
 
-## ♿ Accessibility & UX Notes
+The important operational detail is that tool calls are accumulated while visible content is already streaming. This keeps the UI responsive even when the model is still building a tool request behind the curtain.
 
-- Model selection is mandatory - the system will show an error if you try to send a message without selecting a model.
-- Dropdown is disabled while the model is streaming to avoid accidental context changes.
-- Error banner includes retry and dismiss actions when something goes wrong.
-- Clear error messages guide users to select a model when attempting to send without one.
+## The Only Built-In Tool: Task Summaries
 
----
+The chat feature is deliberately narrow. It does not expose the whole app as an unbounded tool playground.
 
-*This AI Chat feature represents a sophisticated integration of natural language processing, complex data querying, and modern Flutter UI patterns, providing users with an intelligent interface to explore their productivity data.*
+Right now the assistant's main structured retrieval tool is `get_task_summaries`.
+
+`TaskSummaryRepository` resolves that tool request in several steps:
+
+1. find relevant work entries in the requested date range
+2. filter for meaningful work spans
+3. resolve linked task relationships
+4. load tasks in bulk
+5. extract AI summaries where they exist
+6. build fallback summaries where they do not
+
+```mermaid
+flowchart TD
+  ToolCall["get_task_summaries"] --> Work["Find work entries in date range"]
+  Work --> Filter["Filter by duration and category"]
+  Filter --> Links["Resolve linked tasks"]
+  Links --> Tasks["Load tasks in bulk"]
+  Tasks --> Summaries["Load AI summaries / build fallback summaries"]
+  Summaries --> ToolResult["Return tool payload to model"]
+```
+
+This is one of the reasons the feature feels smarter than a plain chat wrapper. It is not just handing the model a giant pile of journal text and wishing it luck.
+
+## Streaming, Reasoning, and Message Segmentation
+
+`ChatSessionController` does not treat the provider stream as one dumb text blob.
+
+It uses:
+
+- `ChatStreamParser`
+- `thinking_parser.dart`
+- `ChatStreamUtils`
+
+to separate:
+
+- visible answer text
+- hidden reasoning blocks
+
+Behavior that matters:
+
+- visible answer text streams into a dedicated assistant bubble
+- reasoning segments are finalized as separate assistant messages
+- copying assistant output strips hidden reasoning by default
+- Gemini-specific "thinking" behavior is normalized at the provider layer and then hidden or shown by the chat UI
+
+This keeps the UX cleaner than the classic "model dumped its chain-of-thought into the answer and now the user has to scroll past a small novel."
+
+## Chat Recorder State Machine
+
+The chat recorder has its own controller and its own state machine. It is separate from the general speech feature because the chat flow has different output semantics: the transcript either becomes chat input or is auto-sent.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Recording: start batch recording
+  Idle --> RealtimeRecording: start realtime mode
+  Recording --> Processing: stop and transcribe
+  Recording --> Idle: cancel
+  RealtimeRecording --> Idle: stop realtime and finalize transcript
+  RealtimeRecording --> Idle: cancel
+  Processing --> Idle: transcript ready
+  Processing --> Idle: transcription error
+```
+
+Controller states are:
+
+- `idle`
+- `recording`
+- `realtimeRecording`
+- `processing`
+
+The controller also tracks:
+
+- waveform amplitude history
+- `partialTranscript` for live mode
+- final `transcript`
+- structured error type
+- whether realtime mode is selected
+
+## Voice Input Paths
+
+### Batch transcription path
+
+`AudioTranscriptionService`:
+
+- reads AI configs
+- finds audio-capable models
+- prefers `gemini-2.5-flash` when present
+- excludes realtime-only Mistral models
+- base64-encodes the local audio file
+- calls `CloudInferenceRepository.generateWithAudio(...)`
+- yields text chunks as they arrive
+
+```mermaid
+sequenceDiagram
+  participant UI as "ChatRecorderController"
+  participant File as "Temporary audio file"
+  participant Batch as "AudioTranscriptionService"
+  participant Cloud as "CloudInferenceRepository"
+
+  UI->>File: record m4a in temp dir
+  UI->>Batch: transcribeStream(filePath)
+  Batch->>Batch: resolve audio-capable model
+  Batch->>Cloud: generateWithAudio(...)
+  Cloud-->>UI: text chunks
+  UI->>UI: accumulate transcript
+```
+
+### Realtime transcription path
+
+`RealtimeTranscriptionService` bypasses the normal HTTP inference path entirely.
+
+It:
+
+- resolves a Mistral realtime transcription model
+- opens the WebSocket session
+- streams PCM audio chunks
+- computes local amplitude values from PCM
+- accumulates text deltas
+- on stop, waits for `transcription.done`
+- writes buffered audio to WAV and converts it to M4A
+
+```mermaid
+sequenceDiagram
+  participant UI as "ChatRecorderController"
+  participant RT as "RealtimeTranscriptionService"
+  participant WS as "Mistral realtime API"
+
+  UI->>RT: startRealtimeTranscription(pcmStream)
+  RT->>WS: connect WebSocket
+  UI->>RT: stream PCM chunks
+  RT->>WS: sendAudioChunk(...)
+  WS-->>RT: transcription deltas
+  RT-->>UI: onDelta(delta)
+  UI->>UI: update partialTranscript
+  UI->>RT: stop(...)
+  RT->>WS: endAudio
+  WS-->>RT: transcription.done
+  RT-->>UI: final transcript + audio file path
+```
+
+### What happens after transcription
+
+The chat feature deliberately distinguishes between:
+
+- "I already selected a model, send this transcript straight into the chat"
+- "I have not selected a model yet, put the transcript into the input field so I can inspect it first"
+
+That is a better failure mode than guessing on the user's behalf.
+
+## Model Selection Rules
+
+The feature is strict here on purpose.
+
+- model selection is explicit
+- no automatic fallback is used for chat turns
+- the selected model must support function calling
+- `categoryId` is required for the send path
+
+If the selected model cannot satisfy the tool contract, the chat turn fails early instead of pretending everything is fine and then hallucinating a summary from thin air.
+
+## Privacy and Data Flow
+
+The chat feature does not invent its own privacy policy. It inherits routing from the configured provider/model path:
+
+- batch chat messages and batch transcription go through the selected provider path
+- realtime transcription goes through the configured Mistral realtime endpoint
+- task retrieval happens locally from Lotti's databases before any tool result is sent upstream
+
+That means the privacy posture depends on the chosen provider configuration, not on the chat UI.
+
+## Current Constraints
+
+- sessions are in-memory only
+- the built-in tool surface is intentionally narrow
+- chat requires explicit model selection
+- realtime transcription currently depends on a configured Mistral realtime model
+- hidden reasoning behavior is normalized, but provider quirks still matter at the stream level
+
+## Relationship to Other Features
+
+- `ai_chat` owns the interactive question/answer surface
+- `ai` owns providers, model metadata, routing, and multimodal transport
+- `speech` owns the app-wide audio entry recorder and player
+- `agents` owns long-running autonomous analysis
+
+If `agents` is the part that thinks on its own schedule, `ai_chat` is the part that waits politely for the user to ask first.

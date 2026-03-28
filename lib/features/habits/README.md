@@ -1,313 +1,341 @@
-# Habits Module
+# Habits Feature
 
-This module contains the habits feature, including habit display, completion tracking, and settings management.
+The `habits` feature sits on top of two different records:
 
-## Architecture
+- `HabitDefinition`, which describes the recurring thing
+- `HabitCompletionEntry`, which records what happened on a concrete day
 
-The habits module follows a repository pattern with three layers:
+Most of the feature exists to reconcile those two streams into "what should the user see right now?" That is why the code is much more about derivation than about CRUD.
 
-1. **Repository Layer** - Abstracts data access from the database
-2. **State Layer** - Riverpod controllers managing UI state
-3. **UI Layer** - Flutter widgets consuming state
+## What This Feature Owns
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         UI Layer                            │
-│     (ConsumerWidget, ConsumerStatefulWidget)                │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ ref.watch / ref.read
-┌──────────────────────────▼──────────────────────────────────┐
-│                       State Layer                           │
-│  (HabitsController, HabitSettingsController, etc.)          │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ ref.read(habitsRepositoryProvider)
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Repository Layer                         │
-│               (HabitsRepository)                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Database Layer                           │
-│         (JournalDb, UpdateNotifications)                    │
-└─────────────────────────────────────────────────────────────┘
-```
+At runtime, the feature owns:
 
-## Directory Structure
+1. the habits tab and its derived sections (`openNow`, `pendingLater`, `completed`)
+2. completion-rate chart state and day-level breakdowns
+3. per-habit completion history strips on each card
+4. habit settings state for create/edit flows
+5. category and dashboard assignment from the habit settings form
+6. completion capture via the habit bottom sheet
 
-```
+It does not own every habit write path by itself.
+
+- Read-side access is abstracted behind `HabitsRepository`.
+- Habit-definition saves currently go through shared `PersistenceLogic`.
+- Completion writes also go through shared `PersistenceLogic`.
+- Notification scheduling lives in `NotificationService`.
+
+That split is deliberate. Habits get a focused read model, but writes still pass through the shared persistence pipeline that already knows how to stamp metadata, emit update notifications, and coordinate scheduling.
+
+## Code Map
+
+```text
 lib/features/habits/
-├── repository/                             # Data access layer
-│   ├── habits_repository.dart                 # Repository interface and implementation
-│   └── habits_repository.g.dart               # Generated riverpod code
-├── state/                                  # Riverpod state management
-│   ├── habits_controller.dart                 # Main habits page state controller
-│   ├── habits_controller.g.dart               # Generated riverpod code
-│   ├── habits_state.dart                      # Freezed state class with helpers
-│   ├── habits_state.freezed.dart              # Generated freezed code
-│   ├── habit_completion_controller.dart       # Habit completion tracking
-│   ├── habit_completion_controller.g.dart     # Generated riverpod code
-│   ├── habit_settings_controller.dart         # Habit settings form state
-│   ├── habit_settings_controller.freezed.dart # Generated freezed code
-│   └── habit_settings_controller.g.dart       # Generated riverpod code
+├── repository/
+│   └── habits_repository.dart
+├── state/
+│   ├── habit_completion_controller.dart
+│   ├── habit_settings_controller.dart
+│   ├── habits_controller.dart
+│   └── habits_state.dart
 └── ui/
-    ├── habits_page.dart                # Main habits list page (ConsumerStatefulWidget)
-    └── widgets/                        # Reusable habit widgets
-        ├── habit_category.dart             # Category selection for habits
-        ├── habit_completion_card.dart      # Habit completion UI card
-        ├── habit_completion_color_icon.dart  # Color-coded completion icon
-        ├── habit_dashboard.dart            # Dashboard selection for habits
-        ├── habit_page_app_bar.dart         # Habits page app bar (ConsumerWidget)
-        ├── habit_streaks.dart              # Streak tracking display (ConsumerWidget)
-        ├── habits_filter.dart              # Habit filtering controls (ConsumerWidget)
-        ├── habits_search.dart              # Habit search (ConsumerStatefulWidget)
-        └── status_segmented_control.dart   # Status filter control
+    ├── habits_page.dart
+    └── widgets/
+
+Related code outside this folder:
+lib/features/settings/ui/pages/habits/
+lib/pages/create/complete_habit_dialog.dart
+lib/widgets/charts/habits/
 ```
+
+That "related code" matters. The habits tab lives in this feature, but the settings pages are mounted under the broader settings feature, and the completion dialog is a shared create-flow surface outside `lib/features/habits/`.
+
+## Runtime Architecture
+
+```mermaid
+flowchart LR
+  Defs["HabitDefinition stream"] --> Ctrl["HabitsController"]
+  Range["Completion range fetch"] --> Ctrl
+  Updates["UpdateNotifications"] --> Ctrl
+  Ctrl --> Tab["HabitsTabPage"]
+  Ctrl --> Chart["HabitCompletionRateChart"]
+  Ctrl --> Filters["Display/category/time-span state"]
+
+  Tab --> Card["HabitCompletionCard"]
+  Card --> CardCtl["HabitCompletionController"]
+  CardCtl --> CardRange["Per-habit range fetch"]
+  Card --> Dialog["HabitDialog"]
+
+  SettingsPage["HabitDetailsPage"] --> SettingsCtl["HabitSettingsController(habitId)"]
+  SettingsCtl --> Repo["HabitsRepository"]
+  SettingsCtl --> Persist["PersistenceLogic.upsertEntityDefinition"]
+  Persist --> Notifications["NotificationService.scheduleHabitNotification"]
+```
+
+There are two different read models on purpose:
+
+- `HabitsController` owns the whole tab-level query model.
+- `HabitCompletionController` owns one habit card's history strip for a specific date range.
+
+That keeps the tab state coherent without turning every card refresh into a full-page recomputation.
+
+## Core Data Model
+
+`HabitDefinition` carries the durable configuration:
+
+- `name` and `description`
+- `habitSchedule`
+- `active`, `private`, `priority`
+- `activeFrom` and `activeUntil`
+- `categoryId` and `dashboardId`
+- optional `autoCompleteRule`
+
+`HabitCompletionData` carries the event-side record:
+
+- `habitId`
+- `dateFrom` / `dateTo`
+- optional `completionType`
+
+The important modeling choice is that completion is append-only journal data, not a mutable field on the definition. That makes history cheap to preserve and lets the UI answer range questions without mutating the definition itself.
+
+### Schedule Reality Today
+
+The model supports `daily`, `weekly`, and `monthly` schedules, but the current habits UI is effectively daily-first:
+
+- new habits are created with `HabitSchedule.daily(requiredCompletions: 1)`
+- the settings page only exposes `showFrom` and `alertAtTime` for daily habits
+- `showHabit()` only checks the daily `showFrom` time when deciding whether a habit belongs in `openNow` or `pendingLater`
+
+So the data model is more ambitious than the current editing surface. The README should reflect that honestly instead of pretending the weekly/monthly UI already exists here.
 
 ## Repository Layer
 
-### HabitsRepository
+`HabitsRepository` is the read boundary around `JournalDb` plus `UpdateNotifications`.
 
-Abstracts all habit-related database operations, making controllers easier to test and more modular.
+It currently provides:
 
-**Provider:** `habitsRepositoryProvider`
+- `watchHabitDefinitions()`
+- `watchHabitById()`
+- `getHabitCompletionsInRange()`
+- `getHabitCompletionsByHabitId()`
+- `watchDashboards()`
+- `updateStream`
 
-- Uses `@Riverpod(keepAlive: true)` for app-wide persistence
-- Bridges `getIt` service locator and Riverpod for dependency injection
-- Can be easily overridden in tests with `ProviderScope` overrides
+In practice:
 
-**Interface Methods:**
+- definition streams react to `habitsNotification` and `privateToggleNotification`
+- dashboard streams react to `dashboardsNotification` and `privateToggleNotification`
+- completions are fetched by range, then refreshed when update notifications arrive
 
-| Method | Return Type | Description |
-|--------|-------------|-------------|
-| `watchHabitDefinitions()` | `Stream<List<HabitDefinition>>` | Watch all habit definitions |
-| `watchHabitById(id)` | `Stream<HabitDefinition?>` | Watch a specific habit by ID |
-| `getHabitCompletionsInRange(rangeStart)` | `Future<List<JournalEntity>>` | Get completions from date to now |
-| `getHabitCompletionsByHabitId(...)` | `Future<List<JournalEntity>>` | Get completions for specific habit |
-| `upsertHabitDefinition(habit)` | `Future<int>` | Save or update a habit |
-| `watchDashboards()` | `Stream<List<DashboardDefinition>>` | Watch all dashboards |
-| `updateStream` | `Stream<Set<String>>` | Stream of notification IDs |
+The repository also exposes `upsertHabitDefinition()`, but the current settings save path does not call it. `HabitSettingsController.onSavePressed()` writes through `PersistenceLogic.upsertEntityDefinition()` instead. So the repository is currently a read-heavy abstraction, not the single write gateway for the feature.
 
-**Testing:**
+## Main Tab Controller
 
-```dart
-// Override repository in tests
-final container = ProviderContainer(
-  overrides: [
-    habitsRepositoryProvider.overrideWithValue(mockRepository),
-  ],
-);
+`HabitsController` is the habits tab's query engine.
+
+It is `keepAlive`, and that choice matches the code:
+
+- the tab stores display filter state
+- it stores category selections
+- it stores search text and time-span selections
+- it caches derived completion maps and chart inputs
+
+Throwing that away on every tab switch would mean redoing work and resetting UI state the user just configured.
+
+### What it actually derives
+
+From active habit definitions plus completion entries in the selected range, it computes:
+
+- `completedToday`
+- `successfulToday`
+- `openHabits`
+- `openNow`
+- `pendingLater`
+- `completed`
+- `successfulByDay`
+- `skippedByDay`
+- `failedByDay`
+- `allByDay`
+- `shortStreakCount`
+- `longStreakCount`
+- chart day labels and `minY`
+
+One important grounding detail: the controller immediately filters definitions to `habit.active == true`. Archived habits still exist in settings and storage, but the main tab only derives from active definitions.
+
+### Refresh lifecycle
+
+```mermaid
+sequenceDiagram
+  participant Repo as "HabitsRepository"
+  participant Ctrl as "HabitsController"
+  participant State as "HabitsState"
+  participant UI as "HabitsTabPage"
+
+  Repo-->>Ctrl: watchHabitDefinitions()
+  Ctrl->>Repo: getHabitCompletionsInRange()
+  Repo-->>Ctrl: completion entries
+  Ctrl->>Ctrl: recompute buckets, maps, chart values
+  Ctrl-->>State: next HabitsState
+  State-->>UI: render chart + sections
+  Repo-->>Ctrl: updateStream(HABIT_COMPLETION)
+  Ctrl->>Repo: refetch range and recompute
 ```
 
-## State Management
+The controller does not run a timer for "open now" logic. Instead, it recomputes when:
 
-### HabitsController
+- definitions change
+- habit completion notifications arrive
+- the time span changes
+- the selected category set changes
+- the tab becomes visible again through `VisibilityDetector`
 
-Main controller managing the complete habits page state. Uses `@Riverpod(keepAlive: true)` for app-wide persistence.
+That last part is worth calling out. `showHabit()` depends on `DateTime.now()`, so visibility-triggered recomputation is the feature's lightweight answer to "time passed while the tab was off-screen." It refreshes the due/later split without keeping a background ticker alive.
 
-**Provider:** `habitsControllerProvider`
+### Search vs. category filtering
 
-- Marked `keepAlive: true` since habits state should persist across navigation
-- Uses `HabitsRepository` for all data access (no direct `getIt` usage)
-- Subscribes to habit definitions and completion notifications via repository
-- Manages visibility updates via `VisibilityDetector`
+The current implementation splits filtering in two places:
 
-**State:** `HabitsState` (freezed)
+- category filtering happens in `HabitsController`
+- text filtering happens in `HabitsTabPage`
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `habitDefinitions` | `List<HabitDefinition>` | All active habit definitions |
-| `habitCompletions` | `List<JournalEntity>` | Habit completions in time range |
-| `completedToday` | `Set<String>` | Habit IDs completed today |
-| `successfulToday` | `Set<String>` | Habit IDs successful today |
-| `openHabits` | `List<HabitDefinition>` | Habits not yet completed today |
-| `openNow` | `List<HabitDefinition>` | Open habits filtered by category (due now) |
-| `pendingLater` | `List<HabitDefinition>` | Open habits filtered by category (due later) |
-| `completed` | `List<HabitDefinition>` | Completed habits filtered by category |
-| `days` | `List<String>` | Date strings for chart display |
-| `successfulByDay` | `Map<String, Set<String>>` | Habit IDs successful by day |
-| `skippedByDay` | `Map<String, Set<String>>` | Habit IDs skipped by day |
-| `failedByDay` | `Map<String, Set<String>>` | Habit IDs failed by day |
-| `allByDay` | `Map<String, Set<String>>` | All habit IDs by day |
-| `selectedInfoYmd` | `String` | Selected day for chart info display |
-| `successPercentage` | `int` | Success rate for selected day |
-| `skippedPercentage` | `int` | Skip rate for selected day |
-| `failedPercentage` | `int` | Fail rate for selected day |
-| `shortStreakCount` | `int` | Habits with 3+ day streaks |
-| `longStreakCount` | `int` | Habits with 7+ day streaks |
-| `timeSpanDays` | `int` | Chart time span (7 or 14 days) |
-| `minY` | `double` | Chart Y-axis minimum value |
-| `zeroBased` | `bool` | Whether chart starts at 0% |
-| `isVisible` | `bool` | Whether habits page is visible |
-| `showTimeSpan` | `bool` | Show time span selector |
-| `showSearch` | `bool` | Show search input |
-| `searchString` | `String` | Current search filter |
-| `selectedCategoryIds` | `Set<String>` | Selected category filter IDs |
-| `displayFilter` | `HabitDisplayFilter` | Tab filter (openNow/pendingLater/completed/all) |
+That is easy to miss if you only read the state shape. The controller stores `searchString`, but the page applies it over `openNow`, `pendingLater`, and `completed` by matching `name` and `description`.
 
-**Methods:**
+## Chart and Day Breakdown
 
-| Method | Description |
-|--------|-------------|
-| `updateVisibility(VisibilityInfo)` | Update visibility state from `VisibilityDetector` |
-| `setTimeSpan(int)` | Set chart time span (refetches completions) |
-| `setDisplayFilter(HabitDisplayFilter?)` | Set tab display filter |
-| `setSearchString(String)` | Set search filter (lowercased) |
-| `toggleZeroBased()` | Toggle chart zero-based mode |
-| `toggleShowSearch()` | Toggle search UI visibility |
-| `toggleShowTimeSpan()` | Toggle time span selector visibility |
-| `toggleSelectedCategoryIds(String)` | Toggle category in filter set |
-| `setInfoYmd(String)` | Set selected day for chart info (auto-clears after 15s) |
+`HabitCompletionRateChart` is driven entirely from `HabitsState`.
 
-**Helper Functions:**
+It renders three layered series:
 
-| Function | Description |
-|----------|-------------|
-| `completionRate(HabitsState, Map)` | Calculate completion percentage for selected day |
-| `totalForDay(String, HabitsState)` | Count total habits that should be tracked for a day |
-| `activeBy(List<HabitDefinition>, String)` | Filter habits active by a given date |
-| `habitMinY(List<String>, HabitsState)` | Calculate chart Y-axis minimum |
-| `getHabitDays(int)` | Generate date strings for time span |
+- successful
+- successful + skipped
+- successful + skipped + failed
 
-### HabitSettingsController
+Tapping the chart sets `selectedInfoYmd`, which updates the summary row above the chart with:
 
-Manages habit settings form state for create/edit flows.
+- success percentage
+- skipped percentage
+- recorded fail percentage
 
-**Provider:** `habitSettingsControllerProvider(habitId)`
+That selected day is cleared with a 15-second debounce in the controller. The chart is interactive, but it is intentionally not sticky forever.
 
-- Uses `AutoDisposeNotifierProvider.family` with `habitId` (String) as key
-- For **create flow**: new UUID is generated upfront, controller initializes with empty habit
-- For **edit flow**: watches habit from database via `habitByIdProvider` (uses repository)
-- Does not update from DB when form is dirty (prevents overwriting user changes)
+The chart can also toggle between a zero-based Y axis and a cropped minimum Y value when the computed minimum is high enough to make that useful.
 
-**State:** `HabitSettingsState` (freezed)
+## Per-Card Completion History
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `habitDefinition` | `HabitDefinition` | Current habit being edited |
-| `dirty` | `bool` | Whether form has unsaved changes |
-| `formKey` | `GlobalKey<FormBuilderState>` | Key for FormBuilder validation |
-| `autoCompleteRule` | `AutoCompleteRule?` | Autocomplete rules for habit (experimental) |
+Each `HabitCompletionCard` asks `HabitCompletionController` for a habit-specific range and renders a day strip.
 
-**Methods:**
+That controller:
 
-| Method | Description |
-|--------|-------------|
-| `setDirty()` | Mark form as modified |
-| `setCategory(String?)` | Update category assignment |
-| `setDashboard(String?)` | Update dashboard assignment |
-| `setActiveFrom(DateTime?)` | Set habit active from date |
-| `setShowFrom(DateTime?)` | Set daily schedule show from time |
-| `setAlertAtTime(DateTime?)` | Set daily schedule alert time |
-| `clearAlertAtTime()` | Remove alert time from schedule |
-| `onSavePressed()` | Validate and save habit (returns `bool`) |
-| `delete()` | Soft-delete habit with deletedAt timestamp |
-| `removeAutoCompleteRuleAt(List<int>)` | Remove autocomplete rule at path |
+- fetches completions only for one habit ID and range
+- listens to `updateStream`
+- refreshes only when the affected IDs include that habit ID
 
-### HabitCompletionController
+That narrower refresh path is the main reason this controller exists separately from `HabitsController`.
 
-Fetches and caches habit completion data for a date range. Uses `@riverpod` annotation.
+The strip itself is synthesized day by day:
 
-**Provider:** `habitCompletionControllerProvider(habitId, rangeStart, rangeEnd)`
+- recorded completion entries overwrite the day's status
+- active days without a recorded entry stay `open`
+- the final result is a compact history view used both for scanning and for tapping into backfilled completions
 
-- Family provider with three parameters: `habitId`, `rangeStart`, `rangeEnd`
-- Returns `AsyncValue<List<HabitResult>>`
-- Uses `HabitsRepository` for data access
-- Listens to `UpdateNotifications` stream (via repository) to refresh when habit is modified
-- Uses `cacheFor(entryCacheDuration)` for performance
+## Completion Flow
 
-**Usage:**
+`HabitCompletionCard` opens `HabitDialog`, which is the actual write surface for success, skip, and fail.
 
-```dart
-final completionsAsync = ref.watch(
-  habitCompletionControllerProvider(
-    habitId: habit.id,
-    rangeStart: weekStart,
-    rangeEnd: weekEnd,
-  ),
-);
-
-completionsAsync.when(
-  data: (results) => HabitChart(results: results),
-  loading: () => const CircularProgressIndicator(),
-  error: (e, _) => Text('Error: $e'),
-);
+```mermaid
+flowchart TD
+  Card["HabitCompletionCard"] --> Dialog["HabitDialog"]
+  Dialog --> Form["Date + optional comment"]
+  Form --> Save["success / skip / fail button"]
+  Save --> Persist["PersistenceLogic.createHabitCompletionEntry"]
+  Persist --> Notify["UpdateNotifications"]
+  Persist --> Schedule["scheduleHabitNotification(daysToAdd: 1)"]
 ```
 
-### Supporting Providers
+Two grounded details here matter:
 
-**`habitByIdProvider(habitId)`** - Stream provider for watching a habit by ID. Uses repository.
+- backfilled completions are supported because the dialog lets the user choose the effective date
+- if the habit has a `dashboardId`, the dialog shows the related dashboard behind the bottom sheet
 
-**`habitDashboardsProvider`** - Stream provider for watching all dashboards. Uses repository.
+That second choice is not decorative. It makes the completion moment contextual: the user can see the related dashboard while deciding how to record the habit.
 
-## Related UI Pages
+## Settings Flow
 
-Habit settings pages are located in `lib/features/settings/ui/pages/habits/`:
+The create/edit state lives in `HabitSettingsController`, but the screens themselves live under `lib/features/settings/ui/pages/habits/`.
 
-| File | Description |
-|------|-------------|
-| `habit_details_page.dart` | Edit existing habit (uses `HabitDetailsPage`) |
-| `habit_create_page.dart` | Create new habit (generates UUID, uses `HabitDetailsPage`) |
-| `habits_page.dart` | List all habits in settings |
+The controller is a Riverpod family keyed by `habitId`, which lets the same code handle both:
 
-Chart widget is located at `lib/widgets/charts/habits/`:
+- create flow with a new UUID
+- edit flow with an existing definition stream
 
-| File | Description |
-|------|-------------|
-| `habit_completion_rate_chart.dart` | Completion rate line chart (ConsumerWidget) |
+### Dirty-state synchronization
 
-## Testing
-
-| Test File | Coverage |
-|-----------|----------|
-| `test/features/habits/repository/habits_repository_test.dart` | Unit tests for HabitsRepository (13 tests) |
-| `test/features/habits/state/habits_controller_test.dart` | Unit tests for HabitsController (20 tests) |
-| `test/features/habits/state/habit_settings_controller_test.dart` | Unit tests for HabitSettingsController (16 tests) |
-| `test/features/habits/ui/pages/habits_tab_page_test.dart` | Widget tests for habits page (4 tests) |
-| `test/features/habits/ui/widgets/habits_search_test.dart` | Widget tests for search widget (7 tests) |
-| `test/widgets/charts/habits/habit_completion_rate_chart_test.dart` | Widget tests for chart (4 tests) |
-| `test/features/settings/ui/pages/habits/habit_details_page_test.dart` | Widget tests for habit details UI (5 tests) |
-
-**Testing with Repository Overrides:**
-
-```dart
-// Create mock repository
-final mockRepository = MockHabitsRepository();
-when(mockRepository.watchHabitDefinitions())
-    .thenAnswer((_) => definitionsController.stream);
-
-// Use provider override instead of getIt registration
-final container = ProviderContainer(
-  overrides: [
-    habitsRepositoryProvider.overrideWithValue(mockRepository),
-  ],
-);
+```mermaid
+stateDiagram-v2
+  [*] --> Clean
+  Clean --> Clean: DB update while dirty == false
+  Clean --> Dirty: user edits form / setDirty()
+  Dirty --> Dirty: DB update ignored
+  Dirty --> Clean: successful save
 ```
 
-## Migration Notes
+This is one of the key reasons the settings controller exists at all.
 
-### v0.9.786 - Habits Page State Migration & Repository Layer
+- When the form is clean, incoming DB updates can replace the in-memory definition.
+- Once the form is dirty, the controller stops applying external updates.
 
-The habits page state was migrated from BLoC to Riverpod:
+That prevents the classic form bug where a live stream rewrites the field the user is typing into.
 
-- Replaced `HabitsCubit` with `HabitsController` using `@Riverpod(keepAlive: true)`
-- Created Freezed-based `HabitsState` with helper functions for chart calculations
-- Updated all UI widgets to use Riverpod (`ConsumerWidget` / `ConsumerStatefulWidget`)
-- Fixed `HabitsSearchWidget` TextEditingController lifecycle (proper init/dispose/sync with `ref.listen`)
-- Fixed chart touch handling to defer state modification via `addPostFrameCallback`
-- Added comprehensive test coverage for controller, state helpers, and widgets
+### What the settings screen actually exposes
 
-Added repository layer to separate data access from state management:
+The current details page allows editing:
 
-- Created `HabitsRepository` interface and `HabitsRepositoryImpl`
-- All controllers now use repository via `ref.read(habitsRepositoryProvider)` instead of direct `getIt`
-- Repository provider bridges `getIt` service locator with Riverpod DI
-- Tests updated to use `habitsRepositoryProvider.overrideWithValue()` instead of `getIt` registration
-- Improves testability - mock repository instead of individual database/notification services
+- name
+- description
+- category
+- dashboard
+- priority
+- private flag
+- archived flag
+- active-from date
+- daily `showFrom`
+- daily `alertAtTime`
 
-### v0.9.784 - Habit Settings State Migration
+Save behavior is also grounded in the code:
 
-The habit settings state was migrated from BLoC to Riverpod:
+- validate form
+- copy form fields into the `HabitDefinition`
+- write through `PersistenceLogic.upsertEntityDefinition()`
+- reset `dirty`
+- schedule the habit notification through `NotificationService`
 
-- Replaced `HabitSettingsCubit` with `HabitSettingsController`
-- Uses manual `AutoDisposeNotifierProvider.family` pattern (not `@riverpod` annotation) to avoid code generation issues with complex family parameters
-- Pattern follows `CategoryDetailsController` implementation
+Delete is a soft delete via `deletedAt`, not a hard remove.
+
+## Current Constraints And Reality Checks
+
+- The model has `autoCompleteRule`, and the settings controller still has rule-removal helpers, but the autocomplete widget is currently commented out on the details page.
+- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`". The streak text is commented out.
+- Text search is local page filtering, not repository querying.
+- The "due now" split is based only on daily `showFrom` and current clock time.
+
+Those are not flaws in the README. They are the current implementation boundaries, and the docs should say so plainly.
+
+## Why It Is Structured This Way
+
+Habits look simple until the UI needs to answer questions like:
+
+- what is due right now versus later today?
+- what happened over the last 7 or 14 days?
+- what percentage of active habits were completed on a given day?
+- which single habit card needs to refresh after one new completion?
+
+Those are derived-state questions, not just persistence questions.
+
+So the architecture leans into that:
+
+- repository for focused reads
+- a keep-alive page controller for whole-tab derivation
+- a smaller per-card controller for one habit's history strip
+- shared persistence services for writes, notifications, and metadata stamping
+
+That keeps the UI declarative, keeps time-sensitive logic out of widget trees, and avoids forcing every habit interaction through one giant monolithic state object.
