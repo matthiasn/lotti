@@ -1,173 +1,439 @@
-# Sync
+# Sync Feature
 
-## What This Feature Is
+`sync` replicates one user's data across that user's devices over Matrix.
 
-Sync is the feature that keeps one user's data in step across that user's
-devices.
+This is single-user, multi-device sync. It is not a collaboration layer, and
+it is not a raw event forwarder. The feature persists outbound work, replays
+inbound Matrix history in order, tracks `(hostId, counter)` coverage, and asks
+peers for missing counters when gaps appear.
 
-At a high level:
+## Default Runtime Wiring
 
-1. Each device writes local changes to an outbox.
-2. The outbox publishes sync messages into an encrypted Matrix room.
-3. Other devices read those messages, apply them locally, and advance their
-   local view.
-4. If a device notices that some counters are missing, it asks for backfill.
+The default app bootstrap in `lib/get_it.dart` wires the sync feature through
+these services:
 
-The core idea is simple:
+- `MatrixService`
+- `OutboxService`
+- `SyncEventProcessor`
+- `SyncSequenceLogService`
+- `BackfillRequestService`
+- `BackfillResponseHandler`
 
-- journal entries, entry links, agent entities, and agent links are sent as
-  sync messages
-- each change carries causal information through vector clocks
-- newer state should dominate older state
-- if a device missed something, another device should be able to fill the gap
+That is the runtime path this README describes.
 
-## Main Parts
+```mermaid
+flowchart LR
+  Local["Local repositories and services"] --> Outbox["OutboxService"]
+  Outbox --> Sender["MatrixService.sendMatrixMsg()"]
+  Sender --> Room["Encrypted Matrix room"]
 
-| Part | What it does |
+  Room --> Consumer["MatrixStreamConsumer"]
+  Consumer --> Processor["SyncEventProcessor"]
+  Processor --> Stores["JournalDb / AgentRepository / SettingsDb"]
+  Processor --> Sequence["SyncSequenceLogService"]
+
+  Sequence --> BackfillReq["BackfillRequestService"]
+  Room --> BackfillResp["BackfillResponseHandler"]
+  BackfillReq --> Outbox
+  BackfillResp --> Outbox
+```
+
+## What This Feature Owns
+
+At runtime, the sync feature owns:
+
+1. outbound queueing, retries, backoff, and send nudges
+2. Matrix session and room lifecycle
+3. catch-up and live scanning of room history
+4. applying sync payloads into local stores
+5. sequence-log tracking for sequence-aware payloads
+6. backfill request and response handling
+7. provisioning, maintenance, verification, and diagnostics UI/state
+
+## Code Map
+
+| Area | Role |
 | --- | --- |
-| `outbox/` | Queues local work that still needs to be sent |
-| `matrix/` | Sends messages to Matrix and reads them back in order |
-| `sequence/` | Tracks `(hostId, counter)` pairs to detect gaps |
-| `backfill/` | Requests and answers "I am missing counter X" |
-| `ui/` | Settings, outbox monitor, conflicts, stats |
+| `outbox/` | Persist pending payloads in `sync_db`, merge superseded work, enrich sequence metadata, and drive send retries |
+| `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle |
+| `matrix/pipeline/` | Catch-up, live scan, signal coalescing, attachment ingestion, retry, and ordered processing |
+| `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track missing/requested/backfilled/deleted/unresolvable states |
+| `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
+| `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
+| `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
 
-## What Travels Through Sync
+## Message Model
 
-The room is not only carrying one kind of message.
+Transport payloads are `SyncMessage` values.
 
-It currently carries:
+Current message families in `model/sync_message.dart`:
 
-- `SyncJournalEntity`
-- `SyncEntryLink`
-- `SyncAgentEntity`
-- `SyncAgentLink`
-- `SyncBackfillRequest`
-- `SyncBackfillResponse`
-- setup and settings messages such as theme and AI config sync
+- `journalEntity`
+- `entityDefinition`
+- `entryLink`
+- `aiConfig`
+- `aiConfigDelete`
+- `themingSelection`
+- `backfillRequest`
+- `backfillResponse`
+- `agentEntity`
+- `agentLink`
 
-For journal entities, the sync message itself carries the vector clock.
+Sequence-tracked payloads are narrower:
 
-For agent entities, the sync message can be file-backed:
+- `journalEntity`
+- `entryLink`
+- `agentEntity`
+- `agentLink`
 
-- the text event points at `jsonPath`
-- the actual JSON is uploaded as an attachment
-- the receiver resolves the payload from that attachment or local disk
+Those payloads can carry:
 
-That distinction matters a lot for the current investigation.
+- `originatingHostId`
+- `coveredVectorClocks`
 
-## What The Sequence Log Is For
+`coveredVectorClocks` are not optional decoration. `SyncSequenceLogService`
+pre-marks covered counters before normal gap detection so a newer payload can
+prove that older counters were semantically superseded instead of simply lost.
 
-The sequence log is the self-healing layer.
+## Vector Clock Mechanism
 
-It records which `(hostId, counter)` pairs are known locally so the device can:
+`VectorClock` in this feature is a `Map<String, int>` from host id to that
+host's monotonic counter.
 
-- detect gaps
-- ask for missing counters
-- mark counters as covered by newer payloads
-- mark counters as backfilled, deleted, or unresolvable
+For locally written payloads, the map answers:
 
-The intended result is eventual convergence even when messages arrive late or
-out of order.
+> "When this payload version was written, what counters were already present in
+> the version it was derived from, plus the current host's next counter?"
 
-## What Backfill Is For
+`VectorClockService.getNextVectorClock(previous: ...)` keeps the previous clock
+entries and advances only the current host's counter. For a brand-new local
+payload with no previous clock, the map contains only the current host's
+counter.
 
-Backfill exists for the case where a device sees:
+That is different from `originatingHostId`:
 
-- "I received counter 10"
-- "I then received counter 12"
-- "I never saw counter 11"
+- `originatingHostId` identifies the host that created or modified the current
+  payload version
+- `vectorClock` carries the causal snapshot that payload was created from, and
+  it can mention other hosts too
 
-In that case the device records counter `11` as missing and broadcasts a
-`SyncBackfillRequest`.
+### Compare Rules
 
-Any device that can still explain that counter can answer with:
+`vector_clock.dart` implements four comparison outcomes for
+`VectorClock.compare(a, b)`:
 
-- the actual payload via normal sync
-- a hint mapping the missing counter to a newer covering payload, but only when
-  the sender has explicit proof that the newer payload covers that counter
-- a deleted response
-- an unresolvable response
+- `equal`: both clocks contain the same counters
+- `a_gt_b`: `a` dominates `b`; every host counter in `a` is greater than or
+  equal to `b`, and at least one is greater
+- `b_gt_a`: the same relation in the other direction
+- `concurrent`: neither clock dominates the other
 
-A later vector clock alone is not enough to prove coverage. If counter `189`
-exists and counter `188` is missing, `vc[host] = 189` does not by itself prove
-that `188` was semantically superseded. That proof has to be carried explicitly
-in `coveredVectorClocks` or another persisted supersession mapping.
+Important details from the implementation:
 
-## Why There Is A Separate Architecture Document
+- missing host entries compare as `0`
+- negative counters are invalid and throw `VclockException`
+- `VectorClock.merge(a, b)` takes the per-host maximum
 
-This README is intentionally the plain-language version.
+### Compare Examples
 
-The detailed engineering map is here:
+| A | B | `compare(A, B)` | Why |
+| --- | --- | --- | --- |
+| `{A: 5}` | `{A: 5}` | `equal` | Same counter for every host |
+| `{A: 7}` | `{A: 5}` | `a_gt_b` | `A` moved forward |
+| `{A: 5}` | `{A: 7}` | `b_gt_a` | Same case in reverse |
+| `{A: 1, B: 1}` | `{A: 1}` | `a_gt_b` | Missing hosts count as `0`, so `B:1 > 0` |
+| `{A: 3, B: 1}` | `{A: 1, B: 3}` | `concurrent` | `A` is ahead on one host and behind on another |
+
+Merge example:
+
+```text
+merge({A:5, B:1}, {A:3, B:4, C:2}) == {A:5, B:4, C:2}
+```
+
+### How Sync Uses Vector Clocks
+
+The feature uses vector clocks in three separate ways.
+
+1. Conflict and freshness checks
+
+   `SyncEventProcessor` and `MatrixMessageSender` compare clocks to decide
+   whether the payload on disk, in memory, or already stored locally is older,
+   newer, equal, or concurrent.
+
+2. Gap detection
+
+   `SyncSequenceLogService.recordReceivedEntry()` iterates every host in the
+   incoming clock except the receiver's own host, not only the originator.
+   It only turns those observations into gaps for the originator and for hosts
+   the receiver has already seen online. That means a payload written by Alice
+   can still reveal that Bob's counter `7` is missing if the clock carries
+   Bob at `8` and the receiver already has Bob in host activity.
+
+3. Supersession tracking
+
+   `coveredVectorClocks` carries the counters that a newer payload
+   semantically replaces. The receiver processes those covered clocks before
+   normal gap detection.
+
+### Example: Rapid Updates On One Host
+
+Suppose host `A` updates the same journal entry several times before the outbox
+drains:
+
+1. first version: `{A:5}`
+2. second version: `{A:6}`
+3. third version: `{A:7}`
+
+The outbox merge path can collapse those into one pending message with:
+
+```text
+vectorClock = {A:7}
+coveredVectorClocks = [{A:5}, {A:6}, {A:7}]
+```
+
+On receive, `SyncSequenceLogService` filters out the covered clock equal to the
+current payload clock before pre-marking. The practical result is:
+
+- counters `5` and `6` are marked as covered/received first
+- counter `7` is recorded as the payload being applied now
+- the receiver does not leave `5` and `6` behind as permanent "missing" rows
+
+That behavior is covered by the outbox and sequence-log tests.
+
+### Example: Multi-Host Clock, Single Originator
+
+Suppose the previous stored version already had:
+
+```text
+{Alice:9, Bob:8}
+```
+
+That can happen because Bob edited earlier, synced that version, and Alice
+later edited the same payload locally.
+
+When Alice writes the next local version, `getNextVectorClock(previous: ...)`
+preserves Bob's counter and advances Alice's own counter, producing:
+
+```text
+originatingHostId = Alice
+vectorClock = {Alice:10, Bob:8}
+```
+
+This means:
+
+- the current payload version was produced on Alice
+- Bob's `8` was inherited causal history from the previous version, not a
+  counter Alice invented locally
+- by the time this Alice-authored version was written, it still carried the
+  fact that Bob's counter `8` was already part of that payload's history
+
+If another device has already seen Bob online and its local sequence log says
+Bob only reached `6`, then receiving Alice's payload can legitimately create a
+gap for Bob's counter `7`. If Bob has never been seen online by that receiver,
+the code still records Bob's counter from the vector clock but skips gap
+detection for Bob.
+
+That is why gap detection walks all hosts in the vector clock, not only the
+originator.
+
+### Example: Why A Later Clock Is Not Enough
+
+Later clock alone is insufficient:
+
+```text
+missing counter: {A:11}
+new payload clock: {A:20}
+```
+
+`{A:20}` proves that the sender knows about later work. It does not prove that
+counter `11` was semantically superseded by the payload currently being
+received.
+
+That proof has to come from explicit covered clocks. A realistic message may
+look like:
+
+```text
+vectorClock = {A:20}
+coveredVectorClocks = [{A:10}, {A:12}, {A:15}, {A:20}]
+```
+
+The receiver will pre-mark the covered counters `10`, `12`, and `15`, then
+handle `20` as the current payload. Any non-covered counters between them can
+still remain missing and can still trigger backfill.
+
+In this feature, vector clocks describe causal knowledge.
+`coveredVectorClocks` describes semantic replacement.
+
+## Send Path
+
+`OutboxService` stages local work in `sync_db`, merges superseded work when it
+can, enriches sequence-aware payloads with covered clocks, and nudges a
+`ClientRunner`-driven `OutboxProcessor`.
+
+`OutboxProcessor` then:
+
+1. fetches the pending head of the queue
+2. refreshes it before send so merged metadata is not stale
+3. sends it through `MatrixService`
+4. marks it sent, retryable, or errored in `sync_db`
+
+The send path is also nudged by:
+
+- connectivity regain
+- Matrix login completion
+- outbox row-count changes
+- a watchdog for pending-but-idle queues
+
+Sending is gated by `UserActivityGate`, so the queue waits for idle time before
+running a send pass.
+
+```mermaid
+sequenceDiagram
+  participant Local as "Local change"
+  participant Outbox as "OutboxService"
+  participant Repo as "OutboxRepository"
+  participant Proc as "OutboxProcessor"
+  participant Matrix as "MatrixService"
+
+  Local->>Outbox: enqueueMessage(syncMessage)
+  Outbox->>Outbox: merge/enrich covered clocks
+  Outbox->>Repo: persist pending row
+  Outbox->>Proc: nudge runner
+  Proc->>Repo: fetchPending(head)
+  Proc->>Repo: refreshItem(head)
+  Proc->>Matrix: sendMatrixMsg(syncMessage)
+  alt send succeeds
+    Proc->>Repo: markSent()
+  else send fails
+    Proc->>Repo: markRetry() or markError()
+  end
+```
+
+## Receive Path
+
+`MatrixService` composes `SyncEngine`, `SyncRoomManager`,
+`MatrixStreamConsumer`, and `SyncEventProcessor`.
+
+The important runtime rules are:
+
+- `MatrixStreamConsumer.initialize()` hydrates room state and restores the last
+  processed marker
+- `start()` runs catch-up before binding the live signal path
+- client-stream and timeline callbacks act as scheduling signals, not as the
+  payload-processing path
+- marker advancement happens inside ordered batches, not per callback
+
+`SyncEventProcessor` decodes `SyncMessage`, resolves file-backed payloads,
+applies them to local stores, records sequence state, and delegates backfill
+messages to `BackfillResponseHandler`.
+
+Journal entities and agent payloads can be file-backed via `jsonPath`. Those
+payloads are resolved through the attachment/index loader path before they are
+applied, which is why attachment ordering and dedupe matter to sync behavior.
+
+```mermaid
+flowchart TD
+  Event["Matrix event"] --> Decode["Decode SyncMessage"]
+  Decode --> Resolve["Resolve inline or file-backed payload"]
+  Resolve --> Apply["SyncEventProcessor applies to local stores"]
+  Apply --> Sequence["SyncSequenceLogService.recordReceivedEntry(...)"]
+  Sequence --> Gap{"Missing counters?"}
+  Gap -->|no| Done["Continue ordered processing"]
+  Gap -->|yes| Request["BackfillRequestService.nudge()"]
+  Request --> Room["Encrypted Matrix room"]
+  Room --> Response["BackfillResponseHandler"]
+```
+
+## Sequence Log And Backfill
+
+`SyncSequenceLogService` is the causal accounting layer. It records which
+`(hostId, counter)` pairs are known locally and tracks transitions through
+states such as:
+
+- `missing`
+- `requested`
+- `received`
+- `backfilled`
+- `deleted`
+- `unresolvable`
+
+Important implementation details:
+
+- gap detection runs for hosts that have been seen online, plus the current
+  originating host
+- sent entries from this device are recorded so peers can request them later
+- later vector clocks do not automatically close gaps; explicit coverage still
+  matters
+- verified covering entries are used as hints when an exact payload is no
+  longer the best answer
+
+`BackfillRequestService` periodically sends bounded batches of missing
+counters, supports manual full historical backfill, and can re-request entries
+that were previously requested but never resolved.
+
+`BackfillResponseHandler` can answer a request with one of four outcomes:
+
+- exact payload resend
+- `deleted`
+- `unresolvable`
+- a verified covering payload hint
+
+Responses are rate-limited and cooled down per `(hostId, counter)` so repair
+traffic does not turn into its own loop.
+
+## Isolate Actor Path
+
+`actor/` contains a separate isolate-based implementation:
+
+- `SyncActorCommandHandler`
+- `SyncActorHost`
+- actor-side `OutboundQueue`
+
+That code has a real lifecycle in `actor/sync_actor.dart`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Uninitialized
+  Uninitialized --> Initializing: init
+  Initializing --> Idle: init succeeds
+  Idle --> Syncing: startSync
+  Syncing --> Idle: stopSync
+  Idle --> Stopping: stop
+  Syncing --> Stopping: stop
+  Stopping --> Disposed: cleanup complete
+```
+
+The actor path is worth documenting because it is in the repo and tested, but
+it is not the default bootstrap path described above.
+
+## Current Constraints
+
+The code still depends on a few sharp assumptions:
+
+- sender-side `coveredVectorClocks` enrichment has to stay correct for offline
+  convergence to stay sound
+- file-backed payload replay depends on attachment dedupe and ordering in
+  `matrix/pipeline/attachment_*`
+- backfill correctness depends on verified `(hostId, counter) -> payloadId`
+  mappings, not on "some later vector clock exists"
+- the detailed performance and failure analysis lives in
+  [current_architecture.md](./current_architecture.md), not in this overview
+
+## Relationship To Other Features
+
+- `journal` repositories and `PersistenceLogic` enqueue journal entities and
+  links
+- `agents/sync/agent_sync_service.dart` enqueues agent entities and links
+- `ai` repositories enqueue AI config updates and deletes
+- theming changes enqueue `themingSelection`
+- sync-facing settings, verification, maintenance, and diagnostics UI live
+  under `lib/features/sync/ui/` and `lib/features/sync/state/`
+
+## Further Reading
 
 - [current_architecture.md](./current_architecture.md)
+- [docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md)
 
-That document covers:
-
-- the actual send and receive pipeline
-- how sequence logging and backfill interact
-- recent sync-related PRs
-- code-backed failure modes
-- the current investigation into false gap storms and sync overhead
-
-## Current State Of The Investigation
-
-The sync system does eventually converge in many cases, but the current logs
-show much more work than the user action volume should create.
-
-The most recent stabilization pass addressed two concrete failures:
-
-- exact backfill hits are now validated against the payload's current vector
-  clock before resend
-- reconnect catch-up now treats the stored timestamp as the canonical replay
-  anchor; it pages backward until that time boundary is visible, then replays
-  forward with bounded overlap instead of trusting exact marker lookup
-- receive-side signal diagnostics now summarize scheduler pokes per catch-up
-  burst and per live-scan pass instead of writing one log line for every raw
-  callback
-- backfill request paging now walks past already queued oldest rows instead of
-  stopping at the first filtered page, and zombie-file cleanup only deletes
-  paths that resolve inside the local docs directory
-
-The largest remaining concerns are:
-
-- inbox-side attachment replay: repeated processing for the exact same
-  attachment `eventId` is now suppressed unless the local file is missing or
-  empty (repair path). The remaining edge case is different attachment events
-  that share the same agent payload path, which can still overwrite each other
-- agent payload handling that can plausibly combine an older text event with a
-  newer attachment version for the same `jsonPath`
-- sender-side supersession metadata: some offline-convergence failures were not
-  caused by replay at all, but by omitted `coveredVectorClocks` for superseded
-  local counters. When that metadata is missing, the receiver cannot soundly
-  infer that a later payload covers an older missing counter, so autonomous
-  convergence may still require either an exact resend or an `unresolvable`
-  response
-
-The receive-side recovery model is now stricter than before:
-
-- reconnect catch-up now succeeds when it reaches the stored timestamp
-  boundary; exact Matrix marker lookup is no longer part of the recovery
-  contract
-- timestamp-first catch-up now keeps paging even when no durable Matrix event
-  id is stored, and it passes the requested history page size through to the
-  Matrix SDK instead of silently falling back to the SDK default page size
-- if catch-up cannot page back to the stored timestamp boundary, it reports
-  incomplete recovery instead of replaying a fallback room tail as if it were
-  exact backlog
-- sequence progress is derived from the highest contiguous resolved counter for
-  each host, not from the maximum sparse counter present anywhere in the log
-- large counter gaps are fully materialized in the sequence log, but automatic
-  backfill is only nudged after the surrounding ordered replay batch settles so
-  transient in-burst holes do not turn into redundant repair chatter
-- durable restart markers now only persist server-assigned Matrix event ids;
-  local `lotti-...` echo ids are kept out of the stored read marker so Matrix
-  read-marker state stays durable even though reconnect recovery is
-  timestamp-first
-- timestamp-first catch-up fixes reachable-history replay, but it does not
-  replace explicit supersession metadata. Full sender-offline convergence still
-  depends on newer payloads carrying the omitted counters in
-  `coveredVectorClocks`
-
-Those are documented in detail in
-[current_architecture.md](./current_architecture.md) and
-[../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md).
+Read this README first for the runtime shape. Read
+[current_architecture.md](./current_architecture.md) when you need the recent
+failure history, log-backed investigations, and tuning context.

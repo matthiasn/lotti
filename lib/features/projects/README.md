@@ -1,292 +1,338 @@
 # Projects Feature
 
-Projects provide a grouping layer between categories and tasks. Each project belongs to a category and can have multiple tasks linked to it. When a matching `projectAgent` template is available, project creation provisions a project agent for analysis and reporting. If no agent exists yet, the detail page lets the user create one later.
+Projects provide the middle layer between categories and tasks.
+
+They group related tasks, power the dedicated projects tab, and integrate with
+the agent system so a project can accumulate health signals, recommendations,
+and scheduled digests instead of just acting as a nicer folder.
+
+## What This Feature Owns
+
+- `ProjectEntry` persistence and editing
+- Task-to-project linking
+- The top-level projects overview tab
+- Both project detail pages
+- Project health built from project-agent reports
+- The filters and grouped list models used by the projects tab
 
 ## Feature Flag
 
-The entire projects UI is gated behind the `enableProjects` config flag (default: `false`). When disabled, no project-related UI is visible. Toggle it in Settings > Feature Flags.
+The visible project experience is controlled by `enableProjects`.
 
-Gated integration points:
-- **Top-level navigation**: the `Projects` tab is hidden unless the flag is enabled.
-- **Tasks page**: `ProjectHealthHeader` is hidden.
-- **Category details**: `CategoryProjectsSection` is hidden.
-- **Task metadata row**: `TaskProjectWrapper` chip is hidden.
+When the flag is off:
 
-Routes remain registered but are unreachable when all navigation entry points are hidden.
+- no top-level projects tab
+- no category projects section
+- no task project chip
+- no project health header on tasks
 
-## Data Model
+Routes may still exist, but the normal ways into the feature are hidden.
 
-Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` sealed class. The project-specific data lives in `ProjectData` (Freezed):
+## Architecture
 
-- **title**: project name (required)
-- **status**: `ProjectStatus` sealed class with five variants: `open`, `active`, `onHold`, `completed`, `archived`. Each carries a timestamp, UTC offset, and the `onHold` variant adds a `reason`.
-- **statusHistory**: chronological list of prior statuses.
-- **targetDate**: optional deadline.
-- **dateFrom** / **dateTo**: time range.
+```mermaid
+flowchart TD
+  ProjectEntry["ProjectEntry"] --> Repo["ProjectRepository"]
+  Repo --> Journal["JournalDb + PersistenceLogic"]
+  Repo --> Links["EntryLink.project"]
+  Links --> Tasks["Task membership"]
 
-Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
-The journal table also keeps a denormalized `project_id` column in sync for
-tasks so the top-level projects tab can batch task rollups without repeated
-link-table joins.
-Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
-forward to 06:00 local time on the next day after creation or after a due
-digest completes. Direct project edits and task linking changes coalesce into a
-short deferred refresh, while other task-level activity marks the current
-summary as stale and defers the automatic refresh to the next scheduled digest.
+  Repo --> Overview["Projects overview snapshot"]
+  Overview --> Filters["ProjectsFilterController"]
+  Filters --> Tab["Projects tab UI"]
 
-## Module Structure
-
+  Agent["Project agent"] --> Health["Health metrics provider"]
+  Agent --> Summary["Project agent summary provider"]
+  Agent --> Recos["Project recommendations provider"]
+  Health --> Snapshot["ProjectHealthSnapshot"]
+  Summary --> Snapshot
+  Recos --> Snapshot
+  Snapshot --> Detail["Project detail UI"]
 ```
+
+Projects are therefore both:
+
+- a journal-backed grouping feature
+- a view of project health built from project-agent data
+
+## Directory Shape
+
+```text
 lib/features/projects/
 ├── model/
-│   └── projects_overview_models.dart  # Tab overview DTOs and filter/query state
 ├── repository/
-│   └── project_repository.dart      # CRUD, task linking, and batch overview methods
+│   └── project_repository.dart
 ├── state/
-│   ├── project_health_metrics.dart   # Parsing for agent-authored health band/rationale
-│   ├── project_detail_record_provider.dart # Live adapter from project/task/agent state into shared detail presentation data
-│   ├── project_providers.dart        # Detail providers plus projects-tab overview/filter providers
-│   └── project_detail_controller.dart # Detail page state (form tracking, save)
-├── widgetbook/
-│   ├── project_list_detail_mock_controller.dart # Widgetbook-only mock controller for the list/detail showcase
-│   ├── project_list_detail_mock_data.dart       # Factory building ProjectListData with realistic mock records
-│   └── project_widgetbook.dart                  # Widgetbook registration for desktop + mobile project showcase use cases
-└── ui/
-    ├── model/
-    │   ├── project_list_detail_models.dart       # Widgetbook list/detail records plus bridge getters into ProjectListItemData
-    │   ├── project_list_detail_state.dart        # Widgetbook search/filter/selection state built on ProjectsFilter + ProjectCategoryGroup
-    │   └── projects_filter_sheet_state.dart      # Adapter between ProjectsFilter and the shared DS filter sheet state
-    ├── pages/
-    │   ├── project_create_page.dart   # New project form
-    │   ├── project_details_page.dart  # New top-level projects-tab detail page
-    │   ├── project_detail_page.dart   # View/edit existing project
-    │   └── projects_tab_page.dart     # Top-level grouped projects list page
-    └── widgets/
-        ├── category_projects_section.dart       # Projects list in category detail
-        ├── health_panel.dart                     # Health score panel with progress bar and legends
-        ├── project_agent_report_card.dart        # Agent report display
-        ├── project_detail_pane.dart              # Right-hand detail pane (header, health, report, tasks, reviews)
-        ├── project_health_header.dart            # Expandable project overview on tasks page
-        ├── project_health_indicator.dart         # Compact health band chip with reason text
-        ├── projects_header.dart                  # Shared DS header used by the production tab and Widgetbook mobile list
-        ├── project_mobile_detail_content.dart    # Shared mobile detail surface used by the app route and Widgetbook
-        ├── projects_overview_content.dart        # Shared sliver scroll view used by the production tab and Widgetbook mobile list
-        ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
-        ├── project_list_detail_showcase.dart     # Thin Widgetbook wrapper composing production widgets with mock data
-        ├── project_list_pane.dart                # Desktop Widgetbook/search pane wrapper around the shared project list widgets
-        ├── project_list_shared.dart              # Neutral shared group header, grouped section, and project row widgets
-        ├── project_mobile_list_detail_showcase.dart # Mobile list/detail showcase with shared mock selection state and adaptive split/stack layout
-        ├── projects_filter_modal.dart            # Projects-specific status/category filter modal built on the shared DS filter scaffold
-        ├── project_selection_modal_content.dart  # Project picker modal
-        ├── project_status_attributes.dart        # Shared status→(label,color,icon) mapping
-        ├── project_status_chip.dart              # Status badge with icon/color
-        ├── project_status_picker.dart            # Interactive status selection bottom sheet
-        ├── projects_overview_list.dart           # Production lazy sliver wrapper around the shared DS project rows
-        ├── project_tasks_panel.dart              # Highlighted tasks panel with duration totals
-        ├── review_sessions_panel.dart            # Review sessions panel with expandable metric rows
-        ├── shared_widgets.dart                   # Reusable widgets: CategoryTag, StatusPill, CountDotBadge, etc.
-        ├── sidebar.dart                          # Desktop sidebar navigation and top bar
-        └── showcase/
-            ├── showcase_palette.dart             # Design-token colour mapping for the desktop layout
-            └── showcase_status_helpers.dart       # Status label/icon/colour helpers and duration formatting
+│   ├── project_providers.dart
+│   ├── project_detail_controller.dart
+│   ├── project_detail_record_provider.dart
+│   └── project_health_metrics.dart
+├── ui/
+│   ├── pages/
+│   ├── model/
+│   └── widgets/
+└── widgetbook/
 ```
 
-## State Management
+## Core Data Model
 
-### Providers (`project_providers.dart`)
+Projects are stored as `ProjectEntry`, a `JournalEntity.project` variant.
 
-- `projectsForCategoryProvider(categoryId)` — `FutureProvider.autoDispose.family` fetching projects for a category. Auto-invalidates on `projectNotification` updates.
-- `projectTaskCountProvider(projectId)` — `FutureProvider.autoDispose.family` returning the number of tasks linked to a project.
-- `projectHealthMetricsProvider(projectId)` — `FutureProvider.autoDispose.family` reading the latest persisted project-agent report and exposing its agent-authored health band and rationale. If the latest report has no health payload yet, the provider returns `null` and the UI shows no health state.
-- `projectHealthSnapshotProvider(projectId)` — aggregates the latest health band, stale-summary state, and active `ProjectRecommendationEntity` records for a single project so dashboard UI can consume one project-scoped state object.
-- `projectHealthOverviewEntriesProvider(categoryId)` — prepares category-scoped project health entries, already sorted worst-band-first for future health dashboard list surfaces.
-- `projectForTaskProvider(taskId)` — `FutureProvider.autoDispose.family` fetching the project a task belongs to.
-- `projectsFilterControllerProvider` — keep-alive `NotifierProvider` storing selected project statuses, selected category IDs, text query, and search mode for the top-level tab rollout. Setting a non-empty text query promotes the search mode to `localText`; clearing it disables text filtering again without disturbing the other filter sections.
-- `projectsOverviewProvider` — `StreamProvider.autoDispose` exposing the batched grouped snapshot for the top-level projects tab via `ProjectRepository.watchProjectsOverview()`.
-- `visibleProjectGroupsProvider` — derived provider that applies provider-layer filtering to the raw grouped snapshot. It supports project-status and category filters in production, and now also powers the live tab's local substring search when `searchMode == ProjectsSearchMode.localText`. Vector search remains a separate future integration.
+The important user-facing fields live in `ProjectData`:
 
-### Detail Controller (`project_detail_controller.dart`)
+- `title`
+- `status`
+- `statusHistory`
+- `targetDate`
+- `dateFrom`
+- `dateTo`
 
-`ProjectDetailController` is a `Notifier` with original/pending pattern for change tracking:
+Projects can also carry free-form body text through `entryText`. The newer
+top-level detail page uses that text as fallback text when no project-agent
+TL;DR exists yet.
 
-- Watches the repository update stream for live reload.
-- Tracks `hasChanges` by comparing pending vs original project data.
-- Methods: `updateTitle`, `updateCategoryId`, `updateTargetDate`,
-  `updateStatus`, `saveChanges`.
+Tasks are linked to projects through `EntryLink.project`. The database also
+maintains a denormalized `project_id` on tasks so overview queries do not need
+to rediscover the relationship expensively every time.
 
-### Live Detail Adapter (`project_detail_record_provider.dart`)
+## Create Flow
 
-The new top-level detail route does not rely on Widgetbook-only mock models.
-Instead `projectDetailRecordProvider(projectId)` assembles the detail UI from
-live app state:
+Project creation is where project data and the agent system connect.
 
-- `projectDetailControllerProvider(projectId)` for the current project and its
-  linked tasks
-- `projectHealthMetricsProvider(projectId)` for the agent-authored health band
-- `projectAgentProvider(projectId)` and `agentReportProvider(agentId)` for the
-  latest summary/report content
-- `projectRecommendationsProvider(projectId)` for active recommendations
-- `EntitiesCacheService` for category metadata lookup
+```mermaid
+sequenceDiagram
+  participant UI as "ProjectCreatePage"
+  participant Repo as "ProjectRepository"
+  participant Template as "AgentTemplateService"
+  participant Agent as "ProjectAgentService"
 
-This keeps the app and Widgetbook aligned on the same presentation contracts
-(`ProjectRecord`, `TaskSummary`) while still allowing Widgetbook to drive the
-shared UI with its own mock controller.
+  UI->>Repo: createProject(ProjectEntry)
+  Repo-->>UI: persisted project
+  UI->>Template: find matching projectAgent template
+  alt template available
+    UI->>Agent: createProjectAgent(projectId, template)
+    Agent-->>UI: agent identity created
+  else no template
+    UI-->>UI: project exists without agent
+  end
+```
 
-## Routing
+The template lookup prefers category-scoped project-agent templates and falls
+back to global ones. If no matching template exists, the project still exists
+just fine. It simply starts life without an agent until one is created later.
 
-Top-level route:
-- `/projects` — grouped list tab, inserted into the main bottom navigation after `Tasks`
-- `/projects/:projectId` — design-system-aligned project details page used by
-  the top-level projects flow
+## Repository Responsibilities
 
-Project routes live under the settings location:
-- `/settings/projects/create?categoryId=X` — create page
-- `/settings/projects/:projectId` — detail page
-- `/settings/projects/:projectId?categoryId=X` — detail page with category
-  return context preserved for back navigation
+`ProjectRepository` owns the data-heavy part of the feature:
 
-The older settings-scoped project detail page remains reachable for now so
-category-driven project flows can keep working while the top-level projects tab
-uses the new route.
+- fetch one project
+- fetch projects for a category
+- fetch tasks for a project
+- fetch the project for a task
+- create and update projects
+- link and relink tasks
+- remove task links
+- compute grouped overview snapshots
+- watch overview snapshots against update notifications
 
-## Key Widgets
+Two design choices matter here:
 
-### ProjectHealthHeader
+1. linking enforces both the same-category rule and the single-project-per-task rule
+2. project overview queries are batched and grouped so the top-level tab can stay fast
 
-Expandable header on the tasks page. Collapsed (default) shows a `ModernBaseCard` with a folder icon, "Projects" title, and a summary like "2 projects, 4 tasks". Tapping expands to reveal per-project rows with name, task count, target date, and status chip. Tapping a project row navigates to its detail page.
+## Overview Tab Model
 
-Each expanded row also renders a compact project health band (`Surviving`, `On Track`, `Watch`, `At Risk`, `Blocked`) taken from the latest project-agent report. The app does not synthesize a fallback band from local heuristics; if the agent has not published health yet, no band is shown.
+The top-level projects tab is driven by grouped DTOs rather than raw entities:
 
-### ProjectListDetailShowcase
+- `ProjectsOverviewSnapshot`
+- `ProjectCategoryGroup`
+- `ProjectListItemData`
+- `ProjectTaskRollupData`
+- `ProjectsFilter`
 
-Widgetbook-only thin wrapper that composes the production desktop layout widgets (`Sidebar`, `MainTopBar`, `ProjectListPane`, `ProjectDetailPane`) with mock data from `project_list_detail_mock_data.dart`. The production widgets live under `ui/widgets/` and consume `ProjectListDetailState` and `ProjectRecord` presentation models from `ui/model/`. A dedicated mock controller in `widgetbook/` drives search and selection without depending on the live repository.
+That lets the tab UI render grouped rows without recomputing counts,
+categories, and task rollups in each widget.
 
-### ProjectMobileListDetailShowcase
+## Filter Model
 
-Widgetbook-only mobile showcase that uses the same mock controller/provider as the desktop showcase. On wide canvases it renders list and detail phone frames side by side; on narrow canvases it navigates between the list screen and the selected detail screen while preserving selection state. The mobile screens reuse the shared `ProjectsHeader`, `ProjectGroupSection`, and `ProjectRow` implementations so the Widgetbook list UI and the production projects tab stay visually aligned instead of drifting apart.
+`ProjectsFilterController` is small, but important.
 
-### ProjectMobileDetailContent
+It stores:
 
-Shared mobile project-detail surface used by both the new `/projects/:projectId`
-app route and the Widgetbook mobile showcase. It reuses the same header,
-health, expandable AI report, and project-tasks sections so the production app
-and the design reference render the same component tree.
+- selected status IDs
+- selected category IDs
+- text query
+- search mode
 
-### ProjectsTabPage
+The current production UI only drives `disabled` and `localText`. The enum also
+already has a `vector` case, but it is not wired into the projects UI yet.
 
-The top-level projects tab now mounts the same shared sliver scroll surface as
-the Widgetbook mobile list via `ProjectsOverviewContent`. That surface owns
-only the common `ProjectsHeader` and the lazy `ProjectsOverviewSliverList`.
-`ProjectCreateFab` is mounted alongside this surface by each consumer
-(`Scaffold.floatingActionButton` in the live tab, `Positioned` in the
-Widgetbook mobile list), so FAB placement, spacing, and bottom offsets remain
-an external layout responsibility. The header uses the same left-aligned title,
-notification icon, design-system search field, and filter icon shown in the
-Widgetbook mobile reference. In production that search field now performs local
-substring filtering against the already-loaded grouped projects, while the
-filter icon opens the shared DS modal scaffold with Projects-specific status
-and category filters.
+Local text search runs over the already-loaded grouped snapshot. That is the
+current tradeoff: cheap, deterministic, and good enough until vector search is
+actually worth adding here.
 
-Tapping a project row in the tab now navigates to `/projects/:projectId`
-instead of opening the older settings-scoped detail route.
+## Detail State
 
-### Shared List Components
+The two detail routes do different jobs:
 
-`ProjectCategoryGroup` and `ProjectListItemData` are the production list contracts. The shared UI components that render them are:
+- `/settings/projects/:projectId` is the edit page driven by `ProjectDetailController`
+- `/projects/:projectId` is the newer detail page built from `ProjectRecord` via `projectDetailRecordProvider`
 
-- `ProjectsHeader` — shared top section for the Widgetbook mobile list and the live tab.
-- `ProjectGroupHeader` — neutral category header row shared across production and Widgetbook.
-- `ProjectGroupSection` — grouped card list used by the desktop/mobile Widgetbook list.
-- `ProjectRow` — shared DS project row with progress ring, task count, due/ongoing label, and compact status label.
-- `ProjectsOverviewSliverList` — sliver wrapper around the shared grouped-card section, used by both the live tab and the Widgetbook mobile list.
-- `ProjectsOverviewContent` — shared sliver scroll view surface that combines the common header and grouped sliver list for the live tab and the Widgetbook mobile list; it does not own FAB placement.
-- `ProjectCreateFab` — shared add-project floating action used by both consumers, mounted as a sibling outside `ProjectsOverviewContent`.
+`ProjectDetailController` follows the same pattern as the other edit pages:
 
-These shared list widgets live in `project_list_shared.dart`, so production and Widgetbook depend on the same neutral module instead of importing showcase-specific pane code.
+- keep an original copy
+- keep a pending copy
+- compute `hasChanges`
+- only append status history when save actually persists
 
-### ProjectsFilterModal
+That last point prevents status-history inflation when users flip between statuses during editing.
 
-Projects reuse the shared design-system filter scaffold from `features/design_system/components/task_filters/`, but adapt it through `projects_filter_sheet_state.dart` and `projects_filter_modal.dart` so only the relevant sections are shown. For now the modal supports:
+## Project Health Composition
 
-- project-status filtering (`open`, `active`, `onHold`, `completed`, `archived`)
-- category filtering
+The health state is assembled across `project_providers.dart` and
+`project_detail_record_provider.dart`.
 
-Nested multi-select picking for those fields now also goes through the shared
-design-system field-selection sheet, so Projects and the design-system Task
-filter showcase use the same DS checkbox rows and apply action instead of
-separate project-specific picker UIs. The same modal and `ProjectsFilter`
-state model are used by the production tab and the Widgetbook list/detail
-showcase, so there is no drift between the implementation and the showcased
-behavior.
+The detail pages pull from a few separate inputs:
 
-### ProjectStatusPicker
+- project entity data
+- linked tasks
+- latest project-agent report
+- parsed health metrics from that report
+- summary freshness and scheduled wake state
+- active recommendation entities
+- derived `ProjectRecord` presentation data
 
-Interactive status selector on the project detail page. Shows the current status with color-coded icon and label. Tapping opens a bottom sheet with all five status options; selecting one calls `updateStatus` on the controller.
+```mermaid
+flowchart LR
+  Project["ProjectEntry"] --> Snapshot["ProjectHealthSnapshot"]
+  Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
+  Metrics --> Snapshot
+  Summary["ProjectAgentSummaryState"] --> Snapshot
+  Recos["ProjectRecommendationEntity list"] --> Snapshot
+  Snapshot --> Header["Health chip / header"]
+  Snapshot --> Panel["Health panel"]
+  Snapshot --> Detail["Detail page sections"]
+```
 
-### ProjectDetailPage
+This is why project health is agent-authored rather than locally guessed. If
+the latest project-agent report has no parseable health payload yet, the app
+shows no health state instead of falling back to invented local heuristics.
 
-Form page with three sections:
-1. **Status** — `ProjectStatusPicker` for changing project status.
-2. **Project Title** — text field and optional target date.
-3. **Project Health** — compact health band chip plus the project agent's user-facing rationale from the latest report. If the latest report has no health payload yet, this section stays hidden.
-4. **Agent** — current project-agent report, active project
-   recommendations, manual refresh action, and an explicit empty state when
-   no project agent has been provisioned. Confirmed
-   `recommend_next_steps` proposals become first-class recommendation records
-   that supersede any older active set and can be resolved or dismissed from
-   this section.
-5. **Linked Tasks** — list of tasks in this project.
+## UI Surfaces
 
-### ProjectDetailsPage
+### Top-Level Projects Tab
 
-The top-level projects-tab detail page uses the shared mobile detail surface and
-live project state instead of Widgetbook-only data. It currently includes:
+The tab renders grouped project rows using the shared overview content and list
+widgets.
 
-1. **Interactive header chips** — tappable category selector, due-date picker,
-   and status selector.
-2. **Health header + panel** — user-facing health band (`At Risk`, etc.) in
-   the header plus the numeric score ring and blocker/task summary card.
-3. **Expandable AI report** — latest project-agent report with manual refresh,
-   TLDR-first expansion, and recommendations.
-4. **Project Tasks** — grouped task card section matching the new design, with
-   task rows linking through to `/tasks/:taskId`.
+It is responsible for:
 
-The top-level detail intentionally omits the old "total time" and
-"one-on-one review" sections, and it also leaves out the plain description
-block for now; those will return later once the new design path is ready for
-them.
+- grouped category sections
+- search
+- filter modal
+- navigation into project details
+- floating create action that still hands off to `/settings/projects/create`
 
-## Integration Points
+### Project Detail Pages
 
-- **Main app shell**: a top-level `Projects` tab now appears immediately after `Tasks` when the feature flag is enabled. The tab uses the existing bottom navigation, opens the production grouped list page, and exposes the shared status/category filter modal from its header.
-- **Category detail page**: `CategoryProjectsSection` shows projects and a "New Project" button (gated by `enableProjects` flag).
-- **Task header**: `TaskProjectWrapper` adds a project chip to the task metadata row (gated by `enableProjects` flag).
-- **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
-- **Agent system**: Project agents are managed through `ProjectAgentService`,
-  `ProjectActivityMonitor`, and the agent workflow system. Local task/project
-  changes mark pending activity, including task-linked updates such as new or
-  refreshed task summaries. Direct edits to the project and task linking
-  changes also schedule a short deferred refresh through the wake orchestrator.
-  Other task-driven staleness still rolls into the next 06:00 scheduled digest
-  unless the user refreshes manually sooner.
-- **Deferred agent proposals**: Project detail pages now surface project-agent
-  change sets so users can confirm or reject proposed status changes, task
-  creation, and other reviewed actions in place. Confirmed
-  `recommend_next_steps` proposals are persisted as active project
-  recommendations instead of being replayed from raw decision history.
+There are currently two detail routes in play:
 
-## Task-Project Linking
+- the newer top-level `/projects/:projectId` path
+- the older settings-scoped detail path used by category-driven flows
 
-Each task can belong to at most one project. Linking is done via the project picker modal (`ProjectSelectionModalContent`) accessible from the task header. The repository methods `linkTaskToProject` and `unlinkTaskFromProject` manage the `EntryLink` records, enforcing the single-project constraint.
+The newer top-level route is not just a renamed editor. It assembles a
+`ProjectRecord` and renders the shared detail widgets
+(`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel`), which keeps
+the production surface aligned with Widgetbook.
 
-## Top-Level Tab Data Path
+### Category and Task Integrations
 
-The top-level projects tab does **not** render through per-project providers such as `projectTaskCountProvider` or by looping `projectsForCategoryProvider` over categories.
+Projects surface in:
 
-Instead it uses one batched overview path:
+- category details via `CategoryProjectsSection`
+- task metadata via `TaskProjectWrapper` and `TaskProjectWidget`
+- the tasks page via `ProjectHealthHeader`
 
-1. `JournalDb.getVisibleProjects()` fetches all visible `ProjectEntry` rows in one query.
-2. `JournalDb.getProjectTaskRollups(projectIds)` fetches task counts for all visible projects in one aggregate query keyed by the denormalized `journal.project_id`.
-3. `ProjectRepository.getProjectsOverview()` resolves category metadata once, groups the result in memory, and returns a `ProjectsOverviewSnapshot`.
-4. `ProjectRepository.watchProjectsOverview()` subscribes to `UpdateNotifications`, refreshing on broad project/task/category/private tokens and on concrete project/category IDs already present in the current snapshot so status changes cannot leave the list stale.
-5. `projectsOverviewProvider` exposes that snapshot stream to the tab, while `visibleProjectGroupsProvider` applies the local status/category/text filtering model without re-querying per project.
+## When the Project Agent Actually Wakes
+
+Plainly: the project agent is not supposed to wake for every microscopic ripple
+in a linked task.
+
+It has three real wake paths:
+
+1. Creation wake. `ProjectAgentService.createProjectAgent()` provisions the agent, sets `scheduledWakeAt` to the next local digest time, and immediately enqueues a `creation` wake.
+2. Immediate direct-project wake. The agent is subscribed to `projectEntityUpdateNotification(projectId)`, so explicit project edits can enqueue an orchestrated wake immediately. Manual reanalysis uses the same immediate path.
+3. Scheduled digest wake. Linked task activity does not wake the model immediately. `ProjectActivityMonitor` resolves affected project IDs and writes `pendingProjectActivityAt` on the agent state instead.
+
+That third path is the key design choice. Task churn marks the summary as stale
+now, and the digest decides later whether the model should spend tokens on a
+fresh project report.
+
+```mermaid
+flowchart TD
+  Create["Create project agent"] --> CreationWake["Enqueue creation wake now"]
+  Create --> NextDigest["Set scheduledWakeAt to next local digest"]
+
+  DirectEdit["Direct project edit"] --> DirectSub["projectEntityUpdateNotification(projectId)"]
+  DirectSub --> Orchestrator["WakeOrchestrator"]
+  Orchestrator --> ImmediateWake["Immediate project-agent wake"]
+
+  TaskActivity["Linked task activity"] --> Monitor["ProjectActivityMonitor"]
+  Monitor --> Mark["Set pendingProjectActivityAt"]
+  Mark --> Due["Wait for scheduled digest"]
+
+  NextDigest --> Due
+  Due --> Scheduler["ScheduledWakeManager checks due wakes roughly hourly"]
+  Scheduler --> ScheduledWake["Scheduled project-agent wake"]
+
+  ScheduledWake --> Stale{"pendingProjectActivityAt set?"}
+  Stale -->|no| Skip["Skip model run, advance scheduledWakeAt"]
+  Stale -->|yes| FullRun["Load project, linked tasks, reports, run LLM"]
+  FullRun --> Persist["Persist fresh report + recommendations"]
+  Persist --> Clear["Clear pendingProjectActivityAt, set lastDailyWakeAt"]
+```
+
+### Project-agent state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Scheduled: project agent created
+  Scheduled --> WakingNow: creation wake
+  Scheduled --> WakingNow: direct project edit / manual reanalysis
+  Scheduled --> PendingActivity: linked task activity recorded
+  PendingActivity --> WakingNow: scheduled digest due
+  Scheduled --> SkipAndReschedule: scheduled digest due and no pending activity
+  SkipAndReschedule --> Scheduled: next digest scheduled
+  WakingNow --> Scheduled: report persisted and pending marker cleared
+```
+
+What the digest actually does:
+
+- every project agent gets a `scheduledWakeAt` when created
+- `ScheduledWakeManager` scans for due wakes on startup and then on a periodic timer with a default one-hour check interval
+- when the wake is due, `ProjectAgentWorkflow` checks whether a report already exists and whether `pendingProjectActivityAt` is still `null`
+- if there is no pending activity, the workflow performs a cheap skip: it updates `lastWakeAt`, increments the wake counter, and rolls `scheduledWakeAt` forward without calling the model
+- if pending activity exists, the workflow loads the project, linked tasks, and task-agent reports, runs the conversation, persists a fresh project report and deferred recommendations, clears the pending marker, records `lastDailyWakeAt`, and schedules the next digest
+
+So the short version is:
+
+- project creation: wake now
+- direct project edit or manual reanalysis: wake now
+- task churn inside the project: mark stale now, think later
+
+That is an intentional tradeoff. The project feature is meant to summarize
+meaningful change, not narrate every checkbox toggle.
+
+## Why The Feature Looks Like This
+
+Projects are not just "tags but bigger". They sit between category-level organization and task-level execution, and they aggregate agent outputs into something a human can scan quickly.
+
+That requires:
+
+- proper persistence
+- strict linking rules
+- grouped overview models
+- filtered list state
+- project health built from agent reports, freshness state, and recommendations
+
+Without those pieces, the feature would collapse into a nice-looking list of vague nouns. With them, it becomes an actual project layer.

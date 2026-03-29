@@ -1,574 +1,334 @@
 # Tasks Feature
 
-This feature powers task creation, editing, filtering and list/grid rendering.
+The `tasks` feature is the task-specific layer on top of Lotti's shared journal substrate.
 
-## Priority (P0–P3)
+A task is still a `JournalEntity`, but this feature is where it becomes a proper task with its own specific behaviors.
 
-- Short codes: `P0` (Urgent), `P1` (High), `P2` (Medium), `P3` (Low)
-- UI
-  - Task Details: header shows a “Priority:” label with a chip; tapping opens the picker
-  - List Cards: priority chip shown alongside status
-  - Filtering: priorities appear in the Tasks filter modal alongside status/labels/categories
-- Persistence
-  - Per‑tab storage via `TASKS_CATEGORY_FILTERS` (tasks tab) and `JOURNAL_CATEGORY_FILTERS` (journal tab)
-  - Only the tasks tab persists `selectedTaskStatuses`, `selectedLabelIds`, and `selectedPriorities`
-- Database
-  - Dual columns on `journal` for performance and readability:
-    - `task_priority` (TEXT: `P0`–`P3`)
-    - `task_priority_rank` (INTEGER: 0–3)
-  - Ordering: `task_priority_rank` ASC, then `date_from` DESC
-  - Migration v29 backfills legacy tasks to `P2` with rank `2` and rebuilds `idx_journal_tasks`
+It owns the task-specific experience:
 
-## Due Dates
+- detail surfaces
+- checklist management
+- linked-task management
+- task progress calculation
+- task-specific filter UI hooks
+- priority, due-date, labels, project, and cover-art presentation
 
-Tasks support optional due dates with visual status indicators and flexible display options.
+## What This Feature Owns
 
-### Features
+At runtime, the feature owns:
 
-- **Date Picker**: Tap the due date chip in task details header to open the date picker modal
-  - Cancel: Close without changes
-  - Clear: Remove the due date
-  - Done: Save the selected date (only if user interacted with picker)
-- **Color-Coded Status**:
-  - 🔴 Red: Overdue (past due date)
-  - 🟠 Orange: Due today
-  - Default: Future due dates
-- **Display Toggle**: Filter modal includes "Show due date on cards" toggle
-- **Card Layout**: Creation date on LEFT, due date on RIGHT
-- **Tappable Format Toggle**: Tap due date text to switch between:
-  - Absolute: "Due: Dec 24, 2025"
-  - Relative: "Due in 5 days", "Due Tomorrow", "Overdue by 3 days"
-- **Localization**: Full ICU plural support for English, Spanish, and French
-  - Handles singular/plural correctly (1 day vs 5 days, 1 día vs 5 días, 1 jour vs 5 jours)
+1. task detail page composition
+2. checklist CRUD and reorder behavior
+3. linked-task UI and manage mode
+4. task progress aggregation and display
+5. task-specific filter widgets and display toggles that plug into the shared journal page controller
+6. task detail controls for status, category, priority, project, due date, labels, estimate, and language
 
-### Implementation
+It does not own raw task persistence by itself. Task entities still live in the journal/persistence layer, and many write operations flow through shared controllers or repositories there.
 
-- **Utility**: `getDueDateStatus()` in `lib/features/tasks/util/due_date_utils.dart` provides consistent status calculation
-- **Widget**: `DueDateText` handles display with tap-to-toggle behavior
-- **Testability**: Uses `clock` package for deterministic time-dependent tests
-- **Persistence**: Due date stored in `TaskData.due` field (nullable DateTime)
+## Directory Shape
 
-## Developer Notes
+```text
+lib/features/tasks/
+├── model/
+├── repository/
+├── services/
+├── state/
+├── ui/
+│   ├── checklists/
+│   ├── filtering/
+│   ├── header/
+│   ├── labels/
+│   ├── linked_tasks/
+│   ├── pages/
+│   └── widgets/
+├── util/
+└── widgetbook/
+```
 
-- Model helpers live in `lib/classes/task.dart` (priority enum, rank/short/color mapping)
-- Filter state lives in `JournalPageController`/`JournalPageState` (Riverpod) at `lib/features/journal/state/`; TasksFilter JSON is used for persistence
-- Mobile task-filter sheet exploration now also lives in the design system as
-  `lib/features/design_system/components/task_filters/design_system_task_filter_sheet.dart`
-  with a single immutable state object and widgetbook coverage
-- Task progress batching reads task estimates through a lightweight DB lookup
-  and aggregates linked work via lightweight linked time-span reads instead of
-  hydrating full task and child entities for progress calculations
-- Do not modify generated code; run `make build_runner` when model changes are made
+## Architecture
 
-The Tasks feature provides comprehensive task management with checklists, time tracking, and AI-powered assistance.
+```mermaid
+flowchart LR
+  Task["Task entity (JournalEntity variant)"] --> Detail["TaskDetailsPage"]
+  Detail --> EntryCtl["EntryController (journal feature)"]
+  Detail --> AppBarCtl["TaskAppBarController"]
+  Detail --> FocusCtl["TaskFocusController"]
 
-## Overview
+  Detail --> Checklists["Checklist widgets + controllers"]
+  Detail --> LinkedTasks["LinkedTasks widgets + controller"]
+  Detail --> Progress["TaskProgressController"]
+  Detail --> Header["Header wrappers"]
 
-Tasks in Lotti are structured journal entries that can contain:
-- Title and description
-- Status tracking (Open, In Progress, Done, etc.)
-- Time estimates and actual time tracking
-- Checklists with individual items
-- Linked journal entries (text, images, audio)
-- Categories for organization
+  Checklists --> ChecklistRepo["ChecklistRepository"]
+  Progress --> ProgressRepo["TaskProgressRepository"]
+  LinkedTasks --> LinkedEntries["Linked entry providers"]
+
+  Filters["Task filter UI"] --> PageCtl["JournalPageController(showTasks=true)"]
+  PageCtl --> DB["JournalDb / FTS / vector search"]
+```
+
+The important boundary here is that the tasks feature owns task behavior and task presentation, but it intentionally reuses the shared journal controllers and persistence paths where possible.
+
+## Core Data Model
+
+Tasks are represented by the `Task` journal entity variant with `TaskData`.
+
+Important task concerns represented directly in `TaskData` include:
+
+- title
+- status
+- priority
+- estimate
+- due date
+- checklist IDs
+- cover-art ID
+- language preference
+- inference profile ID
+- AI-suppressed label IDs
+
+Two important boundaries:
+
+- label assignments live on entry metadata (`meta.labelIds`), not in `TaskData`
+- project membership is resolved through the `projects` feature, not embedded as a task field
+
+Checklist content is modeled separately through checklist entities and linked checklist-item entities. That split matters because the UI allows drag, drop, reorder, export, and cross-checklist movement without flattening everything into one giant task row.
+
+## Task Detail Composition
+
+`TaskDetailsPage` is the main task surface. It composes:
+
+- `TaskSliverAppBar`
+- `TaskTitleHeader`
+- `TaskForm`
+- linked entries with timer-aware highlighting
+- reverse linked-from entries
+- AI-running animation overlay
+
+```mermaid
+flowchart TD
+  Open["Open task detail page"] --> Load["entryControllerProvider(taskId)"]
+  Load --> Header["Task app bar + title header"]
+  Load --> Form["TaskForm"]
+  Load --> Linked["LinkedEntriesWithTimer"]
+  Load --> LinkedFrom["LinkedFromEntriesWidget"]
+  Linked --> Focus["HighlightScrollMixin + TaskFocusController"]
+  Form --> HeaderControls["Status / priority / labels / project / due date"]
+  Open --> Drop["Desktop drag-and-drop media import"]
+  Drop --> ImageAnalysis["Optional automatic image analysis trigger"]
+```
+
+This page is not just "show task fields." It is the task workspace where task metadata, linked content, time tracking, and AI-adjacent affordances meet.
+
+Inside `TaskForm`, the composition is also fairly opinionated:
+
+- `TaskHeaderMetaCard` for status/priority/category/project/language plus created-at and due-date chips
+- `TaskLabelsWrapper` for label assignment and estimate editing/progress
+- an `EditorWidget` only for legacy tasks that already have non-empty entry text
+- `TaskAgentReportSection` and `ChangeSetSummaryCard` for agent output that belongs on the task page but is owned elsewhere
+- `LinkedTasksWidget`
+- `ChecklistsWidget`
+
+## Checklist Subsystem
+
+Checklists are one of the main reasons the tasks feature exists as its own feature instead of being a loose set of task helper widgets.
+
+### Checklist runtime model
+
+`ChecklistController`:
+
+- loads a checklist entity
+- subscribes to the checklist and all linked checklist-item IDs
+- updates title and item order
+- handles dropping existing items into a checklist
+- handles dropping a new item into a checklist
+- unlinks and relinks items
+- deletes the checklist and removes its ID from the parent task when possible
+
+```mermaid
+flowchart TD
+  Checklist["ChecklistWidget"] --> Ctl["ChecklistController"]
+  Ctl --> DB["JournalDb"]
+  Ctl --> Repo["ChecklistRepository"]
+  Ctl --> Notify["UpdateNotifications"]
+
+  Drag["Drag/drop item"] --> Ctl
+  Ctl --> Reorder["Reorder within checklist"]
+  Ctl --> Move["Move item across checklists"]
+  Ctl --> Create["Create new checklist item from drop payload"]
+```
+
+### Checklist sorting state machine
+
+This one is real. `ChecklistsSortingController` owns a small but explicit state machine:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Normal
+  Normal --> Sorting: enterSortingMode(preExpansionStates)
+  Sorting --> Normal: exitSortingMode()
+  Normal --> Normal: clearPreExpansionStates()
+```
+
+What actually happens in sorting mode:
+
+- checklist cards collapse
+- large drag handles appear
+- pre-sort expansion states are stored
+- widgets can restore their previous expansion states when sorting ends
+
+That is not complex enough to deserve a PhD thesis, but it is absolutely worth documenting because it drives a visible UI mode change.
 
 ## Linked Tasks
 
-Tasks can be linked to other tasks to represent relationships like parent-child, dependencies, or related work. The Linked Tasks section provides a dedicated UI for managing these connections.
+The linked-task UI is intentionally separate from the generic linked-entry UI.
 
-### Features
+The feature distinguishes between:
 
-- **Bidirectional Display**: Shows both directions of task relationships
-  - `↳ LINKED FROM`: Tasks that link TO this task (incoming links)
-  - `↗ LINKED TO`: Tasks that this task links TO (outgoing links)
-- **Minimal UI**: Linear-style text links with small status circles (14px)
-  - Open tasks: hollow circle
-  - Completed tasks: filled circle with checkmark
-- **Link Management Menu**:
-  - "Link existing task...": FTS5-powered searchable modal to link an existing task
-  - "Create new linked task...": Creates a subtask inheriting the current task's category
-  - "Manage links...": Toggle mode to show unlink (×) buttons on each linked task
+- outgoing task links
+- incoming task links
+- generic linked entries that are not tasks
 
-### UI Components
+`LinkedTasksController` owns the small UI state for this section.
 
-| File | Widget | Description |
-|------|--------|-------------|
-| `linked_tasks_widget.dart` | `LinkedTasksWidget` | Main container, fetches linked entries and renders sections |
-| `linked_tasks_header.dart` | `LinkedTasksHeader` | Title "Linked Tasks" + popup menu for actions |
-| `linked_from_section.dart` | `LinkedFromSection` | Displays incoming task links (↳ LINKED FROM) |
-| `linked_to_section.dart` | `LinkedToSection` | Displays outgoing task links (↗ LINKED TO) |
-| `linked_task_card.dart` | `LinkedTaskCard` | Minimal text link with status circle and optional unlink button |
-| `link_task_modal.dart` | `LinkTaskModal` | Searchable bottom sheet for linking existing tasks |
+### Linked-task manage-mode state machine
 
-### State Management
-
-- **LinkedTasksController**: Manages UI state (manageMode toggle)
-- **LinkedEntriesController**: Provides outgoing links (existing controller)
-- **LinkedFromEntriesController**: Provides incoming links (existing controller)
-
-### Location in Task Details
-
-The Linked Tasks section appears between the AI Task Summary and Checklists sections:
-
-```
-[Task Header]
-[AI Task Summary]
-[Linked Tasks]     ← NEW
-[Checklists]
-[Linked Entries]   ← Tasks filtered out here
+```mermaid
+stateDiagram-v2
+  [*] --> Browse
+  Browse --> Manage: toggleManageMode()
+  Manage --> Browse: toggleManageMode()
+  Manage --> Browse: exitManageMode()
 ```
 
-### Integration Notes
+When manage mode is active:
 
-- Tasks are filtered out from the generic "Linked Entries" section via `hideTaskEntries: true` parameter
-- The Link Task Modal excludes the current task and already-linked tasks from search results
-- New linked tasks inherit the parent task's category for organization consistency
+- unlink buttons are shown
+- the section behaves like an editor, not just a viewer
 
-## Key Components
+This is one of those tiny state machines that users feel immediately even if they never see the code.
 
-### Data Models
-- `Task`: Main task entity with status, dates, linked checklists, and language preference
-- `Checklist`: Container for checklist items
-- `ChecklistItem`: Individual checklist item with completion status
-- `TaskProgressState`: Tracks time spent vs. estimated
-- `SupportedLanguage`: Enum of 38 supported languages for multilingual summaries
+### Linked-task flow
 
-### Task Filter Persistence
-
-The tasks tab maintains its own independent filter state:
-- **Tab-Specific Storage**: Both category selections and task status filters are saved separately for the tasks tab
-- **Independent Restoration**: When you restart the app, the tasks tab restores its own category and status filters
-- **Task Status/Priority/Labels Scoping**: Task status filters (Open, In Progress, Done, etc.), priorities, and labels are exclusive to the tasks tab
-- **Storage Key**: Uses `TASKS_CATEGORY_FILTERS` for persistence
-- **Migration Support**: Automatically migrates from legacy shared filters on first use
-- **Separation of Concerns**: Category filters are per-tab, but task statuses, priorities, and labels are tasks-only
-
-### UI Components
-
-#### Task Details Page (`task_details_page.dart`)
-The main interface for viewing and editing tasks, featuring:
-- Header with title, status, category, language preference, and time tracking
-- Checklists section with drag-and-drop reordering
-- Linked entries timeline
-- AI-powered features menu
-- Auto-scroll to running timer entry when tapping the timer indicator
-- Entry highlighting: When auto-scrolling to a linked entry, it briefly glows; the entry linked to the currently running timer shows a persistent red glow.
-- Efficiency: `LinkedEntriesWithTimer` rebuilds only the linked entries section on timer state changes; scroll behavior and highlight timing are centralized in `HighlightScrollMixin` with retry/backoff and tunable durations.
-
-#### Task Labels
-
-- The task label picker (`TaskLabelsSheet`, `LabelSelectionModalContent`) presents labels applicable
-  to the current task's category using the reactive
-  `availableLabelsForCategoryProvider(categoryId)` union: `global ∪ scoped(categoryId)`.
-- **Out-of-scope label handling**: The selector unions available labels with currently assigned
-  labels to ensure out-of-scope assigned labels can be unassigned. This solves the issue where
-  labels assigned before category scoping was enforced (or manually assigned) couldn't be removed
-  because they were hidden in the selector.
-  - The selector is strictly A–Z (case-insensitive); selection does not change ordering
-  - Out-of-category assigned labels show a subtle "Out of category" note in the subtitle
-  - All assigned labels remain checkable/uncheckable regardless of category scope
-- The wrapper (`TaskLabelsWrapper`) passes the task's current `categoryId` into the sheet; the list
-  updates reactively when labels change.
-- The label editor allows scoping labels to specific categories via an "Applicable categories"
-  section (chips + add/remove). Labels with no categories selected are considered global.
-
-#### Tasks List — Active Label Filters Header
-
-When label filters are active on the Tasks page, a compact quick‑filter header appears directly
-below the search bar:
-
-- Container: Rounded background using `surfaceContainerHighest` with `BorderRadius.circular(10)` and
-  `EdgeInsets.all(12)` padding.
-- Animation: Wrapped in `AnimatedSize` (~180ms, easeInOut) for smooth expand/collapse as filters
-  change.
-- Header: Leading `filter_alt_outlined` icon and title “Active label filters (n)” using
-  `labelMedium` tinted with `onSurfaceVariant`.
-- Clear: Compact `TextButton.icon` (backspace icon) using `labelSmall` typography.
-- Chips: `InputChip` with `VisualDensity.compact`; delete icon allows removing individual filters.
-- Placement and spacing: Rendered inside a `SliverToBoxAdapter` with outer padding
-  `EdgeInsets.fromLTRB(40, 8, 40, 8)` to align with the search field.
-- Visibility: Rendered only when `selectedLabelIds.isNotEmpty` to avoid an empty container when no
-  label filters are active. `TaskLabelQuickFilter` still self‑hides its own content as an extra
-  guard.
-
-#### Checklist Components (Nano Banana Redesign - 2026‑01)
-
-The checklist UI follows a modular card-based architecture with components organized in `lib/features/tasks/ui/checklists/`:
-
-| File | Widget(s) | Description |
-|------|-----------|-------------|
-| `checklist_widget.dart` | `ChecklistWidget` | Main orchestrator: manages expansion, filter, title editing state |
-| `checklist_card_header.dart` | `ChecklistCardHeader` | Header with title, chevron, progress, filters, menu |
-| `checklist_card_body.dart` | `ChecklistCardBody`, `ChecklistEmptyState`, `ChecklistAllDoneState` | Item list, add input, empty/done states |
-| `checklist_filter_tabs.dart` | `ChecklistFilterTabs`, `ChecklistFilterTab` | Open/All filter with underline indicator |
-| `progress_indicator.dart` | `ChecklistProgressIndicator` | Circular progress ring |
-| `consts.dart` | `ChecklistFilter` enum, animation constants | Shared types and durations |
-
-**ChecklistWidget**: Main checklist card with three display modes:
-- **Expanded**: Full header with filter tabs + body with items + add input at bottom
-- **Collapsed**: Compact header row with inline progress + rotating chevron
-- **Sorting Mode**: Drag handle + title + progress (no chevron/menu, body hidden)
-
-Features:
-- Click-to-edit title (transforms to `TitleTextField`)
-- Animated chevron rotation (90° between expanded/collapsed)
-- Progress ring hidden when `totalCount = 0` (expanded), always shown (collapsed)
-- Filter state persisted per-checklist via `SharedPreferences`
-
-**ChecklistCardHeader**: Renders layout based on mode:
-```
-Expanded:   [Title]  [Chevron ↓]  [Menu ⋯]
-            [Progress] X/Y done    [Open] [All]
-
-Collapsed:  [Title]  [Progress] X/Y done  [Chevron →]  [Menu ⋯]
-
-Sorting:    [Drag ⋮⋮]  [Title]  [Progress] X/Y done
+```mermaid
+flowchart LR
+  Header["LinkedTasksHeader"] --> Modal["LinkTaskModal"]
+  Header --> Manage["Manage mode toggle"]
+  Modal --> Search["Search eligible tasks"]
+  Search --> Link["Create link"]
+  Link --> Outgoing["Outgoing linked tasks provider"]
+  Link --> Incoming["Incoming linked-from tasks"]
 ```
 
-**ChecklistCardBody**: Contains:
-- `ReorderableListView` of items (or empty/done state)
-- Add input field at bottom with divider
-- Completion rate gradient background effect
-
-##### Export and Share Checklists
-
-- Copy as Markdown
-  - Click the export icon to copy the entire checklist as GitHub‑flavored Markdown.
-  - Format per line: `- [ ] Task` for incomplete, `- [x] Task` for complete.
-  - Preserves item order; skips deleted items; trims and sanitizes titles.
-  - Designed for pasting into Linear, GitHub, and other Markdown editors.
-
-- Share for Messenger/Email
-  - Long‑press the export icon to open the system share sheet (works on mobile and desktop/macOS). Secondary‑click/right‑click also works on desktop.
-  - Format per line: `⬜ Task` (incomplete) or `✅ Task` (complete), no hyphen — optimal for chat and email clients.
-  - The email subject uses the checklist title.
-  - macOS share previews are system‑controlled; spacing cannot be customized.
-
-- UX details
-  - Desktop shows an export tooltip; mobile suppresses the tooltip so long‑press triggers share. Long‑press also works on desktop.
-  - After the first successful copy, a one‑time SnackBar hints: "Long press to share".
-
-**ChecklistItemWidget**: Individual checklist item with:
-- Checkbox for completion toggle
-- Inline text editing
-- Always-visible drag handle on LEFT (uses `ReorderableDragStartListener`)
-- Visual and animation details (2025‑10): background tint animates on check/edit; no behaviour changes
-- Archive state: when `isArchived = true`, text shows strikethrough and checkbox is disabled
-
-**ChecklistItemWrapper**: Wraps each checklist item with swipe gestures and drag‑and‑drop support:
-- **Swipe right** (startToEnd): Archive/unarchive toggle. Amber background with archive icon. Returns `false` from `confirmDismiss` so the item stays in place — the state update handles the visual change. Archiving shows a countdown SnackBar (2s) with "Undo". Unarchiving has no SnackBar.
-- **Swipe left** (endToStart): Delete with delayed execution. Item is unlinked immediately (visual removal), then a countdown SnackBar (5s) with "Undo" appears. If the user does not undo, the item is soft-deleted after the countdown. Undo cancels the pending delete and re-links the item.
-- Both countdown SnackBars use the shared `showCountdownSnackBar` helper and `CountdownSnackBarContent` widget (`lib/widgets/misc/countdown_snackbar_content.dart`) — floating, auto-dismissing with a visual progress indicator, replaces any current SnackBar. Action buttons are rendered inside the content (not as `SnackBarAction`) to ensure reliable auto-dismiss.
-- Passes `isArchived` through to `ChecklistItemWithSuggestionWidget` for hide/strikethrough logic.
-
-##### Archive Feature (2026‑02)
-
-The archive state provides a middle ground between "completed" and "deleted":
-- **Data model**: `ChecklistItemData.isArchived` (`@Default(false)`, backward‑compatible).
-- **Semantics**: "Not relevant anymore" — the item is preserved but no longer counted.
-- **Completion metrics**: Archived items are excluded from both `totalCount` and `completedCount` in `ChecklistCompletionController`.
-- **Filter behaviour**: Archived items are hidden when the "Open" filter is active (same as completed items), but visible in "All" mode.
-- **Visual**: Strikethrough text + disabled checkbox, same as completed items.
-- **Undo (archive)**: After archiving, a floating countdown SnackBar with "Undo" action appears for 2 seconds. Unarchiving does not show a SnackBar.
-- **Undo (delete)**: After delete swipe, the item is unlinked immediately for visual removal. A floating countdown SnackBar with "Undo" appears for 5 seconds. The actual soft-delete only executes after the countdown. Undo cancels the pending delete and re-links the item.
-
-**ChecklistItemWithSuggestionWidget**: Enhanced checklist item that supports AI-powered completion suggestions (new in 2025):
-- All features of regular checklist items
-- Visual indication when AI suggests completion
-- Pulsing colored indicator (color indicates confidence: high/medium/low)
-- Tap indicator to see AI's reasoning
-- Accept or dismiss suggestions with one tap
-
-## Language Support
-
-Tasks support multilingual AI-generated summaries in 38 different languages. This feature is particularly useful for:
-- International teams working in different languages
-- Users who record audio notes in their native language
-- Tasks that involve multilingual content
-
-### How It Works
-
-1. **Automatic Language Detection**: When generating a task summary, the AI analyzes:
-   - Language of audio transcripts (highest priority)
-   - Text content in log entries
-   - Overall task context
-
-2. **Manual Language Selection**: Users can manually set their preferred language:
-   - Click the language indicator in the task header
-   - Search and select from 41 supported languages
-   - Visual country flags for easy identification
-
-3. **Language Persistence**: Once set (manually or automatically), the language preference:
-   - Is saved with the task
-   - Applies to all future AI-generated content
-   - Can be changed at any time
-
-### UI Components
-
-**TaskLanguageWidget**: Displays in the task header
-- Shows country flag when language is set
-- Shows language icon placeholder when not set
-- Tap to open language selection modal
-- Flag in rounded frame for dark mode visibility
-
-**LanguageSelectionModalContent**: Language selection interface
-- Searchable list of 41 languages
-- Country flags for visual identification
-- Selected language appears at the top
-- Clear option to remove language preference
-
-### Supported Languages
-
-All 41 languages from Gemini Code Assist are supported:
-- **European**: English, Spanish, French, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Czech, Bulgarian, Croatian, Danish, Estonian, Finnish, Greek, Hungarian, Latvian, Lithuanian, Norwegian, Romanian, Serbian, Slovak, Slovenian, Swedish
-- **Asian**: Chinese, Japanese, Korean, Hindi, Bengali, Indonesian, Thai, Vietnamese, Turkish
-- **Middle Eastern**: Arabic, Hebrew
-- **African**: Swahili, Igbo, Nigerian Pidgin, Yoruba
-
-## AI-Powered Features
-
-### Checklist Completion Suggestions
-
-The system uses AI function calling to intelligently suggest when checklist items might be completed:
-
-1. **Automatic Detection**: During audio transcriptions, task summaries, or image analysis, the AI analyzes content for evidence of completion
-2. **Evidence Types**:
-   - Verbal statements: "I finished...", "That's done", "I've completed..."
-   - Visual confirmation: Screenshots showing completed features, test results
-   - Context clues: Past tense descriptions, results that imply completion
-3. **Visual Feedback**:
-   - Pulsing indicator appears on suggested items
-   - Color coding: Blue (high confidence), Purple (medium), Orange (low)
-   - Non-intrusive: Doesn't auto-complete, just suggests
-4. **User Control**:
-   - Tap indicator to see why AI thinks it's complete
-   - Accept to mark as done
-   - Dismiss to remove suggestion
-5. **High Confidence Auto-Check**:
-   - Items with high confidence are automatically marked as complete
-   - Visual indicator remains to show AI made the change
-   - Users can still undo if needed
-
-### Creating New Checklist Items
-
-The AI can automatically create new checklist items based on content analysis:
-
-1. **Automatic Detection**: AI identifies new action items from:
-   - Audio recordings: "I need to...", "Next I'll...", "We should..."
-   - Task summaries: Newly mentioned tasks or requirements
-   - Image analysis: Visual cues suggesting new tasks
-2. **Smart Checklist Creation**:
-   - If no checklist exists, creates a "to-do" checklist first
-   - If checklists exist, adds to the first one
-3. **Common Triggers**:
-   - Future tense statements about tasks
-   - Action items mentioned but not in existing checklists
-   - Dependencies or follow-up tasks identified by AI
-
-### Implementation Details
-
-The AI-powered checklist features consist of:
-
-1. **ChecklistCompletionFunctions**: Defines OpenAI-compatible functions:
-   - `suggest_checklist_completion`: For marking items as complete
-   - `add_multiple_checklist_items`: Create one or more checklist items in a single call using an array of objects: `{ "items": [{"title": "...", "isChecked": true?}] }`
-2. **ChecklistCompletionService**: Manages suggestion state and notifications
-3. **ChecklistItemWithSuggestionWidget**: Provides visual indication and interaction
-4. **UnifiedAiInferenceRepository**: Processes tool calls and handles:
-   - High confidence auto-checking with duplicate prevention
-   - Smart checklist creation when none exists
-   - Adding items to existing checklists
-5. **Integration Points**:
-   - Audio transcription with task context
-   - Task summaries
-   - Action item suggestions
-   - Image analysis in task context
-
-### Requirements
-
-To use AI-powered checklist features:
-- AI model must support function calling (OpenAI, Anthropic, Gemini)
-- Prompts must include instructions for using the functions (recreate from templates)
-- For completion suggestions: Task must have existing checklist items
-- For creating items: Works with or without existing checklists
-
-## Timer Indicator Auto-Scroll
-
-When a timer is running for a task, tapping the floating timer indicator will:
-1. Navigate to the task details page
-2. Automatically scroll to position the running timer entry at the top of the screen
-3. Works even when already viewing the task (triggers scroll again)
-
-### Implementation
-
-The feature uses a focus intent system:
-- `TaskFocusController`: Manages scroll-to-entry intent per task
-- `TaskFocusIntent`: Encapsulates the target entry ID and scroll alignment
-- Intent is published when timer indicator is tapped for a task-linked timer
-- Task details page listens for focus intents and triggers scroll via `Scrollable.ensureVisible`
-
-### Technical Details
-
-- Journal-linked timers continue to work as before (no auto-scroll)
-- Uses GlobalObjectKey for each linked entry to enable scrolling
-- Scroll animation duration: 300ms with easeInOut curve
-- Default alignment: 0.0 (entry positioned at top of viewport)
-- Intent is cleared after consumption to enable re-triggering
-
-## State Management
-
-The feature uses Riverpod for state management:
-
-- `ChecklistController`: Manages individual checklist state
-- `ChecklistItemController`: Manages individual item state
-- `ChecklistCompletionService`: Manages AI suggestions
-- `TaskProgressController`: Tracks time spent on tasks
-- `TaskFocusController`: Manages scroll-to-entry focus intents
-
-## Drag and Drop
-
-Checklists support sophisticated drag-and-drop operations:
-- Reorder items within a checklist
-- Move items between different checklists
-- Reorder checklists within a task
-- Visual feedback during drag operations
+The modal explicitly excludes:
 
-## Best Practices
+- the current task
+- already-linked tasks
 
-1. **Creating Tasks**: Start with a clear title and add checklists for trackable items
-2. **Using AI Suggestions**: Record audio notes about your progress or paste screenshots
-3. **Time Tracking**: Set realistic estimates and track actual time spent
-4. **Organization**: Use categories and status updates to keep tasks organized
+which is a good example of the feature preferring guardrails over polite chaos.
 
-## Testing AI-Powered Checklist Features
+## Task Progress Calculation
 
-### Testing Completion Suggestions
-1. Create a task with checklist items
-2. Ensure you're using an AI model with function calling support
-3. Record an audio note mentioning completion of specific items
-4. Watch for pulsing indicators on mentioned items
-5. High confidence items are auto-checked with visual indicator
-6. Tap to review and accept/dismiss suggestions
+Task progress is calculated from linked work, not from optimism.
 
-### Testing New Item Creation
-1. Create a task (with or without existing checklists)
-2. Record audio mentioning new tasks: "I need to review the PR" or "Next I'll update the documentation"
-3. AI will either:
-   - Create a "to-do" checklist with the new items (if no checklists exist)
-   - Add items to the first existing checklist
-4. New items appear immediately in the task
+`TaskProgressRepository` batches progress requests across tasks and calculates:
 
-## Usage Examples
+- estimate
+- time ranges of linked work
+- union duration of meaningful work spans
 
-### Language Support Examples
+It deliberately excludes:
 
-#### Example 1: Automatic Language Detection from Audio
-
-Create a task "Proyecto de migración de base de datos" and record audio in Spanish:
-"He completado el análisis de la estructura actual y el diseño del nuevo esquema. Todavía necesito migrar los datos."
+- `Task`
+- `AiResponseEntry`
+- `JournalAudio`
 
-Result:
-- AI detects Spanish language with high confidence
-- Sets task language to Spanish (es)
-- All future summaries are generated in Spanish
+from counted work duration.
 
-#### Example 2: Manual Language Selection
+That last exclusion is especially important. Otherwise a one-hour audio recording of a meeting could count as one hour of work even when it is just a recording artifact, which would be mathematically neat and practically wrong.
 
-Working on "International Marketing Campaign":
-1. Click the language icon in task header
-2. Search for "Japanese" or scroll to find 🇯🇵
-3. Select Japanese
-4. All AI summaries now generate in Japanese
+```mermaid
+flowchart TD
+  TaskId["Task ID"] --> Batch["TaskProgressRepository batch queue"]
+  Batch --> DB["JournalDb.getTaskEstimatesByIds + getBulkLinkedTimeSpans"]
+  DB --> Ranges["Build time ranges"]
+  Ranges --> Union["Calculate union duration"]
+  Union --> State["TaskProgressState(progress, estimate)"]
+  State --> UI["Compact progress / detail widgets"]
+```
 
-#### Example 3: Mixed Language Task
+## Filter and List Model
 
-Task "多语言文档翻译" (Multilingual Documentation Translation) with entries in multiple languages:
-- Chinese audio notes
-- English text entries
-- German screenshots
+The task list route itself is still the shared `InfiniteJournalPage(showTasks: true)`, backed by `JournalPageController(showTasks: true)`. The tasks feature contributes task-specific filter content, task presentation controls, and task detail surfaces on top of that shared list machinery.
 
-Result: AI detects primary language (Chinese) based on audio transcript prevalence and generates summaries in Chinese.
+Task-specific persisted filter concerns include:
 
-### Checklist Examples
+- selected task statuses
+- selected priorities
+- selected labels
+- selected categories
+- selected projects
+- sort option
+- due-date display
+- creation-date display
+- cover-art display
+- projects-header display
+- distance display
+- agent-assignment filter
 
-#### Example 1: Audio-Based Completion Detection
+Persistence uses:
 
-Create a task "Deploy new feature" with checklist:
-- [ ] Write unit tests
-- [ ] Run integration tests
-- [ ] Update documentation
-- [ ] Deploy to staging
+- `TASKS_CATEGORY_FILTERS` for the tasks tab
 
-Record audio: "I've finished writing all the unit tests and the integration tests are passing. Still need to update the docs."
+which keeps tasks-tab filter state separate from the journal tab. One subtle boundary here: project filtering is persisted in the same controller state, but the visible project filter controls are rendered by shared/project widgets rather than `lib/features/tasks/ui/filtering/`.
 
-Result: The AI will suggest marking "Write unit tests" and "Run integration tests" as complete.
+## Header Controls and Metadata
 
-#### Example 2: Screenshot-Based Detection
+The task detail metadata band is split between `TaskHeaderMetaCard` and `TaskLabelsWrapper`. Together they provide interactive controls for:
 
-Working on "Fix login bug" with checklist:
-- [ ] Reproduce the issue
-- [ ] Identify root cause
-- [ ] Implement fix
-- [ ] Test on multiple devices
+- status
+- category
+- language
+- priority
+- project
+- due date
+- estimate
+- labels
 
-Attach a screenshot showing successful login on different devices.
+Notable behavior already implemented:
 
-Result: The AI analyzes the image and suggests marking "Test on multiple devices" as complete.
+- `TaskSliverAppBar` switches between compact and expandable variants based on whether the task has `coverArtId`
+- due dates on the detail page use urgency styling, while relative/absolute date display is a list-level concern owned by the shared page state
+- labels are category-aware, but still allow out-of-scope assigned labels to be removed
+- language changes are explicitly marked as user-originated
+- project selection integrates with the project health layer without making the task feature own project analysis itself
 
-#### Example 3: Task Summary Updates
+## AI and Media Integrations
 
-Task "Refactor database module" with checklist:
-- [ ] Analyze current structure
-- [ ] Design new schema
-- [ ] Migrate data
-- [ ] Update API endpoints
+The tasks feature consumes AI-adjacent capabilities rather than owning them.
 
-Generate a task summary after working. If your logs mention "completed the data migration" or "finished updating all endpoints", those items will be suggested for completion.
+Examples:
 
-#### Example 4: Automatic Item Creation
+- AI-running animation wrapper at the bottom of the detail page
+- automatic image-analysis trigger on dropped media
+- linked entries can include AI-generated content or transcriptions
+- agent reports and pending change sets are displayed on task pages, but generated elsewhere
 
-Working on "Website Redesign" task with no checklists yet.
+That separation is deliberate. The task feature owns the task experience; it should not become a secret duplicate of the AI feature.
 
-Record audio: "I've finished the mockups. Next I need to get client approval, then implement the responsive design, and finally set up the deployment pipeline."
+## Current Constraints
 
-Result: AI creates a "to-do" checklist with:
-- [ ] Get client approval
-- [ ] Implement responsive design
-- [ ] Set up deployment pipeline
+- task persistence still flows through shared journal/persistence machinery
+- task list filtering is powered by the shared journal page controller, so some list-state logic lives outside this feature directory
+- checklists are modular and flexible, but that means the feature spans several controllers and widget clusters
+- linked-task UI is task-specific, while generic linked-entry rendering still lives in the journal feature
 
-#### Example 5: Adding to Existing Checklists
+## Relationship to Other Features
 
-Task "API Integration" already has a "Development" checklist:
-- [x] Set up authentication
-- [ ] Implement endpoints
-- [ ] Write tests
+- `journal` owns the shared entry substrate and paging/filter controller
+- `projects` adds project grouping and project-agent summaries around tasks
+- `labels` supplies label entities and category scoping
+- `speech` can create task-linked audio entries
+- `ai` and `agents` provide reports, change sets, prompts, and automation around task content
 
-Record audio: "While testing, I realized we also need to add rate limiting and update the API documentation."
-
-Result: AI adds to the existing checklist:
-- [x] Set up authentication
-- [ ] Implement endpoints
-- [ ] Write tests
-- [ ] Add rate limiting
-- [ ] Update API documentation
-
-### Handling Multiple Operations
-
-When AI processes audio or images, it can perform multiple operations:
-- **Completion Suggestions**: Multiple items can be suggested simultaneously
-- **Item Creation**: Multiple new items can be added in one operation
-- **Mixed Operations**: AI can both suggest completions AND create new items
-- **Smart Handling**:
-  - High confidence completions are auto-checked
-  - Already checked items are skipped
-  - New items go to appropriate checklists
-- **Edge Cases**: System handles provider quirks like empty IDs transparently
-
-### API Provider Compatibility
-
-The feature works with providers that may send tool calls differently:
-- **OpenAI**: Standard tool call format with unique IDs
-- **Anthropic**: May send multiple tool calls with empty IDs (handled automatically)
-- **Google Gemini**: May concatenate multiple JSON objects in arguments (parsed correctly)
-
-All provider quirks are handled transparently - the UI experience remains consistent.
+If you want to understand why tasks feel like the app's operational center rather than just another entry type, this feature is the answer.
