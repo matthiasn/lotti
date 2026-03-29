@@ -245,6 +245,14 @@ The newer top-level route is not just a renamed editor. It assembles a
 (`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel`), which keeps
 the production surface aligned with Widgetbook.
 
+`ProjectTasksPanel` renders each task row as:
+
+- title in `bodySmall` with regular weight
+- metadata on the next line
+- duration text in `caption`
+- status glyph tinted by task state
+- status label rendered with the same compact `caption` text style as duration
+
 ### Category and Task Integrations
 
 Projects surface in:

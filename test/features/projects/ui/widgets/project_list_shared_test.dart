@@ -124,7 +124,7 @@ void main() {
         final titleTopLeft = tester.getTopLeft(titleFinder);
 
         expect(rowTopLeft.dx, cardTopLeft.dx);
-        expect(titleTopLeft.dx - rowTopLeft.dx, 8);
+        expect(titleTopLeft.dx - rowTopLeft.dx, 16);
       },
     );
 

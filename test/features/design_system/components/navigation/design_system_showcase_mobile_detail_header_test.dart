@@ -18,6 +18,26 @@ void main() {
   }
 
   group('DesignSystemShowcaseMobileDetailHeader', () {
+    testWidgets('renders reusable back control with regular label weight', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const DesignSystemBackControl(
+            foregroundColor: Colors.white,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final backText = tester.widget<Text>(find.text('Back'));
+
+      expect(find.byIcon(Icons.arrow_back_ios), findsOneWidget);
+      expect(backText.style?.fontSize, 14);
+      expect(backText.style?.fontWeight, FontWeight.w400);
+      expect(backText.style?.height, closeTo(20 / 14, 0.001));
+    });
+
     testWidgets('renders the Figma back control styling', (tester) async {
       await tester.pumpWidget(
         wrap(

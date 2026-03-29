@@ -22,45 +22,49 @@ class ProjectTasksPanel extends StatelessWidget {
     final tokens = context.designTokens;
 
     return ShowcasePanel(
-      header: Row(
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    context.messages.projectShowcaseProjectTasksTab,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: ShowcasePalette.highText(context),
+      header: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      context.messages.projectShowcaseProjectTasksTab,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: ShowcasePalette.highText(context),
+                          ),
                     ),
                   ),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                CountDotBadge(
-                  count: record.highlightedTaskSummaries.length,
-                ),
-              ],
+                  SizedBox(width: tokens.spacing.step2),
+                  CountDotBadge(
+                    count: record.highlightedTaskSummaries.length,
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Icon(
-            Icons.timer_outlined,
-            size: tokens.typography.lineHeight.subtitle2,
-            color: ShowcasePalette.timeGreen(context),
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            showcaseFormatDuration(
-              record.highlightedTasksTotalDuration,
-            ),
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            SizedBox(width: tokens.spacing.step2),
+            Icon(
+              Icons.timer_outlined,
+              size: tokens.typography.lineHeight.subtitle2,
               color: ShowcasePalette.timeGreen(context),
             ),
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step1),
+            Text(
+              showcaseFormatDuration(
+                record.highlightedTasksTotalDuration,
+              ),
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: ShowcasePalette.timeGreen(context),
+              ),
+            ),
+          ],
+        ),
       ),
       itemCount: record.highlightedTaskSummaries.length,
       itemBuilder: (_, index) {
@@ -155,6 +159,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
             vertical: tokens.spacing.step3,
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -163,38 +168,46 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                   children: [
                     Text(
                       widget.summary.task.data.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: ShowcasePalette.highText(context),
+                        fontWeight: tokens.typography.weight.regular,
                       ),
                     ),
                     SizedBox(height: tokens.spacing.step1),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      spacing: tokens.spacing.step2,
+                      runSpacing: tokens.spacing.step1,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: tokens.typography.size.caption,
-                          color: ShowcasePalette.lowText(context),
-                        ),
-                        SizedBox(width: tokens.spacing.step1),
-                        Text(
-                          showcaseFormatDuration(
-                            widget.summary.estimatedDuration,
-                          ),
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: ShowcasePalette.lowText(context),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: tokens.typography.size.caption,
+                              color: ShowcasePalette.lowText(context),
+                            ),
+                            SizedBox(width: tokens.spacing.step1),
+                            Text(
+                              showcaseFormatDuration(
+                                widget.summary.estimatedDuration,
                               ),
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: ShowcasePalette.lowText(context),
+                                  ),
+                            ),
+                          ],
+                        ),
+                        TaskStatePill(
+                          status: widget.summary.task.data.status,
+                          compact: true,
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              SizedBox(width: tokens.spacing.step2),
-              TaskStatePill(status: widget.summary.task.data.status),
               SizedBox(width: tokens.spacing.step2),
               Icon(
                 Icons.arrow_forward_ios_rounded,

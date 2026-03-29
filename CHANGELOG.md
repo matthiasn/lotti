@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.936] - 2026-03-28
 ### Changed
+- Design system navigation: the mobile detail back control is now a reusable
+  component with the intended regular-weight label styling, so detail pages do
+  not drift into heavier back-button text.
+- Projects detail task statuses: project-task rows now use the Figma-aligned
+  colored status glyphs for in-progress, done, on-hold, blocked, and related
+  task states instead of flattening every status icon to the same gray tone.
+- Projects detail task typography: project-task titles are explicitly kept at
+  regular body-small weight, and the duration plus status line now uses one
+  shared compact caption text style.
+- Projects detail task list: task rows now let long task titles wrap across
+  multiple lines and keep duration plus state metadata underneath, with extra
+  vertical breathing room in the `Project Tasks` header.
+- Projects list spacing: widened the grouped project-row horizontal inset so
+  titles, metadata, and status pills sit with the intended breathing room
+  inside each card.
 - Projects detail redesign: the top-level Projects flow now opens a new
   design-system-aligned detail page at `/projects/:projectId`, with editable
   category, due date, and status controls, a health-band header, manual agent

@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -234,10 +235,20 @@ void main() {
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      final context = tester.element(find.byType(TaskStatePill));
+
       expect(find.text('Open'), findsOneWidget);
+      expect(loader.assetName, 'assets/design_system/task_status_open.svg');
       expect(
-        find.byIcon(Icons.radio_button_unchecked_rounded),
-        findsOneWidget,
+        svg.colorFilter,
+        equals(
+          ColorFilter.mode(
+            ShowcasePalette.mediumText(context),
+            BlendMode.srcIn,
+          ),
+        ),
       );
     });
 
@@ -256,8 +267,21 @@ void main() {
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      final context = tester.element(find.byType(TaskStatePill));
+
       expect(find.text('Blocked'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(loader.assetName, 'assets/design_system/task_status_blocked.svg');
+      expect(
+        svg.colorFilter,
+        equals(
+          ColorFilter.mode(
+            ShowcasePalette.error(context),
+            BlendMode.srcIn,
+          ),
+        ),
+      );
     });
 
     testWidgets('renders plain icon-plus-label styling without a filled pill', (
@@ -1135,7 +1159,9 @@ Detailed analysis section.
   });
 
   group('TaskStatePill - all status variants', () {
-    testWidgets('renders in-progress status with play icon', (tester) async {
+    testWidgets('renders in-progress status with colored active glyph', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrap(
           TaskStatePill(
@@ -1149,8 +1175,24 @@ Detailed analysis section.
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      final context = tester.element(find.byType(TaskStatePill));
+
       expect(find.text('In Progress'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(
+        loader.assetName,
+        'assets/design_system/project_status_active.svg',
+      );
+      expect(
+        svg.colorFilter,
+        equals(
+          ColorFilter.mode(
+            ShowcasePalette.amber(context),
+            BlendMode.srcIn,
+          ),
+        ),
+      );
     });
 
     testWidgets('renders groomed status', (tester) async {
@@ -1167,11 +1209,16 @@ Detailed analysis section.
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+
       expect(find.text('Groomed'), findsOneWidget);
-      expect(find.byIcon(Icons.circle_outlined), findsOneWidget);
+      expect(loader.assetName, 'assets/design_system/task_status_groomed.svg');
     });
 
-    testWidgets('renders on-hold status', (tester) async {
+    testWidgets('renders on-hold status with colored pause glyph', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrap(
           TaskStatePill(
@@ -1186,14 +1233,29 @@ Detailed analysis section.
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      final context = tester.element(find.byType(TaskStatePill));
+
       expect(find.text('On Hold'), findsOneWidget);
       expect(
-        find.byIcon(Icons.pause_circle_outline_rounded),
-        findsOneWidget,
+        loader.assetName,
+        'assets/design_system/task_status_on_hold.svg',
+      );
+      expect(
+        svg.colorFilter,
+        equals(
+          ColorFilter.mode(
+            ShowcasePalette.amber(context),
+            BlendMode.srcIn,
+          ),
+        ),
       );
     });
 
-    testWidgets('renders done status', (tester) async {
+    testWidgets('renders done status with colored completed glyph', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrap(
           TaskStatePill(
@@ -1207,10 +1269,23 @@ Detailed analysis section.
       );
       await tester.pump();
 
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      final context = tester.element(find.byType(TaskStatePill));
+
       expect(find.text('Done'), findsOneWidget);
       expect(
-        find.byIcon(Icons.check_circle_outline_rounded),
-        findsOneWidget,
+        loader.assetName,
+        'assets/design_system/project_status_completed.svg',
+      );
+      expect(
+        svg.colorFilter,
+        equals(
+          ColorFilter.mode(
+            ShowcasePalette.timeGreen(context),
+            BlendMode.srcIn,
+          ),
+        ),
       );
     });
 
