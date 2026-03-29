@@ -328,6 +328,8 @@ void main() {
           createdAt: createdAt,
           vectorClock: vectorClock,
           content: '# Weekly Summary\n\nCompleted 5 tasks this week.',
+          tldr: 'Completed 5 tasks this week.',
+          oneLiner: 'Stable week, cleanup and release next',
           confidence: 0.92,
           provenance: {'model': 'gemini-3.1-pro-preview', 'wakeId': 'wake-042'},
         );
@@ -336,6 +338,9 @@ void main() {
 
         expect(roundtripped, equals(original));
         expect(roundtripped, isA<AgentReportEntity>());
+        final report = roundtripped as AgentReportEntity;
+        expect(report.tldr, 'Completed 5 tasks this week.');
+        expect(report.oneLiner, 'Stable week, cleanup and release next');
       });
 
       test('roundtrips with null confidence and empty provenance', () {

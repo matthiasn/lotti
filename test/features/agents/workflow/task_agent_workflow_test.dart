@@ -633,6 +633,7 @@ void main() {
         // Scaffold content.
         expect(capturedSystemMessage, contains('You are a Task Agent'));
         expect(capturedSystemMessage, contains('update_report'));
+        expect(capturedSystemMessage, contains('oneLiner'));
         // Parent project context scaffold section.
         expect(
           capturedSystemMessage,
@@ -1349,7 +1350,8 @@ void main() {
                         type: ChatCompletionMessageToolCallType.function,
                         function: ChatCompletionMessageFunctionCall(
                           name: 'update_report',
-                          arguments: r'{"markdown":"# Report\nAll good."}',
+                          arguments:
+                              r'{"markdown":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                         ),
                       ),
                     ],
@@ -1395,7 +1397,7 @@ void main() {
         },
       );
 
-      test('persists report with tldr when provided', () async {
+      test('persists report with tldr and oneLiner when provided', () async {
         mockConversationRepository.sendMessageDelegate =
             ({
               required conversationId,
@@ -1417,6 +1419,7 @@ void main() {
                         name: 'update_report',
                         arguments: jsonEncode({
                           'content': '# Detailed Report\nFull analysis.',
+                          'oneLiner': 'Implementation done, release next',
                           'tldr': 'Brief summary.',
                         }),
                       ),
@@ -1453,6 +1456,7 @@ void main() {
         final report = reports.first as AgentReportEntity;
         expect(report.content, '# Detailed Report\nFull analysis.');
         expect(report.tldr, 'Brief summary.');
+        expect(report.oneLiner, 'Implementation done, release next');
       });
 
       test('persists thought message when LLM produces final text', () async {
@@ -1530,7 +1534,8 @@ void main() {
                       type: ChatCompletionMessageToolCallType.function,
                       function: ChatCompletionMessageFunctionCall(
                         name: 'update_report',
-                        arguments: '{"markdown":"# Updated"}',
+                        arguments:
+                            '{"markdown":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ),
                   ],
@@ -1659,7 +1664,7 @@ void main() {
                         function: ChatCompletionMessageFunctionCall(
                           name: 'update_report',
                           arguments:
-                              r'{"markdown":"# Report\nThis report has enough content to embed."}',
+                              r'{"markdown":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                         ),
                       ),
                     ],

@@ -1111,6 +1111,7 @@ void main() {
               scope: AgentReportScopes.current,
               createdAt: timestamp,
               vectorClock: null,
+              oneLiner: 'Implementation done, release next',
               tldr: 'Task B TLDR',
               content: 'Task B report',
             ),
@@ -1122,6 +1123,7 @@ void main() {
               scope: AgentReportScopes.current,
               createdAt: timestamp.add(const Duration(minutes: 1)),
               vectorClock: null,
+              oneLiner: 'Blocked on API review',
               tldr: 'Task C TLDR',
               content: 'Task C report',
             ),
@@ -1150,8 +1152,13 @@ void main() {
 
           expect(result['task-001']?.agentId, 'task-agent-b');
           expect(result['task-001']?.id, 'task-report-b');
+          expect(
+            result['task-001']?.oneLiner,
+            'Implementation done, release next',
+          );
           expect(result['task-002']?.agentId, 'task-agent-c');
           expect(result['task-002']?.id, 'task-report-c');
+          expect(result['task-002']?.oneLiner, 'Blocked on API review');
         },
       );
 

@@ -56,10 +56,12 @@ class TaskSummary {
   const TaskSummary({
     required this.task,
     required this.estimatedDuration,
+    this.oneLiner,
   });
 
   final Task task;
   final Duration estimatedDuration;
+  final String? oneLiner;
 }
 
 /// The type of metric recorded in a review session.

@@ -458,6 +458,7 @@ class TaskAgentWorkflow {
       // report, observations) are successfully written.
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
+      final reportOneLiner = strategy.extractReportOneLiner();
       if (reportContent.isEmpty) {
         _log(
           'no report published (violates update_report contract)',
@@ -518,6 +519,7 @@ class TaskAgentWorkflow {
               vectorClock: null,
               content: reportContent,
               tldr: reportTldr,
+              oneLiner: reportOneLiner,
               threadId: threadId,
             ),
           );
@@ -858,19 +860,24 @@ for a single task. Your job is to:
 ## Report
 
 You MUST call `update_report` exactly once at the end of every wake with the
-full updated report as markdown. The report must follow this standardized
-structure with emojis for visual consistency:
+full updated report as markdown. Provide `oneLiner`, `tldr`, and `content`.
+The report must follow this standardized structure with emojis for visual
+consistency:
 
 ### Required Sections
 
-1. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
+1. **One-Liner argument** — A concise task tagline for compact task-card
+   subtitles. Keep it short and meaningful, for example:
+   "Implementation done, release and documentation next" or
+   "At risk of missing the deadline without API review".
+2. **📋 TLDR** — A concise 1-3 sentence overview of the task's current state.
    This is the first and most important section — it is what the user sees in
    the collapsed view.
-2. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
+3. **✅ Achieved** — What has been accomplished (bulleted list). Omit if
    nothing has been achieved yet.
-3. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
+4. **📌 What is left to do** — Remaining work items (bulleted list). Omit if
    the task is complete.
-4. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
+5. **💡 Learnings** — Key insights, patterns, or decisions worth surfacing to
    the user. Omit if there are no noteworthy learnings.
 
 Do NOT include a title line (H1) or a status bar — these are already shown in

@@ -403,14 +403,21 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.updateReport,
       description:
           'Publish the updated task report. You MUST call this tool exactly '
-          'once at the end of every wake. Provide both a short TLDR summary '
-          'and the full report content as markdown. Follow the report '
-          'structure defined in your report directive. Write in the task '
-          'content language. Express your personality and voice from your '
-          'directives.',
+          'once at the end of every wake. Provide a compact one-liner '
+          'tagline, a short TLDR summary, and the full report content as '
+          'markdown. Follow the report structure defined in your report '
+          'directive. Write in the task content language. Express your '
+          'personality and voice from your directives.',
       parameters: {
         'type': 'object',
         'properties': {
+          'oneLiner': {
+            'type': 'string',
+            'description':
+                'A concise task tagline for compact task-card subtitles. '
+                'Keep it to a short single sentence or phrase that captures '
+                'the current state, next step, or risk clearly.',
+          },
           'tldr': {
             'type': 'string',
             'description':
@@ -431,7 +438,7 @@ class AgentToolRegistry {
                 'provided, "content" takes precedence.',
           },
         },
-        'required': ['tldr'],
+        'required': ['oneLiner', 'tldr'],
         'additionalProperties': false,
       },
     ),

@@ -158,6 +158,7 @@ AgentReportEntity makeTestReport({
   VectorClock? vectorClock,
   String content = '# Test Report\n\nEverything is fine.',
   String? tldr,
+  String? oneLiner,
   double? confidence,
   Map<String, Object?> provenance = const {},
 }) {
@@ -169,6 +170,7 @@ AgentReportEntity makeTestReport({
         vectorClock: vectorClock,
         content: content,
         tldr: tldr,
+        oneLiner: oneLiner,
         confidence: confidence,
         provenance: provenance,
       )

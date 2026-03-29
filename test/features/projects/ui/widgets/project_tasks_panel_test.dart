@@ -76,7 +76,9 @@ void main() {
   });
 
   group('TaskSummaryRow', () {
-    testWidgets('renders task title and estimated duration', (tester) async {
+    testWidgets('renders task title, one-liner, and estimated duration', (
+      tester,
+    ) async {
       final summary = makeTestTaskSummary(
         task: makeTestTask(id: 't1', title: 'Build feature'),
         estimatedDuration: const Duration(minutes: 45),
@@ -88,6 +90,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('Build feature'), findsOneWidget);
+      expect(
+        find.text('Implementation phase done, release next'),
+        findsOneWidget,
+      );
       expect(find.text('45m'), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       expect(
@@ -138,7 +144,31 @@ void main() {
     });
 
     testWidgets(
-      'uses the same caption-sized typography for duration and task status',
+      'uses the Figma subtitle style for the one-liner',
+      (tester) async {
+        final summary = makeTestTaskSummary(
+          task: makeTestTask(id: 't1', title: 'Build feature'),
+        );
+
+        await tester.pumpWidget(
+          wrap(TaskSummaryRow(summary: summary)),
+        );
+        await tester.pump();
+
+        final subtitle = tester.widget<Text>(
+          find.text('Implementation phase done, release next'),
+        );
+
+        expect(subtitle.style?.fontSize, 12);
+        expect(subtitle.style?.fontWeight, FontWeight.w400);
+        expect(subtitle.style?.height, closeTo(1.3333, 0.0001));
+        expect(subtitle.style?.letterSpacing, 0.25);
+        expect(subtitle.maxLines, 3);
+      },
+    );
+
+    testWidgets(
+      'uses the same body-small typography for duration and task status',
       (tester) async {
         final summary = makeTestTaskSummary(
           task: makeTestTask(id: 't1', title: 'Build feature'),
@@ -153,21 +183,67 @@ void main() {
         final duration = tester.widget<Text>(find.text('45m'));
         final status = tester.widget<Text>(find.text('Open'));
 
-        expect(duration.style?.fontSize, 12);
+        expect(duration.style?.fontSize, 14);
         expect(duration.style?.fontWeight, FontWeight.w400);
+        expect(duration.style?.height, closeTo(1.4286, 0.0001));
         expect(status.style?.fontSize, duration.style?.fontSize);
         expect(status.style?.fontWeight, duration.style?.fontWeight);
+        expect(status.style?.height, duration.style?.height);
       },
     );
 
+    testWidgets('uses a 16px timer icon in the metadata row', (tester) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 't1', title: 'Build feature'),
+        estimatedDuration: const Duration(minutes: 45),
+      );
+
+      await tester.pumpWidget(
+        wrap(TaskSummaryRow(summary: summary)),
+      );
+      await tester.pump();
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.timer_outlined));
+      expect(icon.size, 16);
+    });
+
+    testWidgets('omits the subtitle when the task has no one-liner', (
+      tester,
+    ) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 't1', title: 'Build feature'),
+        oneLiner: null,
+        estimatedDuration: const Duration(minutes: 45),
+      );
+
+      await tester.pumpWidget(
+        wrap(TaskSummaryRow(summary: summary)),
+      );
+      await tester.pump();
+
+      final titleRect = tester.getRect(find.text('Build feature'));
+      final statusRect = tester.getRect(find.text('Open'));
+
+      expect(
+        find.text('Implementation phase done, release next'),
+        findsNothing,
+      );
+      expect(statusRect.top, greaterThan(titleRect.bottom - 1));
+    });
+
     testWidgets(
-      'allows long titles to wrap and keeps status metadata below the title',
+      'lets the title and one-liner wrap while keeping metadata below them',
       (tester) async {
         const longTitle =
             'Sync database optimization and recovery tooling for long-running '
             'offline reconciliation';
+        const longOneLiner =
+            'Implementation phase is done, but release validation, rollout '
+            'notes, and post-release monitoring still need to be completed.';
+
         final summary = makeTestTaskSummary(
           task: makeTestTask(id: 't1', title: longTitle),
+          oneLiner: longOneLiner,
           estimatedDuration: const Duration(hours: 2, minutes: 30),
         );
 
@@ -182,12 +258,16 @@ void main() {
         await tester.pump();
 
         final titleFinder = find.text(longTitle);
+        final subtitleFinder = find.text(longOneLiner);
         final statusFinder = find.text('Open');
         final titleRect = tester.getRect(titleFinder);
+        final subtitleRect = tester.getRect(subtitleFinder);
         final statusRect = tester.getRect(statusFinder);
 
         expect(tester.getSize(titleFinder).height, greaterThan(20));
-        expect(statusRect.top, greaterThan(titleRect.bottom - 1));
+        expect(tester.getSize(subtitleFinder).height, greaterThan(16));
+        expect(subtitleRect.top, greaterThan(titleRect.bottom - 1));
+        expect(statusRect.top, greaterThan(subtitleRect.bottom - 1));
       },
     );
 

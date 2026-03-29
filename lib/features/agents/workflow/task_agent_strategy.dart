@@ -48,6 +48,7 @@ typedef ExecuteToolHandler =
 ///
 /// - `update_report` — the LLM publishes its report via this tool call;
 ///   the markdown is accumulated and retrieved via [extractReportContent].
+///   The compact subtitle/tagline is retrieved via [extractReportOneLiner].
 /// - `record_observations` — private notes for future wakes; accumulated
 ///   and retrieved via [extractObservations].
 ///
@@ -125,6 +126,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   String? _reportContent;
   String? _reportTldr;
+  String? _reportOneLiner;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
@@ -314,6 +316,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Returns `null` if the LLM did not provide a TLDR.
   String? extractReportTldr() => _reportTldr;
 
+  /// Extracts the compact one-liner published via the `update_report` tool
+  /// call.
+  ///
+  /// Returns `null` if the LLM did not provide a one-liner.
+  String? extractReportOneLiner() => _reportOneLiner;
+
   /// Returns observations accumulated from `record_observations` tool calls.
   ///
   /// The LLM calls the `record_observations` tool during the conversation
@@ -325,7 +333,8 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   // ── Internal handlers ──────────────────────────────────────────────────
 
-  /// Handles the `update_report` tool call by capturing the TLDR and content.
+  /// Handles the `update_report` tool call by capturing the one-liner, TLDR,
+  /// and content.
   ///
   /// Accepts both the new parameter names (`tldr`, `content`) and the legacy
   /// `markdown` parameter for backwards compatibility. If both `content` and
@@ -347,16 +356,51 @@ class TaskAgentStrategy extends ConversationStrategy {
         ? contentArg
         : markdownArg;
     final rawTldr = args['tldr'];
+    final rawOneLiner = args['oneLiner'];
+    final tldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
+        ? rawTldr.trim()
+        : null;
+    final oneLiner = (rawOneLiner is String && rawOneLiner.trim().isNotEmpty)
+        ? rawOneLiner.trim()
+        : null;
 
     if (rawContent is String && rawContent.trim().isNotEmpty) {
+      if (tldr == null) {
+        const errorMsg = 'Error: "tldr" must be a non-empty string.';
+        manager.addToolResponse(
+          toolCallId: callId,
+          response: errorMsg,
+        );
+
+        await _recordToolResultMessage(
+          toolName: reportToolName,
+          errorMessage: errorMsg,
+        );
+        return;
+      }
+
+      if (oneLiner == null) {
+        const errorMsg = 'Error: "oneLiner" must be a non-empty string.';
+        manager.addToolResponse(
+          toolCallId: callId,
+          response: errorMsg,
+        );
+
+        await _recordToolResultMessage(
+          toolName: reportToolName,
+          errorMessage: errorMsg,
+        );
+        return;
+      }
+
       _reportContent = rawContent.trim();
-      _reportTldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
-          ? rawTldr.trim()
-          : null;
+      _reportTldr = tldr;
+      _reportOneLiner = oneLiner;
 
       developer.log(
         'Report updated (${_reportContent!.length} chars, '
-        'tldr=${_reportTldr != null ? "${_reportTldr!.length} chars" : "none"})',
+        'tldr=${_reportTldr != null ? "${_reportTldr!.length} chars" : "none"}, '
+        'oneLiner=${_reportOneLiner != null ? "${_reportOneLiner!.length} chars" : "none"})',
         name: 'TaskAgentStrategy',
       );
 

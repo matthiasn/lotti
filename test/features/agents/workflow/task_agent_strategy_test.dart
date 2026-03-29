@@ -851,7 +851,11 @@ void main() {
               type: ChatCompletionMessageToolCallType.function,
               function: ChatCompletionMessageFunctionCall(
                 name: 'update_report',
-                arguments: jsonEncode({'markdown': '# Report'}),
+                arguments: jsonEncode({
+                  'markdown': '# Report',
+                  'oneLiner': 'Implementation done, release next',
+                  'tldr': 'Implementation is done and release is next.',
+                }),
               ),
             ),
           ],
@@ -872,6 +876,8 @@ void main() {
               name: 'update_report',
               arguments: jsonEncode({
                 'markdown': '# Task Summary\n\nAll good.',
+                'oneLiner': 'Implementation done, release next',
+                'tldr': 'Implementation is done and release is next.',
               }),
             ),
           ),
@@ -886,6 +892,14 @@ void main() {
           strategy.extractReportContent(),
           '# Task Summary\n\nAll good.',
         );
+        expect(
+          strategy.extractReportOneLiner(),
+          'Implementation done, release next',
+        );
+        expect(
+          strategy.extractReportTldr(),
+          'Implementation is done and release is next.',
+        );
 
         verify(
           () => mockManager.addToolResponse(
@@ -896,9 +910,9 @@ void main() {
       });
 
       test('uses last update_report call when called multiple times', () async {
-        for (final (id, markdown) in [
-          ('call-1', '# First'),
-          ('call-2', '# Second'),
+        for (final (id, markdown, oneLiner, tldr) in [
+          ('call-1', '# First', 'First one-liner', 'First summary'),
+          ('call-2', '# Second', 'Second one-liner', 'Second summary'),
         ]) {
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -906,7 +920,11 @@ void main() {
               type: ChatCompletionMessageToolCallType.function,
               function: ChatCompletionMessageFunctionCall(
                 name: 'update_report',
-                arguments: jsonEncode({'markdown': markdown}),
+                arguments: jsonEncode({
+                  'markdown': markdown,
+                  'oneLiner': oneLiner,
+                  'tldr': tldr,
+                }),
               ),
             ),
           ];
@@ -918,6 +936,8 @@ void main() {
         }
 
         expect(strategy.extractReportContent(), '# Second');
+        expect(strategy.extractReportOneLiner(), 'Second one-liner');
+        expect(strategy.extractReportTldr(), 'Second summary');
       });
 
       test('trims whitespace from report markdown', () async {
@@ -929,6 +949,8 @@ void main() {
               name: 'update_report',
               arguments: jsonEncode({
                 'markdown': '  # Report\n\nContent  \n\n',
+                'oneLiner': '  Release blocked on docs  ',
+                'tldr': '  Release blocked on docs and QA.  ',
               }),
             ),
           ),
@@ -940,6 +962,8 @@ void main() {
         );
 
         expect(strategy.extractReportContent(), '# Report\n\nContent');
+        expect(strategy.extractReportOneLiner(), 'Release blocked on docs');
+        expect(strategy.extractReportTldr(), 'Release blocked on docs and QA.');
       });
 
       test('returns error for empty markdown', () async {
@@ -949,7 +973,11 @@ void main() {
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
-              arguments: jsonEncode({'markdown': '  '}),
+              arguments: jsonEncode({
+                'markdown': '  ',
+                'oneLiner': 'Release blocked on docs',
+                'tldr': 'Release blocked on docs and QA.',
+              }),
             ),
           ),
         ];
@@ -960,6 +988,8 @@ void main() {
         );
 
         expect(strategy.extractReportContent(), isEmpty);
+        expect(strategy.extractReportOneLiner(), isNull);
+        expect(strategy.extractReportTldr(), isNull);
 
         verify(
           () => mockManager.addToolResponse(
@@ -977,7 +1007,11 @@ void main() {
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
-              arguments: jsonEncode({'markdown': 42}),
+              arguments: jsonEncode({
+                'markdown': 42,
+                'oneLiner': 'Release blocked on docs',
+                'tldr': 'Release blocked on docs and QA.',
+              }),
             ),
           ),
         ];
@@ -988,6 +1022,8 @@ void main() {
         );
 
         expect(strategy.extractReportContent(), isEmpty);
+        expect(strategy.extractReportOneLiner(), isNull);
+        expect(strategy.extractReportTldr(), isNull);
       });
 
       test('does not delegate to executor', () async {
@@ -997,7 +1033,11 @@ void main() {
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
-              arguments: jsonEncode({'markdown': '# Report'}),
+              arguments: jsonEncode({
+                'markdown': '# Report',
+                'oneLiner': 'Implementation done, release next',
+                'tldr': 'Implementation is done and release is next.',
+              }),
             ),
           ),
         ];
@@ -1021,9 +1061,11 @@ void main() {
 
       test('returns empty when update_report never called', () {
         expect(strategy.extractReportContent(), isEmpty);
+        expect(strategy.extractReportTldr(), isNull);
+        expect(strategy.extractReportOneLiner(), isNull);
       });
 
-      test('captures tldr from update_report tool call', () async {
+      test('captures oneLiner and tldr from update_report tool call', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-report-tldr',
@@ -1032,6 +1074,7 @@ void main() {
               name: 'update_report',
               arguments: jsonEncode({
                 'content': '# Full Report\n\nDetailed analysis.',
+                'oneLiner': 'Implementation done, release next',
                 'tldr': 'Brief summary of the report.',
               }),
             ),
@@ -1051,9 +1094,13 @@ void main() {
           strategy.extractReportTldr(),
           'Brief summary of the report.',
         );
+        expect(
+          strategy.extractReportOneLiner(),
+          'Implementation done, release next',
+        );
       });
 
-      test('returns null tldr when not provided', () async {
+      test('returns error when tldr is missing', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-no-tldr',
@@ -1062,6 +1109,7 @@ void main() {
               name: 'update_report',
               arguments: jsonEncode({
                 'content': '# Report',
+                'oneLiner': 'Implementation done, release next',
               }),
             ),
           ),
@@ -1072,8 +1120,48 @@ void main() {
           manager: mockManager,
         );
 
-        expect(strategy.extractReportContent(), '# Report');
+        expect(strategy.extractReportContent(), isEmpty);
         expect(strategy.extractReportTldr(), isNull);
+        expect(strategy.extractReportOneLiner(), isNull);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-no-tldr',
+            response: 'Error: "tldr" must be a non-empty string.',
+          ),
+        ).called(1);
+      });
+
+      test('returns error when oneLiner is missing', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-no-one-liner',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_report',
+              arguments: jsonEncode({
+                'content': '# Report',
+                'tldr': 'Implementation is done and release is next.',
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportContent(), isEmpty);
+        expect(strategy.extractReportTldr(), isNull);
+        expect(strategy.extractReportOneLiner(), isNull);
+
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-no-one-liner',
+            response: 'Error: "oneLiner" must be a non-empty string.',
+          ),
+        ).called(1);
       });
     });
 
@@ -1378,7 +1466,11 @@ void main() {
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
-              arguments: jsonEncode({'markdown': '# Report'}),
+              arguments: jsonEncode({
+                'markdown': '# Report',
+                'oneLiner': 'Implementation done, release next',
+                'tldr': 'Implementation is done and release is next.',
+              }),
             ),
           ),
         ];
@@ -1389,6 +1481,10 @@ void main() {
         );
 
         expect(deferredStrategy.extractReportContent(), '# Report');
+        expect(
+          deferredStrategy.extractReportOneLiner(),
+          'Implementation done, release next',
+        );
         expect(csBuilder.hasItems, isFalse);
       });
 
@@ -1453,7 +1549,11 @@ void main() {
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
-              arguments: jsonEncode({'markdown': '# Summary'}),
+              arguments: jsonEncode({
+                'markdown': '# Summary',
+                'oneLiner': 'Implementation done, release next',
+                'tldr': 'Implementation is done and release is next.',
+              }),
             ),
           ),
         ];
@@ -1469,6 +1569,10 @@ void main() {
 
         // Report should be handled immediately.
         expect(deferredStrategy.extractReportContent(), '# Summary');
+        expect(
+          deferredStrategy.extractReportOneLiner(),
+          'Implementation done, release next',
+        );
 
         // Executor should NOT have been called (only deferred + immediate).
         verifyNever(
