@@ -392,27 +392,42 @@ class TaskStatePill extends StatelessWidget {
     final glyphSize = compact
         ? tokens.typography.size.caption
         : tokens.typography.lineHeight.caption;
-    final iconColor = switch (status) {
-      TaskOpen() => ShowcasePalette.mediumText(context),
-      TaskInProgress() => ShowcasePalette.amber(context),
-      TaskGroomed() => ShowcasePalette.timeGreen(context),
-      TaskBlocked() => ShowcasePalette.error(context),
-      TaskOnHold() => ShowcasePalette.amber(context),
-      TaskDone() => ShowcasePalette.timeGreen(context),
-      TaskRejected() => ShowcasePalette.error(context),
-    };
-    final assetName = switch (status) {
-      TaskOpen() => 'assets/design_system/task_status_open.svg',
-      TaskInProgress() => 'assets/design_system/project_status_active.svg',
-      TaskGroomed() => 'assets/design_system/task_status_groomed.svg',
-      TaskBlocked() => 'assets/design_system/task_status_blocked.svg',
-      TaskOnHold() => 'assets/design_system/task_status_on_hold.svg',
-      TaskDone() => 'assets/design_system/project_status_completed.svg',
-      TaskRejected() => null,
-    };
-    final fallbackIcon = switch (status) {
-      TaskRejected() => Icons.cancel_outlined,
-      _ => null,
+    final (:iconColor, :assetName, :fallbackIcon) = switch (status) {
+      TaskOpen() => (
+        iconColor: ShowcasePalette.mediumText(context),
+        assetName: 'assets/design_system/task_status_open.svg',
+        fallbackIcon: null,
+      ),
+      TaskInProgress() => (
+        iconColor: ShowcasePalette.amber(context),
+        assetName: 'assets/design_system/project_status_active.svg',
+        fallbackIcon: null,
+      ),
+      TaskGroomed() => (
+        iconColor: ShowcasePalette.timeGreen(context),
+        assetName: 'assets/design_system/task_status_groomed.svg',
+        fallbackIcon: null,
+      ),
+      TaskBlocked() => (
+        iconColor: ShowcasePalette.error(context),
+        assetName: 'assets/design_system/task_status_blocked.svg',
+        fallbackIcon: null,
+      ),
+      TaskOnHold() => (
+        iconColor: ShowcasePalette.amber(context),
+        assetName: 'assets/design_system/task_status_on_hold.svg',
+        fallbackIcon: null,
+      ),
+      TaskDone() => (
+        iconColor: ShowcasePalette.timeGreen(context),
+        assetName: 'assets/design_system/project_status_completed.svg',
+        fallbackIcon: null,
+      ),
+      TaskRejected() => (
+        iconColor: ShowcasePalette.error(context),
+        assetName: null,
+        fallbackIcon: Icons.cancel_outlined,
+      ),
     };
 
     return Row(

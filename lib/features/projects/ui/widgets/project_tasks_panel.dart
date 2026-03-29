@@ -159,7 +159,6 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
             vertical: tokens.spacing.step3,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
