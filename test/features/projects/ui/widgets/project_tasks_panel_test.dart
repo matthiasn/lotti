@@ -97,10 +97,7 @@ void main() {
       );
       expect(find.text('45m'), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(
-        find.byIcon(Icons.arrow_forward_ios_rounded),
-        findsOneWidget,
-      );
+      expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsNothing);
     });
 
     testWidgets('calls onTap when the row is tapped', (tester) async {

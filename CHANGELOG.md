@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects detail data path: highlighted task rows now bulk-load the latest
   task-agent reports for all linked task IDs in one repository call, avoiding
   N+1 report queries on larger projects.
+- Projects list grouped cards: category group containers now render the same
+  subtle bordered card treatment shown in the current Figma list designs,
+  instead of relying on background fill alone.
 
 ## [0.9.937] - 2026-03-29
 ### Changed

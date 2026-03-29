@@ -429,16 +429,8 @@ class AgentToolRegistry {
             'type': 'string',
             'description': 'The full updated report as a markdown document.',
           },
-          // Keep legacy parameter name for backwards compatibility with
-          // older template versions that still reference `markdown`.
-          'markdown': {
-            'type': 'string',
-            'description':
-                'Deprecated — use "content" instead. If both are '
-                'provided, "content" takes precedence.',
-          },
         },
-        'required': ['oneLiner', 'tldr'],
+        'required': ['oneLiner', 'tldr', 'content'],
         'additionalProperties': false,
       },
     ),

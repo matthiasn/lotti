@@ -336,10 +336,6 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Handles the `update_report` tool call by capturing the one-liner, TLDR,
   /// and content.
   ///
-  /// Accepts both the new parameter names (`tldr`, `content`) and the legacy
-  /// `markdown` parameter for backwards compatibility. If both `content` and
-  /// `markdown` are provided, `content` takes precedence.
-  ///
   /// If the LLM calls this more than once per wake, the last call wins — the
   /// previous content is silently replaced. This is by design: the agent
   /// contract requires exactly one call, so multiple calls indicate an LLM
@@ -349,12 +345,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    // Accept `content` first, fall back to legacy `markdown`.
     final contentArg = args['content'];
-    final markdownArg = args['markdown'];
-    final rawContent = (contentArg is String && contentArg.trim().isNotEmpty)
-        ? contentArg
-        : markdownArg;
     final rawTldr = args['tldr'];
     final rawOneLiner = args['oneLiner'];
     final tldr = (rawTldr is String && rawTldr.trim().isNotEmpty)
@@ -364,7 +355,7 @@ class TaskAgentStrategy extends ConversationStrategy {
         ? rawOneLiner.trim()
         : null;
 
-    if (rawContent is String && rawContent.trim().isNotEmpty) {
+    if (contentArg is String && contentArg.trim().isNotEmpty) {
       final missingFields = <String>[
         if (tldr == null) 'tldr',
         if (oneLiner == null) 'oneLiner',
@@ -386,7 +377,7 @@ class TaskAgentStrategy extends ConversationStrategy {
         return;
       }
 
-      _reportContent = rawContent.trim();
+      _reportContent = contentArg.trim();
       _reportTldr = tldr;
       _reportOneLiner = oneLiner;
 
@@ -404,8 +395,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
       await _recordToolResultMessage(toolName: reportToolName);
     } else {
-      const errorMsg =
-          'Error: "content" (or "markdown") must be a non-empty string.';
+      const errorMsg = 'Error: "content" must be a non-empty string.';
       manager.addToolResponse(
         toolCallId: callId,
         response: errorMsg,

@@ -231,12 +231,6 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                   ],
                 ),
               ),
-              SizedBox(width: tokens.spacing.step2),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: tokens.typography.lineHeight.caption,
-                color: ShowcasePalette.mediumText(context),
-              ),
             ],
           ),
         ),

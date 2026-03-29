@@ -113,9 +113,13 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
         ),
         const SizedBox(height: 8),
         DecoratedBox(
+          key: ValueKey(
+            'project-group-card-${widget.group.categoryId ?? 'unassigned'}',
+          ),
           decoration: BoxDecoration(
             color: _projectGroupBackgroundColor(context),
             borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),
+            border: Border.all(color: ShowcasePalette.border(context)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),

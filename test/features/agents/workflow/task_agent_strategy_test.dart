@@ -852,7 +852,7 @@ void main() {
               function: ChatCompletionMessageFunctionCall(
                 name: 'update_report',
                 arguments: jsonEncode({
-                  'markdown': '# Report',
+                  'content': '# Report',
                   'oneLiner': 'Implementation done, release next',
                   'tldr': 'Implementation is done and release is next.',
                 }),
@@ -867,7 +867,7 @@ void main() {
     });
 
     group('update_report tool', () {
-      test('captures report markdown from tool call', () async {
+      test('captures report content from tool call', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-report',
@@ -875,7 +875,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '# Task Summary\n\nAll good.',
+                'content': '# Task Summary\n\nAll good.',
                 'oneLiner': 'Implementation done, release next',
                 'tldr': 'Implementation is done and release is next.',
               }),
@@ -910,7 +910,7 @@ void main() {
       });
 
       test('uses last update_report call when called multiple times', () async {
-        for (final (id, markdown, oneLiner, tldr) in [
+        for (final (id, content, oneLiner, tldr) in [
           ('call-1', '# First', 'First one-liner', 'First summary'),
           ('call-2', '# Second', 'Second one-liner', 'Second summary'),
         ]) {
@@ -921,7 +921,7 @@ void main() {
               function: ChatCompletionMessageFunctionCall(
                 name: 'update_report',
                 arguments: jsonEncode({
-                  'markdown': markdown,
+                  'content': content,
                   'oneLiner': oneLiner,
                   'tldr': tldr,
                 }),
@@ -940,7 +940,7 @@ void main() {
         expect(strategy.extractReportTldr(), 'Second summary');
       });
 
-      test('trims whitespace from report markdown', () async {
+      test('trims whitespace from report content', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-report',
@@ -948,7 +948,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '  # Report\n\nContent  \n\n',
+                'content': '  # Report\n\nContent  \n\n',
                 'oneLiner': '  Release blocked on docs  ',
                 'tldr': '  Release blocked on docs and QA.  ',
               }),
@@ -966,7 +966,7 @@ void main() {
         expect(strategy.extractReportTldr(), 'Release blocked on docs and QA.');
       });
 
-      test('returns error for empty markdown', () async {
+      test('returns error for empty content', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-report',
@@ -974,7 +974,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '  ',
+                'content': '  ',
                 'oneLiner': 'Release blocked on docs',
                 'tldr': 'Release blocked on docs and QA.',
               }),
@@ -994,13 +994,12 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-report',
-            response:
-                'Error: "content" (or "markdown") must be a non-empty string.',
+            response: 'Error: "content" must be a non-empty string.',
           ),
         ).called(1);
       });
 
-      test('returns error for non-string markdown', () async {
+      test('returns error for non-string content', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-report',
@@ -1008,7 +1007,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': 42,
+                'content': 42,
                 'oneLiner': 'Release blocked on docs',
                 'tldr': 'Release blocked on docs and QA.',
               }),
@@ -1034,7 +1033,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '# Report',
+                'content': '# Report',
                 'oneLiner': 'Implementation done, release next',
                 'tldr': 'Implementation is done and release is next.',
               }),
@@ -1467,7 +1466,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '# Report',
+                'content': '# Report',
                 'oneLiner': 'Implementation done, release next',
                 'tldr': 'Implementation is done and release is next.',
               }),
@@ -1550,7 +1549,7 @@ void main() {
             function: ChatCompletionMessageFunctionCall(
               name: 'update_report',
               arguments: jsonEncode({
-                'markdown': '# Summary',
+                'content': '# Summary',
                 'oneLiner': 'Implementation done, release next',
                 'tldr': 'Implementation is done and release is next.',
               }),

@@ -225,6 +225,12 @@ shows no health state instead of falling back to invented local heuristics.
 The tab renders grouped project rows using the shared overview content and list
 widgets.
 
+Each category group is rendered as one rounded grouped-card surface with:
+
+- a shared grouped-card background color
+- a 1 px border using `ShowcasePalette.border(context)`
+- internal row dividers that disappear under the selected or hovered row fill
+
 It is responsible for:
 
 - grouped category sections

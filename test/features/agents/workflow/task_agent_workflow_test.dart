@@ -1351,7 +1351,7 @@ void main() {
                         function: ChatCompletionMessageFunctionCall(
                           name: 'update_report',
                           arguments:
-                              r'{"markdown":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
+                              r'{"content":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                         ),
                       ),
                     ],
@@ -1535,7 +1535,7 @@ void main() {
                       function: ChatCompletionMessageFunctionCall(
                         name: 'update_report',
                         arguments:
-                            '{"markdown":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
+                            '{"content":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ),
                   ],
@@ -1664,7 +1664,7 @@ void main() {
                         function: ChatCompletionMessageFunctionCall(
                           name: 'update_report',
                           arguments:
-                              r'{"markdown":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
+                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                         ),
                       ),
                     ],
