@@ -45,6 +45,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     }
 
     return recordAsync.when(
+      skipLoadingOnReload: true,
       loading: () => Scaffold(
         backgroundColor: ShowcasePalette.page(context),
         body: const Center(child: CircularProgressIndicator.adaptive()),
