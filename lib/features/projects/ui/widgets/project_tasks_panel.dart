@@ -24,47 +24,7 @@ class ProjectTasksPanel extends StatelessWidget {
     return ShowcasePanel(
       header: Padding(
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      context.messages.projectShowcaseProjectTasksTab,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(
-                            color: ShowcasePalette.highText(context),
-                          ),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  CountDotBadge(
-                    count: record.highlightedTaskSummaries.length,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Icon(
-              Icons.timer_outlined,
-              size: tokens.typography.lineHeight.subtitle2,
-              color: ShowcasePalette.timeGreen(context),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Text(
-              showcaseFormatDuration(
-                record.highlightedTasksTotalDuration,
-              ),
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: ShowcasePalette.timeGreen(context),
-              ),
-            ),
-          ],
-        ),
+        child: _ProjectTasksPanelHeader(record: record),
       ),
       itemCount: record.highlightedTaskSummaries.length,
       itemBuilder: (_, index) {
@@ -78,6 +38,140 @@ class ProjectTasksPanel extends StatelessWidget {
           onTap: onTaskTap,
         );
       },
+    );
+  }
+}
+
+class ProjectTasksSliverPanel extends StatelessWidget {
+  const ProjectTasksSliverPanel({
+    required this.record,
+    this.onTaskTap,
+    super.key,
+  });
+
+  final ProjectRecord record;
+  final ValueChanged<TaskSummary>? onTaskTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final itemCount = record.highlightedTaskSummaries.length;
+
+    return DecoratedSliver(
+      decoration: BoxDecoration(
+        color: ShowcasePalette.surface(context),
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+        border: Border.all(color: ShowcasePalette.border(context)),
+      ),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.step5,
+                tokens.spacing.step2,
+                tokens.spacing.step5,
+                tokens.spacing.step2,
+              ),
+              child: _ProjectTasksPanelHeader(record: record),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: ShowcasePalette.border(context),
+            ),
+          ),
+          if (itemCount > 0)
+            SliverToBoxAdapter(
+              child: SizedBox(height: tokens.spacing.step2),
+            ),
+          SliverList.builder(
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              final summary = record.highlightedTaskSummaries[index];
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TaskSummaryRow(
+                    summary: summary,
+                    topInset: tokens.spacing.step2,
+                    bottomInset: index == itemCount - 1
+                        ? 0
+                        : tokens.spacing.step2,
+                    onTap: onTaskTap,
+                  ),
+                  if (index < itemCount - 1) ...[
+                    SizedBox(height: tokens.spacing.step2),
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: ShowcasePalette.border(context),
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectTasksPanelHeader extends StatelessWidget {
+  const _ProjectTasksPanelHeader({
+    required this.record,
+  });
+
+  final ProjectRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  context.messages.projectShowcaseProjectTasksTab,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: ShowcasePalette.highText(context),
+                  ),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              CountDotBadge(
+                count: record.highlightedTaskSummaries.length,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Icon(
+          Icons.timer_outlined,
+          size: tokens.typography.lineHeight.subtitle2,
+          color: ShowcasePalette.timeGreen(context),
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        Text(
+          showcaseFormatDuration(
+            record.highlightedTasksTotalDuration,
+          ),
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: ShowcasePalette.timeGreen(context),
+          ),
+        ),
+      ],
     );
   }
 }

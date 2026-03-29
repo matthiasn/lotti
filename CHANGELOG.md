@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects detail live refresh: when related-task updates reload the derived
   project detail record, the page now keeps the previous content mounted until
   the new record resolves, avoiding full-page flicker and scroll-position jumps.
+- Projects detail scrolling: the top-level detail route now renders the task
+  panel through a sliver-based lazy list, which keeps large project task lists
+  steadier during fast downward scrolling instead of eagerly laying out every
+  task row.
 
 ## [0.9.937] - 2026-03-29
 ### Changed

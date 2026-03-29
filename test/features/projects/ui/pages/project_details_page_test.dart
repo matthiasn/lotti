@@ -14,6 +14,7 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -255,10 +256,10 @@ void main() {
           await tester.pump();
 
           expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
-          expect(find.text('Task 11'), findsOneWidget);
+          expect(find.byType(TaskSummaryRow), findsWidgets);
 
           await tester.drag(
-            find.byType(SingleChildScrollView),
+            find.byType(CustomScrollView),
             const Offset(0, -500),
           );
           await tester.pump();
@@ -274,7 +275,7 @@ void main() {
           await tester.pump();
 
           expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
-          expect(find.text('Task 11'), findsOneWidget);
+          expect(find.byType(TaskSummaryRow), findsWidgets);
           expect(
             tester
                 .state<ScrollableState>(find.byType(Scrollable))

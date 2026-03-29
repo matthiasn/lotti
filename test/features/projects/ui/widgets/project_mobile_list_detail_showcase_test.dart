@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_list_detail_showcase.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
 
@@ -144,6 +145,18 @@ void main() {
           theme: DesignSystemTheme.light(),
           viewportSize: const Size(920, 900),
         ),
+      );
+      await tester.pump();
+
+      final detailScrollView = find.descendant(
+        of: find.byType(ProjectMobileDetailContent),
+        matching: find.byType(Scrollable),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Project Tasks'),
+        300,
+        scrollable: detailScrollView,
       );
       await tester.pump();
 

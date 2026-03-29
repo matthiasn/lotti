@@ -77,51 +77,67 @@ class _ProjectMobileDetailContentState
           Expanded(
             child: DesignSystemScrollbar(
               controller: _scrollController,
-              child: SingleChildScrollView(
+              child: CustomScrollView(
                 controller: _scrollController,
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.step5,
-                  tokens.spacing.step3,
-                  tokens.spacing.step5,
-                  tokens.spacing.step6,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProjectMobileHeader(
-                      record: widget.record,
-                      onCategoryTap: widget.onCategoryTap,
-                      onTargetDateTap: widget.onTargetDateTap,
-                      onStatusTap: widget.onStatusTap,
+                slivers: [
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step5,
+                      tokens.spacing.step3,
+                      tokens.spacing.step5,
+                      tokens.spacing.step6,
                     ),
-                    SizedBox(height: tokens.spacing.step5),
-                    HealthPanel(record: widget.record),
-                    SizedBox(height: tokens.spacing.step6),
-                    ExpandableReportSection(
-                      title: context.messages.projectShowcaseAiReportTitle,
-                      body:
-                          widget.record.aiSummary.isEmpty &&
-                              widget.record.reportContent.isEmpty
-                          ? context.messages.agentReportNone
-                          : widget.record.aiSummary,
-                      fullContent: widget.record.reportContent,
-                      recommendations: widget.record.recommendations,
-                      trailingLabel: showcaseUpdatedLabel(
-                        context,
-                        updatedAt: widget.record.reportUpdatedAt,
-                        currentTime: widget.currentTime,
-                      ),
-                      nextWakeAt: widget.record.reportNextWakeAt,
-                      onRefresh: widget.onRefreshReport,
-                      isRefreshing: widget.isRefreshingReport,
+                    sliver: SliverMainAxisGroup(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: _ProjectMobileHeader(
+                            record: widget.record,
+                            onCategoryTap: widget.onCategoryTap,
+                            onTargetDateTap: widget.onTargetDateTap,
+                            onStatusTap: widget.onStatusTap,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: tokens.spacing.step5),
+                        ),
+                        SliverToBoxAdapter(
+                          child: HealthPanel(record: widget.record),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: tokens.spacing.step6),
+                        ),
+                        SliverToBoxAdapter(
+                          child: ExpandableReportSection(
+                            title:
+                                context.messages.projectShowcaseAiReportTitle,
+                            body:
+                                widget.record.aiSummary.isEmpty &&
+                                    widget.record.reportContent.isEmpty
+                                ? context.messages.agentReportNone
+                                : widget.record.aiSummary,
+                            fullContent: widget.record.reportContent,
+                            recommendations: widget.record.recommendations,
+                            trailingLabel: showcaseUpdatedLabel(
+                              context,
+                              updatedAt: widget.record.reportUpdatedAt,
+                              currentTime: widget.currentTime,
+                            ),
+                            nextWakeAt: widget.record.reportNextWakeAt,
+                            onRefresh: widget.onRefreshReport,
+                            isRefreshing: widget.isRefreshingReport,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: tokens.spacing.step6),
+                        ),
+                        ProjectTasksSliverPanel(
+                          record: widget.record,
+                          onTaskTap: widget.onTaskTap,
+                        ),
+                      ],
                     ),
-                    SizedBox(height: tokens.spacing.step6),
-                    ProjectTasksPanel(
-                      record: widget.record,
-                      onTaskTap: widget.onTaskTap,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
