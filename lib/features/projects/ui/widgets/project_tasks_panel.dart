@@ -130,7 +130,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
 
   @override
   Widget build(BuildContext context) {
-    final oneLiner = widget.summary.oneLiner?.trim();
+    final oneLiner = widget.summary.oneLiner;
 
     final tokens = context.designTokens;
     final backgroundColor = _hovered
@@ -187,9 +187,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                             overflow: TextOverflow.ellipsis,
                             style: tokens.typography.styles.others.caption
                                 .copyWith(
-                                  color: ShowcasePalette.highText(
-                                    context,
-                                  ).withValues(alpha: 0.32),
+                                  color: ShowcasePalette.lowText(context),
                                   fontWeight: tokens.typography.weight.regular,
                                 ),
                           ),
@@ -207,10 +205,10 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                           children: [
                             Icon(
                               Icons.timer_outlined,
-                              size: 16,
+                              size: tokens.typography.lineHeight.caption,
                               color: ShowcasePalette.lowText(context),
                             ),
-                            const SizedBox(width: 2),
+                            SizedBox(width: tokens.spacing.step1),
                             Text(
                               showcaseFormatDuration(
                                 widget.summary.estimatedDuration,

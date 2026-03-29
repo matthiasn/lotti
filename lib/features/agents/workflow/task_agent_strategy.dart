@@ -365,22 +365,15 @@ class TaskAgentStrategy extends ConversationStrategy {
         : null;
 
     if (rawContent is String && rawContent.trim().isNotEmpty) {
-      if (tldr == null) {
-        const errorMsg = 'Error: "tldr" must be a non-empty string.';
-        manager.addToolResponse(
-          toolCallId: callId,
-          response: errorMsg,
-        );
+      final missingFields = <String>[
+        if (tldr == null) 'tldr',
+        if (oneLiner == null) 'oneLiner',
+      ];
 
-        await _recordToolResultMessage(
-          toolName: reportToolName,
-          errorMessage: errorMsg,
-        );
-        return;
-      }
-
-      if (oneLiner == null) {
-        const errorMsg = 'Error: "oneLiner" must be a non-empty string.';
+      if (missingFields.isNotEmpty) {
+        final errorMsg =
+            'Error: ${missingFields.map((f) => '"$f"').join(' and ')} '
+            'must be a non-empty string.';
         manager.addToolResponse(
           toolCallId: callId,
           response: errorMsg,
