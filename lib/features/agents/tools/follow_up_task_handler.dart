@@ -214,8 +214,9 @@ class FollowUpTaskHandler {
   }
 
   /// Inherits the project from [sourceTaskId] by linking [newTaskId] to the
-  /// same project. Failures are captured as warnings so they never prevent the
-  /// follow-up task from being returned to the caller.
+  /// same project via [ProjectRepository.inheritProjectFromTask]. Failures are
+  /// captured as warnings so they never prevent the follow-up task from being
+  /// returned to the caller.
   Future<void> _tryInheritProject(
     String sourceTaskId,
     String newTaskId,
@@ -225,15 +226,16 @@ class FollowUpTaskHandler {
     if (repo == null) return;
 
     try {
-      final project = await repo.getProjectForTask(sourceTaskId);
-      if (project != null) {
-        final linked = await repo.linkTaskToProject(
-          projectId: project.meta.id,
-          taskId: newTaskId,
+      final inherited = await repo.inheritProjectFromTask(
+        sourceTaskId: sourceTaskId,
+        newTaskId: newTaskId,
+      );
+      if (!inherited) {
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'No project to inherit from $sourceTaskId for $newTaskId',
+          subDomain: _sub,
         );
-        if (!linked) {
-          warnings.add('Warning: failed to inherit project');
-        }
       }
     } catch (e) {
       _domainLogger?.error(

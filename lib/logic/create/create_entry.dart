@@ -91,29 +91,31 @@ Future<Task?> createTask({
   return task;
 }
 
-/// Looks up the project of [linkedId] and links [newTaskId] to the same
-/// project. Best-effort: failures are silently caught so they never prevent
-/// task creation from succeeding.
+/// Copies the project assignment from [linkedId] to [newTaskId] via
+/// [ProjectRepository.inheritProjectFromTask]. Best-effort: failures are
+/// caught so they never prevent task creation from succeeding.
 Future<void> _inheritProjectFromLinkedTask(
   String linkedId,
   String newTaskId,
 ) async {
   try {
-    final db = getIt<JournalDb>();
-    final project = await db.getProjectForTask(linkedId);
-    if (project == null) return;
-
     final repo = ProjectRepository(
-      journalDb: db,
+      journalDb: getIt<JournalDb>(),
       entitiesCacheService: getIt<EntitiesCacheService>(),
       persistenceLogic: getIt<PersistenceLogic>(),
       updateNotifications: getIt<UpdateNotifications>(),
       vectorClockService: getIt<VectorClockService>(),
     );
-    await repo.linkTaskToProject(
-      projectId: project.meta.id,
-      taskId: newTaskId,
+    final inherited = await repo.inheritProjectFromTask(
+      sourceTaskId: linkedId,
+      newTaskId: newTaskId,
     );
+    if (!inherited) {
+      developer.log(
+        'No project to inherit for task $newTaskId from $linkedId',
+        name: 'createTask',
+      );
+    }
   } catch (e) {
     developer.log(
       'Failed to inherit project for task $newTaskId from $linkedId: $e',
