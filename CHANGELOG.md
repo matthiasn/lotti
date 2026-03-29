@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects list grouped cards: category group containers now render the same
   subtle bordered card treatment shown in the current Figma list designs,
   instead of relying on background fill alone.
+- Projects detail live refresh: when related-task updates reload the derived
+  project detail record, the page now keeps the previous content mounted until
+  the new record resolves, avoiding full-page flicker and scroll-position jumps.
 
 ## [0.9.937] - 2026-03-29
 ### Changed

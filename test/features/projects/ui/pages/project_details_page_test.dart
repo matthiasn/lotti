@@ -188,6 +188,102 @@ void main() {
           expect(find.byType(ProjectMobileDetailContent), findsNothing);
         },
       );
+
+      testWidgets(
+        'keeps rendering the previous detail content during provider reloads',
+        (tester) async {
+          final reloadTriggerController = StreamController<int>.broadcast();
+          final reloadTriggerProvider = StreamProvider<int>(
+            (ref) => reloadTriggerController.stream,
+          );
+          final completer = Completer<ProjectRecord?>();
+          addTearDown(() {
+            reloadTriggerController.close();
+            if (!completer.isCompleted) {
+              completer.complete(testRecord);
+            }
+          });
+
+          final tallRecord = makeTestProjectRecord(
+            project: testProject,
+            reportContent: List.filled(
+              12,
+              'Long report line that keeps the project detail page scrollable.',
+            ).join('\n\n'),
+            highlightedTaskSummaries: List.generate(
+              12,
+              (index) => makeTestTaskSummary(
+                task: makeTestTask(
+                  id: 'task-$index',
+                  title: 'Task $index',
+                ),
+                oneLiner: 'Summary line $index',
+              ),
+            ),
+          );
+
+          final container = ProviderContainer(
+            overrides: _baseOverrides(
+              controllerState: ProjectDetailState(
+                project: testProject,
+                linkedTasks: const [],
+                isLoading: false,
+                isSaving: false,
+                hasChanges: false,
+              ),
+              recordOverride: (ref) {
+                final reload =
+                    ref.watch(reloadTriggerProvider).asData?.value ?? 0;
+                return reload == 0 ? tallRecord : completer.future;
+              },
+            ),
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidget2(
+                Theme(
+                  data: DesignSystemTheme.dark(),
+                  child: const ProjectDetailsPage(projectId: _projectId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Task 11'), findsOneWidget);
+
+          await tester.drag(
+            find.byType(SingleChildScrollView),
+            const Offset(0, -500),
+          );
+          await tester.pump();
+
+          final scrollableState = tester.state<ScrollableState>(
+            find.byType(Scrollable),
+          );
+          final previousOffset = scrollableState.position.pixels;
+          expect(previousOffset, greaterThan(0));
+
+          reloadTriggerController.add(1);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Task 11'), findsOneWidget);
+          expect(
+            tester
+                .state<ScrollableState>(find.byType(Scrollable))
+                .position
+                .pixels,
+            previousOffset,
+          );
+        },
+      );
     });
 
     group('error state', () {

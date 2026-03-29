@@ -37,6 +37,7 @@
           <p>Task-agent reports: the <code>update_report</code> contract now requires a dedicated <code>oneLiner</code> tagline alongside the TLDR and full report so task cards can show a concise current-state summary without reusing the longer report text.</p>
           <p>Projects detail data path: highlighted task rows now bulk-load the latest task-agent reports for all linked task IDs in one repository call, avoiding N+1 report queries on larger projects.</p>
           <p>Projects list grouped cards: category group containers now render the same subtle bordered card treatment shown in the current Figma list designs, instead of relying on background fill alone.</p>
+          <p>Projects detail live refresh: when related-task updates reload the derived project detail record, the page now keeps the previous content mounted until the new record resolves, avoiding full-page flicker and scroll-position jumps.</p>
       </description>
     </release>
     <release version="0.9.937" date="2026-03-29">

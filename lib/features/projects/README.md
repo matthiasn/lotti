@@ -251,6 +251,11 @@ The newer top-level route is not just a renamed editor. It assembles a
 (`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel`), which keeps
 the production surface aligned with Widgetbook.
 
+When the derived `ProjectRecord` reloads because linked tasks or task-agent
+reports changed, the page keeps rendering the previous `ProjectRecord` until the
+new one is ready. This avoids flashing a full-page loading state and preserves
+the current scroll position during live updates.
+
 `ProjectTasksPanel` renders each task row as:
 
 - title in `bodySmall` with regular weight
