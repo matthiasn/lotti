@@ -837,7 +837,7 @@ final class ProjectActivityMonitorProvider
 }
 
 String _$projectActivityMonitorHash() =>
-    r'be70af4bae95fb4cf368b3bca6d2e02d6db132f0';
+    r'31ccbdd01c76e6ed185c4904ad42b37ca0c61053';
 
 /// The high-level agent service.
 

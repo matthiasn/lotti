@@ -224,6 +224,7 @@ AgentReportEntity _$AgentReportEntityFromJson(Map<String, dynamic> json) =>
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       content: json['content'] as String? ?? '',
       tldr: json['tldr'] as String?,
+      oneLiner: json['oneLiner'] as String?,
       confidence: (json['confidence'] as num?)?.toDouble(),
       provenance: json['provenance'] as Map<String, dynamic>? ?? const {},
       deletedAt: json['deletedAt'] == null
@@ -242,6 +243,7 @@ Map<String, dynamic> _$AgentReportEntityToJson(AgentReportEntity instance) =>
       'vectorClock': instance.vectorClock,
       'content': instance.content,
       'tldr': instance.tldr,
+      'oneLiner': instance.oneLiner,
       'confidence': instance.confidence,
       'provenance': instance.provenance,
       'deletedAt': instance.deletedAt?.toIso8601String(),

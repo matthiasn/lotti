@@ -85,8 +85,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   ///
   /// The [content] field holds the full markdown report body. The [tldr]
   /// field is a short summary populated by newer agent versions via the
-  /// `update_report` tool. For older reports where [tldr] is null, the UI
-  /// extracts a synthetic TLDR from the first paragraph of [content].
+  /// `update_report` tool. The [oneLiner] field is a compact task-card
+  /// subtitle/tagline used in project detail task lists. For older reports
+  /// where [tldr] is null, the UI extracts a synthetic TLDR from the first
+  /// paragraph of [content].
   const factory AgentDomainEntity.agentReport({
     required String id,
     required String agentId,
@@ -98,6 +100,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// Short summary, populated by `update_report(tldr:, content:)`.
     /// Null for reports created before this field was added.
     String? tldr,
+
+    /// Compact task tagline, populated by
+    /// `update_report(oneLiner:, tldr:, content:)`.
+    /// Null for reports created before this field was added.
+    String? oneLiner,
     double? confidence,
     @Default({}) Map<String, Object?> provenance,
     DateTime? deletedAt,

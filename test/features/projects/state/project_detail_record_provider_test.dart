@@ -23,6 +23,7 @@ import '../test_utils.dart';
 
 void main() {
   late MockEntitiesCacheService mockCache;
+  late MockAgentRepository mockAgentRepository;
 
   final projectId = uuid.v1();
   const agentId = 'agent-rec-1';
@@ -37,6 +38,7 @@ void main() {
   setUp(() async {
     await getIt.reset();
     mockCache = MockEntitiesCacheService();
+    mockAgentRepository = MockAgentRepository();
     getIt.registerSingleton<EntitiesCacheService>(mockCache);
 
     when(
@@ -45,6 +47,9 @@ void main() {
     when(
       () => mockCache.getCategoryById(categoryId),
     ).thenReturn(testCategory);
+    when(
+      () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+    ).thenAnswer((_) async => const <String, AgentReportEntity>{});
   });
 
   tearDown(() async {
@@ -136,9 +141,13 @@ void main() {
     List<ProjectRecommendationEntity> recommendations = const [],
     AgentDomainEntity? reportEntity,
     AgentDomainEntity? agentState,
+    MockAgentRepository? agentRepository,
   }) {
     final container = ProviderContainer(
       overrides: [
+        agentRepositoryProvider.overrideWithValue(
+          agentRepository ?? mockAgentRepository,
+        ),
         projectDetailControllerProvider(projectId).overrideWith(
           () => _FixedProjectDetailController(detailState),
         ),
@@ -1137,6 +1146,171 @@ void main() {
         expect(
           result.highlightedTasksTotalDuration,
           const Duration(hours: 5),
+        );
+      });
+
+      test('maps one-liners from bulk task-agent report lookup', () async {
+        final project = makeTestProject(
+          id: projectId,
+          categoryId: categoryId,
+        );
+        final task1 = makeTask(
+          status: openStatus(),
+          title: 'Task A',
+          estimate: const Duration(hours: 2),
+        );
+        final task2 = makeTask(
+          status: openStatus(),
+          title: 'Task B',
+          estimate: const Duration(hours: 1),
+        );
+
+        when(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(
+            [task1.id, task2.id],
+          ),
+        ).thenAnswer(
+          (_) async => <String, AgentReportEntity>{
+            task1.id: makeTestReport(
+              id: 'report-task-a',
+              oneLiner: 'Implementation done, release next',
+            ),
+            task2.id: makeTestReport(
+              id: 'report-task-b',
+              oneLiner: 'Blocked on API review',
+            ),
+          },
+        );
+
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: project,
+            linkedTasks: [task1, task2],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+        );
+
+        final result = await container.read(
+          projectDetailRecordProvider(projectId).future,
+        );
+
+        expect(
+          result!.highlightedTaskSummaries[0].oneLiner,
+          'Implementation done, release next',
+        );
+        expect(
+          result.highlightedTaskSummaries[1].oneLiner,
+          'Blocked on API review',
+        );
+      });
+
+      test('trims one-liners and keeps null when absent', () async {
+        final project = makeTestProject(
+          id: projectId,
+          categoryId: categoryId,
+        );
+        final task1 = makeTask(
+          status: openStatus(),
+          title: 'Task A',
+          estimate: const Duration(hours: 2),
+        );
+        final task2 = makeTask(
+          status: openStatus(),
+          title: 'Task B',
+          estimate: const Duration(hours: 1),
+        );
+
+        when(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(
+            [task1.id, task2.id],
+          ),
+        ).thenAnswer(
+          (_) async => <String, AgentReportEntity>{
+            task1.id: makeTestReport(
+              id: 'report-task-a',
+              oneLiner: '  Release cut pending docs  ',
+            ),
+            task2.id: makeTestReport(
+              id: 'report-task-b',
+            ),
+          },
+        );
+
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: project,
+            linkedTasks: [task1, task2],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+        );
+
+        final result = await container.read(
+          projectDetailRecordProvider(projectId).future,
+        );
+
+        expect(
+          result!.highlightedTaskSummaries[0].oneLiner,
+          'Release cut pending docs',
+        );
+        expect(result.highlightedTaskSummaries[1].oneLiner, isNull);
+      });
+
+      test('uses one bulk report lookup for all linked tasks', () async {
+        final project = makeTestProject(
+          id: projectId,
+          categoryId: categoryId,
+        );
+        final task1 = makeTask(status: openStatus(), title: 'Task A');
+        final task2 = makeTask(status: openStatus(), title: 'Task B');
+        final task3 = makeTask(status: openStatus(), title: 'Task C');
+
+        when(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
+        ).thenAnswer((_) async => const <String, AgentReportEntity>{});
+
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: project,
+            linkedTasks: [task1, task2, task3],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+        );
+
+        await container.read(projectDetailRecordProvider(projectId).future);
+
+        verify(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(
+            [task1.id, task2.id, task3.id],
+          ),
+        ).called(1);
+      });
+
+      test('skips bulk report lookup when there are no linked tasks', () async {
+        final project = makeTestProject(
+          id: projectId,
+          categoryId: categoryId,
+        );
+
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: project,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+        );
+
+        await container.read(projectDetailRecordProvider(projectId).future);
+
+        verifyNever(
+          () => mockAgentRepository.getLatestTaskReportsForTaskIds(any()),
         );
       });
     });

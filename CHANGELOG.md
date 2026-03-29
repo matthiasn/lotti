@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.938] - 2026-03-29
+### Changed
+- Projects detail task summaries: project-task rows now show the latest
+  task-agent `oneLiner` subtitle between the task title and metadata, matching
+  the current Figma spacing and typography on mobile and desktop layouts, and
+  open project detail pages now refresh automatically when a task-agent report
+  finishes.
+- Task-agent reports: the `update_report` contract now requires a dedicated
+  `oneLiner` tagline alongside the TLDR and full report so task cards can show
+  a concise current-state summary without reusing the longer report text.
+- Projects detail data path: highlighted task rows now bulk-load the latest
+  task-agent reports for all linked task IDs in one repository call, avoiding
+  N+1 report queries on larger projects.
+- Projects list grouped cards: category group containers now render the same
+  subtle bordered card treatment shown in the current Figma list designs,
+  instead of relying on background fill alone.
+
 ## [0.9.937] - 2026-03-29
 ### Changed
 - Follow-up tasks now automatically inherit the project of the parent task they

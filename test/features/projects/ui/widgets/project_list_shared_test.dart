@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -98,6 +99,37 @@ void main() {
         find.byKey(const ValueKey('project-overview-row-p1')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('renders the grouped card with the Figma border treatment', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final cardFinder = find.byKey(
+        ValueKey('project-group-card-${group.categoryId ?? 'unassigned'}'),
+      );
+      final decoration =
+          tester.widget<DecoratedBox>(cardFinder).decoration as BoxDecoration;
+      final border = decoration.border! as Border;
+      final context = tester.element(cardFinder);
+
+      expect(border.top.width, 1);
+      expect(border.right.width, 1);
+      expect(border.bottom.width, 1);
+      expect(border.left.width, 1);
+      expect(border.top.color, ShowcasePalette.border(context));
     });
 
     testWidgets(

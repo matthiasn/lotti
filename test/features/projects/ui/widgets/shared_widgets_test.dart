@@ -307,6 +307,36 @@ void main() {
       expect(label.style?.fontWeight, FontWeight.w400);
       expect(label.style?.height, closeTo(1.4286, 0.0001));
     });
+
+    testWidgets('uses the compact metadata styling in compact mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          TaskStatePill(
+            status: TaskStatus.onHold(
+              id: 'h',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+              reason: 'waiting',
+            ),
+            compact: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final label = tester.widget<Text>(find.text('On Hold'));
+      final context = tester.element(find.byType(TaskStatePill));
+
+      expect(svg.width, 16);
+      expect(svg.height, 16);
+      expect(label.style?.fontSize, 14);
+      expect(label.style?.fontWeight, FontWeight.w400);
+      expect(label.style?.height, closeTo(1.4286, 0.0001));
+      expect(label.style?.color, ShowcasePalette.lowText(context));
+    });
   });
 
   group('CountDotBadge', () {

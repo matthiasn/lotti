@@ -41,12 +41,14 @@ void main() {
   });
 
   group('TaskSummary', () {
-    test('stores task and estimated duration', () {
+    test('stores task, one-liner, and estimated duration', () {
       final summary = makeTestTaskSummary(
         estimatedDuration: const Duration(hours: 1, minutes: 30),
+        oneLiner: 'Implementation done, release next',
       );
 
       expect(summary.task.data.title, 'Test Task');
+      expect(summary.oneLiner, 'Implementation done, release next');
       expect(summary.estimatedDuration, const Duration(hours: 1, minutes: 30));
     });
   });

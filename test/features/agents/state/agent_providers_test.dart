@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -53,6 +54,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -1339,6 +1341,7 @@ void main() {
     late MockAiConfigRepository mockAiConfigRepo;
     late MockScheduledWakeManager mockScheduledWakeManager;
     late MockProjectActivityMonitor mockProjectActivityMonitor;
+    late MockProjectRepository mockProjectRepository;
 
     setUp(() async {
       await setUpTestGetIt();
@@ -1352,6 +1355,7 @@ void main() {
       mockAiConfigRepo = MockAiConfigRepository();
       mockScheduledWakeManager = MockScheduledWakeManager();
       mockProjectActivityMonitor = MockProjectActivityMonitor();
+      mockProjectRepository = MockProjectRepository();
 
       when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
       when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
@@ -1368,6 +1372,12 @@ void main() {
       when(
         () => mockRepository.abandonOrphanedWakeRuns(),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockProjectRepository.getProjectForTask(any()),
+      ).thenAnswer((_) async => null);
       when(() => mockScheduledWakeManager.start()).thenReturn(null);
       when(() => mockScheduledWakeManager.stop()).thenReturn(null);
       when(() => mockProjectActivityMonitor.start()).thenReturn(null);
@@ -1403,6 +1413,7 @@ void main() {
           projectAgentServiceProvider.overrideWithValue(
             mockProjectAgentService,
           ),
+          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
           scheduledWakeManagerProvider.overrideWithValue(
@@ -1768,6 +1779,84 @@ void main() {
         verify(
           () => mockNotifications.notify(
             {kTestAgentId, 'tpl-1', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor includes taskId and parent projectId for task-agent wakes',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+        const taskId = 'task-123';
+        const projectId = 'project-123';
+        final timestamp = DateTime(2024, 3, 15, 10);
+
+        when(
+          () => mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(
+          () => mockRepository.getLinksFrom(
+            kTestAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            model.AgentLink.agentTask(
+              id: 'task-link-1',
+              fromId: kTestAgentId,
+              toId: taskId,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockProjectRepository.getProjectForTask(taskId),
+        ).thenAnswer((_) async => makeTestProject(id: projectId));
+
+        WakeExecutor? capturedExecutor;
+        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
+          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
+          return null;
+        });
+
+        final container = createInitContainer(enableAgents: true);
+        final sub = container.listen(
+          agentInitializationProvider,
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+        await container.read(agentInitializationProvider.future);
+
+        expect(capturedExecutor, isNotNull);
+
+        await capturedExecutor!(
+          kTestAgentId,
+          'run-key-task-project',
+          {'tok-project'},
+          'thread-task-project',
+        );
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notify(
+            {kTestAgentId, taskId, projectId, agentNotification},
           ),
         ).called(1);
       },

@@ -137,6 +137,7 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
               status: _taskOpen(DateTime(2026, 4, 1, 9)),
               due: DateTime(2026, 4, 8),
             ),
+            oneLiner: 'Core implementation done, release and docs next',
             estimatedDuration: const Duration(hours: 2, minutes: 30),
           ),
           TaskSummary(
@@ -149,6 +150,7 @@ Device Sync is progressing well. The sync engine core is complete and conflict r
               ),
               due: DateTime(2026, 4, 10),
             ),
+            oneLiner: 'Blocked on merge edge cases before parity sign-off',
             estimatedDuration: const Duration(hours: 1, minutes: 10),
           ),
         ],

@@ -130,6 +130,8 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
 
   @override
   Widget build(BuildContext context) {
+    final oneLiner = widget.summary.oneLiner;
+
     final tokens = context.designTokens;
     final backgroundColor = _hovered
         ? ShowcasePalette.hoverFill(context)
@@ -165,16 +167,36 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      widget.summary.task.data.title,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: ShowcasePalette.highText(context),
-                        fontWeight: tokens.typography.weight.regular,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.summary.task.data.title,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: ShowcasePalette.highText(context),
+                                fontWeight: tokens.typography.weight.regular,
+                              ),
+                        ),
+                        if (oneLiner != null && oneLiner.isNotEmpty) ...[
+                          SizedBox(height: tokens.spacing.step1),
+                          Text(
+                            oneLiner,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: ShowcasePalette.lowText(context),
+                                  fontWeight: tokens.typography.weight.regular,
+                                ),
+                          ),
+                        ],
+                      ],
                     ),
-                    SizedBox(height: tokens.spacing.step1),
+                    SizedBox(height: tokens.spacing.step4),
                     Wrap(
-                      spacing: tokens.spacing.step2,
+                      spacing: tokens.spacing.step3,
                       runSpacing: tokens.spacing.step1,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
@@ -183,7 +205,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                           children: [
                             Icon(
                               Icons.timer_outlined,
-                              size: tokens.typography.size.caption,
+                              size: tokens.typography.lineHeight.caption,
                               color: ShowcasePalette.lowText(context),
                             ),
                             SizedBox(width: tokens.spacing.step1),
@@ -191,9 +213,11 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                               showcaseFormatDuration(
                                 widget.summary.estimatedDuration,
                               ),
-                              style: tokens.typography.styles.others.caption
+                              style: tokens.typography.styles.body.bodySmall
                                   .copyWith(
                                     color: ShowcasePalette.lowText(context),
+                                    fontWeight:
+                                        tokens.typography.weight.regular,
                                   ),
                             ),
                           ],
@@ -206,12 +230,6 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
                     ),
                   ],
                 ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: tokens.typography.lineHeight.caption,
-                color: ShowcasePalette.mediumText(context),
               ),
             ],
           ),

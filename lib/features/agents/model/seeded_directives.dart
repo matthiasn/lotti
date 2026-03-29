@@ -116,7 +116,18 @@ rather than assume.''';
 /// the proven task summary prompt approach.
 const taskAgentReportDirective = '''
 You MUST call `update_report` exactly once at the end of every wake.
-Provide both `tldr` and `content` arguments.
+Provide `oneLiner`, `tldr`, and `content` arguments.
+
+## One-Liner (the `oneLiner` argument)
+
+A concise, meaningful tagline describing the task's current state. This is
+shown as a compact subtitle in project task cards, so keep it short, specific,
+and useful at a glance.
+
+Good examples:
+- Implementation done, release and docs next
+- At risk of missing the deadline without backend input
+- Blocked on QA feedback before rollout
 
 ## TLDR (the `tldr` argument)
 

@@ -225,6 +225,12 @@ shows no health state instead of falling back to invented local heuristics.
 The tab renders grouped project rows using the shared overview content and list
 widgets.
 
+Each category group is rendered as one rounded grouped-card surface with:
+
+- a shared grouped-card background color
+- a 1 px border using `ShowcasePalette.border(context)`
+- internal row dividers that disappear under the selected or hovered row fill
+
 It is responsible for:
 
 - grouped category sections
@@ -248,10 +254,23 @@ the production surface aligned with Widgetbook.
 `ProjectTasksPanel` renders each task row as:
 
 - title in `bodySmall` with regular weight
+- optional agent-authored `oneLiner` subtitle in `caption` with low-emphasis text
+- a 4 px gap between title and subtitle, then a 16 px gap before metadata
 - metadata on the next line
-- duration text in `caption`
+- duration text in `bodySmall`
 - status glyph tinted by task state
-- status label rendered with the same compact `caption` text style as duration
+- status label rendered with the same compact `bodySmall` text style as duration
+
+The subtitle comes from the latest task-agent report for that task. The detail
+provider bulk-loads those latest reports for all linked task IDs in one
+repository call, then joins the results into `TaskSummary.oneLiner` before the
+panel renders. That keeps the detail page on the batched query path instead of
+triggering a per-row report lookup when a project has dozens of tasks.
+
+Task-agent wake completion also emits the owning task ID and parent project ID
+through `UpdateNotifications`, so an open project detail page refreshes as soon
+as a task-agent report finishes instead of waiting for the user to leave and
+re-enter the page.
 
 ### Category and Task Integrations
 

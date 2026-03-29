@@ -383,15 +383,11 @@ class TaskStatePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final label = status.localizedLabel(context);
-    final labelStyle = compact
-        ? tokens.typography.styles.others.caption
-        : tokens.typography.styles.body.bodySmall;
+    final labelStyle = tokens.typography.styles.body.bodySmall;
     final labelColor = compact
         ? ShowcasePalette.lowText(context)
         : ShowcasePalette.mediumText(context);
-    final glyphSize = compact
-        ? tokens.typography.size.caption
-        : tokens.typography.lineHeight.caption;
+    final glyphSize = tokens.typography.lineHeight.caption;
     final (:iconColor, :assetName, :fallbackIcon) = switch (status) {
       TaskOpen() => (
         iconColor: ShowcasePalette.mediumText(context),

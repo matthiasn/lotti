@@ -29,11 +29,18 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
       final cache = getIt<EntitiesCacheService>();
       final category = cache.getCategoryById(project.meta.categoryId);
       final linkedTasks = [...detailState.linkedTasks]..sort(_compareTasks);
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      final taskReportsFuture = linkedTasks.isEmpty
+          ? Future.value(const <String, AgentReportEntity>{})
+          : agentRepository.getLatestTaskReportsForTaskIds(
+              linkedTasks.map((task) => task.id).toList(growable: false),
+            );
 
-      final (metrics, agent, recommendations) = await (
+      final (metrics, agent, recommendations, taskReportsByTaskId) = await (
         ref.watch(projectHealthMetricsProvider(projectId).future),
         ref.watch(projectAgentProvider(projectId).future),
         ref.watch(projectRecommendationsProvider(projectId).future),
+        taskReportsFuture,
       ).wait;
 
       final identity = agent?.mapOrNull(agent: (value) => value);
@@ -71,6 +78,11 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
               (task) => TaskSummary(
                 task: task,
                 estimatedDuration: task.data.estimate ?? Duration.zero,
+                oneLiner: switch (taskReportsByTaskId[task.id]?.oneLiner
+                    ?.trim()) {
+                  final value? when value.isNotEmpty => value,
+                  _ => null,
+                },
               ),
             )
             .toList(growable: false),
