@@ -27,6 +27,41 @@ void main() {
   }
 
   group('ProjectMobileDetailContent', () {
+    testWidgets('lazily builds far task rows as the detail page scrolls', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        highlightedTaskSummaries: List.generate(
+          50,
+          (index) => makeTestTaskSummary(
+            task: makeTestTask(
+              id: 'task-$index',
+              title: 'Task $index',
+            ),
+            oneLiner: 'Summary line $index',
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Task 0'), findsOneWidget);
+      expect(find.text('Task 49'), findsNothing);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -8000));
+      await tester.pump();
+
+      expect(find.text('Task 49'), findsOneWidget);
+    });
+
     testWidgets('places the risk chip in the metadata row below the title', (
       tester,
     ) async {

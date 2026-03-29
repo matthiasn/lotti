@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
 
 import '../../../widget_test_utils.dart';
@@ -74,6 +75,18 @@ void main() {
           ),
           mediaQueryData: const MediaQueryData(size: Size(1100, 1000)),
         ),
+      );
+      await tester.pump();
+
+      final detailScrollView = find.descendant(
+        of: find.byType(ProjectMobileDetailContent),
+        matching: find.byType(Scrollable),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Project Tasks'),
+        300,
+        scrollable: detailScrollView,
       );
       await tester.pump();
 

@@ -248,13 +248,21 @@ There are currently two detail routes in play:
 
 The newer top-level route is not just a renamed editor. It assembles a
 `ProjectRecord` and renders the shared detail widgets
-(`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel`), which keeps
-the production surface aligned with Widgetbook.
+(`ProjectMobileDetailContent`, `HealthPanel`, `ProjectTasksPanel` /
+`ProjectTasksSliverPanel`), which keeps the production surface aligned with
+Widgetbook.
 
 When the derived `ProjectRecord` reloads because linked tasks or task-agent
 reports changed, the page keeps rendering the previous `ProjectRecord` until the
 new one is ready. This avoids flashing a full-page loading state and preserves
 the current scroll position during live updates.
+
+The top-level detail route now uses a `CustomScrollView` with slivers instead of
+one large `SingleChildScrollView` body. The static header, health panel, and AI
+report stay boxed in `SliverToBoxAdapter`s, while the task list is rendered by
+`ProjectTasksSliverPanel` on a lazy `SliverList`. That keeps large projects
+from eagerly laying out every task row and reduces the scroll shudder that
+showed up when fast-scrolling long project task lists.
 
 `ProjectTasksPanel` renders each task row as:
 
@@ -271,6 +279,10 @@ provider bulk-loads those latest reports for all linked task IDs in one
 repository call, then joins the results into `TaskSummary.oneLiner` before the
 panel renders. That keeps the detail page on the batched query path instead of
 triggering a per-row report lookup when a project has dozens of tasks.
+
+On the top-level `/projects/:projectId` route those task rows are also rendered
+through a sliver-backed panel, so only the visible slice of the task list is
+built while scrolling.
 
 Task-agent wake completion also emits the owning task ID and parent project ID
 through `UpdateNotifications`, so an open project detail page refreshes as soon
