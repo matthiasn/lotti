@@ -180,6 +180,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       timeService: getIt<TimeService>(),
       domainLogger: logger,
       taskAgentService: ref.watch(taskAgentServiceProvider),
+      projectRepository: ref.watch(projectRepositoryProvider),
     ).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,

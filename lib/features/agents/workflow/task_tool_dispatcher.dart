@@ -24,6 +24,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -46,6 +47,7 @@ class TaskToolDispatcher {
     required this.timeService,
     this.domainLogger,
     this.taskAgentService,
+    this.projectRepository,
   });
 
   final JournalDb journalDb;
@@ -56,6 +58,7 @@ class TaskToolDispatcher {
   final TimeService timeService;
   final DomainLogger? domainLogger;
   final TaskAgentService? taskAgentService;
+  final ProjectRepository? projectRepository;
 
   static const _uuid = Uuid();
 
@@ -524,6 +527,7 @@ class TaskToolDispatcher {
       journalDb: journalDb,
       domainLogger: domainLogger,
       taskAgentService: taskAgentService,
+      projectRepository: projectRepository,
     );
     return handler.handle(sourceTaskId, args);
   }

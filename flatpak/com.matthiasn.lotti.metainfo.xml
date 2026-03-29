@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.937" date="2026-03-29">
+      <description>
+          <p>Follow-up tasks now automatically inherit the project of the parent task they were created from, both from the UI and from the agent follow-up task workflow.</p>
+      </description>
+    </release>
     <release version="0.9.936" date="2026-03-28">
       <description>
           <p>Design system navigation: the mobile detail back control is now a reusable component with the intended regular-weight label styling, so detail pages do not drift into heavier back-button text.</p>

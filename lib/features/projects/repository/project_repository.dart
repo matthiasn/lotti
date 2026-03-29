@@ -327,6 +327,19 @@ class ProjectRepository {
     return _softDeleteLink(existingLink);
   }
 
+  /// Copies the project assignment from [sourceTaskId] to [newTaskId].
+  ///
+  /// Returns `true` if a project was inherited successfully, `false` if the
+  /// source task has no project or the link could not be created.
+  Future<bool> inheritProjectFromTask({
+    required String sourceTaskId,
+    required String newTaskId,
+  }) async {
+    final project = await getProjectForTask(sourceTaskId);
+    if (project == null) return false;
+    return linkTaskToProject(projectId: project.meta.id, taskId: newTaskId);
+  }
+
   // ── Notifications ──────────────────────────────────────────────────────────
 
   /// Stream of all update notifications. Filter for [projectNotification]
