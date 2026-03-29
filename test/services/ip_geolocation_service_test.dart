@@ -21,6 +21,8 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockHttpClient mockHttpClient;
 
+  int localUtcOffsetMinutes() => DateTime.now().timeZoneOffset.inMinutes;
+
   setUpAll(() {
     registerFallbackValue(FakeUri());
     registerFallbackValue(FakeException());
@@ -299,7 +301,7 @@ void main() {
           expect(result, isNotNull);
           expect(
             result!.utcOffset,
-            DateTime(2024, 3, 15).timeZoneOffset.inMinutes,
+            localUtcOffsetMinutes(),
             reason: 'Failed for invalid offset: $offset',
           );
         }
@@ -454,7 +456,7 @@ void main() {
         );
         expect(
           result?.utcOffset,
-          DateTime(2024, 3, 15).timeZoneOffset.inMinutes,
+          localUtcOffsetMinutes(),
         );
 
         verify(

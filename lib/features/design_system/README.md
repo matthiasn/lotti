@@ -177,6 +177,7 @@ Representative composite or feature-shaped components:
 - task filters
 - task list items
 - navigation tab bar and showcase mobile chrome
+- reusable mobile detail back control and header chrome
 - calendar and time pickers
 - file upload surface
 

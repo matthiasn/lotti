@@ -14,6 +14,7 @@ const _kProjectGroupCardRadius = 16.0;
 const _kProjectGroupCardPadding = 8.0;
 const _kProjectRowGap = 16.0;
 const _kProjectRowVerticalPadding = 6.0;
+const _kProjectRowHorizontalPadding = 16.0;
 const _kProjectRowOverlap = 1.0;
 
 /// Shared category header row showing the category tag and project count.
@@ -156,7 +157,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                     if (visibleDividers[index])
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: _kProjectGroupCardPadding,
+                          horizontal: _kProjectRowHorizontalPadding,
                         ),
                         child: Divider(
                           key: ValueKey('project-group-divider-$index'),
@@ -208,7 +209,7 @@ class ProjectRow extends StatelessWidget {
     required this.onTap,
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
-    this.contentHorizontalPadding = 8,
+    this.contentHorizontalPadding = _kProjectRowHorizontalPadding,
     super.key,
   });
 
@@ -249,7 +250,7 @@ class _ProjectRowSurface extends StatefulWidget {
     required this.onTap,
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
-    this.contentHorizontalPadding = 8,
+    this.contentHorizontalPadding = _kProjectRowHorizontalPadding,
     super.key,
   });
 

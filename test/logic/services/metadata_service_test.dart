@@ -201,8 +201,10 @@ void main() {
 
         expect(metadata.timezone, isNotNull);
         expect(metadata.utcOffset, isNotNull);
-        final expectedOffset = DateTime(2024, 3, 15).timeZoneOffset.inMinutes;
-        expect(metadata.utcOffset, equals(expectedOffset));
+        expect(
+          metadata.utcOffset,
+          equals(metadata.createdAt.timeZoneOffset.inMinutes),
+        );
       });
 
       test(

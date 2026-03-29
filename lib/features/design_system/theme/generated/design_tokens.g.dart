@@ -284,7 +284,7 @@ const DsTokens dsTokensDark = DsTokens(
     ),
     background: DsColorsBackground(
       level01: Color(0xFF181818),
-      level02: Color(0xFF2B2B2B),
+      level02: Color(0xFF222222),
       level03: Color(0xFF535353),
       alternative01: Color(0xFF122029),
     ),

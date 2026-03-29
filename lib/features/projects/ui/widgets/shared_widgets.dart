@@ -370,37 +370,87 @@ class _ProjectStatusIcon extends StatelessWidget {
 
 /// A pill showing a task's status icon and localised label.
 class TaskStatePill extends StatelessWidget {
-  const TaskStatePill({required this.status, super.key});
+  const TaskStatePill({
+    required this.status,
+    this.compact = false,
+    super.key,
+  });
 
   final TaskStatus status;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final label = status.localizedLabel(context);
-    final icon = switch (status) {
-      TaskOpen() => Icons.radio_button_unchecked_rounded,
-      TaskInProgress() => Icons.play_arrow_rounded,
-      TaskGroomed() => Icons.circle_outlined,
-      TaskBlocked() => Icons.warning_amber_rounded,
-      TaskOnHold() => Icons.pause_circle_outline_rounded,
-      TaskDone() => Icons.check_circle_outline_rounded,
-      TaskRejected() => Icons.cancel_outlined,
+    final labelStyle = compact
+        ? tokens.typography.styles.others.caption
+        : tokens.typography.styles.body.bodySmall;
+    final labelColor = compact
+        ? ShowcasePalette.lowText(context)
+        : ShowcasePalette.mediumText(context);
+    final glyphSize = compact
+        ? tokens.typography.size.caption
+        : tokens.typography.lineHeight.caption;
+    final (:iconColor, :assetName, :fallbackIcon) = switch (status) {
+      TaskOpen() => (
+        iconColor: ShowcasePalette.mediumText(context),
+        assetName: 'assets/design_system/task_status_open.svg',
+        fallbackIcon: null,
+      ),
+      TaskInProgress() => (
+        iconColor: ShowcasePalette.amber(context),
+        assetName: 'assets/design_system/project_status_active.svg',
+        fallbackIcon: null,
+      ),
+      TaskGroomed() => (
+        iconColor: ShowcasePalette.timeGreen(context),
+        assetName: 'assets/design_system/task_status_groomed.svg',
+        fallbackIcon: null,
+      ),
+      TaskBlocked() => (
+        iconColor: ShowcasePalette.error(context),
+        assetName: 'assets/design_system/task_status_blocked.svg',
+        fallbackIcon: null,
+      ),
+      TaskOnHold() => (
+        iconColor: ShowcasePalette.amber(context),
+        assetName: 'assets/design_system/task_status_on_hold.svg',
+        fallbackIcon: null,
+      ),
+      TaskDone() => (
+        iconColor: ShowcasePalette.timeGreen(context),
+        assetName: 'assets/design_system/project_status_completed.svg',
+        fallbackIcon: null,
+      ),
+      TaskRejected() => (
+        iconColor: ShowcasePalette.error(context),
+        assetName: null,
+        fallbackIcon: Icons.cancel_outlined,
+      ),
     };
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: tokens.typography.lineHeight.caption,
-          color: ShowcasePalette.mediumText(context),
-        ),
+        if (assetName != null)
+          SvgPicture.asset(
+            assetName,
+            width: glyphSize,
+            height: glyphSize,
+            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          )
+        else if (fallbackIcon != null)
+          Icon(
+            fallbackIcon,
+            size: glyphSize,
+            color: iconColor,
+          ),
         SizedBox(width: tokens.spacing.step1),
         Text(
           label,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: ShowcasePalette.mediumText(context),
+          style: labelStyle.copyWith(
+            color: labelColor,
           ),
         ),
       ],

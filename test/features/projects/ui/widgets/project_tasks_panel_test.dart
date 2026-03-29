@@ -137,6 +137,60 @@ void main() {
       expect(title.style?.height, closeTo(1.4286, 0.0001));
     });
 
+    testWidgets(
+      'uses the same caption-sized typography for duration and task status',
+      (tester) async {
+        final summary = makeTestTaskSummary(
+          task: makeTestTask(id: 't1', title: 'Build feature'),
+          estimatedDuration: const Duration(minutes: 45),
+        );
+
+        await tester.pumpWidget(
+          wrap(TaskSummaryRow(summary: summary)),
+        );
+        await tester.pump();
+
+        final duration = tester.widget<Text>(find.text('45m'));
+        final status = tester.widget<Text>(find.text('Open'));
+
+        expect(duration.style?.fontSize, 12);
+        expect(duration.style?.fontWeight, FontWeight.w400);
+        expect(status.style?.fontSize, duration.style?.fontSize);
+        expect(status.style?.fontWeight, duration.style?.fontWeight);
+      },
+    );
+
+    testWidgets(
+      'allows long titles to wrap and keeps status metadata below the title',
+      (tester) async {
+        const longTitle =
+            'Sync database optimization and recovery tooling for long-running '
+            'offline reconciliation';
+        final summary = makeTestTaskSummary(
+          task: makeTestTask(id: 't1', title: longTitle),
+          estimatedDuration: const Duration(hours: 2, minutes: 30),
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            SizedBox(
+              width: 260,
+              child: TaskSummaryRow(summary: summary),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final titleFinder = find.text(longTitle);
+        final statusFinder = find.text('Open');
+        final titleRect = tester.getRect(titleFinder);
+        final statusRect = tester.getRect(statusFinder);
+
+        expect(tester.getSize(titleFinder).height, greaterThan(20));
+        expect(statusRect.top, greaterThan(titleRect.bottom - 1));
+      },
+    );
+
     testWidgets('extends hover fill to the full task row segment', (
       tester,
     ) async {
