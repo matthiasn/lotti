@@ -81,6 +81,7 @@ void main() {
     ) async {
       final summary = makeTestTaskSummary(
         task: makeTestTask(id: 't1', title: 'Build feature'),
+        oneLiner: 'Implementation phase done, release next',
         estimatedDuration: const Duration(minutes: 45),
       );
 
@@ -148,6 +149,7 @@ void main() {
       (tester) async {
         final summary = makeTestTaskSummary(
           task: makeTestTask(id: 't1', title: 'Build feature'),
+          oneLiner: 'Implementation phase done, release next',
         );
 
         await tester.pumpWidget(
@@ -212,7 +214,6 @@ void main() {
     ) async {
       final summary = makeTestTaskSummary(
         task: makeTestTask(id: 't1', title: 'Build feature'),
-        oneLiner: null,
         estimatedDuration: const Duration(minutes: 45),
       );
 

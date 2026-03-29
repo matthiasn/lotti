@@ -170,7 +170,7 @@ ProjectListItemData makeTestProjectListItemData({
 TaskSummary makeTestTaskSummary({
   Task? task,
   Duration estimatedDuration = const Duration(hours: 2),
-  String? oneLiner = 'Implementation phase done, release next',
+  String? oneLiner,
 }) {
   return TaskSummary(
     task: task ?? makeTestTask(id: 'task-1'),

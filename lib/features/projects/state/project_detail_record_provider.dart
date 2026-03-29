@@ -78,7 +78,11 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
               (task) => TaskSummary(
                 task: task,
                 estimatedDuration: task.data.estimate ?? Duration.zero,
-                oneLiner: taskReportsByTaskId[task.id]?.oneLiner?.trim(),
+                oneLiner: switch (taskReportsByTaskId[task.id]?.oneLiner
+                    ?.trim()) {
+                  final value? when value.isNotEmpty => value,
+                  _ => null,
+                },
               ),
             )
             .toList(growable: false),

@@ -254,7 +254,7 @@ Planned updates:
 - Projects README should document that the detail task rows now include the
   agent-authored one-liner subtitle and that the provider batch-fetches task
   reports.
-- Add a changelog line under version `0.9.936`.
+- Add a changelog line under version `0.9.938`.
 - Add the matching Flatpak metainfo release paragraph.
 
 Expected touched files:

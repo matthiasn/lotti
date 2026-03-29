@@ -36,10 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects detail task list: task rows now let long task titles wrap across
   multiple lines and keep duration plus state metadata underneath, with extra
   vertical breathing room in the `Project Tasks` header.
-- Projects detail task summaries: project-task rows now show the latest
-  task-agent one-line status subtitle between the title and metadata, and the
-  detail data path bulk-loads those task reports so large projects avoid N+1
-  report queries.
 - Projects list spacing: widened the grouped project-row horizontal inset so
   titles, metadata, and status pills sit with the intended breathing room
   inside each card.
