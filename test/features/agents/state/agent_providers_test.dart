@@ -1293,6 +1293,9 @@ void main() {
             mockAgentTemplateService,
           ),
           domainLoggerProvider.overrideWithValue(domainLogger),
+          projectRepositoryProvider.overrideWithValue(
+            MockProjectRepository(),
+          ),
         ],
       );
       addTearDown(container.dispose);

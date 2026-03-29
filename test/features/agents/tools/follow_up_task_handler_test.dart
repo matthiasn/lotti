@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -986,6 +987,265 @@ void main() {
               awaitContent: any(named: 'awaitContent'),
             ),
           );
+        });
+      });
+    });
+
+    group('project inheritance', () {
+      late MockProjectRepository mockProjectRepo;
+      late FollowUpTaskHandler handlerWithProject;
+
+      final testProject = ProjectEntry(
+        meta: Metadata(
+          id: 'project-001',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          categoryId: categoryId,
+        ),
+        data: ProjectData(
+          title: 'Test Project',
+          status: ProjectStatus.active(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      setUp(() {
+        mockProjectRepo = MockProjectRepository();
+        handlerWithProject = FollowUpTaskHandler(
+          persistenceLogic: mockPersistenceLogic,
+          journalDb: mockJournalDb,
+          domainLogger: mockDomainLogger,
+          projectRepository: mockProjectRepo,
+        );
+      });
+
+      test('inherits project from source task', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-proj');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockProjectRepo.getProjectForTask(sourceTaskId),
+        ).thenAnswer((_) async => testProject);
+
+        when(
+          () => mockProjectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithProject.handle(
+            sourceTaskId,
+            {'title': 'Inherits Project'},
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, isNot(contains('failed to inherit project')));
+
+          verify(
+            () => mockProjectRepo.linkTaskToProject(
+              projectId: 'project-001',
+              taskId: 'new-task-proj',
+            ),
+          ).called(1);
+        });
+      });
+
+      test('skips project inheritance when source has no project', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-no-proj');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockProjectRepo.getProjectForTask(sourceTaskId),
+        ).thenAnswer((_) async => null);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithProject.handle(
+            sourceTaskId,
+            {'title': 'No Project Source'},
+          );
+
+          expect(result.success, isTrue);
+
+          verifyNever(
+            () => mockProjectRepo.linkTaskToProject(
+              projectId: any(named: 'projectId'),
+              taskId: any(named: 'taskId'),
+            ),
+          );
+        });
+      });
+
+      test('surfaces warning when project linking fails', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-proj-fail');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockProjectRepo.getProjectForTask(sourceTaskId),
+        ).thenAnswer((_) async => testProject);
+
+        when(
+          () => mockProjectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenThrow(Exception('DB error'));
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithProject.handle(
+            sourceTaskId,
+            {'title': 'Project Link Fail'},
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-proj-fail');
+          expect(result.output, contains('failed to inherit project'));
+        });
+      });
+
+      test('surfaces warning when linkTaskToProject returns false', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-proj-false');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockProjectRepo.getProjectForTask(sourceTaskId),
+        ).thenAnswer((_) async => testProject);
+
+        when(
+          () => mockProjectRepo.linkTaskToProject(
+            projectId: any(named: 'projectId'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithProject.handle(
+            sourceTaskId,
+            {'title': 'Project Link False'},
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('failed to inherit project'));
+        });
+      });
+
+      test('does not inherit project when no repository provided', () async {
+        // Default handler has no projectRepository.
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-no-repo');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'No Repo Task'},
+          );
+
+          expect(result.success, isTrue);
+          // No project-related warnings since there's no repository.
+          expect(result.output, isNot(contains('project')));
         });
       });
     });

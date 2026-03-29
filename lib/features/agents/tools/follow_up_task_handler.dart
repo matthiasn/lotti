@@ -6,6 +6,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -18,23 +19,26 @@ import 'package:uuid/uuid.dart';
 /// from user audio/notes, calls `create_follow_up_task`, and the handler
 /// creates the task entity plus a `BasicLink` from source to new task.
 ///
-/// The new task inherits the source task's category. Priority defaults to P2
-/// if not specified.
+/// The new task inherits the source task's category and project. Priority
+/// defaults to P2 if not specified.
 class FollowUpTaskHandler {
   FollowUpTaskHandler({
     required PersistenceLogic persistenceLogic,
     required JournalDb journalDb,
     DomainLogger? domainLogger,
     TaskAgentService? taskAgentService,
+    ProjectRepository? projectRepository,
   }) : _persistenceLogic = persistenceLogic,
        _journalDb = journalDb,
        _domainLogger = domainLogger,
-       _taskAgentService = taskAgentService;
+       _taskAgentService = taskAgentService,
+       _projectRepository = projectRepository;
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
   final DomainLogger? _domainLogger;
   final TaskAgentService? _taskAgentService;
+  final ProjectRepository? _projectRepository;
 
   static const _uuid = Uuid();
   static const _sub = 'FollowUpTaskHandler';
@@ -173,6 +177,9 @@ class FollowUpTaskHandler {
       warnings.add('Warning: failed to link source task');
     }
 
+    // Inherit project from source task.
+    await _tryInheritProject(sourceTaskId, newTaskId, warnings);
+
     final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
     for (final w in warnings) {
       output.write('. $w');
@@ -204,6 +211,39 @@ class FollowUpTaskHandler {
       return DateTime.tryParse(value);
     }
     return null;
+  }
+
+  /// Inherits the project from [sourceTaskId] by linking [newTaskId] to the
+  /// same project. Failures are captured as warnings so they never prevent the
+  /// follow-up task from being returned to the caller.
+  Future<void> _tryInheritProject(
+    String sourceTaskId,
+    String newTaskId,
+    List<String> warnings,
+  ) async {
+    final repo = _projectRepository;
+    if (repo == null) return;
+
+    try {
+      final project = await repo.getProjectForTask(sourceTaskId);
+      if (project != null) {
+        final linked = await repo.linkTaskToProject(
+          projectId: project.meta.id,
+          taskId: newTaskId,
+        );
+        if (!linked) {
+          warnings.add('Warning: failed to inherit project');
+        }
+      }
+    } catch (e) {
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Failed to inherit project from $sourceTaskId → $newTaskId',
+        error: e,
+        subDomain: _sub,
+      );
+      warnings.add('Warning: failed to inherit project');
+    }
   }
 
   /// Auto-assigns an agent from the category's default template.

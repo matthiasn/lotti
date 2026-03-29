@@ -620,6 +620,9 @@ void main() {
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          projectRepositoryProvider.overrideWithValue(
+            MockProjectRepository(),
+          ),
         ],
       );
       addTearDown(container.dispose);

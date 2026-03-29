@@ -5,11 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -208,6 +210,77 @@ void main() {
         parent.meta.id,
       );
       expect(linkedEntities.any((e) => e.meta.id == task!.meta.id), true);
+    });
+
+    test('createTask inherits project from linked task', () async {
+      const testCategoryId = 'project-inherit-cat';
+      final db = getIt<JournalDb>();
+      final mockCache =
+          getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+      when(() => mockCache.getCategoryById(testCategoryId)).thenReturn(null);
+
+      // Create a parent task.
+      final parentTask = await createTask(categoryId: testCategoryId);
+      expect(parentTask, isNotNull);
+
+      // Create a project in the same category.
+      final testDate = DateTime(2024, 6, 15);
+      final project = ProjectEntry(
+        meta: Metadata(
+          id: 'project-inherit-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: testCategoryId,
+        ),
+        data: ProjectData(
+          title: 'Test Project',
+          status: ProjectStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+      );
+      await getIt<PersistenceLogic>().createDbEntity(project);
+
+      // Link the parent task to the project.
+      final repo = ProjectRepository(
+        journalDb: db,
+        entitiesCacheService: getIt<EntitiesCacheService>(),
+        persistenceLogic: getIt<PersistenceLogic>(),
+        updateNotifications: getIt<UpdateNotifications>(),
+        vectorClockService: getIt<VectorClockService>(),
+      );
+      final linked = await repo.linkTaskToProject(
+        projectId: project.meta.id,
+        taskId: parentTask!.meta.id,
+      );
+      expect(linked, isTrue);
+
+      // Create a follow-up task linked to the parent.
+      final followUp = await createTask(
+        linkedId: parentTask.meta.id,
+        categoryId: testCategoryId,
+      );
+      expect(followUp, isNotNull);
+
+      // Verify the follow-up inherited the project.
+      final followUpProject = await db.getProjectForTask(followUp!.meta.id);
+      expect(followUpProject, isNotNull);
+      expect(followUpProject!.meta.id, project.meta.id);
+    });
+
+    test('createTask without linked task does not assign project', () async {
+      final task = await createTask();
+      expect(task, isNotNull);
+
+      final project = await getIt<JournalDb>().getProjectForTask(task!.meta.id);
+      expect(project, isNull);
     });
 
     test('createEvent creates and stores an event', () async {

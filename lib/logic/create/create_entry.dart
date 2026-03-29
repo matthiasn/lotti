@@ -7,16 +7,20 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshots.dart';
 
@@ -79,7 +83,43 @@ Future<Task?> createTask({
     categoryId: categoryId,
   );
 
+  // Inherit project from the linked parent task.
+  if (task != null && linkedId != null) {
+    await _inheritProjectFromLinkedTask(linkedId, task.meta.id);
+  }
+
   return task;
+}
+
+/// Looks up the project of [linkedId] and links [newTaskId] to the same
+/// project. Best-effort: failures are silently caught so they never prevent
+/// task creation from succeeding.
+Future<void> _inheritProjectFromLinkedTask(
+  String linkedId,
+  String newTaskId,
+) async {
+  try {
+    final db = getIt<JournalDb>();
+    final project = await db.getProjectForTask(linkedId);
+    if (project == null) return;
+
+    final repo = ProjectRepository(
+      journalDb: db,
+      entitiesCacheService: getIt<EntitiesCacheService>(),
+      persistenceLogic: getIt<PersistenceLogic>(),
+      updateNotifications: getIt<UpdateNotifications>(),
+      vectorClockService: getIt<VectorClockService>(),
+    );
+    await repo.linkTaskToProject(
+      projectId: project.meta.id,
+      taskId: newTaskId,
+    );
+  } catch (e) {
+    developer.log(
+      'Failed to inherit project for task $newTaskId from $linkedId: $e',
+      name: 'createTask',
+    );
+  }
 }
 
 /// Auto-creates an agent for [task] if the task's category has a

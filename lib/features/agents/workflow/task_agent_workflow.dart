@@ -36,6 +36,7 @@ import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -83,6 +84,7 @@ class TaskAgentWorkflow {
     this.embeddingStore,
     this.embeddingRepository,
     this.taskAgentService,
+    this.projectRepository,
   });
 
   final AgentRepository agentRepository;
@@ -111,6 +113,9 @@ class TaskAgentWorkflow {
 
   /// Optional task agent service for auto-assigning agents to follow-up tasks.
   final TaskAgentService? taskAgentService;
+
+  /// Optional project repository for inheriting projects on follow-up tasks.
+  final ProjectRepository? projectRepository;
 
   static const _uuid = Uuid();
 
@@ -331,6 +336,7 @@ class TaskAgentWorkflow {
         persistenceLogic: getIt<PersistenceLogic>(),
         timeService: getIt<TimeService>(),
         taskAgentService: taskAgentService,
+        projectRepository: projectRepository,
       );
 
       final changeSetBuilder = ChangeSetBuilder(

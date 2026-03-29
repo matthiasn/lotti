@@ -862,6 +862,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     embeddingStore: embeddingStore,
     embeddingRepository: embeddingRepository,
     taskAgentService: ref.watch(taskAgentServiceProvider),
+    projectRepository: ref.watch(projectRepositoryProvider),
   );
 }
 
