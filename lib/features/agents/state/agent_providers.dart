@@ -1059,10 +1059,47 @@ void _wireWakeExecutor(
       throw StateError(result.error ?? 'Task agent wake failed');
     }
 
+    final extraTokens = <String>{};
+    try {
+      final taskLinks = await ref
+          .read(agentRepositoryProvider)
+          .getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentTask,
+          );
+      if (taskLinks.isNotEmpty) {
+        final primaryTaskLink = taskLinks.toList()
+          ..sort((a, b) {
+            final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+            if (byCreatedAt != 0) {
+              return byCreatedAt;
+            }
+            return b.id.compareTo(a.id);
+          });
+        final taskId = primaryTaskLink.first.toId;
+        extraTokens.add(taskId);
+
+        final project = await ref
+            .read(projectRepositoryProvider)
+            .getProjectForTask(taskId);
+        final projectId = project?.meta.id;
+        if (projectId != null) {
+          extraTokens.add(projectId);
+        }
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve task/project wake notification tokens: $error',
+        name: 'agentInitialization',
+        stackTrace: stackTrace,
+      );
+    }
+
     await _notifyWakeCompletion(
       ref,
       agentId: agentId,
       updateNotifications: updateNotifications,
+      extraTokens: extraTokens,
     );
 
     return result.mutatedEntries;

@@ -261,6 +261,11 @@ repository call, then joins the results into `TaskSummary.oneLiner` before the
 panel renders. That keeps the detail page on the batched query path instead of
 triggering a per-row report lookup when a project has dozens of tasks.
 
+Task-agent wake completion also emits the owning task ID and parent project ID
+through `UpdateNotifications`, so an open project detail page refreshes as soon
+as a task-agent report finishes instead of waiting for the user to leave and
+re-enter the page.
+
 ### Category and Task Integrations
 
 Projects surface in:

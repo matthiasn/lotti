@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Projects detail task summaries: project-task rows now show the latest
   task-agent `oneLiner` subtitle between the task title and metadata, matching
-  the current Figma spacing and typography on mobile and desktop layouts.
+  the current Figma spacing and typography on mobile and desktop layouts, and
+  open project detail pages now refresh automatically when a task-agent report
+  finishes.
 - Task-agent reports: the `update_report` contract now requires a dedicated
   `oneLiner` tagline alongside the TLDR and full report so task cards can show
   a concise current-state summary without reusing the longer report text.
