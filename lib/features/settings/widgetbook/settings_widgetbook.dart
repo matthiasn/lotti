@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -115,7 +116,7 @@ class _SettingsShowcasePage extends StatelessWidget {
                       DesignSystemListItem(
                         title: item.title,
                         subtitle: item.subtitle,
-                        leading: _SettingsIcon(icon: item.icon),
+                        leading: SettingsIcon(icon: item.icon),
                         trailing: Icon(
                           Icons.chevron_right_rounded,
                           size: tokens.spacing.step6,
@@ -129,35 +130,6 @@ class _SettingsShowcasePage extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsIcon extends StatelessWidget {
-  const _SettingsIcon({required this.icon});
-
-  static const _containerSize = 36.0;
-  static const _iconSize = 20.0;
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      width: _containerSize,
-      height: _containerSize,
-      decoration: BoxDecoration(
-        color: tokens.colors.interactive.enabled.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-      ),
-      child: Center(
-        child: Icon(
-          icon,
-          size: _iconSize,
-          color: tokens.colors.interactive.enabled,
         ),
       ),
     );

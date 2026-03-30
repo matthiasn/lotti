@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
@@ -41,7 +43,6 @@ void main() {
     testWidgets('main page is displayed with gated cards enabled', (
       tester,
     ) async {
-      // Enable flags for habits and dashboards
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
           {
@@ -59,19 +60,7 @@ void main() {
         ]),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider.overrideWith(
-              _TestWhatsNewController.new,
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Settings'), findsOneWidget);
 
@@ -83,6 +72,19 @@ void main() {
       expect(find.text('Theming'), findsOneWidget);
       expect(find.text('Config Flags'), findsOneWidget);
       expect(find.text('Advanced Settings'), findsOneWidget);
+    });
+
+    testWidgets('renders DesignSystemListItem components with dividers', (
+      tester,
+    ) async {
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+      );
+
+      await _pumpSettingsPage(tester, mockJournalDb);
+
+      // Core items always visible: AI, Categories, Labels, Theming, Flags, Advanced
+      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
     });
 
     testWidgets('shows Sync tile when Matrix flag is ON', (tester) async {
@@ -99,26 +101,16 @@ void main() {
               description: 'Enable Dashboards Page?',
               status: true,
             ),
+            const ConfigFlag(
+              name: enableMatrixFlag,
+              description: 'Enable Matrix?',
+              status: true,
+            ),
           },
         ]),
       );
-      when(
-        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
-      ).thenAnswer((_) => Stream<bool>.value(true));
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider.overrideWith(
-              _TestWhatsNewController.new,
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Sync Settings'), findsOneWidget);
     });
@@ -143,19 +135,7 @@ void main() {
         ]),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider.overrideWith(
-              _TestWhatsNewController.new,
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Habits'), findsNothing);
       // Dashboards and Measurables visible when dashboards enabled
@@ -178,19 +158,7 @@ void main() {
         ]),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider.overrideWith(
-              _TestWhatsNewController.new,
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Agents'), findsOneWidget);
       // Subtitle verifies the full card structure rendered, not just the title.
@@ -207,19 +175,7 @@ void main() {
         (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SettingsPage(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockJournalDb),
-            whatsNewControllerProvider.overrideWith(
-              _TestWhatsNewController.new,
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Agents'), findsNothing);
       // Subtitle also absent when the flag is off.
@@ -244,19 +200,7 @@ void main() {
           ]),
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const SettingsPage(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockJournalDb),
-              whatsNewControllerProvider.overrideWith(
-                _TestWhatsNewController.new,
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await _pumpSettingsPage(tester, mockJournalDb);
 
         // Settings card with title and subtitle
         expect(find.text("What's New"), findsOneWidget);
@@ -276,19 +220,7 @@ void main() {
           (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const SettingsPage(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockJournalDb),
-              whatsNewControllerProvider.overrideWith(
-                _TestWhatsNewController.new,
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await _pumpSettingsPage(tester, mockJournalDb);
 
         expect(find.text("What's New"), findsNothing);
         expect(find.byType(WhatsNewIndicator), findsNothing);
@@ -315,19 +247,7 @@ void main() {
           ]),
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const SettingsPage(),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockJournalDb),
-              whatsNewControllerProvider.overrideWith(
-                _TestWhatsNewController.new,
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
+        await _pumpSettingsPage(tester, mockJournalDb);
 
         // Habits still visible when habits enabled
         expect(find.text('Habits'), findsOneWidget);
@@ -337,4 +257,24 @@ void main() {
       },
     );
   });
+}
+
+Future<void> _pumpSettingsPage(
+  WidgetTester tester,
+  MockJournalDb mockJournalDb,
+) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      const SettingsPage(),
+      theme: DesignSystemTheme.light(),
+      overrides: [
+        journalDbProvider.overrideWithValue(mockJournalDb),
+        whatsNewControllerProvider.overrideWith(
+          _TestWhatsNewController.new,
+        ),
+      ],
+    ),
+  );
+
+  await tester.pumpAndSettle();
 }
