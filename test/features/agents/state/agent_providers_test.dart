@@ -1715,7 +1715,7 @@ void main() {
         final mockNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
-          () => mockNotifications.notify(
+          () => mockNotifications.notifyUiOnly(
             {kTestAgentId, 'AGENT_CHANGED'},
           ),
         ).called(1);
@@ -1777,7 +1777,7 @@ void main() {
         final mockNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
-          () => mockNotifications.notify(
+          () => mockNotifications.notifyUiOnly(
             {kTestAgentId, 'tpl-1', 'AGENT_CHANGED'},
           ),
         ).called(1);
@@ -1855,7 +1855,7 @@ void main() {
         final mockNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
-          () => mockNotifications.notify(
+          () => mockNotifications.notifyUiOnly(
             {kTestAgentId, taskId, projectId, agentNotification},
           ),
         ).called(1);
@@ -1917,7 +1917,7 @@ void main() {
         final mockNotifications =
             getIt<UpdateNotifications>() as MockUpdateNotifications;
         verify(
-          () => mockNotifications.notify(
+          () => mockNotifications.notifyUiOnly(
             {kTestAgentId, 'AGENT_CHANGED'},
           ),
         ).called(1);
@@ -2426,9 +2426,8 @@ void main() {
         orchestrator.onPersistedStateChanged?.call(kTestAgentId);
 
         verify(
-          () => mockNotifications.notify(
+          () => mockNotifications.notifyUiOnly(
             {kTestAgentId, agentNotification},
-            fromSync: true,
           ),
         ).called(1);
       },

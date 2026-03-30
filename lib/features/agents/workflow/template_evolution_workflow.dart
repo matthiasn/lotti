@@ -691,7 +691,7 @@ class TemplateEvolutionWorkflow {
   /// `allEvolutionSessionsProvider`) also invalidate.
   /// No-op when [updateNotifications] is not set.
   void _notifyUpdate(String templateId) {
-    updateNotifications?.notify({templateId, agentNotification});
+    updateNotifications?.notifyUiOnly({templateId, agentNotification});
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible

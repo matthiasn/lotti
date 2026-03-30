@@ -120,9 +120,8 @@ void main() {
       expect(secondActive.position, 1);
 
       verify(
-        () => mockNotifications.notify(
+        () => mockNotifications.notifyUiOnly(
           {'agent-1', 'project-1', agentNotification},
-          fromSync: true,
         ),
       ).called(1);
     },
@@ -149,9 +148,8 @@ void main() {
     expect(updated.status, ProjectRecommendationStatus.resolved);
     expect(updated.resolvedAt, isNotNull);
     verify(
-      () => mockNotifications.notify(
+      () => mockNotifications.notifyUiOnly(
         {'agent-1', 'project-1', agentNotification},
-        fromSync: true,
       ),
     ).called(1);
   });
@@ -174,10 +172,7 @@ void main() {
       expect(success, isFalse);
       verifyNever(() => mockSyncService.upsertEntity(any()));
       verifyNever(
-        () => mockNotifications.notify(
-          any(),
-          fromSync: any(named: 'fromSync'),
-        ),
+        () => mockNotifications.notifyUiOnly(any()),
       );
     },
   );
@@ -205,9 +200,8 @@ void main() {
       expect(updated.status, ProjectRecommendationStatus.dismissed);
       expect(updated.dismissedAt, isNotNull);
       verify(
-        () => mockNotifications.notify(
+        () => mockNotifications.notifyUiOnly(
           {'agent-1', 'project-1', agentNotification},
-          fromSync: true,
         ),
       ).called(1);
     },
