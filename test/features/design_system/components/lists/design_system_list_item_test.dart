@@ -335,6 +335,59 @@ void main() {
       expect(semantics.properties.label, 'Select item');
     });
 
+    testWidgets('divider has default indent matching horizontal padding', (
+      tester,
+    ) async {
+      const itemKey = Key('divider-indent-item');
+
+      await _pumpListItem(
+        tester,
+        DesignSystemListItem(
+          key: itemKey,
+          title: 'With divider',
+          showDivider: true,
+          onTap: () {},
+        ),
+      );
+
+      final divider = tester.widget<Divider>(
+        find.descendant(
+          of: find.byKey(itemKey),
+          matching: find.byType(Divider),
+        ),
+      );
+
+      // Default indent equals horizontal padding (step5 = 16)
+      expect(divider.indent, dsTokensLight.spacing.step5);
+    });
+
+    testWidgets('divider uses custom dividerIndent when provided', (
+      tester,
+    ) async {
+      const itemKey = Key('custom-divider-indent');
+      const customIndent = 60.0;
+
+      await _pumpListItem(
+        tester,
+        DesignSystemListItem(
+          key: itemKey,
+          title: 'Custom indent',
+          showDivider: true,
+          dividerIndent: customIndent,
+          onTap: () {},
+        ),
+      );
+
+      final divider = tester.widget<Divider>(
+        find.descendant(
+          of: find.byKey(itemKey),
+          matching: find.byType(Divider),
+        ),
+      );
+
+      expect(divider.indent, customIndent);
+    });
+
     testWidgets('uses small size spec with reduced padding', (tester) async {
       const itemKey = Key('small-item');
 

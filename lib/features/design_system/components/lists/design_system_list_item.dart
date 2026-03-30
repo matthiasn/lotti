@@ -25,6 +25,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.trailing,
     this.trailingExtra,
     this.showDivider = false,
+    this.dividerIndent,
     this.activated = false,
     this.selected = false,
     this.activatedBackgroundColor,
@@ -53,6 +54,7 @@ class DesignSystemListItem extends StatefulWidget {
   final Widget? trailing;
   final Widget? trailingExtra;
   final bool showDivider;
+  final double? dividerIndent;
   final bool activated;
   final bool selected;
   final Color? activatedBackgroundColor;
@@ -166,6 +168,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
           Divider(
             height: 1,
             thickness: 1,
+            indent: widget.dividerIndent ?? spec.horizontalPadding,
             color: tokens.colors.decorative.level01,
           ),
       ],
