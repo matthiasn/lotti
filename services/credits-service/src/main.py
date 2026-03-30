@@ -63,7 +63,11 @@ app.add_middleware(
 )
 
 # Add API key authentication middleware
-app.add_middleware(APIKeyAuthMiddleware)
+# Admin paths require ADMIN_API_KEYS for user listing and transaction history
+app.add_middleware(
+    APIKeyAuthMiddleware,
+    admin_path_prefixes=["/api/v1/users"],
+)
 
 # Include routes
 app.include_router(router, prefix="/api/v1")

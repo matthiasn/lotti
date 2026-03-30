@@ -1,0 +1,7 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+src/__tests__
+src/test-setup.ts

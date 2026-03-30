@@ -10,7 +10,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies as wheels
-COPY requirements.txt .
+COPY credits-service/requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
 
 
@@ -26,8 +26,12 @@ RUN useradd --create-home appuser
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/*
 
-# Copy application code
-COPY --chown=appuser:appuser src/ ./src/
+# Create data directory for SQLite databases (user registry, transaction log)
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
+
+# Copy application code and shared modules
+COPY --chown=appuser:appuser credits-service/src/ ./src/
+COPY --chown=appuser:appuser shared/ ./shared/
 
 USER appuser
 

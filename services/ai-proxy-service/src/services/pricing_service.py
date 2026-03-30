@@ -2,10 +2,8 @@
 
 import asyncio
 import logging
-import math
 import os
 import sqlite3
-import threading
 from datetime import datetime, timezone
 
 from ..core.constants import (
@@ -24,7 +22,6 @@ class PricingService(IPricingService):
     def __init__(self, db_path: str | None = None) -> None:
         self._db_path = db_path or os.path.join("data", "pricing.db")
         self._cache: dict[str, dict] = {}
-        self._write_lock = threading.Lock()
         self._init_db()
         self._seed_data()
         self._refresh_cache()
@@ -136,14 +133,6 @@ class PricingService(IPricingService):
         """Get pricing for a specific model"""
         return await asyncio.to_thread(self._get_pricing_sync, model_id)
 
-    @staticmethod
-    def _validate_prices(input_price: float, output_price: float) -> None:
-        """Validate pricing values are finite and non-negative."""
-        if not (math.isfinite(input_price) and math.isfinite(output_price)):
-            raise ValueError("Pricing values must be finite numbers")
-        if input_price < 0 or output_price < 0:
-            raise ValueError("Pricing values must be non-negative")
-
     def _update_pricing_sync(
         self,
         model_id: str,
@@ -152,32 +141,30 @@ class PricingService(IPricingService):
         output_price: float,
     ) -> dict:
         """Synchronous update pricing"""
-        self._validate_prices(input_price, output_price)
         now = datetime.now(timezone.utc).isoformat()
-        with self._write_lock:
-            conn = self._get_connection()
-            try:
-                conn.execute(
-                    """
-                    UPDATE model_pricing
-                    SET display_name = ?, input_price_per_1k = ?, output_price_per_1k = ?, updated_at = ?
-                    WHERE model_id = ?
-                    """,
-                    (display_name, input_price, output_price, now, model_id),
-                )
-                conn.commit()
-                row = conn.execute(
-                    "SELECT model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at "
-                    "FROM model_pricing WHERE model_id = ?",
-                    (model_id,),
-                ).fetchone()
-                if row is None:
-                    raise ValueError(f"Model '{model_id}' not found after update")
-                result = dict(row)
-                self._refresh_cache()
-                return result
-            finally:
-                conn.close()
+        conn = self._get_connection()
+        try:
+            conn.execute(
+                """
+                UPDATE model_pricing
+                SET display_name = ?, input_price_per_1k = ?, output_price_per_1k = ?, updated_at = ?
+                WHERE model_id = ?
+                """,
+                (display_name, input_price, output_price, now, model_id),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at "
+                "FROM model_pricing WHERE model_id = ?",
+                (model_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError(f"Model '{model_id}' not found after update")
+            result = dict(row)
+            self._refresh_cache()
+            return result
+        finally:
+            conn.close()
 
     async def update_pricing(
         self,
@@ -199,32 +186,30 @@ class PricingService(IPricingService):
         output_price: float,
     ) -> dict:
         """Synchronous create pricing"""
-        self._validate_prices(input_price, output_price)
         now = datetime.now(timezone.utc).isoformat()
-        with self._write_lock:
-            conn = self._get_connection()
-            try:
-                conn.execute(
-                    """
-                    INSERT INTO model_pricing
-                        (model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (model_id, display_name, input_price, output_price, now),
-                )
-                conn.commit()
-                row = conn.execute(
-                    "SELECT model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at "
-                    "FROM model_pricing WHERE model_id = ?",
-                    (model_id,),
-                ).fetchone()
-                if row is None:
-                    raise ValueError(f"Model '{model_id}' not found after insert")
-                result = dict(row)
-                self._refresh_cache()
-                return result
-            finally:
-                conn.close()
+        conn = self._get_connection()
+        try:
+            conn.execute(
+                """
+                INSERT INTO model_pricing
+                    (model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (model_id, display_name, input_price, output_price, now),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT model_id, display_name, input_price_per_1k, output_price_per_1k, updated_at "
+                "FROM model_pricing WHERE model_id = ?",
+                (model_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError(f"Model '{model_id}' not found after insert")
+            result = dict(row)
+            self._refresh_cache()
+            return result
+        finally:
+            conn.close()
 
     async def create_pricing(
         self,

@@ -15,7 +15,7 @@ class TestContainer:
         """Test container initialization"""
         container = Container()
         assert container._services == {}
-        assert len(container._factories) == 2
+        assert len(container._factories) == 4
 
     @patch("google.generativeai.configure")
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})

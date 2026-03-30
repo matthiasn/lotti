@@ -51,7 +51,12 @@ app.add_middleware(
 )
 
 # Add API key authentication middleware (exempts /health, /metrics, /docs)
-app.add_middleware(APIKeyAuthMiddleware, exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"])
+# Admin paths require ADMIN_API_KEYS for write access to pricing and read access to usage data
+app.add_middleware(
+    APIKeyAuthMiddleware,
+    exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"],
+    admin_path_prefixes=["/v1/pricing", "/v1/usage"],
+)
 
 # Add request ID middleware for tracing
 app.add_middleware(RequestIDMiddleware)

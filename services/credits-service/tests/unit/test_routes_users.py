@@ -11,13 +11,15 @@ from httpx import ASGITransport, AsyncClient
 @pytest.fixture(autouse=True)
 def set_api_keys():
     """Ensure API_KEYS env var is set for auth middleware"""
-    original = os.environ.get("API_KEYS")
+    originals = {k: os.environ.get(k) for k in ("API_KEYS", "ADMIN_API_KEYS")}
     os.environ["API_KEYS"] = "test-key"
+    os.environ["ADMIN_API_KEYS"] = "test-key"
     yield
-    if original is None:
-        os.environ.pop("API_KEYS", None)
-    else:
-        os.environ["API_KEYS"] = original
+    for k, v in originals.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
 
 
 @pytest.fixture
