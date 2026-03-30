@@ -123,9 +123,7 @@ class ProjectActivityMonitor {
         ),
       );
 
-      // UI/state providers listen on the general update stream, but this state
-      // mutation should not feed back into local wake triggering.
-      _notifications.notify({agentId, agentNotification}, fromSync: true);
+      _notifications.notifyUiOnly({agentId, agentNotification});
 
       _log(
         'marked pending project activity for '

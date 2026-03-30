@@ -186,9 +186,7 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
   void Function(String agentId)? onPersistedStateChanged;
   if (notifications != null) {
     onPersistedStateChanged = (agentId) {
-      // Use update-only notifications so these state writes don't feed back
-      // into the orchestrator's local wake-trigger stream.
-      notifications.notify({agentId, agentNotification}, fromSync: true);
+      notifications.notifyUiOnly({agentId, agentNotification});
     };
   }
   return WakeOrchestrator(
@@ -1130,7 +1128,7 @@ Future<void> _notifyWakeCompletion(
     );
   }
 
-  updateNotifications.notify({
+  updateNotifications.notifyUiOnly({
     agentId,
     ?templateId,
     agentNotification,

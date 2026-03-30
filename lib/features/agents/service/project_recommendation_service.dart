@@ -144,10 +144,7 @@ class ProjectRecommendationService {
   }
 
   void _notifyRecommendationUpdate(String agentId, String projectId) {
-    _notifications.notify(
-      {agentId, projectId, agentNotification},
-      fromSync: true,
-    );
+    _notifications.notifyUiOnly({agentId, projectId, agentNotification});
   }
 
   List<_RecommendationDraft> _parseSteps(Object? rawSteps) {

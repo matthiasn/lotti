@@ -104,10 +104,7 @@ void main() {
       expect(captured.revision, state.revision + 1);
 
       verify(
-        () => notifications.notify(
-          {'agent-1', agentNotification},
-          fromSync: true,
-        ),
+        () => notifications.notifyUiOnly({'agent-1', agentNotification}),
       ).called(1);
     });
 

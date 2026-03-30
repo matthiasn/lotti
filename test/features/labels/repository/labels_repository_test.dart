@@ -1161,6 +1161,11 @@ class _TestNotifications implements UpdateNotifications {
   }
 
   @override
+  void notifyUiOnly(Set<String> affectedIds) {
+    _controller.add(affectedIds);
+  }
+
+  @override
   Future<void> dispose() async {
     await _controller.close();
   }

@@ -2016,7 +2016,9 @@ void main() {
       await workflow.startSession(templateId: kTestTemplateId);
 
       verify(
-        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+        () => mockNotifications.notifyUiOnly(
+          {kTestTemplateId, agentNotification},
+        ),
       ).called(1);
     });
 
@@ -2078,7 +2080,9 @@ void main() {
       await workflow.approveProposal(sessionId: 'session-1');
 
       verify(
-        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+        () => mockNotifications.notifyUiOnly(
+          {kTestTemplateId, agentNotification},
+        ),
       ).called(1);
     });
 
@@ -2108,7 +2112,9 @@ void main() {
       await workflow.abandonSession(sessionId: 'session-1');
 
       verify(
-        () => mockNotifications.notify({kTestTemplateId, agentNotification}),
+        () => mockNotifications.notifyUiOnly(
+          {kTestTemplateId, agentNotification},
+        ),
       ).called(1);
     });
 

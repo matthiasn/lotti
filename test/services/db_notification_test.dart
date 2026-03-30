@@ -793,4 +793,84 @@ void main() {
       });
     });
   });
+
+  group('notifyUiOnly', () {
+    test('emits to updateStream but not localUpdateStream', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final localEmitted = <Set<String>>[];
+        final allEmitted = <Set<String>>[];
+        updateNotifications.localUpdateStream.listen(localEmitted.add);
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        updateNotifications.notifyUiOnly({'agent-1', 'task-1'});
+        async.elapse(const Duration(milliseconds: 150));
+
+        expect(allEmitted, hasLength(1));
+        expect(allEmitted.first, containsAll(['agent-1', 'task-1']));
+        expect(localEmitted, isEmpty);
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('batches multiple calls within debounce window', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final allEmitted = <Set<String>>[];
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        updateNotifications.notifyUiOnly({'id-1'});
+        async.elapse(const Duration(milliseconds: 50));
+        updateNotifications.notifyUiOnly({'id-2'});
+        async.elapse(const Duration(milliseconds: 100));
+
+        expect(allEmitted, hasLength(1));
+        expect(allEmitted.first, containsAll(['id-1', 'id-2']));
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('is a no-op after dispose', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final allEmitted = <Set<String>>[];
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        unawaited(updateNotifications.dispose());
+        async.flushMicrotasks();
+
+        updateNotifications.notifyUiOnly({'should-not-emit'});
+        async.elapse(const Duration(milliseconds: 200));
+
+        expect(allEmitted, isEmpty);
+      });
+    });
+
+    test('does not interfere with local notify buffer', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final localEmitted = <Set<String>>[];
+        final allEmitted = <Set<String>>[];
+        updateNotifications.localUpdateStream.listen(localEmitted.add);
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        updateNotifications.notify({'local-1'});
+        updateNotifications.notifyUiOnly({'ui-only-1'});
+        async.elapse(const Duration(milliseconds: 150));
+
+        // Both appear on updateStream (possibly in separate batches).
+        final allIds = allEmitted.expand((s) => s).toSet();
+        expect(allIds, containsAll(['local-1', 'ui-only-1']));
+
+        // Only local notification appears on localUpdateStream.
+        final localIds = localEmitted.expand((s) => s).toSet();
+        expect(localIds, contains('local-1'));
+        expect(localIds, isNot(contains('ui-only-1')));
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+  });
 }
