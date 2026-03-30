@@ -8083,6 +8083,12 @@ abstract class AppLocalizations {
   /// **'Manage sync items'**
   String get settingsAdvancedOutboxSubtitle;
 
+  /// No description provided for @settingsAdvancedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced settings and maintenance'**
+  String get settingsAdvancedSubtitle;
+
   /// No description provided for @settingsAdvancedTitle.
   ///
   /// In en, this message translates to:
@@ -8112,48 +8118,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Settings'**
   String get settingsAiTitle;
-
-  /// No description provided for @settingsAdvancedSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Advanced settings and maintenance'**
-  String get settingsAdvancedSubtitle;
-
-  /// No description provided for @settingsCategoriesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Categories with AI settings'**
-  String get settingsCategoriesSubtitle;
-
-  /// No description provided for @settingsDashboardsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Customize your dashboard views'**
-  String get settingsDashboardsSubtitle;
-
-  /// No description provided for @settingsFlagsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure feature flags and options'**
-  String get settingsFlagsSubtitle;
-
-  /// No description provided for @settingsHabitsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage your habits and routines'**
-  String get settingsHabitsSubtitle;
-
-  /// No description provided for @settingsMeasurablesSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure measurable data types'**
-  String get settingsMeasurablesSubtitle;
-
-  /// No description provided for @settingsThemingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Customize app appearance and themes'**
-  String get settingsThemingSubtitle;
 
   /// No description provided for @settingsCategoriesAddTooltip.
   ///
@@ -8215,6 +8179,12 @@ abstract class AppLocalizations {
   /// **'Category name:'**
   String get settingsCategoriesNameLabel;
 
+  /// No description provided for @settingsCategoriesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories with AI settings'**
+  String get settingsCategoriesSubtitle;
+
   /// No description provided for @settingsCategoriesTaskCount.
   ///
   /// In en, this message translates to:
@@ -8251,11 +8221,23 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get settingsDashboardSaveLabel;
 
+  /// No description provided for @settingsDashboardsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize your dashboard views'**
+  String get settingsDashboardsSubtitle;
+
   /// No description provided for @settingsDashboardsTitle.
   ///
   /// In en, this message translates to:
   /// **'Dashboards'**
   String get settingsDashboardsTitle;
+
+  /// No description provided for @settingsFlagsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure feature flags and options'**
+  String get settingsFlagsSubtitle;
 
   /// No description provided for @settingsFlagsTitle.
   ///
@@ -8298,6 +8280,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get settingsHabitsSaveLabel;
+
+  /// No description provided for @settingsHabitsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your habits and routines'**
+  String get settingsHabitsSubtitle;
 
   /// No description provided for @settingsHabitsTitle.
   ///
@@ -8950,6 +8938,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get settingsMeasurableSaveLabel;
 
+  /// No description provided for @settingsMeasurablesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure measurable data types'**
+  String get settingsMeasurablesSubtitle;
+
   /// No description provided for @settingsMeasurablesTitle.
   ///
   /// In en, this message translates to:
@@ -9075,6 +9069,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Light Appearance'**
   String get settingsThemingLight;
+
+  /// No description provided for @settingsThemingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize app appearance and themes'**
+  String get settingsThemingSubtitle;
 
   /// No description provided for @settingsThemingTitle.
   ///

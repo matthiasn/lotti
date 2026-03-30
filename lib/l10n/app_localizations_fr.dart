@@ -4642,6 +4642,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher et gérer les éléments en attente de synchronisation';
 
   @override
+  String get settingsAdvancedSubtitle => 'Paramètres avancés et maintenance';
+
+  @override
   String get settingsAdvancedTitle => 'Paramètres avancés';
 
   @override
@@ -4656,30 +4659,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Paramètres AI';
-
-  @override
-  String get settingsAdvancedSubtitle => 'Paramètres avancés et maintenance';
-
-  @override
-  String get settingsCategoriesSubtitle => 'Catégories avec paramètres AI';
-
-  @override
-  String get settingsDashboardsSubtitle =>
-      'Personnaliser tes vues de tableau de bord';
-
-  @override
-  String get settingsFlagsSubtitle => 'Configurer les indicateurs et options';
-
-  @override
-  String get settingsHabitsSubtitle => 'Gérer tes habitudes et routines';
-
-  @override
-  String get settingsMeasurablesSubtitle =>
-      'Configurer les types de données mesurables';
-
-  @override
-  String get settingsThemingSubtitle =>
-      'Personnaliser l\'apparence et les thèmes';
 
   @override
   String get settingsCategoriesAddTooltip => 'Ajouter une catégorie';
@@ -4714,6 +4693,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCategoriesNameLabel => 'Nom de la catégorie :';
 
   @override
+  String get settingsCategoriesSubtitle => 'Catégories avec paramètres AI';
+
+  @override
   String settingsCategoriesTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4741,7 +4723,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Enregistrer';
 
   @override
+  String get settingsDashboardsSubtitle =>
+      'Personnaliser tes vues de tableau de bord';
+
+  @override
   String get settingsDashboardsTitle => 'Gestion du tableau de bord';
+
+  @override
+  String get settingsFlagsSubtitle => 'Configurer les indicateurs et options';
 
   @override
   String get settingsFlagsTitle => 'Flags';
@@ -4763,6 +4752,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Enregistrer';
+
+  @override
+  String get settingsHabitsSubtitle => 'Gérer tes habitudes et routines';
 
   @override
   String get settingsHabitsTitle => 'Habitudes';
@@ -5137,6 +5129,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Enregistrer';
 
   @override
+  String get settingsMeasurablesSubtitle =>
+      'Configurer les types de données mesurables';
+
+  @override
   String get settingsMeasurablesTitle => 'Types de données mesurables';
 
   @override
@@ -5219,6 +5215,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsThemingLight => 'Apparence claire';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'Personnaliser l\'apparence et les thèmes';
 
   @override
   String get settingsThemingTitle => 'Thème';

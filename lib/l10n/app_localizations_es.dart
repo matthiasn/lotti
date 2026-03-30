@@ -4635,6 +4635,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ver y gestionar elementos esperando ser sincronizados';
 
   @override
+  String get settingsAdvancedSubtitle =>
+      'Configuración avanzada y mantenimiento';
+
+  @override
   String get settingsAdvancedTitle => 'Configuración avanzada';
 
   @override
@@ -4649,30 +4653,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Configuración de AI';
-
-  @override
-  String get settingsAdvancedSubtitle =>
-      'Configuración avanzada y mantenimiento';
-
-  @override
-  String get settingsCategoriesSubtitle => 'Categorías con configuración de AI';
-
-  @override
-  String get settingsDashboardsSubtitle => 'Personaliza tus vistas del panel';
-
-  @override
-  String get settingsFlagsSubtitle => 'Configurar indicadores y opciones';
-
-  @override
-  String get settingsHabitsSubtitle => 'Gestionar tus hábitos y rutinas';
-
-  @override
-  String get settingsMeasurablesSubtitle =>
-      'Configurar tipos de datos medibles';
-
-  @override
-  String get settingsThemingSubtitle =>
-      'Personalizar la apariencia y los temas';
 
   @override
   String get settingsCategoriesAddTooltip => 'Añadir categoría';
@@ -4706,6 +4686,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCategoriesNameLabel => 'Nombre de la categoría:';
 
   @override
+  String get settingsCategoriesSubtitle => 'Categorías con configuración de AI';
+
+  @override
   String settingsCategoriesTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4733,7 +4716,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Guardar';
 
   @override
+  String get settingsDashboardsSubtitle => 'Personaliza tus vistas del panel';
+
+  @override
   String get settingsDashboardsTitle => 'Paneles';
+
+  @override
+  String get settingsFlagsSubtitle => 'Configurar indicadores y opciones';
 
   @override
   String get settingsFlagsTitle => 'Configuración de indicadores';
@@ -4755,6 +4744,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Guardar';
+
+  @override
+  String get settingsHabitsSubtitle => 'Gestionar tus hábitos y rutinas';
 
   @override
   String get settingsHabitsTitle => 'Hábitos';
@@ -5130,6 +5122,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Guardar';
 
   @override
+  String get settingsMeasurablesSubtitle =>
+      'Configurar tipos de datos medibles';
+
+  @override
   String get settingsMeasurablesTitle => 'Tipos de medición';
 
   @override
@@ -5212,6 +5208,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsThemingLight => 'Apariencia clara';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'Personalizar la apariencia y los temas';
 
   @override
   String get settingsThemingTitle => 'Temas';

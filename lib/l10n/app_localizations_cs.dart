@@ -4546,6 +4546,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Spravujte položky synchronizace';
 
   @override
+  String get settingsAdvancedSubtitle => 'Pokročilá nastavení a údržba';
+
+  @override
   String get settingsAdvancedTitle => 'Pokročilá nastavení';
 
   @override
@@ -4560,28 +4563,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Nastavení AI';
-
-  @override
-  String get settingsAdvancedSubtitle => 'Pokročilá nastavení a údržba';
-
-  @override
-  String get settingsCategoriesSubtitle => 'Kategorie s nastavením AI';
-
-  @override
-  String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
-
-  @override
-  String get settingsFlagsSubtitle => 'Konfigurace příznaků a možností';
-
-  @override
-  String get settingsHabitsSubtitle => 'Spravovat návyky a rutiny';
-
-  @override
-  String get settingsMeasurablesSubtitle =>
-      'Konfigurace měřitelných datových typů';
-
-  @override
-  String get settingsThemingSubtitle => 'Přizpůsobit vzhled a témata aplikace';
 
   @override
   String get settingsCategoriesAddTooltip => 'Přidat kategorii';
@@ -4615,6 +4596,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesNameLabel => 'Název kategorie:';
 
   @override
+  String get settingsCategoriesSubtitle => 'Kategorie s nastavením AI';
+
+  @override
   String settingsCategoriesTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4643,7 +4627,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Uložit';
 
   @override
+  String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
+
+  @override
   String get settingsDashboardsTitle => 'Panely';
+
+  @override
+  String get settingsFlagsSubtitle => 'Konfigurace příznaků a možností';
 
   @override
   String get settingsFlagsTitle => 'Konfigurační příznaky';
@@ -4665,6 +4655,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Uložit';
+
+  @override
+  String get settingsHabitsSubtitle => 'Spravovat návyky a rutiny';
 
   @override
   String get settingsHabitsTitle => 'Návyky';
@@ -5033,6 +5026,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Uložit';
 
   @override
+  String get settingsMeasurablesSubtitle =>
+      'Konfigurace měřitelných datových typů';
+
+  @override
   String get settingsMeasurablesTitle => 'Typy měřitelných veličin';
 
   @override
@@ -5111,6 +5108,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsThemingLight => 'Světlé prostředí';
+
+  @override
+  String get settingsThemingSubtitle => 'Přizpůsobit vzhled a témata aplikace';
 
   @override
   String get settingsThemingTitle => 'Vzhled';
