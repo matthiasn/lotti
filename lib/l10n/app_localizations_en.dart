@@ -88,10 +88,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentActivityLogHeading => 'Activity Log';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+  String get agentBinaryChoiceNo => 'No';
 
   @override
-  String get agentCategoryRatingsTitle => 'Rate Categories';
+  String get agentBinaryChoiceYes => 'Yes';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Fix first';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Leave it';
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Use These Priorities';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Help Me Prioritize';
 
   @override
   String agentControlsActionError(String error) {
@@ -520,6 +536,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'You';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake activity (last 30 days)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';

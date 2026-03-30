@@ -61,6 +61,7 @@ abstract final class TaskAgentToolNames {
 abstract final class EvolutionToolNames {
   static const proposeDirectives = 'propose_directives';
   static const recordEvolutionNote = 'record_evolution_note';
+  static const publishRitualRecap = 'publish_ritual_recap';
 }
 
 /// Registry of tool definitions available to agents.
@@ -618,6 +619,33 @@ class AgentToolRegistry {
           },
         },
         'required': ['general_directive', 'report_directive', 'rationale'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: EvolutionToolNames.publishRitualRecap,
+      description:
+          'Publish the structured recap for this evolution ritual. Call this '
+          'when you have enough signal to summarize what changed in the '
+          'session. Provide a concise TLDR for collapsed history cards and a '
+          'full markdown recap for expanded history views.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'tldr': {
+            'type': 'string',
+            'description':
+                'A concise 1-2 sentence summary of the session outcome. '
+                'This is shown in the collapsed session history view.',
+          },
+          'content': {
+            'type': 'string',
+            'description':
+                'The full user-facing ritual recap as markdown. This is shown '
+                'in the expanded session history view.',
+          },
+        },
+        'required': ['tldr', 'content'],
         'additionalProperties': false,
       },
     ),

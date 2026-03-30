@@ -8,7 +8,6 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/animations.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Bottom-anchored text input bar for the evolution chat.
 ///
@@ -126,17 +125,25 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
     final isRealtimeRecording =
         recState.status == ChatRecorderStatus.realtimeRecording;
     final isProcessing = recState.status == ChatRecorderStatus.processing;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: GameyColors.surfaceDarkElevated.withValues(alpha: 0.95),
+          color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.97),
           border: Border(
             top: BorderSide(
-              color: GameyColors.aiCyan.withValues(alpha: 0.15),
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: isRecording
             ? EvolutionVoiceControls(
@@ -167,6 +174,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
   Widget _buildIdleRow(ChatRecorderState recState) {
     final canSend = _hasText && !widget.isWaiting && widget.enabled;
     final isProcessing = recState.status == ChatRecorderStatus.processing;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
       children: [
@@ -178,26 +186,35 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
             onSubmitted: (_) => _handleSend(),
             maxLines: 4,
             minLines: 1,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: context.messages.agentEvolutionChatPlaceholder,
               hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
               ),
               filled: true,
-              fillColor: GameyColors.surfaceDark,
+              fillColor: colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 10,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(24),
-                borderSide: const BorderSide(
-                  color: GameyColors.aiCyan,
+                borderSide: BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.8),
+                  width: 1.4,
                 ),
               ),
             ),

@@ -574,6 +574,32 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch persisted evolution session recaps for [templateId], newest-first.
+  Future<List<EvolutionSessionRecapEntity>> getEvolutionSessionRecaps(
+    String templateId, {
+    int limit = 50,
+  }) async {
+    final rows = await _db
+        .getAgentEntitiesByType(
+          templateId,
+          AgentEntityTypes.evolutionSessionRecap,
+          limit,
+        )
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<EvolutionSessionRecapEntity>()
+        .toList();
+  }
+
+  /// Fetch the persisted recap for [sessionId], if one exists.
+  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
+    String sessionId,
+  ) async {
+    final entity = await getEntity(evolutionSessionRecapId(sessionId));
+    return entity?.mapOrNull(evolutionSessionRecap: (recap) => recap);
+  }
+
   /// Fetch evolution notes for [templateId], newest-first.
   Future<List<EvolutionNoteEntity>> getEvolutionNotes(
     String templateId, {
@@ -903,6 +929,20 @@ class AgentRepository {
     return _db.getWakeRunsByTemplateId(templateId, limit).get();
   }
 
+  /// Count all wake runs for [templateId] with no presentation cap.
+  Future<int> countWakeRunsForTemplate(String templateId) {
+    return _db.countWakeRunsByTemplateId(templateId).getSingle();
+  }
+
+  /// Fetch wake runs for [templateId] within the inclusive window.
+  Future<List<WakeRunLogData>> getWakeRunsForTemplateInWindow(
+    String templateId, {
+    required DateTime since,
+    required DateTime until,
+  }) {
+    return _db.getWakeRunsByTemplateInWindow(templateId, since, until).get();
+  }
+
   /// Fetch a single wake-run entry by [runKey], or `null` if not found.
   Future<WakeRunLogData?> getWakeRun(String runKey) async {
     final rows = await _db.getWakeRunByKey(runKey).get();
@@ -945,6 +985,21 @@ class AgentRepository {
     int limit = 10000,
   }) async {
     final rows = await _db.getTokenUsageByTemplateId(templateId, limit).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<WakeTokenUsageEntity>()
+        .toList();
+  }
+
+  /// Fetch token usage records for all instances of [templateId] created on or
+  /// after [since].
+  Future<List<WakeTokenUsageEntity>> getTokenUsageForTemplateSince(
+    String templateId, {
+    required DateTime since,
+  }) async {
+    final rows = await _db
+        .getTokenUsageByTemplateSince(templateId, since)
+        .get();
     return rows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<WakeTokenUsageEntity>()

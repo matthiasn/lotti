@@ -9,13 +9,11 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
-import 'package:lotti/themes/theme.dart';
 
 /// Chat-based evolution page for template evolution sessions.
 ///
 /// Provides a multi-turn conversation with the evolution agent, an inline
-/// proposal review flow, and a collapsible performance dashboard.
+/// proposal review flow, and a compact ritual summary header.
 class EvolutionChatPage extends ConsumerStatefulWidget {
   const EvolutionChatPage({
     required this.templateId,
@@ -45,30 +43,24 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: GameyColors.surfaceDarkLow,
         appBar: AppBar(
-          backgroundColor: GameyColors.surfaceDark,
           title: Text(
             templateName,
-            style: appBarTextStyleNewLarge.copyWith(
-              color: GameyColors.aiCyan,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
-          iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: chatAsync.when(
           data: (data) => _buildChat(context, data),
           loading: () => const Center(
-            child: CircularProgressIndicator(
-              color: GameyColors.aiCyan,
-            ),
+            child: CircularProgressIndicator(),
           ),
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Text(
                 context.messages.agentEvolutionSessionError,
-                style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -107,7 +99,7 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
   }
 }
 
-class _MessageList extends StatelessWidget {
+class _MessageList extends StatefulWidget {
   const _MessageList({
     required this.messages,
     required this.isWaiting,
@@ -119,8 +111,44 @@ class _MessageList extends StatelessWidget {
   final A2uiMessageProcessor? processor;
 
   @override
+  State<_MessageList> createState() => _MessageListState();
+}
+
+class _MessageListState extends State<_MessageList> {
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scheduleScrollToBottom();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MessageList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.messages.length != oldWidget.messages.length ||
+        widget.isWaiting != oldWidget.isWaiting) {
+      _scheduleScrollToBottom();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scheduleScrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final messages = this.messages;
+    final messages = widget.messages;
 
     // Build items list with optional trailing elements
     final items = <Widget>[];
@@ -128,11 +156,12 @@ class _MessageList extends StatelessWidget {
       items.add(_buildMessage(context, message));
     }
 
-    if (isWaiting) {
-      items.add(_buildLoadingIndicator());
+    if (widget.isWaiting) {
+      items.add(_buildLoadingIndicator(context));
     }
 
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: items.length,
       itemBuilder: (context, index) => items[index],
@@ -154,9 +183,9 @@ class _MessageList extends StatelessWidget {
         role: 'system',
       ),
       EvolutionSurfaceMessage(:final surfaceId) =>
-        processor != null
+        widget.processor != null
             ? GenUiSurface(
-                host: processor!,
+                host: widget.processor!,
                 surfaceId: surfaceId,
               )
             : const SizedBox.shrink(),
@@ -179,7 +208,7 @@ class _MessageList extends StatelessWidget {
     };
   }
 
-  Widget _buildLoadingIndicator() {
+  Widget _buildLoadingIndicator(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -187,19 +216,16 @@ class _MessageList extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: GameyColors.aiCyan.withValues(alpha: 0.6),
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: 8),
             Text(
               '...',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
             ),

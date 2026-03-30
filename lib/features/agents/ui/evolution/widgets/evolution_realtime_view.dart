@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_cancel_stop_buttons.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcript_container.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
-/// Live partial transcript view during realtime recording,
-/// styled for the evolution dark/cyan theme.
+/// Live partial transcript view during realtime recording.
 class EvolutionRealtimeView extends StatelessWidget {
   const EvolutionRealtimeView({
     required this.partialTranscript,
@@ -22,6 +20,7 @@ class EvolutionRealtimeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasText = partialTranscript != null && partialTranscript!.isNotEmpty;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return CallbackShortcuts(
       bindings: {
@@ -43,19 +42,19 @@ class EvolutionRealtimeView extends StatelessWidget {
                       )
                     : Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: GameyColors.aiCyan,
+                              color: colorScheme.primary,
                             ),
                           ),
                           const SizedBox(width: 12),
                           Text(
                             context.messages.chatInputListening,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],

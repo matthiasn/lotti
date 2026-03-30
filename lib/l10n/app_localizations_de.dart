@@ -90,10 +90,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentActivityLogHeading => 'Aktivitätsprotokoll';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Bewertungen absenden';
+  String get agentBinaryChoiceNo => 'Nein';
 
   @override
-  String get agentCategoryRatingsTitle => 'Kategorien bewerten';
+  String get agentBinaryChoiceYes => 'Ja';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Zuerst beheben';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'So lassen';
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Diese Prioritäten nutzen';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'Wie wichtig ist es, dass ich das jeweils behebe? 1 heißt: so lassen. 5 heißt: als Erstes beheben.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Hilf mir beim Priorisieren';
 
   @override
   String agentControlsActionError(String error) {
@@ -526,6 +542,42 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading =>
+      'Bestätigte Änderungen';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Gespräch';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'Du';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Starte ein 1-on-1, um zu prüfen, was den Nutzer gestört hat, was gut funktioniert hat und was sich als Nächstes ändern sollte.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Frühere 1-on-1s, echte Wake-Aktivität und die Änderungen, auf die ihr euch geeinigt habt.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast =>
+      'Tokens seit dem letzten 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake-Aktivität (letzte 30 Tage)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast =>
+      'Wakes seit dem letzten 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Läuft';

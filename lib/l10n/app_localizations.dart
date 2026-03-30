@@ -263,16 +263,46 @@ abstract class AppLocalizations {
   /// **'Activity Log'**
   String get agentActivityLogHeading;
 
+  /// No description provided for @agentBinaryChoiceNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get agentBinaryChoiceNo;
+
+  /// No description provided for @agentBinaryChoiceYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get agentBinaryChoiceYes;
+
+  /// No description provided for @agentCategoryRatingsScaleMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix first'**
+  String get agentCategoryRatingsScaleMax;
+
+  /// No description provided for @agentCategoryRatingsScaleMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it'**
+  String get agentCategoryRatingsScaleMin;
+
   /// No description provided for @agentCategoryRatingsSubmit.
   ///
   /// In en, this message translates to:
-  /// **'Submit Ratings'**
+  /// **'Use These Priorities'**
   String get agentCategoryRatingsSubmit;
+
+  /// No description provided for @agentCategoryRatingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.'**
+  String get agentCategoryRatingsSubtitle;
 
   /// No description provided for @agentCategoryRatingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Rate Categories'**
+  /// **'Help Me Prioritize'**
   String get agentCategoryRatingsTitle;
 
   /// No description provided for @agentControlsActionError.
@@ -1034,6 +1064,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'1-on-1'**
   String get agentRitualReviewTitle;
+
+  /// No description provided for @agentRitualSummaryApprovedChangesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved changes'**
+  String get agentRitualSummaryApprovedChangesHeading;
+
+  /// No description provided for @agentRitualSummaryConversationHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get agentRitualSummaryConversationHeading;
+
+  /// No description provided for @agentRitualSummaryRoleAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get agentRitualSummaryRoleAssistant;
+
+  /// No description provided for @agentRitualSummaryRoleUser.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get agentRitualSummaryRoleUser;
+
+  /// No description provided for @agentRitualSummaryStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a one-on-one to review what bothered the user, what worked, and what should change next.'**
+  String get agentRitualSummaryStartHint;
+
+  /// No description provided for @agentRitualSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent one-on-ones, real wake activity, and the changes you agreed to.'**
+  String get agentRitualSummarySubtitle;
+
+  /// No description provided for @agentRitualSummaryTldrHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'TLDR'**
+  String get agentRitualSummaryTldrHeading;
+
+  /// No description provided for @agentRitualSummaryTokensSinceLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens since last 1-on-1'**
+  String get agentRitualSummaryTokensSinceLast;
+
+  /// No description provided for @agentRitualSummaryWakeHistory30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake activity (last 30 days)'**
+  String get agentRitualSummaryWakeHistory30Days;
+
+  /// No description provided for @agentRitualSummaryWakesSinceLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes since last 1-on-1'**
+  String get agentRitualSummaryWakesSinceLast;
 
   /// No description provided for @agentRunningIndicator.
   ///

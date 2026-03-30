@@ -88,10 +88,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Protokol aktivity';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+  String get agentBinaryChoiceNo => 'Ne';
 
   @override
-  String get agentCategoryRatingsTitle => 'Rate Categories';
+  String get agentBinaryChoiceYes => 'Ano';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Opravit první';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Nechat být';
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Použít tyto priority';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Pomoz mi s prioritami';
 
   @override
   String agentControlsActionError(String error) {
@@ -521,6 +537,39 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'You';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake activity (last 30 days)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';

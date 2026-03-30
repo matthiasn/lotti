@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -353,6 +354,11 @@ class TemplateEvolutionWorkflow {
     return activeSessions[sessionId]?.strategy.latestProposal;
   }
 
+  /// Get the latest structured ritual recap for a session, if one exists.
+  PendingRitualRecap? getCurrentRecap({required String sessionId}) {
+    return activeSessions[sessionId]?.strategy.latestRecap;
+  }
+
   /// Approve the current proposal: create a new template version, persist
   /// pending notes, and complete the session.
   ///
@@ -361,6 +367,7 @@ class TemplateEvolutionWorkflow {
     required String sessionId,
     double? userRating,
     String? feedbackSummary,
+    Map<String, int> categoryRatings = const {},
   }) async {
     final active = activeSessions[sessionId];
     final svc = templateService;
@@ -400,16 +407,28 @@ class TemplateEvolutionWorkflow {
         sync: sync,
       );
 
+      final recap = _buildSessionRecapEntity(
+        active: active,
+        proposal: proposal,
+        categoryRatings: categoryRatings,
+      );
+      if (recap != null) {
+        await sync.upsertEntity(recap);
+      }
+
       // Complete the session entity.
       final now = clock.now();
       final sessionEntity = await _getSessionEntity(sessionId);
       if (sessionEntity != null) {
+        final normalizedRating =
+            userRating ?? _averageCategoryRating(categoryRatings);
+        final normalizedSummary = feedbackSummary ?? recap?.tldr;
         await sync.upsertEntity(
           sessionEntity.copyWith(
             status: EvolutionSessionStatus.completed,
             proposedVersionId: newVersion.id,
-            feedbackSummary: feedbackSummary,
-            userRating: userRating,
+            feedbackSummary: normalizedSummary,
+            userRating: normalizedRating,
             completedAt: now,
             updatedAt: now,
           ),
@@ -675,6 +694,76 @@ class TemplateEvolutionWorkflow {
       }
     }
     return null;
+  }
+
+  EvolutionSessionRecapEntity? _buildSessionRecapEntity({
+    required ActiveEvolutionSession active,
+    required PendingProposal proposal,
+    required Map<String, int> categoryRatings,
+  }) {
+    final manager = conversationRepository.getConversation(
+      active.conversationId,
+    );
+    final transcript = _snapshotTranscript(manager?.messages ?? const []);
+    final structuredRecap = active.strategy.latestRecap;
+    final recapMarkdown = structuredRecap?.content.trim() ?? '';
+    final recapTldr = structuredRecap?.tldr.trim() ?? proposal.rationale.trim();
+    final approvedChangeSummary = proposal.rationale.trim();
+
+    if (recapMarkdown.isEmpty &&
+        recapTldr.isEmpty &&
+        approvedChangeSummary.isEmpty &&
+        transcript.isEmpty) {
+      return null;
+    }
+
+    return AgentDomainEntity.evolutionSessionRecap(
+          id: evolutionSessionRecapId(active.sessionId),
+          agentId: active.templateId,
+          sessionId: active.sessionId,
+          createdAt: clock.now(),
+          vectorClock: null,
+          tldr: recapTldr,
+          recapMarkdown: recapMarkdown,
+          categoryRatings: Map.unmodifiable(categoryRatings),
+          transcript: transcript,
+          approvedChangeSummary: approvedChangeSummary.isEmpty
+              ? null
+              : approvedChangeSummary,
+        )
+        as EvolutionSessionRecapEntity;
+  }
+
+  List<Map<String, String>> _snapshotTranscript(
+    List<ChatCompletionMessage> messages,
+  ) {
+    final transcript = <Map<String, String>>[];
+    for (final message in messages) {
+      switch (message) {
+        case ChatCompletionUserMessage(:final content):
+          final text = ContentExtractionHelper.extractTextFromUserContent(
+            content,
+          ).trim();
+          if (text.isNotEmpty) {
+            transcript.add({'role': 'user', 'text': text});
+          }
+        case ChatCompletionAssistantMessage(content: final content?)
+            when content.trim().isNotEmpty:
+          transcript.add({'role': 'assistant', 'text': content.trim()});
+        default:
+          break;
+      }
+    }
+    return transcript;
+  }
+
+  double? _averageCategoryRating(Map<String, int> ratings) {
+    final values = ratings.values.where((rating) => rating > 0).toList();
+    if (values.isEmpty) {
+      return null;
+    }
+    final total = values.fold<int>(0, (sum, rating) => sum + rating);
+    return total / values.length;
   }
 
   void _cleanupSession(String sessionId) {

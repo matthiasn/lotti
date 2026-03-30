@@ -4,11 +4,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
-import 'package:lotti/themes/gamey/glows.dart';
 import 'package:lotti/themes/gamey/gradients.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/widgets/cards/modern_icon_container.dart';
 
 /// Catalog ID for the evolution agent's custom widgets.
 const evolutionCatalogId = 'com.lotti.evolution_catalog';
@@ -25,6 +27,7 @@ Catalog buildEvolutionCatalog() => Catalog(
     feedbackCategoryBreakdownItem,
     sessionProgressItem,
     categoryRatingsItem,
+    binaryChoicePromptItem,
     highPriorityFeedbackItem,
   ],
   catalogId: evolutionCatalogId,
@@ -206,6 +209,28 @@ final _highPriorityFeedbackSchema = S.object(
   required: ['grievances', 'excellenceNotes'],
 );
 
+final _binaryChoicePromptSchema = S.object(
+  properties: {
+    'question': S.string(description: 'The yes/no question to ask'),
+    'detail': S.string(
+      description: 'Optional supporting detail shown below the question',
+    ),
+    'confirmLabel': S.string(
+      description: 'Optional label for the affirmative button',
+    ),
+    'dismissLabel': S.string(
+      description: 'Optional label for the negative button',
+    ),
+    'confirmValue': S.string(
+      description: 'Semantic payload sent when the user confirms',
+    ),
+    'dismissValue': S.string(
+      description: 'Semantic payload sent when the user declines',
+    ),
+  },
+  required: ['question'],
+);
+
 // ── JSON Parsing Helpers ────────────────────────────────────────────────────
 
 /// Reads an integer from a dynamic JSON map, returning [fallback] if the
@@ -266,6 +291,8 @@ final evolutionProposalItem = CatalogItem(
       'currentReportDirective',
     )?.trim();
     final context = itemContext.buildContext;
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     final hasCurrentDirectives =
         (currentGeneral != null && currentGeneral.isNotEmpty) ||
@@ -274,27 +301,39 @@ final evolutionProposalItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ModernBaseCard(
-        isEnhanced: true,
-        customShadows: [GameyGlows.strongGlow(GameyColors.primaryPurple)],
-        gradient: GameyGradients.cardDark(GameyColors.primaryPurple),
-        padding: const EdgeInsets.all(16),
+        backgroundColor: colorScheme.surfaceContainerLow,
+        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.auto_awesome,
-                  size: 20,
-                  color: GameyColors.primaryPurple,
+                const ModernIconContainer(
+                  icon: Icons.auto_awesome_rounded,
+                  isCompact: true,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  context.messages.agentEvolutionProposalTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.messages.agentEvolutionProposalTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        context.messages.agentEvolutionProposedDirectives,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -309,7 +348,10 @@ final evolutionProposalItem = CatalogItem(
                   ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
                 ),
                 const SizedBox(height: 6),
-                _directiveBox(text: currentGeneral),
+                _directiveBox(
+                  context: context,
+                  text: currentGeneral,
+                ),
               ],
               if (currentReport != null && currentReport.isNotEmpty) ...[
                 const SizedBox(height: 14),
@@ -319,7 +361,10 @@ final evolutionProposalItem = CatalogItem(
                   ' — ${context.messages.agentTemplateReportDirectiveLabel}',
                 ),
                 const SizedBox(height: 6),
-                _directiveBox(text: currentReport),
+                _directiveBox(
+                  context: context,
+                  text: currentReport,
+                ),
               ],
             ],
             // Proposed directives (after)
@@ -332,11 +377,9 @@ final evolutionProposalItem = CatalogItem(
               ),
               const SizedBox(height: 6),
               _directiveBox(
+                context: context,
                 text: generalDirective,
-                backgroundColor: GameyColors.primaryPurple.withValues(
-                  alpha: 0.1,
-                ),
-                borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
+                isHighlighted: true,
               ),
             ],
             if (reportDirective.isNotEmpty) ...[
@@ -348,29 +391,33 @@ final evolutionProposalItem = CatalogItem(
               ),
               const SizedBox(height: 6),
               _directiveBox(
+                context: context,
                 text: reportDirective,
-                backgroundColor: GameyColors.primaryPurple.withValues(
-                  alpha: 0.1,
-                ),
-                borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
+                isHighlighted: true,
               ),
             ],
             if (rationale.isNotEmpty) ...[
               const SizedBox(height: 14),
-              Text(
-                rationale,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 14,
-                  height: 1.5,
-                ),
+              _sectionLabel(
+                context,
+                context.messages.agentEvolutionProposalRationale,
+              ),
+              const SizedBox(height: 6),
+              _directiveBox(
+                context: context,
+                text: rationale,
               ),
             ],
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.end,
               children: [
-                OutlinedButton(
+                DesignSystemButton(
+                  label: context.messages.agentTemplateEvolveReject,
+                  variant: DesignSystemButtonVariant.dangerSecondary,
+                  size: DesignSystemButtonSize.medium,
                   onPressed: () => itemContext.dispatchEvent(
                     UserActionEvent(
                       name: 'proposal_rejected',
@@ -378,22 +425,9 @@ final evolutionProposalItem = CatalogItem(
                       surfaceId: itemContext.surfaceId,
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: GameyColors.primaryRed),
-                    foregroundColor: GameyColors.primaryRed,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                  ),
-                  child: Text(context.messages.agentTemplateEvolveReject),
                 ),
-                const SizedBox(width: 12),
-                _approveButton(
-                  context: context,
+                _primaryActionButton(
+                  label: context.messages.agentTemplateEvolveApprove,
                   onPressed: () => itemContext.dispatchEvent(
                     UserActionEvent(
                       name: 'proposal_approved',
@@ -622,7 +656,10 @@ final versionComparisonItem = CatalogItem(
               ' (v$beforeVersion)',
             ),
             const SizedBox(height: 6),
-            _directiveBox(text: beforeDirectives),
+            _directiveBox(
+              context: context,
+              text: beforeDirectives,
+            ),
             const SizedBox(height: 12),
             _sectionLabel(
               context,
@@ -631,9 +668,9 @@ final versionComparisonItem = CatalogItem(
             ),
             const SizedBox(height: 6),
             _directiveBox(
+              context: context,
               text: afterDirectives,
-              backgroundColor: GameyColors.primaryPurple.withValues(alpha: 0.1),
-              borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
+              isHighlighted: true,
             ),
             if (changesSummary != null && changesSummary.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -905,6 +942,56 @@ final categoryRatingsItem = CatalogItem(
   },
 );
 
+/// Lightweight yes/no prompt for quick conversational branching.
+final binaryChoicePromptItem = CatalogItem(
+  name: 'BinaryChoicePrompt',
+  dataSchema: _binaryChoicePromptSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+
+    final question = _readString(json, 'question').trim();
+    if (question.isEmpty) return const SizedBox.shrink();
+
+    final detail = _readString(json, 'detail').trim();
+    final context = itemContext.buildContext;
+
+    final confirmLabelRaw = _readStringOrNull(json, 'confirmLabel')?.trim();
+    final dismissLabelRaw = _readStringOrNull(json, 'dismissLabel')?.trim();
+    final confirmLabel = (confirmLabelRaw?.isNotEmpty ?? false)
+        ? confirmLabelRaw!
+        : context.messages.agentBinaryChoiceYes;
+    final dismissLabel = (dismissLabelRaw?.isNotEmpty ?? false)
+        ? dismissLabelRaw!
+        : context.messages.agentBinaryChoiceNo;
+
+    final confirmValueRaw = _readStringOrNull(json, 'confirmValue')?.trim();
+    final dismissValueRaw = _readStringOrNull(json, 'dismissValue')?.trim();
+    final confirmValue = (confirmValueRaw?.isNotEmpty ?? false)
+        ? confirmValueRaw!
+        : confirmLabel;
+    final dismissValue = (dismissValueRaw?.isNotEmpty ?? false)
+        ? dismissValueRaw!
+        : dismissLabel;
+
+    return _BinaryChoicePromptCard(
+      question: question,
+      detail: detail,
+      confirmLabel: confirmLabel,
+      dismissLabel: dismissLabel,
+      confirmValue: confirmValue,
+      dismissValue: dismissValue,
+      onSelect: (value) => itemContext.dispatchEvent(
+        UserActionEvent(
+          name: 'binary_choice_submitted',
+          sourceComponentId: jsonEncode({'value': value}),
+          surfaceId: itemContext.surfaceId,
+        ),
+      ),
+    );
+  },
+);
+
 /// High-priority feedback card showing grievances (red) and excellence notes
 /// (green) with full untruncated text.
 final highPriorityFeedbackItem = CatalogItem(
@@ -1048,29 +1135,46 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ModernBaseCard(
-        gradient: GameyGradients.cardDark(GameyColors.aiCyan),
-        padding: const EdgeInsets.all(16),
+        backgroundColor: colorScheme.surfaceContainerLow,
+        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.star_outline,
-                  size: 20,
-                  color: GameyColors.aiCyan,
+                const ModernIconContainer(
+                  icon: Icons.star_rounded,
+                  isCompact: true,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  messages.agentCategoryRatingsTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        messages.agentCategoryRatingsTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        messages.agentCategoryRatingsSubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1085,42 +1189,76 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.45,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         label,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    ...List.generate(5, (i) {
-                      final starIndex = i + 1;
-                      return GestureDetector(
-                        onTap: _submitted
-                            ? null
-                            : () => setState(
-                                () => _ratings[name] = starIndex,
+                      const SizedBox(height: 10),
+                      Row(
+                        children: List.generate(5, (i) {
+                          final starIndex = i + 1;
+                          final selected = starIndex <= rating;
+                          return GestureDetector(
+                            onTap: _submitted
+                                ? null
+                                : () => setState(
+                                    () => _ratings[name] = starIndex,
+                                  ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(
+                                selected
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                size: 26,
+                                color: selected
+                                    ? colorScheme.tertiary
+                                    : colorScheme.onSurfaceVariant.withValues(
+                                        alpha: 0.6,
+                                      ),
                               ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Icon(
-                            starIndex <= rating
-                                ? Icons.star
-                                : Icons.star_border,
-                            size: 24,
-                            color: starIndex <= rating
-                                ? GameyColors.primaryOrange
-                                : Colors.white.withValues(alpha: 0.3),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Text(
+                            messages.agentCategoryRatingsScaleMin,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      );
-                    }),
-                  ],
+                          const Spacer(),
+                          Text(
+                            messages.agentCategoryRatingsScaleMax,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),
@@ -1128,16 +1266,26 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
             Align(
               alignment: Alignment.centerRight,
               child: _submitted
-                  ? Text(
-                      messages.agentCategoryRatingsSubmit,
-                      style: TextStyle(
-                        color: GameyColors.primaryGreen.withValues(alpha: 0.8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 18,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          messages.agentCategoryRatingsSubmit,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     )
-                  : _approveButton(
-                      context: context,
+                  : _primaryActionButton(
+                      label: messages.agentCategoryRatingsSubmit,
                       onPressed: () {
                         setState(() => _submitted = true);
                         widget.onSubmit(_ratings);
@@ -1151,39 +1299,132 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
   }
 }
 
+class _BinaryChoicePromptCard extends StatelessWidget {
+  const _BinaryChoicePromptCard({
+    required this.question,
+    required this.detail,
+    required this.confirmLabel,
+    required this.dismissLabel,
+    required this.confirmValue,
+    required this.dismissValue,
+    required this.onSelect,
+  });
+
+  final String question;
+  final String detail;
+  final String confirmLabel;
+  final String dismissLabel;
+  final String confirmValue;
+  final String dismissValue;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ModernBaseCard(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ModernIconContainer(
+                  icon: Icons.help_outline_rounded,
+                  isCompact: true,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    question,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (detail.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                detail,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.end,
+              children: [
+                DesignSystemButton(
+                  onPressed: () => onSelect(dismissValue),
+                  label: dismissLabel,
+                  variant: DesignSystemButtonVariant.secondary,
+                  size: DesignSystemButtonSize.medium,
+                ),
+                _primaryActionButton(
+                  label: confirmLabel,
+                  onPressed: () => onSelect(confirmValue),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Private helpers ─────────────────────────────────────────────────────────
 
 Widget _sectionLabel(BuildContext context, String text) {
   return Text(
     text,
-    style: TextStyle(
-      color: Colors.white.withValues(alpha: 0.6),
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.5,
+    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.2,
     ),
   );
 }
 
 Widget _directiveBox({
+  required BuildContext context,
   required String text,
-  Color? backgroundColor,
-  Color? borderColor,
+  bool isHighlighted = false,
 }) {
+  final colorScheme = Theme.of(context).colorScheme;
+
   return Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: backgroundColor ?? GameyColors.surfaceDark.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(8),
-      border: borderColor != null ? Border.all(color: borderColor) : null,
+      color: isHighlighted
+          ? colorScheme.primaryContainer.withValues(alpha: 0.22)
+          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: isHighlighted
+            ? colorScheme.primary.withValues(alpha: 0.35)
+            : colorScheme.outlineVariant.withValues(alpha: 0.35),
+      ),
     ),
-    child: SelectableText(
+    child: AgentMarkdownView(
       text,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.9),
-        fontSize: 13,
-        height: 1.5,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onSurface,
+        height: 1.55,
       ),
     ),
   );
@@ -1212,33 +1453,14 @@ Widget _metricChip(String label, String value) {
   );
 }
 
-Widget _approveButton({
-  required BuildContext context,
+Widget _primaryActionButton({
+  required String label,
   required VoidCallback onPressed,
 }) {
-  return Container(
-    decoration: BoxDecoration(
-      gradient: GameyGradients.success,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text(
-            context.messages.agentTemplateEvolveApprove,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-    ),
+  return DesignSystemButton(
+    onPressed: onPressed,
+    label: label,
+    size: DesignSystemButtonSize.medium,
   );
 }
 

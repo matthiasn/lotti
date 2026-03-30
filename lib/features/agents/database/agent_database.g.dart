@@ -3048,6 +3048,30 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
+  Selectable<int> countWakeRunsByTemplateId(String? templateId) {
+    return customSelect(
+      'SELECT COUNT(*) AS cnt FROM wake_run_log WHERE template_id = ?1',
+      variables: [Variable<String>(templateId)],
+      readsFrom: {wakeRunLog},
+    ).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
+  Selectable<WakeRunLogData> getWakeRunsByTemplateInWindow(
+    String? templateId,
+    DateTime since,
+    DateTime until,
+  ) {
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE template_id = ?1 AND created_at >= ?2 AND created_at <= ?3 ORDER BY created_at DESC',
+      variables: [
+        Variable<String>(templateId),
+        Variable<DateTime>(since),
+        Variable<DateTime>(until),
+      ],
+      readsFrom: {wakeRunLog},
+    ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   Selectable<AgentEntity> getRecentReportsByTemplate(
     String templateId,
     int limit,
@@ -3176,6 +3200,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     return customSelect(
       'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?2',
       variables: [Variable<String>(templateId), Variable<int>(limit)],
+      readsFrom: {agentEntities, agentLinks},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentEntity> getTokenUsageByTemplateSince(
+    String templateId,
+    DateTime since,
+  ) {
+    return customSelect(
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC',
+      variables: [Variable<String>(templateId), Variable<DateTime>(since)],
       readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
   }

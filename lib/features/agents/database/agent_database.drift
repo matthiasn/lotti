@@ -134,6 +134,10 @@ countAgentLinksInInterval: SELECT COUNT(*) AS cnt FROM agent_links WHERE updated
 
 getWakeRunsByTemplateId: SELECT * FROM wake_run_log WHERE template_id = :templateId ORDER BY created_at DESC LIMIT :limit;
 
+countWakeRunsByTemplateId: SELECT COUNT(*) AS cnt FROM wake_run_log WHERE template_id = :templateId;
+
+getWakeRunsByTemplateInWindow: SELECT * FROM wake_run_log WHERE template_id = :templateId AND created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
+
 getRecentReportsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentReport' AND ae.subtype = 'current' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentMessage' AND ae.subtype = 'observation' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
@@ -159,6 +163,8 @@ getRecentDecisionsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agen
 getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+
+getTokenUsageByTemplateSince: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC;
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 

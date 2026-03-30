@@ -615,6 +615,22 @@ void main() {
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
+      // Also add a structured recap.
+      const recapCall = ChatCompletionMessageToolCall(
+        id: 'call-recap',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'publish_ritual_recap',
+          arguments:
+              r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nWe tightened the opening prompt and removed repeated self-congratulation."}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [recapCall]);
+      await strategy.processToolCalls(
+        toolCalls: [recapCall],
+        manager: manager,
+      );
+
       // Also add a pending note.
       const noteCall = ChatCompletionMessageToolCall(
         id: 'call-2',
@@ -631,6 +647,7 @@ void main() {
       );
 
       expect(strategy.latestProposal, isNotNull);
+      expect(strategy.latestRecap, isNotNull);
       expect(strategy.pendingNotes, hasLength(1));
 
       final workflow = TemplateEvolutionWorkflow(
@@ -670,11 +687,21 @@ void main() {
         ),
       ).called(1);
 
-      // Verify notes and session completion were persisted.
-      // upsertEntity is called for: note + session completion = 2 calls.
+      // Verify recap, notes, and session completion were persisted.
       final capturedEntities = verify(
         () => mockSyncService.upsertEntity(captureAny()),
       ).captured;
+
+      final recapEntities = capturedEntities
+          .whereType<EvolutionSessionRecapEntity>()
+          .toList();
+      expect(recapEntities, hasLength(1));
+      expect(recapEntities.first.tldr, 'Tightened the prompt around brevity.');
+      expect(
+        recapEntities.first.recapMarkdown,
+        '## Session recap\n\nWe tightened the opening prompt and removed repeated self-congratulation.',
+      );
+      expect(recapEntities.first.approvedChangeSummary, 'Based on data');
 
       final noteEntities = capturedEntities
           .whereType<EvolutionNoteEntity>()

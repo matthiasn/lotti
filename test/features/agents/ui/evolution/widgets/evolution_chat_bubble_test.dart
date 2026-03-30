@@ -110,6 +110,52 @@ void main() {
         expect(find.text('Hide reasoning'), findsNothing);
       });
 
+      testWidgets(
+        'uses a more compact bubble when only thinking is present',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              text: '<think>Hidden reasoning only</think>',
+              role: 'assistant',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final thinkingOnlyBubble = tester.widget<Container>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              text: '<think>Hidden reasoning</think>Visible answer',
+              role: 'assistant',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final mixedBubble = tester.widget<Container>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
+            ),
+          );
+
+          expect(
+            thinkingOnlyBubble.padding,
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          );
+          expect(
+            mixedBubble.padding,
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          );
+        },
+      );
+
       testWidgets('renders plain message without ThinkingDisclosure', (
         tester,
       ) async {

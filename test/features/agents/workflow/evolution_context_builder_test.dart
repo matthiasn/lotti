@@ -71,7 +71,14 @@ void main() {
 
       expect(ctx.systemPrompt, contains('evolution agent'));
       expect(ctx.systemPrompt, contains('propose_directives'));
+      expect(ctx.systemPrompt, contains('publish_ritual_recap'));
       expect(ctx.systemPrompt, contains('record_evolution_note'));
+      expect(ctx.systemPrompt, contains('Surface the sharpest issue'));
+      expect(
+        ctx.systemPrompt,
+        contains('Start with a short recap since the last 1-on-1'),
+      );
+      expect(ctx.systemPrompt, contains('BinaryChoicePrompt'));
     });
 
     test('contains conversation rules', () {
@@ -79,6 +86,14 @@ void main() {
 
       expect(ctx.systemPrompt, contains('propose improved directives'));
       expect(ctx.systemPrompt, contains('core identity'));
+      expect(
+        ctx.systemPrompt,
+        contains('Treat aggregate metrics as background only'),
+      );
+      expect(
+        ctx.systemPrompt,
+        contains('Keep the opening conversational'),
+      );
     });
   });
 
@@ -90,13 +105,14 @@ void main() {
       expect(ctx.initialUserMessage, contains('Be helpful and concise.'));
     });
 
-    test('includes performance metrics', () {
+    test('includes operational background without success-rate praise', () {
       final ctx = buildWithDefaults();
 
+      expect(ctx.initialUserMessage, contains('Operational Background'));
       expect(ctx.initialUserMessage, contains('Total wakes: 10'));
-      expect(ctx.initialUserMessage, contains('Success rate: 80.0%'));
-      expect(ctx.initialUserMessage, contains('Failures: 2'));
+      expect(ctx.initialUserMessage, contains('Failed wakes: 2'));
       expect(ctx.initialUserMessage, contains('Active instances: 2'));
+      expect(ctx.initialUserMessage, isNot(contains('Success rate:')));
     });
 
     test('includes delta count when non-zero', () {
@@ -172,8 +188,12 @@ void main() {
     test('ends with prompt for user interaction', () {
       final ctx = buildWithDefaults();
 
-      expect(ctx.initialUserMessage, contains('Review this data'));
-      expect(ctx.initialUserMessage, contains('category ratings'));
+      expect(ctx.initialUserMessage, contains('sharpest problem'));
+      expect(ctx.initialUserMessage, contains('category ratings only if'));
+      expect(
+        ctx.systemPrompt,
+        contains('say that plainly instead of forcing drama'),
+      );
     });
 
     test('uses split directives when generalDirective is populated', () {
@@ -444,8 +464,8 @@ void main() {
     });
 
     test('omits entries for a different template kind', () {
-      // All current changelog entries are for taskAgent. An improver
-      // template should not see them.
+      // The latest changelog entry applies to the improver template kind, so
+      // this template should still receive the seed-directive update section.
       final ctx = builder.build(
         template: makeTestTemplate(
           displayName: 'Improver',
@@ -462,7 +482,7 @@ void main() {
 
       expect(
         ctx.initialUserMessage,
-        isNot(contains('Seed Directive Updates')),
+        contains('Seed Directive Updates'),
       );
     });
 

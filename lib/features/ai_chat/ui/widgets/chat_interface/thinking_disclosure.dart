@@ -65,6 +65,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                       toggleLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.1,
                       ),
                     ),
                   ],

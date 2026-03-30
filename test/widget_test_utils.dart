@@ -8,6 +8,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -132,6 +133,21 @@ const phoneMediaQueryData = MediaQueryData(
   padding: EdgeInsets.only(top: 47, bottom: 34),
 );
 
+ThemeData _resolveTestTheme([ThemeData? theme]) {
+  final baseTheme = theme ?? ThemeData(useMaterial3: true);
+  if (baseTheme.extension<DsTokens>() != null) {
+    return baseTheme;
+  }
+
+  final tokens = baseTheme.brightness == Brightness.dark
+      ? dsTokensDark
+      : dsTokensLight;
+
+  return baseTheme.copyWith(
+    extensions: <ThemeExtension<dynamic>>[tokens],
+  );
+}
+
 Widget makeTestableWidget(
   Widget child, {
   MediaQueryData? mediaQueryData,
@@ -144,6 +160,7 @@ Widget makeTestableWidget(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        theme: _resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -167,6 +184,7 @@ Widget makeTestableWidget2(
   return MediaQuery(
     data: mq,
     child: MaterialApp(
+      theme: _resolveTestTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         FormBuilderLocalizations.delegate,
@@ -193,7 +211,7 @@ Widget makeTestableWidgetWithScaffold(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: theme,
+        theme: _resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -231,7 +249,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: theme,
+        theme: _resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,

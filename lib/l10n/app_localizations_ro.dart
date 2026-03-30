@@ -88,10 +88,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentActivityLogHeading => 'Jurnal de activitate';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Trimite evaluările';
+  String get agentBinaryChoiceNo => 'Nu';
 
   @override
-  String get agentCategoryRatingsTitle => 'Evaluează categoriile';
+  String get agentBinaryChoiceYes => 'Da';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Corectați mai întâi';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Lăsați așa';
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Folosește aceste priorități';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lăsați așa, 5 înseamnă corectați mai întâi.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Ajută-mă să prioritizez';
 
   @override
   String agentControlsActionError(String error) {
@@ -529,6 +545,39 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'You';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake activity (last 30 days)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
 
   @override
   String get agentRunningIndicator => 'În execuție';

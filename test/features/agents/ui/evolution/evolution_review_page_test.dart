@@ -1,15 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/feedback_summary_section.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/ritual_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -19,12 +20,27 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  final summaryMetrics = RitualSummaryMetrics(
+    lifetimeWakeCount: 40,
+    wakesSinceLastSession: 6,
+    totalTokenUsageSinceLastSession: 888,
+    meanTimeToResolution: const Duration(hours: 3),
+    dailyWakeCounts: List.generate(
+      5,
+      (index) => DailyWakeCountBucket(
+        date: DateTime(2024, 3, 20 + index),
+        wakeCount: index + 1,
+      ),
+    ),
+  );
+
   Widget buildSubject({
     String templateId = kTestTemplateId,
-    FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
-    FutureOr<ClassifiedFeedback?> Function(Ref, String)? feedbackOverride,
-    FutureOr<AgentDomainEntity?> Function(Ref, String)? pendingOverride,
-    FutureOr<List<AgentDomainEntity>> Function(Ref, String)? sessionsOverride,
+    FutureOr<AgentDomainEntity?> Function()? templateOverride,
+    FutureOr<AgentDomainEntity?> Function()? pendingOverride,
+    FutureOr<RitualSummaryMetrics> Function()? summaryOverride,
+    FutureOr<List<RitualSessionHistoryEntry>> Function()? historyOverride,
+    MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
   }) {
     final template = makeTestTemplate(
@@ -35,18 +51,19 @@ void main() {
 
     return makeTestableWidgetNoScroll(
       EvolutionReviewPage(templateId: templateId),
+      mediaQueryData: mediaQueryData,
       overrides: [
         agentTemplateProvider.overrideWith(
-          templateOverride ?? (ref, id) async => template,
-        ),
-        ritualFeedbackProvider.overrideWith(
-          feedbackOverride ?? (ref, id) async => null,
+          (ref, id) async => await (templateOverride?.call() ?? template),
         ),
         pendingRitualReviewProvider.overrideWith(
-          pendingOverride ?? (ref, id) async => null,
+          (ref, id) async => await pendingOverride?.call(),
         ),
-        evolutionSessionsProvider.overrideWith(
-          sessionsOverride ?? (ref, id) async => [],
+        ritualSummaryMetricsProvider.overrideWith(
+          (ref, id) async => await (summaryOverride?.call() ?? summaryMetrics),
+        ),
+        ritualSessionHistoryProvider.overrideWith(
+          (ref, id) async => await (historyOverride?.call() ?? const []),
         ),
         ...extraOverrides,
       ],
@@ -54,268 +71,141 @@ void main() {
   }
 
   group('EvolutionReviewPage', () {
-    testWidgets('shows "Ritual Review" title in app bar', (tester) async {
+    testWidgets('shows template name plus ritual home copy', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(EvolutionReviewPage));
-      expect(
-        find.text(context.messages.agentRitualReviewTitle),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows template display name', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
 
       expect(find.text('Daily Standup'), findsOneWidget);
-    });
-
-    testWidgets('shows Feedback Signals section header', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
-        find.text(context.messages.agentRitualReviewFeedbackTitle),
-        findsOneWidget,
+        find.text(context.messages.agentRitualReviewTitle),
+        findsAtLeastNWidgets(1),
       );
-    });
-
-    testWidgets('shows no-feedback empty state when feedback is null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
-        find.text(context.messages.agentRitualReviewNoFeedback),
-        findsOneWidget,
+        find.text(context.messages.agentRitualSummarySubtitle),
+        findsAtLeastNWidgets(1),
       );
+      expect(find.byType(RitualSummaryCard), findsOneWidget);
     });
 
-    testWidgets('shows FeedbackSummarySection when feedback has items', (
-      tester,
-    ) async {
-      final feedback = makeTestClassifiedFeedback(
-        items: [
-          makeTestClassifiedFeedbackItem(detail: 'Agent was accurate'),
-        ],
-      );
-
+    testWidgets('shows start card when no ritual is pending', (tester) async {
       await tester.pumpWidget(
-        buildSubject(feedbackOverride: (ref, id) async => feedback),
+        buildSubject(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 1600),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(FeedbackSummarySection), findsOneWidget);
+      final context = tester.element(find.byType(EvolutionReviewPage));
+
+      expect(
+        find.text(context.messages.agentRitualSummaryStartHint),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text(context.messages.agentEvolutionNoSessions),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.text(context.messages.agentEvolutionNoSessions),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows feedbackSummary text when active session has one', (
+    testWidgets('shows pending session card details when ritual is active', (
       tester,
     ) async {
       final session = makeTestEvolutionSession(
-        feedbackSummary: 'Agent performed well in most areas.',
+        sessionNumber: 3,
+        feedbackSummary: 'The user wants less self-congratulation.',
       );
 
       await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) async => session),
+        buildSubject(
+          pendingOverride: () async => session,
+        ),
       );
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Agent performed well in most areas.'),
+        find.text('The user wants less self-congratulation.'),
         findsOneWidget,
       );
+      expect(find.textContaining('3'), findsWidgets);
     });
 
-    testWidgets(
-      'shows proposal section label inside summary card when session has '
-      'feedbackSummary',
-      (tester) async {
-        final session = makeTestEvolutionSession(
-          feedbackSummary: 'Summary text here.',
-        );
-
-        await tester.pumpWidget(
-          buildSubject(pendingOverride: (ref, id) async => session),
-        );
-        await tester.pump();
-
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        expect(
-          find.text(context.messages.agentRitualReviewProposalSection),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('summary text is bounded with ellipsis overflow', (
-      tester,
-    ) async {
+    testWidgets('renders persisted session history entries', (tester) async {
       final session = makeTestEvolutionSession(
-        feedbackSummary: 'Summary text here.',
+        id: 'session-1',
+        sessionNumber: 2,
+        status: EvolutionSessionStatus.completed,
+        completedAt: DateTime(2024, 3, 18, 9),
+      );
+      final recap = makeTestEvolutionSessionRecap(
+        sessionId: session.id,
+        tldr: 'Short recap of what changed.',
       );
 
       await tester.pumpWidget(
-        buildSubject(pendingOverride: (ref, id) async => session),
+        buildSubject(
+          historyOverride: () async => [
+            RitualSessionHistoryEntry(
+              session: session,
+              recap: recap,
+            ),
+          ],
+        ),
       );
-      await tester.pump();
-
-      final summaryText = tester.widget<Text>(find.text('Summary text here.'));
-      expect(summaryText.maxLines, 8);
-      expect(summaryText.overflow, TextOverflow.ellipsis);
-    });
-
-    testWidgets('does not show proposal card when pending session is null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      final context = tester.element(find.byType(EvolutionReviewPage));
-      // No proposal section label should appear (it's part of the card)
-      expect(
-        find.text(context.messages.agentRitualReviewProposalSection),
-        findsNothing,
-      );
-    });
-
-    testWidgets(
-      'FAB with "Start Conversation" appears when there is an active session',
-      (tester) async {
-        final session = makeTestEvolutionSession();
-
-        await tester.pumpWidget(
-          buildSubject(pendingOverride: (ref, id) async => session),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byType(FloatingActionButton), findsOneWidget);
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        expect(
-          find.text(context.messages.agentRitualReviewAction),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets('FAB appears when there is no active session', (tester) async {
-      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Short recap of what changed.'),
+        200,
+      );
+      expect(find.byType(RitualSessionHistoryCard), findsOneWidget);
+      expect(find.text('Short recap of what changed.'), findsOneWidget);
+    });
+
+    testWidgets('shows loading card while summary metrics load', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          summaryOverride: () => Completer<RitualSummaryMetrics>().future,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('keeps the review page usable when history loading fails', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 1600),
+          ),
+          historyOverride: () async => throw Exception('fail'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
       final context = tester.element(find.byType(EvolutionReviewPage));
       expect(
         find.text(context.messages.agentRitualReviewAction),
         findsOneWidget,
       );
+      expect(find.byType(RitualSessionHistoryCard), findsNothing);
     });
-
-    testWidgets(
-      'ignores non-session pending entities for FAB and proposal card',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            pendingOverride: (ref, id) async => makeTestTemplate(
-              id: 'not-a-session',
-              agentId: id,
-            ),
-          ),
-        );
-        await tester.pump();
-
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        expect(find.byType(FloatingActionButton), findsOneWidget);
-        expect(
-          find.text(context.messages.agentRitualReviewProposalSection),
-          findsNothing,
-        );
-      },
-    );
-
-    testWidgets(
-      'renders SizedBox.shrink when pending session provider has error',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            pendingOverride: (ref, id) =>
-                Future<AgentDomainEntity?>.error(Exception('fail')),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        expect(find.text(context.messages.commonError), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'does not show feedbackSummary box when session has null feedbackSummary',
-      (tester) async {
-        // makeTestEvolutionSession defaults feedbackSummary to null.
-        final session = makeTestEvolutionSession();
-
-        await tester.pumpWidget(
-          buildSubject(pendingOverride: (ref, id) async => session),
-        );
-        await tester.pumpAndSettle();
-
-        // The FAB should still be present.
-        expect(find.byType(FloatingActionButton), findsOneWidget);
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        // Proposal section label exists only inside the summary card.
-        expect(
-          find.text(context.messages.agentRitualReviewProposalSection),
-          findsNothing,
-        );
-      },
-    );
-
-    testWidgets('shows empty template name when template is not loaded', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(templateOverride: (ref, id) async => null),
-      );
-      await tester.pumpAndSettle();
-
-      // Template name should be empty — 'Daily Standup' must not appear.
-      expect(find.text('Daily Standup'), findsNothing);
-    });
-
-    testWidgets('shows loading indicator while feedback is loading', (
-      tester,
-    ) async {
-      // Use a Completer so no timer is left pending after the test.
-      final completer = Completer<ClassifiedFeedback?>();
-
-      await tester.pumpWidget(
-        buildSubject(feedbackOverride: (ref, id) => completer.future),
-      );
-      // One pump to start the async operation — provider stays in loading.
-      await tester.pump();
-
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
-    });
-
-    testWidgets(
-      'shows common error text when feedback provider emits an error',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            feedbackOverride: (ref, id) => Future<ClassifiedFeedback?>.error(
-              Exception('extraction failed'),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(EvolutionReviewPage));
-        expect(find.text(context.messages.commonError), findsOneWidget);
-      },
-    );
   });
 }

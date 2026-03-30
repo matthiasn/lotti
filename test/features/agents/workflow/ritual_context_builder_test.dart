@@ -54,8 +54,12 @@ void main() {
 
       expect(ctx.systemPrompt, contains('improver agent'));
       expect(ctx.systemPrompt, contains('one-on-one ritual'));
-      expect(ctx.systemPrompt, contains('Present feedback'));
-      expect(ctx.systemPrompt, contains('Ask questions'));
+      expect(ctx.systemPrompt, contains('Lead with the main issue'));
+      expect(
+        ctx.systemPrompt,
+        contains('Start with a short recap since the last ritual'),
+      );
+      expect(ctx.systemPrompt, contains('BinaryChoicePrompt'));
       // Should NOT contain the standard evolution agent prompt.
       expect(ctx.systemPrompt, isNot(contains('evolution agent')));
     });
@@ -198,7 +202,7 @@ void main() {
       expect(ctx.initialUserMessage, contains('Evolution Session: My Agent'));
       expect(ctx.initialUserMessage, contains('Current Directives (v3)'));
       expect(ctx.initialUserMessage, contains('Be helpful'));
-      expect(ctx.initialUserMessage, contains('Performance Metrics'));
+      expect(ctx.initialUserMessage, contains('Operational Background'));
       expect(
         ctx.initialUserMessage,
         contains('Changes Since Last Session'),
@@ -227,6 +231,11 @@ void main() {
       expect(ctx.systemPrompt, contains('recursive self-improvement'));
       expect(ctx.systemPrompt, contains('Directive churn stability'));
       expect(ctx.systemPrompt, contains('Acceptance rates'));
+      expect(ctx.systemPrompt, contains('Lead with the main process problem'));
+      expect(
+        ctx.systemPrompt,
+        contains('Start with a short recap since the last ritual'),
+      );
       // Should NOT contain the standard improver prompt.
       expect(
         ctx.systemPrompt,

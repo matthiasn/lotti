@@ -1,6 +1,8 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/database/agent_database.dart'
+    show WakeRunLogData;
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -487,21 +489,23 @@ class AgentTemplateService {
 
   /// Compute recent performance metrics for a template.
   ///
-  /// Fetches up to [limit] most recent wake-run log entries tagged with this
-  /// template and agent instances using it, then aggregates into
-  /// [TemplatePerformanceMetrics]. Metrics reflect the recent window, not
-  /// necessarily the template's entire history.
+  /// Fetches wake-run log entries tagged with this template and agent
+  /// instances using it, then aggregates them into
+  /// [TemplatePerformanceMetrics].
+  ///
+  /// Pass [limit] to intentionally scope the aggregation to a recent window.
+  /// The default `-1` computes metrics over the full history.
   Future<TemplatePerformanceMetrics> computeMetrics(
     String templateId, {
-    int limit = 500,
+    int limit = -1,
   }) async {
     final runs = await repository.getWakeRunsForTemplate(
       templateId,
       limit: limit,
     );
     final agents = await getAgentsForTemplate(templateId);
+    final totalWakes = await repository.countWakeRunsForTemplate(templateId);
 
-    final totalWakes = runs.length;
     var successCount = 0;
     var failureCount = 0;
     var durationSumMs = 0;
@@ -544,6 +548,36 @@ class AgentTemplateService {
     );
   }
 
+  /// Return the uncapped lifetime wake count for [templateId].
+  Future<int> getLifetimeWakeCount(String templateId) {
+    return repository.countWakeRunsForTemplate(templateId);
+  }
+
+  /// Fetch wake runs for [templateId] in the inclusive `[since, until]`
+  /// window.
+  Future<List<WakeRunLogData>> getWakeRunsInWindow(
+    String templateId, {
+    required DateTime since,
+    required DateTime until,
+  }) {
+    return repository.getWakeRunsForTemplateInWindow(
+      templateId,
+      since: since,
+      until: until,
+    );
+  }
+
+  /// Fetch token usage for [templateId] created on or after [since].
+  Future<List<WakeTokenUsageEntity>> getTokenUsageSince(
+    String templateId, {
+    required DateTime since,
+  }) {
+    return repository.getTokenUsageForTemplateSince(
+      templateId,
+      since: since,
+    );
+  }
+
   // ── Evolution data fetching ─────────────────────────────────────────────
 
   /// Fetch the N most recent reports from all instances of this template.
@@ -577,6 +611,21 @@ class AgentTemplateService {
     int limit = 10,
   }) {
     return repository.getEvolutionSessions(templateId, limit: limit);
+  }
+
+  /// Fetch persisted recaps for completed ritual sessions, newest-first.
+  Future<List<EvolutionSessionRecapEntity>> getEvolutionSessionRecaps(
+    String templateId, {
+    int limit = 50,
+  }) {
+    return repository.getEvolutionSessionRecaps(templateId, limit: limit);
+  }
+
+  /// Fetch the recap for a single ritual session.
+  Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
+    String sessionId,
+  ) {
+    return repository.getEvolutionSessionRecap(sessionId);
   }
 
   /// Count entities changed since [since] for all instances of [templateId].

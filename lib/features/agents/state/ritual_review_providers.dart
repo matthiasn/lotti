@@ -1,9 +1,15 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/database/agent_database.dart'
+    show WakeRunLogData;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/model/ritual_summary.dart';
+import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -109,4 +115,162 @@ class EvolutionSessionStats {
   final int completedCount;
   final int abandonedCount;
   final double approvalRate;
+}
+
+/// Returns the completion timestamp of the newest completed ritual session
+/// for a template, if any.
+@riverpod
+Future<DateTime?> latestCompletedRitualTimestamp(
+  Ref ref,
+  String templateId,
+) async {
+  final sessions = await ref.watch(
+    evolutionSessionsProvider(templateId).future,
+  );
+  final latestCompleted = sessions
+      .whereType<EvolutionSessionEntity>()
+      .firstWhereOrNull(
+        (session) => session.status == EvolutionSessionStatus.completed,
+      );
+  return latestCompleted?.completedAt ?? latestCompleted?.createdAt;
+}
+
+/// History entries for past ritual sessions, backed by persisted recap data.
+@riverpod
+Future<List<RitualSessionHistoryEntry>> ritualSessionHistory(
+  Ref ref,
+  String templateId,
+) async {
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final (sessions, recaps) = await (
+    ref.watch(evolutionSessionsProvider(templateId).future),
+    templateService.getEvolutionSessionRecaps(templateId),
+  ).wait;
+
+  final recapBySessionId = {
+    for (final recap in recaps) recap.sessionId: recap,
+  };
+
+  return sessions
+      .whereType<EvolutionSessionEntity>()
+      .where((session) => session.status != EvolutionSessionStatus.active)
+      .map(
+        (session) => RitualSessionHistoryEntry(
+          session: session,
+          recap: recapBySessionId[session.id],
+        ),
+      )
+      .toList();
+}
+
+/// Compact summary metrics for ritual home and chat header surfaces.
+@riverpod
+Future<RitualSummaryMetrics> ritualSummaryMetrics(
+  Ref ref,
+  String templateId,
+) async {
+  ref.watch(agentUpdateStreamProvider(templateId));
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final repository = ref.watch(agentRepositoryProvider);
+  final lastSessionAt = await ref.watch(
+    latestCompletedRitualTimestampProvider(templateId).future,
+  );
+  final resolutionTimeSeries = await ref.watch(
+    templateTaskResolutionTimeSeriesProvider(templateId).future,
+  );
+
+  final now = clock.now();
+  final today = truncateToDay(now);
+  final chartStart = today.subtract(const Duration(days: 29));
+
+  final lifetimeWakeCount = await templateService.getLifetimeWakeCount(
+    templateId,
+  );
+  final recentWakeRuns = await templateService.getWakeRunsInWindow(
+    templateId,
+    since: chartStart,
+    until: now,
+  );
+
+  final wakesSinceLastSession = lastSessionAt == null
+      ? lifetimeWakeCount
+      : (await templateService.getWakeRunsInWindow(
+          templateId,
+          since: lastSessionAt,
+          until: now,
+        )).length;
+
+  final tokenUsageRecords = lastSessionAt == null
+      ? await repository.getTokenUsageForTemplate(templateId, limit: -1)
+      : await templateService.getTokenUsageSince(
+          templateId,
+          since: lastSessionAt,
+        );
+
+  final totalTokenUsageSinceLastSession = tokenUsageRecords.fold<int>(
+    0,
+    (sum, record) =>
+        sum +
+        (record.inputTokens ?? 0) +
+        (record.outputTokens ?? 0) +
+        (record.thoughtsTokens ?? 0),
+  );
+
+  return RitualSummaryMetrics(
+    lifetimeWakeCount: lifetimeWakeCount,
+    wakesSinceLastSession: wakesSinceLastSession,
+    totalTokenUsageSinceLastSession: totalTokenUsageSinceLastSession,
+    meanTimeToResolution: _weightedMeanMttr(
+      resolutionTimeSeries.dailyBuckets,
+    ),
+    dailyWakeCounts: _buildDailyWakeCounts(
+      recentWakeRuns: recentWakeRuns,
+      chartStart: chartStart,
+      today: today,
+    ),
+  );
+}
+
+Duration? _weightedMeanMttr(List<DailyResolutionBucket> buckets) {
+  var totalResolved = 0;
+  var totalMs = 0;
+
+  for (final bucket in buckets) {
+    if (bucket.resolvedCount <= 0) {
+      continue;
+    }
+    totalResolved += bucket.resolvedCount;
+    totalMs += bucket.averageMttr.inMilliseconds * bucket.resolvedCount;
+  }
+
+  if (totalResolved == 0) {
+    return null;
+  }
+  return Duration(milliseconds: totalMs ~/ totalResolved);
+}
+
+List<DailyWakeCountBucket> _buildDailyWakeCounts({
+  required List<WakeRunLogData> recentWakeRuns,
+  required DateTime chartStart,
+  required DateTime today,
+}) {
+  final countsByDay = <DateTime, int>{};
+  for (final run in recentWakeRuns) {
+    final day = truncateToDay(run.createdAt);
+    countsByDay.update(day, (count) => count + 1, ifAbsent: () => 1);
+  }
+
+  final buckets = <DailyWakeCountBucket>[];
+  var current = chartStart;
+  while (!current.isAfter(today)) {
+    buckets.add(
+      DailyWakeCountBucket(
+        date: current,
+        wakeCount: countsByDay[current] ?? 0,
+      ),
+    );
+    current = current.add(const Duration(days: 1));
+  }
+  return buckets;
 }

@@ -91,10 +91,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentActivityLogHeading => 'Journal d\'activité';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Envoyer les évaluations';
+  String get agentBinaryChoiceNo => 'Non';
 
   @override
-  String get agentCategoryRatingsTitle => 'Évaluer les catégories';
+  String get agentBinaryChoiceYes => 'Oui';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Corriger d\'abord';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Laisser';
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Utiliser ces priorités';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'À quel point c\'est important que je corrige chacun de ces points ? 1 = laisse comme ça, 5 = corrige ça en premier.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Aide-moi à prioriser';
 
   @override
   String agentControlsActionError(String error) {
@@ -528,6 +544,42 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading =>
+      'Modifications validées';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'Toi';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Lance un 1-on-1 pour passer en revue ce qui a dérangé l’utilisateur, ce qui a bien marché et ce qui doit changer ensuite.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Tes derniers 1-on-1, l’activité réelle des wakes et les changements validés.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast =>
+      'Tokens depuis le dernier 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Activité des wakes (30 derniers jours)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast =>
+      'Wakes depuis le dernier 1-on-1';
 
   @override
   String get agentRunningIndicator => 'En cours';

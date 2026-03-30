@@ -26,8 +26,13 @@
   "addToDictionarySuccess": "Termen adăugat la dicționar",
   "addToDictionaryTooLong": "Termen prea lung (max 50 caractere)",
   "agentActivityLogHeading": "Jurnal de activitate",
-  "agentCategoryRatingsSubmit": "Trimite evaluările",
-  "agentCategoryRatingsTitle": "Evaluează categoriile",
+  "agentBinaryChoiceNo": "Nu",
+  "agentBinaryChoiceYes": "Da",
+  "agentCategoryRatingsScaleMax": "Corectați mai întâi",
+  "agentCategoryRatingsScaleMin": "Lăsați așa",
+  "agentCategoryRatingsSubmit": "Folosește aceste priorități",
+  "agentCategoryRatingsSubtitle": "Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lăsați așa, 5 înseamnă corectați mai întâi.",
+  "agentCategoryRatingsTitle": "Ajută-mă să prioritizez",
   "agentControlsActionError": "Acțiunea a eșuat: {error}",
   "@agentControlsActionError": {
     "placeholders": {

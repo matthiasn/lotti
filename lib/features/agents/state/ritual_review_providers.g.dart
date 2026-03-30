@@ -362,3 +362,275 @@ final class EvolutionSessionStatsFamily extends $Family
   @override
   String toString() => r'evolutionSessionStatsProvider';
 }
+
+/// Returns the completion timestamp of the newest completed ritual session
+/// for a template, if any.
+
+@ProviderFor(latestCompletedRitualTimestamp)
+final latestCompletedRitualTimestampProvider =
+    LatestCompletedRitualTimestampFamily._();
+
+/// Returns the completion timestamp of the newest completed ritual session
+/// for a template, if any.
+
+final class LatestCompletedRitualTimestampProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<DateTime?>,
+          DateTime?,
+          FutureOr<DateTime?>
+        >
+    with $FutureModifier<DateTime?>, $FutureProvider<DateTime?> {
+  /// Returns the completion timestamp of the newest completed ritual session
+  /// for a template, if any.
+  LatestCompletedRitualTimestampProvider._({
+    required LatestCompletedRitualTimestampFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'latestCompletedRitualTimestampProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$latestCompletedRitualTimestampHash();
+
+  @override
+  String toString() {
+    return r'latestCompletedRitualTimestampProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<DateTime?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DateTime?> create(Ref ref) {
+    final argument = this.argument as String;
+    return latestCompletedRitualTimestamp(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LatestCompletedRitualTimestampProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$latestCompletedRitualTimestampHash() =>
+    r'e7a2b14bb69384d39eb59c085deccf9d33870f3b';
+
+/// Returns the completion timestamp of the newest completed ritual session
+/// for a template, if any.
+
+final class LatestCompletedRitualTimestampFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<DateTime?>, String> {
+  LatestCompletedRitualTimestampFamily._()
+    : super(
+        retry: null,
+        name: r'latestCompletedRitualTimestampProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Returns the completion timestamp of the newest completed ritual session
+  /// for a template, if any.
+
+  LatestCompletedRitualTimestampProvider call(String templateId) =>
+      LatestCompletedRitualTimestampProvider._(
+        argument: templateId,
+        from: this,
+      );
+
+  @override
+  String toString() => r'latestCompletedRitualTimestampProvider';
+}
+
+/// History entries for past ritual sessions, backed by persisted recap data.
+
+@ProviderFor(ritualSessionHistory)
+final ritualSessionHistoryProvider = RitualSessionHistoryFamily._();
+
+/// History entries for past ritual sessions, backed by persisted recap data.
+
+final class RitualSessionHistoryProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<RitualSessionHistoryEntry>>,
+          List<RitualSessionHistoryEntry>,
+          FutureOr<List<RitualSessionHistoryEntry>>
+        >
+    with
+        $FutureModifier<List<RitualSessionHistoryEntry>>,
+        $FutureProvider<List<RitualSessionHistoryEntry>> {
+  /// History entries for past ritual sessions, backed by persisted recap data.
+  RitualSessionHistoryProvider._({
+    required RitualSessionHistoryFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'ritualSessionHistoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$ritualSessionHistoryHash();
+
+  @override
+  String toString() {
+    return r'ritualSessionHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<RitualSessionHistoryEntry>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<RitualSessionHistoryEntry>> create(Ref ref) {
+    final argument = this.argument as String;
+    return ritualSessionHistory(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RitualSessionHistoryProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$ritualSessionHistoryHash() =>
+    r'a0f7adba77f65234158556742af9f3be0ab0a19d';
+
+/// History entries for past ritual sessions, backed by persisted recap data.
+
+final class RitualSessionHistoryFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<RitualSessionHistoryEntry>>,
+          String
+        > {
+  RitualSessionHistoryFamily._()
+    : super(
+        retry: null,
+        name: r'ritualSessionHistoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// History entries for past ritual sessions, backed by persisted recap data.
+
+  RitualSessionHistoryProvider call(String templateId) =>
+      RitualSessionHistoryProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'ritualSessionHistoryProvider';
+}
+
+/// Compact summary metrics for ritual home and chat header surfaces.
+
+@ProviderFor(ritualSummaryMetrics)
+final ritualSummaryMetricsProvider = RitualSummaryMetricsFamily._();
+
+/// Compact summary metrics for ritual home and chat header surfaces.
+
+final class RitualSummaryMetricsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<RitualSummaryMetrics>,
+          RitualSummaryMetrics,
+          FutureOr<RitualSummaryMetrics>
+        >
+    with
+        $FutureModifier<RitualSummaryMetrics>,
+        $FutureProvider<RitualSummaryMetrics> {
+  /// Compact summary metrics for ritual home and chat header surfaces.
+  RitualSummaryMetricsProvider._({
+    required RitualSummaryMetricsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'ritualSummaryMetricsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$ritualSummaryMetricsHash();
+
+  @override
+  String toString() {
+    return r'ritualSummaryMetricsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<RitualSummaryMetrics> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<RitualSummaryMetrics> create(Ref ref) {
+    final argument = this.argument as String;
+    return ritualSummaryMetrics(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RitualSummaryMetricsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$ritualSummaryMetricsHash() =>
+    r'2682d0439e4b7f9028b82d9e2cdba9f3d9adfa1d';
+
+/// Compact summary metrics for ritual home and chat header surfaces.
+
+final class RitualSummaryMetricsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<RitualSummaryMetrics>, String> {
+  RitualSummaryMetricsFamily._()
+    : super(
+        retry: null,
+        name: r'ritualSummaryMetricsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Compact summary metrics for ritual home and chat header surfaces.
+
+  RitualSummaryMetricsProvider call(String templateId) =>
+      RitualSummaryMetricsProvider._(argument: templateId, from: this);
+
+  @override
+  String toString() => r'ritualSummaryMetricsProvider';
+}

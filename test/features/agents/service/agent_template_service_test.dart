@@ -1422,8 +1422,14 @@ void main() {
 
     test('returns zeroed metrics when no runs exist', () async {
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1462,8 +1468,14 @@ void main() {
         ),
       ];
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => runs);
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => runs.length);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1501,8 +1513,14 @@ void main() {
           ),
         ];
         when(
-          () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+          () => mockRepo.getWakeRunsForTemplate(
+            kTestTemplateId,
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async => runs);
+        when(
+          () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+        ).thenAnswer((_) async => runs.length);
         stubAgentsForTemplate([]);
 
         final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1526,8 +1544,14 @@ void main() {
         ),
       ];
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => runs);
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => runs.length);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1540,8 +1564,14 @@ void main() {
 
     test('activeInstanceCount counts only active agents', () async {
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
       stubAgentsForTemplate([
         makeTestIdentity(id: 'a1', agentId: 'a1'),
         makeTestIdentity(
@@ -1683,8 +1713,14 @@ void main() {
       final defaultSessions = sessions ?? <EvolutionSessionEntity>[];
 
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        () => mockRepo.getWakeRunsForTemplate(
+          kTestTemplateId,
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
       when(
         () => mockRepo.getLinksFrom(
           kTestTemplateId,

@@ -26,6 +26,13 @@
   "addToDictionarySuccess": "Výraz byl přidán do slovníku",
   "addToDictionaryTooLong": "Výraz je příliš dlouhý (max. 50 znaků)",
   "agentActivityLogHeading": "Protokol aktivity",
+  "agentBinaryChoiceNo": "Ne",
+  "agentBinaryChoiceYes": "Ano",
+  "agentCategoryRatingsScaleMax": "Opravit první",
+  "agentCategoryRatingsScaleMin": "Nechat být",
+  "agentCategoryRatingsSubmit": "Použít tyto priority",
+  "agentCategoryRatingsSubtitle": "Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.",
+  "agentCategoryRatingsTitle": "Pomoz mi s prioritami",
   "agentControlsActionError": "Akce se nezdařila: {error}",
   "@agentControlsActionError": {
     "placeholders": {

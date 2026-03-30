@@ -5,7 +5,9 @@ import 'package:clock/clock.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
+import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,6 +21,8 @@ class EvolutionChatData {
     this.isWaiting = false,
     this.currentDirectives,
     this.processor,
+    this.categoryRatings = const {},
+    this.lastSurfacedProposalKey,
   });
 
   final String? sessionId;
@@ -29,6 +33,8 @@ class EvolutionChatData {
   /// The GenUI message processor, available after session start.
   /// Used by [GenUiSurface] widgets to render dynamic content.
   final A2uiMessageProcessor? processor;
+  final Map<String, int> categoryRatings;
+  final String? lastSurfacedProposalKey;
 
   EvolutionChatData copyWith({
     String? Function()? sessionId,
@@ -36,6 +42,8 @@ class EvolutionChatData {
     bool? isWaiting,
     String? Function()? currentDirectives,
     A2uiMessageProcessor? Function()? processor,
+    Map<String, int>? categoryRatings,
+    String? Function()? lastSurfacedProposalKey,
   }) {
     return EvolutionChatData(
       sessionId: sessionId != null ? sessionId() : this.sessionId,
@@ -45,6 +53,10 @@ class EvolutionChatData {
           ? currentDirectives()
           : this.currentDirectives,
       processor: processor != null ? processor() : this.processor,
+      categoryRatings: categoryRatings ?? this.categoryRatings,
+      lastSurfacedProposalKey: lastSurfacedProposalKey != null
+          ? lastSurfacedProposalKey()
+          : this.lastSurfacedProposalKey,
     );
   }
 }
@@ -99,18 +111,11 @@ class EvolutionChatState extends _$EvolutionChatState {
       );
     }
 
-    messages.add(
-      EvolutionChatMessage.assistant(
-        text: openingResponse,
-        timestamp: clock.now(),
-      ),
-    );
-
-    // Drain any GenUI surfaces created during the opening turn.
+    final openingSurfaces = <EvolutionChatMessage>[];
     final bridge = session.strategy.genUiBridge;
     if (bridge != null) {
       for (final surfaceId in bridge.drainPendingSurfaceIds()) {
-        messages.add(
+        openingSurfaces.add(
           EvolutionChatMessage.surface(
             surfaceId: surfaceId,
             timestamp: clock.now(),
@@ -118,6 +123,24 @@ class EvolutionChatState extends _$EvolutionChatState {
         );
       }
     }
+
+    final hasOpeningProposal =
+        workflow.getCurrentProposal(sessionId: session.sessionId) != null;
+    final openingProposal = workflow.getCurrentProposal(
+      sessionId: session.sessionId,
+    );
+    final suppressOpeningAssistantBubble =
+        hasOpeningProposal && openingSurfaces.isNotEmpty;
+
+    if (!suppressOpeningAssistantBubble && _hasNonEmptyText(openingResponse)) {
+      messages.add(
+        EvolutionChatMessage.assistant(
+          text: openingResponse,
+          timestamp: clock.now(),
+        ),
+      );
+    }
+    messages.addAll(openingSurfaces);
 
     final processor = session.processor;
 
@@ -134,11 +157,15 @@ class EvolutionChatState extends _$EvolutionChatState {
     session.eventHandler?.onRatingsSubmitted = (surfaceId, ratings) {
       _handleRatingsSubmitted(ratings);
     };
+    session.eventHandler?.onBinaryChoiceSubmitted = (surfaceId, value) {
+      sendMessage(value);
+    };
 
     ref.onDispose(() {
       // Remove GenUI event handler callbacks to avoid calling disposed notifier.
       session.eventHandler?.onProposalAction = null;
       session.eventHandler?.onRatingsSubmitted = null;
+      session.eventHandler?.onBinaryChoiceSubmitted = null;
       // Abandon session on dispose if still active.
       if (workflow.getActiveSessionForTemplate(templateId) != null) {
         unawaited(
@@ -162,6 +189,10 @@ class EvolutionChatState extends _$EvolutionChatState {
       messages: messages,
       currentDirectives: currentDirectives,
       processor: processor,
+      lastSurfacedProposalKey:
+          openingProposal != null && openingSurfaces.isNotEmpty
+          ? _proposalKey(openingProposal)
+          : null,
     );
   }
 
@@ -173,16 +204,25 @@ class EvolutionChatState extends _$EvolutionChatState {
         .map((e) => '${e.key}: ${e.value}/5')
         .join(', ');
     final message = 'My category ratings: $formatted';
+    final current = state.value;
+    if (current != null) {
+      state = AsyncData(current.copyWith(categoryRatings: ratings));
+    }
     sendMessage(message);
   }
 
   /// Send a user message and receive the assistant's response.
+  ///
+  /// If a proposal is already pending, brief acknowledgements such as `ok`
+  /// are treated as approval instead of triggering another model turn.
   Future<void> sendMessage(String text) async {
     final data = state.value;
     if (data == null || data.sessionId == null || data.isWaiting) return;
 
     final workflow = ref.read(templateEvolutionWorkflowProvider);
     final sessionId = data.sessionId!;
+    final hasPendingProposal =
+        workflow.getCurrentProposal(sessionId: sessionId) != null;
 
     // Add user message and set waiting state.
     final userMsg = EvolutionChatMessage.user(
@@ -196,6 +236,11 @@ class EvolutionChatState extends _$EvolutionChatState {
       ),
     );
 
+    if (hasPendingProposal && _isImplicitApprovalMessage(text)) {
+      await approveProposal();
+      return;
+    }
+
     try {
       final response = await workflow.sendMessage(
         sessionId: sessionId,
@@ -206,22 +251,13 @@ class EvolutionChatState extends _$EvolutionChatState {
       if (current == null) return;
 
       final updatedMessages = [...current.messages];
+      var surfaceMessages = <EvolutionChatMessage>[];
 
-      if (response != null) {
-        updatedMessages.add(
-          EvolutionChatMessage.assistant(
-            text: response,
-            timestamp: clock.now(),
-          ),
-        );
-      }
-
-      // Drain any GenUI surfaces created during this turn.
       final session = workflow.getSession(sessionId);
-      final bridge = session?.strategy.genUiBridge;
+      final bridge = session?.strategy.genUiBridge ?? session?.genUiBridge;
       if (bridge != null) {
         for (final surfaceId in bridge.drainPendingSurfaceIds()) {
-          updatedMessages.add(
+          surfaceMessages.add(
             EvolutionChatMessage.surface(
               surfaceId: surfaceId,
               timestamp: clock.now(),
@@ -230,10 +266,44 @@ class EvolutionChatState extends _$EvolutionChatState {
         }
       }
 
+      final pendingProposal = workflow.getCurrentProposal(sessionId: sessionId);
+      final proposalKey = pendingProposal != null
+          ? _proposalKey(pendingProposal)
+          : null;
+
+      if (pendingProposal != null &&
+          proposalKey != current.lastSurfacedProposalKey &&
+          surfaceMessages.isEmpty) {
+        surfaceMessages = _renderProposalSurface(
+          session: session,
+          proposal: pendingProposal,
+        );
+      }
+
+      final hasPendingProposalAfterTurn = pendingProposal != null;
+      final shouldSuppressAssistantBubble =
+          hasPendingProposalAfterTurn && surfaceMessages.isNotEmpty;
+
+      final responseText = response?.trim();
+      if ((responseText?.isNotEmpty ?? false) &&
+          !shouldSuppressAssistantBubble) {
+        updatedMessages.add(
+          EvolutionChatMessage.assistant(
+            text: responseText!,
+            timestamp: clock.now(),
+          ),
+        );
+      }
+
+      updatedMessages.addAll(surfaceMessages);
+
       state = AsyncData(
         current.copyWith(
           messages: updatedMessages,
           isWaiting: false,
+          lastSurfacedProposalKey: () => surfaceMessages.isNotEmpty
+              ? proposalKey
+              : current.lastSurfacedProposalKey,
         ),
       );
     } catch (e, s) {
@@ -248,6 +318,59 @@ class EvolutionChatState extends _$EvolutionChatState {
         state = AsyncData(current.copyWith(isWaiting: false));
       }
     }
+  }
+
+  static final _implicitApprovalPattern = RegExp(
+    r'^[\s\p{P}\p{S}]*(ok|okay|yes|yep|approve|approved|lgtm|sounds good|looks good|ship it)[\s\p{P}\p{S}]*$',
+    caseSensitive: false,
+    unicode: true,
+  );
+
+  static bool _isImplicitApprovalMessage(String text) =>
+      _implicitApprovalPattern.hasMatch(text.trim());
+
+  static bool _hasNonEmptyText(String? text) =>
+      text?.trim().isNotEmpty ?? false;
+
+  static String _proposalKey(PendingProposal proposal) {
+    return [
+      proposal.generalDirective.trim(),
+      proposal.reportDirective.trim(),
+      proposal.rationale.trim(),
+    ].join('\n---\n');
+  }
+
+  List<EvolutionChatMessage> _renderProposalSurface({
+    required ActiveEvolutionSession? session,
+    required PendingProposal proposal,
+  }) {
+    final bridge = session?.strategy.genUiBridge ?? session?.genUiBridge;
+    final strategy = session?.strategy;
+    if (bridge == null || strategy == null) {
+      return const [];
+    }
+
+    bridge.handleToolCall({
+      'surfaceId': 'proposal-${clock.now().microsecondsSinceEpoch}',
+      'rootType': 'EvolutionProposal',
+      'data': {
+        'generalDirective': proposal.generalDirective,
+        'reportDirective': proposal.reportDirective,
+        'rationale': proposal.rationale,
+        'currentGeneralDirective': strategy.currentGeneralDirective,
+        'currentReportDirective': strategy.currentReportDirective,
+      },
+    });
+
+    return bridge
+        .drainPendingSurfaceIds()
+        .map(
+          (surfaceId) => EvolutionChatMessage.surface(
+            surfaceId: surfaceId,
+            timestamp: clock.now(),
+          ),
+        )
+        .toList(growable: false);
   }
 
   /// Approve the current proposal.
@@ -266,8 +389,13 @@ class EvolutionChatState extends _$EvolutionChatState {
     state = AsyncData(data.copyWith(isWaiting: true));
 
     try {
+      final pendingRecap = workflow.getCurrentRecap(sessionId: sessionId);
+      final recapSummary = pendingRecap?.tldr.trim().isNotEmpty ?? false
+          ? pendingRecap!.tldr.trim()
+          : pendingRecap?.content.trim();
       final newVersion = await workflow.approveProposal(
         sessionId: sessionId,
+        categoryRatings: data.categoryRatings,
       );
 
       if (newVersion == null) {
@@ -284,6 +412,11 @@ class EvolutionChatState extends _$EvolutionChatState {
           processor: () => null,
           messages: [
             ...current.messages,
+            if (_hasNonEmptyText(recapSummary))
+              EvolutionChatMessage.assistant(
+                text: recapSummary!,
+                timestamp: clock.now(),
+              ),
             EvolutionChatMessage.system(
               text: 'session_completed:${newVersion.version}',
               timestamp: clock.now(),
@@ -298,7 +431,9 @@ class EvolutionChatState extends _$EvolutionChatState {
         ..invalidate(agentTemplatesProvider)
         ..invalidate(activeTemplateVersionProvider(templateId))
         ..invalidate(templateVersionHistoryProvider(templateId))
-        ..invalidate(templatePerformanceMetricsProvider(templateId));
+        ..invalidate(templatePerformanceMetricsProvider(templateId))
+        ..invalidate(ritualSummaryMetricsProvider(templateId))
+        ..invalidate(ritualSessionHistoryProvider(templateId));
 
       return true;
     } catch (e, s) {
