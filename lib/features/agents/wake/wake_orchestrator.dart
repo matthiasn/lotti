@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// A registered interest that wakes [agentId] when tokens arrive matching
@@ -86,6 +87,7 @@ class WakeOrchestrator {
     this.onPersistedStateChanged,
     this.taskContentChecker,
     this.syncEntityWriter,
+    this.updateNotifications,
   }) {
     _throttle = _WakeThrottleCoordinator(
       repository: repository,
@@ -117,6 +119,11 @@ class WakeOrchestrator {
   /// propagate across devices (e.g. clearing the `awaitingContent` flag).
   /// When null, falls back to the raw [repository] write.
   SyncEntityWriter? syncEntityWriter;
+
+  /// Optional [UpdateNotifications] reference used to mute subscribed
+  /// entity IDs on the local stream during and after execution,
+  /// preventing stale notification echoes from re-triggering the agent.
+  final UpdateNotifications? updateNotifications;
 
   /// Optional callback fired when persisted throttle state changes for an
   /// agent (set/clear `nextWakeAt`).
@@ -253,14 +260,21 @@ class WakeOrchestrator {
   /// that arrives while the executor is running will be suppressed, closing
   /// the window between DB writes and [recordMutatedEntities].  After
   /// execution, the actual mutation set replaces this pre-registered data.
-  void _preRegisterSuppression(String agentId) {
-    final subscribedIds = <String>{};
+  Set<String> _getSubscribedEntityIds(String agentId) {
+    final ids = <String>{};
     for (final sub in _subscriptions) {
       if (sub.agentId == agentId) {
-        subscribedIds.addAll(sub.matchEntityIds);
+        ids.addAll(sub.matchEntityIds);
       }
     }
-    _suppression.preRegisterSuppression(agentId, subscribedIds);
+    return ids;
+  }
+
+  void _preRegisterSuppression(String agentId) {
+    _suppression.preRegisterSuppression(
+      agentId,
+      _getSubscribedEntityIds(agentId),
+    );
   }
 
   // ── Throttle management ────────────────────────────────────────────────────
@@ -407,11 +421,18 @@ class WakeOrchestrator {
       if (_isSuppressed(sub.agentId, matched)) {
         _log(
           'suppressed self-notification for '
-          '${DomainLogger.sanitizeId(sub.agentId)}',
+          '${DomainLogger.sanitizeId(sub.agentId)} '
+          'matched=${matched.map(DomainLogger.sanitizeId)}',
           subDomain: 'suppression',
         );
         continue;
       }
+      _log(
+        'not suppressed for ${DomainLogger.sanitizeId(sub.agentId)} '
+        'matched=${matched.map(DomainLogger.sanitizeId)} '
+        'suppression=${_suppression.debugState(sub.agentId)}',
+        subDomain: 'suppression',
+      );
 
       // 3. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
@@ -698,11 +719,18 @@ class WakeOrchestrator {
           );
           if (suppressed || preRegSuppressed) {
             _log(
-              'drain re-check: suppressed=${suppressed || preRegSuppressed} '
+              'drain re-check: dropped '
+              '(suppressed=$suppressed, preReg=$preRegSuppressed) '
               'for ${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
             runner.release(job.agentId);
+            // Cancel the deferred drain timer that _setThrottleDeadline
+            // scheduled inside _executeJob.  Without this, the timer
+            // fires after the throttle window and re-processes stale
+            // notifications whose suppression TTL has expired, creating
+            // an infinite 2-minute wake loop.
+            _throttle.cancelDeferredDrainTimer(job.agentId);
             continue;
           }
 
@@ -800,23 +828,27 @@ class WakeOrchestrator {
         // the executor returns and recordMutatedEntities is called.
         _preRegisterSuppression(job.agentId);
 
-        final mutated = await executor(
-          job.agentId,
-          job.runKey,
-          job.triggerTokens,
-          threadId,
+        // Run the executor inside an agent-execution zone so that any
+        // DB writes made by agent tools are tagged.  PersistenceLogic
+        // checks this zone value and routes notifications through
+        // notifyUiOnly instead of notify, preventing self-wake.
+        final mutated = await runZoned(
+          () => executor(
+            job.agentId,
+            job.runKey,
+            job.triggerTokens,
+            threadId,
+          ),
+          zoneValues: {agentExecutionZoneKey: true},
         );
 
-        // Clear the pre-registered suppression and record actual mutations
-        // so that only genuinely self-written entities are suppressed.
-        _suppression.clearPreRegistered(job.agentId);
-        if (mutated != null && mutated.isNotEmpty) {
-          recordMutatedEntities(job.agentId, mutated);
-        } else {
-          // No mutations this cycle — clear confirmed suppression so
-          // external edits are not incorrectly blocked.
-          _suppression.clearConfirmed(job.agentId);
-        }
+        // Merge pre-registered subscribed entity IDs with actual tool
+        // mutations into the confirmed suppression record.  Even when
+        // the executor reports zero mutations (e.g. only virtual tools
+        // like record_observations / update_report were used), the
+        // subscribed IDs must survive so the drain re-check can suppress
+        // stale notifications that arrived during execution.
+        _suppression.promotePreRegistered(job.agentId, mutated);
 
         final elapsed = clock.now().difference(startTime);
         _log(
@@ -923,6 +955,34 @@ class _WakeSuppressionTracker {
     );
   }
 
+  /// Promote pre-registered suppression into the confirmed record, merging
+  /// with actual tool-mutation entity IDs.
+  ///
+  /// Notifications that arrive during execution (from the user action that
+  /// triggered the wake, debounced into a second batch) are queued by the
+  /// during-execution gate.  After execution the drain re-check evaluates
+  /// them.  Without this merge, a wake cycle with zero tool mutations clears
+  /// suppression entirely, letting the stale notification through and
+  /// causing a 2-minute infinite loop via the throttle-deferred drain.
+  void promotePreRegistered(
+    String agentId,
+    Map<String, VectorClock>? actualMutations,
+  ) {
+    final preReg = _preRegisteredSuppression.remove(agentId);
+    final preRegIds = preReg?.entityIds ?? const <String>{};
+    final mutationIds = actualMutations?.keys.toSet() ?? const <String>{};
+
+    final merged = {...preRegIds, ...mutationIds};
+    if (merged.isNotEmpty) {
+      _recentlyMutatedEntries[agentId] = _MutationRecord(
+        entityIds: merged,
+        recordedAt: clock.now(),
+      );
+    } else {
+      _recentlyMutatedEntries.remove(agentId);
+    }
+  }
+
   bool isSuppressed(String agentId, Set<String> matchedTokens) {
     final record = _recentlyMutatedEntries[agentId];
     if (record == null || record.entityIds.isEmpty) return false;
@@ -940,6 +1000,21 @@ class _WakeSuppressionTracker {
     final record = _preRegisteredSuppression[agentId];
     if (record == null || record.entityIds.isEmpty) return false;
     return matchedTokens.every(record.entityIds.contains);
+  }
+
+  /// Debug representation of the suppression state for [agentId].
+  String debugState(String agentId) {
+    final confirmed = _recentlyMutatedEntries[agentId];
+    final preReg = _preRegisteredSuppression[agentId];
+    final confirmedAge = confirmed != null
+        ? '${clock.now().difference(confirmed.recordedAt).inMilliseconds}ms ago'
+        : 'none';
+    final confirmedIds =
+        confirmed?.entityIds.map(DomainLogger.sanitizeId).join(',') ?? '∅';
+    final preRegIds =
+        preReg?.entityIds.map(DomainLogger.sanitizeId).join(',') ?? '∅';
+    return 'confirmed=[$confirmedIds]($confirmedAge) '
+        'preReg=[$preRegIds]';
   }
 }
 
@@ -1033,6 +1108,26 @@ class _WakeThrottleCoordinator {
     if (deadline.isBefore(clock.now())) return;
     _throttleDeadlines[agentId] = deadline;
     _scheduleDeferredDrain(agentId, deadline);
+  }
+
+  /// Cancel only the deferred drain timer without clearing the throttle.
+  ///
+  /// Used when the drain re-check suppresses all queued jobs for an agent:
+  /// the timer is no longer needed but the throttle cooldown must remain
+  /// so that the next legitimate notification is properly deferred.
+  void cancelDeferredDrainTimer(String agentId) {
+    final timer = _deferredDrainTimers.remove(agentId);
+    if (timer != null) {
+      timer.cancel();
+      _log(
+        'deferred drain timer cancelled (suppressed) '
+        'for ${DomainLogger.sanitizeId(agentId)}',
+        subDomain: 'timer',
+      );
+      // Clear persisted nextWakeAt so the UI stops showing a countdown
+      // for a wake that will never fire.
+      unawaited(_clearPersistedThrottle(agentId));
+    }
   }
 
   void clearThrottle(String agentId) {

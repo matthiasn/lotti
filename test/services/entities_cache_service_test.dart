@@ -17,6 +17,9 @@ class TestNotifications implements UpdateNotifications {
   final _controller = StreamController<Set<String>>.broadcast(sync: true);
 
   @override
+  final debugEntityIds = <String>{};
+
+  @override
   Stream<Set<String>> get updateStream => _controller.stream;
 
   @override
@@ -35,6 +38,12 @@ class TestNotifications implements UpdateNotifications {
   void notifyUiOnly(Set<String> affectedIds) {
     emit(affectedIds);
   }
+
+  @override
+  void muteLocally(Set<String> entityIds) {}
+
+  @override
+  void unmuteLocally(Set<String> entityIds) {}
 
   @override
   Future<void> dispose() async {

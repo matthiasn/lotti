@@ -703,12 +703,20 @@ class PersistenceLogic {
           .parentLinkedEntityIds(journalEntity.id)
           .get();
 
-      _updateNotifications.notify({
+      // When running inside an agent execution zone, route the
+      // notification through notifyUiOnly so the wake orchestrator
+      // does not re-trigger the agent on its own writes.
+      final ids = {
         ...journalEntity.affectedIds,
         ?linkedId,
         ...parentIds,
         labelUsageNotification,
-      });
+      };
+      if (isAgentExecution) {
+        _updateNotifications.notifyUiOnly(ids);
+      } else {
+        _updateNotifications.notify(ids);
+      }
 
       await getIt<Fts5Db>().insertText(
         journalEntity,

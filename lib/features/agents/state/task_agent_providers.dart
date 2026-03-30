@@ -14,6 +14,8 @@ TaskAgentService taskAgentService(Ref ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    // TODO(debug): remove after wake-loop investigation
+    updateNotifications: ref.watch(maybeUpdateNotificationsProvider),
   );
 }
 

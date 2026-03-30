@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 class UpdateNotifications {
   UpdateNotifications();
@@ -13,6 +14,13 @@ class UpdateNotifications {
   Timer? _uiOnlyTimer;
   bool _isDisposed = false;
 
+  /// Entity IDs muted on [localUpdateStream].  Notifications containing
+  /// these IDs still reach [updateStream] (UI refresh) but are stripped
+  /// from [localUpdateStream] (agent wake orchestration).
+  ///
+  /// Use [muteLocally] / [unmuteLocally] to manage.
+  final _mutedEntityIds = <String>{};
+
   /// Stream of all update notifications (both local and sync-originated).
   ///
   /// Used by UI widgets and other consumers that need to react to all changes.
@@ -24,8 +32,23 @@ class UpdateNotifications {
   /// trigger agent wakes — the source device already ran the agent.
   Stream<Set<String>> get localUpdateStream => _localController.stream;
 
+  // TODO(debug): remove after wake-loop investigation.
+  // Entity IDs to trace — any local notify() containing one of these
+  // will log the caller's stack trace.
+  final debugEntityIds = <String>{};
+
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (_isDisposed) return;
+
+    if (!fromSync && debugEntityIds.isNotEmpty) {
+      final hit = affectedIds.intersection(debugEntityIds);
+      if (hit.isNotEmpty) {
+        developer.log(
+          'notify(local) hit=$hit — caller:\n${StackTrace.current}',
+          name: 'UpdateNotifications.DEBUG',
+        );
+      }
+    }
 
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);
@@ -43,7 +66,15 @@ class UpdateNotifications {
         if (_affectedIds.isNotEmpty) {
           final batch = {..._affectedIds};
           _controller.add(batch);
-          _localController.add(batch);
+          // Strip muted entity IDs from the local stream so the agent
+          // orchestrator does not wake on its own (or stale echo)
+          // notifications.
+          final localBatch = _mutedEntityIds.isEmpty
+              ? batch
+              : batch.difference(_mutedEntityIds);
+          if (localBatch.isNotEmpty) {
+            _localController.add(localBatch);
+          }
           _affectedIds.clear();
         }
         _timer = null;
@@ -67,6 +98,20 @@ class UpdateNotifications {
       }
       _uiOnlyTimer = null;
     });
+  }
+
+  /// Mute [entityIds] on [localUpdateStream].
+  ///
+  /// While muted, local `notify()` calls that include these IDs still
+  /// reach [updateStream] (so the UI refreshes) but are stripped from
+  /// [localUpdateStream] (so the wake orchestrator ignores them).
+  void muteLocally(Set<String> entityIds) {
+    _mutedEntityIds.addAll(entityIds);
+  }
+
+  /// Remove [entityIds] from the local-stream mute set.
+  void unmuteLocally(Set<String> entityIds) {
+    _mutedEntityIds.removeAll(entityIds);
   }
 
   Future<void> dispose() async {
@@ -107,6 +152,18 @@ const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+
+/// Zone key set to `true` during agent wake execution.
+///
+/// Code running inside this zone (e.g. tool handlers writing to the
+/// journal DB) should route notifications through `notifyUiOnly` instead
+/// of `notify` to prevent the wake orchestrator from re-triggering the
+/// agent on its own writes.
+const agentExecutionZoneKey = #agentExecution;
+
+/// Returns `true` when the current code is executing inside an agent
+/// wake cycle.
+bool get isAgentExecution => Zone.current[agentExecutionZoneKey] == true;
 
 const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
 

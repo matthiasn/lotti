@@ -1134,79 +1134,96 @@ void main() {
         });
       });
 
-      test('external signal for different entity during execution '
-          'triggers a second wake after throttle expires', () {
-        fakeAsync((async) {
-          final gate = Completer<Map<String, VectorClock>?>();
-          var executionCount = 0;
+      test(
+        'external signal for different entity during execution '
+        'is suppressed within 5s TTL but triggers wake after TTL expires',
+        () {
+          fakeAsync((async) {
+            final gate = Completer<Map<String, VectorClock>?>();
+            var executionCount = 0;
 
-          orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
+            orchestrator
+              ..addSubscription(
+                AgentSubscription(
+                  id: 'sub-1',
+                  agentId: 'agent-1',
+                  matchEntityIds: {'entity-1', 'entity-2'},
+                ),
+              )
+              ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+                executionCount++;
+                if (executionCount == 1) return gate.future;
+                return Future.value();
+              };
+
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer((_) async => null);
+
+            // Start execution via direct enqueue (bypasses _onBatch deferral).
+            queue.enqueue(
+              WakeJob(
+                runKey: 'rk-1',
                 agentId: 'agent-1',
-                matchEntityIds: {'entity-1', 'entity-2'},
+                reason: 'subscription',
+                triggerTokens: {'entity-1'},
+                createdAt: DateTime(2024, 3, 15),
               ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
-              executionCount++;
-              if (executionCount == 1) return gate.future;
-              return Future.value();
-            };
+            );
+            orchestrator.processNext();
+            async.flushMicrotasks();
+            expect(executionCount, 1);
 
-          when(
-            () => mockRepository.getAgentState('agent-1'),
-          ).thenAnswer((_) async => null);
+            // While executing, an external change to entity-2 arrives.
+            // Since _onBatch sets throttle on first non-throttled match,
+            // this will enqueue and set throttle + deferred drain.
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+            emitTokens(async, controller, {'entity-2'});
 
-          // Start execution via direct enqueue (bypasses _onBatch deferral).
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'entity-1'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
-          orchestrator.processNext();
-          async.flushMicrotasks();
-          expect(executionCount, 1);
+            // The signal should be queued.
+            expect(queue.isEmpty, isFalse);
 
-          // While executing, an external change to entity-2 arrives.
-          // Since _onBatch sets throttle on first non-throttled match,
-          // this will enqueue and set throttle + deferred drain.
-          final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-2'});
+            // Complete first execution — only entity-1 was mutated.
+            // promotePreRegistered merges ALL subscribed IDs (entity-1 AND
+            // entity-2) into the confirmed suppression record with 5s TTL.
+            gate.complete({
+              'entity-1': const VectorClock({'node-1': 1}),
+            });
+            async.flushMicrotasks();
 
-          // The signal should be queued.
-          expect(queue.isEmpty, isFalse);
+            // Only the first wake should have run so far.
+            expect(executionCount, 1);
 
-          // Complete first execution — only entity-1 was mutated.
-          gate.complete({
-            'entity-1': const VectorClock({'node-1': 1}),
+            // After the throttle window expires, the deferred drain fires
+            // but entity-2 is still suppressed (within 5s TTL).
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+            expect(executionCount, 1);
+
+            // Advance past the 5s suppression TTL (total elapsed now > 5s
+            // from when promotePreRegistered was called).
+            async.elapse(const Duration(seconds: 6));
+
+            // Clear throttle so a new notification can proceed.
+            orchestrator.clearThrottle('agent-1');
+
+            // Now a new entity-2 notification should NOT be suppressed.
+            emitAndDrain(async, controller, {'entity-2'});
+            expect(executionCount, 2);
+
+            controller.close();
           });
-          async.flushMicrotasks();
+        },
+      );
 
-          // Only the first wake should have run so far.
-          expect(executionCount, 1);
-
-          // After the throttle window expires, the deferred drain fires
-          // and picks up the entity-2 job.
-          async
-            ..elapse(WakeOrchestrator.throttleWindow)
-            ..flushMicrotasks();
-
-          expect(executionCount, 2);
-
-          controller.close();
-        });
-      });
-
-      test('replaces pre-registered suppression with actual mutations '
-          'so external changes are not blocked', () {
+      test('promotePreRegistered suppresses all subscribed IDs within TTL '
+          'but allows them after TTL expires', () {
         fakeAsync((async) {
           // Executor mutates entity-1 but not entity-2.
+          // promotePreRegistered merges ALL subscribed IDs (entity-1 AND
+          // entity-2) into the confirmed suppression record with 5s TTL.
           orchestrator
             ..addSubscription(
               AgentSubscription(
@@ -1252,13 +1269,23 @@ void main() {
           // second notification is not blocked by the cooldown.
           orchestrator.clearThrottle('agent-1');
 
-          // Now a notification arrives for entity-2 only (external change).
-          // It should NOT be suppressed because only entity-1 is in the
-          // actual mutation record.
+          // Within the 5s TTL, entity-2 is suppressed because
+          // promotePreRegistered merged all subscribed IDs.
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitAndDrain(async, controller, {'entity-2'});
+          emitTokens(async, controller, {'entity-2'});
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
 
+          // Advance past the 5s suppression TTL.
+          async.elapse(const Duration(seconds: 6));
+
+          // Clear throttle again (the suppressed notification set one).
+          orchestrator.clearThrottle('agent-1');
+
+          // Now a notification for entity-2 should NOT be suppressed.
+          emitAndDrain(async, controller, {'entity-2'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).called(1);
@@ -1713,6 +1740,10 @@ void main() {
           // Defer-first: first notification enqueues + defers; drain executes.
           emitAndDrain(async, controller, {'entity-1'});
 
+          // Advance past the 5s suppression TTL so the second notification
+          // is not suppressed by promotePreRegistered.
+          async.elapse(const Duration(seconds: 6));
+
           // Clear throttle so the second notification is not blocked.
           orchestrator.clearThrottle('agent-1');
 
@@ -1759,6 +1790,9 @@ void main() {
 
           // Fire twice to increment counter to 1 (defer-first: drain each).
           emitAndDrain(async, controller, {'entity-1'});
+          // Advance past the 5s suppression TTL so the second notification
+          // is not suppressed by promotePreRegistered.
+          async.elapse(const Duration(seconds: 6));
           orchestrator.clearThrottle('agent-1');
           emitAndDrain(async, controller, {'entity-1'});
           expect(capturedEntries.length, equals(2));
@@ -1813,6 +1847,10 @@ void main() {
           // First wake: defer-first enqueues + defers; drain executes.
           emitAndDrain(async, controller, {'entity-1'});
           expect(executionCount, 1);
+
+          // Advance past the 5s suppression TTL so the next notification
+          // for entity-1 is not suppressed by promotePreRegistered.
+          async.elapse(const Duration(seconds: 6));
 
           // Agent is now throttled (post-execution throttle). An external
           // notification arrives — no queued job to merge into, so a new
@@ -2093,7 +2131,12 @@ void main() {
               reason: 'creation',
               triggerTokens: {'task-1'},
             );
-          async.flushMicrotasks();
+          async
+            ..flushMicrotasks()
+            // Advance past the 5s suppression TTL so the subscription
+            // notification is not suppressed by promotePreRegistered
+            // (which merges all subscribed IDs after the creation wake).
+            ..elapse(const Duration(seconds: 6));
 
           // Subscription notification should still proceed (not throttled by
           // the creation wake). It will be deferred by the initial throttle.
@@ -2555,6 +2598,10 @@ void main() {
               () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
             ).called(1);
 
+            // Advance past the 5s suppression TTL so the next entity-1
+            // notification is not suppressed by promotePreRegistered.
+            async.elapse(const Duration(seconds: 6));
+
             // Make getAgentState throw so clearThrottle's DB write fails.
             when(
               () => mockRepository.getAgentState('agent-1'),
@@ -2670,6 +2717,10 @@ void main() {
               ),
             ).captured.cast<WakeRunLogData>();
             expect(firstBatch.length, 2);
+
+            // Advance past the 5s suppression TTL so subsequent
+            // notifications are not suppressed by promotePreRegistered.
+            async.elapse(const Duration(seconds: 6));
 
             clearInteractions(mockRepository);
             when(
