@@ -19,7 +19,10 @@ void main() {
       final location = CalendarLocation(
         RouteInformation(uri: Uri.parse('/calendar')),
       );
-      expect(location.pathPatterns, ['/calendar']);
+      expect(location.pathPatterns, [
+        '/calendar',
+        '/calendar/set-time-blocks',
+      ]);
     });
 
     test('buildPages builds DailyOsPage with default values', () {
