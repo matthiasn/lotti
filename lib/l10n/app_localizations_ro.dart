@@ -4569,6 +4569,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizualizați și gestionați elementele care așteaptă sincronizarea';
 
   @override
+  String get settingsAdvancedSubtitle => 'Setări avansate și întreținere';
+
+  @override
   String get settingsAdvancedTitle => 'Setari Avansate';
 
   @override
@@ -4576,6 +4579,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAiModels => 'Modele AI';
+
+  @override
+  String get settingsAiSubtitle =>
+      'Configurați furnizorii AI, modelele și prompturile';
+
+  @override
+  String get settingsAiTitle => 'Setări AI';
 
   @override
   String get settingsCategoriesAddTooltip => 'Adaugă categorie';
@@ -4610,6 +4620,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesNameLabel => 'Numele categoriei:';
 
   @override
+  String get settingsCategoriesSubtitle => 'Categorii cu setări AI';
+
+  @override
   String settingsCategoriesTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4638,7 +4651,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Salvează';
 
   @override
+  String get settingsDashboardsSubtitle =>
+      'Personalizați vizualizările tabloului de bord';
+
+  @override
   String get settingsDashboardsTitle => 'Panouri de bord';
+
+  @override
+  String get settingsFlagsSubtitle => 'Configurați indicatoarele și opțiunile';
 
   @override
   String get settingsFlagsTitle => 'Marcaje';
@@ -4660,6 +4680,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Salvează';
+
+  @override
+  String get settingsHabitsSubtitle =>
+      'Gestionați obiceiurile și rutinele dvs.';
 
   @override
   String get settingsHabitsTitle => 'Obiceiuri';
@@ -5030,6 +5054,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Salvare';
 
   @override
+  String get settingsMeasurablesSubtitle =>
+      'Configurați tipurile de date măsurabile';
+
+  @override
   String get settingsMeasurablesTitle => 'Măsurători';
 
   @override
@@ -5110,6 +5138,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsThemingLight => 'Aspect luminos';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'Personalizați aspectul și temele aplicației';
 
   @override
   String get settingsThemingTitle => 'Tematică';

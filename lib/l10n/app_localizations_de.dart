@@ -4548,6 +4548,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Elemente anzeigen und verwalten, die auf Synchronisierung warten';
 
   @override
+  String get settingsAdvancedSubtitle => 'Erweiterte Einstellungen und Wartung';
+
+  @override
   String get settingsAdvancedTitle => 'Erweiterte Einstellungen';
 
   @override
@@ -4555,6 +4558,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAiModels => 'AI-Modelle';
+
+  @override
+  String get settingsAiSubtitle =>
+      'AI-Anbieter, Modelle und Prompts konfigurieren';
+
+  @override
+  String get settingsAiTitle => 'AI-Einstellungen';
 
   @override
   String get settingsCategoriesAddTooltip => 'Kategorie hinzufügen';
@@ -4589,6 +4599,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesNameLabel => 'Kategoriename:';
 
   @override
+  String get settingsCategoriesSubtitle => 'Kategorien mit AI-Einstellungen';
+
+  @override
   String settingsCategoriesTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4616,7 +4629,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Speichern';
 
   @override
+  String get settingsDashboardsSubtitle => 'Deine Dashboard-Ansichten anpassen';
+
+  @override
   String get settingsDashboardsTitle => 'Dashboards';
+
+  @override
+  String get settingsFlagsSubtitle =>
+      'Feature-Flags und Optionen konfigurieren';
 
   @override
   String get settingsFlagsTitle => 'Konfigurationsflags';
@@ -4638,6 +4658,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsHabitsSaveLabel => 'Speichern';
+
+  @override
+  String get settingsHabitsSubtitle =>
+      'Deine Gewohnheiten und Routinen verwalten';
 
   @override
   String get settingsHabitsTitle => 'Gewohnheiten';
@@ -5006,6 +5030,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Speichern';
 
   @override
+  String get settingsMeasurablesSubtitle => 'Messbare Datentypen konfigurieren';
+
+  @override
   String get settingsMeasurablesTitle => 'Messgrößen';
 
   @override
@@ -5085,6 +5112,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsThemingLight => 'Helles Erscheinungsbild';
+
+  @override
+  String get settingsThemingSubtitle =>
+      'App-Erscheinungsbild und Themes anpassen';
 
   @override
   String get settingsThemingTitle => 'Farbschema';
