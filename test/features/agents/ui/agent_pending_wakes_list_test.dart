@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,19 +31,28 @@ void main() {
     required List<PendingWakeRecord> records,
     AgentService? agentService,
     Map<String, String?> subjectTitles = const {},
+    bool withScaffold = true,
   }) {
-    return makeTestableWidgetWithScaffold(
-      const AgentPendingWakesList(),
-      theme: DesignSystemTheme.light(),
-      overrides: [
-        pendingWakeRecordsProvider.overrideWith((ref) async => records),
-        pendingWakeTargetTitleProvider.overrideWith(
-          (ref, String? entryId) async => subjectTitles[entryId],
-        ),
-        if (agentService != null)
-          agentServiceProvider.overrideWith((ref) => agentService),
-      ],
-    );
+    final overrides = [
+      pendingWakeRecordsProvider.overrideWith((ref) async => records),
+      pendingWakeTargetTitleProvider.overrideWith(
+        (ref, String? entryId) async => subjectTitles[entryId],
+      ),
+      if (agentService != null)
+        agentServiceProvider.overrideWith((ref) => agentService),
+    ];
+
+    return withScaffold
+        ? makeTestableWidgetWithScaffold(
+            const AgentPendingWakesList(),
+            theme: DesignSystemTheme.light(),
+            overrides: overrides,
+          )
+        : makeTestableWidgetNoScroll(
+            const AgentPendingWakesList(),
+            theme: DesignSystemTheme.light(),
+            overrides: overrides,
+          );
   }
 
   group('AgentPendingWakesList', () {
@@ -56,6 +67,49 @@ void main() {
         find.text(context.messages.agentPendingWakesEmptyList),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows a loading indicator while wakes are loading', (
+      tester,
+    ) async {
+      final completer = Completer<List<PendingWakeRecord>>();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentPendingWakesList(),
+          theme: DesignSystemTheme.light(),
+          overrides: [
+            pendingWakeRecordsProvider.overrideWith((ref) => completer.future),
+          ],
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      completer.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('shows an error message when pending wakes fail to load', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentPendingWakesList(),
+          theme: DesignSystemTheme.light(),
+          overrides: [
+            pendingWakeRecordsProvider.overrideWith(
+              (ref) => Future<List<PendingWakeRecord>>.error(
+                StateError('boom'),
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentPendingWakesList));
+      expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
     testWidgets('renders wake cards with local countdown updates', (
@@ -189,6 +243,29 @@ void main() {
       expect(find.text('Task Agent'), findsNWidgets(2));
     });
 
+    testWidgets('shows the raw kind label for unknown agent kinds', (
+      tester,
+    ) async {
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-1',
+          kind: 'custom_kind',
+          displayName: 'Custom Agent',
+        ),
+        state: makeTestState(
+          agentId: 'agent-1',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 5)),
+      );
+
+      await tester.pumpWidget(buildSubject(records: [record]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('custom_kind'), findsOneWidget);
+    });
+
     testWidgets('shows zero countdown when the wake is already overdue', (
       tester,
     ) async {
@@ -308,6 +385,42 @@ void main() {
 
       final context = tester.element(find.byType(AgentPendingWakesList));
       expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('delete failure without a scaffold does not throw', (
+      tester,
+    ) async {
+      final mockAgentService = MockAgentService();
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-2',
+          displayName: 'Loop Guard',
+        ),
+        state: makeTestState(
+          agentId: 'agent-2',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 5)),
+      );
+
+      when(
+        () => mockAgentService.cancelPendingWake('agent-2'),
+      ).thenThrow(Exception('boom'));
+
+      await tester.pumpWidget(
+        buildSubject(
+          records: [record],
+          agentService: mockAgentService,
+          withScaffold: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }

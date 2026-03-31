@@ -150,6 +150,45 @@ void main() {
     },
   );
 
+  test(
+    'omits agents whose states have no pending or scheduled wakes',
+    () async {
+      final mockAgentService = MockAgentService();
+      final mockRepository = MockAgentRepository();
+      final notifications = UpdateNotifications();
+      final identity = makeTestIdentity(
+        agentId: 'agent-a',
+        displayName: 'Idle Agent',
+      );
+      final state = makeTestState(
+        agentId: 'agent-a',
+      );
+
+      when(
+        mockAgentService.listAgents,
+      ).thenAnswer((_) => Future.value([identity]));
+      when(
+        () => mockRepository.getAgentStatesByAgentIds(any()),
+      ).thenAnswer((_) async => {'agent-a': state});
+
+      final container = ProviderContainer(
+        overrides: [
+          agentServiceProvider.overrideWithValue(mockAgentService),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
+
+      final records = await container.read(pendingWakeRecordsProvider.future);
+
+      expect(records, isEmpty);
+    },
+  );
+
   group('pendingWakeTargetTitleProvider', () {
     late MockJournalDb mockJournalDb;
 
@@ -230,5 +269,23 @@ void main() {
         isNull,
       );
     });
+
+    test(
+      'returns null when no journal entity exists for the entry ID',
+      () async {
+        when(() => mockJournalDb.journalEntityById('missing')).thenAnswer(
+          (_) async => null,
+        );
+
+        final container = createContainer();
+
+        expect(
+          await container.read(
+            pendingWakeTargetTitleProvider('missing').future,
+          ),
+          isNull,
+        );
+      },
+    );
   });
 }

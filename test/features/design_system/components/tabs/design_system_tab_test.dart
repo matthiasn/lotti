@@ -374,6 +374,34 @@ void main() {
       expect(decoratedWidth, greaterThan(textOnlyWidth));
     });
 
+    testWidgets('preferredWidth expands once the counter exceeds two digits', (
+      tester,
+    ) async {
+      late double twoDigitCounterWidth;
+      late double threeDigitCounterWidth;
+
+      await _pumpTab(
+        tester,
+        Builder(
+          builder: (context) {
+            twoDigitCounterWidth = DesignSystemTab.preferredWidth(
+              context,
+              label: 'Pending',
+              counter: '10',
+            );
+            threeDigitCounterWidth = DesignSystemTab.preferredWidth(
+              context,
+              label: 'Pending',
+              counter: '100',
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      expect(threeDigitCounterWidth, greaterThan(twoDigitCounterWidth));
+    });
+
     testWidgets('uses semanticsLabel when the visible label is omitted', (
       tester,
     ) async {

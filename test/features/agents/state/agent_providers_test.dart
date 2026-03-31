@@ -26,6 +26,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -56,6 +57,7 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_utils.dart';
+import '../workflow/task_agent_workflow_test.dart';
 
 void main() {
   setUpAll(() {
@@ -2636,6 +2638,12 @@ void main() {
       expect(service, isA<AgentService>());
       expect(service.repository, same(mockRepo));
       expect(service.orchestrator, same(mockOrchestrator));
+
+      service.onPersistedStateChanged?.call('agent-1');
+
+      verify(
+        () => mockNotifications.notifyUiOnly({'agent-1', agentNotification}),
+      ).called(1);
     });
   });
 
@@ -2719,6 +2727,58 @@ void main() {
 
       final service = container.read(improverAgentServiceProvider);
       expect(service, isA<ImproverAgentService>());
+
+      service.onPersistedStateChanged?.call('agent-2');
+
+      verify(
+        () => mockNotifications.notifyUiOnly({'agent-2', agentNotification}),
+      ).called(1);
+    });
+  });
+
+  group('projectAgentWorkflowProvider', () {
+    test('resolves dependencies and wires persisted-state notifications', () {
+      final mockRepo = MockAgentRepository();
+      final mockSync = MockAgentSyncService();
+      final mockOutbox = MockOutboxService();
+      final mockConversationRepository = MockConversationRepository(
+        MockConversationManager(),
+      );
+      final mockAiConfig = MockAiConfigRepository();
+      final mockCloudInference = MockCloudInferenceRepository();
+      final mockJournalRepository = MockJournalRepository();
+      final mockTemplateService = MockAgentTemplateService();
+      final mockNotifications = MockUpdateNotifications();
+      final domainLogger = DomainLogger(loggingService: LoggingService());
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSync),
+          outboxServiceProvider.overrideWithValue(mockOutbox),
+          conversationRepositoryProvider.overrideWith(
+            () => mockConversationRepository,
+          ),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfig),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            mockCloudInference,
+          ),
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
+          domainLoggerProvider.overrideWithValue(domainLogger),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final workflow = container.read(projectAgentWorkflowProvider);
+      expect(workflow, isA<ProjectAgentWorkflow>());
+
+      workflow.onPersistedStateChanged?.call('agent-3');
+
+      verify(
+        () => mockNotifications.notifyUiOnly({'agent-3', agentNotification}),
+      ).called(1);
     });
   });
 
