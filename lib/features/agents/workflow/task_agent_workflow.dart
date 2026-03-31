@@ -408,6 +408,7 @@ class TaskAgentWorkflow {
       final tools = _buildToolDefinitions();
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
+        isReasoningModel: true,
       );
 
       // Record template provenance and the resolved model on the wake run

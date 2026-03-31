@@ -43,7 +43,7 @@ class MistralInferenceRepository {
   ///
   /// Args:
   ///   prompt: The text prompt to send
-  ///   model: The model identifier (e.g., 'mistral-small-2501')
+  ///   model: The model identifier (e.g., 'mistral-small-2603')
   ///   baseUrl: The base URL for the API
   ///   apiKey: The API key for authentication
   ///   systemMessage: Optional system message for context
@@ -62,6 +62,8 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    bool isReasoningModel = false,
+    bool stream = false,
   }) async* {
     yield* _generate(
       messages: [
@@ -74,6 +76,8 @@ class MistralInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      isReasoningModel: isReasoningModel,
+      stream: stream,
     );
   }
 
@@ -88,6 +92,8 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    bool isReasoningModel = false,
+    bool stream = false,
   }) async* {
     yield* _generate(
       messages: _convertMessages(messages),
@@ -97,6 +103,8 @@ class MistralInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      isReasoningModel: isReasoningModel,
+      stream: stream,
     );
   }
 
@@ -201,7 +209,11 @@ class MistralInferenceRepository {
     }).toList();
   }
 
-  /// Internal method to generate text with streaming.
+  /// Internal method to call the Mistral chat completions API.
+  ///
+  /// When [stream] is `false` (default), makes a single request and yields
+  /// one response — no SSE overhead. When `true`, uses SSE streaming with
+  /// thinking-content accumulation across chunks.
   Stream<CreateChatCompletionStreamResponse> _generate({
     required List<Map<String, dynamic>> messages,
     required String model,
@@ -210,16 +222,19 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    bool isReasoningModel = false,
+    bool stream = false,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
       'messages': messages,
-      'stream': true,
+      'stream': stream,
       'temperature': ?temperature,
       'max_tokens': ?maxCompletionTokens,
+      if (isReasoningModel) 'reasoning_effort': 'high',
     };
 
-    // Add tools if provided
+    // Add tools if provided, with tool-use reinforcement
     if (tools != null && tools.isNotEmpty) {
       requestBody['tools'] = tools.map((tool) {
         return {
@@ -233,17 +248,28 @@ class MistralInferenceRepository {
         };
       }).toList();
       requestBody['tool_choice'] = 'auto';
+
+      // Inject tool-use reinforcement into the message list.
+      // Mistral Small 4 tends to under-use tools compared to other models;
+      // a light nudge ensures the model acts via tools when warranted rather
+      // than just describing what it would do.
+      messages.add({
+        'role': 'system',
+        'content':
+            'Tool-use reminder: when the context calls for a change '
+            '(e.g. adding checklist items, updating metadata), call the '
+            'appropriate tool rather than just describing the change in text.',
+      });
     }
 
     developer.log(
-      'Sending streaming request to Mistral API - '
-      'baseUrl: $baseUrl, model: $model, '
+      'Sending ${stream ? 'streaming' : 'non-streaming'} request to '
+      'Mistral API - baseUrl: $baseUrl, model: $model, '
       'tools: ${tools?.length ?? 0}',
       name: 'MistralInferenceRepository',
     );
 
     try {
-      // Ensure proper URL construction - append path to baseUrl
       final baseUri = Uri.parse(baseUrl);
       final uri = baseUri.replace(
         path:
@@ -251,8 +277,10 @@ class MistralInferenceRepository {
       );
       final request = http.Request('POST', uri);
       request.headers['Content-Type'] = 'application/json';
-      request.headers['Accept'] = 'text/event-stream';
       request.headers['Authorization'] = 'Bearer $apiKey';
+      if (stream) {
+        request.headers['Accept'] = 'text/event-stream';
+      }
       request.body = jsonEncode(requestBody);
 
       final streamedResponse = await _httpClient.send(request);
@@ -269,22 +297,35 @@ class MistralInferenceRepository {
         );
       }
 
+      if (!stream) {
+        // Non-streaming: read full response body and parse once
+        final body = await streamedResponse.stream.bytesToString();
+        final json = jsonDecode(body) as Map<String, dynamic>;
+        final response = _parseNonStreamResponse(json);
+        if (response != null) {
+          yield response;
+        }
+        return;
+      }
+
+      // Streaming path — SSE parsing with thinking accumulation
       var chunksReceived = 0;
       var parseErrorCount = 0;
       const maxParseErrors = 5;
       var buffer = StringBuffer();
 
+      var inThinking = false;
+      final thinkingBuffer = StringBuffer();
+      String? streamId;
+      int? streamCreated;
+
       await for (final chunk in streamedResponse.stream.transform(
         utf8.decoder,
       )) {
-        // Append chunk to buffer and process complete lines
         buffer.write(chunk);
         final bufferContent = buffer.toString();
-
-        // Find complete lines (SSE format: "data: {...}\n\n")
         final lines = bufferContent.split('\n');
 
-        // Keep the last incomplete line in the buffer
         buffer = StringBuffer();
         if (!bufferContent.endsWith('\n')) {
           buffer.write(lines.removeLast());
@@ -297,8 +338,16 @@ class MistralInferenceRepository {
           if (trimmedLine.startsWith('data: ')) {
             final data = trimmedLine.substring(6).trim();
 
-            // Check for stream end
             if (data == '[DONE]') {
+              if (inThinking && thinkingBuffer.isNotEmpty) {
+                chunksReceived++;
+                yield _createThinkingChunkResponse(
+                  thinking: thinkingBuffer.toString(),
+                  id: streamId,
+                  created: streamCreated,
+                  model: model,
+                );
+              }
               developer.log(
                 'Streaming complete - received $chunksReceived chunks',
                 name: 'MistralInferenceRepository',
@@ -308,6 +357,28 @@ class MistralInferenceRepository {
 
             try {
               final json = jsonDecode(data) as Map<String, dynamic>;
+              streamId ??= json['id'] as String?;
+              streamCreated ??= json['created'] as int?;
+
+              final thinkingText = _extractThinkingFromJson(json);
+              if (thinkingText != null) {
+                thinkingBuffer.write(thinkingText);
+                inThinking = true;
+                continue;
+              }
+
+              if (inThinking && thinkingBuffer.isNotEmpty) {
+                chunksReceived++;
+                yield _createThinkingChunkResponse(
+                  thinking: thinkingBuffer.toString(),
+                  id: streamId,
+                  created: streamCreated,
+                  model: model,
+                );
+                thinkingBuffer.clear();
+                inThinking = false;
+              }
+
               final response = _parseStreamResponse(json);
               if (response != null) {
                 chunksReceived++;
@@ -330,7 +401,6 @@ class MistralInferenceRepository {
                   originalError: e,
                 );
               }
-              // Continue processing other chunks
             }
           }
         }
@@ -349,6 +419,99 @@ class MistralInferenceRepository {
         originalError: e,
       );
     }
+  }
+
+  /// Parse a non-streaming (complete) response from Mistral's API.
+  ///
+  /// The response uses `message` instead of `delta`. Content may be an array
+  /// of ContentChunks including ThinkChunks. Thinking content is extracted
+  /// and wrapped in `<think>` tags.
+  CreateChatCompletionStreamResponse? _parseNonStreamResponse(
+    Map<String, dynamic> json,
+  ) {
+    final choices = json['choices'] as List<dynamic>?;
+    if (choices == null || choices.isEmpty) return null;
+
+    final parsedChoices = <ChatCompletionStreamResponseChoice>[];
+
+    for (final choice in choices) {
+      final choiceMap = choice as Map<String, dynamic>;
+      final message = choiceMap['message'] as Map<String, dynamic>?;
+      if (message == null) continue;
+
+      // Extract thinking and text content separately
+      final rawContent = message['content'];
+      final thinkingText = _extractThinkingFromContent(rawContent);
+      final textContent = _extractContent(rawContent);
+
+      // Build final content: thinking (if any) + text
+      final contentBuffer = StringBuffer();
+      if (thinkingText != null && thinkingText.isNotEmpty) {
+        contentBuffer.write('<think>\n$thinkingText\n</think>\n');
+      }
+      if (textContent != null) {
+        contentBuffer.write(textContent);
+      }
+      final finalContent = contentBuffer.isEmpty
+          ? null
+          : contentBuffer.toString();
+
+      final toolCalls = _parseToolCalls(message['tool_calls']);
+
+      final roleStr = message['role'] as String?;
+      ChatCompletionMessageRole? role;
+      if (roleStr != null) {
+        role = ChatCompletionMessageRole.values.firstWhere(
+          (r) => r.name == roleStr,
+          orElse: () => ChatCompletionMessageRole.assistant,
+        );
+      }
+
+      final finishReasonStr = choiceMap['finish_reason'] as String?;
+      ChatCompletionFinishReason? finishReason;
+      if (finishReasonStr != null) {
+        final camelCaseReason = _snakeToCamel(finishReasonStr);
+        finishReason = ChatCompletionFinishReason.values.firstWhere(
+          (r) => r.name == camelCaseReason,
+          orElse: () => ChatCompletionFinishReason.stop,
+        );
+      }
+
+      parsedChoices.add(
+        ChatCompletionStreamResponseChoice(
+          delta: ChatCompletionStreamResponseDelta(
+            content: finalContent,
+            role: role,
+            toolCalls: toolCalls,
+          ),
+          index: choiceMap['index'] as int? ?? 0,
+          finishReason: finishReason,
+        ),
+      );
+    }
+
+    if (parsedChoices.isEmpty) return null;
+
+    CompletionUsage? usage;
+    final usageJson = json['usage'] as Map<String, dynamic>?;
+    if (usageJson != null) {
+      usage = CompletionUsage(
+        completionTokens: usageJson['completion_tokens'] as int? ?? 0,
+        promptTokens: usageJson['prompt_tokens'] as int? ?? 0,
+        totalTokens: usageJson['total_tokens'] as int? ?? 0,
+      );
+    }
+
+    return CreateChatCompletionStreamResponse(
+      id: json['id'] as String? ?? 'mistral-response',
+      choices: parsedChoices,
+      object: 'chat.completion',
+      created:
+          json['created'] as int? ??
+          DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      model: json['model'] as String?,
+      usage: usage,
+    );
   }
 
   /// Parse a streaming response chunk from Mistral's API.
@@ -455,7 +618,7 @@ class MistralInferenceRepository {
     }
 
     if (content is List) {
-      // Extract text from content parts
+      // Extract text from content parts (thinking blocks are handled at _generate level)
       final textParts = <String>[];
       for (final part in content) {
         if (part is Map<String, dynamic>) {
@@ -465,6 +628,9 @@ class MistralInferenceRepository {
             if (text != null) {
               textParts.add(text);
             }
+          } else if (type == 'thinking') {
+            // Thinking blocks are accumulated at the _generate level,
+            // not extracted here. Skip them.
           }
         } else if (part is String) {
           textParts.add(part);
@@ -519,6 +685,88 @@ class MistralInferenceRepository {
     }
 
     return result.isEmpty ? null : result;
+  }
+
+  /// Extracts thinking text from raw content (string, array, or null).
+  ///
+  /// Returns concatenated thinking text, or `null` if no thinking blocks.
+  String? _extractThinkingFromContent(dynamic content) {
+    if (content is! List) return null;
+
+    final thinkingText = StringBuffer();
+    for (final part in content) {
+      if (part is Map<String, dynamic> && part['type'] == 'thinking') {
+        final thinkingParts = part['thinking'];
+        if (thinkingParts is List) {
+          for (final tp in thinkingParts) {
+            if (tp is Map<String, dynamic> && tp['text'] is String) {
+              thinkingText.write(tp['text'] as String);
+            }
+          }
+        }
+      }
+    }
+    return thinkingText.isEmpty ? null : thinkingText.toString();
+  }
+
+  /// Extracts thinking text from a raw SSE JSON chunk, if present.
+  ///
+  /// Returns the concatenated thinking text, or `null` if the chunk
+  /// contains no thinking content (i.e. it is a regular text/tool chunk).
+  /// Mistral ThinkChunk schema:
+  /// `{"type": "thinking", "thinking": [{"type": "text", "text": "..."}]}`
+  String? _extractThinkingFromJson(Map<String, dynamic> json) {
+    final choices = json['choices'] as List<dynamic>?;
+    if (choices == null || choices.isEmpty) return null;
+
+    final choice = choices.first as Map<String, dynamic>;
+    final delta = choice['delta'] as Map<String, dynamic>?;
+    if (delta == null) return null;
+
+    final content = delta['content'];
+    if (content is! List) return null;
+
+    final thinkingText = StringBuffer();
+    var hasThinking = false;
+
+    for (final part in content) {
+      if (part is Map<String, dynamic> && part['type'] == 'thinking') {
+        hasThinking = true;
+        final thinkingParts = part['thinking'];
+        if (thinkingParts is List) {
+          for (final tp in thinkingParts) {
+            if (tp is Map<String, dynamic> && tp['text'] is String) {
+              thinkingText.write(tp['text'] as String);
+            }
+          }
+        }
+      }
+    }
+
+    return hasThinking ? thinkingText.toString() : null;
+  }
+
+  /// Creates a response chunk containing accumulated thinking content
+  /// wrapped in `<think>` tags, matching the convention used by Gemini.
+  CreateChatCompletionStreamResponse _createThinkingChunkResponse({
+    required String thinking,
+    required String model,
+    String? id,
+    int? created,
+  }) {
+    return CreateChatCompletionStreamResponse(
+      id: id ?? 'mistral-${DateTime.now().millisecondsSinceEpoch}',
+      created: created ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      model: model,
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          index: 0,
+          delta: ChatCompletionStreamResponseDelta(
+            content: '<think>\n$thinking\n</think>\n',
+          ),
+        ),
+      ],
+    );
   }
 }
 

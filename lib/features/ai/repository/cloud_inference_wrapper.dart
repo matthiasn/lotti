@@ -18,9 +18,14 @@ import 'package:openai_dart/openai_dart.dart';
 class CloudInferenceWrapper implements InferenceRepositoryInterface {
   CloudInferenceWrapper({
     required this.cloudRepository,
+    this.isReasoningModel = false,
   });
 
   final CloudInferenceRepository cloudRepository;
+
+  /// Whether the model being used is a reasoning model.
+  /// When true and the provider is Mistral, enables reasoning_effort: "high".
+  final bool isReasoningModel;
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateText({
@@ -43,6 +48,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       maxCompletionTokens: maxCompletionTokens,
       provider: provider,
       tools: tools,
+      isReasoningModel: isReasoningModel,
     );
   }
 
@@ -57,6 +63,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    bool isReasoningModel = false,
   }) async* {
     developer.log(
       'CloudInferenceWrapper: Processing ${messages.length} messages for '
@@ -68,6 +75,9 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
 
     // Use the cloud repository's native multi-turn support
     // This properly routes to Gemini's multi-turn API with signature support
+    // Use per-call flag if set, otherwise fall back to instance-level flag
+    final effectiveIsReasoning = isReasoningModel || this.isReasoningModel;
+
     final stream = cloudRepository.generateWithMessages(
       messages: messages,
       model: model,
@@ -78,6 +88,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       thoughtSignatures: thoughtSignatures,
       signatureCollector: signatureCollector,
       turnIndex: turnIndex,
+      isReasoningModel: effectiveIsReasoning,
     );
 
     // Pass through the stream but log any tool calls we see

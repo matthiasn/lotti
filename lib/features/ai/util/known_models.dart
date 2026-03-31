@@ -539,29 +539,17 @@ const List<KnownModel> voxtralModels = [
 /// language models, reasoning models, and audio transcription capabilities.
 /// Audio files (M4A, MP3, WAV, FLAC, OGG) are sent natively without conversion.
 const List<KnownModel> mistralModels = [
-  // Fast model - efficient for quick tasks
+  // Mistral Small 4 - unified model with adjustable reasoning
   KnownModel(
-    providerModelId: 'mistral-small-2501',
-    name: 'Mistral Small 3.1',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description:
-        'Fast and efficient model with vision capabilities. '
-        'Great for summaries, image analysis, and quick tasks.',
-  ),
-  // Reasoning model - for complex tasks
-  KnownModel(
-    providerModelId: 'magistral-medium-2509',
-    name: 'Magistral Medium 1.2',
+    providerModelId: 'mistral-small-2603',
+    name: 'Mistral Small 4',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Frontier-class multimodal reasoning model with 128k context. '
-        'Supports function calling, vision, and document AI.',
+        'Unified model with adjustable reasoning via reasoning_effort. '
+        'Replaces both Mistral Small 3.1 and Magistral models.',
   ),
   // Audio transcription model — uses /v1/audio/transcriptions endpoint
   KnownModel(
@@ -760,8 +748,8 @@ getAlibabaFtueKnownModels() {
 // =============================================================================
 
 /// Model IDs used for Mistral FTUE automation
-const ftueMistralFlashModelId = 'mistral-small-2501';
-const ftueMistralReasoningModelId = 'magistral-medium-2509';
+const ftueMistralFlashModelId = 'mistral-small-2603';
+const ftueMistralReasoningModelId = 'mistral-small-2603';
 const ftueMistralAudioModelId = 'voxtral-mini-latest';
 
 /// Finds a KnownModel by its provider model ID from the mistralModels list.

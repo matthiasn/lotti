@@ -51,6 +51,7 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    bool isReasoningModel = false,
   }) {
     lastMessages = messages;
     lastModel = model;

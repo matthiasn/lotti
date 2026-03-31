@@ -550,6 +550,7 @@ class UnifiedAiInferenceRepository {
         systemMessage: systemMessage,
         maxCompletionTokens: model.maxCompletionTokens,
         provider: provider,
+        isReasoningModel: model.isReasoningModel,
       );
     }
   }

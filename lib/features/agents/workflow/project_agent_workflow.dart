@@ -271,6 +271,7 @@ class ProjectAgentWorkflow {
       final tools = _buildToolDefinitions();
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: cloudInferenceRepository,
+        isReasoningModel: true,
       );
 
       // Record template provenance on the wake run log.

@@ -125,6 +125,7 @@ class CloudInferenceRepository {
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
+    bool isReasoningModel = false,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with:\n'
@@ -185,6 +186,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        isReasoningModel: isReasoningModel,
       );
     }
 
@@ -464,6 +466,7 @@ class CloudInferenceRepository {
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
+    bool isReasoningModel = false,
   }) {
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
@@ -529,6 +532,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        isReasoningModel: isReasoningModel,
       );
     }
 

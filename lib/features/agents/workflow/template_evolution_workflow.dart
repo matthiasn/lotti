@@ -282,6 +282,7 @@ class TemplateEvolutionWorkflow {
         provider: provider,
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
+          isReasoningModel: true,
         ),
         tools: _buildToolDefinitions(bridge: bridge),
         strategy: strategy,
@@ -331,6 +332,7 @@ class TemplateEvolutionWorkflow {
         provider: provider,
         inferenceRepo: CloudInferenceWrapper(
           cloudRepository: cloudInferenceRepository,
+          isReasoningModel: true,
         ),
         tools: _buildToolDefinitions(bridge: active.genUiBridge),
         strategy: active.strategy,

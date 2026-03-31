@@ -42,7 +42,7 @@ Map<String, dynamic> createSseChunkEvent({
   String? id,
   String? finishReason,
   int? created,
-  String model = 'magistral-medium-2509',
+  String model = 'mistral-small-2603',
   String? role,
   List<Map<String, dynamic>>? toolCalls,
   Map<String, dynamic>? usage,
@@ -71,7 +71,7 @@ Map<String, dynamic> createSseChunkEvent({
 Map<String, dynamic> createSseFinalEvent({
   String? id,
   int? created,
-  String model = 'magistral-medium-2509',
+  String model = 'mistral-small-2603',
 }) {
   return {
     'id': id ?? 'chatcmpl-test',
@@ -106,7 +106,7 @@ void main() {
 
   group('MistralInferenceRepository', () {
     group('generateText', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
       const prompt = 'Hello, how are you?';
@@ -131,6 +131,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -184,6 +185,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
           systemMessage: 'You are a helpful assistant.',
         );
 
@@ -227,6 +229,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
           temperature: 0.7,
         );
 
@@ -258,6 +261,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
           maxCompletionTokens: 1000,
         );
 
@@ -317,6 +321,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
           tools: tools,
         );
 
@@ -360,6 +365,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         expect(
@@ -387,6 +393,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         expect(
@@ -403,7 +410,7 @@ void main() {
     });
 
     group('generateTextWithMessages', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -433,6 +440,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         await stream.toList();
@@ -491,6 +499,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         await stream.toList();
@@ -542,6 +551,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         await stream.toList();
@@ -564,7 +574,7 @@ void main() {
     });
 
     group('content extraction', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -585,6 +595,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -624,6 +635,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -660,6 +672,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -696,6 +709,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -736,6 +750,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -746,7 +761,7 @@ void main() {
     });
 
     group('SSE stream buffering', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -778,6 +793,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await responseStream.toList();
@@ -812,6 +828,7 @@ void main() {
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await responseStream.toList();
@@ -847,6 +864,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await responseStream.toList();
@@ -875,6 +893,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await responseStream.toList();
@@ -885,7 +904,7 @@ data: [DONE]
     });
 
     group('URL construction', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const apiKey = 'test-api-key';
 
       test('should construct URL correctly without trailing slash', () async {
@@ -901,6 +920,7 @@ data: [DONE]
           model: model,
           baseUrl: 'https://api.mistral.ai/v1',
           apiKey: apiKey,
+          stream: true,
         );
 
         await stream.toList();
@@ -929,6 +949,7 @@ data: [DONE]
           model: model,
           baseUrl: 'https://api.mistral.ai/v1/',
           apiKey: apiKey,
+          stream: true,
         );
 
         await stream.toList();
@@ -946,7 +967,7 @@ data: [DONE]
     });
 
     group('tool call parsing', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -987,6 +1008,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1044,6 +1066,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1069,6 +1092,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1079,7 +1103,7 @@ data: [DONE]
     });
 
     group('usage parsing', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -1104,6 +1128,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1117,7 +1142,7 @@ data: [DONE]
     });
 
     group('finish reason parsing', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -1138,6 +1163,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1166,6 +1192,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1203,6 +1230,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1216,7 +1244,7 @@ data: [DONE]
     });
 
     group('edge cases', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
@@ -1240,6 +1268,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1268,6 +1297,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1302,6 +1332,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1335,6 +1366,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1368,6 +1400,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         final results = await stream.toList();
@@ -1404,7 +1437,7 @@ data: [DONE]
     });
 
     group('exception logging with LoggingService', () {
-      const model = 'magistral-medium-2509';
+      const model = 'mistral-small-2603';
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
       late MockLoggingService mockLoggingService;
@@ -1444,6 +1477,7 @@ data: [DONE]
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
+          stream: true,
         );
 
         await expectLater(
@@ -1466,6 +1500,235 @@ data: [DONE]
           ),
         ).called(1);
       });
+    });
+
+    group('non-streaming (stream: false)', () {
+      const model = 'mistral-small-2603';
+      const baseUrl = 'https://api.mistral.ai/v1';
+      const apiKey = 'test-api-key';
+
+      /// Helper to create a non-streaming JSON response body.
+      http.StreamedResponse createNonStreamResponse(
+        Map<String, dynamic> body, {
+        int statusCode = 200,
+      }) {
+        final stream = Stream.fromIterable([utf8.encode(jsonEncode(body))]);
+        return http.StreamedResponse(stream, statusCode);
+      }
+
+      test('should parse tool calls from non-streaming response', () async {
+        final responseBody = {
+          'id': 'cmpl-test',
+          'object': 'chat.completion',
+          'created': 1234567890,
+          'model': model,
+          'choices': [
+            {
+              'index': 0,
+              'message': {
+                'role': 'assistant',
+                'content': null,
+                'tool_calls': [
+                  {
+                    'id': 'call_abc',
+                    'index': 0,
+                    'function': {
+                      'name': 'record_observations',
+                      'arguments':
+                          '{"observations": [{"text": "test", "priority": "normal"}]}',
+                    },
+                  },
+                ],
+              },
+              'finish_reason': 'tool_calls',
+            },
+          ],
+          'usage': {
+            'prompt_tokens': 100,
+            'completion_tokens': 50,
+            'total_tokens': 150,
+          },
+        };
+
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createNonStreamResponse(responseBody),
+        );
+
+        final results = await repository
+            .generateText(
+              prompt: 'Do something',
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              isReasoningModel: true,
+            )
+            .toList();
+
+        expect(results.length, equals(1));
+        final toolCalls = results[0].choices?.first.delta?.toolCalls;
+        expect(toolCalls, isNotNull);
+        expect(toolCalls?.length, equals(1));
+        expect(toolCalls?.first.function?.name, equals('record_observations'));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.toolCalls),
+        );
+        expect(results[0].usage?.promptTokens, equals(100));
+        expect(results[0].usage?.completionTokens, equals(50));
+
+        // Verify reasoning_effort was sent in the request
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody['reasoning_effort'], equals('high'));
+        expect(requestBody['stream'], isFalse);
+      });
+
+      test(
+        'should extract thinking and text from non-streaming response',
+        () async {
+          final responseBody = {
+            'id': 'cmpl-test',
+            'object': 'chat.completion',
+            'created': 1234567890,
+            'model': model,
+            'choices': [
+              {
+                'index': 0,
+                'message': {
+                  'role': 'assistant',
+                  'content': [
+                    {
+                      'type': 'thinking',
+                      'thinking': [
+                        {
+                          'type': 'text',
+                          'text':
+                              'I need to analyze this task and determine the '
+                              'best approach for updating the report.',
+                        },
+                      ],
+                    },
+                    {
+                      'type': 'text',
+                      'text': 'Here is my analysis.',
+                    },
+                  ],
+                },
+                'finish_reason': 'stop',
+              },
+            ],
+            'usage': {
+              'prompt_tokens': 200,
+              'completion_tokens': 100,
+              'total_tokens': 300,
+            },
+          };
+
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createNonStreamResponse(responseBody),
+          );
+
+          final results = await repository
+              .generateText(
+                prompt: 'Analyze this',
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                isReasoningModel: true,
+              )
+              .toList();
+
+          expect(results.length, equals(1));
+          final content = results[0].choices?.first.delta?.content;
+          expect(content, contains('<think>'));
+          expect(content, contains('I need to analyze this task'));
+          expect(content, contains('</think>'));
+          expect(content, contains('Here is my analysis.'));
+        },
+      );
+
+      test(
+        'should handle non-streaming response with tool calls and thinking',
+        () async {
+          final responseBody = {
+            'id': 'cmpl-test',
+            'object': 'chat.completion',
+            'created': 1234567890,
+            'model': model,
+            'choices': [
+              {
+                'index': 0,
+                'message': {
+                  'role': 'assistant',
+                  'content': [
+                    {
+                      'type': 'thinking',
+                      'thinking': [
+                        {
+                          'type': 'text',
+                          'text': 'I should call update_report.',
+                        },
+                      ],
+                    },
+                  ],
+                  'tool_calls': [
+                    {
+                      'id': 'call_xyz',
+                      'index': 0,
+                      'function': {
+                        'name': 'update_report',
+                        'arguments': '{"content": "updated"}',
+                      },
+                    },
+                  ],
+                },
+                'finish_reason': 'tool_calls',
+              },
+            ],
+            'usage': {
+              'prompt_tokens': 50,
+              'completion_tokens': 30,
+              'total_tokens': 80,
+            },
+          };
+
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createNonStreamResponse(responseBody),
+          );
+
+          final results = await repository
+              .generateText(
+                prompt: 'Update the report',
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                isReasoningModel: true,
+              )
+              .toList();
+
+          expect(results.length, equals(1));
+          // Thinking content present
+          expect(
+            results[0].choices?.first.delta?.content,
+            contains('<think>'),
+          );
+          expect(
+            results[0].choices?.first.delta?.content,
+            contains('I should call update_report.'),
+          );
+          // Tool calls present
+          final toolCalls = results[0].choices?.first.delta?.toolCalls;
+          expect(toolCalls, isNotNull);
+          expect(toolCalls?.first.function?.name, equals('update_report'));
+          expect(
+            results[0].choices?.first.finishReason,
+            equals(ChatCompletionFinishReason.toolCalls),
+          );
+        },
+      );
     });
   });
 }
