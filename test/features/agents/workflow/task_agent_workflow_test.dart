@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -639,9 +640,10 @@ void main() {
           capturedSystemMessage,
           contains('## Parent Project Context'),
         );
+        // Related-tasks scaffold is disabled to reduce context pollution.
         expect(
           capturedSystemMessage,
-          contains('## Related Tasks In This Project'),
+          isNot(contains('## Related Tasks In This Project')),
         );
         // Template directives appended.
         expect(
@@ -698,9 +700,10 @@ void main() {
             capturedSystemMessage,
             contains('## Parent Project Context'),
           );
+          // Related-tasks scaffold is disabled to reduce context pollution.
           expect(
             capturedSystemMessage,
-            contains('## Related Tasks In This Project'),
+            isNot(contains('## Related Tasks In This Project')),
           );
           // General directive injected.
           expect(
@@ -769,9 +772,10 @@ void main() {
             capturedSystemMessage,
             contains('## Parent Project Context'),
           );
+          // Related-tasks scaffold is disabled to reduce context pollution.
           expect(
             capturedSystemMessage,
-            contains('## Related Tasks In This Project'),
+            isNot(contains('## Related Tasks In This Project')),
           );
           // General directive present.
           expect(capturedSystemMessage, contains('Be concise.'));
@@ -1805,48 +1809,77 @@ void main() {
       );
 
       test(
-        'get_related_task_details delegates to aiInputRepository for allowlisted siblings',
+        'does not expose disabled related-task drill-down tools to the LLM',
         () async {
-          when(
-            () => mockAiInputRepository.buildRelatedProjectTasksJson(
-              taskId: taskId,
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => jsonEncode({
-              'projectId': 'project-1',
-              'tasks': [
-                {
-                  'id': 'task-sibling',
-                  'title': 'Sibling Task',
-                  'status': 'OPEN',
-                  'timeSpent': '00:10',
-                  'tldr': 'Sibling TLDR',
-                },
-              ],
-            }),
+          final relatedTaskTool = AgentToolRegistry.taskAgentTools.firstWhere(
+            (def) => def.name == TaskAgentToolNames.getRelatedTaskDetails,
           );
-          when(
-            () => mockAiInputRepository.buildRelatedTaskDetailsJson(
-              currentTaskId: taskId,
-              requestedTaskId: 'task-sibling',
-            ),
-          ).thenAnswer(
-            (_) async => '{"task":{"id":"task-sibling"}}',
-          );
+          expect(relatedTaskTool.enabled, isFalse);
 
-          final result = await executeWithToolCall(
-            'get_related_task_details',
-            '{"taskId":"task-sibling"}',
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => testAgentState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => '{"title":"Test Task"}');
+          when(
+            () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepository.buildLinkedFromContext(taskId),
+          ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+          when(
+            () => mockAiInputRepository.buildLinkedToContext(taskId),
+          ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+          when(
+            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [geminiModel]);
+          when(
+            () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+          ).thenAnswer((_) async => geminiProvider);
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          List<ChatCompletionTool>? exposedTools;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                exposedTools = tools;
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
           );
 
           expect(result.success, isTrue);
-          verify(
-            () => mockAiInputRepository.buildRelatedTaskDetailsJson(
-              currentTaskId: taskId,
-              requestedTaskId: 'task-sibling',
-            ),
-          ).called(1);
+          expect(exposedTools, isNotNull);
+          expect(
+            exposedTools!.map((tool) => tool.function.name),
+            isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
+          );
         },
       );
     });
@@ -1858,7 +1891,6 @@ void main() {
         AgentReportEntity? lastReport,
         List<AgentMessageEntity> observations = const [],
         String projectContextJson = '{}',
-        String relatedProjectTasksJson = '{}',
         String linkedTasksJson = '{}',
         Set<String> triggerTokens = const {},
         bool throwOnLinkedContextBuild = false,
@@ -1911,12 +1943,6 @@ void main() {
         when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async => projectContextJson);
-        when(
-          () => mockAiInputRepository.buildRelatedProjectTasksJson(
-            taskId: taskId,
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer((_) async => relatedProjectTasksJson);
         if (throwOnLinkedContextBuild) {
           when(
             () => mockAiInputRepository.buildLinkedFromContext(taskId),
@@ -2012,27 +2038,15 @@ void main() {
       );
 
       test(
-        'includes related-task directory when sibling tasks are available',
+        'does not include a related-task directory section in the wake context',
         () async {
-          final message = await executeAndCaptureMessage(
-            relatedProjectTasksJson: jsonEncode({
-              'projectId': 'project-1',
-              'tasks': [
-                {
-                  'id': 'task-2',
-                  'title': 'Replay Queue',
-                  'status': 'IN PROGRESS',
-                  'timeSpent': '00:45',
-                  'tldr': 'Investigating offline replay failures.',
-                },
-              ],
-            }),
-          );
+          final message = await executeAndCaptureMessage();
 
           expect(message, isNotNull);
-          expect(message, contains('## Related Tasks In This Project'));
-          expect(message, contains('Replay Queue'));
-          expect(message, contains('Investigating offline replay failures.'));
+          expect(
+            message,
+            isNot(contains('## Related Tasks In This Project')),
+          );
         },
       );
 

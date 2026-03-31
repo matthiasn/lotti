@@ -197,15 +197,17 @@ class TaskAgentWorkflow {
 
     // 2. Build task context from journal domain (independent fetches in
     //    parallel).
+    // NOTE: Related-project task enrichment is intentionally disabled here.
+    // Injecting sibling-task TLDRs polluted the context window, and the
+    // related-task drill-down tool is currently hidden from the LLM until it
+    // can be backed by a better retrieval path.
     final (
       taskDetailsJson,
       projectContextJson,
-      relatedProjectTasksJson,
       linkedTasksJson,
     ) = await (
       aiInputRepository.buildTaskDetailsJson(id: taskId),
       aiInputRepository.buildProjectContextJsonForTask(taskId),
-      aiInputRepository.buildRelatedProjectTasksJson(taskId: taskId),
       _buildLinkedTasksContextJson(taskId),
     ).wait;
 
@@ -270,14 +272,10 @@ class TaskAgentWorkflow {
       journalObservations: journalObservations,
       taskDetailsJson: taskDetailsJson,
       projectContextJson: projectContextJson,
-      relatedProjectTasksJson: relatedProjectTasksJson,
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
       taskId: taskId,
       pendingChangeSets: pendingSets,
-    );
-    final allowedRelatedTaskIds = _extractAllowedRelatedTaskIds(
-      relatedProjectTasksJson,
     );
 
     // 6. Create conversation and run with strategy.
@@ -402,7 +400,6 @@ class TaskAgentWorkflow {
             requestedTaskId: requestedTaskId,
           );
         },
-        allowedRelatedTaskIds: allowedRelatedTaskIds,
       );
 
       final tools = _buildToolDefinitions();
@@ -806,7 +803,6 @@ class TaskAgentWorkflow {
 
       buf
         ..write(taskAgentScaffoldProjectContext)
-        ..write(taskAgentScaffoldRelatedTasksContext)
         ..write(taskAgentScaffoldTrailing);
 
       final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
@@ -838,7 +834,6 @@ class TaskAgentWorkflow {
       '$taskAgentScaffoldCore'
       '$taskAgentScaffoldReport'
       '$taskAgentScaffoldProjectContext'
-      '$taskAgentScaffoldRelatedTasksContext'
       '$taskAgentScaffoldTrailing';
 
   /// Core scaffold: role description and job responsibilities.
@@ -956,34 +951,6 @@ Use this as high-level planning context:
 - look for project-level dependencies or risks that change what matters next
 - prefer direct evidence from the current task when it conflicts with older,
   broader project context
-''';
-
-  /// Related-task directory guidance for task agents.
-  static const taskAgentScaffoldRelatedTasksContext = '''
-
-
-## Related Tasks In This Project
-
-When a task belongs to a project, the wake payload may include a
-`Related Tasks In This Project` JSON block. This is a bounded directory of
-other tasks in the same parent project. Each row is lightweight and includes:
-- `id`
-- `title`
-- `status`
-- `timeSpent`
-- `tldr`
-
-Use this directory to spot overlaps, dependencies, sequencing constraints,
-and nearby work that may affect the current task.
-
-Important:
-- this directory is NOT full sibling-task context
-- only call `get_related_task_details` when one of these sibling tasks is
-  materially relevant to the current task
-- use the drill-down tool sparingly; do not inspect siblings just because
-  they exist
-- you may only inspect task IDs that appear in this wake's related-tasks
-  directory
 ''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
@@ -1105,7 +1072,6 @@ Important:
     required List<AgentMessageEntity> journalObservations,
     required String taskDetailsJson,
     required String projectContextJson,
-    required String relatedProjectTasksJson,
     required String linkedTasksJson,
     required Set<String> triggerTokens,
     required String taskId,
@@ -1176,15 +1142,6 @@ Important:
         ..writeln('## Parent Project Context')
         ..writeln('```json')
         ..writeln(projectContextJson)
-        ..writeln('```')
-        ..writeln();
-    }
-
-    if (relatedProjectTasksJson.isNotEmpty && relatedProjectTasksJson != '{}') {
-      buffer
-        ..writeln('## Related Tasks In This Project')
-        ..writeln('```json')
-        ..writeln(relatedProjectTasksJson)
         ..writeln('```')
         ..writeln();
     }
@@ -1268,33 +1225,6 @@ Important:
     );
 
     return buffer.toString();
-  }
-
-  Set<String> _extractAllowedRelatedTaskIds(String relatedProjectTasksJson) {
-    if (relatedProjectTasksJson.isEmpty || relatedProjectTasksJson == '{}') {
-      return const <String>{};
-    }
-
-    try {
-      final decoded = jsonDecode(relatedProjectTasksJson);
-      if (decoded is! Map<String, dynamic>) {
-        return const <String>{};
-      }
-
-      final tasks = decoded['tasks'];
-      if (tasks is! List) {
-        return const <String>{};
-      }
-
-      return tasks
-          .whereType<Map<String, dynamic>>()
-          .map((task) => task['id'])
-          .whereType<String>()
-          .where((id) => id.isNotEmpty)
-          .toSet();
-    } catch (_) {
-      return const <String>{};
-    }
   }
 
   /// Formats pending [ChangeSetEntity] items into a markdown section so the
@@ -1597,7 +1527,9 @@ Important:
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
   List<ChatCompletionTool> _buildToolDefinitions() {
-    return AgentToolRegistry.taskAgentTools.map((def) {
+    return AgentToolRegistry.taskAgentTools.where((def) => def.enabled).map((
+      def,
+    ) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.939] - 2026-03-31
+### Changed
+- Task-agent wake prompts no longer inject sibling-task TLDR directories, and
+  the related-task drill-down tool now stays defined in the registry while
+  being hidden from the LLM until a stronger retrieval path is in place.
+
 ## [0.9.938] - 2026-03-29
 ### Changed
 - Projects detail task summaries: project-task rows now show the latest
