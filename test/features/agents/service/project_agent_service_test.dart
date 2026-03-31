@@ -24,6 +24,7 @@ void main() {
   late MockWakeOrchestrator mockOrchestrator;
   late MockAgentSyncService mockSyncService;
   late ProjectAgentService service;
+  late List<String> notifiedAgentIds;
 
   AgentIdentityEntity makeIdentity({
     String agentId = 'agent-1',
@@ -59,6 +60,7 @@ void main() {
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
     mockSyncService = MockAgentSyncService();
+    notifiedAgentIds = [];
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
@@ -74,6 +76,7 @@ void main() {
       syncService: mockSyncService,
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomains.agentRuntime),
+      onPersistedStateChanged: notifiedAgentIds.add,
     );
   });
 
@@ -163,6 +166,7 @@ void main() {
             triggerTokens: {'project-1'},
           ),
         ).called(1);
+        expect(notifiedAgentIds, ['agent-1']);
       });
 
       test(

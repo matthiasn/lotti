@@ -204,6 +204,13 @@
     }
   },
   "agentObservationsEmpty": "No observations recorded yet.",
+  "agentPendingWakesCountdownLabel": "Countdown",
+  "agentPendingWakesDeleteTooltip": "Remove wake",
+  "agentPendingWakesDueAtLabel": "Due at",
+  "agentPendingWakesEmptyList": "No pending wakes",
+  "agentPendingWakesPendingLabel": "Pending",
+  "agentPendingWakesScheduledLabel": "Scheduled",
+  "agentPendingWakesTitle": "Pending Wakes",
   "agentReportErrorLoading": "Failed to load report: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

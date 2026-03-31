@@ -10,12 +10,14 @@ part 'project_agent_providers.g.dart';
 /// The project-agent-specific service.
 @Riverpod(keepAlive: true)
 ProjectAgentService projectAgentService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
   return ProjectAgentService(
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 

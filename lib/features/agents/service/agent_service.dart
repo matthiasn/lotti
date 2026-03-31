@@ -23,6 +23,7 @@ class AgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    this.onPersistedStateChanged,
   });
 
   final AgentRepository repository;
@@ -31,6 +32,7 @@ class AgentService {
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+  final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
 
@@ -128,6 +130,31 @@ class AgentService {
     String scope = AgentReportScopes.current,
   ]) async {
     return repository.getLatestReport(agentId, scope);
+  }
+
+  /// Clear a pending deferred wake for [agentId].
+  ///
+  /// Removes any persisted/local throttle deadline and drops queued wake jobs
+  /// for the same agent from the in-memory wake queue.
+  void cancelPendingWake(String agentId) {
+    orchestrator.clearThrottle(agentId);
+    orchestrator.queue.removeByAgent(agentId);
+  }
+
+  /// Remove a persisted scheduled wake from the agent state.
+  Future<void> clearScheduledWake(String agentId) async {
+    final state = await repository.getAgentState(agentId);
+    if (state == null || state.scheduledWakeAt == null) {
+      return;
+    }
+
+    await syncService.upsertEntity(
+      state.copyWith(
+        scheduledWakeAt: null,
+        updatedAt: clock.now(),
+      ),
+    );
+    onPersistedStateChanged?.call(agentId);
   }
 
   /// Transition agent to [AgentLifecycle.dormant] and unregister

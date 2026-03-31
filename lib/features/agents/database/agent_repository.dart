@@ -83,6 +83,42 @@ class AgentRepository {
     return entity.mapOrNull(agentState: (e) => e);
   }
 
+  /// Batch-fetch the latest [AgentStateEntity] for each agent in [agentIds].
+  ///
+  /// Issues a single SQL query ordered newest-first, then keeps the first
+  /// state row seen per `agentId`. Agents without a state are omitted.
+  Future<Map<String, AgentStateEntity>> getAgentStatesByAgentIds(
+    List<String> agentIds,
+  ) async {
+    if (agentIds.isEmpty) return {};
+
+    final placeholders = List.filled(agentIds.length, '?').join(', ');
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE agent_id IN ($placeholders) '
+          "AND type = '${AgentEntityTypes.agentState}' "
+          'AND deleted_at IS NULL '
+          'ORDER BY created_at DESC',
+          variables: agentIds.map(Variable.withString).toList(),
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    final statesByAgentId = <String, AgentStateEntity>{};
+    for (final row in rows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
+      final state = entity.mapOrNull(agentState: (e) => e);
+      if (state != null) {
+        statesByAgentId.putIfAbsent(state.agentId, () => state);
+      }
+    }
+
+    return statesByAgentId;
+  }
+
   /// Fetch messages for [agentId] filtered by [kind], optionally capped at
   /// [limit] rows (most-recent first).
   Future<List<AgentMessageEntity>> getMessagesByKind(

@@ -23,6 +23,7 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late MockWakeOrchestrator mockOrchestrator;
   late ImproverAgentService service;
+  late List<String> notifiedAgentIds;
 
   final testDate = DateTime(2024, 3, 15, 10, 30);
   const targetTemplateId = 'target-template-001';
@@ -80,6 +81,7 @@ void main() {
     mockRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockOrchestrator = MockWakeOrchestrator();
+    notifiedAgentIds = [];
 
     // Stub syncService write methods.
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -94,6 +96,7 @@ void main() {
       repository: mockRepository,
       syncService: mockSyncService,
       orchestrator: mockOrchestrator,
+      onPersistedStateChanged: notifiedAgentIds.add,
     );
   });
 
@@ -187,6 +190,7 @@ void main() {
               .first;
           expect(templateAssignmentLink.fromId, improverTemplateId);
           expect(templateAssignmentLink.toId, identity.agentId);
+          expect(notifiedAgentIds, [identity.agentId]);
         });
       });
 
@@ -236,6 +240,7 @@ void main() {
             ),
           );
           expect(updatedState.scheduledWakeAt, expectedWake);
+          expect(notifiedAgentIds, [identity.agentId]);
         });
       });
 
@@ -725,6 +730,7 @@ void main() {
           expect(updatedState.slots.lastOneOnOneAt, testDate);
           expect(updatedState.slots.totalSessionsCompleted, 3);
           expect(updatedState.updatedAt, testDate);
+          expect(notifiedAgentIds, [agentId]);
         });
       });
 

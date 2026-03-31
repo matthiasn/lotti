@@ -109,6 +109,13 @@
       }
     }
   },
+  "agentPendingWakesCountdownLabel": "Odpočet",
+  "agentPendingWakesDeleteTooltip": "Odstranit probuzení",
+  "agentPendingWakesDueAtLabel": "Spustí se",
+  "agentPendingWakesEmptyList": "Žádná čekající probuzení",
+  "agentPendingWakesPendingLabel": "Čekající",
+  "agentPendingWakesScheduledLabel": "Naplánované",
+  "agentPendingWakesTitle": "Čekající probuzení",
   "agentReportErrorLoading": "Nepodařilo se načíst report: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

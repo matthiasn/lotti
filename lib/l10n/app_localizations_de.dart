@@ -429,6 +429,27 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Beobachtungen aufgezeichnet.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Countdown';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Weckvorgang entfernen';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Fällig um';
+
+  @override
+  String get agentPendingWakesEmptyList => 'Keine ausstehenden Weckvorgänge';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'Ausstehend';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Geplant';
+
+  @override
+  String get agentPendingWakesTitle => 'Ausstehende Weckvorgänge';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Bericht konnte nicht geladen werden: $error';
   }

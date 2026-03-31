@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
+import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/gamey/colors.dart';
@@ -15,45 +19,193 @@ import 'package:lotti/widgets/gamey/gamey_fab.dart';
 
 /// Landing page for Settings > Agents.
 ///
-/// Contains two tabs:
+/// Contains three tabs:
 /// - **Templates**: inline list of agent templates (extracted from the former
 ///   `AgentTemplateListPage`).
 /// - **Instances**: filterable list of agent instances.
-class AgentSettingsPage extends ConsumerWidget {
+/// - **Pending Wakes**: live list of scheduled and deferred wake timers.
+class AgentSettingsPage extends ConsumerStatefulWidget {
   const AgentSettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: agentBackButton(context),
-          title: Text(
-            context.messages.agentSettingsTitle,
-            style: appBarTextStyleNewLarge.copyWith(
-              color: Theme.of(context).primaryColor,
-            ),
+  ConsumerState<AgentSettingsPage> createState() => _AgentSettingsPageState();
+}
+
+enum _AgentSettingsTab {
+  templates,
+  instances,
+  pendingWakes,
+}
+
+class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
+  _AgentSettingsTab _selectedTab = _AgentSettingsTab.templates;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final pendingWakeCount = ref.watch(
+      pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: agentBackButton(context),
+        title: Text(
+          context.messages.agentSettingsTitle,
+          style: appBarTextStyleNewLarge.copyWith(
+            color: Theme.of(context).primaryColor,
           ),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: context.messages.agentTemplatesTitle),
-              Tab(text: context.messages.agentInstancesTitle),
-            ],
-          ),
-        ),
-        body: const TabBarView(
-          children: [
-            _TemplatesTab(),
-            AgentInstancesList(),
-          ],
-        ),
-        floatingActionButton: GameyFab(
-          onPressed: () => beamToNamed('/settings/agents/templates/create'),
-          semanticLabel: context.messages.agentTemplateCreateTitle,
-          child: const Icon(Icons.add),
         ),
       ),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step4,
+              tokens.spacing.step4,
+              tokens.spacing.step4,
+              tokens.spacing.step2,
+            ),
+            child: _AgentSettingsTabBar(
+              selectedTab: _selectedTab,
+              pendingWakeCount: pendingWakeCount,
+              onSelected: (_AgentSettingsTab tab) =>
+                  setState(() => _selectedTab = tab),
+            ),
+          ),
+          Expanded(
+            child: _AgentSettingsTabBody(
+              selectedTab: _selectedTab,
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: _selectedTab == _AgentSettingsTab.templates
+          ? GameyFab(
+              onPressed: () => beamToNamed('/settings/agents/templates/create'),
+              semanticLabel: context.messages.agentTemplateCreateTitle,
+              child: const Icon(Icons.add),
+            )
+          : null,
+    );
+  }
+}
+
+class _AgentSettingsTabBar extends StatelessWidget {
+  const _AgentSettingsTabBar({
+    required this.selectedTab,
+    required this.pendingWakeCount,
+    required this.onSelected,
+  });
+
+  final _AgentSettingsTab selectedTab;
+  final int pendingWakeCount;
+  final ValueChanged<_AgentSettingsTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final tabs = [
+      (
+        tab: _AgentSettingsTab.templates,
+        label: context.messages.agentTemplatesTitle,
+        counter: null as String?,
+      ),
+      (
+        tab: _AgentSettingsTab.instances,
+        label: context.messages.agentInstancesTitle,
+        counter: null as String?,
+      ),
+      (
+        tab: _AgentSettingsTab.pendingWakes,
+        label: context.messages.agentPendingWakesTitle,
+        counter: '$pendingWakeCount',
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final widths = _segmentWidths(
+          context,
+          constraints.maxWidth,
+          tabs,
+        );
+        final totalWidth = widths.fold<double>(0, (sum, width) => sum + width);
+
+        return ClipRRect(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(tokens.radii.m),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: totalWidth,
+              child: Row(
+                children: [
+                  for (var i = 0; i < tabs.length; i++)
+                    SizedBox(
+                      width: widths[i],
+                      child: DesignSystemTab(
+                        selected: selectedTab == tabs[i].tab,
+                        shape: DesignSystemTabShape.rectangular,
+                        label: tabs[i].label,
+                        counter: tabs[i].counter,
+                        onPressed: () => onSelected(tabs[i].tab),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<double> _segmentWidths(
+    BuildContext context,
+    double availableWidth,
+    List<({String? counter, String label, _AgentSettingsTab tab})> tabs,
+  ) {
+    final naturalWidths = tabs
+        .map(
+          (tab) => DesignSystemTab.preferredWidth(
+            context,
+            label: tab.label,
+            counter: tab.counter,
+          ),
+        )
+        .toList();
+    final totalNaturalWidth = naturalWidths.fold<double>(
+      0,
+      (sum, width) => sum + width,
+    );
+
+    if (totalNaturalWidth >= availableWidth) {
+      return naturalWidths;
+    }
+
+    final extraPerTab = (availableWidth - totalNaturalWidth) / tabs.length;
+    return naturalWidths.map((width) => width + extraPerTab).toList();
+  }
+}
+
+class _AgentSettingsTabBody extends ConsumerWidget {
+  const _AgentSettingsTabBody({
+    required this.selectedTab,
+  });
+
+  final _AgentSettingsTab selectedTab;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return IndexedStack(
+      index: selectedTab.index,
+      children: const [
+        _TemplatesTab(),
+        AgentInstancesList(),
+        AgentPendingWakesList(),
+      ],
     );
   }
 }

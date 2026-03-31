@@ -1252,6 +1252,7 @@ void main() {
     late MockLabelsRepository mockLabelsRepository;
     late MockAgentSyncService mockAgentSyncService;
     late MockAgentTemplateService mockAgentTemplateService;
+    late MockUpdateNotifications mockNotifications;
     late DomainLogger domainLogger;
 
     setUp(() async {
@@ -1265,6 +1266,7 @@ void main() {
       mockLabelsRepository = MockLabelsRepository();
       mockAgentSyncService = MockAgentSyncService();
       mockAgentTemplateService = MockAgentTemplateService();
+      mockNotifications = MockUpdateNotifications();
       domainLogger = DomainLogger(loggingService: LoggingService());
     });
 
@@ -1294,6 +1296,7 @@ void main() {
           agentTemplateServiceProvider.overrideWithValue(
             mockAgentTemplateService,
           ),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
           domainLoggerProvider.overrideWithValue(domainLogger),
           projectRepositoryProvider.overrideWithValue(
             MockProjectRepository(),
@@ -2616,6 +2619,7 @@ void main() {
       final mockOrchestrator = MockWakeOrchestrator();
       final mockSyncService = MockAgentSyncService();
       final mockOutbox = MockOutboxService();
+      final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
         overrides: [
@@ -2623,6 +2627,7 @@ void main() {
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           outboxServiceProvider.overrideWithValue(mockOutbox),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
         ],
       );
       addTearDown(container.dispose);
@@ -2699,6 +2704,7 @@ void main() {
       final mockSync = MockAgentSyncService();
       final mockOutbox = MockOutboxService();
       final mockOrchestrator = MockWakeOrchestrator();
+      final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
         overrides: [
@@ -2706,6 +2712,7 @@ void main() {
           agentSyncServiceProvider.overrideWithValue(mockSync),
           outboxServiceProvider.overrideWithValue(mockOutbox),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
         ],
       );
       addTearDown(container.dispose);
@@ -2723,6 +2730,7 @@ void main() {
       final mockOrchestrator = MockWakeOrchestrator();
       final mockTemplateWorkflow = MockTemplateEvolutionWorkflow();
       final mockLogging = MockLoggingService();
+      final mockNotifications = MockUpdateNotifications();
 
       final container = ProviderContainer(
         overrides: [
@@ -2733,6 +2741,7 @@ void main() {
           templateEvolutionWorkflowProvider.overrideWithValue(
             mockTemplateWorkflow,
           ),
+          updateNotificationsProvider.overrideWithValue(mockNotifications),
           loggingServiceProvider.overrideWithValue(mockLogging),
         ],
       );

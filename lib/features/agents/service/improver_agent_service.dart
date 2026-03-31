@@ -26,6 +26,7 @@ class ImproverAgentService {
     required this.repository,
     required this.syncService,
     required this.orchestrator,
+    this.onPersistedStateChanged,
   });
 
   final AgentService agentService;
@@ -33,6 +34,7 @@ class ImproverAgentService {
   final AgentRepository repository;
   final AgentSyncService syncService;
   final WakeOrchestrator orchestrator;
+  final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
 
@@ -73,7 +75,7 @@ class ImproverAgentService {
     final resolvedImproverTemplateId =
         overrideImproverTemplateId ?? improverTemplateId;
 
-    return syncService.runInTransaction(() async {
+    final identity = await syncService.runInTransaction(() async {
       // Validate target template exists.
       final targetTemplate = await agentTemplateService.getTemplate(
         targetTemplateId,
@@ -177,6 +179,9 @@ class ImproverAgentService {
 
       return identity;
     });
+
+    onPersistedStateChanged?.call(identity.agentId);
+    return identity;
   }
 
   /// Get the improver agent for a template (if one exists).
@@ -228,6 +233,7 @@ class ImproverAgentService {
     );
 
     await syncService.upsertEntity(updatedState);
+    onPersistedStateChanged?.call(agentId);
 
     developer.log(
       'Scheduled next ritual for $agentId at $nextWake',

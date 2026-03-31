@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/pending_wake_record.dart';
+import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/ui/agent_instances_list.dart';
+import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -29,10 +35,13 @@ void main() {
     List<AgentDomainEntity> templates = const [],
     List<AgentDomainEntity> agents = const [],
     List<AgentDomainEntity> evolutions = const [],
+    List<PendingWakeRecord> pendingWakes = const [],
+    Map<String, String?> subjectTitles = const {},
     List<Override> extraOverrides = const [],
   }) {
     return makeTestableWidgetNoScroll(
       const AgentSettingsPage(),
+      theme: DesignSystemTheme.light(),
       overrides: [
         agentTemplatesProvider.overrideWith(
           (ref) async => templates,
@@ -53,6 +62,12 @@ void main() {
         ),
         templateForAgentProvider.overrideWith(
           (ref, agentId) async => null,
+        ),
+        pendingWakeRecordsProvider.overrideWith(
+          (ref) async => pendingWakes,
+        ),
+        pendingWakeTargetTitleProvider.overrideWith(
+          (ref, String? entryId) async => subjectTitles[entryId],
         ),
         ...extraOverrides,
       ],
@@ -119,6 +134,82 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Worker Agent'), findsOneWidget);
+    });
+
+    testWidgets('shows Pending Wakes tab badge and wake cards', (tester) async {
+      final wake = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-wake',
+          displayName: 'Wake Watcher',
+        ),
+        state: makeTestState(
+          agentId: 'agent-wake',
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 10)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 10)),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          pendingWakes: [wake],
+          subjectTitles: const {'task-1': 'Wake dashboard polish'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      expect(
+        find.text(context.messages.agentPendingWakesTitle),
+        findsOneWidget,
+      );
+      expect(find.text('1'), findsOneWidget);
+
+      await tester.tap(find.text(context.messages.agentPendingWakesTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Wake dashboard polish'), findsOneWidget);
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+    });
+
+    testWidgets('keeps all tab bodies mounted in an IndexedStack', (
+      tester,
+    ) async {
+      final agent = makeTestIdentity(
+        agentId: 'agent-a',
+        displayName: 'Worker Agent',
+      );
+      final wake = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-wake',
+          displayName: 'Wake Watcher',
+        ),
+        state: makeTestState(
+          agentId: 'agent-wake',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 10)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 10)),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          agents: [agent],
+          pendingWakes: [wake],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(IndexedStack), findsOneWidget);
+      expect(
+        find.byType(AgentInstancesList, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(AgentPendingWakesList, skipOffstage: false),
+        findsOneWidget,
+      );
     });
 
     testWidgets('instances tab shows evolution sessions', (tester) async {
@@ -196,6 +287,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentSettingsPage(),
+          theme: DesignSystemTheme.light(),
           overrides: [
             agentTemplatesProvider.overrideWith(
               (ref) async => throw Exception('load failed'),
@@ -214,6 +306,9 @@ void main() {
             ),
             templateForAgentProvider.overrideWith(
               (ref, agentId) async => null,
+            ),
+            pendingWakeRecordsProvider.overrideWith(
+              (ref) async => const <PendingWakeRecord>[],
             ),
           ],
         ),
@@ -237,6 +332,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentSettingsPage(),
+          theme: DesignSystemTheme.light(),
           overrides: [
             agentTemplatesProvider.overrideWith(
               (ref) async => [template],
@@ -258,6 +354,9 @@ void main() {
             ),
             templateForAgentProvider.overrideWith(
               (ref, agentId) async => null,
+            ),
+            pendingWakeRecordsProvider.overrideWith(
+              (ref) async => const <PendingWakeRecord>[],
             ),
           ],
         ),

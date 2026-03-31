@@ -15,11 +15,17 @@ enum DesignSystemTabVisualState {
   pressed,
 }
 
+enum DesignSystemTabShape {
+  standalone,
+  rectangular,
+}
+
 class DesignSystemTab extends StatefulWidget {
   const DesignSystemTab({
     required this.selected,
     required this.onPressed,
     this.size = DesignSystemTabSize.defaultSize,
+    this.shape = DesignSystemTabShape.standalone,
     this.label,
     this.counter,
     this.leadingIcon,
@@ -32,9 +38,31 @@ class DesignSystemTab extends StatefulWidget {
          'Provide either a visible label or a semanticsLabel.',
        );
 
+  static double preferredWidth(
+    BuildContext context, {
+    required String label,
+    String? counter,
+    IconData? leadingIcon,
+    IconData? trailingIcon,
+    DesignSystemTabSize size = DesignSystemTabSize.defaultSize,
+  }) {
+    final tokens = context.designTokens;
+    final sizeSpec = _TabSizeSpec.fromTokens(tokens, size);
+
+    return _TabContentMetrics.measure(
+      context,
+      sizeSpec: sizeSpec,
+      label: label,
+      counter: counter,
+      leadingIcon: leadingIcon,
+      trailingIcon: trailingIcon,
+    );
+  }
+
   final bool selected;
   final VoidCallback? onPressed;
   final DesignSystemTabSize size;
+  final DesignSystemTabShape shape;
   final String? label;
   final String? counter;
   final IconData? leadingIcon;
@@ -77,11 +105,20 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
       enabled: enabled,
       visualState: visualState,
     );
+    final borderRadius = switch (widget.shape) {
+      DesignSystemTabShape.standalone => BorderRadius.vertical(
+        top: Radius.circular(sizeSpec.cornerRadius),
+      ),
+      DesignSystemTabShape.rectangular => BorderRadius.zero,
+    };
 
     final tab = Material(
       color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: borderRadius,
       child: InkWell(
         onTap: widget.onPressed,
+        borderRadius: borderRadius,
         onHover: widget.forcedState == null && enabled && !widget.selected
             ? (value) => setState(() => _hovered = value)
             : null,
@@ -93,33 +130,31 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
           enabled: enabled,
           selected: widget.selected,
           label: widget.semanticsLabel ?? widget.label,
-          child: IntrinsicWidth(
-            child: SizedBox(
-              height: sizeSpec.height,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: styleSpec.backgroundColor,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(sizeSpec.cornerRadius),
-                        ),
+          child: SizedBox(
+            height: sizeSpec.height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: styleSpec.backgroundColor,
+                      borderRadius: borderRadius,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: sizeSpec.horizontalPadding,
+                        right: sizeSpec.horizontalPadding,
+                        top: sizeSpec.topPadding,
+                        bottom: widget.selected
+                            ? sizeSpec.selectedBottomPadding
+                            : sizeSpec.bottomPadding,
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: sizeSpec.horizontalPadding,
-                          right: sizeSpec.horizontalPadding,
-                          top: sizeSpec.topPadding,
-                          bottom: widget.selected
-                              ? sizeSpec.selectedBottomPadding
-                              : sizeSpec.bottomPadding,
+                      child: DefaultTextStyle.merge(
+                        style: sizeSpec.labelStyle.copyWith(
+                          color: styleSpec.labelColor,
                         ),
-                        child: DefaultTextStyle.merge(
-                          style: sizeSpec.labelStyle.copyWith(
-                            color: styleSpec.labelColor,
-                          ),
+                        child: Center(
                           child: _TabContent(
                             sizeSpec: sizeSpec,
                             styleSpec: styleSpec,
@@ -132,27 +167,29 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
                       ),
                     ),
                   ),
-                  if (widget.selected)
-                    SizedBox(
-                      height: sizeSpec.selectorHeight,
-                      child: ColoredBox(color: styleSpec.selectorColor),
-                    ),
-                  if (styleSpec.showDivider)
-                    SizedBox(
-                      height: sizeSpec.dividerHeight,
-                      child: ColoredBox(color: styleSpec.dividerColor),
-                    ),
-                ],
-              ),
+                ),
+                if (widget.selected)
+                  SizedBox(
+                    height: sizeSpec.selectorHeight,
+                    child: ColoredBox(color: styleSpec.selectorColor),
+                  ),
+                if (styleSpec.showDivider)
+                  SizedBox(
+                    height: sizeSpec.dividerHeight,
+                    child: ColoredBox(color: styleSpec.dividerColor),
+                  ),
+              ],
             ),
           ),
         ),
       ),
     );
 
-    return tab.withDisabledOpacity(
-      enabled: enabled,
-      disabledOpacity: tokens.colors.text.lowEmphasis.a,
+    return IntrinsicWidth(
+      child: tab.withDisabledOpacity(
+        enabled: enabled,
+        disabledOpacity: tokens.colors.text.lowEmphasis.a,
+      ),
     );
   }
 
@@ -282,6 +319,90 @@ class _TabIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TabContentMetrics {
+  const _TabContentMetrics._();
+
+  static double measure(
+    BuildContext context, {
+    required _TabSizeSpec sizeSpec,
+    required String? label,
+    required String? counter,
+    required IconData? leadingIcon,
+    required IconData? trailingIcon,
+  }) {
+    final tokens = context.designTokens;
+    final primaryWidths = <double>[
+      if (leadingIcon != null) sizeSpec.iconSlotSize,
+      if (label?.isNotEmpty == true)
+        _measureText(
+          context,
+          label!,
+          sizeSpec.labelStyle,
+        ),
+      if (counter?.isNotEmpty == true)
+        _measureCounter(
+          context,
+          tokens,
+          counter!,
+        ),
+    ];
+
+    final primaryWidth =
+        _sum(primaryWidths) +
+        (primaryWidths.length > 1
+            ? sizeSpec.primaryContentGap * (primaryWidths.length - 1)
+            : 0);
+    final trailingWidth = trailingIcon == null ? 0.0 : sizeSpec.iconSlotSize;
+    final contentWidth =
+        primaryWidth +
+        (primaryWidth > 0 && trailingWidth > 0
+            ? sizeSpec.secondaryContentGap
+            : 0) +
+        trailingWidth;
+
+    return contentWidth + (sizeSpec.horizontalPadding * 2);
+  }
+
+  static double _measureText(
+    BuildContext context,
+    String text,
+    TextStyle style,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
+  static double _measureCounter(
+    BuildContext context,
+    DsTokens tokens,
+    String value,
+  ) {
+    final textWidth = _measureText(
+      context,
+      value,
+      tokens.typography.styles.others.caption,
+    );
+    final textScaler = MediaQuery.textScalerOf(context);
+    final badgeHeight =
+        textScaler.scale(tokens.typography.lineHeight.caption) +
+        (tokens.spacing.step1 * 2);
+
+    if (value.length <= 2) {
+      return badgeHeight;
+    }
+
+    return textWidth + (tokens.spacing.step2 * 2);
+  }
+
+  static double _sum(List<double> values) =>
+      values.fold<double>(0, (sum, width) => sum + width);
 }
 
 class _TabSizeSpec {

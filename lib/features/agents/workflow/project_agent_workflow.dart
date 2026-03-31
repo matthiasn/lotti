@@ -48,6 +48,7 @@ class ProjectAgentWorkflow {
     required this.syncService,
     required this.templateService,
     this.domainLogger,
+    this.onPersistedStateChanged,
   });
 
   final AgentRepository agentRepository;
@@ -58,6 +59,7 @@ class ProjectAgentWorkflow {
   final JournalRepository journalRepository;
   final AgentTemplateService templateService;
   final DomainLogger? domainLogger;
+  final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
 
@@ -490,6 +492,7 @@ class ProjectAgentWorkflow {
           ),
         );
       });
+      onPersistedStateChanged?.call(agentId);
 
       _log(
         'wake completed: ${observations.length} observations, '
@@ -544,6 +547,7 @@ class ProjectAgentWorkflow {
         ),
       );
     });
+    onPersistedStateChanged?.call(state.agentId);
 
     _log(
       'scheduled wake skipped: no pending project activity',

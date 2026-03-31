@@ -867,6 +867,48 @@ abstract class AppLocalizations {
   /// **'No observations recorded yet.'**
   String get agentObservationsEmpty;
 
+  /// No description provided for @agentPendingWakesCountdownLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Countdown'**
+  String get agentPendingWakesCountdownLabel;
+
+  /// No description provided for @agentPendingWakesDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove wake'**
+  String get agentPendingWakesDeleteTooltip;
+
+  /// No description provided for @agentPendingWakesDueAtLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due at'**
+  String get agentPendingWakesDueAtLabel;
+
+  /// No description provided for @agentPendingWakesEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending wakes'**
+  String get agentPendingWakesEmptyList;
+
+  /// No description provided for @agentPendingWakesPendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get agentPendingWakesPendingLabel;
+
+  /// No description provided for @agentPendingWakesScheduledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get agentPendingWakesScheduledLabel;
+
+  /// No description provided for @agentPendingWakesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Wakes'**
+  String get agentPendingWakesTitle;
+
   /// No description provided for @agentReportErrorLoading.
   ///
   /// In en, this message translates to:

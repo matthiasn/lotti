@@ -198,6 +198,13 @@
     }
   },
   "agentObservationsEmpty": "Nu au fost înregistrate observații încă.",
+  "agentPendingWakesCountdownLabel": "Numărătoare inversă",
+  "agentPendingWakesDeleteTooltip": "Elimină trezirea",
+  "agentPendingWakesDueAtLabel": "Programată la",
+  "agentPendingWakesEmptyList": "Nu există treziri în așteptare",
+  "agentPendingWakesPendingLabel": "În așteptare",
+  "agentPendingWakesScheduledLabel": "Programată",
+  "agentPendingWakesTitle": "Treziri în așteptare",
   "agentReportErrorLoading": "Eroare la încărcarea raportului: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

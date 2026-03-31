@@ -288,6 +288,92 @@ void main() {
       expect(tapCount, 1);
     });
 
+    testWidgets('keeps intrinsic width by default inside wider parents', (
+      tester,
+    ) async {
+      const tabKey = Key('intrinsic-width-tab');
+
+      await _pumpTab(
+        tester,
+        const SizedBox(
+          width: 320,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: DesignSystemTab(
+              key: tabKey,
+              selected: false,
+              label: 'Instances',
+              onPressed: _noop,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byKey(tabKey)).width, lessThan(320));
+    });
+
+    testWidgets('uses rectangular shape without rounded corners', (
+      tester,
+    ) async {
+      const tabKey = Key('rectangular-tab');
+
+      await _pumpTab(
+        tester,
+        const DesignSystemTab(
+          key: tabKey,
+          selected: true,
+          shape: DesignSystemTabShape.rectangular,
+          label: 'Pending Wakes',
+          onPressed: _noop,
+        ),
+      );
+
+      final material = tester.widget<Material>(
+        find.descendant(
+          of: find.byKey(tabKey),
+          matching: find.byType(Material),
+        ),
+      );
+      final inkWell = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(tabKey),
+          matching: find.byType(InkWell),
+        ),
+      );
+
+      expect(material.borderRadius, BorderRadius.zero);
+      expect(inkWell.borderRadius, BorderRadius.zero);
+    });
+
+    testWidgets('preferredWidth accounts for icons and multi-digit counters', (
+      tester,
+    ) async {
+      late double textOnlyWidth;
+      late double decoratedWidth;
+
+      await _pumpTab(
+        tester,
+        Builder(
+          builder: (context) {
+            textOnlyWidth = DesignSystemTab.preferredWidth(
+              context,
+              label: 'Pending',
+            );
+            decoratedWidth = DesignSystemTab.preferredWidth(
+              context,
+              label: 'Pending',
+              counter: '100',
+              leadingIcon: Icons.schedule_rounded,
+              trailingIcon: Icons.close_rounded,
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      );
+
+      expect(decoratedWidth, greaterThan(textOnlyWidth));
+    });
+
     testWidgets('uses semanticsLabel when the visible label is omitted', (
       tester,
     ) async {

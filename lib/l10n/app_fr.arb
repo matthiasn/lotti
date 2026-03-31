@@ -198,6 +198,13 @@
     }
   },
   "agentObservationsEmpty": "Aucune observation enregistrée pour le moment.",
+  "agentPendingWakesCountdownLabel": "Compte à rebours",
+  "agentPendingWakesDeleteTooltip": "Supprimer le réveil",
+  "agentPendingWakesDueAtLabel": "Prévu à",
+  "agentPendingWakesEmptyList": "Aucun réveil en attente",
+  "agentPendingWakesPendingLabel": "En attente",
+  "agentPendingWakesScheduledLabel": "Planifié",
+  "agentPendingWakesTitle": "Réveils en attente",
   "agentReportErrorLoading": "Échec du chargement du rapport : {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

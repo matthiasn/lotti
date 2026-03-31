@@ -430,6 +430,27 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no se han registrado observaciones.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Cuenta atrás';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Eliminar despertar';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Vence a las';
+
+  @override
+  String get agentPendingWakesEmptyList => 'No hay despertares pendientes';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'Pendiente';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Programado';
+
+  @override
+  String get agentPendingWakesTitle => 'Despertares pendientes';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Error al cargar el informe: $error';
   }
