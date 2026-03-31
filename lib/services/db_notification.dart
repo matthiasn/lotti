@@ -14,13 +14,6 @@ class UpdateNotifications {
   Timer? _uiOnlyTimer;
   bool _isDisposed = false;
 
-  /// Entity IDs muted on [localUpdateStream].  Notifications containing
-  /// these IDs still reach [updateStream] (UI refresh) but are stripped
-  /// from [localUpdateStream] (agent wake orchestration).
-  ///
-  /// Use [muteLocally] / [unmuteLocally] to manage.
-  final _mutedEntityIds = <String>{};
-
   /// Stream of all update notifications (both local and sync-originated).
   ///
   /// Used by UI widgets and other consumers that need to react to all changes.
@@ -66,15 +59,7 @@ class UpdateNotifications {
         if (_affectedIds.isNotEmpty) {
           final batch = {..._affectedIds};
           _controller.add(batch);
-          // Strip muted entity IDs from the local stream so the agent
-          // orchestrator does not wake on its own (or stale echo)
-          // notifications.
-          final localBatch = _mutedEntityIds.isEmpty
-              ? batch
-              : batch.difference(_mutedEntityIds);
-          if (localBatch.isNotEmpty) {
-            _localController.add(localBatch);
-          }
+          _localController.add(batch);
           _affectedIds.clear();
         }
         _timer = null;
@@ -98,20 +83,6 @@ class UpdateNotifications {
       }
       _uiOnlyTimer = null;
     });
-  }
-
-  /// Mute [entityIds] on [localUpdateStream].
-  ///
-  /// While muted, local `notify()` calls that include these IDs still
-  /// reach [updateStream] (so the UI refreshes) but are stripped from
-  /// [localUpdateStream] (so the wake orchestrator ignores them).
-  void muteLocally(Set<String> entityIds) {
-    _mutedEntityIds.addAll(entityIds);
-  }
-
-  /// Remove [entityIds] from the local-stream mute set.
-  void unmuteLocally(Set<String> entityIds) {
-    _mutedEntityIds.removeAll(entityIds);
   }
 
   Future<void> dispose() async {

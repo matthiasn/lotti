@@ -194,7 +194,6 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     queue: ref.watch(wakeQueueProvider),
     runner: ref.watch(wakeRunnerProvider),
     domainLogger: ref.watch(domainLoggerProvider),
-    updateNotifications: notifications,
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),

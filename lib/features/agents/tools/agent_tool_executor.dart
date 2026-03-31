@@ -278,12 +278,12 @@ class AgentToolExecutor {
           // parent IDs in notifications via parentLinkedEntityIds; without
           // this entry the suppression set lacks the subscription-matched
           // ID and the agent re-wakes on its own writes.
+          //
+          // The vector clock value is not used for suppression (only the
+          // entity ID presence matters), so we avoid a redundant DB read.
           if (result.mutatedEntityId != targetEntityId &&
               !_mutatedEntries.containsKey(targetEntityId)) {
-            final targetVc = await readVectorClock(targetEntityId);
-            if (targetVc != null) {
-              _mutatedEntries[targetEntityId] = targetVc;
-            }
+            _mutatedEntries[targetEntityId] = const VectorClock({});
           }
         } catch (e, s) {
           developer.log(

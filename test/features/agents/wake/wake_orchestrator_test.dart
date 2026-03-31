@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1136,7 +1137,8 @@ void main() {
 
       test(
         'external signal for different entity during execution '
-        'is suppressed within 5s TTL but triggers wake after TTL expires',
+        'is NOT suppressed after execution completes (only actual '
+        'mutations are recorded)',
         () {
           fakeAsync((async) {
             final gate = Completer<Map<String, VectorClock>?>();
@@ -1185,32 +1187,22 @@ void main() {
             expect(queue.isEmpty, isFalse);
 
             // Complete first execution — only entity-1 was mutated.
-            // promotePreRegistered merges ALL subscribed IDs (entity-1 AND
-            // entity-2) into the confirmed suppression record with 5s TTL.
+            // Only actual mutations (entity-1) are recorded in the
+            // confirmed suppression record; entity-2 is NOT suppressed.
             gate.complete({
               'entity-1': const VectorClock({'node-1': 1}),
             });
             async.flushMicrotasks();
 
-            // Only the first wake should have run so far.
+            // Only the first wake should have run so far (throttle gate).
             expect(executionCount, 1);
 
-            // After the throttle window expires, the deferred drain fires
-            // but entity-2 is still suppressed (within 5s TTL).
+            // After the throttle window expires, the deferred drain fires.
+            // entity-2 is NOT in the confirmed suppression set (only
+            // entity-1 was mutated), so the queued job proceeds.
             async
               ..elapse(WakeOrchestrator.throttleWindow)
               ..flushMicrotasks();
-            expect(executionCount, 1);
-
-            // Advance past the 5s suppression TTL (total elapsed now > 5s
-            // from when promotePreRegistered was called).
-            async.elapse(const Duration(seconds: 6));
-
-            // Clear throttle so a new notification can proceed.
-            orchestrator.clearThrottle('agent-1');
-
-            // Now a new entity-2 notification should NOT be suppressed.
-            emitAndDrain(async, controller, {'entity-2'});
             expect(executionCount, 2);
 
             controller.close();
@@ -1218,12 +1210,11 @@ void main() {
         },
       );
 
-      test('promotePreRegistered suppresses all subscribed IDs within TTL '
-          'but allows them after TTL expires', () {
+      test('only actual mutations are suppressed after execution '
+          '(non-mutated subscribed IDs are not suppressed)', () {
         fakeAsync((async) {
           // Executor mutates entity-1 but not entity-2.
-          // promotePreRegistered merges ALL subscribed IDs (entity-1 AND
-          // entity-2) into the confirmed suppression record with 5s TTL.
+          // Only entity-1 should be in the confirmed suppression record.
           orchestrator
             ..addSubscription(
               AgentSubscription(
@@ -1269,22 +1260,10 @@ void main() {
           // second notification is not blocked by the cooldown.
           orchestrator.clearThrottle('agent-1');
 
-          // Within the 5s TTL, entity-2 is suppressed because
-          // promotePreRegistered merged all subscribed IDs.
+          // entity-2 was NOT mutated, so it is NOT suppressed — the
+          // notification should enqueue a wake job immediately.
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
-          emitTokens(async, controller, {'entity-2'});
-          verifyNever(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          );
-
-          // Advance past the 5s suppression TTL.
-          async.elapse(const Duration(seconds: 6));
-
-          // Clear throttle again (the suppressed notification set one).
-          orchestrator.clearThrottle('agent-1');
-
-          // Now a notification for entity-2 should NOT be suppressed.
           emitAndDrain(async, controller, {'entity-2'});
           verify(
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
@@ -1741,7 +1720,7 @@ void main() {
           emitAndDrain(async, controller, {'entity-1'});
 
           // Advance past the 5s suppression TTL so the second notification
-          // is not suppressed by promotePreRegistered.
+          // is not suppressed by the confirmed suppression record.
           async.elapse(const Duration(seconds: 6));
 
           // Clear throttle so the second notification is not blocked.
@@ -1791,7 +1770,7 @@ void main() {
           // Fire twice to increment counter to 1 (defer-first: drain each).
           emitAndDrain(async, controller, {'entity-1'});
           // Advance past the 5s suppression TTL so the second notification
-          // is not suppressed by promotePreRegistered.
+          // is not suppressed by the confirmed suppression record.
           async.elapse(const Duration(seconds: 6));
           orchestrator.clearThrottle('agent-1');
           emitAndDrain(async, controller, {'entity-1'});
@@ -1849,7 +1828,7 @@ void main() {
           expect(executionCount, 1);
 
           // Advance past the 5s suppression TTL so the next notification
-          // for entity-1 is not suppressed by promotePreRegistered.
+          // for entity-1 is not suppressed by the confirmed suppression record.
           async.elapse(const Duration(seconds: 6));
 
           // Agent is now throttled (post-execution throttle). An external
@@ -2134,7 +2113,7 @@ void main() {
           async
             ..flushMicrotasks()
             // Advance past the 5s suppression TTL so the subscription
-            // notification is not suppressed by promotePreRegistered
+            // notification is not suppressed by the confirmed suppression record
             // (which merges all subscribed IDs after the creation wake).
             ..elapse(const Duration(seconds: 6));
 
@@ -2599,7 +2578,7 @@ void main() {
             ).called(1);
 
             // Advance past the 5s suppression TTL so the next entity-1
-            // notification is not suppressed by promotePreRegistered.
+            // notification is not suppressed by the confirmed suppression record.
             async.elapse(const Duration(seconds: 6));
 
             // Make getAgentState throw so clearThrottle's DB write fails.
@@ -2719,7 +2698,7 @@ void main() {
             expect(firstBatch.length, 2);
 
             // Advance past the 5s suppression TTL so subsequent
-            // notifications are not suppressed by promotePreRegistered.
+            // notifications are not suppressed by the confirmed suppression record.
             async.elapse(const Duration(seconds: 6));
 
             clearInteractions(mockRepository);
@@ -3647,6 +3626,45 @@ void main() {
 
           cg.stop();
         });
+      });
+    });
+
+    group('agent execution zone', () {
+      test('executor runs inside agent execution zone '
+          '(isAgentExecution is true)', () {
+        fakeAsync((async) {
+          bool? capturedIsAgentExecution;
+
+          orchestrator
+            ..addSubscription(
+              AgentSubscription(
+                id: 'sub-zone',
+                agentId: 'agent-zone',
+                matchEntityIds: {'entity-zone'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              capturedIsAgentExecution = isAgentExecution;
+              return null;
+            };
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitAndDrain(async, controller, {'entity-zone'});
+
+          expect(
+            capturedIsAgentExecution,
+            isTrue,
+            reason: 'The executor should run inside the agent execution zone',
+          );
+
+          controller.close();
+        });
+      });
+
+      test('isAgentExecution is false outside of executor', () {
+        // Verify that outside the executor context, the zone flag is false.
+        expect(isAgentExecution, isFalse);
       });
     });
   });

@@ -873,4 +873,61 @@ void main() {
       });
     });
   });
+
+  group('isAgentExecution zone utility', () {
+    test('returns false outside agent execution zone', () {
+      expect(isAgentExecution, isFalse);
+    });
+
+    test('returns true inside agent execution zone', () {
+      late bool captured;
+      runZoned(
+        () {
+          captured = isAgentExecution;
+        },
+        zoneValues: {agentExecutionZoneKey: true},
+      );
+      expect(captured, isTrue);
+    });
+
+    test('returns false when zone key is set to non-true value', () {
+      late bool captured;
+      runZoned(
+        () {
+          captured = isAgentExecution;
+        },
+        zoneValues: {agentExecutionZoneKey: 'yes'},
+      );
+      expect(captured, isFalse);
+    });
+
+    test('returns false when zone key is set to false', () {
+      late bool captured;
+      runZoned(
+        () {
+          captured = isAgentExecution;
+        },
+        zoneValues: {agentExecutionZoneKey: false},
+      );
+      expect(captured, isFalse);
+    });
+
+    test('nested zones inherit the agent execution flag', () {
+      late bool outerCapture;
+      late bool innerCapture;
+      runZoned(
+        () {
+          outerCapture = isAgentExecution;
+          runZoned(
+            () {
+              innerCapture = isAgentExecution;
+            },
+          );
+        },
+        zoneValues: {agentExecutionZoneKey: true},
+      );
+      expect(outerCapture, isTrue);
+      expect(innerCapture, isTrue);
+    });
+  });
 }

@@ -34,12 +34,6 @@ class TestNotifications implements UpdateNotifications {
   }
 
   @override
-  void muteLocally(Set<String> entityIds) {}
-
-  @override
-  void unmuteLocally(Set<String> entityIds) {}
-
-  @override
   Future<void> dispose() async {
     await _controller.close();
   }
