@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.939" date="2026-03-31">
+      <description>
+          <p>Task-agent wake prompts no longer inject sibling-task TLDR directories, and the related-task drill-down tool now stays defined in the registry while being hidden from the LLM until a stronger retrieval path is in place.</p>
+      </description>
+    </release>
     <release version="0.9.938" date="2026-03-29">
       <description>
           <p>Projects detail task summaries: project-task rows now show the latest task-agent <code>oneLiner</code> subtitle between the task title and metadata, matching the current Figma spacing and typography on mobile and desktop layouts, and open project detail pages now refresh automatically when a task-agent report finishes.</p>

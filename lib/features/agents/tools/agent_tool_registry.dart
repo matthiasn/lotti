@@ -9,6 +9,7 @@ class AgentToolDefinition {
     required this.name,
     required this.description,
     required this.parameters,
+    this.enabled = true,
   });
 
   /// The tool name used in function-call messages.
@@ -19,6 +20,9 @@ class AgentToolDefinition {
 
   /// JSON Schema object describing the tool's parameters.
   final Map<String, dynamic> parameters;
+
+  /// Whether this tool should be exposed to the LLM right now.
+  final bool enabled;
 }
 
 /// Tool name constants used by the task agent.
@@ -385,6 +389,7 @@ class AgentToolRegistry {
           'Fetch full details for one related task in the same parent '
           'project. Use only when a task from the related-tasks directory is '
           'directly relevant to the current task. Use sparingly.',
+      enabled: false,
       parameters: {
         'type': 'object',
         'properties': {
