@@ -511,6 +511,110 @@ void main() {
       );
     });
 
+    group('targetEntityId capture', () {
+      test(
+        'adds targetEntityId to mutatedEntries when mutatedEntityId differs',
+        () async {
+          const mutatedId = 'child-entity-001';
+          const parentClock = VectorClock({'host-a': 3});
+
+          await executor.execute(
+            toolName: 'add_linked_entry',
+            args: {'text': 'child text'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'done',
+              mutatedEntityId: mutatedId,
+            ),
+            readVectorClock: (id) async {
+              if (id == mutatedId) return parentClock;
+              return null;
+            },
+          );
+
+          // Both the mutated child entity and the parent targetEntityId
+          // should be recorded.
+          expect(executor.mutatedEntries, contains(mutatedId));
+          expect(executor.mutatedEntries, contains(targetEntityId));
+          // targetEntityId uses a placeholder VectorClock (no DB read).
+          expect(
+            executor.mutatedEntries[targetEntityId],
+            equals(const VectorClock({})),
+          );
+        },
+      );
+
+      test(
+        'does not add duplicate when mutatedEntityId equals targetEntityId',
+        () async {
+          const clock = VectorClock({'host-a': 5});
+
+          await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'Updated'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'done',
+              mutatedEntityId: targetEntityId,
+            ),
+            readVectorClock: (_) async => clock,
+          );
+
+          // Only one entry: the mutatedEntityId IS the targetEntityId.
+          expect(executor.mutatedEntries, hasLength(1));
+          expect(executor.mutatedEntries[targetEntityId], equals(clock));
+        },
+      );
+
+      test(
+        'does not add targetEntityId when it is already captured from a '
+        'previous execution',
+        () async {
+          const clock1 = VectorClock({'host-a': 1});
+          const clock2 = VectorClock({'host-a': 2});
+
+          // First execution: mutatedEntityId == targetEntityId.
+          await executor.execute(
+            toolName: 'set_task_title',
+            args: {'title': 'First'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'done',
+              mutatedEntityId: targetEntityId,
+            ),
+            readVectorClock: (_) async => clock1,
+          );
+
+          // Second execution: mutatedEntityId is a child entity.
+          await executor.execute(
+            toolName: 'add_linked_entry',
+            args: {'text': 'child'},
+            targetEntityId: targetEntityId,
+            resolveCategoryId: (_) async => allowedCategoryId,
+            executeHandler: () async => const ToolExecutionResult(
+              success: true,
+              output: 'done',
+              mutatedEntityId: 'child-entity',
+            ),
+            readVectorClock: (id) async {
+              if (id == 'child-entity') return clock2;
+              return null;
+            },
+          );
+
+          // targetEntityId should keep the original clock (from first exec).
+          expect(executor.mutatedEntries[targetEntityId], equals(clock1));
+          expect(executor.mutatedEntries['child-entity'], equals(clock2));
+        },
+      );
+    });
+
     group('operation ID determinism', () {
       test('two executions with identical tool/args/target produce same '
           'operationId', () async {

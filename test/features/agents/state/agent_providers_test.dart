@@ -2400,10 +2400,7 @@ void main() {
         addTearDown(runner.dispose);
 
         when(
-          () => mockNotifications.notify(
-            any(),
-            fromSync: any(named: 'fromSync'),
-          ),
+          () => mockNotifications.notifyUiOnly(any()),
         ).thenReturn(null);
 
         await getIt.reset();

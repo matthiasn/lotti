@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// A registered interest that wakes [agentId] when tokens arrive matching
@@ -248,19 +249,13 @@ class WakeOrchestrator {
 
   /// Pre-register suppression for [agentId] before execution starts.
   ///
-  /// Uses the union of all subscribed entity IDs for this agent as a
-  /// conservative over-approximation.  Any notification matching these IDs
-  /// that arrives while the executor is running will be suppressed, closing
-  /// the window between DB writes and [recordMutatedEntities].  After
-  /// execution, the actual mutation set replaces this pre-registered data.
-  void _preRegisterSuppression(String agentId) {
-    final subscribedIds = <String>{};
-    for (final sub in _subscriptions) {
-      if (sub.agentId == agentId) {
-        subscribedIds.addAll(sub.matchEntityIds);
-      }
-    }
-    _suppression.preRegisterSuppression(agentId, subscribedIds);
+  /// Uses only the [triggerTokens] that caused this wake.  Any notification
+  /// matching these IDs that arrives while the executor is running will be
+  /// suppressed, closing the window between DB writes and
+  /// [recordMutatedEntities].  After execution, the actual mutation set
+  /// replaces this pre-registered data.
+  void _preRegisterSuppression(String agentId, Set<String> triggerTokens) {
+    _suppression.preRegisterSuppression(agentId, triggerTokens);
   }
 
   // ── Throttle management ────────────────────────────────────────────────────
@@ -407,11 +402,18 @@ class WakeOrchestrator {
       if (_isSuppressed(sub.agentId, matched)) {
         _log(
           'suppressed self-notification for '
-          '${DomainLogger.sanitizeId(sub.agentId)}',
+          '${DomainLogger.sanitizeId(sub.agentId)} '
+          'matched=${matched.map(DomainLogger.sanitizeId)}',
           subDomain: 'suppression',
         );
         continue;
       }
+      _log(
+        'not suppressed for ${DomainLogger.sanitizeId(sub.agentId)} '
+        'matched=${matched.map(DomainLogger.sanitizeId)} '
+        'suppression=${_suppression.debugState(sub.agentId)}',
+        subDomain: 'suppression',
+      );
 
       // 3. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
@@ -698,7 +700,8 @@ class WakeOrchestrator {
           );
           if (suppressed || preRegSuppressed) {
             _log(
-              'drain re-check: suppressed=${suppressed || preRegSuppressed} '
+              'drain re-check: dropped '
+              '(suppressed=$suppressed, preReg=$preRegSuppressed) '
               'for ${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
@@ -793,28 +796,34 @@ class WakeOrchestrator {
 
       final startTime = clock.now();
       try {
-        // Pre-register suppression data BEFORE executing, using the agent's
-        // subscribed entity IDs as a conservative over-approximation.  This
-        // prevents a race where the executor writes to the DB, the stream
-        // emits a notification, and _onBatch enqueues a self-wake before
-        // the executor returns and recordMutatedEntities is called.
-        _preRegisterSuppression(job.agentId);
+        // Pre-register suppression for the trigger tokens BEFORE executing.
+        // This prevents a race where the executor writes to the DB, the
+        // stream emits a notification, and _onBatch enqueues a self-wake
+        // before the executor returns and recordMutatedEntities is called.
+        _preRegisterSuppression(job.agentId, job.triggerTokens);
 
-        final mutated = await executor(
-          job.agentId,
-          job.runKey,
-          job.triggerTokens,
-          threadId,
+        // Run the executor inside an agent-execution zone so that any
+        // DB writes made by agent tools are tagged.  PersistenceLogic
+        // checks this zone value and routes notifications through
+        // notifyUiOnly instead of notify, preventing self-wake.
+        final mutated = await runZoned(
+          () => executor(
+            job.agentId,
+            job.runKey,
+            job.triggerTokens,
+            threadId,
+          ),
+          zoneValues: {agentExecutionZoneKey: true},
         );
 
-        // Clear the pre-registered suppression and record actual mutations
-        // so that only genuinely self-written entities are suppressed.
+        // Clear pre-registered suppression and record only the actual
+        // mutations.  The zone-based isAgentExecution in PersistenceLogic
+        // prevents self-notifications, so the pre-registered superset is
+        // no longer needed after execution completes.
         _suppression.clearPreRegistered(job.agentId);
         if (mutated != null && mutated.isNotEmpty) {
           recordMutatedEntities(job.agentId, mutated);
         } else {
-          // No mutations this cycle — clear confirmed suppression so
-          // external edits are not incorrectly blocked.
           _suppression.clearConfirmed(job.agentId);
         }
 
@@ -940,6 +949,21 @@ class _WakeSuppressionTracker {
     final record = _preRegisteredSuppression[agentId];
     if (record == null || record.entityIds.isEmpty) return false;
     return matchedTokens.every(record.entityIds.contains);
+  }
+
+  /// Debug representation of the suppression state for [agentId].
+  String debugState(String agentId) {
+    final confirmed = _recentlyMutatedEntries[agentId];
+    final preReg = _preRegisteredSuppression[agentId];
+    final confirmedAge = confirmed != null
+        ? '${clock.now().difference(confirmed.recordedAt).inMilliseconds}ms ago'
+        : 'none';
+    final confirmedIds =
+        confirmed?.entityIds.map(DomainLogger.sanitizeId).join(',') ?? '∅';
+    final preRegIds =
+        preReg?.entityIds.map(DomainLogger.sanitizeId).join(',') ?? '∅';
+    return 'confirmed=[$confirmedIds]($confirmedAge) '
+        'preReg=[$preRegIds]';
   }
 }
 

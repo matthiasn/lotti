@@ -273,6 +273,18 @@ class AgentToolExecutor {
               name: 'AgentToolExecutor',
             );
           }
+          // Also record the target entity (e.g. the parent task) when
+          // the mutated entity is a child.  PersistenceLogic includes
+          // parent IDs in notifications via parentLinkedEntityIds; without
+          // this entry the suppression set lacks the subscription-matched
+          // ID and the agent re-wakes on its own writes.
+          //
+          // The vector clock value is not used for suppression (only the
+          // entity ID presence matters), so we avoid a redundant DB read.
+          if (result.mutatedEntityId != targetEntityId &&
+              !_mutatedEntries.containsKey(targetEntityId)) {
+            _mutatedEntries[targetEntityId] = const VectorClock({});
+          }
         } catch (e, s) {
           developer.log(
             'Failed to capture vector clock for ${result.mutatedEntityId} '

@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -27,6 +28,7 @@ class TaskAgentService {
     required this.orchestrator,
     required this.syncService,
     this.domainLogger,
+    this.updateNotifications, // TODO(debug): remove after wake-loop investigation
   });
 
   final AgentService agentService;
@@ -39,6 +41,9 @@ class TaskAgentService {
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
+
+  // TODO(debug): remove after wake-loop investigation
+  final UpdateNotifications? updateNotifications;
 
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.taskAgent;
@@ -253,6 +258,9 @@ class TaskAgentService {
   /// The subscription matches on the [taskId] entity ID, so the agent wakes
   /// whenever the task (or its linked entries) receives a notification.
   void _registerTaskSubscription(String agentId, String taskId) {
+    // TODO(debug): remove after wake-loop investigation.
+    updateNotifications?.debugEntityIds.add(taskId);
+
     orchestrator.addSubscription(
       AgentSubscription(
         id: '${agentId}_task_$taskId',

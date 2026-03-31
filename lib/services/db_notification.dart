@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 class UpdateNotifications {
   UpdateNotifications();
@@ -24,8 +25,23 @@ class UpdateNotifications {
   /// trigger agent wakes — the source device already ran the agent.
   Stream<Set<String>> get localUpdateStream => _localController.stream;
 
+  // TODO(debug): remove after wake-loop investigation.
+  // Entity IDs to trace — any local notify() containing one of these
+  // will log the caller's stack trace.
+  final debugEntityIds = <String>{};
+
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (_isDisposed) return;
+
+    if (!fromSync && debugEntityIds.isNotEmpty) {
+      final hit = affectedIds.intersection(debugEntityIds);
+      if (hit.isNotEmpty) {
+        developer.log(
+          'notify(local) hit=$hit — caller:\n${StackTrace.current}',
+          name: 'UpdateNotifications.DEBUG',
+        );
+      }
+    }
 
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);
@@ -107,6 +123,18 @@ const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+
+/// Zone key set to `true` during agent wake execution.
+///
+/// Code running inside this zone (e.g. tool handlers writing to the
+/// journal DB) should route notifications through `notifyUiOnly` instead
+/// of `notify` to prevent the wake orchestrator from re-triggering the
+/// agent on its own writes.
+const agentExecutionZoneKey = #agentExecution;
+
+/// Returns `true` when the current code is executing inside an agent
+/// wake cycle.
+bool get isAgentExecution => Zone.current[agentExecutionZoneKey] == true;
 
 const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
 

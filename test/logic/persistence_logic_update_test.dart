@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -318,6 +320,42 @@ void main() {
 
         expect(skipped, isFalse);
         verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
+      },
+    );
+  });
+
+  group('agent execution zone routing', () {
+    test(
+      'updateDbEntity calls notify when outside agent execution zone',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+
+        await logic.updateDbEntity(buildEntry());
+
+        verify(() => updateNotifications.notify(any<Set<String>>())).called(1);
+        verifyNever(
+          () => updateNotifications.notifyUiOnly(any<Set<String>>()),
+        );
+      },
+    );
+
+    test(
+      'updateDbEntity calls notifyUiOnly when inside agent execution zone',
+      () async {
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => updateNotifications.notifyUiOnly(any<Set<String>>()),
+        ).thenReturn(null);
+
+        await runZoned(
+          () => logic.updateDbEntity(buildEntry()),
+          zoneValues: {agentExecutionZoneKey: true},
+        );
+
+        verify(
+          () => updateNotifications.notifyUiOnly(any<Set<String>>()),
+        ).called(1);
+        verifyNever(() => updateNotifications.notify(any<Set<String>>()));
       },
     );
   });

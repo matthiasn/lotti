@@ -11,6 +11,9 @@ class TestNotifications implements UpdateNotifications {
   final _controller = StreamController<Set<String>>.broadcast();
 
   @override
+  final debugEntityIds = <String>{};
+
+  @override
   Stream<Set<String>> get updateStream => _controller.stream;
 
   @override
