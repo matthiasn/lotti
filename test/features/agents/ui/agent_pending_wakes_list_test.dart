@@ -30,7 +30,7 @@ void main() {
     AgentService? agentService,
     Map<String, String?> subjectTitles = const {},
   }) {
-    return makeTestableWidgetNoScroll(
+    return makeTestableWidgetWithScaffold(
       const AgentPendingWakesList(),
       theme: DesignSystemTheme.light(),
       overrides: [
@@ -62,6 +62,7 @@ void main() {
       tester,
     ) async {
       final now = DateTime(2026, 3, 31, 9);
+      var currentNow = now;
       final record = PendingWakeRecord(
         agent: makeTestIdentity(
           agentId: 'agent-1',
@@ -77,7 +78,7 @@ void main() {
         dueAt: now.add(const Duration(minutes: 2, seconds: 5)),
       );
 
-      await withClock(Clock.fixed(now), () async {
+      await withClock(Clock(() => currentNow), () async {
         await tester.pumpWidget(
           buildSubject(
             records: [record],
@@ -89,9 +90,10 @@ void main() {
         expect(find.text('Platform Refresh'), findsOneWidget);
         expect(find.text('2m 5s'), findsOneWidget);
 
+        currentNow = currentNow.add(const Duration(seconds: 2));
         await tester.pump(const Duration(seconds: 1));
 
-        expect(find.text('2m 4s'), findsOneWidget);
+        expect(find.text('2m 3s'), findsOneWidget);
       });
     });
 
@@ -191,6 +193,40 @@ void main() {
       await tester.pump();
 
       verify(() => mockAgentService.clearScheduledWake('agent-2')).called(1);
+    });
+
+    testWidgets('delete failure shows snackbar feedback', (tester) async {
+      final mockAgentService = MockAgentService();
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-2',
+          displayName: 'Loop Guard',
+        ),
+        state: makeTestState(
+          agentId: 'agent-2',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 5)),
+      );
+
+      when(
+        () => mockAgentService.cancelPendingWake('agent-2'),
+      ).thenThrow(Exception('boom'));
+
+      await tester.pumpWidget(
+        buildSubject(
+          records: [record],
+          agentService: mockAgentService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentPendingWakesList));
+      expect(find.text(context.messages.commonError), findsOneWidget);
     });
   });
 }

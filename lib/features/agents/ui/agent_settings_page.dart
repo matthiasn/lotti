@@ -168,7 +168,13 @@ class _AgentSettingsTabBar extends StatelessWidget {
     List<({String? counter, String label, _AgentSettingsTab tab})> tabs,
   ) {
     final naturalWidths = tabs
-        .map((tab) => _naturalTabWidth(context, tab.label, tab.counter))
+        .map(
+          (tab) => DesignSystemTab.preferredWidth(
+            context,
+            label: tab.label,
+            counter: tab.counter,
+          ),
+        )
         .toList();
     final totalNaturalWidth = naturalWidths.fold<double>(
       0,
@@ -182,49 +188,6 @@ class _AgentSettingsTabBar extends StatelessWidget {
     final extraPerTab = (availableWidth - totalNaturalWidth) / tabs.length;
     return naturalWidths.map((width) => width + extraPerTab).toList();
   }
-
-  double _naturalTabWidth(BuildContext context, String label, String? counter) {
-    final tokens = context.designTokens;
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: tokens.typography.styles.subtitle.subtitle2,
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: textScaler,
-      maxLines: 1,
-    )..layout();
-
-    final badgeWidth = switch (counter) {
-      null || '' => 0.0,
-      final value when value.length <= 2 => textScaler.scale(
-        tokens.typography.lineHeight.caption,
-      ),
-      final value =>
-        _measureText(
-              context,
-              value,
-              tokens.typography.styles.others.caption,
-            ) +
-            (tokens.spacing.step2 * 2),
-    };
-
-    final gap = counter == null || counter.isEmpty ? 0.0 : tokens.spacing.step2;
-
-    return labelPainter.width + badgeWidth + gap + (tokens.spacing.step5 * 2);
-  }
-
-  double _measureText(BuildContext context, String text, TextStyle style) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    )..layout();
-    return painter.width;
-  }
 }
 
 class _AgentSettingsTabBody extends ConsumerWidget {
@@ -236,11 +199,14 @@ class _AgentSettingsTabBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return switch (selectedTab) {
-      _AgentSettingsTab.templates => const _TemplatesTab(),
-      _AgentSettingsTab.instances => const AgentInstancesList(),
-      _AgentSettingsTab.pendingWakes => const AgentPendingWakesList(),
-    };
+    return IndexedStack(
+      index: selectedTab.index,
+      children: const [
+        _TemplatesTab(),
+        AgentInstancesList(),
+        AgentPendingWakesList(),
+      ],
+    );
   }
 }
 

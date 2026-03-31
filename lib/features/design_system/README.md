@@ -181,6 +181,11 @@ Representative composite or feature-shaped components:
 - calendar and time pickers
 - file upload surface
 
+The tabs component is intentionally content-sized by default. Segmented tab
+bars are expected to clip and shape the outer container, while each
+`DesignSystemTab` stays rectangular when asked and keeps its own label/badge
+content centered without scaling the text down.
+
 That mix is intentional. The current DS is not only a box of atoms; it also includes a few opinionated composites that encode real app interaction patterns.
 
 ## Public Surface

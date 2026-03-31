@@ -13,10 +13,13 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   final agentService = ref.watch(agentServiceProvider);
   final repository = ref.watch(agentRepositoryProvider);
   final identities = await agentService.listAgents();
+  final statesByAgentId = await repository.getAgentStatesByAgentIds(
+    identities.map((identity) => identity.agentId).toList(),
+  );
 
   final records = <PendingWakeRecord>[];
   for (final identity in identities) {
-    final state = await repository.getAgentState(identity.agentId);
+    final state = statesByAgentId[identity.agentId];
     if (state == null || state.deletedAt != null) {
       continue;
     }

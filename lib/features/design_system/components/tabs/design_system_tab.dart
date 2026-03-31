@@ -38,6 +38,27 @@ class DesignSystemTab extends StatefulWidget {
          'Provide either a visible label or a semanticsLabel.',
        );
 
+  static double preferredWidth(
+    BuildContext context, {
+    required String label,
+    String? counter,
+    IconData? leadingIcon,
+    IconData? trailingIcon,
+    DesignSystemTabSize size = DesignSystemTabSize.defaultSize,
+  }) {
+    final tokens = context.designTokens;
+    final sizeSpec = _TabSizeSpec.fromTokens(tokens, size);
+
+    return _TabContentMetrics.measure(
+      context,
+      sizeSpec: sizeSpec,
+      label: label,
+      counter: counter,
+      leadingIcon: leadingIcon,
+      trailingIcon: trailingIcon,
+    );
+  }
+
   final bool selected;
   final VoidCallback? onPressed;
   final DesignSystemTabSize size;
@@ -164,9 +185,11 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
       ),
     );
 
-    return tab.withDisabledOpacity(
-      enabled: enabled,
-      disabledOpacity: tokens.colors.text.lowEmphasis.a,
+    return IntrinsicWidth(
+      child: tab.withDisabledOpacity(
+        enabled: enabled,
+        disabledOpacity: tokens.colors.text.lowEmphasis.a,
+      ),
     );
   }
 
@@ -296,6 +319,90 @@ class _TabIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TabContentMetrics {
+  const _TabContentMetrics._();
+
+  static double measure(
+    BuildContext context, {
+    required _TabSizeSpec sizeSpec,
+    required String? label,
+    required String? counter,
+    required IconData? leadingIcon,
+    required IconData? trailingIcon,
+  }) {
+    final tokens = context.designTokens;
+    final primaryWidths = <double>[
+      if (leadingIcon != null) sizeSpec.iconSlotSize,
+      if (label?.isNotEmpty == true)
+        _measureText(
+          context,
+          label!,
+          sizeSpec.labelStyle,
+        ),
+      if (counter?.isNotEmpty == true)
+        _measureCounter(
+          context,
+          tokens,
+          counter!,
+        ),
+    ];
+
+    final primaryWidth =
+        _sum(primaryWidths) +
+        (primaryWidths.length > 1
+            ? sizeSpec.primaryContentGap * (primaryWidths.length - 1)
+            : 0);
+    final trailingWidth = trailingIcon == null ? 0.0 : sizeSpec.iconSlotSize;
+    final contentWidth =
+        primaryWidth +
+        (primaryWidth > 0 && trailingWidth > 0
+            ? sizeSpec.secondaryContentGap
+            : 0) +
+        trailingWidth;
+
+    return contentWidth + (sizeSpec.horizontalPadding * 2);
+  }
+
+  static double _measureText(
+    BuildContext context,
+    String text,
+    TextStyle style,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width;
+  }
+
+  static double _measureCounter(
+    BuildContext context,
+    DsTokens tokens,
+    String value,
+  ) {
+    final textWidth = _measureText(
+      context,
+      value,
+      tokens.typography.styles.others.caption,
+    );
+    final textScaler = MediaQuery.textScalerOf(context);
+    final badgeHeight =
+        textScaler.scale(tokens.typography.lineHeight.caption) +
+        (tokens.spacing.step1 * 2);
+
+    if (value.length <= 2) {
+      return badgeHeight;
+    }
+
+    return textWidth + (tokens.spacing.step2 * 2);
+  }
+
+  static double _sum(List<double> values) =>
+      values.fold<double>(0, (sum, width) => sum + width);
 }
 
 class _TabSizeSpec {

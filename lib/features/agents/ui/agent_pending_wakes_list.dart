@@ -131,13 +131,12 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
         return;
       }
 
+      final remainingSeconds = _remainingFromDueAt(widget.record.dueAt);
       setState(() {
-        if (_remainingSeconds <= 1) {
-          _remainingSeconds = 0;
+        _remainingSeconds = remainingSeconds;
+        if (_remainingSeconds <= 0) {
           timer.cancel();
-          return;
         }
-        _remainingSeconds -= 1;
       });
     });
   }
@@ -160,6 +159,21 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
           service.cancelPendingWake(widget.record.agent.agentId);
         case PendingWakeType.scheduled:
           await service.clearScheduledWake(widget.record.agent.agentId);
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      final scaffold = Scaffold.maybeOf(context);
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (scaffold != null && messenger != null) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(context.messages.commonError),
+            ),
+          );
       }
     } finally {
       if (mounted) {

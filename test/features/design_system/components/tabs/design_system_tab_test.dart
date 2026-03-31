@@ -288,6 +288,30 @@ void main() {
       expect(tapCount, 1);
     });
 
+    testWidgets('keeps intrinsic width by default inside wider parents', (
+      tester,
+    ) async {
+      const tabKey = Key('intrinsic-width-tab');
+
+      await _pumpTab(
+        tester,
+        const SizedBox(
+          width: 320,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: DesignSystemTab(
+              key: tabKey,
+              selected: false,
+              label: 'Instances',
+              onPressed: _noop,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byKey(tabKey)).width, lessThan(320));
+    });
+
     testWidgets('uses semanticsLabel when the visible label is omitted', (
       tester,
     ) async {

@@ -103,11 +103,12 @@ log. It shows only wake records that can still fire later:
 - `scheduledWakeAt`: the synced scheduled wake used by project agents and
   template improvers
 
-Each pending-wake card computes its countdown locally from the moment the card
-first mounts, so the page does not need to rebuild the whole list every second.
-Deleting a card clears only the represented wake marker: `nextWakeAt` uses the
-shared pending-wake cancellation path, while `scheduledWakeAt` is removed from
-the agent state.
+Each pending-wake card owns its own one-second countdown timer and recomputes
+the remaining time from `clock.now()` on every tick, so the page does not need
+to rebuild the whole list every second and the timer does not drift if frames
+arrive late. Deleting a card clears only the represented wake marker:
+`nextWakeAt` uses the shared pending-wake cancellation path, while
+`scheduledWakeAt` is removed from the agent state.
 
 ```mermaid
 flowchart LR
