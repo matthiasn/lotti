@@ -15,11 +15,17 @@ enum DesignSystemTabVisualState {
   pressed,
 }
 
+enum DesignSystemTabShape {
+  standalone,
+  rectangular,
+}
+
 class DesignSystemTab extends StatefulWidget {
   const DesignSystemTab({
     required this.selected,
     required this.onPressed,
     this.size = DesignSystemTabSize.defaultSize,
+    this.shape = DesignSystemTabShape.standalone,
     this.label,
     this.counter,
     this.leadingIcon,
@@ -35,6 +41,7 @@ class DesignSystemTab extends StatefulWidget {
   final bool selected;
   final VoidCallback? onPressed;
   final DesignSystemTabSize size;
+  final DesignSystemTabShape shape;
   final String? label;
   final String? counter;
   final IconData? leadingIcon;
@@ -77,11 +84,20 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
       enabled: enabled,
       visualState: visualState,
     );
+    final borderRadius = switch (widget.shape) {
+      DesignSystemTabShape.standalone => BorderRadius.vertical(
+        top: Radius.circular(sizeSpec.cornerRadius),
+      ),
+      DesignSystemTabShape.rectangular => BorderRadius.zero,
+    };
 
     final tab = Material(
       color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: borderRadius,
       child: InkWell(
         onTap: widget.onPressed,
+        borderRadius: borderRadius,
         onHover: widget.forcedState == null && enabled && !widget.selected
             ? (value) => setState(() => _hovered = value)
             : null,
@@ -93,33 +109,31 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
           enabled: enabled,
           selected: widget.selected,
           label: widget.semanticsLabel ?? widget.label,
-          child: IntrinsicWidth(
-            child: SizedBox(
-              height: sizeSpec.height,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: styleSpec.backgroundColor,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(sizeSpec.cornerRadius),
-                        ),
+          child: SizedBox(
+            height: sizeSpec.height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: styleSpec.backgroundColor,
+                      borderRadius: borderRadius,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: sizeSpec.horizontalPadding,
+                        right: sizeSpec.horizontalPadding,
+                        top: sizeSpec.topPadding,
+                        bottom: widget.selected
+                            ? sizeSpec.selectedBottomPadding
+                            : sizeSpec.bottomPadding,
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: sizeSpec.horizontalPadding,
-                          right: sizeSpec.horizontalPadding,
-                          top: sizeSpec.topPadding,
-                          bottom: widget.selected
-                              ? sizeSpec.selectedBottomPadding
-                              : sizeSpec.bottomPadding,
+                      child: DefaultTextStyle.merge(
+                        style: sizeSpec.labelStyle.copyWith(
+                          color: styleSpec.labelColor,
                         ),
-                        child: DefaultTextStyle.merge(
-                          style: sizeSpec.labelStyle.copyWith(
-                            color: styleSpec.labelColor,
-                          ),
+                        child: Center(
                           child: _TabContent(
                             sizeSpec: sizeSpec,
                             styleSpec: styleSpec,
@@ -132,18 +146,18 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
                       ),
                     ),
                   ),
-                  if (widget.selected)
-                    SizedBox(
-                      height: sizeSpec.selectorHeight,
-                      child: ColoredBox(color: styleSpec.selectorColor),
-                    ),
-                  if (styleSpec.showDivider)
-                    SizedBox(
-                      height: sizeSpec.dividerHeight,
-                      child: ColoredBox(color: styleSpec.dividerColor),
-                    ),
-                ],
-              ),
+                ),
+                if (widget.selected)
+                  SizedBox(
+                    height: sizeSpec.selectorHeight,
+                    child: ColoredBox(color: styleSpec.selectorColor),
+                  ),
+                if (styleSpec.showDivider)
+                  SizedBox(
+                    height: sizeSpec.dividerHeight,
+                    child: ColoredBox(color: styleSpec.dividerColor),
+                  ),
+              ],
             ),
           ),
         ),

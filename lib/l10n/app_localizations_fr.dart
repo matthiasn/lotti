@@ -431,6 +431,27 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune observation enregistrée pour le moment.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Compte à rebours';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Supprimer le réveil';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Prévu à';
+
+  @override
+  String get agentPendingWakesEmptyList => 'Aucun réveil en attente';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'En attente';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Planifié';
+
+  @override
+  String get agentPendingWakesTitle => 'Réveils en attente';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Échec du chargement du rapport : $error';
   }

@@ -85,6 +85,43 @@ flowchart TD
   Init --> Sync["Wire SyncEventProcessor (if available)"]
 ```
 
+## Settings Surfaces
+
+`Settings > Agents` is the operator-facing entry point for the feature. The
+landing page now exposes three runtime views:
+
+- `Templates`: reusable agent definitions and version heads
+- `Instances`: persisted agent identities and evolution sessions
+- `Pending Wakes`: live wake timers derived from persisted `AgentStateEntity`
+  records
+
+The pending-wakes dashboard is intentionally narrower than the full message
+log. It shows only wake records that can still fire later:
+
+- `nextWakeAt`: the per-device deferred wake/throttle deadline persisted by
+  `WakeOrchestrator`
+- `scheduledWakeAt`: the synced scheduled wake used by project agents and
+  template improvers
+
+Each pending-wake card computes its countdown locally from the moment the card
+first mounts, so the page does not need to rebuild the whole list every second.
+Deleting a card clears only the represented wake marker: `nextWakeAt` uses the
+shared pending-wake cancellation path, while `scheduledWakeAt` is removed from
+the agent state.
+
+```mermaid
+flowchart LR
+  Settings["Settings > Agents"] --> Templates["Templates tab"]
+  Settings --> Instances["Instances tab"]
+  Settings --> Pending["Pending Wakes tab"]
+
+  Pending --> Throttle["nextWakeAt<br/>deferred wake"]
+  Pending --> Schedule["scheduledWakeAt<br/>scheduled wake"]
+
+  Throttle --> CancelPending["AgentService.cancelPendingWake()"]
+  Schedule --> ClearScheduled["AgentService.clearScheduledWake()"]
+```
+
 ## Persistence Model
 
 Agent persistence lives in `agent.sqlite` via Drift

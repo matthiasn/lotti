@@ -198,6 +198,13 @@
     }
   },
   "agentObservationsEmpty": "Aún no se han registrado observaciones.",
+  "agentPendingWakesCountdownLabel": "Cuenta atrás",
+  "agentPendingWakesDeleteTooltip": "Eliminar despertar",
+  "agentPendingWakesDueAtLabel": "Vence a las",
+  "agentPendingWakesEmptyList": "No hay despertares pendientes",
+  "agentPendingWakesPendingLabel": "Pendiente",
+  "agentPendingWakesScheduledLabel": "Programado",
+  "agentPendingWakesTitle": "Despertares pendientes",
   "agentReportErrorLoading": "Error al cargar el informe: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

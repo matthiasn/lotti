@@ -249,8 +249,7 @@ class TaskAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    orchestrator.clearThrottle(agentId);
-    orchestrator.queue.removeByAgent(agentId);
+    agentService.cancelPendingWake(agentId);
   }
 
   /// Register a wake subscription for a task agent.

@@ -198,6 +198,13 @@
     }
   },
   "agentObservationsEmpty": "Noch keine Beobachtungen aufgezeichnet.",
+  "agentPendingWakesCountdownLabel": "Countdown",
+  "agentPendingWakesDeleteTooltip": "Weckvorgang entfernen",
+  "agentPendingWakesDueAtLabel": "Fällig um",
+  "agentPendingWakesEmptyList": "Keine ausstehenden Weckvorgänge",
+  "agentPendingWakesPendingLabel": "Ausstehend",
+  "agentPendingWakesScheduledLabel": "Geplant",
+  "agentPendingWakesTitle": "Ausstehende Weckvorgänge",
   "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

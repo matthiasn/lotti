@@ -424,6 +424,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentObservationsEmpty => 'No observations recorded yet.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Odpočet';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Odstranit probuzení';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Spustí se';
+
+  @override
+  String get agentPendingWakesEmptyList => 'Žádná čekající probuzení';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'Čekající';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Naplánované';
+
+  @override
+  String get agentPendingWakesTitle => 'Čekající probuzení';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Nepodařilo se načíst report: $error';
   }

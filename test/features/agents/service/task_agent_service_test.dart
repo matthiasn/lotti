@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -387,15 +386,14 @@ void main() {
     });
 
     group('cancelScheduledWake', () {
-      test('clears throttle and removes queued jobs', () {
-        final queue = WakeQueue();
-        when(() => mockOrchestrator.clearThrottle(any())).thenReturn(null);
-        when(() => mockOrchestrator.queue).thenReturn(queue);
+      test('delegates to the shared pending-wake cancellation path', () {
+        when(() => mockAgentService.cancelPendingWake('agent-1')).thenReturn(
+          null,
+        );
 
         service.cancelScheduledWake('agent-1');
 
-        verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
-        verify(() => mockOrchestrator.queue).called(1);
+        verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
       });
     });
 

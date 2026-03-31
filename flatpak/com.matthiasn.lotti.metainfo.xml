@@ -31,8 +31,9 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.939" date="2026-03-31">
+    <release version="0.9.940" date="2026-03-31">
       <description>
+          <p>Agents settings now include a Pending Wakes dashboard with a live badge count, per-wake countdown cards, and per-card deletion for deferred and scheduled wakes.</p>
           <p>Task-agent wake prompts no longer inject sibling-task TLDR directories, and the related-task drill-down tool now stays defined in the registry while being hidden from the LLM until a stronger retrieval path is in place.</p>
       </description>
     </release>

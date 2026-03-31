@@ -423,6 +423,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentObservationsEmpty => 'No observations recorded yet.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Countdown';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Remove wake';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Due at';
+
+  @override
+  String get agentPendingWakesEmptyList => 'No pending wakes';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'Pending';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Scheduled';
+
+  @override
+  String get agentPendingWakesTitle => 'Pending Wakes';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Failed to load report: $error';
   }

@@ -429,6 +429,27 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu au fost înregistrate observații încă.';
 
   @override
+  String get agentPendingWakesCountdownLabel => 'Numărătoare inversă';
+
+  @override
+  String get agentPendingWakesDeleteTooltip => 'Eliminați trezirea';
+
+  @override
+  String get agentPendingWakesDueAtLabel => 'Programată la';
+
+  @override
+  String get agentPendingWakesEmptyList => 'Nu există treziri în așteptare';
+
+  @override
+  String get agentPendingWakesPendingLabel => 'În așteptare';
+
+  @override
+  String get agentPendingWakesScheduledLabel => 'Programată';
+
+  @override
+  String get agentPendingWakesTitle => 'Treziri în așteptare';
+
+  @override
   String agentReportErrorLoading(String error) {
     return 'Eroare la încărcarea raportului: $error';
   }

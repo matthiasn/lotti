@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -226,6 +227,61 @@ void main() {
         verify(
           () => mockRepository.getLatestReport('agent-1', 'weekly'),
         ).called(1);
+      });
+    });
+
+    group('cancelPendingWake', () {
+      test('clears throttle and removes queued jobs for the agent', () {
+        final queue = WakeQueue()
+          ..enqueue(
+            WakeJob(
+              runKey: 'run-1',
+              agentId: 'agent-1',
+              reason: 'subscription',
+              triggerTokens: {'task-1'},
+              createdAt: kAgentTestDate,
+            ),
+          );
+
+        when(() => mockOrchestrator.clearThrottle('agent-1')).thenReturn(null);
+        when(() => mockOrchestrator.queue).thenReturn(queue);
+
+        service.cancelPendingWake('agent-1');
+
+        verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+        expect(queue.removeByAgent('agent-1'), isEmpty);
+      });
+    });
+
+    group('clearScheduledWake', () {
+      test('persists state with scheduledWakeAt cleared', () async {
+        final state = makeTestState(
+          agentId: 'agent-1',
+          scheduledWakeAt: kAgentTestDate.add(const Duration(hours: 2)),
+        );
+
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+
+        await service.clearScheduledWake('agent-1');
+
+        final captured =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.last
+                as AgentStateEntity;
+        expect(captured.scheduledWakeAt, isNull);
+      });
+
+      test('does nothing when no state exists', () async {
+        when(
+          () => mockRepository.getAgentState('missing'),
+        ).thenAnswer((_) async => null);
+
+        await service.clearScheduledWake('missing');
+
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       });
     });
 
