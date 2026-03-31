@@ -17,11 +17,13 @@ void main() {
   late MockWakeOrchestrator mockOrchestrator;
   late MockAgentSyncService mockSyncService;
   late AgentService service;
+  late List<String> notifiedAgentIds;
 
   setUp(() {
     mockRepository = MockAgentRepository();
     mockOrchestrator = MockWakeOrchestrator();
     mockSyncService = MockAgentSyncService();
+    notifiedAgentIds = [];
 
     // Stub syncService write methods
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -31,6 +33,7 @@ void main() {
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
+      onPersistedStateChanged: notifiedAgentIds.add,
     );
   });
 
@@ -246,6 +249,17 @@ void main() {
         when(() => mockOrchestrator.clearThrottle('agent-1')).thenReturn(null);
         when(() => mockOrchestrator.queue).thenReturn(queue);
 
+        expect(queue.removeByAgent('agent-1'), hasLength(1));
+        queue.enqueue(
+          WakeJob(
+            runKey: 'run-1',
+            agentId: 'agent-1',
+            reason: 'subscription',
+            triggerTokens: {'task-1'},
+            createdAt: kAgentTestDate,
+          ),
+        );
+
         service.cancelPendingWake('agent-1');
 
         verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
@@ -272,6 +286,7 @@ void main() {
                 ).captured.last
                 as AgentStateEntity;
         expect(captured.scheduledWakeAt, isNull);
+        expect(notifiedAgentIds, ['agent-1']);
       });
 
       test('does nothing when no state exists', () async {

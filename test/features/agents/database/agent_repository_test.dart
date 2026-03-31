@@ -433,6 +433,58 @@ void main() {
       });
     });
 
+    group('getAgentStatesByAgentIds', () {
+      test('returns empty map when no agent IDs are requested', () async {
+        final result = await repo.getAgentStatesByAgentIds(const []);
+
+        expect(result, isEmpty);
+      });
+
+      test('returns the latest state for each requested agent', () async {
+        await repo.upsertEntity(
+          makeAgentState(
+            id: 'state-a-old',
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-a-new',
+            agentId: testAgentId,
+            revision: 2,
+            slots: const AgentSlots(activeTaskId: 'task-a'),
+            updatedAt: DateTime(2026, 2, 21),
+            vectorClock: const VectorClock({'node-1': 3}),
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-b',
+            agentId: otherAgentId,
+            revision: 7,
+            slots: const AgentSlots(activeTaskId: 'task-b'),
+            updatedAt: DateTime(2026, 2, 22),
+            vectorClock: const VectorClock({'node-1': 4}),
+          ),
+        );
+        await repo.upsertEntity(
+          makeAgent(id: 'identity-only', agentId: 'agent-3'),
+        );
+
+        final result = await repo.getAgentStatesByAgentIds([
+          testAgentId,
+          otherAgentId,
+          'agent-3',
+        ]);
+
+        expect(result.keys, containsAll([testAgentId, otherAgentId]));
+        expect(result.keys, isNot(contains('agent-3')));
+        expect(result[testAgentId]!.id, 'state-a-new');
+        expect(result[testAgentId]!.revision, 2);
+        expect(result[otherAgentId]!.id, 'state-b');
+        expect(result[otherAgentId]!.revision, 7);
+      });
+    });
+
     group('getMessagesByKind', () {
       test('filters messages by kind correctly', () async {
         await repo.upsertEntity(

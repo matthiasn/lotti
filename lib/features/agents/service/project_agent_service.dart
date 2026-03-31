@@ -27,6 +27,7 @@ class ProjectAgentService {
     required this.orchestrator,
     required this.syncService,
     this.domainLogger,
+    this.onPersistedStateChanged,
   });
 
   final AgentService agentService;
@@ -39,6 +40,7 @@ class ProjectAgentService {
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
+  final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.projectAgent;
@@ -142,6 +144,8 @@ class ProjectAgentService {
 
       return identity;
     });
+
+    onPersistedStateChanged?.call(identity.agentId);
 
     _registerProjectSubscription(identity.agentId, projectId);
 

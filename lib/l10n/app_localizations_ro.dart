@@ -432,7 +432,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentPendingWakesCountdownLabel => 'Numărătoare inversă';
 
   @override
-  String get agentPendingWakesDeleteTooltip => 'Eliminați trezirea';
+  String get agentPendingWakesDeleteTooltip => 'Elimină trezirea';
 
   @override
   String get agentPendingWakesDueAtLabel => 'Programată la';

@@ -23,6 +23,7 @@ class AgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    this.onPersistedStateChanged,
   });
 
   final AgentRepository repository;
@@ -31,6 +32,7 @@ class AgentService {
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
   final AgentSyncService syncService;
+  final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
 
@@ -152,6 +154,7 @@ class AgentService {
         updatedAt: clock.now(),
       ),
     );
+    onPersistedStateChanged?.call(agentId);
   }
 
   /// Transition agent to [AgentLifecycle.dormant] and unregister

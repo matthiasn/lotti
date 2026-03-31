@@ -51,6 +51,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'agent_providers.g.dart';
 
+void Function(String) persistedStateChangedNotifier(
+  UpdateNotifications notifications,
+) {
+  return (agentId) {
+    notifications.notifyUiOnly({agentId, agentNotification});
+  };
+}
+
 /// Optional UpdateNotifications service from GetIt.
 @Riverpod(keepAlive: true)
 UpdateNotifications? maybeUpdateNotifications(Ref ref) {
@@ -247,10 +255,12 @@ ProjectActivityMonitor projectActivityMonitor(Ref ref) {
 /// The high-level agent service.
 @Riverpod(keepAlive: true)
 AgentService agentService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
   return AgentService(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 
@@ -275,12 +285,14 @@ FeedbackExtractionService feedbackExtractionService(Ref ref) {
 /// The improver agent service.
 @Riverpod(keepAlive: true)
 ImproverAgentService improverAgentService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
   return ImproverAgentService(
     agentService: ref.watch(agentServiceProvider),
     agentTemplateService: ref.watch(agentTemplateServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 
@@ -867,6 +879,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
 /// The project agent workflow with all dependencies resolved.
 @Riverpod(keepAlive: true)
 ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
   return ProjectAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
@@ -876,6 +889,7 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }
 

@@ -161,6 +161,87 @@ void main() {
       expect(find.text('Task Agent'), findsOneWidget);
     });
 
+    testWidgets('falls back to the agent display name when no title resolves', (
+      tester,
+    ) async {
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-1',
+          displayName: 'Task Agent',
+        ),
+        state: makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 5)),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          records: [record],
+          subjectTitles: const {'task-1': ''},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Task Agent'), findsNWidgets(2));
+    });
+
+    testWidgets('shows zero countdown when the wake is already overdue', (
+      tester,
+    ) async {
+      final now = DateTime(2026, 3, 31, 9);
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-1',
+          displayName: 'Overdue',
+        ),
+        state: makeTestState(
+          agentId: 'agent-1',
+          nextWakeAt: now.subtract(const Duration(seconds: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: now.subtract(const Duration(seconds: 5)),
+      );
+
+      await withClock(Clock(() => now), () async {
+        await tester.pumpWidget(buildSubject(records: [record]));
+        await tester.pumpAndSettle();
+      });
+
+      expect(find.text('0s'), findsOneWidget);
+    });
+
+    testWidgets('formats long countdowns with hours, minutes, and seconds', (
+      tester,
+    ) async {
+      final now = DateTime(2026, 3, 31, 9);
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-1',
+          kind: AgentKinds.projectAgent,
+          displayName: 'Project Watcher',
+        ),
+        state: makeTestState(
+          agentId: 'agent-1',
+          scheduledWakeAt: now.add(
+            const Duration(hours: 1, minutes: 1, seconds: 1),
+          ),
+        ),
+        type: PendingWakeType.scheduled,
+        dueAt: now.add(const Duration(hours: 1, minutes: 1, seconds: 1)),
+      );
+
+      await withClock(Clock(() => now), () async {
+        await tester.pumpWidget(buildSubject(records: [record]));
+        await tester.pumpAndSettle();
+      });
+
+      expect(find.text('1h 1m 1s'), findsOneWidget);
+    });
+
     testWidgets('delete action clears a scheduled wake', (tester) async {
       final mockAgentService = MockAgentService();
       final record = PendingWakeRecord(

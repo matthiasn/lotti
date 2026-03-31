@@ -199,7 +199,7 @@
   },
   "agentObservationsEmpty": "Nu au fost înregistrate observații încă.",
   "agentPendingWakesCountdownLabel": "Numărătoare inversă",
-  "agentPendingWakesDeleteTooltip": "Eliminați trezirea",
+  "agentPendingWakesDeleteTooltip": "Elimină trezirea",
   "agentPendingWakesDueAtLabel": "Programată la",
   "agentPendingWakesEmptyList": "Nu există treziri în așteptare",
   "agentPendingWakesPendingLabel": "În așteptare",

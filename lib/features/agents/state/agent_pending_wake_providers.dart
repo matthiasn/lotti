@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -53,21 +54,21 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   return records;
 });
 
-// ignore: specify_nonobvious_property_types
-final pendingWakeTargetTitleProvider = FutureProvider.family<String?, String?>((
-  ref,
-  String? entryId,
-) async {
-  if (entryId == null || entryId.isEmpty) {
-    return null;
-  }
+final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
+    FutureProvider.family<String?, String?>((
+      ref,
+      String? entryId,
+    ) async {
+      if (entryId == null || entryId.isEmpty) {
+        return null;
+      }
 
-  final journalDb = ref.watch(journalDbProvider);
-  final entry = await journalDb.journalEntityById(entryId);
+      final journalDb = ref.watch(journalDbProvider);
+      final entry = await journalDb.journalEntityById(entryId);
 
-  return switch (entry) {
-    Task(:final data) => data.title,
-    ProjectEntry(:final data) => data.title,
-    _ => null,
-  };
-});
+      return switch (entry) {
+        Task(:final data) => data.title,
+        ProjectEntry(:final data) => data.title,
+        _ => null,
+      };
+    });
