@@ -282,14 +282,24 @@ class FeedbackExtractionService {
     };
 
     bool containsContext(Object? value, {String? key}) {
+      final isExplanatoryKey =
+          key != null && explanatoryKeys.contains(key.toLowerCase());
       if (value is String) {
-        return key != null &&
-            explanatoryKeys.contains(key.toLowerCase()) &&
-            _isMeaningfulSignalText(value);
+        return isExplanatoryKey && _isMeaningfulSignalText(value);
       }
       if (value is Map) {
         return value.entries.any(
-          (entry) => containsContext(entry.value, key: entry.key.toString()),
+          (entry) {
+            final entryKey = entry.key.toString();
+            // If the parent key is explanatory, propagate it so nested
+            // string values are still recognized as having explanatory
+            // context (e.g. {'feedback': {'text': 'too early'}}).
+            final effectiveKey =
+                explanatoryKeys.contains(entryKey.toLowerCase())
+                ? entryKey
+                : (isExplanatoryKey ? key : entryKey);
+            return containsContext(entry.value, key: effectiveKey);
+          },
         );
       }
       if (value is Iterable) {

@@ -204,6 +204,7 @@ class _MessageListState extends State<_MessageList> {
       'session_error' => messages.agentEvolutionSessionError,
       'session_abandoned' => messages.agentEvolutionSessionAbandoned,
       'proposal_rejected' => messages.agentEvolutionProposalRejected,
+      'approval_failed' => messages.agentEvolutionProposalApprovalFailed,
       _ => token,
     };
   }

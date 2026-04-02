@@ -237,7 +237,23 @@ class EvolutionChatState extends _$EvolutionChatState {
     );
 
     if (hasPendingProposal && _isImplicitApprovalMessage(text)) {
-      await approveProposal();
+      final approved = await approveProposal();
+      if (!approved) {
+        final current = state.value;
+        if (current != null) {
+          state = AsyncData(
+            current.copyWith(
+              messages: [
+                ...current.messages,
+                EvolutionChatMessage.system(
+                  text: 'approval_failed',
+                  timestamp: clock.now(),
+                ),
+              ],
+            ),
+          );
+        }
+      }
       return;
     }
 
@@ -251,7 +267,7 @@ class EvolutionChatState extends _$EvolutionChatState {
       if (current == null) return;
 
       final updatedMessages = [...current.messages];
-      var surfaceMessages = <EvolutionChatMessage>[];
+      final surfaceMessages = <EvolutionChatMessage>[];
 
       final session = workflow.getSession(sessionId);
       final bridge = session?.strategy.genUiBridge ?? session?.genUiBridge;
@@ -271,18 +287,34 @@ class EvolutionChatState extends _$EvolutionChatState {
           ? _proposalKey(pendingProposal)
           : null;
 
+      // Render the proposal surface as a fallback when the LLM didn't already
+      // emit surfaces (which typically include the proposal via a tool call).
+      // When `surfaceMessages` is non-empty the LLM already produced the
+      // proposal surface, so we skip to avoid duplicates.
+      var proposalRenderedThisTurn = false;
       if (pendingProposal != null &&
-          proposalKey != current.lastSurfacedProposalKey &&
-          surfaceMessages.isEmpty) {
-        surfaceMessages = _renderProposalSurface(
-          session: session,
-          proposal: pendingProposal,
-        );
+          proposalKey != current.lastSurfacedProposalKey) {
+        if (surfaceMessages.isEmpty) {
+          final proposalSurfaces = _renderProposalSurface(
+            session: session,
+            proposal: pendingProposal,
+          );
+          if (proposalSurfaces.isNotEmpty) {
+            surfaceMessages.addAll(proposalSurfaces);
+            proposalRenderedThisTurn = true;
+          }
+        } else {
+          // Surfaces were emitted by the LLM while a new proposal is pending
+          // — treat the proposal as already rendered.
+          proposalRenderedThisTurn = true;
+        }
       }
 
-      final hasPendingProposalAfterTurn = pendingProposal != null;
+      // Suppress the plain-text assistant bubble when a proposal surface was
+      // shown this turn — either via _renderProposalSurface or via a GenUI
+      // tool call that the LLM emitted directly.
       final shouldSuppressAssistantBubble =
-          hasPendingProposalAfterTurn && surfaceMessages.isNotEmpty;
+          pendingProposal != null && surfaceMessages.isNotEmpty;
 
       final responseText = response?.trim();
       if ((responseText?.isNotEmpty ?? false) &&
@@ -301,7 +333,7 @@ class EvolutionChatState extends _$EvolutionChatState {
         current.copyWith(
           messages: updatedMessages,
           isWaiting: false,
-          lastSurfacedProposalKey: () => surfaceMessages.isNotEmpty
+          lastSurfacedProposalKey: () => proposalRenderedThisTurn
               ? proposalKey
               : current.lastSurfacedProposalKey,
         ),

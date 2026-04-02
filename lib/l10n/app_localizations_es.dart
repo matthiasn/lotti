@@ -243,6 +243,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentEvolutionProposalRationale => 'Justificación';
 
   @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Error en la aprobación — inténtalo de nuevo';
+
+  @override
   String get agentEvolutionProposalRejected =>
       'Propuesta rechazada — continúa la conversación';
 

@@ -111,6 +111,7 @@
   "agentEvolutionMttrLabel": "Temps moyen de résolution",
   "agentEvolutionNoSessions": "Aucune session d'évolution pour l'instant",
   "agentEvolutionNoteRecorded": "Note enregistrée",
+  "agentEvolutionProposalApprovalFailed": "Échec de l'approbation — réessaie",
   "agentEvolutionProposalRationale": "Justification",
   "agentEvolutionProposalRejected": "Proposition rejetée — continue la conversation",
   "agentEvolutionProposalTitle": "Modifications proposées",

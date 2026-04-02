@@ -110,6 +110,7 @@
   "agentEvolutionMttrLabel": "Mean Time to Resolution",
   "agentEvolutionNoSessions": "No evolution sessions yet",
   "agentEvolutionNoteRecorded": "Note Recorded",
+  "agentEvolutionProposalApprovalFailed": "Approval failed — please try again",
   "agentEvolutionProposalRationale": "Rationale",
   "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
   "agentEvolutionProposalTitle": "Proposed Changes",

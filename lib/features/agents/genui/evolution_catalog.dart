@@ -1216,24 +1216,29 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
                         children: List.generate(5, (i) {
                           final starIndex = i + 1;
                           final selected = starIndex <= rating;
-                          return GestureDetector(
-                            onTap: _submitted
-                                ? null
-                                : () => setState(
-                                    () => _ratings[name] = starIndex,
-                                  ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Icon(
-                                selected
-                                    ? Icons.star_rounded
-                                    : Icons.star_border_rounded,
-                                size: 26,
-                                color: selected
-                                    ? colorScheme.tertiary
-                                    : colorScheme.onSurfaceVariant.withValues(
-                                        alpha: 0.6,
-                                      ),
+                          return Semantics(
+                            label: '$starIndex of 5 stars',
+                            selected: selected,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _submitted
+                                  ? null
+                                  : () => setState(
+                                      () => _ratings[name] = starIndex,
+                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: Icon(
+                                  selected
+                                      ? Icons.star_rounded
+                                      : Icons.star_border_rounded,
+                                  size: 26,
+                                  color: selected
+                                      ? colorScheme.tertiary
+                                      : colorScheme.onSurfaceVariant.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                ),
                               ),
                             ),
                           );

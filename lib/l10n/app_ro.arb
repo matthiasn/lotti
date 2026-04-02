@@ -111,6 +111,7 @@
   "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
   "agentEvolutionNoSessions": "Nu există sesiuni de evoluție încă",
   "agentEvolutionNoteRecorded": "Notă înregistrată",
+  "agentEvolutionProposalApprovalFailed": "Aprobarea a eșuat — vă rugăm încercați din nou",
   "agentEvolutionProposalRationale": "Justificare",
   "agentEvolutionProposalRejected": "Propunere respinsă — continuați conversația",
   "agentEvolutionProposalTitle": "Modificări propuse",

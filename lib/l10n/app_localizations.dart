@@ -537,6 +537,12 @@ abstract class AppLocalizations {
   /// **'Rationale'**
   String get agentEvolutionProposalRationale;
 
+  /// No description provided for @agentEvolutionProposalApprovalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval failed — please try again'**
+  String get agentEvolutionProposalApprovalFailed;
+
   /// No description provided for @agentEvolutionProposalRejected.
   ///
   /// In en, this message translates to:

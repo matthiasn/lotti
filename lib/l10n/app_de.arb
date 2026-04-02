@@ -111,6 +111,7 @@
   "agentEvolutionMttrLabel": "Mittlere Lösungszeit",
   "agentEvolutionNoSessions": "Noch keine Evolutionssitzungen",
   "agentEvolutionNoteRecorded": "Notiz aufgezeichnet",
+  "agentEvolutionProposalApprovalFailed": "Genehmigung fehlgeschlagen — bitte versuche es erneut",
   "agentEvolutionProposalRationale": "Begründung",
   "agentEvolutionProposalRejected": "Vorschlag abgelehnt — Gespräch fortsetzen",
   "agentEvolutionProposalTitle": "Vorgeschlagene Änderungen",

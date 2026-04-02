@@ -243,6 +243,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionProposalRationale => 'Begründung';
 
   @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Genehmigung fehlgeschlagen — bitte versuche es erneut';
+
+  @override
   String get agentEvolutionProposalRejected =>
       'Vorschlag abgelehnt — Gespräch fortsetzen';
 
