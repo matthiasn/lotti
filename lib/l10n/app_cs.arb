@@ -94,6 +94,32 @@
   "agentFeedbackSourceMetric": "Metrika",
   "agentFeedbackSourceObservation": "Pozorování",
   "agentFeedbackSourceRating": "Hodnocení",
+  "agentInstancesEmptyList": "Nebyly nalezeny žádné instance agenta",
+  "agentInstancesFilterActive": "Aktivní",
+  "agentInstancesFilterAll": "Vše",
+  "agentInstancesFilterDestroyed": "Zničené",
+  "agentInstancesFilterDormant": "Neaktivní",
+  "agentInstancesKindAll": "Vše",
+  "agentInstancesKindEvolution": "Evoluce",
+  "agentInstancesKindTaskAgent": "Agent úkolů",
+  "agentInstancesStatsSummary": "Celkem {total} · Aktivní {active} · Neaktivní {dormant} · Zničené {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesTitle": "Instance",
   "agentLifecycleActive": "Aktivní",
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",

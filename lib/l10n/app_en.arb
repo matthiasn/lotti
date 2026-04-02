@@ -185,6 +185,23 @@
   "agentInstancesKindAll": "All",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
+  "agentInstancesStatsSummary": "Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instances",
   "agentLifecycleActive": "Active",
   "agentLifecycleCreated": "Created",

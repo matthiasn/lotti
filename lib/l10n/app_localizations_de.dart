@@ -391,6 +391,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Aufgaben-Agent';
 
   @override
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Gesamt $total · Aktiv $active · Ruhend $dormant · Zerstört $destroyed';
+  }
+
+  @override
   String get agentInstancesTitle => 'Instanzen';
 
   @override

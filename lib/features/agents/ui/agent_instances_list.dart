@@ -34,10 +34,13 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
   Widget build(BuildContext context) {
     final agentsAsync = ref.watch(allAgentInstancesProvider);
     final evolutionAsync = ref.watch(allEvolutionSessionsProvider);
+    final stats = agentsAsync.hasValue
+        ? _AgentInstanceStats.fromEntities(agentsAsync.value ?? const [])
+        : null;
 
     return Column(
       children: [
-        _buildFilters(context),
+        _buildFilters(context, stats: stats),
         Expanded(
           child: _buildContent(context, agentsAsync, evolutionAsync),
         ),
@@ -45,10 +48,14 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
     );
   }
 
-  Widget _buildFilters(BuildContext context) {
+  Widget _buildFilters(
+    BuildContext context, {
+    required _AgentInstanceStats? stats,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Kind filter
           SegmentedButton<_InstanceKind>(
@@ -103,6 +110,20 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
               onSelectionChanged: (selection) {
                 setState(() => _lifecycleFilter = selection.first);
               },
+            ),
+          ],
+          if (_kindFilter != _InstanceKind.evolution && stats != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              context.messages.agentInstancesStatsSummary(
+                stats.total,
+                stats.active,
+                stats.dormant,
+                stats.destroyed,
+              ),
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -201,6 +222,50 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
       },
     );
   }
+}
+
+class _AgentInstanceStats {
+  const _AgentInstanceStats({
+    required this.total,
+    required this.active,
+    required this.dormant,
+    required this.destroyed,
+  });
+
+  factory _AgentInstanceStats.fromEntities(List<AgentDomainEntity> entities) {
+    var total = 0;
+    var active = 0;
+    var dormant = 0;
+    var destroyed = 0;
+
+    for (final entity in entities) {
+      final agent = entity.mapOrNull(agent: (a) => a);
+      if (agent == null) continue;
+      total++;
+      switch (agent.lifecycle) {
+        case AgentLifecycle.active:
+          active++;
+        case AgentLifecycle.dormant:
+          dormant++;
+        case AgentLifecycle.destroyed:
+          destroyed++;
+        case AgentLifecycle.created:
+          break;
+      }
+    }
+
+    return _AgentInstanceStats(
+      total: total,
+      active: active,
+      dormant: dormant,
+      destroyed: destroyed,
+    );
+  }
+
+  final int total;
+  final int active;
+  final int dormant;
+  final int destroyed;
 }
 
 /// Unified instance item for sorting across kinds.

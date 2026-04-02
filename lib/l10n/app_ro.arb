@@ -179,6 +179,23 @@
   "agentInstancesKindAll": "Toate",
   "agentInstancesKindEvolution": "Evoluție",
   "agentInstancesKindTaskAgent": "Agent de sarcini",
+  "agentInstancesStatsSummary": "Total {total} · Active {active} · Inactive {dormant} · Distruse {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instanțe",
   "agentLifecycleActive": "Activ",
   "agentLifecycleCreated": "Creat",

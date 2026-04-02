@@ -110,6 +110,13 @@ arrive late. Deleting a card clears only the represented wake marker:
 `nextWakeAt` uses the shared pending-wake cancellation path, while
 `scheduledWakeAt` is removed from the agent state.
 
+The instances dashboard stays intentionally lightweight. It exposes kind and
+lifecycle filters for task agents, and the task-agent modes now include one
+compact aggregate line showing the current counts for total, active, dormant,
+and destroyed task-agent identities. The stats line is derived from the same
+loaded `AgentIdentityEntity` list as the cards below it, so it tracks the
+currently persisted fleet size without adding another query path.
+
 ```mermaid
 flowchart LR
   Settings["Settings > Agents"] --> Templates["Templates tab"]

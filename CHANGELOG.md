@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.940] - 2026-03-31
+## [0.9.941] - 2026-04-02
 ### Changed
 - Agents settings: added a `Pending Wakes` dashboard under `Settings > Agents`
   with a live badge count, per-wake countdown cards, and per-card wake
   deletion for deferred and scheduled wakes.
+- Agents settings: the `Instances` tab now shows a compact task-agent fleet
+  summary under the filters, with current totals for all, active, dormant,
+  and destroyed task agents.
 - Task-agent wake prompts no longer inject sibling-task TLDR directories, and
   the related-task drill-down tool now stays defined in the registry while
   being hidden from the LLM until a stronger retrieval path is in place.

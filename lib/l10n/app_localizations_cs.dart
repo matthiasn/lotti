@@ -363,31 +363,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
-  String get agentInstancesEmptyList => 'No agent instances found';
+  String get agentInstancesEmptyList => 'Nebyly nalezeny žádné instance agenta';
 
   @override
-  String get agentInstancesFilterActive => 'Active';
+  String get agentInstancesFilterActive => 'Aktivní';
 
   @override
-  String get agentInstancesFilterAll => 'All';
+  String get agentInstancesFilterAll => 'Vše';
 
   @override
-  String get agentInstancesFilterDestroyed => 'Destroyed';
+  String get agentInstancesFilterDestroyed => 'Zničené';
 
   @override
-  String get agentInstancesFilterDormant => 'Dormant';
+  String get agentInstancesFilterDormant => 'Neaktivní';
 
   @override
-  String get agentInstancesKindAll => 'All';
+  String get agentInstancesKindAll => 'Vše';
 
   @override
-  String get agentInstancesKindEvolution => 'Evolution';
+  String get agentInstancesKindEvolution => 'Evoluce';
 
   @override
-  String get agentInstancesKindTaskAgent => 'Task Agent';
+  String get agentInstancesKindTaskAgent => 'Agent úkolů';
 
   @override
-  String get agentInstancesTitle => 'Instances';
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Celkem $total · Aktivní $active · Neaktivní $dormant · Zničené $destroyed';
+  }
+
+  @override
+  String get agentInstancesTitle => 'Instance';
 
   @override
   String get agentLifecycleActive => 'Aktivní';

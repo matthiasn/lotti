@@ -795,6 +795,17 @@ abstract class AppLocalizations {
   /// **'Task Agent'**
   String get agentInstancesKindTaskAgent;
 
+  /// No description provided for @agentInstancesStatsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}'**
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  );
+
   /// No description provided for @agentInstancesTitle.
   ///
   /// In en, this message translates to:

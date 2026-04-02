@@ -179,6 +179,23 @@
   "agentInstancesKindAll": "Tous",
   "agentInstancesKindEvolution": "Évolution",
   "agentInstancesKindTaskAgent": "Agent de tâches",
+  "agentInstancesStatsSummary": "Total {total} · Actifs {active} · En veille {dormant} · Détruits {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instances",
   "agentLifecycleActive": "Actif",
   "agentLifecycleCreated": "Créé",
