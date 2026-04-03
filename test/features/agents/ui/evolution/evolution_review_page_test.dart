@@ -300,8 +300,11 @@ void main() {
           findsOneWidget,
         );
 
-        // Session badge should display the session number.
-        expect(find.textContaining('2'), findsWidgets);
+        // Session badge should display the session progress.
+        expect(
+          find.text(context.messages.agentEvolutionSessionProgress(2, 2)),
+          findsOneWidget,
+        );
       },
     );
 
