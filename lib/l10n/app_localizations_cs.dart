@@ -100,6 +100,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentCategoryRatingsScaleMin => 'Nechat být';
 
   @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex of $totalStars stars';
+  }
+
+  @override
   String get agentCategoryRatingsSubmit => 'Použít tyto priority';
 
   @override

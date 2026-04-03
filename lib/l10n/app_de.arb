@@ -30,6 +30,17 @@
   "agentBinaryChoiceYes": "Ja",
   "agentCategoryRatingsScaleMax": "Zuerst beheben",
   "agentCategoryRatingsScaleMin": "So lassen",
+  "agentCategoryRatingsStarLabel": "{starIndex} von {totalStars} Sternen",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Diese Prioritäten nutzen",
   "agentCategoryRatingsSubtitle": "Wie wichtig ist es, dass ich das jeweils behebe? 1 heißt: so lassen. 5 heißt: als Erstes beheben.",
   "agentCategoryRatingsTitle": "Hilf mir beim Priorisieren",

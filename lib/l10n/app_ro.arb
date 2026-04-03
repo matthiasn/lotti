@@ -30,6 +30,17 @@
   "agentBinaryChoiceYes": "Da",
   "agentCategoryRatingsScaleMax": "Corectează mai întâi",
   "agentCategoryRatingsScaleMin": "Lasă așa",
+  "agentCategoryRatingsStarLabel": "{starIndex} din {totalStars} stele",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Folosește aceste priorități",
   "agentCategoryRatingsSubtitle": "Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lasă așa, 5 înseamnă corectează mai întâi.",
   "agentCategoryRatingsTitle": "Ajută-mă să prioritizez",

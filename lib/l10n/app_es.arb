@@ -30,6 +30,17 @@
   "agentBinaryChoiceYes": "Sí",
   "agentCategoryRatingsScaleMax": "Arreglar primero",
   "agentCategoryRatingsScaleMin": "Déjalo",
+  "agentCategoryRatingsStarLabel": "{starIndex} de {totalStars} estrellas",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Usar estas prioridades",
   "agentCategoryRatingsSubtitle": "¿Qué tan importante es que arregle cada uno de estos puntos? 1 significa déjalo así, 5 significa arréglalo primero.",
   "agentCategoryRatingsTitle": "Ayúdame a priorizar",

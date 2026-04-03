@@ -30,6 +30,17 @@
   "agentBinaryChoiceYes": "Oui",
   "agentCategoryRatingsScaleMax": "Corriger d'abord",
   "agentCategoryRatingsScaleMin": "Laisser",
+  "agentCategoryRatingsStarLabel": "{starIndex} sur {totalStars} étoiles",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Utiliser ces priorités",
   "agentCategoryRatingsSubtitle": "À quel point c'est important que je corrige chacun de ces points ? 1 = laisse comme ça, 5 = corrige ça en premier.",
   "agentCategoryRatingsTitle": "Aide-moi à prioriser",

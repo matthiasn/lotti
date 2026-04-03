@@ -102,6 +102,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentCategoryRatingsScaleMin => 'So lassen';
 
   @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex von $totalStars Sternen';
+  }
+
+  @override
   String get agentCategoryRatingsSubmit => 'Diese Prioritäten nutzen';
 
   @override

@@ -1219,7 +1219,10 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
                           final starIndex = i + 1;
                           final selected = starIndex <= rating;
                           return Semantics(
-                            label: '$starIndex of 5 stars',
+                            label: messages.agentCategoryRatingsStarLabel(
+                              starIndex,
+                              5,
+                            ),
                             selected: selected,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),

@@ -287,6 +287,12 @@ abstract class AppLocalizations {
   /// **'Leave it'**
   String get agentCategoryRatingsScaleMin;
 
+  /// No description provided for @agentCategoryRatingsStarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{starIndex} of {totalStars} stars'**
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars);
+
   /// No description provided for @agentCategoryRatingsSubmit.
   ///
   /// In en, this message translates to:

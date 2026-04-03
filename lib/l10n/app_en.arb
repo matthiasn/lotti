@@ -29,6 +29,17 @@
   "agentBinaryChoiceYes": "Yes",
   "agentCategoryRatingsScaleMax": "Fix first",
   "agentCategoryRatingsScaleMin": "Leave it",
+  "agentCategoryRatingsStarLabel": "{starIndex} of {totalStars} stars",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
   "agentCategoryRatingsSubmit": "Use These Priorities",
   "agentCategoryRatingsSubtitle": "How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.",
   "agentCategoryRatingsTitle": "Help Me Prioritize",
