@@ -2257,6 +2257,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsPlan => 'Plán';
 
   @override
+  String get dailyOsPlanCreated => 'Plán úspěšně vytvořen';
+
+  @override
+  String get dailyOsPlanCreatedDescription =>
+      'Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
+
+  @override
   String get dailyOsPlanned => 'Naplánováno';
 
   @override
@@ -2281,7 +2291,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsSave => 'Uložit';
 
   @override
+  String get dailyOsSaveError => 'Plán se nepodařilo uložit';
+
+  @override
+  String get dailyOsSaveErrorDescription =>
+      'Něco se pokazilo. Zkus to prosím znovu.';
+
+  @override
+  String get dailyOsSavePlan => 'Uložit plán';
+
+  @override
   String get dailyOsSelectCategory => 'Vyberte kategorii';
+
+  @override
+  String get dailyOsSetTimeBlocks => 'Nastavit časové bloky';
+
+  @override
+  String get dailyOsSetTimeBlocksAddNew => 'Přidat nový časový blok';
+
+  @override
+  String get dailyOsSetTimeBlocksFavourites => 'Oblíbené';
+
+  @override
+  String get dailyOsSetTimeBlocksOther => 'Další kategorie';
+
+  @override
+  String get dailyOsSetTimeBlocksTapHint => 'Klepni pro přidání časového bloku';
 
   @override
   String get dailyOsStartTime => 'Začátek';

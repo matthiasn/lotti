@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart'
     as add_block;
@@ -317,6 +318,12 @@ class _BudgetsEmptyStateState extends State<BudgetsEmptyState>
           _AddBudgetButton(
             onPressed: () => add_block.AddBlockSheet.show(context, widget.date),
             isDark: isDark,
+          ),
+          const SizedBox(height: AppTheme.spacingMedium),
+          TextButton.icon(
+            onPressed: () => context.beamToNamed('/calendar/set-time-blocks'),
+            icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+            label: Text(context.messages.dailyOsPlanWithoutVoice),
           ),
         ],
       ),

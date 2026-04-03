@@ -4053,6 +4053,24 @@ abstract class AppLocalizations {
   /// **'Plan'**
   String get dailyOsPlan;
 
+  /// No description provided for @dailyOsPlanCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan created successfully'**
+  String get dailyOsPlanCreated;
+
+  /// No description provided for @dailyOsPlanCreatedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your time blocks have been saved. You can start tracking your tasks.'**
+  String get dailyOsPlanCreatedDescription;
+
+  /// No description provided for @dailyOsPlanWithoutVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan without voice'**
+  String get dailyOsPlanWithoutVoice;
+
   /// No description provided for @dailyOsPlanned.
   ///
   /// In en, this message translates to:
@@ -4101,11 +4119,59 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get dailyOsSave;
 
+  /// No description provided for @dailyOsSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save plan'**
+  String get dailyOsSaveError;
+
+  /// No description provided for @dailyOsSaveErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get dailyOsSaveErrorDescription;
+
+  /// No description provided for @dailyOsSavePlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Save plan'**
+  String get dailyOsSavePlan;
+
   /// No description provided for @dailyOsSelectCategory.
   ///
   /// In en, this message translates to:
   /// **'Select Category'**
   String get dailyOsSelectCategory;
+
+  /// No description provided for @dailyOsSetTimeBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Set time blocks'**
+  String get dailyOsSetTimeBlocks;
+
+  /// No description provided for @dailyOsSetTimeBlocksAddNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new time block'**
+  String get dailyOsSetTimeBlocksAddNew;
+
+  /// No description provided for @dailyOsSetTimeBlocksFavourites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get dailyOsSetTimeBlocksFavourites;
+
+  /// No description provided for @dailyOsSetTimeBlocksOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other categories'**
+  String get dailyOsSetTimeBlocksOther;
+
+  /// No description provided for @dailyOsSetTimeBlocksTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add time block'**
+  String get dailyOsSetTimeBlocksTapHint;
 
   /// No description provided for @dailyOsStartTime.
   ///

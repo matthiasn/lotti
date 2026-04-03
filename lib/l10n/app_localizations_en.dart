@@ -2242,6 +2242,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsPlan => 'Plan';
 
   @override
+  String get dailyOsPlanCreated => 'Plan created successfully';
+
+  @override
+  String get dailyOsPlanCreatedDescription =>
+      'Your time blocks have been saved. You can start tracking your tasks.';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plan without voice';
+
+  @override
   String get dailyOsPlanned => 'Planned';
 
   @override
@@ -2266,7 +2276,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsSave => 'Save';
 
   @override
+  String get dailyOsSaveError => 'Could not save plan';
+
+  @override
+  String get dailyOsSaveErrorDescription =>
+      'Something went wrong. Please try again.';
+
+  @override
+  String get dailyOsSavePlan => 'Save plan';
+
+  @override
   String get dailyOsSelectCategory => 'Select Category';
+
+  @override
+  String get dailyOsSetTimeBlocks => 'Set time blocks';
+
+  @override
+  String get dailyOsSetTimeBlocksAddNew => 'Add new time block';
+
+  @override
+  String get dailyOsSetTimeBlocksFavourites => 'Favourites';
+
+  @override
+  String get dailyOsSetTimeBlocksOther => 'Other categories';
+
+  @override
+  String get dailyOsSetTimeBlocksTapHint => 'Tap to add time block';
 
   @override
   String get dailyOsStartTime => 'Start';

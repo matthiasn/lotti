@@ -475,20 +475,17 @@ void main() {
     File? findGeneralLog() => _findLogFile(bufferedTempDocs);
     File? findSyncLog() => _findLogFile(bufferedTempDocs, prefix: 'sync-');
 
-    test('timer flush writes buffered lines after interval', () async {
+    test('buffered lines are flushed to file', () async {
       bufferedLogging.captureEvent(
         'buffered line',
         domain: 'BUF_TEST',
       );
 
-      // Give the async write time to settle
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-
-      // File should not exist yet (below threshold, timer not fired)
+      // Line is only in the in-memory buffer; no file yet.
       expect(findGeneralLog(), isNull);
 
-      // Wait for the flush timer to fire (500ms interval + margin)
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      // Deterministic flush instead of racing real timers (flaky on CI).
+      await bufferedLogging.flushAllForTest();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist after flush');

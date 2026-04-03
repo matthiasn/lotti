@@ -963,6 +963,14 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     );
   }
 
+  /// Replaces all planned blocks at once (batch save from manual planning).
+  Future<void> setPlannedBlocks(List<PlannedBlock> blocks) async {
+    await _mutateDayPlan(
+      (data) => data.copyWith(plannedBlocks: blocks),
+      reviewReason: DayPlanReviewReason.blockModified,
+    );
+  }
+
   /// Adds a planned block to the timeline.
   Future<void> addPlannedBlock(PlannedBlock block) async {
     await _mutateDayPlan(

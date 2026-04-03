@@ -2281,6 +2281,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsPlan => 'Plan';
 
   @override
+  String get dailyOsPlanCreated => 'Plan creat cu succes';
+
+  @override
+  String get dailyOsPlanCreatedDescription =>
+      'Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Planificați fără voce';
+
+  @override
   String get dailyOsPlanned => 'Planificat';
 
   @override
@@ -2305,7 +2315,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsSave => 'Salvează';
 
   @override
+  String get dailyOsSaveError => 'Planul nu a putut fi salvat';
+
+  @override
+  String get dailyOsSaveErrorDescription =>
+      'Ceva nu a funcționat corect. Vă rugăm să încercați din nou.';
+
+  @override
+  String get dailyOsSavePlan => 'Salvați planul';
+
+  @override
   String get dailyOsSelectCategory => 'Selectează categoria';
+
+  @override
+  String get dailyOsSetTimeBlocks => 'Setați blocuri de timp';
+
+  @override
+  String get dailyOsSetTimeBlocksAddNew => 'Adăugați un bloc de timp nou';
+
+  @override
+  String get dailyOsSetTimeBlocksFavourites => 'Favorite';
+
+  @override
+  String get dailyOsSetTimeBlocksOther => 'Alte categorii';
+
+  @override
+  String get dailyOsSetTimeBlocksTapHint =>
+      'Atingeți pentru a adăuga un bloc de timp';
 
   @override
   String get dailyOsStartTime => 'Început';
