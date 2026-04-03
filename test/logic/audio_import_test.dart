@@ -299,23 +299,48 @@ void main() {
           enqueueSync: any(named: 'enqueueSync'),
         ),
       ).called(1);
+
+      // Verify cleanup: only the original source file should remain;
+      // the copied target file should have been deleted.
+      final remainingFiles = tempDir
+          .listSync(recursive: true)
+          .whereType<File>();
+      expect(
+        remainingFiles.length,
+        1,
+        reason: 'The copied file should have been deleted',
+      );
+      expect(path.basename(remainingFiles.first.path), 'cleanup-test.m4a');
     });
 
     test('handles exception during import and continues', () async {
-      // Create a drop detail pointing to a non-existent file
-      final xFile = XFile('/nonexistent/path/fake.m4a');
-      final dropDetails = createDropDetails([xFile]);
+      // Include both a bad file and a good file to verify continuation
+      final validFile = await createTestAudioFile('good.m4a', 1024);
+      final dropDetails = createDropDetails([
+        XFile('/nonexistent/path/bad.m4a'),
+        XFile(validFile.path),
+      ]);
 
       // Should not throw
       await importDroppedAudio(data: dropDetails);
 
-      // Should log the error
+      // Should log the error for the bad file
       verify(
         () => mockLoggingService.captureException(
           any<Object>(),
           domain: AudioImportConstants.loggingDomain,
           subDomain: 'importDroppedAudio',
           stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // Should still create the entry for the good file
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
         ),
       ).called(1);
     });
