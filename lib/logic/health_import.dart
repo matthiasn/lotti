@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -22,13 +23,21 @@ class HealthImport {
     required JournalDb db,
     required this.health,
     required this.deviceInfo,
-  }) : _db = db {
+    Future<void> Function()? requestPermissions,
+  }) : _db = db,
+       _requestPermissions = requestPermissions ?? _defaultRequestPermissions {
     getPlatform();
   }
   final PersistenceLogic persistenceLogic;
   final JournalDb _db;
   final HealthService health;
   final DeviceInfoPlugin deviceInfo;
+  final Future<void> Function() _requestPermissions;
+
+  static Future<void> _defaultRequestPermissions() async {
+    await Permission.activityRecognition.request();
+    await Permission.location.request();
+  }
 
   Duration defaultFetchDuration = const Duration(days: 90);
 
@@ -74,7 +83,7 @@ class HealthImport {
     Map<DateTime, num> flightsByDay,
     Map<DateTime, num> distanceByDay,
   ) async {
-    final now = DateTime.now();
+    final now = clock.now();
     if (dateFrom.isBefore(now)) {
       final dateTo = DateTime(
         dateFrom.year,
@@ -111,7 +120,7 @@ class HealthImport {
     String type,
     String unit,
   ) async {
-    final now = DateTime.now();
+    final now = clock.now();
     final entries = List<MapEntry<DateTime, num>>.from(data.entries)
       ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -142,8 +151,7 @@ class HealthImport {
       return;
     }
 
-    await Permission.activityRecognition.request();
-    await Permission.location.request();
+    await _requestPermissions();
     final accessWasGranted = await authorizeHealth(activityTypes) ?? false;
 
     if (!accessWasGranted) {
@@ -203,7 +211,7 @@ class HealthImport {
 
     if (accessWasGranted) {
       try {
-        final now = DateTime.now();
+        final now = clock.now();
         final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
         final dataPoints = await health.getHealthDataFromTypes(
           types: types,
@@ -274,7 +282,7 @@ class HealthImport {
     }
 
     final latest = await _db.latestQuantitativeByType(actualTypes.first);
-    final now = DateTime.now();
+    final now = clock.now();
 
     final dateFrom =
         latest?.meta.dateFrom ?? now.subtract(defaultFetchDuration);
@@ -319,7 +327,7 @@ class HealthImport {
   }
 
   Future<void> fetchHealthDataDelta(String type) async {
-    final now = DateTime.now();
+    final now = clock.now();
     final lastFetch = lastFetched[type] ?? DateTime(0);
 
     if (now.difference(lastFetch) < const Duration(minutes: 10) &&
@@ -342,11 +350,10 @@ class HealthImport {
       return;
     }
 
-    final now = DateTime.now();
+    final now = clock.now();
     final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
-    await Permission.activityRecognition.request();
-    await Permission.location.request();
+    await _requestPermissions();
     const types = [HealthDataType.WORKOUT];
     final accessWasGranted = await authorizeHealth(types);
 
@@ -387,7 +394,7 @@ class HealthImport {
     workoutImportRunning = true;
 
     final latest = await _db.latestWorkout();
-    final now = DateTime.now();
+    final now = clock.now();
 
     await getWorkoutsHealthData(
       dateFrom: latest?.data.dateFrom ?? now.subtract(defaultFetchDuration),
