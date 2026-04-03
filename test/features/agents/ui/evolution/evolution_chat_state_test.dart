@@ -529,6 +529,167 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'skipApprovalCheck bypasses implicit approval even when proposal is pending',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Please review this proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(
+            const PendingProposal(
+              generalDirective: 'new directives',
+              reportDirective: '',
+              rationale: 'Better fit for the user.',
+            ),
+          );
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+          when(() => mockWorkflow.getSession(any())).thenReturn(null);
+          when(
+            () => mockWorkflow.sendMessage(
+              sessionId: 'session-1',
+              userMessage: 'yes',
+            ),
+          ).thenAnswer((_) async => 'Got it, continuing.');
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          await withClock(
+            testClock,
+            () => container
+                .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+                .sendMessage('yes', skipApprovalCheck: true),
+          );
+
+          // approveProposal should NOT have been called.
+          verifyNever(
+            () => mockWorkflow.approveProposal(
+              sessionId: any(named: 'sessionId'),
+            ),
+          );
+
+          // The message should have gone through workflow.sendMessage instead.
+          verify(
+            () => mockWorkflow.sendMessage(
+              sessionId: 'session-1',
+              userMessage: 'yes',
+            ),
+          ).called(1);
+
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+
+          // system + assistant (opening) + user + assistant (response)
+          expect(data.messages.length, 4);
+          expect(data.messages[2], isA<EvolutionUserMessage>());
+          expect((data.messages[2] as EvolutionUserMessage).text, 'yes');
+          expect(data.messages[3], isA<EvolutionAssistantMessage>());
+          expect(
+            (data.messages[3] as EvolutionAssistantMessage).text,
+            'Got it, continuing.',
+          );
+        },
+      );
+
+      test(
+        'adds approval_failed system message when implicit approval fails',
+        () async {
+          when(
+            () => mockWorkflow.startSession(templateId: kTestTemplateId),
+          ).thenAnswer((_) async => 'Please review this proposal.');
+          when(
+            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+          ).thenReturn(
+            ActiveEvolutionSession(
+              sessionId: 'session-1',
+              templateId: kTestTemplateId,
+              conversationId: 'conv-1',
+              strategy: EvolutionStrategy(),
+              modelId: 'model-1',
+            ),
+          );
+          when(
+            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+          ).thenReturn(
+            const PendingProposal(
+              generalDirective: 'new directives',
+              reportDirective: '',
+              rationale: 'Better fit for the user.',
+            ),
+          );
+          when(
+            () => mockWorkflow.approveProposal(
+              sessionId: 'session-1',
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+          ).thenAnswer((_) async {});
+
+          container = createContainer();
+          await withClock(
+            testClock,
+            () => container.read(
+              evolutionChatStateProvider(kTestTemplateId).future,
+            ),
+          );
+
+          await withClock(
+            testClock,
+            () => container
+                .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+                .sendMessage('ok'),
+          );
+
+          final data = container
+              .read(evolutionChatStateProvider(kTestTemplateId))
+              .value!;
+
+          // The last message should be a system message with approval_failed.
+          expect(data.messages.last, isA<EvolutionSystemMessage>());
+          expect(
+            (data.messages.last as EvolutionSystemMessage).text,
+            'approval_failed',
+          );
+
+          // approveProposal was called but returned null (failure).
+          verify(
+            () => mockWorkflow.approveProposal(
+              sessionId: 'session-1',
+            ),
+          ).called(1);
+
+          // sendMessage should NOT have been called (approval path, not chat).
+          verifyNever(
+            () => mockWorkflow.sendMessage(
+              sessionId: any(named: 'sessionId'),
+              userMessage: any(named: 'userMessage'),
+            ),
+          );
+        },
+      );
     });
 
     group('rejectProposal', () {
@@ -587,6 +748,9 @@ void main() {
           systemMessages.any((m) => m.text == 'proposal_rejected'),
           isTrue,
         );
+
+        // lastSurfacedProposalKey should be cleared to null after rejection.
+        expect(data.lastSurfacedProposalKey, isNull);
       });
     });
 
