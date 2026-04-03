@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_update_result.dart';
@@ -358,5 +362,193 @@ void main() {
         verifyNever(() => updateNotifications.notify(any<Set<String>>()));
       },
     );
+  });
+
+  group('updateJournalEntityText - entity type branches', () {
+    test('updates MeasurementEntry with new text and metadata', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final measurementEntry = JournalEntity.measurement(
+        meta: Metadata(
+          id: 'measurement-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        data: MeasurementData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          value: 500,
+          dataTypeId: 'water-type-id',
+        ),
+        entryText: const EntryText(plainText: 'original text'),
+      );
+
+      when(
+        () => journalDb.journalEntityById('measurement-id'),
+      ).thenAnswer((_) async => measurementEntry);
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler:
+            (
+              entity, {
+              linkedId,
+              enqueueSync = true,
+              overrideComparison = false,
+            }) async => true,
+      );
+
+      const newText = EntryText(plainText: 'updated measurement notes');
+      final result = await logic.updateJournalEntityText(
+        'measurement-id',
+        newText,
+        DateTime(2024, 3, 15, 10, 35),
+      );
+
+      expect(result, isTrue);
+      expect(logic.lastUpdateDbEntity, isA<MeasurementEntry>());
+      final updated = logic.lastUpdateDbEntity! as MeasurementEntry;
+      expect(updated.entryText?.plainText, 'updated measurement notes');
+      expect(updated.data.value, 500);
+      expect(updated.data.dataTypeId, 'water-type-id');
+      expect(logic.updateMetadataCalls, 1);
+    });
+
+    test('updates HabitCompletionEntry with new text and metadata', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final habitEntry = JournalEntity.habitCompletion(
+        meta: Metadata(
+          id: 'habit-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        data: HabitCompletionData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          habitId: 'flossing-habit-id',
+        ),
+        entryText: const EntryText(plainText: 'original habit text'),
+      );
+
+      when(
+        () => journalDb.journalEntityById('habit-id'),
+      ).thenAnswer((_) async => habitEntry);
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler:
+            (
+              entity, {
+              linkedId,
+              enqueueSync = true,
+              overrideComparison = false,
+            }) async => true,
+      );
+
+      const newText = EntryText(plainText: 'updated habit notes');
+      final result = await logic.updateJournalEntityText(
+        'habit-id',
+        newText,
+        DateTime(2024, 3, 15, 10, 35),
+      );
+
+      expect(result, isTrue);
+      expect(logic.lastUpdateDbEntity, isA<HabitCompletionEntry>());
+      final updated = logic.lastUpdateDbEntity! as HabitCompletionEntry;
+      expect(updated.entryText?.plainText, 'updated habit notes');
+      expect(updated.data.habitId, 'flossing-habit-id');
+      expect(logic.updateMetadataCalls, 1);
+    });
+  });
+
+  group('updateTask - orElse path', () {
+    test('logs captureException when entity is not a Task', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final journalEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'not-a-task-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        entryText: const EntryText(plainText: 'just a journal entry'),
+      );
+
+      when(
+        () => journalDb.journalEntityById('not-a-task-id'),
+      ).thenAnswer((_) async => journalEntry);
+
+      final taskData = TaskData(
+        status: TaskStatus.open(
+          id: 'status-id',
+          createdAt: testDate,
+          utcOffset: 60,
+        ),
+        title: 'test task',
+        statusHistory: [],
+        dateTo: testDate,
+        dateFrom: testDate,
+      );
+
+      final result = await logic.updateTask(
+        journalEntityId: 'not-a-task-id',
+        taskData: taskData,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => loggingService.captureException(
+          'not a task',
+          domain: 'persistence_logic',
+          subDomain: 'updateTask',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('updateEvent - orElse path', () {
+    test('logs captureException when entity is not an Event', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final journalEntry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'not-an-event-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        entryText: const EntryText(plainText: 'just a journal entry'),
+      );
+
+      when(
+        () => journalDb.journalEntityById('not-an-event-id'),
+      ).thenAnswer((_) async => journalEntry);
+
+      const eventData = EventData(
+        status: EventStatus.tentative,
+        title: 'Test Event',
+        stars: 3,
+      );
+
+      final result = await logic.updateEvent(
+        journalEntityId: 'not-an-event-id',
+        data: eventData,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => loggingService.captureException(
+          'not an event',
+          domain: 'persistence_logic',
+          subDomain: 'updateEvent',
+        ),
+      ).called(1);
+    });
   });
 }

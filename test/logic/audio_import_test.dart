@@ -271,6 +271,55 @@ void main() {
       ).called(1);
     });
 
+    test('cleans up copied file when entry creation fails', () async {
+      // Override createDbEntity to throw (simulates creation failure),
+      // which causes SpeechRepository.createAudioEntry to catch and
+      // return null, triggering the cleanup path in importDroppedAudio.
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenThrow(Exception('DB creation failed'));
+
+      final testFile = await createTestAudioFile('cleanup-test.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      await importDroppedAudio(data: dropDetails);
+
+      // Entry creation was attempted (and failed)
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
+
+    test('handles exception during import and continues', () async {
+      // Create a drop detail pointing to a non-existent file
+      final xFile = XFile('/nonexistent/path/fake.m4a');
+      final dropDetails = createDropDetails([xFile]);
+
+      // Should not throw
+      await importDroppedAudio(data: dropDetails);
+
+      // Should log the error
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: AudioImportConstants.loggingDomain,
+          subDomain: 'importDroppedAudio',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
     test('parses timestamp from Lotti filename format', () async {
       final testFile = await createTestAudioFile(
         '2025-10-20_16-49-32-203.m4a',
