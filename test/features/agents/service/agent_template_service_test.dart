@@ -1500,6 +1500,42 @@ void main() {
       },
     );
 
+    test(
+      'averageDuration is zero when durationSumMs is null but count > 0',
+      () async {
+        // Edge case: durationCount > 0 but durationSumMs is null (SQL NULL).
+        // The ?? 0 fallback should produce Duration.zero, not crash.
+        stubAggregateMetrics(
+          successCount: 2,
+          totalWakes: 2,
+          // durationSumMs intentionally left null
+          durationCount: 2,
+        );
+        stubAgentsForTemplate([]);
+
+        final metrics = await service.computeMetrics(kTestTemplateId);
+
+        expect(metrics.averageDuration, Duration.zero);
+      },
+    );
+
+    test(
+      'averageDuration is null when durationCount is zero with non-null sum',
+      () async {
+        // durationSumMs is non-null but durationCount is 0 → should skip average.
+        stubAggregateMetrics(
+          successCount: 1,
+          totalWakes: 1,
+          durationSumMs: 5000,
+        );
+        stubAgentsForTemplate([]);
+
+        final metrics = await service.computeMetrics(kTestTemplateId);
+
+        expect(metrics.averageDuration, isNull);
+      },
+    );
+
     test('firstWakeAt and lastWakeAt from SQL aggregation', () async {
       stubAggregateMetrics(
         successCount: 2,

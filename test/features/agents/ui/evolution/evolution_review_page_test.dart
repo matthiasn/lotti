@@ -207,5 +207,154 @@ void main() {
       );
       expect(find.byType(RitualSessionHistoryCard), findsNothing);
     });
+
+    testWidgets('shows SizedBox.shrink when summary metrics fail', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 1600),
+          ),
+          summaryOverride: () async => throw Exception('summary failed'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify the summary card is NOT rendered.
+      expect(find.byType(RitualSummaryCard), findsNothing);
+
+      // Verify no summary-specific text appears (e.g. "Total Wakes").
+      expect(find.text('Total Wakes'), findsNothing);
+
+      // Page is still usable — the start card and hero panel are present.
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentRitualSummarySubtitle),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows session badge with number in pending card', (
+      tester,
+    ) async {
+      final session = makeTestEvolutionSession(
+        sessionNumber: 5,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: () async => session,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+
+      // Proposal section title should appear.
+      expect(
+        find.text(context.messages.agentRitualReviewProposalSection),
+        findsOneWidget,
+      );
+      // Session badge should show the session number.
+      expect(
+        find.text(
+          context.messages.agentEvolutionSessionProgress(5, 5),
+        ),
+        findsOneWidget,
+      );
+      // Action button should appear.
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'shows pending session card without feedback summary',
+      (tester) async {
+        final session = makeTestEvolutionSession(
+          sessionNumber: 2,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            pendingOverride: () async => session,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(EvolutionReviewPage));
+
+        // The proposal section title and action button should be present.
+        expect(
+          find.text(context.messages.agentRitualReviewProposalSection),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.agentRitualReviewAction),
+          findsOneWidget,
+        );
+
+        // Session badge should display the session number.
+        expect(find.textContaining('2'), findsWidgets);
+      },
+    );
+
+    testWidgets('shows loading placeholder while history loads', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 1600),
+          ),
+          historyOverride: () =>
+              Completer<List<RitualSessionHistoryEntry>>().future,
+        ),
+      );
+      // Allow summary and other providers to settle, but history stays
+      // loading because its Completer never completes.
+      await tester.pump();
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.byType(CircularProgressIndicator),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsAtLeastNWidgets(1),
+      );
+    });
+
+    testWidgets('renders SizedBox.shrink while pending session loads', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: () => Completer<AgentDomainEntity?>().future,
+        ),
+      );
+      await tester.pump();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+
+      // While the pending provider is loading, neither the start card nor
+      // the pending session card should appear.
+      expect(
+        find.text(context.messages.agentRitualSummaryStartHint),
+        findsNothing,
+      );
+      expect(
+        find.text(context.messages.agentRitualReviewProposalSection),
+        findsNothing,
+      );
+    });
   });
 }
