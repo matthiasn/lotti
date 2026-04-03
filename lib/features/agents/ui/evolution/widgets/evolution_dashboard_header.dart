@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_wake_activity_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -29,12 +30,18 @@ class _EvolutionDashboardHeaderState
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final metricsAsync = ref.watch(
       ritualSummaryMetricsProvider(widget.templateId),
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step4,
+        10,
+        tokens.spacing.step4,
+        0,
+      ),
       child: metricsAsync.when(
         data: (metrics) => ModernBaseCard(
           onTap: () => setState(() => _expanded = !_expanded),
@@ -85,6 +92,7 @@ class _HeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final titleStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w800,
     );
@@ -121,7 +129,7 @@ class _HeaderRow extends StatelessWidget {
                 ],
               ),
               if (expanded) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: tokens.spacing.step2),
                 Text(
                   context.messages.agentRitualSummarySubtitle,
                   maxLines: 2,
@@ -132,8 +140,8 @@ class _HeaderRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step3,
                   children: [
                     _InlineStat(
                       label: context.messages.agentRitualSummaryWakesSinceLast,
@@ -150,10 +158,10 @@ class _HeaderRow extends StatelessWidget {
                   ],
                 ),
               ] else ...[
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.spacing.step3),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step3,
                   children: [
                     _CompactInlineStat(
                       label: context.messages.agentRitualSummaryWakesSinceLast,
@@ -230,13 +238,18 @@ class _InlineStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: tokens.spacing.step3,
+      ),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerHighest.withValues(
           alpha: 0.42,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +261,7 @@ class _InlineStat extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: tokens.spacing.step1),
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -272,6 +285,8 @@ class _ExpandedContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -304,7 +319,12 @@ class _ExpandedContent extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step4,
+            tokens.spacing.step4,
+            tokens.spacing.step4,
+            10,
+          ),
           decoration: BoxDecoration(
             color: context.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.26,
@@ -334,10 +354,12 @@ class _DetailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 150, maxWidth: 180),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(tokens.spacing.step4),
         decoration: BoxDecoration(
           color: context.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.38,
@@ -353,7 +375,7 @@ class _DetailTile extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: tokens.spacing.step2),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

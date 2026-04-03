@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
@@ -515,32 +516,17 @@ void main() {
           ],
         );
         when(
-          () => templateService.getTokenUsageSince(
+          () => repository.sumTokenUsageForTemplateSince(
             kTestTemplateId,
             since: lastSessionAt,
           ),
         ).thenAnswer(
-          (_) async => [
-            makeTestWakeTokenUsage(
-              outputTokens: 40,
-              thoughtsTokens: 10,
-            ),
-            makeTestWakeTokenUsage(
-              id: 'usage-2',
-              runKey: 'run-2',
-              threadId: 'thread-2',
-              inputTokens: 20,
-              outputTokens: 5,
-              thoughtsTokens: 0,
-            ),
-          ],
-        );
-        when(
-          () => repository.getTokenUsageForTemplate(
-            kTestTemplateId,
-            limit: any(named: 'limit'),
+          (_) async => SumTokenUsageByTemplateSinceResult(
+            totalInput: 120,
+            totalOutput: 45,
+            totalThoughts: 10,
           ),
-        ).thenAnswer((_) async => const []);
+        );
 
         final container = ProviderContainer(
           overrides: [
@@ -610,18 +596,13 @@ void main() {
         ),
       ).thenAnswer((_) async => const []);
       when(
-        () => repository.getTokenUsageForTemplate(
-          kTestTemplateId,
-          limit: -1,
-        ),
+        () => repository.sumTokenUsageForTemplate(kTestTemplateId),
       ).thenAnswer(
-        (_) async => [
-          makeTestWakeTokenUsage(
-            inputTokens: 10,
-            outputTokens: 5,
-            thoughtsTokens: 1,
-          ),
-        ],
+        (_) async => SumTokenUsageByTemplateResult(
+          totalInput: 10,
+          totalOutput: 5,
+          totalThoughts: 1,
+        ),
       );
 
       final container = ProviderContainer(
@@ -655,10 +636,7 @@ void main() {
       expect(result.totalTokenUsageSinceLastSession, 16);
       expect(result.meanTimeToResolution, isNull);
       verify(
-        () => repository.getTokenUsageForTemplate(
-          kTestTemplateId,
-          limit: -1,
-        ),
+        () => repository.sumTokenUsageForTemplate(kTestTemplateId),
       ).called(1);
     });
   });

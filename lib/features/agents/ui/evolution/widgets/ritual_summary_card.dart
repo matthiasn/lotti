@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_wake_activity_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -20,10 +21,11 @@ class RitualSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = compact ? 12.0 : 16.0;
+    final tokens = context.designTokens;
+    final spacing = compact ? tokens.spacing.step4 : tokens.spacing.step5;
 
     return ModernBaseCard(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: tokens.spacing.step4),
       padding: EdgeInsets.all(spacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +36,7 @@ class RitualSummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.spacing.step2),
           Text(
             context.messages.agentRitualSummarySubtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -69,7 +71,7 @@ class RitualSummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spacing.step3),
           EvolutionWakeActivityChart(
             buckets: metrics.dailyWakeCounts,
           ),
@@ -90,15 +92,17 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 132, maxWidth: 180),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(tokens.spacing.step4),
         decoration: BoxDecoration(
           color: context.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.45,
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +113,7 @@ class _MetricTile extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: tokens.spacing.step2),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

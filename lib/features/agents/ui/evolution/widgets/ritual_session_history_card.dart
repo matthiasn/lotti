@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_helpers.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -18,6 +19,7 @@ class RitualSessionHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final session = entry.session;
     final recap = entry.recap;
     final summary = recap?.tldr.trim();
@@ -25,15 +27,23 @@ class RitualSessionHistoryCard extends StatelessWidget {
     final approvedChangeSummary = recap?.approvedChangeSummary?.trim();
 
     return ModernBaseCard(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: tokens.spacing.step4),
       padding: EdgeInsets.zero,
       child: Theme(
         data: Theme.of(context).copyWith(
           dividerColor: Colors.transparent,
         ),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          tilePadding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          childrenPadding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            0,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+          ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -45,7 +55,7 @@ class RitualSessionHistoryCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: tokens.spacing.step2),
               Text(
                 formatAgentDateTime(session.completedAt ?? session.createdAt),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -72,8 +82,8 @@ class RitualSessionHistoryCard extends StatelessWidget {
                 if (recap != null && recap.categoryRatings.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: tokens.spacing.step3,
+                    runSpacing: tokens.spacing.step3,
                     children: recap.categoryRatings.entries.map((entry) {
                       return _RatingChip(
                         label: _ratingLabelForKey(context, entry.key),
@@ -106,7 +116,7 @@ class RitualSessionHistoryCard extends StatelessWidget {
                     final role = turn['role'] ?? 'assistant';
                     final text = turn['text'] ?? '';
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(bottom: tokens.spacing.step4),
                       child: _TranscriptTurn(
                         role: role,
                         text: text,
@@ -227,8 +237,10 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: EdgeInsets.only(top: tokens.spacing.step5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -238,7 +250,7 @@ class _Section extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spacing.step3),
           child,
         ],
       ),
@@ -257,6 +269,7 @@ class _TranscriptTurn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final isUser = role == 'user';
     final accent = isUser
         ? context.colorScheme.tertiary
@@ -264,10 +277,10 @@ class _TranscriptTurn extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(
           color: accent.withValues(alpha: 0.18),
         ),

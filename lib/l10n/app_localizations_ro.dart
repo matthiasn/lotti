@@ -94,17 +94,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentBinaryChoiceYes => 'Da';
 
   @override
-  String get agentCategoryRatingsScaleMax => 'Corectați mai întâi';
+  String get agentCategoryRatingsScaleMax => 'Corectează mai întâi';
 
   @override
-  String get agentCategoryRatingsScaleMin => 'Lăsați așa';
+  String get agentCategoryRatingsScaleMin => 'Lasă așa';
 
   @override
   String get agentCategoryRatingsSubmit => 'Folosește aceste priorități';
 
   @override
   String get agentCategoryRatingsSubtitle =>
-      'Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lăsați așa, 5 înseamnă corectați mai întâi.';
+      'Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lasă așa, 5 înseamnă corectează mai întâi.';
 
   @override
   String get agentCategoryRatingsTitle => 'Ajută-mă să prioritizez';
@@ -238,11 +238,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Notă înregistrată';
 
   @override
-  String get agentEvolutionProposalRationale => 'Justificare';
+  String get agentEvolutionProposalApprovalFailed =>
+      'Aprobarea a eșuat — te rog încearcă din nou';
 
   @override
-  String get agentEvolutionProposalApprovalFailed =>
-      'Aprobarea a eșuat — vă rugăm încercați din nou';
+  String get agentEvolutionProposalRationale => 'Justificare';
 
   @override
   String get agentEvolutionProposalRejected =>

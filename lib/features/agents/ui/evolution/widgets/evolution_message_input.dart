@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcripti
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/animations.dart';
 
@@ -126,10 +127,14 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
         recState.status == ChatRecorderStatus.realtimeRecording;
     final isProcessing = recState.status == ChatRecorderStatus.processing;
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.designTokens;
 
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step3,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.97),
           border: Border(
@@ -175,6 +180,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
     final canSend = _hasText && !widget.isWaiting && widget.enabled;
     final isProcessing = recState.status == ChatRecorderStatus.processing;
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.designTokens;
 
     return Row(
       children: [
@@ -194,24 +200,24 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
               ),
               filled: true,
               fillColor: colorScheme.surface,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
                 vertical: 10,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(tokens.radii.xl),
                 borderSide: BorderSide(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.45),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(tokens.radii.xl),
                 borderSide: BorderSide(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.45),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(tokens.radii.xl),
                 borderSide: BorderSide(
                   color: colorScheme.primary.withValues(alpha: 0.8),
                   width: 1.4,
@@ -220,7 +226,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: tokens.spacing.step3),
         if (isProcessing)
           const EvolutionCircleButton(
             icon: Icons.hourglass_top_rounded,
@@ -269,7 +275,7 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
                 ? context.messages.aiBatchToggleTooltip
                 : context.messages.aiRealtimeToggleTooltip,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: context.designTokens.spacing.step2),
           EvolutionCircleButton(
             icon: useRealtime ? Icons.graphic_eq : Icons.mic,
             onPressed: useRealtime

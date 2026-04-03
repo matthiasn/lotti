@@ -238,11 +238,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Note Recorded';
 
   @override
-  String get agentEvolutionProposalRationale => 'Rationale';
-
-  @override
   String get agentEvolutionProposalApprovalFailed =>
       'Approval failed — please try again';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Rationale';
 
   @override
   String get agentEvolutionProposalRejected =>

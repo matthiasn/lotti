@@ -531,17 +531,17 @@ abstract class AppLocalizations {
   /// **'Note Recorded'**
   String get agentEvolutionNoteRecorded;
 
-  /// No description provided for @agentEvolutionProposalRationale.
-  ///
-  /// In en, this message translates to:
-  /// **'Rationale'**
-  String get agentEvolutionProposalRationale;
-
   /// No description provided for @agentEvolutionProposalApprovalFailed.
   ///
   /// In en, this message translates to:
   /// **'Approval failed — please try again'**
   String get agentEvolutionProposalApprovalFailed;
+
+  /// No description provided for @agentEvolutionProposalRationale.
+  ///
+  /// In en, this message translates to:
+  /// **'Rationale'**
+  String get agentEvolutionProposalRationale;
 
   /// No description provided for @agentEvolutionProposalRejected.
   ///

@@ -487,61 +487,37 @@ class AgentTemplateService {
     return versions;
   }
 
-  /// Compute recent performance metrics for a template.
+  /// Compute performance metrics for a template using SQL aggregation.
   ///
-  /// Fetches wake-run log entries tagged with this template and agent
-  /// instances using it, then aggregates them into
-  /// [TemplatePerformanceMetrics].
-  ///
-  /// Pass [limit] to intentionally scope the aggregation to a recent window.
-  /// The default `-1` computes metrics over the full history.
+  /// All counts, sums, and min/max timestamps are computed in a single
+  /// database query, avoiding the need to load all rows into memory.
   Future<TemplatePerformanceMetrics> computeMetrics(
-    String templateId, {
-    int limit = -1,
-  }) async {
-    final runs = await repository.getWakeRunsForTemplate(
-      templateId,
-      limit: limit,
-    );
-    final agents = await getAgentsForTemplate(templateId);
-    final totalWakes = await repository.countWakeRunsForTemplate(templateId);
+    String templateId,
+  ) async {
+    final (agg, agents, totalWakes) = await (
+      repository.aggregateWakeRunMetrics(templateId),
+      getAgentsForTemplate(templateId),
+      repository.countWakeRunsForTemplate(templateId),
+    ).wait;
 
-    var successCount = 0;
-    var failureCount = 0;
-    var durationSumMs = 0;
-    var durationCount = 0;
-    // Query returns rows ordered by created_at DESC, so first = latest,
-    // last = earliest.
-    final lastWakeAt = runs.isNotEmpty ? runs.first.createdAt : null;
-    final firstWakeAt = runs.isNotEmpty ? runs.last.createdAt : null;
-
-    for (final r in runs) {
-      if (r.status == WakeRunStatus.completed.name) successCount++;
-      if (r.status == WakeRunStatus.failed.name) failureCount++;
-      if (r.startedAt != null && r.completedAt != null) {
-        final diffMs = r.completedAt!.difference(r.startedAt!).inMilliseconds;
-        if (diffMs > 0) {
-          durationSumMs += diffMs;
-          durationCount++;
-        }
-      }
-    }
-
-    final terminalCount = successCount + failureCount;
-    final successRate = terminalCount > 0 ? successCount / terminalCount : 0.0;
-    final averageDuration = durationCount > 0
-        ? Duration(milliseconds: durationSumMs ~/ durationCount)
+    final terminalCount = agg.successCount + agg.failureCount;
+    final successRate = terminalCount > 0
+        ? agg.successCount / terminalCount
+        : 0.0;
+    final durationSumMs = agg.durationSumMs ?? 0;
+    final averageDuration = agg.durationCount > 0
+        ? Duration(milliseconds: durationSumMs ~/ agg.durationCount)
         : null;
 
     return TemplatePerformanceMetrics(
       templateId: templateId,
       totalWakes: totalWakes,
-      successCount: successCount,
-      failureCount: failureCount,
+      successCount: agg.successCount,
+      failureCount: agg.failureCount,
       successRate: successRate,
       averageDuration: averageDuration,
-      firstWakeAt: firstWakeAt,
-      lastWakeAt: lastWakeAt,
+      firstWakeAt: agg.firstWakeAt,
+      lastWakeAt: agg.lastWakeAt,
       activeInstanceCount: agents
           .where((a) => a.lifecycle == AgentLifecycle.active)
           .length,

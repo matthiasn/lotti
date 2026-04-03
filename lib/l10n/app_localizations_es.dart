@@ -240,11 +240,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Nota registrada';
 
   @override
-  String get agentEvolutionProposalRationale => 'Justificación';
-
-  @override
   String get agentEvolutionProposalApprovalFailed =>
       'Error en la aprobación — inténtalo de nuevo';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justificación';
 
   @override
   String get agentEvolutionProposalRejected =>

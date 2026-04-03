@@ -883,7 +883,7 @@ final class AgentServiceProvider
   }
 }
 
-String _$agentServiceHash() => r'6009a2c80577a05731e21a2cf7a569111cb42603';
+String _$agentServiceHash() => r'faebbb3da6c43ad7767b1eccb45d190858c897f3';
 
 /// The agent template service.
 
@@ -1042,7 +1042,7 @@ final class ImproverAgentServiceProvider
 }
 
 String _$improverAgentServiceHash() =>
-    r'2e5a9a2e49539c6295136a413cb7792f789e60f2';
+    r'8dac9d73ab543b14fb416325781f6f07638fa37a';
 
 /// The improver agent workflow with all dependencies resolved.
 
@@ -3770,7 +3770,7 @@ final class ProjectAgentWorkflowProvider
 }
 
 String _$projectAgentWorkflowHash() =>
-    r'f251a7d78ec3fb4d901b0659c87f456076cb4dbf';
+    r'6a67247d99b24a6c45dfc196620477eef8eccb29';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

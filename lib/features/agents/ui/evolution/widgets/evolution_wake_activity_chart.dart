@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Compact 30-day wake activity chart with date labels.
@@ -18,6 +19,8 @@ class EvolutionWakeActivityChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     if (buckets.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -113,7 +116,7 @@ class EvolutionWakeActivityChart extends StatelessWidget {
                             color: context.colorScheme.outlineVariant
                                 .withValues(alpha: 0.42),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: tokens.spacing.step2),
                           Text(
                             _labelFormat.format(buckets[index].date),
                             maxLines: 1,

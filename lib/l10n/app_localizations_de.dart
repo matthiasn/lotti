@@ -240,11 +240,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Notiz aufgezeichnet';
 
   @override
-  String get agentEvolutionProposalRationale => 'Begründung';
-
-  @override
   String get agentEvolutionProposalApprovalFailed =>
       'Genehmigung fehlgeschlagen — bitte versuche es erneut';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Begründung';
 
   @override
   String get agentEvolutionProposalRejected =>

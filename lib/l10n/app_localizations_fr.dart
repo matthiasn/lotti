@@ -242,11 +242,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Note enregistrée';
 
   @override
-  String get agentEvolutionProposalRationale => 'Justification';
-
-  @override
   String get agentEvolutionProposalApprovalFailed =>
       'Échec de l\'approbation — réessaie';
+
+  @override
+  String get agentEvolutionProposalRationale => 'Justification';
 
   @override
   String get agentEvolutionProposalRejected =>

@@ -158,7 +158,7 @@ class EvolutionChatState extends _$EvolutionChatState {
       _handleRatingsSubmitted(ratings);
     };
     session.eventHandler?.onBinaryChoiceSubmitted = (surfaceId, value) {
-      sendMessage(value);
+      sendMessage(value, skipApprovalCheck: true);
     };
 
     ref.onDispose(() {
@@ -215,7 +215,10 @@ class EvolutionChatState extends _$EvolutionChatState {
   ///
   /// If a proposal is already pending, brief acknowledgements such as `ok`
   /// are treated as approval instead of triggering another model turn.
-  Future<void> sendMessage(String text) async {
+  Future<void> sendMessage(
+    String text, {
+    bool skipApprovalCheck = false,
+  }) async {
     final data = state.value;
     if (data == null || data.sessionId == null || data.isWaiting) return;
 
@@ -236,7 +239,9 @@ class EvolutionChatState extends _$EvolutionChatState {
       ),
     );
 
-    if (hasPendingProposal && _isImplicitApprovalMessage(text)) {
+    if (!skipApprovalCheck &&
+        hasPendingProposal &&
+        _isImplicitApprovalMessage(text)) {
       final approved = await approveProposal();
       if (!approved) {
         final current = state.value;

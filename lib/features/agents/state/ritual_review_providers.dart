@@ -201,21 +201,19 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
           until: now,
         )).length;
 
-  final tokenUsageRecords = lastSessionAt == null
-      ? await repository.getTokenUsageForTemplate(templateId, limit: -1)
-      : await templateService.getTokenUsageSince(
-          templateId,
-          since: lastSessionAt,
-        );
-
-  final totalTokenUsageSinceLastSession = tokenUsageRecords.fold<int>(
-    0,
-    (sum, record) =>
-        sum +
-        (record.inputTokens ?? 0) +
-        (record.outputTokens ?? 0) +
-        (record.thoughtsTokens ?? 0),
-  );
+  final int totalTokenUsageSinceLastSession;
+  if (lastSessionAt == null) {
+    final sums = await repository.sumTokenUsageForTemplate(templateId);
+    totalTokenUsageSinceLastSession =
+        sums.totalInput + sums.totalOutput + sums.totalThoughts;
+  } else {
+    final sums = await repository.sumTokenUsageForTemplateSince(
+      templateId,
+      since: lastSessionAt,
+    );
+    totalTokenUsageSinceLastSession =
+        sums.totalInput + sums.totalOutput + sums.totalThoughts;
+  }
 
   return RitualSummaryMetrics(
     lifetimeWakeCount: lifetimeWakeCount,

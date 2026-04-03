@@ -934,6 +934,31 @@ class AgentRepository {
     return _db.countWakeRunsByTemplateId(templateId).getSingle();
   }
 
+  /// Aggregate wake-run metrics (success/failure counts, duration stats,
+  /// first/last timestamps) for [templateId] in a single SQL query.
+  Future<AggregateWakeRunMetricsByTemplateIdResult> aggregateWakeRunMetrics(
+    String templateId,
+  ) {
+    return _db.aggregateWakeRunMetricsByTemplateId(templateId).getSingle();
+  }
+
+  /// Sum token usage (input, output, thoughts) for all instances of
+  /// [templateId] in a single SQL query.
+  Future<SumTokenUsageByTemplateResult> sumTokenUsageForTemplate(
+    String templateId,
+  ) {
+    return _db.sumTokenUsageByTemplate(templateId).getSingle();
+  }
+
+  /// Sum token usage for all instances of [templateId] created on or
+  /// after [since].
+  Future<SumTokenUsageByTemplateSinceResult> sumTokenUsageForTemplateSince(
+    String templateId, {
+    required DateTime since,
+  }) {
+    return _db.sumTokenUsageByTemplateSince(templateId, since).getSingle();
+  }
+
   /// Fetch wake runs for [templateId] within the inclusive window.
   Future<List<WakeRunLogData>> getWakeRunsForTemplateInWindow(
     String templateId, {

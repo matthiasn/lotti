@@ -6,6 +6,7 @@ import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/gamey/gradients.dart';
@@ -293,13 +294,14 @@ final evolutionProposalItem = CatalogItem(
     final context = itemContext.buildContext;
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final tokens = context.designTokens;
 
     final hasCurrentDirectives =
         (currentGeneral != null && currentGeneral.isNotEmpty) ||
         (currentReport != null && currentReport.isNotEmpty);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
       child: ModernBaseCard(
         backgroundColor: colorScheme.surfaceContainerLow,
         borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
@@ -314,7 +316,7 @@ final evolutionProposalItem = CatalogItem(
                   icon: Icons.auto_awesome_rounded,
                   isCompact: true,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.spacing.step4),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,7 +328,7 @@ final evolutionProposalItem = CatalogItem(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: tokens.spacing.step2),
                       Text(
                         context.messages.agentEvolutionProposedDirectives,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -341,7 +343,7 @@ final evolutionProposalItem = CatalogItem(
             // Current directives (before)
             if (hasCurrentDirectives) ...[
               if (currentGeneral != null && currentGeneral.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: tokens.spacing.step5),
                 _sectionLabel(
                   context,
                   '${context.messages.agentEvolutionCurrentDirectives}'
@@ -369,7 +371,7 @@ final evolutionProposalItem = CatalogItem(
             ],
             // Proposed directives (after)
             if (generalDirective.isNotEmpty) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: tokens.spacing.step5),
               _sectionLabel(
                 context,
                 '${context.messages.agentEvolutionProposedDirectives}'
@@ -410,8 +412,8 @@ final evolutionProposalItem = CatalogItem(
             ],
             const SizedBox(height: 20),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: tokens.spacing.step4,
+              runSpacing: tokens.spacing.step4,
               alignment: WrapAlignment.end,
               children: [
                 DesignSystemButton(
@@ -1304,7 +1306,7 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
   }
 }
 
-class _BinaryChoicePromptCard extends StatelessWidget {
+class _BinaryChoicePromptCard extends StatefulWidget {
   const _BinaryChoicePromptCard({
     required this.question,
     required this.detail,
@@ -1322,6 +1324,20 @@ class _BinaryChoicePromptCard extends StatelessWidget {
   final String confirmValue;
   final String dismissValue;
   final ValueChanged<String> onSelect;
+
+  @override
+  State<_BinaryChoicePromptCard> createState() =>
+      _BinaryChoicePromptCardState();
+}
+
+class _BinaryChoicePromptCardState extends State<_BinaryChoicePromptCard> {
+  bool _submitted = false;
+
+  void _handleSelect(String value) {
+    if (_submitted) return;
+    setState(() => _submitted = true);
+    widget.onSelect(value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1347,7 +1363,7 @@ class _BinaryChoicePromptCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    question,
+                    widget.question,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w800,
@@ -1356,10 +1372,10 @@ class _BinaryChoicePromptCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (detail.isNotEmpty) ...[
+            if (widget.detail.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
-                detail,
+                widget.detail,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   height: 1.45,
@@ -1373,14 +1389,19 @@ class _BinaryChoicePromptCard extends StatelessWidget {
               alignment: WrapAlignment.end,
               children: [
                 DesignSystemButton(
-                  onPressed: () => onSelect(dismissValue),
-                  label: dismissLabel,
+                  onPressed: _submitted
+                      ? null
+                      : () => _handleSelect(widget.dismissValue),
+                  label: widget.dismissLabel,
                   variant: DesignSystemButtonVariant.secondary,
                   size: DesignSystemButtonSize.medium,
                 ),
-                _primaryActionButton(
-                  label: confirmLabel,
-                  onPressed: () => onSelect(confirmValue),
+                DesignSystemButton(
+                  onPressed: _submitted
+                      ? null
+                      : () => _handleSelect(widget.confirmValue),
+                  label: widget.confirmLabel,
+                  size: DesignSystemButtonSize.medium,
                 ),
               ],
             ),
@@ -1410,6 +1431,7 @@ Widget _directiveBox({
   bool isHighlighted = false,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
+  final tokens = context.designTokens;
 
   return Container(
     width: double.infinity,
@@ -1418,7 +1440,7 @@ Widget _directiveBox({
       color: isHighlighted
           ? colorScheme.primaryContainer.withValues(alpha: 0.22)
           : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(tokens.radii.l),
       border: Border.all(
         color: isHighlighted
             ? colorScheme.primary.withValues(alpha: 0.35)

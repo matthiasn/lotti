@@ -59,7 +59,7 @@ final class ProjectAgentServiceProvider
 }
 
 String _$projectAgentServiceHash() =>
-    r'1bd321d78e5ffad90bdad4b777ec4065752990de';
+    r'f55f3d97fcf83a838be37b352e84aa046f539334';
 
 /// Fetch the Project Agent for a given journal-domain [projectId].
 ///

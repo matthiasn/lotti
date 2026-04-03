@@ -281,9 +281,15 @@ class FeedbackExtractionService {
       'why',
     };
 
+    // Normalize keys by lowercasing and stripping separators so that
+    // variants like `rejection_reason`, `rejection-reason`, and
+    // `rejectionReason` all match the allowlist entry `rejectionreason`.
+    String normalizeKey(String key) =>
+        key.toLowerCase().replaceAll(RegExp('[_-]'), '');
+
     bool containsContext(Object? value, {String? key}) {
       final isExplanatoryKey =
-          key != null && explanatoryKeys.contains(key.toLowerCase());
+          key != null && explanatoryKeys.contains(normalizeKey(key));
       if (value is String) {
         return isExplanatoryKey && _isMeaningfulSignalText(value);
       }
@@ -295,7 +301,7 @@ class FeedbackExtractionService {
             // string values are still recognized as having explanatory
             // context (e.g. {'feedback': {'text': 'too early'}}).
             final effectiveKey =
-                explanatoryKeys.contains(entryKey.toLowerCase())
+                explanatoryKeys.contains(normalizeKey(entryKey))
                 ? entryKey
                 : (isExplanatoryKey ? key : entryKey);
             return containsContext(entry.value, key: effectiveKey);

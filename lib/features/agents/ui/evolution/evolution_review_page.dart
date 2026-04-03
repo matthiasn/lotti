@@ -25,6 +25,7 @@ class EvolutionReviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final templateAsync = ref.watch(agentTemplateProvider(templateId));
     final pendingAsync = ref.watch(pendingRitualReviewProvider(templateId));
     final summaryAsync = ref.watch(ritualSummaryMetricsProvider(templateId));
@@ -44,7 +45,7 @@ class EvolutionReviewPage extends ConsumerWidget {
         padding: const EdgeInsets.all(AppTheme.spacingLarge),
         children: [
           const _HeroPanel(),
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.spacing.step5),
           pendingAsync.when(
             data: (entity) {
               final session = entity is EvolutionSessionEntity ? entity : null;
@@ -63,18 +64,18 @@ class EvolutionReviewPage extends ConsumerWidget {
               onPressed: () => _openChat(context),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: tokens.spacing.step4),
           summaryAsync.when(
             data: (metrics) => RitualSummaryCard(metrics: metrics),
             loading: () => const _LoadingCard(),
             error: (_, _) => const SizedBox.shrink(),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: tokens.spacing.step4),
           _SectionHeader(
             icon: Icons.history_rounded,
             title: context.messages.agentRitualReviewSessionHistory,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: tokens.spacing.step4),
           historyAsync.when(
             data: (entries) {
               if (entries.isEmpty) {
@@ -129,7 +130,7 @@ class _HeroPanel extends StatelessWidget {
                 icon: Icons.forum_rounded,
                 isCompact: true,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.spacing.step4),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +222,7 @@ class _StartCard extends StatelessWidget {
               color: tokens.colors.text.highEmphasis,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spacing.step3),
           Text(
             context.messages.agentRitualSummaryStartHint,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
@@ -229,7 +230,7 @@ class _StartCard extends StatelessWidget {
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.spacing.step5),
           SizedBox(
             width: double.infinity,
             child: DesignSystemButton(
@@ -278,10 +279,10 @@ class _PendingSessionCard extends StatelessWidget {
           const SizedBox(height: 10),
           _SessionBadge(session: session),
           if (session.feedbackSummary case final summary?) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spacing.step4),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(tokens.spacing.step4),
               decoration: BoxDecoration(
                 color: tokens.colors.background.level03,
                 borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -298,7 +299,7 @@ class _PendingSessionCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.spacing.step5),
           SizedBox(
             width: double.infinity,
             child: DesignSystemButton(
@@ -364,7 +365,10 @@ class _SessionBadge extends StatelessWidget {
     final tokens = context.designTokens;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step3,
+      ),
       decoration: BoxDecoration(
         color: tokens.colors.background.level03,
         borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
@@ -414,11 +418,13 @@ class _LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ModernBaseCard(
+    final tokens = context.designTokens;
+
+    return ModernBaseCard(
       child: Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          child: CircularProgressIndicator(),
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          child: const CircularProgressIndicator(),
         ),
       ),
     );
