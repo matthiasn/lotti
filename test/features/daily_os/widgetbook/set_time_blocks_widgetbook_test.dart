@@ -149,12 +149,19 @@ void main() {
     testWidgets('rows with blocks have accent green border', (tester) async {
       await pumpPage(tester);
 
-      // Work has blocks — find its container and verify decoration
+      // Work has blocks — verify row border color is the accent green.
       final workRow = find.ancestor(
         of: find.text('Work'),
-        matching: find.byType(Container),
+        matching: find.byWidgetPredicate((widget) {
+          if (widget is! Container) return false;
+          final decoration = widget.decoration;
+          if (decoration is! BoxDecoration) return false;
+          final border = decoration.border;
+          if (border is! Border) return false;
+          return border.top.color == const Color(0xFF5ED4B7);
+        }),
       );
-      expect(workRow, findsWidgets);
+      expect(workRow, findsOneWidget);
     });
 
     testWidgets('renders in light mode without errors', (tester) async {

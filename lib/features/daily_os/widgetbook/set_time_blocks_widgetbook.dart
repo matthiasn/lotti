@@ -50,28 +50,10 @@ class _SetTimeBlocksShowcasePageState extends State<SetTimeBlocksShowcasePage> {
     setState(() {
       if (cat.isFavourite) {
         _favourites.removeWhere((c) => c.id == cat.id);
-        _others.insert(
-          0,
-          MockCategory(
-            id: cat.id,
-            name: cat.name,
-            color: cat.color,
-            icon: cat.icon,
-            timeBlocks: cat.timeBlocks,
-          ),
-        );
+        _others.insert(0, cat.copyWith(isFavourite: false));
       } else {
         _others.removeWhere((c) => c.id == cat.id);
-        _favourites.add(
-          MockCategory(
-            id: cat.id,
-            name: cat.name,
-            color: cat.color,
-            icon: cat.icon,
-            isFavourite: true,
-            timeBlocks: cat.timeBlocks,
-          ),
-        );
+        _favourites.add(cat.copyWith(isFavourite: true));
       }
     });
   }
@@ -309,16 +291,12 @@ class _CategoryRow extends StatelessWidget {
                 if (hasBlocks)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Row(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
-                        for (
-                          var i = 0;
-                          i < category.timeBlocks.length;
-                          i++
-                        ) ...[
-                          if (i > 0) const SizedBox(width: 8),
-                          _TimeChip(block: category.timeBlocks[i]),
-                        ],
+                        for (final block in category.timeBlocks)
+                          _TimeChip(block: block),
                       ],
                     ),
                   )
