@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os/widgetbook/set_time_blocks_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 import '../../../widget_test_utils.dart';
@@ -107,7 +108,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Save plan'), findsOneWidget);
-      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(find.byType(FilledButton), findsOneWidget);
     });
 
     testWidgets('renders other categories section', (tester) async {
@@ -146,10 +147,14 @@ void main() {
       expect(find.byIcon(Icons.schedule), findsWidgets);
     });
 
-    testWidgets('rows with blocks have accent green border', (tester) async {
+    testWidgets('rows with blocks have interactive accent border', (
+      tester,
+    ) async {
       await pumpPage(tester);
 
-      // Work has blocks — verify row border color is the accent green.
+      final tokens = DesignSystemTheme.dark().extension<DsTokens>()!;
+      final accent = tokens.colors.interactive.enabled;
+
       final workRow = find.ancestor(
         of: find.text('Work'),
         matching: find.byWidgetPredicate((widget) {
@@ -158,7 +163,7 @@ void main() {
           if (decoration is! BoxDecoration) return false;
           final border = decoration.border;
           if (border is! Border) return false;
-          return border.top.color == const Color(0xFF5ED4B7);
+          return border.top.color == accent;
         }),
       );
       expect(workRow, findsOneWidget);

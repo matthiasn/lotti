@@ -220,5 +220,234 @@ void main() {
       expect(find.text('12:00 PM'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    group('_updateTime logic', () {
+      /// Helper to open a picker and invoke its onTimeChanged callback.
+      Future<void> openPickerAndSetTime(
+        WidgetTester tester, {
+        required String tapLabel,
+        required TimeOfDay newTime,
+      }) async {
+        await tester.tap(find.text(tapLabel));
+        await tester.pumpAndSettle();
+
+        final picker = tester.widget<DesignSystemTimePicker>(
+          find.byType(DesignSystemTimePicker),
+        );
+        picker.onTimeChanged(newTime);
+        await tester.pump();
+      }
+
+      testWidgets(
+        'changing start time within valid range calls onChanged '
+        'with updated startTime',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '9:00 AM',
+            newTime: const TimeOfDay(hour: 10, minute: 30),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 10, 30));
+          expect(result!.endTime, DateTime(2026, 3, 15, 12));
+        },
+      );
+
+      testWidgets(
+        'changing end time within valid range calls onChanged '
+        'with updated endTime',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '12:00 PM',
+            newTime: const TimeOfDay(hour: 14, minute: 0),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 9));
+          expect(result!.endTime, DateTime(2026, 3, 15, 14));
+        },
+      );
+
+      testWidgets(
+        'moving start past end auto-adjusts end to start + 1 hour',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          // Start at 9, end at 12 — move start to 13 (past end)
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '9:00 AM',
+            newTime: const TimeOfDay(hour: 13, minute: 0),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 13));
+          expect(result!.endTime, DateTime(2026, 3, 15, 14));
+        },
+      );
+
+      testWidgets(
+        'moving start equal to end auto-adjusts end to start + 1 hour',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          // Start at 9, end at 12 — move start to 12 (equal to end)
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '9:00 AM',
+            newTime: const TimeOfDay(hour: 12, minute: 0),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 12));
+          expect(result!.endTime, DateTime(2026, 3, 15, 13));
+        },
+      );
+
+      testWidgets(
+        'moving end before start auto-adjusts start to end - 1 hour',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          // Start at 9, end at 12 — move end to 8 (before start)
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '12:00 PM',
+            newTime: const TimeOfDay(hour: 8, minute: 0),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 7));
+          expect(result!.endTime, DateTime(2026, 3, 15, 8));
+        },
+      );
+
+      testWidgets(
+        'moving end equal to start auto-adjusts start to end - 1 hour',
+        (tester) async {
+          PlannedBlock? result;
+          await pumpEditor(tester, onChanged: (b) => result = b);
+
+          // Start at 9, end at 12 — move end to 9 (equal to start)
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '12:00 PM',
+            newTime: const TimeOfDay(hour: 9, minute: 0),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 8));
+          expect(result!.endTime, DateTime(2026, 3, 15, 9));
+        },
+      );
+
+      testWidgets(
+        'start auto-adjust clamps to midnight when end moved to 0:00',
+        (tester) async {
+          // Use a block starting at 1:00, ending at 2:00
+          final earlyBlock = PlannedBlock(
+            id: 'block-early',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 3, 15, 1),
+            endTime: DateTime(2026, 3, 15, 2),
+          );
+
+          PlannedBlock? result;
+          await pumpEditor(
+            tester,
+            block: earlyBlock,
+            onChanged: (b) => result = b,
+          );
+
+          // Move end to 0:00 — start would become -1:00 → clamp to midnight
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '2:00 AM',
+            newTime: const TimeOfDay(hour: 0, minute: 0),
+          );
+
+          // end (0:00) is not after start (1:00), so auto-adjust makes
+          // start = end - 1h = 23:00 previous day, but that's before midnight
+          // so it gets clamped to midnight.
+          // Then newEnd (0:00) is still not after newStart (midnight = 0:00),
+          // so the callback should NOT be invoked (bail out).
+          expect(result, isNull);
+        },
+      );
+
+      testWidgets(
+        'end auto-adjust clamps to day end when start moved to 23:30',
+        (tester) async {
+          final lateBlock = PlannedBlock(
+            id: 'block-late',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 3, 15, 22),
+            endTime: DateTime(2026, 3, 15, 23),
+          );
+
+          PlannedBlock? result;
+          await pumpEditor(
+            tester,
+            block: lateBlock,
+            onChanged: (b) => result = b,
+          );
+
+          // Move start to 23:30 — end auto-adjusts to 00:30 next day,
+          // but clamped to midnight+24h (day end)
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '10:00 PM',
+            newTime: const TimeOfDay(hour: 23, minute: 30),
+          );
+
+          expect(result, isNotNull);
+          expect(result!.startTime, DateTime(2026, 3, 15, 23, 30));
+          // End clamped to day end: midnight + 24h = 2026-03-16 00:00
+          expect(result!.endTime, DateTime(2026, 3, 16));
+        },
+      );
+
+      testWidgets(
+        'bail out when end is still not after start after clamping',
+        (tester) async {
+          // Block from 0:00 to 1:00
+          final midnightBlock = PlannedBlock(
+            id: 'block-midnight',
+            categoryId: 'cat-1',
+            startTime: DateTime(2026, 3, 15),
+            endTime: DateTime(2026, 3, 15, 1),
+          );
+
+          PlannedBlock? result;
+          await pumpEditor(
+            tester,
+            block: midnightBlock,
+            onChanged: (b) => result = b,
+          );
+
+          // Move end to 0:00 — same as start
+          // auto-adjust: start = end - 1h = -1h → clamped to midnight
+          // then end (0:00) is not after start (0:00) → bail out
+          await openPickerAndSetTime(
+            tester,
+            tapLabel: '1:00 AM',
+            newTime: const TimeOfDay(hour: 0, minute: 0),
+          );
+
+          expect(result, isNull);
+        },
+      );
+    });
   });
 }

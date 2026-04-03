@@ -3,9 +3,6 @@ import 'package:lotti/features/daily_os/widgetbook/set_time_blocks_mock_data.dar
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
-/// Accent color matching Figma: rgb(94, 212, 183).
-const _accent = Color(0xFF5ED4B7);
-
 WidgetbookFolder buildSetTimeBlocksWidgetbookFolder() {
   return WidgetbookFolder(
     name: 'Set Time Blocks',
@@ -23,10 +20,7 @@ WidgetbookFolder buildSetTimeBlocksWidgetbookFolder() {
   );
 }
 
-/// Standalone "Set time blocks" page showcase.
-///
-/// Renders the full page with category rows, time chips, favourites/other
-/// sections, and a save button. Uses mock data, no real controllers.
+/// Standalone "Set time blocks" page showcase using mock data.
 class SetTimeBlocksShowcasePage extends StatefulWidget {
   const SetTimeBlocksShowcasePage({super.key});
 
@@ -116,10 +110,6 @@ class _SetTimeBlocksShowcasePageState extends State<SetTimeBlocksShowcasePage> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Page Header
-// ---------------------------------------------------------------------------
-
 class _PageHeader extends StatelessWidget {
   const _PageHeader({required this.tokens});
   final DsTokens tokens;
@@ -136,36 +126,31 @@ class _PageHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Back row — Figma uses arrow_back_ios (thin chevron) + 4px gap
           Row(
             children: [
               Icon(
                 Icons.arrow_back_ios,
                 size: 17,
-                color: Colors.white.withValues(alpha: 0.88),
+                color: tokens.colors.text.highEmphasis,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: tokens.spacing.step1),
               Text(
                 'Back',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.88),
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
             ],
           ),
           SizedBox(height: tokens.spacing.step4),
-          // Title row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
                 child: Text(
                   'Set time blocks',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.88),
+                  style: tokens.typography.styles.heading.heading3.copyWith(
+                    color: tokens.colors.text.highEmphasis,
                   ),
                 ),
               ),
@@ -173,18 +158,15 @@ class _PageHeader extends StatelessWidget {
                 children: [
                   Text(
                     'Today',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.88),
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: tokens.spacing.step2),
                   Text(
                     'Oct 17, 2026',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.64),
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
                 ],
@@ -197,10 +179,6 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Section Divider (label left-aligned with line extending right)
-// ---------------------------------------------------------------------------
-
 class _SectionDivider extends StatelessWidget {
   const _SectionDivider({
     required this.label,
@@ -211,31 +189,25 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lineColor = Colors.white.withValues(alpha: 0.24);
-
     return Row(
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            letterSpacing: 0.25,
-            height: 16 / 12,
-            color: Colors.white.withValues(alpha: 0.64),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: tokens.spacing.step3),
         Expanded(
-          child: Divider(color: lineColor, height: 1),
+          child: Divider(
+            color: tokens.colors.decorative.level01,
+            height: 1,
+          ),
         ),
       ],
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Category Row
-// ---------------------------------------------------------------------------
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
@@ -250,30 +222,25 @@ class _CategoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasBlocks = category.hasBlocks;
+    final accent = tokens.colors.interactive.enabled;
 
-    // Figma: rows with blocks get accent green border + green-tinted bg
-    // Rows without blocks get subtle white border, no bg
-    final borderColor = hasBlocks
-        ? _accent
-        : Colors.white.withValues(alpha: 0.12);
+    final borderColor = hasBlocks ? accent : tokens.colors.decorative.level01;
     final bgColor = hasBlocks
-        ? _accent.withValues(alpha: 0.16)
+        ? accent.withValues(alpha: 0.16)
         : Colors.transparent;
 
     return Container(
       constraints: const BoxConstraints(minHeight: 58),
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(tokens.spacing.step3),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: borderColor),
       ),
       child: Row(
         children: [
-          // Category icon
-          _CategoryIcon(category: category),
-          SizedBox(width: tokens.spacing.step5),
-          // Name + time chips
+          _CategoryIcon(category: category, tokens: tokens),
+          SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,47 +248,38 @@ class _CategoryRow extends StatelessWidget {
               children: [
                 Text(
                   category.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.88),
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                SizedBox(height: tokens.spacing.step1),
                 if (hasBlocks)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        for (final block in category.timeBlocks)
-                          _TimeChip(block: block),
-                      ],
-                    ),
+                  Wrap(
+                    spacing: tokens.spacing.step2,
+                    runSpacing: tokens.spacing.step1,
+                    children: [
+                      for (final block in category.timeBlocks)
+                        _TimeChip(block: block, tokens: tokens),
+                    ],
                   )
                 else
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Tap to add time block',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.32),
-                      ),
+                  Text(
+                    'Tap to add time block',
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
                     ),
                   ),
               ],
             ),
           ),
-          // Star icon — only shown for favourites
           if (category.isFavourite)
             GestureDetector(
               onTap: onStarTap,
-              child: const Icon(
+              child: Icon(
                 Icons.star,
                 size: 20,
-                color: Color(0xFFFBA337),
+                color: tokens.colors.alert.warning.defaultColor,
               ),
             ),
         ],
@@ -330,13 +288,10 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Category Icon
-// ---------------------------------------------------------------------------
-
 class _CategoryIcon extends StatelessWidget {
-  const _CategoryIcon({required this.category});
+  const _CategoryIcon({required this.category, required this.tokens});
   final MockCategory category;
+  final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +300,7 @@ class _CategoryIcon extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: category.color.withValues(alpha: 0.24),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(
           color: category.color.withValues(alpha: 0.24),
         ),
@@ -359,35 +314,30 @@ class _CategoryIcon extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Time Chip (clock icon + time range label)
-// ---------------------------------------------------------------------------
-
 class _TimeChip extends StatelessWidget {
-  const _TimeChip({required this.block});
+  const _TimeChip({required this.block, required this.tokens});
   final MockTimeBlock block;
+  final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    final color = Colors.white.withValues(alpha: 0.64);
+    final accent = tokens.colors.interactive.enabled;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.schedule, size: 12, color: color),
-        const SizedBox(width: 2),
+        Icon(Icons.schedule, size: 12, color: accent),
+        SizedBox(width: tokens.spacing.step1),
         Text(
           block.label,
-          style: TextStyle(fontSize: 10, color: color),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: accent,
+          ),
         ),
       ],
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Save Plan Button
-// ---------------------------------------------------------------------------
 
 class _SavePlanButton extends StatelessWidget {
   const _SavePlanButton({required this.tokens});
@@ -397,25 +347,26 @@ class _SavePlanButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: SizedBox(
-        width: double.infinity,
-        height: 44,
-        child: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: _accent,
-            foregroundColor: Colors.black,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        child: SizedBox(
+          width: double.infinity,
+          height: tokens.spacing.step9,
+          child: FilledButton(
+            onPressed: () {},
+            style: FilledButton.styleFrom(
+              backgroundColor: tokens.colors.interactive.enabled,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+              ),
             ),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+            child: Text(
+              'Save plan',
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: Colors.white,
+              ),
             ),
           ),
-          child: const Text('Save plan'),
         ),
       ),
     );
