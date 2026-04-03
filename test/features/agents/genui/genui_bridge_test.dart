@@ -52,6 +52,7 @@ void main() {
           'EvolutionNoteConfirmation',
           'MetricsSummary',
           'VersionComparison',
+          'BinaryChoicePrompt',
         ]),
       );
     });

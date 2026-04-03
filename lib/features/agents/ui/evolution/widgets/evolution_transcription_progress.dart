@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcript_container.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
-/// Shows streaming transcription progress with partial text,
-/// styled for the evolution dark/cyan theme.
+/// Shows streaming transcription progress with partial text.
 class EvolutionTranscriptionProgress extends StatelessWidget {
   const EvolutionTranscriptionProgress({
     required this.partialTranscript,
@@ -14,6 +12,8 @@ class EvolutionTranscriptionProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
@@ -28,7 +28,7 @@ class EvolutionTranscriptionProgress extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        const SizedBox(
+        SizedBox(
           width: 40,
           height: 40,
           child: Stack(
@@ -39,13 +39,13 @@ class EvolutionTranscriptionProgress extends StatelessWidget {
                 height: 32,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: GameyColors.aiCyan,
+                  color: colorScheme.primary,
                 ),
               ),
               Icon(
                 Icons.transcribe,
                 size: 16,
-                color: GameyColors.aiCyan,
+                color: colorScheme.primary,
               ),
             ],
           ),

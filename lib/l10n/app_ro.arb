@@ -26,8 +26,24 @@
   "addToDictionarySuccess": "Termen adăugat la dicționar",
   "addToDictionaryTooLong": "Termen prea lung (max 50 caractere)",
   "agentActivityLogHeading": "Jurnal de activitate",
-  "agentCategoryRatingsSubmit": "Trimite evaluările",
-  "agentCategoryRatingsTitle": "Evaluează categoriile",
+  "agentBinaryChoiceNo": "Nu",
+  "agentBinaryChoiceYes": "Da",
+  "agentCategoryRatingsScaleMax": "Corectează mai întâi",
+  "agentCategoryRatingsScaleMin": "Lasă așa",
+  "agentCategoryRatingsStarLabel": "{starIndex} din {totalStars} stele",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
+  "agentCategoryRatingsSubmit": "Folosește aceste priorități",
+  "agentCategoryRatingsSubtitle": "Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lasă așa, 5 înseamnă corectează mai întâi.",
+  "agentCategoryRatingsTitle": "Ajută-mă să prioritizez",
   "agentControlsActionError": "Acțiunea a eșuat: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -106,6 +122,7 @@
   "agentEvolutionMttrLabel": "Timp mediu de rezolvare",
   "agentEvolutionNoSessions": "Nu există sesiuni de evoluție încă",
   "agentEvolutionNoteRecorded": "Notă înregistrată",
+  "agentEvolutionProposalApprovalFailed": "Aprobarea a eșuat — te rog încearcă din nou",
   "agentEvolutionProposalRationale": "Justificare",
   "agentEvolutionProposalRejected": "Propunere respinsă — continuați conversația",
   "agentEvolutionProposalTitle": "Modificări propuse",
@@ -174,6 +191,23 @@
   "agentInstancesKindAll": "Toate",
   "agentInstancesKindEvolution": "Evoluție",
   "agentInstancesKindTaskAgent": "Agent de sarcini",
+  "agentInstancesStatsSummary": "Total {total} · Active {active} · Inactive {dormant} · Distruse {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instanțe",
   "agentLifecycleActive": "Activ",
   "agentLifecycleCreated": "Creat",
@@ -240,6 +274,17 @@
   "agentRitualReviewProposalSection": "Propunerea curentă",
   "agentRitualReviewSessionHistory": "Istoricul sesiunilor",
   "agentRitualReviewTitle": "1-on-1",
+  "agentRitualSummaryApprovedChangesHeading": "Modificări aprobate",
+  "agentRitualSummaryConversationHeading": "Conversație",
+  "agentRitualSummaryRecapHeading": "Rezumatul sesiunii",
+  "agentRitualSummaryRoleAssistant": "Agent",
+  "agentRitualSummaryRoleUser": "Tu",
+  "agentRitualSummaryStartHint": "Începe un 1-on-1 pentru a revizui ce te-a deranjat, ce a funcționat și ce ar trebui schimbat.",
+  "agentRitualSummarySubtitle": "Sesiunile 1-on-1 anterioare, activitatea reală de activări și modificările convenite.",
+  "agentRitualSummaryTldrHeading": "TLDR",
+  "agentRitualSummaryTokensSinceLast": "Tokeni de la ultimul 1-on-1",
+  "agentRitualSummaryWakeHistory30Days": "Activitate activări (ultimele 30 de zile)",
+  "agentRitualSummaryWakesSinceLast": "Activări de la ultimul 1-on-1",
   "agentRunningIndicator": "În execuție",
   "agentSessionProgressTitle": "Progresul sesiunii",
   "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
@@ -1005,9 +1050,9 @@
   "dailyOsPlan": "Plan",
   "dailyOsPlanCreated": "Plan creat cu succes",
   "dailyOsPlanCreatedDescription": "Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.",
-  "dailyOsPlanWithoutVoice": "Planificați fără voce",
   "dailyOsPlanned": "Planificat",
   "dailyOsPlannedDuration": "Durată planificată",
+  "dailyOsPlanWithoutVoice": "Planificați fără voce",
   "dailyOsQuickCreateTask": "Creează sarcină pentru acest buget",
   "dailyOsReAgree": "Acceptă din nou",
   "dailyOsRecorded": "Înregistrat",

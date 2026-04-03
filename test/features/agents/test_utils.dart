@@ -349,6 +349,39 @@ WakeRunLogData makeTestWakeRun({
   );
 }
 
+WakeTokenUsageEntity makeTestWakeTokenUsage({
+  String id = 'token-usage-001',
+  String agentId = kTestAgentId,
+  String runKey = 'run-key-001',
+  String threadId = 'thread-001',
+  String modelId = 'models/gemini-3-flash-preview',
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  String? templateId = kTestTemplateId,
+  String? templateVersionId,
+  int? inputTokens = 100,
+  int? outputTokens = 60,
+  int? thoughtsTokens = 40,
+  int? cachedInputTokens,
+}) {
+  return AgentDomainEntity.wakeTokenUsage(
+        id: id,
+        agentId: agentId,
+        runKey: runKey,
+        threadId: threadId,
+        modelId: modelId,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        templateId: templateId,
+        templateVersionId: templateVersionId,
+        inputTokens: inputTokens,
+        outputTokens: outputTokens,
+        thoughtsTokens: thoughtsTokens,
+        cachedInputTokens: cachedInputTokens,
+      )
+      as WakeTokenUsageEntity;
+}
+
 SagaLogData makeTestSagaOp({
   String operationId = 'op-001',
   String agentId = 'agent-001',
@@ -467,6 +500,40 @@ EvolutionNoteEntity makeTestEvolutionNote({
         content: content,
       )
       as EvolutionNoteEntity;
+}
+
+EvolutionSessionRecapEntity makeTestEvolutionSessionRecap({
+  String id = 'evo-recap-001',
+  String agentId = kTestTemplateId,
+  String sessionId = 'evo-session-001',
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  String tldr = 'Short recap',
+  String recapMarkdown = '## Recap\n\n- Updated directive tone',
+  Map<String, int> categoryRatings = const {
+    'language': 4,
+  },
+  List<Map<String, String>> transcript = const [
+    {
+      'role': 'assistant',
+      'text': 'What bothered you most?',
+    },
+  ],
+  String? approvedChangeSummary = '- Rewrote the opening prompt',
+}) {
+  return AgentDomainEntity.evolutionSessionRecap(
+        id: id,
+        agentId: agentId,
+        sessionId: sessionId,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        tldr: tldr,
+        recapMarkdown: recapMarkdown,
+        categoryRatings: categoryRatings,
+        transcript: transcript,
+        approvedChangeSummary: approvedChangeSummary,
+      )
+      as EvolutionSessionRecapEntity;
 }
 
 // ── Change set entity factories ──────────────────────────────────────────────

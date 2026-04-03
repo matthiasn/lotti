@@ -3048,6 +3048,48 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
+  Selectable<int> countWakeRunsByTemplateId(String? templateId) {
+    return customSelect(
+      'SELECT COUNT(*) AS cnt FROM wake_run_log WHERE template_id = ?1',
+      variables: [Variable<String>(templateId)],
+      readsFrom: {wakeRunLog},
+    ).map((QueryRow row) => row.read<int>('cnt'));
+  }
+
+  Selectable<AggregateWakeRunMetricsByTemplateIdResult>
+  aggregateWakeRunMetricsByTemplateId(String? templateId) {
+    return customSelect(
+      'SELECT COUNT(CASE WHEN status = \'completed\' THEN 1 END) AS success_count, COUNT(CASE WHEN status = \'failed\' THEN 1 END) AS failure_count, CAST(SUM(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND(julianday(completed_at) - julianday(started_at))* 86400000 > 0 THEN(julianday(completed_at) - julianday(started_at))* 86400000 ELSE 0 END) AS INT) AS duration_sum_ms, COUNT(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND(julianday(completed_at) - julianday(started_at))* 86400000 > 0 THEN 1 END) AS duration_count, MIN(created_at) AS first_wake_at, MAX(created_at) AS last_wake_at FROM wake_run_log WHERE template_id = ?1',
+      variables: [Variable<String>(templateId)],
+      readsFrom: {wakeRunLog},
+    ).map(
+      (QueryRow row) => AggregateWakeRunMetricsByTemplateIdResult(
+        successCount: row.read<int>('success_count'),
+        failureCount: row.read<int>('failure_count'),
+        durationSumMs: row.readNullable<int>('duration_sum_ms'),
+        durationCount: row.read<int>('duration_count'),
+        firstWakeAt: row.readNullable<DateTime>('first_wake_at'),
+        lastWakeAt: row.readNullable<DateTime>('last_wake_at'),
+      ),
+    );
+  }
+
+  Selectable<WakeRunLogData> getWakeRunsByTemplateInWindow(
+    String? templateId,
+    DateTime since,
+    DateTime until,
+  ) {
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE template_id = ?1 AND created_at >= ?2 AND created_at <= ?3 ORDER BY created_at DESC',
+      variables: [
+        Variable<String>(templateId),
+        Variable<DateTime>(since),
+        Variable<DateTime>(until),
+      ],
+      readsFrom: {wakeRunLog},
+    ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   Selectable<AgentEntity> getRecentReportsByTemplate(
     String templateId,
     int limit,
@@ -3178,6 +3220,50 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       variables: [Variable<String>(templateId), Variable<int>(limit)],
       readsFrom: {agentEntities, agentLinks},
     ).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<AgentEntity> getTokenUsageByTemplateSince(
+    String templateId,
+    DateTime since,
+  ) {
+    return customSelect(
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC',
+      variables: [Variable<String>(templateId), Variable<DateTime>(since)],
+      readsFrom: {agentEntities, agentLinks},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
+  Selectable<SumTokenUsageByTemplateResult> sumTokenUsageByTemplate(
+    String templateId,
+  ) {
+    return customSelect(
+      'SELECT CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.inputTokens\')), 0) AS INT) AS total_input, CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.outputTokens\')), 0) AS INT) AS total_output, CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.thoughtsTokens\')), 0) AS INT) AS total_thoughts FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL',
+      variables: [Variable<String>(templateId)],
+      readsFrom: {agentEntities, agentLinks},
+    ).map(
+      (QueryRow row) => SumTokenUsageByTemplateResult(
+        totalInput: row.read<int>('total_input'),
+        totalOutput: row.read<int>('total_output'),
+        totalThoughts: row.read<int>('total_thoughts'),
+      ),
+    );
+  }
+
+  Selectable<SumTokenUsageByTemplateSinceResult> sumTokenUsageByTemplateSince(
+    String templateId,
+    DateTime since,
+  ) {
+    return customSelect(
+      'SELECT CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.inputTokens\')), 0) AS INT) AS total_input, CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.outputTokens\')), 0) AS INT) AS total_output, CAST(COALESCE(SUM(json_extract(ae.serialized, \'\$.thoughtsTokens\')), 0) AS INT) AS total_thoughts FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'wakeTokenUsage\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL',
+      variables: [Variable<String>(templateId), Variable<DateTime>(since)],
+      readsFrom: {agentEntities, agentLinks},
+    ).map(
+      (QueryRow row) => SumTokenUsageByTemplateSinceResult(
+        totalInput: row.read<int>('total_input'),
+        totalOutput: row.read<int>('total_output'),
+        totalThoughts: row.read<int>('total_thoughts'),
+      ),
+    );
   }
 
   Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
@@ -4532,7 +4618,46 @@ class $AgentDatabaseManager {
   $SagaLogTableManager get sagaLog => $SagaLogTableManager(_db, _db.sagaLog);
 }
 
+class AggregateWakeRunMetricsByTemplateIdResult {
+  final int successCount;
+  final int failureCount;
+  final int? durationSumMs;
+  final int durationCount;
+  final DateTime? firstWakeAt;
+  final DateTime? lastWakeAt;
+  AggregateWakeRunMetricsByTemplateIdResult({
+    required this.successCount,
+    required this.failureCount,
+    this.durationSumMs,
+    required this.durationCount,
+    this.firstWakeAt,
+    this.lastWakeAt,
+  });
+}
+
 class GetAllEvolutionSessionsResult {
   final AgentEntity es;
   GetAllEvolutionSessionsResult({required this.es});
+}
+
+class SumTokenUsageByTemplateResult {
+  final int totalInput;
+  final int totalOutput;
+  final int totalThoughts;
+  SumTokenUsageByTemplateResult({
+    required this.totalInput,
+    required this.totalOutput,
+    required this.totalThoughts,
+  });
+}
+
+class SumTokenUsageByTemplateSinceResult {
+  final int totalInput;
+  final int totalOutput;
+  final int totalThoughts;
+  SumTokenUsageByTemplateSinceResult({
+    required this.totalInput,
+    required this.totalOutput,
+    required this.totalThoughts,
+  });
 }

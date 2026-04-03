@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/gamey/colors.dart';
-import 'package:lotti/themes/gamey/gradients.dart';
 
-/// Circular icon button styled with the evolution dark/cyan theme.
+/// Circular icon button used by the evolution composer controls.
 ///
-/// Shows the AI gradient when [onPressed] is non-null, or when [forceActive]
-/// is true (e.g. during the waiting/pulsing state).
+/// Shows a prominent filled state when [onPressed] is non-null, or when
+/// [forceActive] is true (for waiting/recording states).
 class EvolutionCircleButton extends StatelessWidget {
   const EvolutionCircleButton({
     required this.icon,
@@ -28,25 +26,42 @@ class EvolutionCircleButton extends StatelessWidget {
   /// but not be tappable.
   final bool forceActive;
 
-  static const _disabledColor = Color.fromRGBO(255, 255, 255, 0.3);
-
   @override
   Widget build(BuildContext context) {
     final showActive = onPressed != null || forceActive;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: showActive ? GameyGradients.ai : null,
-        color: showActive ? null : GameyColors.surfaceDark,
+        color: showActive
+            ? colorScheme.primary
+            : colorScheme.surfaceContainerHighest,
+        border: Border.all(
+          color: showActive
+              ? colorScheme.primary.withValues(alpha: 0.2)
+              : colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(
+              alpha: showActive ? 0.22 : 0.1,
+            ),
+            blurRadius: showActive ? 14 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: IconButton(
         onPressed: onPressed,
         icon: Icon(
           icon,
           size: iconSize,
-          color: showActive ? Colors.white : _disabledColor,
+          color: showActive
+              ? colorScheme.onPrimary
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
         ),
         padding: EdgeInsets.zero,
         tooltip: tooltip,

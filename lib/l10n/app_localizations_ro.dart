@@ -88,10 +88,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentActivityLogHeading => 'Jurnal de activitate';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Trimite evaluările';
+  String get agentBinaryChoiceNo => 'Nu';
 
   @override
-  String get agentCategoryRatingsTitle => 'Evaluează categoriile';
+  String get agentBinaryChoiceYes => 'Da';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Corectează mai întâi';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Lasă așa';
+
+  @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex din $totalStars stele';
+  }
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Folosește aceste priorități';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'Cât de important este să corectez fiecare dintre aceste puncte? 1 înseamnă lasă așa, 5 înseamnă corectează mai întâi.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Ajută-mă să prioritizez';
 
   @override
   String agentControlsActionError(String error) {
@@ -220,6 +241,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentEvolutionNoteRecorded => 'Notă înregistrată';
+
+  @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Aprobarea a eșuat — te rog încearcă din nou';
 
   @override
   String get agentEvolutionProposalRationale => 'Justificare';
@@ -373,6 +398,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentInstancesKindTaskAgent => 'Agent de sarcini';
+
+  @override
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Total $total · Active $active · Inactive $dormant · Distruse $destroyed';
+  }
 
   @override
   String get agentInstancesTitle => 'Instanțe';
@@ -529,6 +564,43 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Modificări aprobate';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversație';
+
+  @override
+  String get agentRitualSummaryRecapHeading => 'Rezumatul sesiunii';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'Tu';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Începe un 1-on-1 pentru a revizui ce te-a deranjat, ce a funcționat și ce ar trebui schimbat.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Sesiunile 1-on-1 anterioare, activitatea reală de activări și modificările convenite.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokeni de la ultimul 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Activitate activări (ultimele 30 de zile)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast =>
+      'Activări de la ultimul 1-on-1';
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -2288,13 +2360,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Planificați fără voce';
-
-  @override
   String get dailyOsPlanned => 'Planificat';
 
   @override
   String get dailyOsPlannedDuration => 'Durată planificată';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Planificați fără voce';
 
   @override
   String get dailyOsQuickCreateTask => 'Creează sarcină pentru acest buget';

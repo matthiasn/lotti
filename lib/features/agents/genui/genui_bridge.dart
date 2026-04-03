@@ -40,6 +40,7 @@ class GenUiBridge {
           'Render rich UI content inline in the chat. Available widget '
           'types: EvolutionProposal, EvolutionNoteConfirmation, '
           'MetricsSummary, VersionComparison, CategoryRatings, '
+          'BinaryChoicePrompt, '
           'HighPriorityFeedback. Each surface needs a unique surfaceId '
           'and a root component type with its data.',
       parameters: {
@@ -57,6 +58,7 @@ class GenUiBridge {
               'MetricsSummary',
               'VersionComparison',
               'CategoryRatings',
+              'BinaryChoicePrompt',
               'HighPriorityFeedback',
             ],
             'description': 'Widget type to render',
@@ -89,6 +91,7 @@ class GenUiBridge {
       'MetricsSummary',
       'VersionComparison',
       'CategoryRatings',
+      'BinaryChoicePrompt',
       'HighPriorityFeedback',
     };
     final rootTypeValue = args['rootType'];

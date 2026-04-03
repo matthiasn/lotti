@@ -234,6 +234,29 @@ void main() {
       );
     });
 
+    testWidgets('resolves approval_failed system token', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'approval_failed',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionProposalApprovalFailed),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('resolves session_error system token', (tester) async {
       await tester.pumpWidget(
         buildSubject(

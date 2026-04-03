@@ -29,6 +29,7 @@ abstract final class AgentEntityTypes {
   static const agentTemplate = 'agentTemplate';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';
+  static const evolutionSessionRecap = 'evolutionSessionRecap';
   static const wakeTokenUsage = 'wakeTokenUsage';
 }
 
@@ -51,3 +52,6 @@ String? formatIsoDate(DateTime? date) {
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';
 }
+
+String evolutionSessionRecapId(String sessionId) =>
+    'evolution-session-recap-$sessionId';

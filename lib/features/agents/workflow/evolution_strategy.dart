@@ -20,6 +20,17 @@ class PendingProposal {
   final String rationale;
 }
 
+/// Holds a structured recap for the current ritual.
+class PendingRitualRecap {
+  const PendingRitualRecap({
+    required this.tldr,
+    required this.content,
+  });
+
+  final String tldr;
+  final String content;
+}
+
 /// Holds a pending evolution note from the evolution agent.
 class PendingNote {
   const PendingNote({
@@ -33,8 +44,9 @@ class PendingNote {
 
 /// Conversation strategy for evolution agent sessions.
 ///
-/// Handles two tools locally:
+/// Handles three tools locally:
 /// - `propose_directives` — captures the proposal for user review
+/// - `publish_ritual_recap` — captures the structured recap for persistence
 /// - `record_evolution_note` — accumulates notes for persistence
 ///
 /// After each LLM turn, the strategy returns [ConversationAction.wait] to
@@ -56,9 +68,13 @@ class EvolutionStrategy extends ConversationStrategy {
 
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
+  PendingRitualRecap? _latestRecap;
 
   /// The most recent proposal from the evolution agent, if any.
   PendingProposal? get latestProposal => _latestProposal;
+
+  /// The latest structured ritual recap, if any.
+  PendingRitualRecap? get latestRecap => _latestRecap;
 
   /// All notes recorded during this session.
   List<PendingNote> get pendingNotes => List.unmodifiable(_pendingNotes);
@@ -106,6 +122,8 @@ class EvolutionStrategy extends ConversationStrategy {
       switch (name) {
         case EvolutionToolNames.proposeDirectives:
           _handleProposeDirectives(args, call.id, manager);
+        case EvolutionToolNames.publishRitualRecap:
+          _handlePublishRitualRecap(args, call.id, manager);
         case EvolutionToolNames.recordEvolutionNote:
           _handleRecordNote(args, call.id, manager);
         default:
@@ -215,6 +233,33 @@ class EvolutionStrategy extends ConversationStrategy {
     manager.addToolResponse(
       toolCallId: callId,
       response: 'Note recorded (${kind.name}).',
+    );
+  }
+
+  void _handlePublishRitualRecap(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) {
+    final tldr = _readStringArg(args, 'tldr').trim();
+    final content = _readStringArg(args, 'content').trim();
+
+    if (tldr.isEmpty || content.isEmpty) {
+      final missing = [
+        if (tldr.isEmpty) 'tldr',
+        if (content.isEmpty) 'content',
+      ].join(', ');
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: missing required fields: $missing.',
+      );
+      return;
+    }
+
+    _latestRecap = PendingRitualRecap(tldr: tldr, content: content);
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: 'Ritual recap recorded.',
     );
   }
 

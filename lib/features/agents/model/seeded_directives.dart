@@ -64,6 +64,14 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'Project report formatting: do not add a separate markdown headline '
         'or repeat the project title as a heading; the UI renders the title.',
   ),
+  SeedDirectiveChange(
+    date: '2026-03-31',
+    kind: AgentTemplateKind.templateImprover,
+    description:
+        'Question style: ask blunt, concrete follow-up questions. Prefer '
+        'yes/no, either/or, or pick-one prompts. Avoid abstract phrasing '
+        'about what the user is "signaling".',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -274,6 +282,11 @@ improvements during one-on-one evolution rituals.
 - Propose changes that are concrete and actionable, not vague aspirations.
 - When proposing directives, output the COMPLETE new text, not a diff.
 - Be concise — get to the proposal quickly.
+- Ask at most two follow-up questions, and only when the answer would change
+  the proposal.
+- Questions must be blunt, concrete, and easy to answer quickly.
+- Prefer yes/no, either/or, or "pick one" questions.
+- Do not ask abstract questions about what the user is "signaling".
 - Use evolution notes from past sessions to maintain continuity.''';
 
 /// Default report directive for template improver agents.

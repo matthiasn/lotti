@@ -172,6 +172,47 @@ void main() {
       expect(find.text('Dormant Agent'), findsNothing);
     });
 
+    testWidgets('shows task agent stats summary under filters', (tester) async {
+      final activeAgent = makeTestIdentity(
+        id: 'agent-active',
+        agentId: 'agent-active',
+        displayName: 'Active Agent',
+      );
+      final dormantAgent = makeTestIdentity(
+        id: 'agent-dormant',
+        agentId: 'agent-dormant',
+        displayName: 'Dormant Agent',
+        lifecycle: AgentLifecycle.dormant,
+      );
+      final destroyedAgent = makeTestIdentity(
+        id: 'agent-destroyed',
+        agentId: 'agent-destroyed',
+        displayName: 'Destroyed Agent',
+        lifecycle: AgentLifecycle.destroyed,
+      );
+      final createdAgent = makeTestIdentity(
+        id: 'agent-created',
+        agentId: 'agent-created',
+        displayName: 'Created Agent',
+        lifecycle: AgentLifecycle.created,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          agents: [activeAgent, dormantAgent, destroyedAgent, createdAgent],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(
+          context.messages.agentInstancesStatsSummary(4, 1, 1, 1),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows empty state when no instances match', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -252,8 +293,15 @@ void main() {
     testWidgets('hides lifecycle filter in evolution-only mode', (
       tester,
     ) async {
+      final activeAgent = makeTestIdentity(
+        id: 'agent-active',
+        agentId: 'agent-active',
+        displayName: 'Active Agent',
+      );
+
       await tester.pumpWidget(
         buildSubject(
+          agents: [activeAgent],
           evolutions: [makeTestEvolutionSession()],
         ),
       );
@@ -271,6 +319,12 @@ void main() {
       );
       expect(
         find.text(context.messages.agentInstancesFilterDestroyed),
+        findsNothing,
+      );
+      expect(
+        find.text(
+          context.messages.agentInstancesStatsSummary(1, 1, 0, 0),
+        ),
         findsNothing,
       );
     });

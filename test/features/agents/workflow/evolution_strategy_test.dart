@@ -217,6 +217,50 @@ void main() {
     });
   });
 
+  group('publish_ritual_recap', () {
+    test('captures structured recap content', () async {
+      final toolCall = makeToolCall(
+        name: 'publish_ritual_recap',
+        args: {
+          'tldr': 'Short recap for history.',
+          'content': '## Session recap\n\nWe tightened the opening prompt.',
+        },
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(strategy.latestRecap, isNotNull);
+      expect(strategy.latestRecap!.tldr, 'Short recap for history.');
+      expect(
+        strategy.latestRecap!.content,
+        '## Session recap\n\nWe tightened the opening prompt.',
+      );
+    });
+
+    test('rejects empty tldr or content', () async {
+      final toolCall = makeToolCall(
+        name: 'publish_ritual_recap',
+        args: {
+          'tldr': '  ',
+          'content': '',
+        },
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestRecap, isNull);
+    });
+  });
+
   group('removeFirstNote', () {
     test('returns and removes the first note', () async {
       final toolCall = makeToolCall(
@@ -551,6 +595,22 @@ void main() {
 
       // Invalid kind (non-string) should be rejected.
       expect(strategy.pendingNotes, isEmpty);
+    });
+
+    test('handles non-string values in publish_ritual_recap', () async {
+      final toolCall = makeToolCall(
+        name: 'publish_ritual_recap',
+        args: {'tldr': 123, 'content': true},
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+
+      final action = await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(strategy.latestRecap, isNull);
     });
   });
 }

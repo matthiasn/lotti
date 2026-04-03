@@ -451,6 +451,52 @@ const _$EvolutionSessionStatusEnumMap = {
   EvolutionSessionStatus.abandoned: 'abandoned',
 };
 
+EvolutionSessionRecapEntity _$EvolutionSessionRecapEntityFromJson(
+  Map<String, dynamic> json,
+) => EvolutionSessionRecapEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  sessionId: json['sessionId'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  tldr: json['tldr'] as String,
+  recapMarkdown: json['recapMarkdown'] as String,
+  categoryRatings:
+      (json['categoryRatings'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const {},
+  transcript:
+      (json['transcript'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(e as Map))
+          .toList() ??
+      const <Map<String, String>>[],
+  approvedChangeSummary: json['approvedChangeSummary'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$EvolutionSessionRecapEntityToJson(
+  EvolutionSessionRecapEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'sessionId': instance.sessionId,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'tldr': instance.tldr,
+  'recapMarkdown': instance.recapMarkdown,
+  'categoryRatings': instance.categoryRatings,
+  'transcript': instance.transcript,
+  'approvedChangeSummary': instance.approvedChangeSummary,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 EvolutionNoteEntity _$EvolutionNoteEntityFromJson(Map<String, dynamic> json) =>
     EvolutionNoteEntity(
       id: json['id'] as String,

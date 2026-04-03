@@ -90,10 +90,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentActivityLogHeading => 'Registro de actividad';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Enviar calificaciones';
+  String get agentBinaryChoiceNo => 'No';
 
   @override
-  String get agentCategoryRatingsTitle => 'Calificar categorías';
+  String get agentBinaryChoiceYes => 'Sí';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Arreglar primero';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Déjalo';
+
+  @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex de $totalStars estrellas';
+  }
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Usar estas prioridades';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      '¿Qué tan importante es que arregle cada uno de estos puntos? 1 significa déjalo así, 5 significa arréglalo primero.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Ayúdame a priorizar';
 
   @override
   String agentControlsActionError(String error) {
@@ -222,6 +243,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentEvolutionNoteRecorded => 'Nota registrada';
+
+  @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Error en la aprobación — inténtalo de nuevo';
 
   @override
   String get agentEvolutionProposalRationale => 'Justificación';
@@ -376,6 +401,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Agente de tareas';
 
   @override
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Total $total · Activos $active · Inactivos $dormant · Destruidos $destroyed';
+  }
+
+  @override
   String get agentInstancesTitle => 'Instancias';
 
   @override
@@ -528,6 +563,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Cambios aprobados';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversación';
+
+  @override
+  String get agentRitualSummaryRecapHeading => 'Resumen de la sesión';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agente';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'Tú';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Inicia un 1-on-1 para revisar qué molestó a la persona usuaria, qué funcionó bien y qué debería cambiar después.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Tus 1-on-1 anteriores, la actividad real de wakes y los cambios acordados.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast =>
+      'Tokens desde el último 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Actividad de wakes (últimos 30 días)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes desde el último 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Ejecutando';
@@ -2325,13 +2397,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tus bloques de tiempo se han guardado. Puedes empezar a registrar tus tareas.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Planificar sin voz';
-
-  @override
   String get dailyOsPlanned => 'Planificado';
 
   @override
   String get dailyOsPlannedDuration => 'Duración planificada';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Planificar sin voz';
 
   @override
   String get dailyOsQuickCreateTask => 'Crear tarea para este presupuesto';

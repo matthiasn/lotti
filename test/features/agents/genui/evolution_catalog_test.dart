@@ -30,11 +30,11 @@ Widget _buildCatalogWidget(CatalogItem item, Map<String, Object?> data) {
 
 void main() {
   group('buildEvolutionCatalog', () {
-    test('contains all four catalog items', () {
+    test('contains all catalog items', () {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(9));
+      expect(items, hasLength(10));
       expect(
         items.map((i) => i.name),
         containsAll([
@@ -46,6 +46,7 @@ void main() {
           'FeedbackCategoryBreakdown',
           'SessionProgress',
           'CategoryRatings',
+          'BinaryChoicePrompt',
           'HighPriorityFeedback',
         ]),
       );
@@ -202,7 +203,7 @@ void main() {
         // Proposed Report Directive section should be present.
         expect(
           find.textContaining('Proposed Directives'),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
       },
     );
@@ -234,13 +235,7 @@ void main() {
         ),
       );
 
-      // The approve button wraps its text in an InkWell.
-      await tester.tap(
-        find.ancestor(
-          of: find.text('Approve & Save'),
-          matching: find.byType(InkWell),
-        ),
-      );
+      await tester.tap(find.text('Approve & Save'));
       await tester.pump();
 
       expect(events, hasLength(1));
@@ -275,8 +270,7 @@ void main() {
         ),
       );
 
-      // The reject button is an OutlinedButton
-      await tester.tap(find.byType(OutlinedButton));
+      await tester.tap(find.text('Reject'));
       await tester.pump();
 
       expect(events, hasLength(1));
@@ -865,19 +859,37 @@ void main() {
           ),
         );
 
+        final messagesContext = tester.element(find.text('Accuracy'));
+
         expect(find.text('Accuracy'), findsOneWidget);
         expect(find.text('Communication'), findsOneWidget);
+        expect(
+          find.text(messagesContext.messages.agentCategoryRatingsTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messagesContext.messages.agentCategoryRatingsSubtitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messagesContext.messages.agentCategoryRatingsScaleMin),
+          findsNWidgets(2),
+        );
+        expect(
+          find.text(messagesContext.messages.agentCategoryRatingsScaleMax),
+          findsNWidgets(2),
+        );
 
         final firstRow = find
             .ancestor(
               of: find.text('Accuracy'),
-              matching: find.byType(Row),
+              matching: find.byType(Padding),
             )
             .first;
         final secondRow = find
             .ancestor(
               of: find.text('Communication'),
-              matching: find.byType(Row),
+              matching: find.byType(Padding),
             )
             .first;
 
@@ -894,9 +906,9 @@ void main() {
         );
         await tester.pump();
 
-        final context = tester.element(find.text('Accuracy'));
+        final localizedContext = tester.element(find.text('Accuracy'));
         await tester.tap(
-          find.text(context.messages.agentTemplateEvolveApprove),
+          find.text(localizedContext.messages.agentCategoryRatingsSubmit),
         );
         await tester.pumpAndSettle();
 
@@ -909,13 +921,13 @@ void main() {
             jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
         expect(ratings, {'accuracy': 4, 'communication': 2});
 
-        // After submit, the approve button is replaced by confirmation text.
+        // After submit, the button is replaced by a confirmation row.
         expect(
-          find.text(context.messages.agentTemplateEvolveApprove),
-          findsNothing,
+          find.text(localizedContext.messages.agentCategoryRatingsSubmit),
+          findsOneWidget,
         );
         expect(
-          find.text(context.messages.agentCategoryRatingsSubmit),
+          find.byIcon(Icons.check_circle_rounded),
           findsOneWidget,
         );
       },
@@ -955,19 +967,19 @@ void main() {
       final firstRow = find
           .ancestor(
             of: find.text('Accuracy A'),
-            matching: find.byType(Row),
+            matching: find.byType(Padding),
           )
           .first;
       final secondRow = find
           .ancestor(
             of: find.text('Accuracy B'),
-            matching: find.byType(Row),
+            matching: find.byType(Padding),
           )
           .first;
       final thirdRow = find
           .ancestor(
             of: find.text('Unlabeled'),
-            matching: find.byType(Row),
+            matching: find.byType(Padding),
           )
           .first;
 
@@ -990,8 +1002,10 @@ void main() {
       );
       await tester.pump();
 
-      final context = tester.element(find.text('Accuracy A'));
-      await tester.tap(find.text(context.messages.agentTemplateEvolveApprove));
+      final localizedContext = tester.element(find.text('Accuracy A'));
+      await tester.tap(
+        find.text(localizedContext.messages.agentCategoryRatingsSubmit),
+      );
       await tester.pumpAndSettle();
 
       final event = events.single as UserActionEvent;
@@ -1002,6 +1016,63 @@ void main() {
         'accuracy_1': 5,
         'category_2': 3,
       });
+    });
+  });
+
+  group('BinaryChoicePrompt', () {
+    testWidgets('renders question and optional detail', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(binaryChoicePromptItem, {
+            'question': 'Want to rate me?',
+            'detail': 'A quick yes or no is enough.',
+          }),
+        ),
+      );
+
+      expect(find.text('Want to rate me?'), findsOneWidget);
+      expect(find.text('A quick yes or no is enough.'), findsOneWidget);
+    });
+
+    testWidgets('dispatches binary_choice_submitted with semantic payload', (
+      tester,
+    ) async {
+      final events = <UiEvent>[];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: const <String, Object?>{
+                  'question': 'Want to rate me?',
+                  'confirmValue': 'Yes, show the rating form.',
+                  'dismissValue': 'No, skip ratings for now.',
+                },
+                id: 'binary-choice-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: events.add,
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'binary-choice-surface',
+              );
+              return binaryChoicePromptItem.widgetBuilder(itemContext);
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Yes'));
+      await tester.pumpAndSettle();
+
+      final event = events.single as UserActionEvent;
+      expect(event.name, 'binary_choice_submitted');
+      expect(event.surfaceId, 'binary-choice-surface');
+      expect(
+        jsonDecode(event.sourceComponentId),
+        {'value': 'Yes, show the rating form.'},
+      );
     });
   });
 

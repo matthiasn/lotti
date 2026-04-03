@@ -26,8 +26,24 @@
   "addToDictionarySuccess": "Begriff zum Wörterbuch hinzugefügt",
   "addToDictionaryTooLong": "Begriff zu lang (max. 50 Zeichen)",
   "agentActivityLogHeading": "Aktivitätsprotokoll",
-  "agentCategoryRatingsSubmit": "Bewertungen absenden",
-  "agentCategoryRatingsTitle": "Kategorien bewerten",
+  "agentBinaryChoiceNo": "Nein",
+  "agentBinaryChoiceYes": "Ja",
+  "agentCategoryRatingsScaleMax": "Zuerst beheben",
+  "agentCategoryRatingsScaleMin": "So lassen",
+  "agentCategoryRatingsStarLabel": "{starIndex} von {totalStars} Sternen",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
+  "agentCategoryRatingsSubmit": "Diese Prioritäten nutzen",
+  "agentCategoryRatingsSubtitle": "Wie wichtig ist es, dass ich das jeweils behebe? 1 heißt: so lassen. 5 heißt: als Erstes beheben.",
+  "agentCategoryRatingsTitle": "Hilf mir beim Priorisieren",
   "agentControlsActionError": "Aktion fehlgeschlagen: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -106,6 +122,7 @@
   "agentEvolutionMttrLabel": "Mittlere Lösungszeit",
   "agentEvolutionNoSessions": "Noch keine Evolutionssitzungen",
   "agentEvolutionNoteRecorded": "Notiz aufgezeichnet",
+  "agentEvolutionProposalApprovalFailed": "Genehmigung fehlgeschlagen — bitte versuche es erneut",
   "agentEvolutionProposalRationale": "Begründung",
   "agentEvolutionProposalRejected": "Vorschlag abgelehnt — Gespräch fortsetzen",
   "agentEvolutionProposalTitle": "Vorgeschlagene Änderungen",
@@ -174,6 +191,23 @@
   "agentInstancesKindAll": "Alle",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Aufgaben-Agent",
+  "agentInstancesStatsSummary": "Gesamt {total} · Aktiv {active} · Ruhend {dormant} · Zerstört {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instanzen",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Erstellt",
@@ -240,6 +274,17 @@
   "agentRitualReviewProposalSection": "Aktueller Vorschlag",
   "agentRitualReviewSessionHistory": "Sitzungsverlauf",
   "agentRitualReviewTitle": "1-on-1",
+  "agentRitualSummaryApprovedChangesHeading": "Bestätigte Änderungen",
+  "agentRitualSummaryConversationHeading": "Gespräch",
+  "agentRitualSummaryRecapHeading": "Sitzungszusammenfassung",
+  "agentRitualSummaryRoleAssistant": "Agent",
+  "agentRitualSummaryRoleUser": "Du",
+  "agentRitualSummaryStartHint": "Starte ein 1-on-1, um zu prüfen, was den Nutzer gestört hat, was gut funktioniert hat und was sich als Nächstes ändern sollte.",
+  "agentRitualSummarySubtitle": "Frühere 1-on-1s, echte Wake-Aktivität und die Änderungen, auf die du dich mit dem Agenten geeinigt hast.",
+  "agentRitualSummaryTldrHeading": "TLDR",
+  "agentRitualSummaryTokensSinceLast": "Tokens seit dem letzten 1-on-1",
+  "agentRitualSummaryWakeHistory30Days": "Wake-Aktivität (letzte 30 Tage)",
+  "agentRitualSummaryWakesSinceLast": "Wakes seit dem letzten 1-on-1",
   "agentRunningIndicator": "Läuft",
   "agentSessionProgressTitle": "Sitzungsfortschritt",
   "agentSettingsSubtitle": "Vorlagen, Instanzen und Überwachung",
@@ -1005,9 +1050,9 @@
   "dailyOsPlan": "Plan",
   "dailyOsPlanCreated": "Plan erfolgreich erstellt",
   "dailyOsPlanCreatedDescription": "Deine Zeitblöcke wurden gespeichert. Du kannst jetzt deine Aufgaben verfolgen.",
-  "dailyOsPlanWithoutVoice": "Ohne Sprache planen",
   "dailyOsPlanned": "Geplant",
   "dailyOsPlannedDuration": "Geplante Dauer",
+  "dailyOsPlanWithoutVoice": "Ohne Sprache planen",
   "dailyOsQuickCreateTask": "Aufgabe für dieses Budget erstellen",
   "dailyOsReAgree": "Erneut bestätigen",
   "dailyOsRecorded": "Erfasst",

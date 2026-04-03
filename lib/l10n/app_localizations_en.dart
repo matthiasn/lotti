@@ -88,10 +88,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentActivityLogHeading => 'Activity Log';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+  String get agentBinaryChoiceNo => 'No';
 
   @override
-  String get agentCategoryRatingsTitle => 'Rate Categories';
+  String get agentBinaryChoiceYes => 'Yes';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Fix first';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Leave it';
+
+  @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex of $totalStars stars';
+  }
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Use These Priorities';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Help Me Prioritize';
 
   @override
   String agentControlsActionError(String error) {
@@ -220,6 +241,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentEvolutionNoteRecorded => 'Note Recorded';
+
+  @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Approval failed — please try again';
 
   @override
   String get agentEvolutionProposalRationale => 'Rationale';
@@ -368,6 +393,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentInstancesKindTaskAgent => 'Task Agent';
+
+  @override
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Total $total · Active $active · Dormant $dormant · Destroyed $destroyed';
+  }
 
   @override
   String get agentInstancesTitle => 'Instances';
@@ -520,6 +555,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRecapHeading => 'Session Recap';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'You';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake activity (last 30 days)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -2249,13 +2320,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your time blocks have been saved. You can start tracking your tasks.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Plan without voice';
-
-  @override
   String get dailyOsPlanned => 'Planned';
 
   @override
   String get dailyOsPlannedDuration => 'Planned Duration';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plan without voice';
 
   @override
   String get dailyOsQuickCreateTask => 'Create task for this budget';

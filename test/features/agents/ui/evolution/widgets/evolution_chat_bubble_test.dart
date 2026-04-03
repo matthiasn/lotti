@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -39,18 +39,18 @@ void main() {
     });
 
     group('assistant role', () {
-      testWidgets('renders markdown via GptMarkdown', (tester) async {
+      testWidgets('renders markdown via AgentMarkdownView', (tester) async {
         await tester.pumpWidget(
           buildSubject(text: '**Bold** text', role: 'assistant'),
         );
         await tester.pumpAndSettle();
 
-        // GptMarkdown widget should be present
-        expect(find.byType(GptMarkdown), findsOneWidget);
+        // AgentMarkdownView widget should be present
+        expect(find.byType(AgentMarkdownView), findsOneWidget);
         // Left-aligned
         final align = tester.widget<Align>(
           find.ancestor(
-            of: find.byType(GptMarkdown),
+            of: find.byType(AgentMarkdownView),
             matching: find.byType(Align),
           ),
         );
@@ -90,8 +90,8 @@ void main() {
 
         // ThinkingDisclosure should be rendered (collapsed by default).
         expect(find.byType(ThinkingDisclosure), findsOneWidget);
-        // Visible answer should be shown via GptMarkdown.
-        expect(find.byType(GptMarkdown), findsOneWidget);
+        // Visible answer should be shown via AgentMarkdownView.
+        expect(find.byType(AgentMarkdownView), findsOneWidget);
         // Raw think tags should not be visible.
         expect(find.text('<think>Some reasoning</think>'), findsNothing);
       });
@@ -110,6 +110,52 @@ void main() {
         expect(find.text('Hide reasoning'), findsNothing);
       });
 
+      testWidgets(
+        'uses a more compact bubble when only thinking is present',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              text: '<think>Hidden reasoning only</think>',
+              role: 'assistant',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final thinkingOnlyBubble = tester.widget<Container>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              text: '<think>Hidden reasoning</think>Visible answer',
+              role: 'assistant',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final mixedBubble = tester.widget<Container>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
+            ),
+          );
+
+          expect(
+            thinkingOnlyBubble.padding,
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          );
+          expect(
+            mixedBubble.padding,
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          );
+        },
+      );
+
       testWidgets('renders plain message without ThinkingDisclosure', (
         tester,
       ) async {
@@ -119,7 +165,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(ThinkingDisclosure), findsNothing);
-        expect(find.byType(GptMarkdown), findsOneWidget);
+        expect(find.byType(AgentMarkdownView), findsOneWidget);
       });
     });
 

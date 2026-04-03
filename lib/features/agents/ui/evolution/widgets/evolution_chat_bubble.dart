@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
-import 'package:lotti/themes/gamey/animations.dart';
-import 'package:lotti/themes/gamey/colors.dart';
-import 'package:lotti/themes/gamey/gradients.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// A single chat bubble in the evolution conversation.
 ///
 /// Renders differently based on [role]:
-/// - **user**: Right-aligned, cyan gradient background, white text
-/// - **assistant**: Left-aligned, elevated dark surface, markdown rendering
-/// - **system**: Centered, muted surface, small text with icon
+/// - **user**: Right-aligned filled bubble
+/// - **assistant**: Left-aligned surface bubble with markdown rendering
+/// - **system**: Centered muted info pill
 class EvolutionChatBubble extends StatelessWidget {
   const EvolutionChatBubble({
     required this.text,
@@ -55,9 +53,9 @@ class _UserBubble extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(bottom: 8, left: 48),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: const BoxDecoration(
-            gradient: GameyGradients.ai,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: context.colorScheme.primary,
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
               bottomLeft: Radius.circular(18),
@@ -66,8 +64,8 @@ class _UserBubble extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.colorScheme.onPrimary,
               fontSize: 15,
               height: 1.4,
             ),
@@ -89,6 +87,10 @@ class _AssistantBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final segments = splitThinkingSegments(text);
+    final hasVisibleContent = segments.any((seg) => !seg.isThinking);
+    final bubblePadding = hasVisibleContent
+        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+        : const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
     final bubble = Align(
       alignment: Alignment.centerLeft,
@@ -98,9 +100,9 @@ class _AssistantBubble extends StatelessWidget {
         ),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8, right: 24),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: bubblePadding,
           decoration: BoxDecoration(
-            color: GameyColors.surfaceDarkElevated,
+            color: context.colorScheme.surfaceContainerHigh,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
@@ -109,9 +111,9 @@ class _AssistantBubble extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: GameyColors.aiCyan.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
+                color: context.colorScheme.shadow.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -122,10 +124,10 @@ class _AssistantBubble extends StatelessWidget {
                 if (seg.isThinking)
                   ThinkingDisclosure(thinking: seg.text)
                 else
-                  GptMarkdown(
+                  AgentMarkdownView(
                     seg.text,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.colorScheme.onSurface,
                       fontSize: 15,
                       height: 1.5,
                     ),
@@ -153,7 +155,9 @@ class _SystemBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: GameyColors.surfaceDark.withValues(alpha: 0.6),
+          color: context.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.85,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -169,7 +173,7 @@ class _SystemBubble extends StatelessWidget {
               child: Text(
                 text,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: context.colorScheme.onSurfaceVariant,
                   fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
@@ -205,11 +209,11 @@ class _AnimatedEntryState extends State<_AnimatedEntry>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: GameyAnimations.normal,
+      duration: const Duration(milliseconds: AppTheme.animationDuration),
     );
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
-      curve: GameyAnimations.smooth,
+      curve: AppTheme.animationCurve,
     );
     _slideAnimation =
         Tween<Offset>(
@@ -218,7 +222,7 @@ class _AnimatedEntryState extends State<_AnimatedEntry>
         ).animate(
           CurvedAnimation(
             parent: _controller,
-            curve: GameyAnimations.smooth,
+            curve: AppTheme.animationCurve,
           ),
         );
     _controller.forward();

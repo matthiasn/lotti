@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -167,6 +168,183 @@ void main() {
         result.items.first.detail,
         contains('rejected'),
       );
+    });
+
+    test('suppresses a single bare rejected checklist proposal', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.addChecklistItem,
+        createdAt: DateTime(2024, 3, 15),
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, isEmpty);
+      expect(result.totalDecisionsScanned, 1);
+    });
+
+    test('keeps rejected checklist proposals with explanation', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.updateChecklistItem,
+        rejectionReason: 'This was premature; QA has not signed off yet.',
+        createdAt: DateTime(2024, 3, 15),
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+      expect(result.items.first.detail, contains('premature'));
+    });
+
+    test('keeps rejected checklist decision when args contain '
+        'snake_case explanatory key', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.addChecklistItem,
+        createdAt: DateTime(2024, 3, 15),
+        args: {'rejection_reason': 'Not relevant to current sprint'},
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('keeps rejected checklist decision when args contain '
+        'kebab-case explanatory key', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.updateChecklistItem,
+        createdAt: DateTime(2024, 3, 15),
+        args: {'rejection-reason': 'Duplicate of existing item'},
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('keeps rejected checklist decision when args contain '
+        'nested map under explanatory key', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.addMultipleChecklistItems,
+        createdAt: DateTime(2024, 3, 15),
+        args: {
+          'feedback': {'text': 'too early to add these items'},
+        },
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('keeps rejected checklist decision when args contain '
+        'list under explanatory key', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.migrateChecklistItems,
+        createdAt: DateTime(2024, 3, 15),
+        args: {
+          'notes': ['first concern', 'second concern'],
+        },
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+    });
+
+    test('suppresses rejected checklist decision when args contain '
+        'only non-explanatory keys', () async {
+      final decision = makeTestChangeDecision(
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.addChecklistItem,
+        createdAt: DateTime(2024, 3, 15),
+        args: {
+          'title': 'Write integration tests for auth module',
+          'status': 'open',
+        },
+      );
+      stubDecisions([decision]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      // Non-explanatory keys should not prevent suppression.
+      expect(result.items, isEmpty);
+      expect(result.totalDecisionsScanned, 1);
+    });
+
+    test('aggregates repeated bare rejected checklist proposals', () async {
+      final first = makeTestChangeDecision(
+        id: 'cd-1',
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.addChecklistItem,
+        createdAt: DateTime(2024, 3, 15),
+      );
+      final second = makeTestChangeDecision(
+        id: 'cd-2',
+        verdict: ChangeDecisionVerdict.rejected,
+        toolName: TaskAgentToolNames.updateChecklistItems,
+        createdAt: DateTime(2024, 3, 16),
+      );
+      stubDecisions([first, second]);
+
+      final result = await service.extract(
+        templateId: kTestTemplateId,
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result.items, hasLength(1));
+      expect(result.items.first.sentiment, FeedbackSentiment.negative);
+      expect(result.items.first.category, FeedbackCategory.prioritization);
+      expect(
+        result.items.first.detail,
+        contains('Repeated rejected checklist proposals'),
+      );
+      expect(result.totalDecisionsScanned, 2);
     });
 
     test('classifies deferred decisions as neutral', () async {

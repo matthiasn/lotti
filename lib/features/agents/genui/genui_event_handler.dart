@@ -22,6 +22,9 @@ class GenUiEventHandler {
   /// Called when the user submits category ratings.
   void Function(String surfaceId, Map<String, int> ratings)? onRatingsSubmitted;
 
+  /// Called when the user submits a binary choice surface.
+  void Function(String surfaceId, String value)? onBinaryChoiceSubmitted;
+
   StreamSubscription<UserUiInteractionMessage>? _subscription;
 
   /// Start listening for surface events. Idempotent: cancels any existing
@@ -56,6 +59,24 @@ class GenUiEventHandler {
         } catch (e, s) {
           developer.log(
             'Failed to parse ratings JSON: $ratingsJson',
+            name: 'GenUiEventHandler',
+            error: e,
+            stackTrace: s,
+          );
+        }
+      } else if (name == 'binary_choice_submitted') {
+        final payloadJson = action.sourceComponentId;
+        try {
+          final decoded = jsonDecode(payloadJson);
+          if (decoded is Map<String, dynamic>) {
+            final value = decoded['value'];
+            if (value is String && value.trim().isNotEmpty) {
+              onBinaryChoiceSubmitted?.call(action.surfaceId, value.trim());
+            }
+          }
+        } catch (e, s) {
+          developer.log(
+            'Failed to parse binary choice JSON: $payloadJson',
             name: 'GenUiEventHandler',
             error: e,
             stackTrace: s,

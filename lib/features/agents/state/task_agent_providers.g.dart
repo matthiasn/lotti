@@ -57,7 +57,7 @@ final class TaskAgentServiceProvider
   }
 }
 
-String _$taskAgentServiceHash() => r'ca5323c2e1aee849830805dc8466ba5e09a238a2';
+String _$taskAgentServiceHash() => r'780b000fd2697015a8e408e4f6197bb97c11ac64';
 
 /// Fetch the Task Agent for a given journal-domain [taskId].
 ///

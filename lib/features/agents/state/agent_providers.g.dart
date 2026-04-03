@@ -728,7 +728,7 @@ final class WakeOrchestratorProvider
   }
 }
 
-String _$wakeOrchestratorHash() => r'da315da88ec8f6b8ff8648815c377932b6a47e02';
+String _$wakeOrchestratorHash() => r'1ed2401446f7f0631d79528e28b77392ceb6af6c';
 
 /// The scheduled wake manager for time-based agent wakes.
 
@@ -883,7 +883,7 @@ final class AgentServiceProvider
   }
 }
 
-String _$agentServiceHash() => r'6009a2c80577a05731e21a2cf7a569111cb42603';
+String _$agentServiceHash() => r'faebbb3da6c43ad7767b1eccb45d190858c897f3';
 
 /// The agent template service.
 
@@ -1042,7 +1042,7 @@ final class ImproverAgentServiceProvider
 }
 
 String _$improverAgentServiceHash() =>
-    r'2e5a9a2e49539c6295136a413cb7792f789e60f2';
+    r'8dac9d73ab543b14fb416325781f6f07638fa37a';
 
 /// The improver agent workflow with all dependencies resolved.
 
@@ -3717,7 +3717,7 @@ final class TaskAgentWorkflowProvider
   }
 }
 
-String _$taskAgentWorkflowHash() => r'6a272bc1cb89433abf1efa145ec4600cc42561c7';
+String _$taskAgentWorkflowHash() => r'de94652894767a4ed1fac77bc6bb1a784e079d0f';
 
 /// The project agent workflow with all dependencies resolved.
 
@@ -3770,7 +3770,7 @@ final class ProjectAgentWorkflowProvider
 }
 
 String _$projectAgentWorkflowHash() =>
-    r'f251a7d78ec3fb4d901b0659c87f456076cb4dbf';
+    r'6a67247d99b24a6c45dfc196620477eef8eccb29';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

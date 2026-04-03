@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -1420,10 +1421,34 @@ void main() {
       }
     }
 
-    test('returns zeroed metrics when no runs exist', () async {
+    void stubAggregateMetrics({
+      int successCount = 0,
+      int failureCount = 0,
+      int? durationSumMs,
+      int durationCount = 0,
+      DateTime? firstWakeAt,
+      DateTime? lastWakeAt,
+      int totalWakes = 0,
+    }) {
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-      ).thenAnswer((_) async => []);
+        () => mockRepo.aggregateWakeRunMetrics(kTestTemplateId),
+      ).thenAnswer(
+        (_) async => AggregateWakeRunMetricsByTemplateIdResult(
+          successCount: successCount,
+          failureCount: failureCount,
+          durationSumMs: durationSumMs,
+          durationCount: durationCount,
+          firstWakeAt: firstWakeAt,
+          lastWakeAt: lastWakeAt,
+        ),
+      );
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => totalWakes);
+    }
+
+    test('returns zeroed metrics when no runs exist', () async {
+      stubAggregateMetrics();
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1440,30 +1465,11 @@ void main() {
     });
 
     test('computes counts and success rate from mixed statuses', () async {
-      final runs = [
-        makeTestWakeRun(
-          runKey: 'r1',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 15, 12),
-        ),
-        makeTestWakeRun(
-          runKey: 'r2',
-          status: 'failed',
-          createdAt: DateTime(2024, 3, 15, 11),
-        ),
-        makeTestWakeRun(
-          runKey: 'r3',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 15, 10),
-        ),
-        makeTestWakeRun(
-          runKey: 'r4',
-          createdAt: DateTime(2024, 3, 15, 9),
-        ),
-      ];
-      when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-      ).thenAnswer((_) async => runs);
+      stubAggregateMetrics(
+        successCount: 2,
+        failureCount: 1,
+        totalWakes: 4,
+      );
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1478,31 +1484,13 @@ void main() {
     test(
       'computes average duration from completed runs with timestamps',
       () async {
-        final runs = [
-          makeTestWakeRun(
-            runKey: 'r1',
-            status: 'completed',
-            createdAt: DateTime(2024, 3, 15, 12),
-            startedAt: DateTime(2024, 3, 15, 12),
-            completedAt: DateTime(2024, 3, 15, 12, 0, 10), // 10s
-          ),
-          makeTestWakeRun(
-            runKey: 'r2',
-            status: 'completed',
-            createdAt: DateTime(2024, 3, 15, 11),
-            startedAt: DateTime(2024, 3, 15, 11),
-            completedAt: DateTime(2024, 3, 15, 11, 0, 20), // 20s
-          ),
-          // This run has no timestamps — should be skipped for avg.
-          makeTestWakeRun(
-            runKey: 'r3',
-            status: 'completed',
-            createdAt: DateTime(2024, 3, 15, 10),
-          ),
-        ];
-        when(
-          () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-        ).thenAnswer((_) async => runs);
+        // Two runs: 10s and 20s → average 15s = 15000ms total / 2
+        stubAggregateMetrics(
+          successCount: 3,
+          totalWakes: 3,
+          durationSumMs: 30000,
+          durationCount: 2,
+        );
         stubAgentsForTemplate([]);
 
         final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1512,36 +1500,23 @@ void main() {
       },
     );
 
-    test('firstWakeAt is oldest, lastWakeAt is newest (DESC order)', () async {
-      final runs = [
-        makeTestWakeRun(
-          runKey: 'newest',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 20),
-        ),
-        makeTestWakeRun(
-          runKey: 'oldest',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 10),
-        ),
-      ];
-      when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-      ).thenAnswer((_) async => runs);
+    test('firstWakeAt and lastWakeAt from SQL aggregation', () async {
+      stubAggregateMetrics(
+        successCount: 2,
+        totalWakes: 2,
+        firstWakeAt: DateTime(2024, 3, 10),
+        lastWakeAt: DateTime(2024, 3, 20),
+      );
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
 
-      // Runs are DESC (runs[0] is newest); metrics.firstWakeAt == oldest
-      // wake, metrics.lastWakeAt == newest wake.
-      expect(metrics.lastWakeAt, DateTime(2024, 3, 20));
       expect(metrics.firstWakeAt, DateTime(2024, 3, 10));
+      expect(metrics.lastWakeAt, DateTime(2024, 3, 20));
     });
 
     test('activeInstanceCount counts only active agents', () async {
-      when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-      ).thenAnswer((_) async => []);
+      stubAggregateMetrics();
       stubAgentsForTemplate([
         makeTestIdentity(id: 'a1', agentId: 'a1'),
         makeTestIdentity(
@@ -1683,8 +1658,17 @@ void main() {
       final defaultSessions = sessions ?? <EvolutionSessionEntity>[];
 
       when(
-        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
-      ).thenAnswer((_) async => []);
+        () => mockRepo.aggregateWakeRunMetrics(kTestTemplateId),
+      ).thenAnswer(
+        (_) async => AggregateWakeRunMetricsByTemplateIdResult(
+          successCount: 0,
+          failureCount: 0,
+          durationCount: 0,
+        ),
+      );
+      when(
+        () => mockRepo.countWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => 0);
       when(
         () => mockRepo.getLinksFrom(
           kTestTemplateId,

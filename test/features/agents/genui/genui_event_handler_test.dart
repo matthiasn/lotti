@@ -186,5 +186,41 @@ void main() {
 
       expect(events, isEmpty);
     });
+
+    test('routes binary_choice_submitted event to callback', () async {
+      final events = <(String, String)>[];
+      handler.onBinaryChoiceSubmitted = (surfaceId, value) {
+        events.add((surfaceId, value));
+      };
+
+      dispatchAction(
+        name: 'binary_choice_submitted',
+        surfaceId: 'binary-choice-surface',
+        sourceComponentId: '{"value":"Yes, show the rating form."}',
+      );
+
+      await Future<void>.value();
+
+      expect(events, hasLength(1));
+      expect(events.first.$1, 'binary-choice-surface');
+      expect(events.first.$2, 'Yes, show the rating form.');
+    });
+
+    test('ignores malformed binary choice JSON', () async {
+      final events = <(String, String)>[];
+      handler.onBinaryChoiceSubmitted = (surfaceId, value) {
+        events.add((surfaceId, value));
+      };
+
+      dispatchAction(
+        name: 'binary_choice_submitted',
+        surfaceId: 'binary-choice-surface',
+        sourceComponentId: '{bad-json',
+      );
+
+      await Future<void>.value();
+
+      expect(events, isEmpty);
+    });
   });
 }

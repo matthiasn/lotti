@@ -26,6 +26,13 @@
   "addToDictionarySuccess": "Výraz byl přidán do slovníku",
   "addToDictionaryTooLong": "Výraz je příliš dlouhý (max. 50 znaků)",
   "agentActivityLogHeading": "Protokol aktivity",
+  "agentBinaryChoiceNo": "Ne",
+  "agentBinaryChoiceYes": "Ano",
+  "agentCategoryRatingsScaleMax": "Opravit první",
+  "agentCategoryRatingsScaleMin": "Nechat být",
+  "agentCategoryRatingsSubmit": "Použít tyto priority",
+  "agentCategoryRatingsSubtitle": "Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.",
+  "agentCategoryRatingsTitle": "Pomoz mi s prioritami",
   "agentControlsActionError": "Akce se nezdařila: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -87,6 +94,32 @@
   "agentFeedbackSourceMetric": "Metrika",
   "agentFeedbackSourceObservation": "Pozorování",
   "agentFeedbackSourceRating": "Hodnocení",
+  "agentInstancesEmptyList": "Nebyly nalezeny žádné instance agenta",
+  "agentInstancesFilterActive": "Aktivní",
+  "agentInstancesFilterAll": "Vše",
+  "agentInstancesFilterDestroyed": "Zničené",
+  "agentInstancesFilterDormant": "Neaktivní",
+  "agentInstancesKindAll": "Vše",
+  "agentInstancesKindEvolution": "Evoluce",
+  "agentInstancesKindTaskAgent": "Agent úkolů",
+  "agentInstancesStatsSummary": "Celkem {total} · Aktivní {active} · Neaktivní {dormant} · Zničené {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesTitle": "Instance",
   "agentLifecycleActive": "Aktivní",
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",
@@ -810,9 +843,9 @@
   "dailyOsPlan": "Plán",
   "dailyOsPlanCreated": "Plán úspěšně vytvořen",
   "dailyOsPlanCreatedDescription": "Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.",
-  "dailyOsPlanWithoutVoice": "Plánovat bez hlasu",
   "dailyOsPlanned": "Naplánováno",
   "dailyOsPlannedDuration": "Plánovaná doba trvání",
+  "dailyOsPlanWithoutVoice": "Plánovat bez hlasu",
   "dailyOsQuickCreateTask": "Vytvořit úkol pro tento rozpočet",
   "dailyOsReAgree": "Znovu souhlasit",
   "dailyOsRecorded": "Zaznamenáno",

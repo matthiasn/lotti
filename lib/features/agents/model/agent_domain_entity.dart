@@ -193,9 +193,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// Lightweight metadata record for a 1-on-1 evolution session.
   ///
   /// The [agentId] field stores the owning **template's ID**, enabling
-  /// direct SQL lookups via `getEvolutionSessionsByTemplate`. The actual
-  /// conversation messages are stored as [AgentMessageEntity] records with
-  /// [AgentMessageEntity.threadId] set to this session's [id].
+  /// direct SQL lookups via `getEvolutionSessionsByTemplate`. Detailed recap
+  /// and transcript content is stored separately in
+  /// [EvolutionSessionRecapEntity], keyed by [id].
   ///
   /// Delta tracking (`lastAcknowledgedAt`) lives on the evolution agent's
   /// [AgentStateEntity], not here — see Phase 2.
@@ -214,6 +214,25 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? completedAt,
     DateTime? deletedAt,
   }) = EvolutionSessionEntity;
+
+  /// Persisted recap for a completed evolution session.
+  ///
+  /// Stored separately from [EvolutionSessionEntity] so the session index stays
+  /// lightweight while history views can still render TLDR, full markdown
+  /// recap, approved changes, and a transcript snapshot.
+  const factory AgentDomainEntity.evolutionSessionRecap({
+    required String id,
+    required String agentId,
+    required String sessionId,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    required String tldr,
+    required String recapMarkdown,
+    @Default({}) Map<String, int> categoryRatings,
+    @Default(<Map<String, String>>[]) List<Map<String, String>> transcript,
+    String? approvedChangeSummary,
+    DateTime? deletedAt,
+  }) = EvolutionSessionRecapEntity;
 
   /// The evolution agent's private reasoning note.
   ///

@@ -110,6 +110,13 @@ arrive late. Deleting a card clears only the represented wake marker:
 `nextWakeAt` uses the shared pending-wake cancellation path, while
 `scheduledWakeAt` is removed from the agent state.
 
+The instances dashboard stays intentionally lightweight. It exposes kind and
+lifecycle filters for task agents, and the task-agent modes now include one
+compact aggregate line showing the current counts for total, active, dormant,
+and destroyed task-agent identities. The stats line is derived from the same
+loaded `AgentIdentityEntity` list as the cards below it, so it tracks the
+currently persisted fleet size without adding another query path.
+
 ```mermaid
 flowchart LR
   Settings["Settings > Agents"] --> Templates["Templates tab"]
@@ -137,7 +144,8 @@ Persisted agent-side entities include:
 - `AgentReportEntity` and `AgentReportHeadEntity`
 - `AgentTemplateEntity`, `AgentTemplateVersionEntity`, and
   `AgentTemplateHeadEntity`
-- `EvolutionSessionEntity` and `EvolutionNoteEntity`
+- `EvolutionSessionEntity`, `EvolutionSessionRecapEntity`, and
+  `EvolutionNoteEntity`
 - `ChangeSetEntity` and `ChangeDecisionEntity`
 - `ProjectRecommendationEntity`
 - `WakeTokenUsageEntity`
@@ -207,7 +215,8 @@ The persisted memory surface includes:
 - structured observations, stored as observation messages plus payloads
 - reports and report-head pointers
 - change sets, decisions, and project recommendations
-- template versions, evolution sessions, and evolution notes
+- template versions, evolution sessions, persisted ritual recaps, and
+  evolution notes
 - wake token usage and wake-run history
 
 ### Live context pulled from the journal domain
@@ -548,15 +557,45 @@ and a head pointer.
 - `Template Improver`
 - `Meta Improver`
 
-`TemplateEvolutionWorkflow` is a multi-turn, user-visible session. It:
+The one-on-one UI is split into two surfaces:
+
+- `EvolutionReviewPage`: a history-first ritual home with a pending-session
+  card, compact ritual summary metrics, and persisted session history
+- `EvolutionChatPage`: the active negotiation loop for the current ritual
+
+The compact summary surface is backed by `ritualSummaryMetricsProvider` and
+only exposes the retained signals:
+
+- lifetime wake count
+- wakes since the last completed ritual
+- token usage since the last completed ritual
+- mean time to resolution
+- 30-day wake activity buckets
+
+`TemplateEvolutionWorkflow` is the multi-turn session runtime. It:
 
 1. gathers template context and metrics
 2. creates an `EvolutionSessionEntity`
 3. starts a conversation with `EvolutionStrategy`
-4. records evolution notes and proposal state
+4. records evolution notes, structured ritual recap state, and proposal state
 5. creates a new template version only after approval
+6. persists an `EvolutionSessionRecapEntity` from the explicit
+   `publish_ritual_recap` tool payload plus the approved-change rationale,
+   ratings, and transcript snapshot
+
+Session history cards render only the persisted recap `tldr`. They do not
+fall back to `feedbackSummary`.
 
 Only one active evolution session per template is allowed at a time.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Active: startSession()
+  Active --> Completed: approveProposal() + persist recap
+  Active --> Abandoned: abandon / stale-session cleanup
+  Completed --> [*]
+  Abandoned --> [*]
+```
 
 Improver agents are scheduled agents whose job is to open those evolution
 sessions with richer context. `ImproverAgentWorkflow`:
@@ -571,6 +610,21 @@ sessions with richer context. `ImproverAgentWorkflow`:
 
 Meta-improvers reuse the same workflow. They are distinguished only by the
 state slot `recursionDepth > 0`.
+
+```mermaid
+flowchart TD
+  Wake["Scheduled improver wake"] --> Feedback["FeedbackExtractionService.extract()"]
+  Feedback --> Threshold{"At least 3 feedback items?"}
+  Threshold -->|No| Reschedule["Update watermark and schedule next ritual"]
+  Threshold -->|Yes| Context["RitualContextBuilder.buildRitualContext()"]
+  Context --> Session["TemplateEvolutionWorkflow.startSession()"]
+  Session --> Home["EvolutionReviewPage shows pending card and history"]
+  Home --> Chat["EvolutionChatPage negotiation loop"]
+  Chat --> Approval{"Proposal approved?"}
+  Approval -->|Yes| Recap["Persist EvolutionSessionRecapEntity"]
+  Approval -->|No, abandoned| Reschedule
+  Recap --> Reschedule
+```
 
 ## Sync and Privacy
 

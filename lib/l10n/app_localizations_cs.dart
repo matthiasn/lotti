@@ -88,10 +88,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Protokol aktivity';
 
   @override
-  String get agentCategoryRatingsSubmit => 'Submit Ratings';
+  String get agentBinaryChoiceNo => 'Ne';
 
   @override
-  String get agentCategoryRatingsTitle => 'Rate Categories';
+  String get agentBinaryChoiceYes => 'Ano';
+
+  @override
+  String get agentCategoryRatingsScaleMax => 'Opravit první';
+
+  @override
+  String get agentCategoryRatingsScaleMin => 'Nechat být';
+
+  @override
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars) {
+    return '$starIndex of $totalStars stars';
+  }
+
+  @override
+  String get agentCategoryRatingsSubmit => 'Použít tyto priority';
+
+  @override
+  String get agentCategoryRatingsSubtitle =>
+      'Jak důležité je, abych každou z těchto věcí opravil? 1 znamená nechat být, 5 znamená opravit jako první.';
+
+  @override
+  String get agentCategoryRatingsTitle => 'Pomoz mi s prioritami';
 
   @override
   String agentControlsActionError(String error) {
@@ -222,6 +243,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionNoteRecorded => 'Note Recorded';
 
   @override
+  String get agentEvolutionProposalApprovalFailed =>
+      'Approval failed — please try again';
+
+  @override
   String get agentEvolutionProposalRationale => 'Rationale';
 
   @override
@@ -347,31 +372,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
-  String get agentInstancesEmptyList => 'No agent instances found';
+  String get agentInstancesEmptyList => 'Nebyly nalezeny žádné instance agenta';
 
   @override
-  String get agentInstancesFilterActive => 'Active';
+  String get agentInstancesFilterActive => 'Aktivní';
 
   @override
-  String get agentInstancesFilterAll => 'All';
+  String get agentInstancesFilterAll => 'Vše';
 
   @override
-  String get agentInstancesFilterDestroyed => 'Destroyed';
+  String get agentInstancesFilterDestroyed => 'Zničené';
 
   @override
-  String get agentInstancesFilterDormant => 'Dormant';
+  String get agentInstancesFilterDormant => 'Neaktivní';
 
   @override
-  String get agentInstancesKindAll => 'All';
+  String get agentInstancesKindAll => 'Vše';
 
   @override
-  String get agentInstancesKindEvolution => 'Evolution';
+  String get agentInstancesKindEvolution => 'Evoluce';
 
   @override
-  String get agentInstancesKindTaskAgent => 'Task Agent';
+  String get agentInstancesKindTaskAgent => 'Agent úkolů';
 
   @override
-  String get agentInstancesTitle => 'Instances';
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  ) {
+    return 'Celkem $total · Aktivní $active · Neaktivní $dormant · Zničené $destroyed';
+  }
+
+  @override
+  String get agentInstancesTitle => 'Instance';
 
   @override
   String get agentLifecycleActive => 'Aktivní';
@@ -521,6 +556,42 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+
+  @override
+  String get agentRitualSummaryConversationHeading => 'Conversation';
+
+  @override
+  String get agentRitualSummaryRecapHeading => 'Session Recap';
+
+  @override
+  String get agentRitualSummaryRoleAssistant => 'Agent';
+
+  @override
+  String get agentRitualSummaryRoleUser => 'You';
+
+  @override
+  String get agentRitualSummaryStartHint =>
+      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
+
+  @override
+  String get agentRitualSummarySubtitle =>
+      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
+
+  @override
+  String get agentRitualSummaryTldrHeading => 'TLDR';
+
+  @override
+  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+
+  @override
+  String get agentRitualSummaryWakeHistory30Days =>
+      'Wake activity (last 30 days)';
+
+  @override
+  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -2264,13 +2335,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
-
-  @override
   String get dailyOsPlanned => 'Naplánováno';
 
   @override
   String get dailyOsPlannedDuration => 'Plánovaná doba trvání';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
 
   @override
   String get dailyOsQuickCreateTask => 'Vytvořit úkol pro tento rozpočet';

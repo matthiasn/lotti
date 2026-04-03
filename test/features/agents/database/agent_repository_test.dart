@@ -3217,4 +3217,366 @@ void main() {
       expect(results.first.deletedAt, isNotNull);
     });
   });
+
+  // ── aggregateWakeRunMetrics ───────────────────────────────────────────────
+
+  group('aggregateWakeRunMetrics', () {
+    const templateId = 'tpl-agg-001';
+
+    test('returns zeroed metrics when no runs exist for template', () async {
+      final result = await repo.aggregateWakeRunMetrics(templateId);
+
+      expect(result.successCount, 0);
+      expect(result.failureCount, 0);
+      expect(result.durationSumMs, isNull);
+      expect(result.durationCount, 0);
+      expect(result.firstWakeAt, isNull);
+      expect(result.lastWakeAt, isNull);
+    });
+
+    test(
+      'correctly counts completed/failed runs and excludes other templates',
+      () async {
+        // Two completed runs for the template.
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-c1',
+            agentId: testAgentId,
+            reason: 'scheduled',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 3, 1, 10),
+            templateId: templateId,
+            templateVersionId: 'ver-001',
+          ),
+        );
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-c2',
+            agentId: testAgentId,
+            reason: 'scheduled',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 3, 1, 11),
+            templateId: templateId,
+            templateVersionId: 'ver-001',
+          ),
+        );
+
+        // One failed run for the template.
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-f1',
+            agentId: testAgentId,
+            reason: 'scheduled',
+            threadId: 'thread-001',
+            status: 'failed',
+            createdAt: DateTime(2026, 3, 1, 12),
+            templateId: templateId,
+            templateVersionId: 'ver-001',
+          ),
+        );
+
+        // A pending run — should count as neither success nor failure.
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-p1',
+            agentId: testAgentId,
+            reason: 'scheduled',
+            threadId: 'thread-001',
+            status: 'pending',
+            createdAt: DateTime(2026, 3, 1, 13),
+            templateId: templateId,
+            templateVersionId: 'ver-001',
+          ),
+        );
+
+        // Different template — should be excluded entirely.
+        await repo.insertWakeRun(
+          entry: WakeRunLogData(
+            runKey: 'run-other',
+            agentId: testAgentId,
+            reason: 'scheduled',
+            threadId: 'thread-001',
+            status: 'completed',
+            createdAt: DateTime(2026, 3, 1, 14),
+            templateId: 'tpl-other',
+            templateVersionId: 'ver-other',
+          ),
+        );
+
+        final result = await repo.aggregateWakeRunMetrics(templateId);
+
+        expect(result.successCount, 2);
+        expect(result.failureCount, 1);
+        // firstWakeAt / lastWakeAt cover the 4 runs for this template.
+        expect(result.firstWakeAt, DateTime(2026, 3, 1, 10));
+        expect(result.lastWakeAt, DateTime(2026, 3, 1, 13));
+      },
+    );
+
+    test('returns correct first/last wake timestamps', () async {
+      final earliest = DateTime(2026, 3, 1, 8);
+      final middle = DateTime(2026, 3, 1, 12);
+      final latest = DateTime(2026, 3, 1, 16);
+
+      await repo.insertWakeRun(
+        entry: WakeRunLogData(
+          runKey: 'run-mid',
+          agentId: testAgentId,
+          reason: 'scheduled',
+          threadId: 'thread-001',
+          status: 'completed',
+          createdAt: middle,
+          templateId: templateId,
+          templateVersionId: 'ver-001',
+        ),
+      );
+      await repo.insertWakeRun(
+        entry: WakeRunLogData(
+          runKey: 'run-early',
+          agentId: testAgentId,
+          reason: 'scheduled',
+          threadId: 'thread-001',
+          status: 'completed',
+          createdAt: earliest,
+          templateId: templateId,
+          templateVersionId: 'ver-001',
+        ),
+      );
+      await repo.insertWakeRun(
+        entry: WakeRunLogData(
+          runKey: 'run-late',
+          agentId: testAgentId,
+          reason: 'scheduled',
+          threadId: 'thread-001',
+          status: 'pending',
+          createdAt: latest,
+          templateId: templateId,
+          templateVersionId: 'ver-001',
+        ),
+      );
+
+      final result = await repo.aggregateWakeRunMetrics(templateId);
+
+      expect(result.firstWakeAt, earliest);
+      expect(result.lastWakeAt, latest);
+    });
+  });
+
+  // ── sumTokenUsageForTemplate ──────────────────────────────────────────────
+
+  group('sumTokenUsageForTemplate', () {
+    const templateId = 'tpl-sum-001';
+    const agentA = 'agent-sum-A';
+    const agentB = 'agent-sum-B';
+
+    Future<void> seedTemplateWithInstances() async {
+      await repo.upsertEntity(
+        AgentDomainEntity.agentTemplate(
+          id: templateId,
+          agentId: templateId,
+          displayName: 'Sum Template',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'models/gemini-2.5-pro',
+          categoryIds: const {},
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertEntity(
+        makeAgent(id: agentA, agentId: agentA),
+      );
+      await repo.upsertEntity(
+        makeAgent(id: agentB, agentId: agentB),
+      );
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-sum-A',
+          fromId: templateId,
+          toId: agentA,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-sum-B',
+          fromId: templateId,
+          toId: agentB,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+    }
+
+    test('returns zero sums when no token usage records exist', () async {
+      await seedTemplateWithInstances();
+
+      final result = await repo.sumTokenUsageForTemplate(templateId);
+
+      expect(result.totalInput, 0);
+      expect(result.totalOutput, 0);
+      expect(result.totalThoughts, 0);
+    });
+
+    test(
+      'correctly sums input/output/thoughts tokens across multiple records',
+      () async {
+        await seedTemplateWithInstances();
+
+        await repo.upsertEntity(
+          AgentDomainEntity.wakeTokenUsage(
+            id: 'su1',
+            agentId: agentA,
+            runKey: 'run-s1',
+            threadId: 't1',
+            modelId: 'gemini-2.5-pro',
+            createdAt: testDate,
+            vectorClock: null,
+            inputTokens: 100,
+            outputTokens: 50,
+            thoughtsTokens: 20,
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.wakeTokenUsage(
+            id: 'su2',
+            agentId: agentA,
+            runKey: 'run-s2',
+            threadId: 't2',
+            modelId: 'gemini-2.5-pro',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            vectorClock: null,
+            inputTokens: 200,
+            outputTokens: 80,
+            thoughtsTokens: 30,
+          ),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.wakeTokenUsage(
+            id: 'su3',
+            agentId: agentB,
+            runKey: 'run-s3',
+            threadId: 't3',
+            modelId: 'claude-sonnet',
+            createdAt: testDate.add(const Duration(minutes: 2)),
+            vectorClock: null,
+            inputTokens: 300,
+            outputTokens: 120,
+            thoughtsTokens: 50,
+          ),
+        );
+
+        final result = await repo.sumTokenUsageForTemplate(templateId);
+
+        expect(result.totalInput, 600);
+        expect(result.totalOutput, 250);
+        expect(result.totalThoughts, 100);
+      },
+    );
+  });
+
+  // ── sumTokenUsageForTemplateSince ─────────────────────────────────────────
+
+  group('sumTokenUsageForTemplateSince', () {
+    const templateId = 'tpl-since-001';
+    const agentA = 'agent-since-A';
+
+    Future<void> seedTemplateWithInstance() async {
+      await repo.upsertEntity(
+        AgentDomainEntity.agentTemplate(
+          id: templateId,
+          agentId: templateId,
+          displayName: 'Since Template',
+          kind: AgentTemplateKind.taskAgent,
+          modelId: 'models/gemini-2.5-pro',
+          categoryIds: const {},
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertEntity(
+        makeAgent(id: agentA, agentId: agentA),
+      );
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-since-A',
+          fromId: templateId,
+          toId: agentA,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+    }
+
+    test('only sums records created on or after the since date', () async {
+      await seedTemplateWithInstance();
+
+      final cutoff = DateTime(2026, 3, 15);
+
+      // Before cutoff — should be excluded.
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'ts-old',
+          agentId: agentA,
+          runKey: 'run-old',
+          threadId: 't-old',
+          modelId: 'gemini',
+          createdAt: DateTime(2026, 3, 14),
+          vectorClock: null,
+          inputTokens: 1000,
+          outputTokens: 500,
+          thoughtsTokens: 200,
+        ),
+      );
+
+      // Exactly on cutoff — should be included.
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'ts-exact',
+          agentId: agentA,
+          runKey: 'run-exact',
+          threadId: 't-exact',
+          modelId: 'gemini',
+          createdAt: cutoff,
+          vectorClock: null,
+          inputTokens: 100,
+          outputTokens: 50,
+          thoughtsTokens: 10,
+        ),
+      );
+
+      // After cutoff — should be included.
+      await repo.upsertEntity(
+        AgentDomainEntity.wakeTokenUsage(
+          id: 'ts-new',
+          agentId: agentA,
+          runKey: 'run-new',
+          threadId: 't-new',
+          modelId: 'gemini',
+          createdAt: DateTime(2026, 3, 16),
+          vectorClock: null,
+          inputTokens: 200,
+          outputTokens: 80,
+          thoughtsTokens: 30,
+        ),
+      );
+
+      final result = await repo.sumTokenUsageForTemplateSince(
+        templateId,
+        since: cutoff,
+      );
+
+      // Only ts-exact + ts-new should be summed.
+      expect(result.totalInput, 300);
+      expect(result.totalOutput, 130);
+      expect(result.totalThoughts, 40);
+    });
+  });
 }

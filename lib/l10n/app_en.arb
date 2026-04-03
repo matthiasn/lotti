@@ -25,8 +25,24 @@
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
   "agentActivityLogHeading": "Activity Log",
-  "agentCategoryRatingsSubmit": "Submit Ratings",
-  "agentCategoryRatingsTitle": "Rate Categories",
+  "agentBinaryChoiceNo": "No",
+  "agentBinaryChoiceYes": "Yes",
+  "agentCategoryRatingsScaleMax": "Fix first",
+  "agentCategoryRatingsScaleMin": "Leave it",
+  "agentCategoryRatingsStarLabel": "{starIndex} of {totalStars} stars",
+  "@agentCategoryRatingsStarLabel": {
+    "placeholders": {
+      "starIndex": {
+        "type": "int"
+      },
+      "totalStars": {
+        "type": "int"
+      }
+    }
+  },
+  "agentCategoryRatingsSubmit": "Use These Priorities",
+  "agentCategoryRatingsSubtitle": "How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.",
+  "agentCategoryRatingsTitle": "Help Me Prioritize",
   "agentControlsActionError": "Action failed: {error}",
   "@agentControlsActionError": {
     "placeholders": {
@@ -105,6 +121,7 @@
   "agentEvolutionMttrLabel": "Mean Time to Resolution",
   "agentEvolutionNoSessions": "No evolution sessions yet",
   "agentEvolutionNoteRecorded": "Note Recorded",
+  "agentEvolutionProposalApprovalFailed": "Approval failed — please try again",
   "agentEvolutionProposalRationale": "Rationale",
   "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
   "agentEvolutionProposalTitle": "Proposed Changes",
@@ -180,6 +197,23 @@
   "agentInstancesKindAll": "All",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
+  "agentInstancesStatsSummary": "Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}",
+  "@agentInstancesStatsSummary": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      },
+      "dormant": {
+        "type": "int"
+      },
+      "destroyed": {
+        "type": "int"
+      }
+    }
+  },
   "agentInstancesTitle": "Instances",
   "agentLifecycleActive": "Active",
   "agentLifecycleCreated": "Created",
@@ -249,6 +283,17 @@
   "agentRitualReviewProposalSection": "Current Proposal",
   "agentRitualReviewSessionHistory": "Session History",
   "agentRitualReviewTitle": "1-on-1",
+  "agentRitualSummaryApprovedChangesHeading": "Approved changes",
+  "agentRitualSummaryConversationHeading": "Conversation",
+  "agentRitualSummaryRecapHeading": "Session Recap",
+  "agentRitualSummaryRoleAssistant": "Agent",
+  "agentRitualSummaryRoleUser": "You",
+  "agentRitualSummaryStartHint": "Start a 1-on-1 to review what bothered you, what worked, and what should change next.",
+  "agentRitualSummarySubtitle": "Recent 1-on-1s, real wake activity, and the changes you agreed to.",
+  "agentRitualSummaryTldrHeading": "TLDR",
+  "agentRitualSummaryTokensSinceLast": "Tokens since last 1-on-1",
+  "agentRitualSummaryWakeHistory30Days": "Wake activity (last 30 days)",
+  "agentRitualSummaryWakesSinceLast": "Wakes since last 1-on-1",
   "agentRunningIndicator": "Running",
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
@@ -1155,9 +1200,9 @@
   "dailyOsPlan": "Plan",
   "dailyOsPlanCreated": "Plan created successfully",
   "dailyOsPlanCreatedDescription": "Your time blocks have been saved. You can start tracking your tasks.",
-  "dailyOsPlanWithoutVoice": "Plan without voice",
   "dailyOsPlanned": "Planned",
   "dailyOsPlannedDuration": "Planned Duration",
+  "dailyOsPlanWithoutVoice": "Plan without voice",
   "dailyOsQuickCreateTask": "Create task for this budget",
   "dailyOsReAgree": "Re-agree",
   "dailyOsRecorded": "Recorded",

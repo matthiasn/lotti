@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 
 /// Well-known feedback source identifiers.
@@ -89,9 +90,32 @@ class FeedbackExtractionService {
       );
     }
 
+    var suppressedChecklistRejectionCount = 0;
     for (final decision in windowDecisions) {
+      if (_shouldSuppressRejectedChecklistDecision(decision)) {
+        suppressedChecklistRejectionCount += 1;
+        continue;
+      }
       items.add(
         _classifyDecision(decision, changeSetMap: changeSetMap),
+      );
+    }
+
+    if (suppressedChecklistRejectionCount >= 2) {
+      items.add(
+        ClassifiedFeedbackItem(
+          sentiment: FeedbackSentiment.negative,
+          category: FeedbackCategory.prioritization,
+          source: FeedbackSources.decision,
+          detail:
+              'Repeated rejected checklist proposals: '
+              '$suppressedChecklistRejectionCount checklist changes were '
+              'rejected without explanation in this feedback window. This '
+              'suggests the agent may be proposing checklist updates too '
+              'aggressively or too early.',
+          agentId: templateId,
+          confidence: 1,
+        ),
       );
     }
 
@@ -218,6 +242,87 @@ class FeedbackExtractionService {
       sourceEntityId: decision.id,
       confidence: 1,
     );
+  }
+
+  static bool _shouldSuppressRejectedChecklistDecision(
+    ChangeDecisionEntity decision,
+  ) =>
+      decision.verdict == ChangeDecisionVerdict.rejected &&
+      _isChecklistTool(decision.toolName) &&
+      !_decisionHasExplanatoryContext(decision);
+
+  static bool _isChecklistTool(String toolName) => switch (toolName) {
+    TaskAgentToolNames.addChecklistItem ||
+    TaskAgentToolNames.addMultipleChecklistItems ||
+    TaskAgentToolNames.updateChecklistItem ||
+    TaskAgentToolNames.updateChecklistItems ||
+    TaskAgentToolNames.migrateChecklistItem ||
+    TaskAgentToolNames.migrateChecklistItems => true,
+    _ => false,
+  };
+
+  static bool _decisionHasExplanatoryContext(ChangeDecisionEntity decision) {
+    if (_isMeaningfulSignalText(decision.rejectionReason)) return true;
+    return _argsContainExplanatoryContext(decision.args);
+  }
+
+  static bool _argsContainExplanatoryContext(Map<String, dynamic>? args) {
+    if (args == null || args.isEmpty) return false;
+
+    const explanatoryKeys = {
+      'reason',
+      'rejectionreason',
+      'note',
+      'notes',
+      'comment',
+      'comments',
+      'feedback',
+      'explanation',
+      'why',
+    };
+
+    // Normalize keys by lowercasing and stripping separators so that
+    // variants like `rejection_reason`, `rejection-reason`, and
+    // `rejectionReason` all match the allowlist entry `rejectionreason`.
+    String normalizeKey(String key) =>
+        key.toLowerCase().replaceAll(RegExp('[_-]'), '');
+
+    bool containsContext(Object? value, {String? key}) {
+      final isExplanatoryKey =
+          key != null && explanatoryKeys.contains(normalizeKey(key));
+      if (value is String) {
+        return isExplanatoryKey && _isMeaningfulSignalText(value);
+      }
+      if (value is Map) {
+        return value.entries.any(
+          (entry) {
+            final entryKey = entry.key.toString();
+            // If the parent key is explanatory, propagate it so nested
+            // string values are still recognized as having explanatory
+            // context (e.g. {'feedback': {'text': 'too early'}}).
+            final effectiveKey =
+                explanatoryKeys.contains(normalizeKey(entryKey))
+                ? entryKey
+                : (isExplanatoryKey ? key : entryKey);
+            return containsContext(entry.value, key: effectiveKey);
+          },
+        );
+      }
+      if (value is Iterable) {
+        return value.any((entry) => containsContext(entry, key: key));
+      }
+      return false;
+    }
+
+    return args.entries.any(
+      (entry) => containsContext(entry.value, key: entry.key),
+    );
+  }
+
+  static bool _isMeaningfulSignalText(String? value) {
+    if (value == null) return false;
+    final normalized = value.trim();
+    return normalized.isNotEmpty && normalized.length >= 4;
   }
 
   /// Build a human-readable detail string for a decision.

@@ -263,16 +263,52 @@ abstract class AppLocalizations {
   /// **'Activity Log'**
   String get agentActivityLogHeading;
 
+  /// No description provided for @agentBinaryChoiceNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get agentBinaryChoiceNo;
+
+  /// No description provided for @agentBinaryChoiceYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get agentBinaryChoiceYes;
+
+  /// No description provided for @agentCategoryRatingsScaleMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix first'**
+  String get agentCategoryRatingsScaleMax;
+
+  /// No description provided for @agentCategoryRatingsScaleMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it'**
+  String get agentCategoryRatingsScaleMin;
+
+  /// No description provided for @agentCategoryRatingsStarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{starIndex} of {totalStars} stars'**
+  String agentCategoryRatingsStarLabel(int starIndex, int totalStars);
+
   /// No description provided for @agentCategoryRatingsSubmit.
   ///
   /// In en, this message translates to:
-  /// **'Submit Ratings'**
+  /// **'Use These Priorities'**
   String get agentCategoryRatingsSubmit;
+
+  /// No description provided for @agentCategoryRatingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How important is it that I fix each of these? 1 means leave it alone, 5 means fix it first.'**
+  String get agentCategoryRatingsSubtitle;
 
   /// No description provided for @agentCategoryRatingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Rate Categories'**
+  /// **'Help Me Prioritize'**
   String get agentCategoryRatingsTitle;
 
   /// No description provided for @agentControlsActionError.
@@ -500,6 +536,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note Recorded'**
   String get agentEvolutionNoteRecorded;
+
+  /// No description provided for @agentEvolutionProposalApprovalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval failed — please try again'**
+  String get agentEvolutionProposalApprovalFailed;
 
   /// No description provided for @agentEvolutionProposalRationale.
   ///
@@ -764,6 +806,17 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task Agent'**
   String get agentInstancesKindTaskAgent;
+
+  /// No description provided for @agentInstancesStatsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}'**
+  String agentInstancesStatsSummary(
+    int total,
+    int active,
+    int dormant,
+    int destroyed,
+  );
 
   /// No description provided for @agentInstancesTitle.
   ///
@@ -1034,6 +1087,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'1-on-1'**
   String get agentRitualReviewTitle;
+
+  /// No description provided for @agentRitualSummaryApprovedChangesHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved changes'**
+  String get agentRitualSummaryApprovedChangesHeading;
+
+  /// No description provided for @agentRitualSummaryConversationHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get agentRitualSummaryConversationHeading;
+
+  /// No description provided for @agentRitualSummaryRecapHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Recap'**
+  String get agentRitualSummaryRecapHeading;
+
+  /// No description provided for @agentRitualSummaryRoleAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get agentRitualSummaryRoleAssistant;
+
+  /// No description provided for @agentRitualSummaryRoleUser.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get agentRitualSummaryRoleUser;
+
+  /// No description provided for @agentRitualSummaryStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a 1-on-1 to review what bothered you, what worked, and what should change next.'**
+  String get agentRitualSummaryStartHint;
+
+  /// No description provided for @agentRitualSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent 1-on-1s, real wake activity, and the changes you agreed to.'**
+  String get agentRitualSummarySubtitle;
+
+  /// No description provided for @agentRitualSummaryTldrHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'TLDR'**
+  String get agentRitualSummaryTldrHeading;
+
+  /// No description provided for @agentRitualSummaryTokensSinceLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens since last 1-on-1'**
+  String get agentRitualSummaryTokensSinceLast;
+
+  /// No description provided for @agentRitualSummaryWakeHistory30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake activity (last 30 days)'**
+  String get agentRitualSummaryWakeHistory30Days;
+
+  /// No description provided for @agentRitualSummaryWakesSinceLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes since last 1-on-1'**
+  String get agentRitualSummaryWakesSinceLast;
 
   /// No description provided for @agentRunningIndicator.
   ///
@@ -4065,12 +4184,6 @@ abstract class AppLocalizations {
   /// **'Your time blocks have been saved. You can start tracking your tasks.'**
   String get dailyOsPlanCreatedDescription;
 
-  /// No description provided for @dailyOsPlanWithoutVoice.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan without voice'**
-  String get dailyOsPlanWithoutVoice;
-
   /// No description provided for @dailyOsPlanned.
   ///
   /// In en, this message translates to:
@@ -4082,6 +4195,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Planned Duration'**
   String get dailyOsPlannedDuration;
+
+  /// No description provided for @dailyOsPlanWithoutVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan without voice'**
+  String get dailyOsPlanWithoutVoice;
 
   /// No description provided for @dailyOsQuickCreateTask.
   ///

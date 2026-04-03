@@ -134,6 +134,19 @@ countAgentLinksInInterval: SELECT COUNT(*) AS cnt FROM agent_links WHERE updated
 
 getWakeRunsByTemplateId: SELECT * FROM wake_run_log WHERE template_id = :templateId ORDER BY created_at DESC LIMIT :limit;
 
+countWakeRunsByTemplateId: SELECT COUNT(*) AS cnt FROM wake_run_log WHERE template_id = :templateId;
+
+aggregateWakeRunMetricsByTemplateId: SELECT
+  COUNT(CASE WHEN status = 'completed' THEN 1 END) AS success_count,
+  COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failure_count,
+  CAST(SUM(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND (julianday(completed_at) - julianday(started_at)) * 86400000 > 0 THEN (julianday(completed_at) - julianday(started_at)) * 86400000 ELSE 0 END) AS INT) AS duration_sum_ms,
+  COUNT(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND (julianday(completed_at) - julianday(started_at)) * 86400000 > 0 THEN 1 END) AS duration_count,
+  MIN(created_at) AS first_wake_at,
+  MAX(created_at) AS last_wake_at
+  FROM wake_run_log WHERE template_id = :templateId;
+
+getWakeRunsByTemplateInWindow: SELECT * FROM wake_run_log WHERE template_id = :templateId AND created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
+
 getRecentReportsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentReport' AND ae.subtype = 'current' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentMessage' AND ae.subtype = 'observation' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
@@ -159,6 +172,20 @@ getRecentDecisionsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agen
 getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getTokenUsageByTemplateId: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+
+getTokenUsageByTemplateSince: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC;
+
+sumTokenUsageByTemplate: SELECT
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.inputTokens')), 0) AS INT) AS total_input,
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.outputTokens')), 0) AS INT) AS total_output,
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.thoughtsTokens')), 0) AS INT) AS total_thoughts
+  FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;
+
+sumTokenUsageByTemplateSince: SELECT
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.inputTokens')), 0) AS INT) AS total_input,
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.outputTokens')), 0) AS INT) AS total_output,
+  CAST(COALESCE(SUM(json_extract(ae.serialized, '$.thoughtsTokens')), 0) AS INT) AS total_thoughts
+  FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 
