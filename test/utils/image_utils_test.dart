@@ -15,6 +15,34 @@ void main() {
       const expectedPath = '/image.jpg';
       expect(getRelativeAssetPath(absolutePath), expectedPath);
     });
+
+    test('returns null when absolutePath is null', () {
+      expect(getRelativeAssetPath(null), isNull);
+    });
+
+    test('returns null when absolutePath is null on Android', () {
+      expect(getRelativeAssetPath(null, isAndroid: true), isNull);
+    });
+
+    test('handles path with nested Documents directory', () {
+      // Note: split('Documents').last is fragile when the separator string
+      // appears multiple times — it returns the segment after the LAST
+      // occurrence. This documents the current behavior; see image_utils.dart.
+      const path = '/Users/test/Documents/Lotti/Documents/image.jpg';
+      expect(getRelativeAssetPath(path), '/image.jpg');
+    });
+
+    test('handles Android path with nested app_flutter directory', () {
+      // Same fragility applies to the Android split('app_flutter').last path.
+      const path =
+          '/data/user/0/com.example.app/app_flutter/sub/app_flutter/img.jpg';
+      expect(getRelativeAssetPath(path, isAndroid: true), '/img.jpg');
+    });
+
+    test('handles path with subdirectories after Documents', () {
+      const path = '/Users/test/Documents/images/2024/photo.jpg';
+      expect(getRelativeAssetPath(path), '/images/2024/photo.jpg');
+    });
   });
 
   group('getRelativeImagePath', () {

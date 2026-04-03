@@ -8,9 +8,9 @@ import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Modal that displays "What's New" content for all unseen releases.
@@ -25,14 +25,6 @@ class WhatsNewModal {
   /// Pattern to extract image URLs from markdown: ![alt](url)
   static final _imageUrlPattern = RegExp(r'!\[[^\]]*\]\((https?://[^)]+)\)');
 
-  /// Handles link taps in markdown content.
-  static Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   /// Builds a styled link with classic blue underline and pointer cursor.
   static Widget _buildLink(
     BuildContext context,
@@ -42,7 +34,7 @@ class WhatsNewModal {
   ) {
     const linkColor = Colors.blue;
     return InkWell(
-      onTap: () => _handleLinkTap(url, ''),
+      onTap: () => handleMarkdownLinkTap(url, ''),
       mouseCursor: SystemMouseCursors.click,
       child: Text.rich(
         TextSpan(
@@ -298,7 +290,7 @@ class WhatsNewModal {
           child: SelectionArea(
             child: GptMarkdown(
               allContent,
-              onLinkTap: _handleLinkTap,
+              onLinkTap: handleMarkdownLinkTap,
               linkBuilder: _buildLink,
             ),
           ),

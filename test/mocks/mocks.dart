@@ -92,6 +92,8 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
 class MockSelectable<T> extends Mock implements drift.Selectable<T> {
@@ -521,3 +523,9 @@ class MockPromptBuilderHelper extends Mock implements PromptBuilderHelper {}
 
 class MockPagingController extends Mock
     implements PagingController<int, JournalEntity> {}
+
+class MockUrlLauncher extends Mock
+    with MockPlatformInterfaceMixin
+    implements UrlLauncherPlatform {}
+
+class FakeLaunchOptions extends Fake implements LaunchOptions {}

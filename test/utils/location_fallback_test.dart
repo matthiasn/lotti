@@ -13,6 +13,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 
+Future<Geolocation?> nullIpGeolocationProvider({
+  http.Client? httpClient,
+}) async {
+  return null;
+}
+
 class MockLocation extends Mock implements Location {}
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -330,6 +336,111 @@ void main() {
           expect(result.accuracy, 50000);
 
           verifyNever(() => mockLocation.getLocation());
+        },
+      );
+
+      test(
+        'gets native location when permission initially denied then granted',
+        () async {
+          if (Platform.isLinux || Platform.isWindows) return;
+
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.serviceEnabled(),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.hasPermission(),
+          ).thenAnswer((_) async => PermissionStatus.denied);
+
+          when(
+            () => mockLocation.requestPermission(),
+          ).thenAnswer((_) async => PermissionStatus.granted);
+
+          final mockLocationData = MockLocationData();
+          when(() => mockLocationData.latitude).thenReturn(48.8566);
+          when(() => mockLocationData.longitude).thenReturn(2.3522);
+          when(() => mockLocationData.altitude).thenReturn(35);
+          when(() => mockLocationData.speed).thenReturn(null);
+          when(() => mockLocationData.accuracy).thenReturn(20);
+          when(() => mockLocationData.heading).thenReturn(null);
+          when(() => mockLocationData.speedAccuracy).thenReturn(null);
+
+          when(
+            () => mockLocation.getLocation(),
+          ).thenAnswer((_) async => mockLocationData);
+
+          deviceLocation = DeviceLocation(
+            locationService: mockLocation,
+            ipGeolocationProvider: fakeIpGeolocationProvider,
+          );
+          final result = await deviceLocation.getCurrentGeoLocation();
+
+          expect(result, isNotNull);
+          expect(result!.latitude, 48.8566);
+          expect(result.longitude, 2.3522);
+          verify(() => mockLocation.requestPermission()).called(1);
+          verify(() => mockLocation.getLocation()).called(1);
+        },
+      );
+
+      test('returns null when both native and IP geolocation fail', () async {
+        if (Platform.isLinux || Platform.isWindows) return;
+
+        when(
+          () => mockJournalDb.getConfigFlag(recordLocationFlag),
+        ).thenAnswer((_) async => true);
+
+        when(() => mockLocation.serviceEnabled()).thenAnswer((_) async => true);
+
+        when(
+          () => mockLocation.hasPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
+
+        when(
+          () => mockLocation.requestPermission(),
+        ).thenAnswer((_) async => PermissionStatus.denied);
+
+        deviceLocation = DeviceLocation(
+          locationService: mockLocation,
+          ipGeolocationProvider: nullIpGeolocationProvider,
+        );
+        final result = await deviceLocation.getCurrentGeoLocation();
+
+        expect(result, isNull);
+      });
+
+      test(
+        'returns null when native throws and IP provider returns null',
+        () async {
+          if (Platform.isLinux || Platform.isWindows) return;
+
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.serviceEnabled(),
+          ).thenAnswer((_) async => true);
+
+          when(
+            () => mockLocation.hasPermission(),
+          ).thenAnswer((_) async => PermissionStatus.granted);
+
+          when(
+            () => mockLocation.getLocation(),
+          ).thenThrow(Exception('Native failed'));
+
+          deviceLocation = DeviceLocation(
+            locationService: mockLocation,
+            ipGeolocationProvider: nullIpGeolocationProvider,
+          );
+          final result = await deviceLocation.getCurrentGeoLocation();
+
+          expect(result, isNull);
         },
       );
     });

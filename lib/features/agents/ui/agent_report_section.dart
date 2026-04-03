@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Displays the contents of an agent report with an expandable TLDR section.
 ///
@@ -91,13 +91,6 @@ class _AgentReportSectionState extends State<AgentReportSection>
     });
   }
 
-  Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   Widget _buildLink(
     BuildContext context,
     InlineSpan text,
@@ -108,7 +101,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
     return Semantics(
       link: true,
       child: InkWell(
-        onTap: () => _handleLinkTap(url, ''),
+        onTap: () => handleMarkdownLinkTap(url, ''),
         mouseCursor: SystemMouseCursors.click,
         child: Text.rich(
           TextSpan(
@@ -144,7 +137,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                 SelectionArea(
                   child: GptMarkdown(
                     parsed.tldr,
-                    onLinkTap: _handleLinkTap,
+                    onLinkTap: handleMarkdownLinkTap,
                     linkBuilder: _buildLink,
                   ),
                 ),
@@ -171,7 +164,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                         SelectionArea(
                           child: GptMarkdown(
                             parsed.additional!,
-                            onLinkTap: _handleLinkTap,
+                            onLinkTap: handleMarkdownLinkTap,
                             linkBuilder: _buildLink,
                           ),
                         ),

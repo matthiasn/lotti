@@ -4,9 +4,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AiResponseSummary extends StatelessWidget {
   const AiResponseSummary(
@@ -19,13 +19,6 @@ class AiResponseSummary extends StatelessWidget {
   final AiResponseEntry aiResponse;
   final String? linkedFromId;
   final bool fadeOut;
-
-  static Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +34,7 @@ class AiResponseSummary extends StatelessWidget {
     final content = SelectionArea(
       child: GptMarkdown(
         aiResponse.data.response,
-        onLinkTap: _handleLinkTap,
+        onLinkTap: handleMarkdownLinkTap,
       ),
     );
 
