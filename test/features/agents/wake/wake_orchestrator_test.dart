@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+import 'wake_orchestrator_test_helpers.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -93,13 +94,7 @@ void main() {
     group('subscription management', () {
       test('addSubscription registers a subscription', () {
         fakeAsync((async) {
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -107,13 +102,7 @@ void main() {
 
           // Deferred drain fires after throttleWindow, consuming the job
           // and persisting a wake run entry.
-          final captured =
-              verify(
-                    () => mockRepository.insertWakeRun(
-                      entry: captureAny(named: 'entry'),
-                    ),
-                  ).captured.single
-                  as WakeRunLogData;
+          final captured = captureSingleWakeRun(mockRepository);
           expect(captured.agentId, 'agent-1');
           expect(captured.reason, 'subscription');
           expect(captured.reasonId, 'sub-1');
@@ -126,21 +115,9 @@ void main() {
         fakeAsync((async) {
           // Add a subscription matching entity-1.
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             // Replace it with one matching entity-2 (same id).
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-2'},
-              ),
-            );
+            ..addSubscription(makeSub(matchEntityIds: {'entity-2'}));
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -166,13 +143,7 @@ void main() {
         fakeAsync((async) {
           // Add the same subscription twice.
           for (var i = 0; i < 2; i++) {
-            orchestrator.addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            );
+            orchestrator.addSubscription(makeSub());
           }
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -193,26 +164,12 @@ void main() {
       test('removeSubscriptions removes all subscriptions for an agent', () {
         fakeAsync((async) {
           orchestrator
+            ..addSubscription(makeSub())
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
+              makeSub(id: 'sub-2', matchEntityIds: {'entity-2'}),
             )
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-2',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-2'},
-              ),
-            )
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-3',
-                agentId: 'agent-2',
-                matchEntityIds: {'entity-1'},
-              ),
+              makeSub(id: 'sub-3', agentId: 'agent-2'),
             )
             ..removeSubscriptions('agent-1');
 
@@ -221,13 +178,7 @@ void main() {
           emitAndDrain(async, controller, {'entity-1', 'entity-2'});
 
           // Only agent-2's subscription should fire; deferred drain consumes it.
-          final captured =
-              verify(
-                    () => mockRepository.insertWakeRun(
-                      entry: captureAny(named: 'entry'),
-                    ),
-                  ).captured.single
-                  as WakeRunLogData;
+          final captured = captureSingleWakeRun(mockRepository);
           expect(captured.agentId, 'agent-2');
 
           controller.close();
@@ -238,13 +189,7 @@ void main() {
     group('notification matching', () {
       test('ignores tokens that do not match any subscription', () {
         fakeAsync((async) {
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -258,19 +203,10 @@ void main() {
 
       test('enqueues job when tokens match subscription', () {
         fakeAsync((async) {
-          WakeRunLogData? capturedEntry;
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntry = invocation.namedArguments[#entry] as WakeRunLogData;
-          });
+          final capturedEntries = stubInsertCapture(mockRepository);
 
           orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1', 'entity-2'},
-            ),
+            makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
           );
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -278,8 +214,8 @@ void main() {
           emitAndDrain(async, controller, {'entity-2', 'other-entity'});
 
           // Deferred drain consumes the job; verify the persisted entry.
-          expect(capturedEntry, isNotNull);
-          expect(capturedEntry!.agentId, 'agent-1');
+          expect(capturedEntries, hasLength(1));
+          expect(capturedEntries.first.agentId, 'agent-1');
 
           controller.close();
         });
@@ -288,15 +224,9 @@ void main() {
       test('matches multiple subscriptions in a single batch', () {
         fakeAsync((async) {
           orchestrator
+            ..addSubscription(makeSub())
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..addSubscription(
-              AgentSubscription(
+              makeSub(
                 id: 'sub-2',
                 agentId: 'agent-2',
                 matchEntityIds: {'entity-2'},
@@ -308,11 +238,7 @@ void main() {
           emitAndDrain(async, controller, {'entity-1', 'entity-2'});
 
           // Deferred drain processes all ready jobs.
-          final captured = verify(
-            () => mockRepository.insertWakeRun(
-              entry: captureAny(named: 'entry'),
-            ),
-          ).captured.cast<WakeRunLogData>();
+          final captured = captureWakeRuns(mockRepository);
 
           expect(captured.length, equals(2));
           final ids = captured.map((e) => e.agentId).toSet();
@@ -327,12 +253,7 @@ void main() {
       test('skips subscription when predicate returns false', () {
         fakeAsync((async) {
           orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-              predicate: (tokens) => false,
-            ),
+            makeSub(predicate: (tokens) => false),
           );
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -348,12 +269,7 @@ void main() {
       test('allows subscription when predicate returns true', () {
         fakeAsync((async) {
           orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-              predicate: (tokens) => tokens.contains('entity-1'),
-            ),
+            makeSub(predicate: (tokens) => tokens.contains('entity-1')),
           );
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -370,6 +286,45 @@ void main() {
           controller.close();
         });
       });
+
+      test('predicate receives only matched tokens, not the full batch', () {
+        fakeAsync((async) {
+          Set<String>? receivedTokens;
+
+          // Subscription matches only entity-1 and entity-2.
+          orchestrator.addSubscription(
+            makeSub(
+              matchEntityIds: {'entity-1', 'entity-2'},
+              predicate: (tokens) {
+                receivedTokens = tokens;
+                return true;
+              },
+            ),
+          );
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Batch contains entity-1 (matches) plus entity-99 and entity-100
+          // (do not match the subscription). The predicate should only see
+          // the intersection: {entity-1}.
+          emitAndDrain(
+            async,
+            controller,
+            {'entity-1', 'entity-99', 'entity-100'},
+          );
+
+          expect(
+            receivedTokens,
+            equals({'entity-1'}),
+            reason:
+                'Predicate must receive only the tokens that matched '
+                "the subscription's entityIds, not the entire batch",
+          );
+
+          controller.close();
+        });
+      });
     });
 
     group('self-notification suppression', () {
@@ -377,11 +332,7 @@ void main() {
         fakeAsync((async) {
           orchestrator
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1', 'entity-2'},
-              ),
+              makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
             )
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
@@ -406,11 +357,7 @@ void main() {
         fakeAsync((async) {
           orchestrator
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1', 'entity-2'},
-              ),
+              makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
             )
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
@@ -434,13 +381,7 @@ void main() {
 
       test('does not suppress when agent has no mutation records', () {
         fakeAsync((async) {
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -460,13 +401,7 @@ void main() {
       test('expires suppression after TTL elapses', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
             });
@@ -492,13 +427,7 @@ void main() {
       test('does not expire suppression within TTL', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
             });
@@ -523,19 +452,9 @@ void main() {
       test('suppression is per-agent', () {
         fakeAsync((async) {
           orchestrator
+            ..addSubscription(makeSub())
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-2',
-                agentId: 'agent-2',
-                matchEntityIds: {'entity-1'},
-              ),
+              makeSub(id: 'sub-2', agentId: 'agent-2'),
             )
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
@@ -547,13 +466,7 @@ void main() {
 
           // agent-1 is suppressed, agent-2 is not; deferred drain persists
           // only agent-2's run.
-          final captured =
-              verify(
-                    () => mockRepository.insertWakeRun(
-                      entry: captureAny(named: 'entry'),
-                    ),
-                  ).captured.single
-                  as WakeRunLogData;
+          final captured = captureSingleWakeRun(mockRepository);
           expect(captured.agentId, 'agent-2');
 
           controller.close();
@@ -570,11 +483,7 @@ void main() {
           async.flushMicrotasks();
 
           orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1', 'entity-2'},
-            ),
+            makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
           );
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -613,13 +522,7 @@ void main() {
     group('lifecycle', () {
       test('start subscribes to notification stream', () {
         fakeAsync((async) {
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -643,13 +546,7 @@ void main() {
       // immediately — this test only verifies stream attachment/detachment
       // by checking that _onBatch fires (enqueue) vs not (old stream ignored).
       test('start replaces previous subscription when called twice', () async {
-        orchestrator.addSubscription(
-          AgentSubscription(
-            id: 'sub-1',
-            agentId: 'agent-1',
-            matchEntityIds: {'entity-1'},
-          ),
-        );
+        orchestrator.addSubscription(makeSub());
 
         final controller1 = StreamController<Set<String>>.broadcast();
         final controller2 = StreamController<Set<String>>.broadcast();
@@ -675,13 +572,7 @@ void main() {
 
       test('stop cancels notification subscription', () {
         fakeAsync((async) {
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator
@@ -716,15 +607,7 @@ void main() {
             () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
           ).thenAnswer((_) async {});
 
-          final job = WakeJob(
-            runKey: 'rk-1',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            reasonId: 'sub-1',
-            createdAt: DateTime(2024, 3, 15),
-          );
-          queue.enqueue(job);
+          queue.enqueue(makeJob(reasonId: 'sub-1'));
 
           orchestrator.processNext();
           async.flushMicrotasks();
@@ -744,14 +627,7 @@ void main() {
           runner.tryAcquire('agent-1');
           async.flushMicrotasks();
 
-          final job = WakeJob(
-            runKey: 'rk-1',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            createdAt: DateTime(2024, 3, 15),
-          );
-          queue.enqueue(job);
+          queue.enqueue(makeJob());
 
           orchestrator.processNext();
           async.flushMicrotasks();
@@ -771,50 +647,39 @@ void main() {
 
       test('persisted entry has correct fields from job', () {
         fakeAsync((async) {
-          WakeRunLogData? capturedEntry;
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntry = invocation.namedArguments[#entry] as WakeRunLogData;
-          });
+          final capturedEntries = stubInsertCapture(mockRepository);
 
           final createdAt = DateTime(2024, 3, 15, 10, 30);
-          final job = WakeJob(
-            runKey: 'rk-test',
-            agentId: 'agent-42',
-            reason: 'timer',
-            triggerTokens: {'tok-a'},
-            reasonId: 'timer-7',
-            createdAt: createdAt,
+          queue.enqueue(
+            makeJob(
+              runKey: 'rk-test',
+              agentId: 'agent-42',
+              reason: 'timer',
+              reasonId: 'timer-7',
+              createdAt: createdAt,
+            ),
           );
-          queue.enqueue(job);
 
           orchestrator.processNext();
           async.flushMicrotasks();
 
-          expect(capturedEntry, isNotNull);
-          expect(capturedEntry!.runKey, 'rk-test');
-          expect(capturedEntry!.agentId, 'agent-42');
-          expect(capturedEntry!.reason, 'timer');
-          expect(capturedEntry!.reasonId, 'timer-7');
-          expect(capturedEntry!.threadId, 'rk-test');
-          expect(capturedEntry!.status, 'running');
-          expect(capturedEntry!.createdAt, createdAt);
-          expect(capturedEntry!.startedAt, isNotNull);
+          expect(capturedEntries, hasLength(1));
+          final capturedEntry = capturedEntries.first;
+          expect(capturedEntry.runKey, 'rk-test');
+          expect(capturedEntry.agentId, 'agent-42');
+          expect(capturedEntry.reason, 'timer');
+          expect(capturedEntry.reasonId, 'timer-7');
+          expect(capturedEntry.threadId, 'rk-test');
+          expect(capturedEntry.status, 'running');
+          expect(capturedEntry.createdAt, createdAt);
+          expect(capturedEntry.startedAt, isNotNull);
         });
       });
 
       test('marks run as failed when wakeExecutor is null', () {
         fakeAsync((async) {
           // orchestrator created without wakeExecutor (default null)
-          final job = WakeJob(
-            runKey: 'rk-null',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            createdAt: DateTime(2024, 3, 15),
-          );
-          queue.enqueue(job);
+          queue.enqueue(makeJob(runKey: 'rk-null'));
 
           orchestrator.processNext();
           async.flushMicrotasks();
@@ -837,36 +702,23 @@ void main() {
 
       test('processes multiple agents in one processNext loop', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
 
-          final job1 = WakeJob(
-            runKey: 'rk-1',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            createdAt: DateTime(2024, 3, 15),
-          );
-          final job2 = WakeJob(
-            runKey: 'rk-2',
-            agentId: 'agent-2',
-            reason: 'subscription',
-            triggerTokens: {'tok-b'},
-            createdAt: DateTime(2024, 3, 15),
-          );
           queue
-            ..enqueue(job1)
-            ..enqueue(job2);
+            ..enqueue(makeJob())
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                triggerTokens: {'tok-b'},
+              ),
+            );
 
           orchestrator.processNext();
           async.flushMicrotasks();
 
           // Both jobs processed in one call — no starvation.
-          final captured = verify(
-            () => mockRepository.insertWakeRun(
-              entry: captureAny(named: 'entry'),
-            ),
-          ).captured.cast<WakeRunLogData>();
+          final captured = captureWakeRuns(mockRepository);
           expect(captured.length, equals(2));
           expect(
             captured.map((e) => e.agentId).toSet(),
@@ -877,40 +729,27 @@ void main() {
 
       test('defers busy agent job and processes others', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
 
           // Pre-lock agent-1
           runner.tryAcquire('agent-1');
           async.flushMicrotasks();
 
-          final job1 = WakeJob(
-            runKey: 'rk-1',
-            agentId: 'agent-1',
-            reason: 'subscription',
-            triggerTokens: {'tok-a'},
-            createdAt: DateTime(2024, 3, 15),
-          );
-          final job2 = WakeJob(
-            runKey: 'rk-2',
-            agentId: 'agent-2',
-            reason: 'subscription',
-            triggerTokens: {'tok-b'},
-            createdAt: DateTime(2024, 3, 15),
-          );
           queue
-            ..enqueue(job1)
-            ..enqueue(job2);
+            ..enqueue(makeJob())
+            ..enqueue(
+              makeJob(
+                runKey: 'rk-2',
+                agentId: 'agent-2',
+                triggerTokens: {'tok-b'},
+              ),
+            );
 
           orchestrator.processNext();
           async.flushMicrotasks();
 
           // Only agent-2 processed; agent-1 deferred back to queue.
-          final captured = verify(
-            () => mockRepository.insertWakeRun(
-              entry: captureAny(named: 'entry'),
-            ),
-          ).captured.cast<WakeRunLogData>();
+          final captured = captureWakeRuns(mockRepository);
           expect(captured.length, equals(1));
           expect(captured.first.agentId, 'agent-2');
 
@@ -924,30 +763,19 @@ void main() {
 
       test('clears history only when queue fully drained', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
 
           // Pre-lock agent-1 so its job gets deferred
           runner.tryAcquire('agent-1');
           async.flushMicrotasks();
 
           queue
+            ..enqueue(makeJob())
             ..enqueue(
-              WakeJob(
-                runKey: 'rk-1',
-                agentId: 'agent-1',
-                reason: 'subscription',
-                triggerTokens: {'tok-a'},
-                createdAt: DateTime(2024, 3, 15),
-              ),
-            )
-            ..enqueue(
-              WakeJob(
+              makeJob(
                 runKey: 'rk-2',
                 agentId: 'agent-2',
-                reason: 'subscription',
                 triggerTokens: {'tok-b'},
-                createdAt: DateTime(2024, 3, 15),
               ),
             );
 
@@ -956,15 +784,7 @@ void main() {
 
           // Queue is not empty (agent-1 deferred), so history not cleared.
           // Re-enqueueing rk-1 should fail (key still seen).
-          final reEnqueued = queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'tok-a'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          final reEnqueued = queue.enqueue(makeJob());
           // The deferred job was re-enqueued internally, so rk-1 is already
           // in the queue. A second enqueue with the same key should be rejected.
           expect(reEnqueued, isFalse);
@@ -980,44 +800,19 @@ void main() {
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
             })
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..wakeExecutor = noOpExecutor;
 
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'tok-a'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          queue.enqueue(makeJob());
 
           orchestrator.processNext();
           async.flushMicrotasks();
 
           // Now entity-1 should no longer be suppressed for agent-1
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           // Clear verify history to isolate the next assertion.
           clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
+          restubWakeRunMethods(mockRepository);
 
           // Clear throttle set by the first subscription wake so the
           // second notification is not blocked by the cooldown.
@@ -1039,25 +834,13 @@ void main() {
       test('removeSubscriptions also clears mutation history', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..recordMutatedEntities('agent-1', {
               'entity-1': const VectorClock({'node-1': 1}),
             })
             ..removeSubscriptions('agent-1')
             // Re-add subscription after removal
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1b',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            );
+            ..addSubscription(makeSub(id: 'sub-1b'));
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -1081,27 +864,13 @@ void main() {
           final gate = Completer<Map<String, VectorClock>?>();
 
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..wakeExecutor = (agentId, runKey, triggers, threadId) {
               return gate.future;
             };
 
           // Start execution via direct enqueue (bypasses _onBatch deferral).
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'entity-1'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          queue.enqueue(makeJob(triggerTokens: {'entity-1'}));
           orchestrator.processNext();
           async.flushMicrotasks();
 
@@ -1146,11 +915,7 @@ void main() {
 
             orchestrator
               ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1', 'entity-2'},
-                ),
+                makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
               )
               ..wakeExecutor = (agentId, runKey, triggers, threadId) {
                 executionCount++;
@@ -1163,15 +928,7 @@ void main() {
             ).thenAnswer((_) async => null);
 
             // Start execution via direct enqueue (bypasses _onBatch deferral).
-            queue.enqueue(
-              WakeJob(
-                runKey: 'rk-1',
-                agentId: 'agent-1',
-                reason: 'subscription',
-                triggerTokens: {'entity-1'},
-                createdAt: DateTime(2024, 3, 15),
-              ),
-            );
+            queue.enqueue(makeJob(triggerTokens: {'entity-1'}));
             orchestrator.processNext();
             async.flushMicrotasks();
             expect(executionCount, 1);
@@ -1217,11 +974,7 @@ void main() {
           // Only entity-1 should be in the confirmed suppression record.
           orchestrator
             ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1', 'entity-2'},
-              ),
+              makeSub(matchEntityIds: {'entity-1', 'entity-2'}),
             )
             ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
               // Only entity-1 was actually mutated.
@@ -1231,30 +984,12 @@ void main() {
             };
 
           // Trigger the first execution.
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'entity-1'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          queue.enqueue(makeJob(triggerTokens: {'entity-1'}));
           orchestrator.processNext();
           async.flushMicrotasks();
 
           clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
+          restubWakeRunMethods(mockRepository);
 
           // Clear throttle set by the first subscription wake so the
           // second notification is not blocked by the cooldown.
@@ -1287,22 +1022,12 @@ void main() {
 
             // Enqueue two jobs for different agents.
             queue
+              ..enqueue(makeJob(runKey: 'rk-fail'))
               ..enqueue(
-                WakeJob(
-                  runKey: 'rk-fail',
-                  agentId: 'agent-1',
-                  reason: 'subscription',
-                  triggerTokens: {'tok-a'},
-                  createdAt: DateTime(2024, 3, 15),
-                ),
-              )
-              ..enqueue(
-                WakeJob(
+                makeJob(
                   runKey: 'rk-ok',
                   agentId: 'agent-2',
-                  reason: 'subscription',
                   triggerTokens: {'tok-b'},
-                  createdAt: DateTime(2024, 3, 15),
                 ),
               );
 
@@ -1333,13 +1058,7 @@ void main() {
 
             final gate = Completer<Map<String, VectorClock>?>();
             orchestrator
-              ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
+              ..addSubscription(makeSub())
               ..wakeExecutor = (agentId, runKey, triggers, threadId) {
                 if (runKey.contains('manual')) {
                   return gate.future;
@@ -1348,27 +1067,17 @@ void main() {
               };
 
             // Enqueue a manual wake that will hold the lock.
-            final manualJob = WakeJob(
-              runKey: 'manual-rk',
-              agentId: 'agent-1',
-              reason: 'manual',
-              triggerTokens: <String>{},
-              createdAt: DateTime(2024, 3, 15),
+            queue.enqueue(
+              makeJob(runKey: 'manual-rk', reason: 'manual', triggerTokens: {}),
             );
-            queue.enqueue(manualJob);
             orchestrator.processNext();
             async.flushMicrotasks();
 
             // Agent-1 is now busy executing the manual job.
             // Enqueue a subscription job that will be deferred.
-            final subJob = WakeJob(
-              runKey: 'sub-rk',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'entity-1'},
-              createdAt: DateTime(2024, 3, 15),
+            queue.enqueue(
+              makeJob(runKey: 'sub-rk', triggerTokens: {'entity-1'}),
             );
-            queue.enqueue(subJob);
             orchestrator.processNext();
             async.flushMicrotasks();
 
@@ -1381,11 +1090,7 @@ void main() {
             // The deferred subscription job should now be suppressed because
             // entity-1 was self-mutated by the manual execution.
             // Only the manual run's insertWakeRun should have been called.
-            final captured = verify(
-              () => mockRepository.insertWakeRun(
-                entry: captureAny(named: 'entry'),
-              ),
-            ).captured.cast<WakeRunLogData>();
+            final captured = captureWakeRuns(mockRepository);
 
             // Only the manual wake run should have been persisted;
             // the subscription job should have been suppressed at re-check.
@@ -1420,22 +1125,12 @@ void main() {
           });
 
           queue
+            ..enqueue(makeJob())
             ..enqueue(
-              WakeJob(
-                runKey: 'rk-1',
-                agentId: 'agent-1',
-                reason: 'subscription',
-                triggerTokens: {'tok-a'},
-                createdAt: DateTime(2024, 3, 15),
-              ),
-            )
-            ..enqueue(
-              WakeJob(
+              makeJob(
                 runKey: 'rk-2',
                 agentId: 'agent-2',
-                reason: 'subscription',
                 triggerTokens: {'tok-b'},
-                createdAt: DateTime(2024, 3, 15),
               ),
             );
 
@@ -1475,22 +1170,12 @@ void main() {
           });
 
           queue
+            ..enqueue(makeJob())
             ..enqueue(
-              WakeJob(
-                runKey: 'rk-1',
-                agentId: 'agent-1',
-                reason: 'subscription',
-                triggerTokens: {'tok-a'},
-                createdAt: DateTime(2024, 3, 15),
-              ),
-            )
-            ..enqueue(
-              WakeJob(
+              makeJob(
                 runKey: 'rk-2',
                 agentId: 'agent-2',
-                reason: 'subscription',
                 triggerTokens: {'tok-b'},
-                createdAt: DateTime(2024, 3, 15),
               ),
             );
 
@@ -1519,27 +1204,18 @@ void main() {
           };
 
           // Enqueue and start draining the first job.
-          queue.enqueue(
-            WakeJob(
-              runKey: 'rk-1',
-              agentId: 'agent-1',
-              reason: 'test',
-              triggerTokens: {'tok-a'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
-          );
+          queue.enqueue(makeJob(reason: 'test'));
           orchestrator.processNext();
           async.flushMicrotasks();
 
           // Drain is blocked on gate. Enqueue a second job for a different
           // agent and call processNext again — the guard should defer it.
           queue.enqueue(
-            WakeJob(
+            makeJob(
               runKey: 'rk-2',
               agentId: 'agent-2',
               reason: 'test',
               triggerTokens: {'tok-b'},
-              createdAt: DateTime(2024, 3, 15),
             ),
           );
           orchestrator.processNext();
@@ -1564,7 +1240,7 @@ void main() {
             repository: mockRepository,
             queue: queue,
             runner: runner,
-            wakeExecutor: (agentId, runKey, triggers, threadId) async => null,
+            wakeExecutor: noOpExecutor,
           )).enqueueManualWake(
             agentId: 'agent-1',
             reason: 'creation',
@@ -1594,7 +1270,7 @@ void main() {
             repository: mockRepository,
             queue: queue,
             runner: runner,
-            wakeExecutor: (agentId, runKey, triggers, threadId) async => null,
+            wakeExecutor: noOpExecutor,
           )).enqueueManualWake(
             agentId: 'agent-1',
             reason: 'reanalysis',
@@ -1620,8 +1296,7 @@ void main() {
                   repository: mockRepository,
                   queue: queue,
                   runner: runner,
-                  wakeExecutor: (agentId, runKey, triggers, threadId) async =>
-                      null,
+                  wakeExecutor: noOpExecutor,
                 )
                 // Record mutations for agent-1 that include task-1.
                 ..recordMutatedEntities('agent-1', {
@@ -1643,24 +1318,12 @@ void main() {
       });
       test('removes pending subscription jobs for the same agent', () {
         fakeAsync((async) {
-          final capturedEntries = <WakeRunLogData>[];
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntries.add(
-              invocation.namedArguments[#entry] as WakeRunLogData,
-            );
-          });
+          final capturedEntries = stubInsertCapture(mockRepository);
 
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
           // ignore: cascade_invocations
           orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'task-1'},
-            ),
+            makeSub(matchEntityIds: {'task-1'}),
           );
 
           final controller = StreamController<Set<String>>.broadcast();
@@ -1693,25 +1356,11 @@ void main() {
     group('monotonic wake counter', () {
       test('identical notifications produce different run keys', () {
         fakeAsync((async) {
-          final capturedEntries = <WakeRunLogData>[];
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntries.add(
-              invocation.namedArguments[#entry] as WakeRunLogData,
-            );
-          });
+          final capturedEntries = stubInsertCapture(mockRepository);
 
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
           // ignore: cascade_invocations
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -1744,25 +1393,11 @@ void main() {
 
       test('removeSubscriptions resets counter for agent', () {
         fakeAsync((async) {
-          final capturedEntries = <WakeRunLogData>[];
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((invocation) async {
-            capturedEntries.add(
-              invocation.namedArguments[#entry] as WakeRunLogData,
-            );
-          });
+          final capturedEntries = stubInsertCapture(mockRepository);
 
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
           // ignore: cascade_invocations
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -1779,13 +1414,7 @@ void main() {
           // Remove and re-add subscription (counter resets, throttle clears).
           orchestrator.removeSubscriptions('agent-1');
           // ignore: cascade_invocations
-          orchestrator.addSubscription(
-            AgentSubscription(
-              id: 'sub-1',
-              agentId: 'agent-1',
-              matchEntityIds: {'entity-1'},
-            ),
-          );
+          orchestrator.addSubscription(makeSub());
 
           // Fire again — counter is back to 0 after reset, so both
           // invocations after the reset should succeed (not be deduped).
@@ -1804,13 +1433,7 @@ void main() {
           var executionCount = 0;
 
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
               executionCount++;
               return null;
@@ -1851,15 +1474,8 @@ void main() {
       test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           final controller = StreamController<Set<String>>.broadcast();
           orchestrator.start(controller.stream);
@@ -1872,9 +1488,7 @@ void main() {
           async.flushMicrotasks();
 
           clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
+          restubWakeRunMethods(mockRepository);
 
           // Advance past the throttle window — timer should not fire.
           async
@@ -1895,15 +1509,8 @@ void main() {
       test('subscription wake sets throttle deadline', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           // Stub getAgentState for _setThrottleDeadline persistence.
           when(
@@ -1947,15 +1554,8 @@ void main() {
       test('manual wake clears throttle and executes immediately', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -1980,11 +1580,7 @@ void main() {
           async.flushMicrotasks();
 
           // Manual wake run should have been persisted.
-          final captured = verify(
-            () => mockRepository.insertWakeRun(
-              entry: captureAny(named: 'entry'),
-            ),
-          ).captured.cast<WakeRunLogData>();
+          final captured = captureWakeRuns(mockRepository);
           expect(captured.any((e) => e.reason == 'reanalysis'), isTrue);
 
           controller.close();
@@ -1996,13 +1592,7 @@ void main() {
           var executionCount = 0;
 
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
               executionCount++;
               return null;
@@ -2046,13 +1636,7 @@ void main() {
           var executionCount = 0;
 
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
               executionCount++;
               return null;
@@ -2093,18 +1677,11 @@ void main() {
 
       test('creation wake does NOT set throttle', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
 
           // ignore: cascade_invocations
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..enqueueManualWake(
               agentId: 'agent-1',
               reason: 'creation',
@@ -2135,15 +1712,8 @@ void main() {
       test('removeSubscriptions clears throttle', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -2158,26 +1728,10 @@ void main() {
           // Remove and re-add subscription — throttle should be cleared.
           orchestrator
             ..removeSubscriptions('agent-1')
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1b',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            );
+            ..addSubscription(makeSub(id: 'sub-1b'));
 
           clearInteractions(mockRepository);
-          when(
-            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockRepository.updateWakeRunStatus(
-              any(),
-              any(),
-              completedAt: any(named: 'completedAt'),
-              errorMessage: any(named: 'errorMessage'),
-            ),
-          ).thenAnswer((_) async {});
+          restubWakeRunMethods(mockRepository);
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => null);
@@ -2195,15 +1749,8 @@ void main() {
       test('setThrottleDeadline hydrates throttle from persisted state', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           // Hydrate a throttle deadline 120 seconds in the future.
           final deadline = clock.now().add(const Duration(seconds: 120));
@@ -2235,15 +1782,8 @@ void main() {
       test('setThrottleDeadline ignores past deadlines', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           // Set a past deadline — should be ignored.
           final pastDeadline = clock.now().subtract(
@@ -2268,15 +1808,8 @@ void main() {
       test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           when(
             () => mockRepository.getAgentState('agent-1'),
@@ -2309,15 +1842,8 @@ void main() {
       test('subscription wake persists throttle deadline via upsertEntity', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           final existingState = makeTestState(
             id: 'state-agent-1',
@@ -2366,15 +1892,8 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator
-              ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
-              ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                  null;
+              ..addSubscription(makeSub())
+              ..wakeExecutor = noOpExecutor;
 
             // getAgentState throws to simulate DB failure in persistence.
             when(
@@ -2396,17 +1915,7 @@ void main() {
             // _setThrottleDeadline even when DB persistence fails) —
             // second notification should be merged, not executed.
             clearInteractions(mockRepository);
-            when(
-              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockRepository.updateWakeRunStatus(
-                any(),
-                any(),
-                completedAt: any(named: 'completedAt'),
-                errorMessage: any(named: 'errorMessage'),
-              ),
-            ).thenAnswer((_) async {});
+            restubWakeRunMethods(mockRepository);
 
             emitTokens(async, controller, {'entity-1'});
             verifyNever(
@@ -2421,15 +1930,8 @@ void main() {
       test('clearThrottle persists nextWakeAt null via upsertEntity', () {
         fakeAsync((async) {
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                null;
+            ..addSubscription(makeSub())
+            ..wakeExecutor = noOpExecutor;
 
           final existingState = makeTestState(
             id: 'state-agent-1',
@@ -2491,15 +1993,8 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator
-              ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
-              ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                  null;
+              ..addSubscription(makeSub())
+              ..wakeExecutor = noOpExecutor;
 
             final existingState = makeTestState(
               id: 'state-agent-1',
@@ -2554,15 +2049,8 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator
-              ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
-              ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                  null;
+              ..addSubscription(makeSub())
+              ..wakeExecutor = noOpExecutor;
 
             when(
               () => mockRepository.getAgentState('agent-1'),
@@ -2592,17 +2080,7 @@ void main() {
             // In-memory throttle should be cleared despite DB failure,
             // so a new subscription notification should execute after deferral.
             clearInteractions(mockRepository);
-            when(
-              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockRepository.updateWakeRunStatus(
-                any(),
-                any(),
-                completedAt: any(named: 'completedAt'),
-                errorMessage: any(named: 'errorMessage'),
-              ),
-            ).thenAnswer((_) async {});
+            restubWakeRunMethods(mockRepository);
             when(
               () => mockRepository.getAgentState('agent-1'),
             ).thenAnswer((_) async => null);
@@ -2619,8 +2097,7 @@ void main() {
 
       test('natural expiry clears persisted nextWakeAt', () {
         fakeAsync((async) {
-          orchestrator.wakeExecutor =
-              (agentId, runKey, triggers, threadId) async => null;
+          orchestrator.wakeExecutor = noOpExecutor;
 
           final existingState = makeTestState(
             id: 'state-agent-1',
@@ -2664,22 +2141,15 @@ void main() {
         () {
           fakeAsync((async) {
             orchestrator
+              ..addSubscription(makeSub())
               ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
-              ..addSubscription(
-                AgentSubscription(
+                makeSub(
                   id: 'sub-2',
                   agentId: 'agent-2',
                   matchEntityIds: {'entity-2'},
                 ),
               )
-              ..wakeExecutor = (agentId, runKey, triggers, threadId) async =>
-                  null;
+              ..wakeExecutor = noOpExecutor;
 
             when(
               () => mockRepository.getAgentState(any()),
@@ -2690,11 +2160,7 @@ void main() {
 
             // Both agents execute on separate tokens.
             emitAndDrain(async, controller, {'entity-1', 'entity-2'});
-            final firstBatch = verify(
-              () => mockRepository.insertWakeRun(
-                entry: captureAny(named: 'entry'),
-              ),
-            ).captured.cast<WakeRunLogData>();
+            final firstBatch = captureWakeRuns(mockRepository);
             expect(firstBatch.length, 2);
 
             // Advance past the 5s suppression TTL so subsequent
@@ -2702,17 +2168,7 @@ void main() {
             async.elapse(const Duration(seconds: 6));
 
             clearInteractions(mockRepository);
-            when(
-              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockRepository.updateWakeRunStatus(
-                any(),
-                any(),
-                completedAt: any(named: 'completedAt'),
-                errorMessage: any(named: 'errorMessage'),
-              ),
-            ).thenAnswer((_) async {});
+            restubWakeRunMethods(mockRepository);
 
             // Both agents should be throttled now (post-execution throttle).
             // Only emit entity-1 so agent-2 (which subscribes to entity-2)
@@ -2733,11 +2189,7 @@ void main() {
             emitAndDrain(async, controller, {'entity-1'});
 
             // Only agent-1 should run.
-            final captured = verify(
-              () => mockRepository.insertWakeRun(
-                entry: captureAny(named: 'entry'),
-              ),
-            ).captured.cast<WakeRunLogData>();
+            final captured = captureWakeRuns(mockRepository);
             expect(captured.length, 1);
             expect(captured.first.agentId, 'agent-1');
 
@@ -2755,13 +2207,7 @@ void main() {
             var executionCount = 0;
 
             orchestrator
-              ..addSubscription(
-                AgentSubscription(
-                  id: 'sub-1',
-                  agentId: 'agent-1',
-                  matchEntityIds: {'entity-1'},
-                ),
-              )
+              ..addSubscription(makeSub())
               ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
                 executionCount++;
                 return null;
@@ -2812,13 +2258,7 @@ void main() {
 
             // Directly enqueue a job so processNext has work.
             queue.enqueue(
-              WakeJob(
-                runKey: 'edge-case-key',
-                agentId: 'agent-1',
-                reason: 'subscription',
-                triggerTokens: {'entity-1'},
-                createdAt: DateTime(2024, 3, 15),
-              ),
+              makeJob(runKey: 'edge-case-key', triggerTokens: {'entity-1'}),
             );
 
             // Set deadline to exactly now — remaining will be Duration.zero.
@@ -2855,13 +2295,7 @@ void main() {
           // Directly enqueue a "stuck" job — no deferred drain timer is
           // scheduled, simulating the failure mode the safety net catches.
           queue.enqueue(
-            WakeJob(
-              runKey: 'stuck-job-key',
-              agentId: 'agent-1',
-              reason: 'subscription',
-              triggerTokens: {'entity-1'},
-              createdAt: DateTime(2024, 3, 15),
-            ),
+            makeJob(runKey: 'stuck-job-key', triggerTokens: {'entity-1'}),
           );
 
           // Advance past the safety-net interval.
@@ -2953,15 +2387,8 @@ void main() {
                     runner: runner,
                     onPersistedStateChanged: changedAgentIds.add,
                   )
-                  ..addSubscription(
-                    AgentSubscription(
-                      id: 'sub-1',
-                      agentId: 'agent-1',
-                      matchEntityIds: {'entity-1'},
-                    ),
-                  )
-                  ..wakeExecutor = (agentId, runKey, tokens, threadId) async =>
-                      null;
+                  ..addSubscription(makeSub())
+                  ..wakeExecutor = noOpExecutor;
 
             // ignore: cascade_invocations
             orchestrator.start(controller.stream);
@@ -2998,15 +2425,8 @@ void main() {
                     runner: runner,
                     onPersistedStateChanged: changedAgentIds.add,
                   )
-                  ..addSubscription(
-                    AgentSubscription(
-                      id: 'sub-1',
-                      agentId: 'agent-1',
-                      matchEntityIds: {'entity-1'},
-                    ),
-                  )
-                  ..wakeExecutor = (agentId, runKey, tokens, threadId) async =>
-                      null;
+                  ..addSubscription(makeSub())
+                  ..wakeExecutor = noOpExecutor;
 
             // ignore: cascade_invocations
             orchestrator.start(controller.stream);
@@ -3032,13 +2452,7 @@ void main() {
           final executedRunKeys = <String>[];
 
           orchestrator
-            ..addSubscription(
-              AgentSubscription(
-                id: 'sub-1',
-                agentId: 'agent-1',
-                matchEntityIds: {'entity-1'},
-              ),
-            )
+            ..addSubscription(makeSub())
             ..wakeExecutor = (agentId, runKey, tokens, threadId) async {
               executedRunKeys.add(runKey);
               return null;
@@ -3096,14 +2510,14 @@ void main() {
               return Future.value();
             }
             ..addSubscription(
-              AgentSubscription(
+              makeSub(
                 id: 'sub-stuck',
                 agentId: 'stuck-agent',
                 matchEntityIds: {'entity-stuck'},
               ),
             )
             ..addSubscription(
-              AgentSubscription(
+              makeSub(
                 id: 'sub-ok',
                 agentId: 'ok-agent',
                 matchEntityIds: {'entity-ok'},
@@ -3161,7 +2575,7 @@ void main() {
               return Future.value();
             }
             ..addSubscription(
-              AgentSubscription(
+              makeSub(
                 id: 'sub-stuck',
                 agentId: 'stuck-agent',
                 matchEntityIds: {'entity-stuck'},
@@ -3213,14 +2627,14 @@ void main() {
             return Future.value();
           }
           ..addSubscription(
-            AgentSubscription(
+            makeSub(
               id: 'sub-slow',
               agentId: 'slow-agent',
               matchEntityIds: {'entity-slow'},
             ),
           )
           ..addSubscription(
-            AgentSubscription(
+            makeSub(
               id: 'sub-ok',
               agentId: 'ok-agent',
               matchEntityIds: {'entity-ok'},
@@ -3304,12 +2718,11 @@ void main() {
         );
 
         loggedQueue.enqueue(
-          WakeJob(
+          makeJob(
             runKey: 'rk-err',
             agentId: 'agent-err',
             reason: 'manual',
             triggerTokens: {'tok'},
-            createdAt: DateTime(2024, 3, 15),
           ),
         );
 
@@ -3591,6 +3004,62 @@ void main() {
         });
       });
 
+      test(
+        'proceeds and logs completed run when taskContentChecker throws',
+        () {
+          fakeAsync((async) {
+            final capturedEntries = stubInsertCapture(mockRepository);
+
+            final state = makeTestState(
+              agentId: 'agent-cg-throw',
+              awaitingContent: true,
+              slots: const AgentSlots(activeTaskId: 'task-throw'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg-throw'),
+            ).thenAnswer((_) async => state);
+
+            String? executedAgentId;
+            final cg =
+                WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: WakeRunner(),
+                  taskContentChecker: (taskId) async =>
+                      throw StateError('unexpected DB failure'),
+                  wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                    executedAgentId = agentId;
+                    return null;
+                  },
+                )..enqueueManualWake(
+                  agentId: 'agent-cg-throw',
+                  reason: 'creation',
+                );
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            // The wake must execute despite the checker throwing.
+            expect(executedAgentId, 'agent-cg-throw');
+
+            // A wake run log entry was persisted for the agent.
+            expect(capturedEntries, hasLength(1));
+            expect(capturedEntries.first.agentId, 'agent-cg-throw');
+
+            // The run completed successfully (not marked as failed).
+            verify(
+              () => mockRepository.updateWakeRunStatus(
+                any(),
+                'completed',
+                completedAt: any(named: 'completedAt'),
+              ),
+            ).called(1);
+
+            cg.stop();
+          });
+        },
+      );
+
       test('proceeds when state has no activeTaskId', () {
         fakeAsync((async) {
           final state = makeTestState(
@@ -3637,7 +3106,7 @@ void main() {
 
           orchestrator
             ..addSubscription(
-              AgentSubscription(
+              makeSub(
                 id: 'sub-zone',
                 agentId: 'agent-zone',
                 matchEntityIds: {'entity-zone'},

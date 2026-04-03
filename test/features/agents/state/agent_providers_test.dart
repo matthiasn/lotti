@@ -19,8 +19,6 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -57,7 +55,8 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_utils.dart';
-import '../workflow/task_agent_workflow_test.dart';
+import '../workflow/task_agent_workflow_test_helpers.dart';
+import 'agent_providers_test_helpers.dart';
 
 void main() {
   setUpAll(() {
@@ -1146,36 +1145,13 @@ void main() {
   });
 
   group('agentUpdateStreamProvider', () {
-    Future<ProviderContainer> setUpStreamTest(
-      StreamController<Set<String>> controller,
-    ) async {
-      final mockNotifications = MockUpdateNotifications();
-      when(
-        () => mockNotifications.updateStream,
-      ).thenAnswer((_) => controller.stream);
-      when(
-        () => mockNotifications.localUpdateStream,
-      ).thenAnswer((_) => const Stream.empty());
-
-      await getIt.reset();
-      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
-      addTearDown(getIt.reset);
-
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test(
       'emits when UpdateNotifications fires with matching agent ID',
       () async {
-        final controller = StreamController<Set<String>>.broadcast();
-        addTearDown(controller.close);
-
-        final container = await setUpStreamTest(controller);
+        final setup = await setUpUpdateStreamTest();
 
         final values = <AsyncValue<Set<String>>>[];
-        final sub = container.listen(
+        final sub = setup.container.listen(
           agentUpdateStreamProvider(kTestAgentId),
           (_, next) => values.add(next),
         );
@@ -1184,7 +1160,7 @@ void main() {
         await pumpEventQueue();
 
         // Fire notification with matching agent ID.
-        controller.add({kTestAgentId, 'other-id'});
+        setup.controller.add({kTestAgentId, 'other-id'});
         await pumpEventQueue();
 
         expect(values, isNotEmpty);
@@ -1192,13 +1168,10 @@ void main() {
     );
 
     test('does NOT emit for unrelated agent IDs', () async {
-      final controller = StreamController<Set<String>>.broadcast();
-      addTearDown(controller.close);
-
-      final container = await setUpStreamTest(controller);
+      final setup = await setUpUpdateStreamTest();
 
       final values = <AsyncValue<Set<String>>>[];
-      final sub = container.listen(
+      final sub = setup.container.listen(
         agentUpdateStreamProvider(kTestAgentId),
         (_, next) => values.add(next),
       );
@@ -1208,20 +1181,17 @@ void main() {
       values.clear();
 
       // Fire notification with a DIFFERENT agent ID.
-      controller.add({'different-agent-id'});
+      setup.controller.add({'different-agent-id'});
       await pumpEventQueue();
 
       expect(values, isEmpty);
     });
 
     test('multiple emissions each trigger a new notification', () async {
-      final controller = StreamController<Set<String>>.broadcast();
-      addTearDown(controller.close);
-
-      final container = await setUpStreamTest(controller);
+      final setup = await setUpUpdateStreamTest();
 
       final values = <AsyncValue<Set<String>>>[];
-      final sub = container.listen(
+      final sub = setup.container.listen(
         agentUpdateStreamProvider(kTestAgentId),
         (_, next) => values.add(next),
       );
@@ -1233,11 +1203,11 @@ void main() {
       // Fire three successive notifications — each must produce a
       // distinct AsyncData because we pass through Set<String> (identity
       // distinct) rather than void (which Riverpod would deduplicate).
-      controller.add({kTestAgentId});
+      setup.controller.add({kTestAgentId});
       await pumpEventQueue();
-      controller.add({kTestAgentId});
+      setup.controller.add({kTestAgentId});
       await pumpEventQueue();
-      controller.add({kTestAgentId});
+      setup.controller.add({kTestAgentId});
       await pumpEventQueue();
 
       expect(values, hasLength(3));
@@ -1336,210 +1306,70 @@ void main() {
   });
 
   group('agentInitializationProvider', () {
-    late MockWakeOrchestrator mockOrchestrator;
-    late MockTaskAgentWorkflow mockWorkflow;
-    late MockImproverAgentWorkflow mockImproverWorkflow;
-    late MockProjectAgentWorkflow mockProjectWorkflow;
-    late MockTaskAgentService mockTaskAgentService;
-    late MockProjectAgentService mockProjectAgentService;
-    late MockAgentTemplateService mockTemplateService;
-    late MockAiConfigRepository mockAiConfigRepo;
-    late MockScheduledWakeManager mockScheduledWakeManager;
-    late MockProjectActivityMonitor mockProjectActivityMonitor;
-    late MockProjectRepository mockProjectRepository;
+    late InitProviderBench bench;
 
     setUp(() async {
-      await setUpTestGetIt();
-      mockOrchestrator = MockWakeOrchestrator();
-      mockWorkflow = MockTaskAgentWorkflow();
-      mockImproverWorkflow = MockImproverAgentWorkflow();
-      mockProjectWorkflow = MockProjectAgentWorkflow();
-      mockTaskAgentService = MockTaskAgentService();
-      mockProjectAgentService = MockProjectAgentService();
-      mockTemplateService = MockAgentTemplateService();
-      mockAiConfigRepo = MockAiConfigRepository();
-      mockScheduledWakeManager = MockScheduledWakeManager();
-      mockProjectActivityMonitor = MockProjectActivityMonitor();
-      mockProjectRepository = MockProjectRepository();
-
-      when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
-      when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(
-        () => mockTaskAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockProjectAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
-      when(
-        () => mockTemplateService.getTemplateForAgent(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockRepository.abandonOrphanedWakeRuns(),
-      ).thenAnswer((_) async => 0);
-      when(
-        () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockProjectRepository.getProjectForTask(any()),
-      ).thenAnswer((_) async => null);
-      when(() => mockScheduledWakeManager.start()).thenReturn(null);
-      when(() => mockScheduledWakeManager.stop()).thenReturn(null);
-      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
-      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
-      // Profile seeding stubs.
-      when(
-        () => mockAiConfigRepo.getConfigById(any()),
-      ).thenAnswer((_) async => null);
-      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
-      // Model prepopulation stubs (backfill + stale removal).
-      when(
-        () => mockAiConfigRepo.getConfigsByType(any()),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockAiConfigRepo.deleteConfig(any()),
-      ).thenAnswer((_) async {});
+      bench = await InitProviderBench.create();
     });
 
     tearDown(tearDownTestGetIt);
 
-    ProviderContainer createInitContainer({
-      required bool enableAgents,
-    }) {
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
-          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
-          improverAgentWorkflowProvider.overrideWithValue(mockImproverWorkflow),
-          projectAgentWorkflowProvider.overrideWithValue(mockProjectWorkflow),
-          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
-          projectAgentServiceProvider.overrideWithValue(
-            mockProjectAgentService,
-          ),
-          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          scheduledWakeManagerProvider.overrideWithValue(
-            mockScheduledWakeManager,
-          ),
-          projectActivityMonitorProvider.overrideWithValue(
-            mockProjectActivityMonitor,
-          ),
-          configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(
-              flagName == enableAgentsFlag && enableAgents,
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test('does nothing when agents are disabled', () async {
-      final container = createInitContainer(enableAgents: false);
+      final container = bench.createContainer(enableAgents: false);
+      await bench.initAndSubscribe(container);
 
-      // Keep the subscription alive for keepAlive provider.
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      await container.read(agentInitializationProvider.future);
-
-      verifyNever(() => mockOrchestrator.start(any()));
-      verifyNever(() => mockTaskAgentService.restoreSubscriptions());
+      verifyNever(() => bench.mockOrchestrator.start(any()));
+      verifyNever(() => bench.mockTaskAgentService.restoreSubscriptions());
     });
 
     test(
       'starts orchestrator and restores subscriptions when enabled',
       () async {
-        final container = createInitContainer(enableAgents: true);
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-
-        await container.read(agentInitializationProvider.future);
-
-        verify(() => mockOrchestrator.start(any())).called(1);
-        verify(() => mockTemplateService.seedDefaults()).called(1);
-        verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
+        verify(() => bench.mockOrchestrator.start(any())).called(1);
+        verify(() => bench.mockTemplateService.seedDefaults()).called(1);
+        verify(
+          () => bench.mockTaskAgentService.restoreSubscriptions(),
+        ).called(1);
       },
     );
 
     test('starts scheduled wake manager when enabled', () async {
-      final container = createInitContainer(enableAgents: true);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockScheduledWakeManager.start()).called(1);
+      verify(() => bench.mockScheduledWakeManager.start()).called(1);
     });
 
     test('starts the project activity monitor when enabled', () async {
-      final container = createInitContainer(enableAgents: true);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockProjectActivityMonitor.start()).called(1);
+      verify(() => bench.mockProjectActivityMonitor.start()).called(1);
     });
 
     test('sets wakeExecutor on orchestrator when enabled', () async {
-      final container = createInitContainer(enableAgents: true);
-
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      await container.read(agentInitializationProvider.future);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
       // The orchestrator's wakeExecutor setter should have been called.
-      verify(() => mockOrchestrator.wakeExecutor = any()).called(1);
+      verify(() => bench.mockOrchestrator.wakeExecutor = any()).called(1);
     });
 
     test(
       'wakeExecutor returns null when agent identity not found',
       () async {
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => null);
 
-        // Use a capturing orchestrator to grab the wakeExecutor callback.
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-        final result = await capturedExecutor!(
+        final result = await capture.executor(
           kTestAgentId,
           'run-key-1',
           {'tok-a'},
@@ -1547,7 +1377,7 @@ void main() {
         );
 
         expect(result, isNull);
-        verify(() => mockService.getAgent(kTestAgentId)).called(1);
+        verify(() => bench.mockService.getAgent(kTestAgentId)).called(1);
       },
     );
 
@@ -1560,10 +1390,10 @@ void main() {
         };
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1573,22 +1403,11 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-        final result = await capturedExecutor!(
+        final result = await capture.executor(
           kTestAgentId,
           'run-key-1',
           {'tok-a'},
@@ -1597,7 +1416,7 @@ void main() {
 
         expect(result, equals(mutated));
         verify(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: identity,
             runKey: 'run-key-1',
             triggerTokens: {'tok-a'},
@@ -1613,10 +1432,10 @@ void main() {
         final identity = makeTestIdentity();
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1629,23 +1448,12 @@ void main() {
           ),
         );
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
         await expectLater(
-          capturedExecutor!(
+          capture.executor(
             kTestAgentId,
             'run-key-fail',
             {'tok-fail'},
@@ -1679,10 +1487,10 @@ void main() {
         };
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1692,25 +1500,13 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
-
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
         // Execute the wakeExecutor — this should fire a notification
         // with the agent ID so detail providers self-invalidate.
-        await capturedExecutor!(
+        await capture.executor(
           kTestAgentId,
           'run-key-2',
           {'tok-b'},
@@ -1740,10 +1536,10 @@ void main() {
         );
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1753,26 +1549,14 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
         when(
-          () => mockTemplateService.getTemplateForAgent(kTestAgentId),
+          () => bench.mockTemplateService.getTemplateForAgent(kTestAgentId),
         ).thenAnswer((_) async => template);
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-
-        await capturedExecutor!(
+        await capture.executor(
           kTestAgentId,
           'run-key-tpl',
           {'tok-c'},
@@ -1801,10 +1585,10 @@ void main() {
         final timestamp = DateTime(2024, 3, 15, 10);
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1814,7 +1598,7 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
         when(
-          () => mockRepository.getLinksFrom(
+          () => bench.mockRepository.getLinksFrom(
             kTestAgentId,
             type: AgentLinkTypes.agentTask,
           ),
@@ -1831,26 +1615,14 @@ void main() {
           ],
         );
         when(
-          () => mockProjectRepository.getProjectForTask(taskId),
+          () => bench.mockProjectRepository.getProjectForTask(taskId),
         ).thenAnswer((_) async => makeTestProject(id: projectId));
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-
-        await capturedExecutor!(
+        await capture.executor(
           kTestAgentId,
           'run-key-task-project',
           {'tok-project'},
@@ -1876,10 +1648,10 @@ void main() {
         };
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -1889,26 +1661,14 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
         when(
-          () => mockTemplateService.getTemplateForAgent(kTestAgentId),
+          () => bench.mockTemplateService.getTemplateForAgent(kTestAgentId),
         ).thenThrow(Exception('db connection lost'));
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-
-        final result = await capturedExecutor!(
+        final result = await capture.executor(
           kTestAgentId,
           'run-key-err',
           {'tok-d'},
@@ -1940,10 +1700,10 @@ void main() {
         };
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockImproverWorkflow.execute(
+          () => bench.mockImproverWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             threadId: any(named: 'threadId'),
@@ -1952,22 +1712,11 @@ void main() {
           (_) async => WakeResult(success: true, mutatedEntries: mutated),
         );
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
-        final result = await capturedExecutor!(
+        final result = await capture.executor(
           kTestAgentId,
           'run-key-improver',
           {'tok-a'},
@@ -1976,7 +1725,7 @@ void main() {
 
         expect(result, equals(mutated));
         verify(
-          () => mockImproverWorkflow.execute(
+          () => bench.mockImproverWorkflow.execute(
             agentIdentity: identity,
             runKey: 'run-key-improver',
             threadId: 'thread-improver',
@@ -1985,7 +1734,7 @@ void main() {
 
         // Should NOT call task agent workflow.
         verifyNever(
-          () => mockWorkflow.execute(
+          () => bench.mockWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             triggerTokens: any(named: 'triggerTokens'),
@@ -2003,10 +1752,10 @@ void main() {
         );
 
         when(
-          () => mockService.getAgent(kTestAgentId),
+          () => bench.mockService.getAgent(kTestAgentId),
         ).thenAnswer((_) async => identity);
         when(
-          () => mockImproverWorkflow.execute(
+          () => bench.mockImproverWorkflow.execute(
             agentIdentity: any(named: 'agentIdentity'),
             runKey: any(named: 'runKey'),
             threadId: any(named: 'threadId'),
@@ -2018,23 +1767,12 @@ void main() {
           ),
         );
 
-        WakeExecutor? capturedExecutor;
-        when(() => mockOrchestrator.wakeExecutor = any()).thenAnswer((inv) {
-          capturedExecutor = inv.positionalArguments[0] as WakeExecutor?;
-          return null;
-        });
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
 
-        final container = createInitContainer(enableAgents: true);
-        final sub = container.listen(
-          agentInitializationProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
-        await container.read(agentInitializationProvider.future);
-
-        expect(capturedExecutor, isNotNull);
         await expectLater(
-          capturedExecutor!(
+          capture.executor(
             kTestAgentId,
             'run-key-fail',
             {'tok-a'},
@@ -2055,17 +1793,12 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
-      final container = createInitContainer(enableAgents: true);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockProcessor.wakeOrchestrator = mockOrchestrator).called(1);
+      verify(
+        () => mockProcessor.wakeOrchestrator = bench.mockOrchestrator,
+      ).called(1);
       verify(
         () => mockProcessor.agentRepository = any(that: isNotNull),
       ).called(1);
@@ -2075,7 +1808,7 @@ void main() {
       final mockProcessor = MockSyncEventProcessor();
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
-      final container = createInitContainer(enableAgents: true);
+      final container = bench.createContainer();
 
       final sub = container.listen(
         agentInitializationProvider,
@@ -2092,7 +1825,7 @@ void main() {
     });
 
     test('stops orchestrator on dispose', () async {
-      final container = createInitContainer(enableAgents: true);
+      final container = bench.createContainer();
 
       final sub = container.listen(
         agentInitializationProvider,
@@ -2104,7 +1837,7 @@ void main() {
       sub.close();
       container.dispose();
 
-      verify(() => mockOrchestrator.stop()).called(1);
+      verify(() => bench.mockOrchestrator.stop()).called(1);
     });
   });
 
@@ -2115,17 +1848,11 @@ void main() {
       mockTemplateService = MockAgentTemplateService();
     });
 
-    ProviderContainer createTemplateContainer() {
-      final container = ProviderContainer(
-        overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
+    ProviderContainer makeContainer() => createTemplateContainer(
+      mockTemplateService: mockTemplateService,
+      mockService: mockService,
+      mockRepository: mockRepository,
+    );
 
     test('agentTemplatesProvider delegates to listTemplates', () async {
       final templates = [
@@ -2135,7 +1862,7 @@ void main() {
         () => mockTemplateService.listTemplates(),
       ).thenAnswer((_) async => templates);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(agentTemplatesProvider.future);
 
       expect(result, hasLength(1));
@@ -2148,7 +1875,7 @@ void main() {
         () => mockTemplateService.getTemplate(kTestTemplateId),
       ).thenAnswer((_) async => template);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(
         agentTemplateProvider(kTestTemplateId).future,
       );
@@ -2162,7 +1889,7 @@ void main() {
         () => mockTemplateService.getTemplate('missing'),
       ).thenAnswer((_) async => null);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(
         agentTemplateProvider('missing').future,
       );
@@ -2178,7 +1905,7 @@ void main() {
           () => mockTemplateService.getActiveVersion(kTestTemplateId),
         ).thenAnswer((_) async => version);
 
-        final container = createTemplateContainer();
+        final container = makeContainer();
         final result = await container.read(
           activeTemplateVersionProvider(kTestTemplateId).future,
         );
@@ -2199,7 +1926,7 @@ void main() {
           () => mockTemplateService.getVersionHistory(kTestTemplateId),
         ).thenAnswer((_) async => versions);
 
-        final container = createTemplateContainer();
+        final container = makeContainer();
         final result = await container.read(
           templateVersionHistoryProvider(kTestTemplateId).future,
         );
@@ -2214,7 +1941,7 @@ void main() {
         () => mockTemplateService.getTemplateForAgent(kTestAgentId),
       ).thenAnswer((_) async => template);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(
         templateForAgentProvider(kTestAgentId).future,
       );
@@ -2231,7 +1958,7 @@ void main() {
           () => mockTemplateService.computeMetrics(kTestTemplateId),
         ).thenAnswer((_) async => metrics);
 
-        final container = createTemplateContainer();
+        final container = makeContainer();
         final result = await container.read(
           templatePerformanceMetricsProvider(kTestTemplateId).future,
         );
@@ -2246,7 +1973,7 @@ void main() {
         () => mockTemplateService.getActiveVersion('missing'),
       ).thenAnswer((_) async => null);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(
         activeTemplateVersionProvider('missing').future,
       );
@@ -2261,7 +1988,7 @@ void main() {
           () => mockTemplateService.getTemplateForAgent('no-template'),
         ).thenAnswer((_) async => null);
 
-        final container = createTemplateContainer();
+        final container = makeContainer();
         final result = await container.read(
           templateForAgentProvider('no-template').future,
         );
@@ -2275,7 +2002,7 @@ void main() {
         () => mockTemplateService.getVersionHistory('empty'),
       ).thenAnswer((_) async => []);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(
         templateVersionHistoryProvider('empty').future,
       );
@@ -2288,7 +2015,7 @@ void main() {
         () => mockTemplateService.listTemplates(),
       ).thenAnswer((_) async => []);
 
-      final container = createTemplateContainer();
+      final container = makeContainer();
       final result = await container.read(agentTemplatesProvider.future);
 
       expect(result, isEmpty);
@@ -2444,24 +2171,6 @@ void main() {
         mockDb = MockJournalDb();
       });
 
-      ProviderContainer createCheckerContainer() {
-        final runner = WakeRunner();
-        addTearDown(runner.dispose);
-        final container = ProviderContainer(
-          overrides: [
-            agentRepositoryProvider.overrideWithValue(mockRepo),
-            wakeQueueProvider.overrideWithValue(WakeQueue()),
-            wakeRunnerProvider.overrideWithValue(runner),
-            domainLoggerProvider.overrideWithValue(
-              DomainLogger(loggingService: LoggingService()),
-            ),
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-        );
-        addTearDown(container.dispose);
-        return container;
-      }
-
       test('returns true when task has non-empty title', () async {
         when(() => mockDb.journalEntityById('task-1')).thenAnswer(
           (_) async => JournalEntity.task(
@@ -2483,7 +2192,10 @@ void main() {
           ),
         );
 
-        final container = createCheckerContainer();
+        final container = createCheckerContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+        );
         final orchestrator = container.read(wakeOrchestratorProvider);
         final result = await orchestrator.taskContentChecker!('task-1');
         expect(result, isTrue);
@@ -2511,7 +2223,10 @@ void main() {
           ),
         );
 
-        final container = createCheckerContainer();
+        final container = createCheckerContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+        );
         final orchestrator = container.read(wakeOrchestratorProvider);
         final result = await orchestrator.taskContentChecker!('task-2');
         expect(result, isTrue);
@@ -2552,7 +2267,10 @@ void main() {
           ],
         );
 
-        final container = createCheckerContainer();
+        final container = createCheckerContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+        );
         final orchestrator = container.read(wakeOrchestratorProvider);
         final result = await orchestrator.taskContentChecker!('task-3');
         expect(result, isTrue);
@@ -2584,7 +2302,10 @@ void main() {
             (_) async => <JournalEntity>[],
           );
 
-          final container = createCheckerContainer();
+          final container = createCheckerContainer(
+            mockRepo: mockRepo,
+            mockDb: mockDb,
+          );
           final orchestrator = container.read(wakeOrchestratorProvider);
           final result = await orchestrator.taskContentChecker!('task-4');
           expect(result, isFalse);
@@ -2607,7 +2328,10 @@ void main() {
           (_) async => <JournalEntity>[],
         );
 
-        final container = createCheckerContainer();
+        final container = createCheckerContainer(
+          mockRepo: mockRepo,
+          mockDb: mockDb,
+        );
         final orchestrator = container.read(wakeOrchestratorProvider);
         final result = await orchestrator.taskContentChecker!('entry-1');
         expect(result, isFalse);
@@ -2923,17 +2647,11 @@ void main() {
       mockTemplateService = MockAgentTemplateService();
     });
 
-    ProviderContainer createEvolutionContainer() {
-      final container = ProviderContainer(
-        overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
+    ProviderContainer makeEvolutionContainer() => createTemplateContainer(
+      mockTemplateService: mockTemplateService,
+      mockService: mockService,
+      mockRepository: mockRepository,
+    );
 
     test('delegates to getEvolutionSessions', () async {
       final sessions = [
@@ -2947,7 +2665,7 @@ void main() {
         () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
       ).thenAnswer((_) async => sessions);
 
-      final container = createEvolutionContainer();
+      final container = makeEvolutionContainer();
       final result = await container.read(
         evolutionSessionsProvider(kTestTemplateId).future,
       );
@@ -2966,7 +2684,7 @@ void main() {
         () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
       ).thenAnswer((_) async => []);
 
-      final container = createEvolutionContainer();
+      final container = makeEvolutionContainer();
       final result = await container.read(
         evolutionSessionsProvider(kTestTemplateId).future,
       );
@@ -2975,21 +2693,6 @@ void main() {
     });
 
     test('refetches when agentUpdateStream emits for template', () async {
-      final controller = StreamController<Set<String>>.broadcast();
-      addTearDown(controller.close);
-
-      final mockNotifications = MockUpdateNotifications();
-      when(
-        () => mockNotifications.updateStream,
-      ).thenAnswer((_) => controller.stream);
-      when(
-        () => mockNotifications.localUpdateStream,
-      ).thenAnswer((_) => const Stream.empty());
-
-      await getIt.reset();
-      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
-      addTearDown(getIt.reset);
-
       var fetchCount = 0;
       when(
         () => mockTemplateService.getEvolutionSessions(kTestTemplateId),
@@ -2998,30 +2701,35 @@ void main() {
         return [];
       });
 
-      final container = ProviderContainer(
-        overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+      final setup = await setUpUpdateStreamTest(
+        containerFactory: () => ProviderContainer(
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentServiceProvider.overrideWithValue(mockService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
       );
-      addTearDown(container.dispose);
 
       // Initial fetch.
-      final sub = container.listen(
+      final sub = setup.container.listen(
         evolutionSessionsProvider(kTestTemplateId),
         (_, _) {},
       );
       addTearDown(sub.close);
-      await container.read(evolutionSessionsProvider(kTestTemplateId).future);
+      await setup.container.read(
+        evolutionSessionsProvider(kTestTemplateId).future,
+      );
       expect(fetchCount, 1);
 
       // Fire update notification for the template.
-      controller.add({kTestTemplateId});
+      setup.controller.add({kTestTemplateId});
       await pumpEventQueue();
 
       // Provider should have refetched.
-      await container.read(evolutionSessionsProvider(kTestTemplateId).future);
+      await setup.container.read(
+        evolutionSessionsProvider(kTestTemplateId).future,
+      );
       expect(fetchCount, 2);
     });
   });
@@ -3294,114 +3002,35 @@ void main() {
   });
 
   group('agentInitializationProvider — orphan cleanup', () {
-    late MockWakeOrchestrator mockOrchestrator;
-    late MockTaskAgentWorkflow mockWorkflow;
-    late MockProjectAgentWorkflow mockProjectWorkflow;
-    late MockTaskAgentService mockTaskAgentService;
-    late MockProjectAgentService mockProjectAgentService;
-    late MockAgentTemplateService mockTemplateService;
-    late MockAiConfigRepository mockAiConfigRepo;
-    late MockProjectActivityMonitor mockProjectActivityMonitor;
+    late InitProviderBench bench;
 
     setUp(() async {
-      await setUpTestGetIt();
-      mockOrchestrator = MockWakeOrchestrator();
-      mockWorkflow = MockTaskAgentWorkflow();
-      mockProjectWorkflow = MockProjectAgentWorkflow();
-      mockTaskAgentService = MockTaskAgentService();
-      mockProjectAgentService = MockProjectAgentService();
-      mockTemplateService = MockAgentTemplateService();
-      mockAiConfigRepo = MockAiConfigRepository();
-      mockProjectActivityMonitor = MockProjectActivityMonitor();
-
-      when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
-      when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(
-        () => mockTaskAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockProjectAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
-      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
-      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
-      // Profile seeding stubs.
-      when(
-        () => mockAiConfigRepo.getConfigById(any()),
-      ).thenAnswer((_) async => null);
-      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
-      // Model prepopulation stubs (backfill + stale removal).
-      when(
-        () => mockAiConfigRepo.getConfigsByType(any()),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockAiConfigRepo.deleteConfig(any()),
-      ).thenAnswer((_) async {});
+      bench = await InitProviderBench.create();
     });
 
     tearDown(tearDownTestGetIt);
 
-    ProviderContainer createInitContainer() {
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
-          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
-          projectAgentWorkflowProvider.overrideWithValue(mockProjectWorkflow),
-          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
-          projectAgentServiceProvider.overrideWithValue(
-            mockProjectAgentService,
-          ),
-          projectActivityMonitorProvider.overrideWithValue(
-            mockProjectActivityMonitor,
-          ),
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(
-              flagName == enableAgentsFlag,
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test('calls abandonOrphanedWakeRuns on startup', () async {
       when(
-        () => mockRepository.abandonOrphanedWakeRuns(),
+        () => bench.mockRepository.abandonOrphanedWakeRuns(),
       ).thenAnswer((_) async => 0);
 
-      final container = createInitContainer();
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockRepository.abandonOrphanedWakeRuns()).called(1);
+      verify(() => bench.mockRepository.abandonOrphanedWakeRuns()).called(1);
     });
 
     test('logs when orphaned runs are found', () async {
       when(
-        () => mockRepository.abandonOrphanedWakeRuns(),
+        () => bench.mockRepository.abandonOrphanedWakeRuns(),
       ).thenAnswer((_) async => 3);
 
-      final container = createInitContainer();
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
       // Should complete without error even when orphans exist.
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockRepository.abandonOrphanedWakeRuns()).called(1);
+      verify(() => bench.mockRepository.abandonOrphanedWakeRuns()).called(1);
     });
   });
 
@@ -3412,17 +3041,11 @@ void main() {
       mockTemplateService = MockAgentTemplateService();
     });
 
-    ProviderContainer createEvolutionContainer() {
-      final container = ProviderContainer(
-        overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
+    ProviderContainer makeNotesContainer() => createTemplateContainer(
+      mockTemplateService: mockTemplateService,
+      mockService: mockService,
+      mockRepository: mockRepository,
+    );
 
     test('delegates to getRecentEvolutionNotes', () async {
       final notes = [
@@ -3440,7 +3063,7 @@ void main() {
         () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
       ).thenAnswer((_) async => notes);
 
-      final container = createEvolutionContainer();
+      final container = makeNotesContainer();
       final result = await container.read(
         evolutionNotesProvider(kTestTemplateId).future,
       );
@@ -3460,7 +3083,7 @@ void main() {
         () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
       ).thenAnswer((_) async => []);
 
-      final container = createEvolutionContainer();
+      final container = makeNotesContainer();
       final result = await container.read(
         evolutionNotesProvider(kTestTemplateId).future,
       );
@@ -3469,21 +3092,6 @@ void main() {
     });
 
     test('refetches when agentUpdateStream emits for template', () async {
-      final controller = StreamController<Set<String>>.broadcast();
-      addTearDown(controller.close);
-
-      final mockNotifications = MockUpdateNotifications();
-      when(
-        () => mockNotifications.updateStream,
-      ).thenAnswer((_) => controller.stream);
-      when(
-        () => mockNotifications.localUpdateStream,
-      ).thenAnswer((_) => const Stream.empty());
-
-      await getIt.reset();
-      getIt.registerSingleton<UpdateNotifications>(mockNotifications);
-      addTearDown(getIt.reset);
-
       var fetchCount = 0;
       when(
         () => mockTemplateService.getRecentEvolutionNotes(kTestTemplateId),
@@ -3492,81 +3100,44 @@ void main() {
         return [];
       });
 
-      final container = ProviderContainer(
-        overrides: [
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+      final setup = await setUpUpdateStreamTest(
+        containerFactory: () => ProviderContainer(
+          overrides: [
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            agentServiceProvider.overrideWithValue(mockService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
       );
-      addTearDown(container.dispose);
 
       // Initial fetch.
-      final sub = container.listen(
+      final sub = setup.container.listen(
         evolutionNotesProvider(kTestTemplateId),
         (_, _) {},
       );
       addTearDown(sub.close);
-      await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      await setup.container.read(
+        evolutionNotesProvider(kTestTemplateId).future,
+      );
       expect(fetchCount, 1);
 
       // Fire update notification for the template.
-      controller.add({kTestTemplateId});
+      setup.controller.add({kTestTemplateId});
       await pumpEventQueue();
 
       // Provider should have refetched.
-      await container.read(evolutionNotesProvider(kTestTemplateId).future);
+      await setup.container.read(
+        evolutionNotesProvider(kTestTemplateId).future,
+      );
       expect(fetchCount, 2);
     });
   });
 
   group('agentInitializationProvider - SyncEventProcessor not registered', () {
-    late MockWakeOrchestrator mockOrchestrator;
-    late MockTaskAgentWorkflow mockWorkflow;
-    late MockProjectAgentWorkflow mockProjectWorkflow;
-    late MockTaskAgentService mockTaskAgentService;
-    late MockProjectAgentService mockProjectAgentService;
-    late MockAgentTemplateService mockTemplateService;
-    late MockAiConfigRepository mockAiConfigRepo;
-    late MockProjectActivityMonitor mockProjectActivityMonitor;
+    late InitProviderBench bench;
 
     setUp(() async {
-      await setUpTestGetIt();
-      mockOrchestrator = MockWakeOrchestrator();
-      mockWorkflow = MockTaskAgentWorkflow();
-      mockProjectWorkflow = MockProjectAgentWorkflow();
-      mockTaskAgentService = MockTaskAgentService();
-      mockProjectAgentService = MockProjectAgentService();
-      mockTemplateService = MockAgentTemplateService();
-      mockAiConfigRepo = MockAiConfigRepository();
-      mockProjectActivityMonitor = MockProjectActivityMonitor();
-
-      when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
-      when(() => mockOrchestrator.stop()).thenAnswer((_) async {});
-      when(
-        () => mockTaskAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockProjectAgentService.restoreSubscriptions(),
-      ).thenAnswer((_) async {});
-      when(() => mockProjectActivityMonitor.start()).thenReturn(null);
-      when(() => mockProjectActivityMonitor.stop()).thenAnswer((_) async {});
-      when(() => mockTemplateService.seedDefaults()).thenAnswer((_) async {});
-      when(
-        () => mockRepository.abandonOrphanedWakeRuns(),
-      ).thenAnswer((_) async => 0);
-      // Profile seeding stubs.
-      when(
-        () => mockAiConfigRepo.getConfigById(any()),
-      ).thenAnswer((_) async => null);
-      when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
-      // Model prepopulation stubs (backfill + stale removal).
-      when(
-        () => mockAiConfigRepo.getConfigsByType(any()),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockAiConfigRepo.deleteConfig(any()),
-      ).thenAnswer((_) async {});
+      bench = await InitProviderBench.create();
     });
 
     tearDown(tearDownTestGetIt);
@@ -3575,69 +3146,25 @@ void main() {
       // Ensure SyncEventProcessor is NOT registered.
       expect(getIt.isRegistered<SyncEventProcessor>(), isFalse);
 
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
-          taskAgentWorkflowProvider.overrideWithValue(mockWorkflow),
-          projectAgentWorkflowProvider.overrideWithValue(mockProjectWorkflow),
-          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
-          projectAgentServiceProvider.overrideWithValue(
-            mockProjectAgentService,
-          ),
-          projectActivityMonitorProvider.overrideWithValue(
-            mockProjectActivityMonitor,
-          ),
-          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          configFlagProvider.overrideWith(
-            (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = bench.createContainer();
+      await bench.initAndSubscribe(container);
 
-      final sub = container.listen(
-        agentInitializationProvider,
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      // Should complete without error even without SyncEventProcessor.
-      await container.read(agentInitializationProvider.future);
-
-      verify(() => mockOrchestrator.start(any())).called(1);
-      verify(() => mockTemplateService.seedDefaults()).called(1);
-      verify(() => mockTaskAgentService.restoreSubscriptions()).called(1);
+      verify(() => bench.mockOrchestrator.start(any())).called(1);
+      verify(() => bench.mockTemplateService.seedDefaults()).called(1);
+      verify(
+        () => bench.mockTaskAgentService.restoreSubscriptions(),
+      ).called(1);
     });
   });
 
   group('agentTokenUsageSummariesProvider', () {
     const agentId = kTestAgentId;
 
-    ProviderContainer createTokenContainer({
-      required List<WakeTokenUsageEntity> records,
-    }) {
-      final repo = MockAgentRepository();
-      when(
-        () => repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')),
-      ).thenAnswer((_) async => records);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider.overrideWith(
-            (ref, agentId) => const Stream.empty(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test('returns empty list when no records', () async {
-      final container = createTokenContainer(records: []);
+      final container = createAgentTokenContainer(
+        agentId: agentId,
+        records: [],
+      );
       final result = await container.read(
         agentTokenUsageSummariesProvider(agentId).future,
       );
@@ -3646,7 +3173,8 @@ void main() {
 
     test('aggregates records by model', () async {
       final now = DateTime(2025, 6, 15);
-      final container = createTokenContainer(
+      final container = createAgentTokenContainer(
+        agentId: agentId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3710,7 +3238,8 @@ void main() {
 
     test('handles null token fields gracefully', () async {
       final now = DateTime(2025, 6, 15);
-      final container = createTokenContainer(
+      final container = createAgentTokenContainer(
+        agentId: agentId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3741,29 +3270,10 @@ void main() {
   group('tokenUsageForThreadProvider', () {
     const agentId = kTestAgentId;
 
-    ProviderContainer createThreadTokenContainer({
-      required List<WakeTokenUsageEntity> records,
-    }) {
-      final repo = MockAgentRepository();
-      when(
-        () => repo.getTokenUsageForAgent(agentId, limit: any(named: 'limit')),
-      ).thenAnswer((_) async => records);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider.overrideWith(
-            (ref, agentId) => const Stream.empty(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test('returns null when no records match threadId', () async {
       final now = DateTime(2025, 6, 15);
-      final container = createThreadTokenContainer(
+      final container = createAgentTokenContainer(
+        agentId: agentId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3785,7 +3295,10 @@ void main() {
     });
 
     test('returns null when no records at all', () async {
-      final container = createThreadTokenContainer(records: []);
+      final container = createAgentTokenContainer(
+        agentId: agentId,
+        records: [],
+      );
       final result = await container.read(
         tokenUsageForThreadProvider(agentId, 'my-thread').future,
       );
@@ -3794,7 +3307,8 @@ void main() {
 
     test('aggregates records for matching threadId', () async {
       final now = DateTime(2025, 6, 15);
-      final container = createThreadTokenContainer(
+      final container = createAgentTokenContainer(
+        agentId: agentId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3853,7 +3367,8 @@ void main() {
 
     test('handles null token fields gracefully', () async {
       final now = DateTime(2025, 6, 15);
-      final container = createThreadTokenContainer(
+      final container = createAgentTokenContainer(
+        agentId: agentId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3882,31 +3397,11 @@ void main() {
   });
 
   group('templateTokenUsageSummariesProvider', () {
-    ProviderContainer createTemplateTokenContainer({
-      required List<WakeTokenUsageEntity> records,
-    }) {
-      final repo = MockAgentRepository();
-      when(
-        () => repo.getTokenUsageForTemplate(
-          kTestTemplateId,
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => records);
-
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(repo),
-          agentUpdateStreamProvider.overrideWith(
-            (ref, agentId) => const Stream.empty(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
     test('returns empty list when no records', () async {
-      final container = createTemplateTokenContainer(records: []);
+      final container = createTemplateTokenContainer(
+        templateId: kTestTemplateId,
+        records: [],
+      );
       final result = await container.read(
         templateTokenUsageSummariesProvider(kTestTemplateId).future,
       );
@@ -3916,6 +3411,7 @@ void main() {
     test('aggregates records across multiple instances by model', () async {
       final now = DateTime(2025, 6, 15);
       final container = createTemplateTokenContainer(
+        templateId: kTestTemplateId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -3980,6 +3476,7 @@ void main() {
     test('sorts by totalTokens descending', () async {
       final now = DateTime(2025, 6, 15);
       final container = createTemplateTokenContainer(
+        templateId: kTestTemplateId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
@@ -4030,6 +3527,7 @@ void main() {
     test('handles null token fields', () async {
       final now = DateTime(2025, 6, 15);
       final container = createTemplateTokenContainer(
+        templateId: kTestTemplateId,
         records: [
           WakeTokenUsageEntity(
             id: 'u1',
