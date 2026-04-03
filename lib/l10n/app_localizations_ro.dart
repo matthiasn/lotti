@@ -561,37 +561,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewTitle => '1-on-1';
 
   @override
-  String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
+  String get agentRitualSummaryApprovedChangesHeading => 'Modificări aprobate';
 
   @override
-  String get agentRitualSummaryConversationHeading => 'Conversation';
+  String get agentRitualSummaryConversationHeading => 'Conversație';
+
+  @override
+  String get agentRitualSummaryRecapHeading => 'Rezumatul sesiunii';
 
   @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
-  String get agentRitualSummaryRoleUser => 'You';
+  String get agentRitualSummaryRoleUser => 'Tu';
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+      'Începe un 1-on-1 pentru a revizui ce te-a deranjat, ce a funcționat și ce ar trebui schimbat.';
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+      'Sesiunile 1-on-1 anterioare, activitatea reală de activări și modificările convenite.';
 
   @override
   String get agentRitualSummaryTldrHeading => 'TLDR';
 
   @override
-  String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
+  String get agentRitualSummaryTokensSinceLast => 'Tokeni de la ultimul 1-on-1';
 
   @override
   String get agentRitualSummaryWakeHistory30Days =>
-      'Wake activity (last 30 days)';
+      'Activitate activări (ultimele 30 de zile)';
 
   @override
-  String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
+  String get agentRitualSummaryWakesSinceLast =>
+      'Activări de la ultimul 1-on-1';
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -2351,13 +2355,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Planificați fără voce';
-
-  @override
   String get dailyOsPlanned => 'Planificat';
 
   @override
   String get dailyOsPlannedDuration => 'Durată planificată';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Planificați fără voce';
 
   @override
   String get dailyOsQuickCreateTask => 'Creează sarcină pentru acest buget';

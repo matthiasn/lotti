@@ -971,10 +971,10 @@ final binaryChoicePromptItem = CatalogItem(
     final dismissValueRaw = _readStringOrNull(json, 'dismissValue')?.trim();
     final confirmValue = (confirmValueRaw?.isNotEmpty ?? false)
         ? confirmValueRaw!
-        : confirmLabel;
+        : 'confirm';
     final dismissValue = (dismissValueRaw?.isNotEmpty ?? false)
         ? dismissValueRaw!
-        : dismissLabel;
+        : 'dismiss';
 
     return _BinaryChoicePromptCard(
       question: question,

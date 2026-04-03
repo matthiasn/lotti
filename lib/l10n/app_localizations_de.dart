@@ -565,6 +565,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentRitualSummaryConversationHeading => 'Gespräch';
 
   @override
+  String get agentRitualSummaryRecapHeading => 'Sitzungszusammenfassung';
+
+  @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
@@ -576,7 +579,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Frühere 1-on-1s, echte Wake-Aktivität und die Änderungen, auf die ihr euch geeinigt habt.';
+      'Frühere 1-on-1s, echte Wake-Aktivität und die Änderungen, auf die du dich mit dem Agenten geeinigt hast.';
 
   @override
   String get agentRitualSummaryTldrHeading => 'TLDR';
@@ -2351,13 +2354,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Deine Zeitblöcke wurden gespeichert. Du kannst jetzt deine Aufgaben verfolgen.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Ohne Sprache planen';
-
-  @override
   String get dailyOsPlanned => 'Geplant';
 
   @override
   String get dailyOsPlannedDuration => 'Geplante Dauer';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Ohne Sprache planen';
 
   @override
   String get dailyOsQuickCreateTask => 'Aufgabe für dieses Budget erstellen';

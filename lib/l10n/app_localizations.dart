@@ -1094,6 +1094,12 @@ abstract class AppLocalizations {
   /// **'Conversation'**
   String get agentRitualSummaryConversationHeading;
 
+  /// No description provided for @agentRitualSummaryRecapHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Recap'**
+  String get agentRitualSummaryRecapHeading;
+
   /// No description provided for @agentRitualSummaryRoleAssistant.
   ///
   /// In en, this message translates to:
@@ -1109,13 +1115,13 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualSummaryStartHint.
   ///
   /// In en, this message translates to:
-  /// **'Start a one-on-one to review what bothered the user, what worked, and what should change next.'**
+  /// **'Start a 1-on-1 to review what bothered you, what worked, and what should change next.'**
   String get agentRitualSummaryStartHint;
 
   /// No description provided for @agentRitualSummarySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent one-on-ones, real wake activity, and the changes you agreed to.'**
+  /// **'Recent 1-on-1s, real wake activity, and the changes you agreed to.'**
   String get agentRitualSummarySubtitle;
 
   /// No description provided for @agentRitualSummaryTldrHeading.
@@ -4172,12 +4178,6 @@ abstract class AppLocalizations {
   /// **'Your time blocks have been saved. You can start tracking your tasks.'**
   String get dailyOsPlanCreatedDescription;
 
-  /// No description provided for @dailyOsPlanWithoutVoice.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan without voice'**
-  String get dailyOsPlanWithoutVoice;
-
   /// No description provided for @dailyOsPlanned.
   ///
   /// In en, this message translates to:
@@ -4189,6 +4189,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Planned Duration'**
   String get dailyOsPlannedDuration;
+
+  /// No description provided for @dailyOsPlanWithoutVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan without voice'**
+  String get dailyOsPlanWithoutVoice;
 
   /// No description provided for @dailyOsQuickCreateTask.
   ///

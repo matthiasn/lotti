@@ -559,6 +559,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualSummaryConversationHeading => 'Conversation';
 
   @override
+  String get agentRitualSummaryRecapHeading => 'Session Recap';
+
+  @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
@@ -566,11 +569,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
 
   @override
   String get agentRitualSummaryTldrHeading => 'TLDR';
@@ -2327,13 +2330,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tvé časové bloky byly uloženy. Můžeš začít sledovat své úkoly.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
-
-  @override
   String get dailyOsPlanned => 'Naplánováno';
 
   @override
   String get dailyOsPlannedDuration => 'Plánovaná doba trvání';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plánovat bez hlasu';
 
   @override
   String get dailyOsQuickCreateTask => 'Vytvořit úkol pro tento rozpočet';

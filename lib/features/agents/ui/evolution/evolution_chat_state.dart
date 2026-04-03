@@ -499,6 +499,7 @@ class EvolutionChatState extends _$EvolutionChatState {
 
     state = AsyncData(
       data.copyWith(
+        lastSurfacedProposalKey: () => null,
         messages: [
           ...data.messages,
           EvolutionChatMessage.system(

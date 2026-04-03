@@ -567,6 +567,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentRitualSummaryConversationHeading => 'Conversation';
 
   @override
+  String get agentRitualSummaryRecapHeading => 'Résumé de la session';
+
+  @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
@@ -2384,13 +2387,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tes blocs de temps ont été enregistrés. Tu peux commencer à suivre tes tâches.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Planifier sans la voix';
-
-  @override
   String get dailyOsPlanned => 'Planifié';
 
   @override
   String get dailyOsPlannedDuration => 'Durée planifiée';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Planifier sans la voix';
 
   @override
   String get dailyOsQuickCreateTask => 'Créer une tâche pour ce budget';

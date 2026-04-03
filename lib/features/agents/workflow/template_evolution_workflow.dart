@@ -422,7 +422,12 @@ class TemplateEvolutionWorkflow {
       if (sessionEntity != null) {
         final normalizedRating =
             userRating ?? _averageCategoryRating(categoryRatings);
-        final normalizedSummary = feedbackSummary ?? recap?.tldr;
+        final recapTldr = recap?.tldr.trim();
+        final normalizedSummary =
+            feedbackSummary ??
+            ((recapTldr != null && recapTldr.isNotEmpty)
+                ? recapTldr
+                : proposal.rationale);
         await sync.upsertEntity(
           sessionEntity.copyWith(
             status: EvolutionSessionStatus.completed,

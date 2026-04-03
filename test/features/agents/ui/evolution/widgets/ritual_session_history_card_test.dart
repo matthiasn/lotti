@@ -39,7 +39,7 @@ void main() {
       expect(find.text('Legacy fallback summary.'), findsNothing);
     });
 
-    testWidgets('renders no collapsed summary when recap tldr is missing', (
+    testWidgets('falls back to feedbackSummary when recap tldr is blank', (
       tester,
     ) async {
       final session = makeTestEvolutionSession(
@@ -58,7 +58,31 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Legacy fallback summary.'), findsNothing);
+      expect(find.text('Legacy fallback summary.'), findsOneWidget);
+    });
+
+    testWidgets('renders no summary when both tldr and feedbackSummary empty', (
+      tester,
+    ) async {
+      final session = makeTestEvolutionSession(
+        status: EvolutionSessionStatus.completed,
+      );
+      final recap = makeTestEvolutionSessionRecap(
+        sessionId: session.id,
+        tldr: '',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          RitualSessionHistoryEntry(session: session, recap: recap),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.maxLines == 3),
+        findsNothing,
+      );
     });
 
     testWidgets('renders human-readable rating labels from stored recap keys', (

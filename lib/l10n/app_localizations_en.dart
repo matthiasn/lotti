@@ -558,6 +558,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentRitualSummaryConversationHeading => 'Conversation';
 
   @override
+  String get agentRitualSummaryRecapHeading => 'Session Recap';
+
+  @override
   String get agentRitualSummaryRoleAssistant => 'Agent';
 
   @override
@@ -565,11 +568,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start a one-on-one to review what bothered the user, what worked, and what should change next.';
+      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
 
   @override
   String get agentRitualSummarySubtitle =>
-      'Recent one-on-ones, real wake activity, and the changes you agreed to.';
+      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
 
   @override
   String get agentRitualSummaryTldrHeading => 'TLDR';
@@ -2312,13 +2315,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your time blocks have been saved. You can start tracking your tasks.';
 
   @override
-  String get dailyOsPlanWithoutVoice => 'Plan without voice';
-
-  @override
   String get dailyOsPlanned => 'Planned';
 
   @override
   String get dailyOsPlannedDuration => 'Planned Duration';
+
+  @override
+  String get dailyOsPlanWithoutVoice => 'Plan without voice';
 
   @override
   String get dailyOsQuickCreateTask => 'Create task for this budget';

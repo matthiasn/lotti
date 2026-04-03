@@ -22,7 +22,10 @@ class RitualSessionHistoryCard extends StatelessWidget {
     final tokens = context.designTokens;
     final session = entry.session;
     final recap = entry.recap;
-    final summary = recap?.tldr.trim();
+    final recapTldr = recap?.tldr.trim();
+    final summary = (recapTldr != null && recapTldr.isNotEmpty)
+        ? recapTldr
+        : session.feedbackSummary?.trim();
     final recapMarkdown = recap?.recapMarkdown.trim();
     final approvedChangeSummary = recap?.approvedChangeSummary?.trim();
 
@@ -98,7 +101,7 @@ class RitualSessionHistoryCard extends StatelessWidget {
           children: [
             if (recapMarkdown != null && recapMarkdown.isNotEmpty)
               _Section(
-                title: context.messages.agentRitualSummaryTldrHeading,
+                title: context.messages.agentRitualSummaryRecapHeading,
                 child: AgentMarkdownView(recapMarkdown),
               ),
             if (approvedChangeSummary != null &&

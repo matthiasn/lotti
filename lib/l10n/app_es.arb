@@ -265,6 +265,7 @@
   "agentRitualReviewTitle": "1-on-1",
   "agentRitualSummaryApprovedChangesHeading": "Cambios aprobados",
   "agentRitualSummaryConversationHeading": "Conversación",
+  "agentRitualSummaryRecapHeading": "Resumen de la sesión",
   "agentRitualSummaryRoleAssistant": "Agente",
   "agentRitualSummaryRoleUser": "Tú",
   "agentRitualSummaryStartHint": "Inicia un 1-on-1 para revisar qué molestó a la persona usuaria, qué funcionó bien y qué debería cambiar después.",
