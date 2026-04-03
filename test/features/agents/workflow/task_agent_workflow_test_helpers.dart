@@ -148,6 +148,9 @@ void stubPreExecuteDefaults({
   when(
     () => mockAiInputRepository.buildLinkedTasksJson(taskId),
   ).thenAnswer((_) async => '{}');
+  when(
+    () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
+  ).thenAnswer((_) async => '{}');
 }
 
 /// Extends [stubPreExecuteDefaults] with the model/provider stubs needed for

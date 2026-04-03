@@ -3052,6 +3052,7 @@ void main() {
                 any(),
                 'completed',
                 completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
               ),
             ).called(1);
 

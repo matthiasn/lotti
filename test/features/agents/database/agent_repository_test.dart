@@ -2314,8 +2314,8 @@ void main() {
       });
 
       test('throws StateError when runKey does not exist', () async {
-        expect(
-          () => repo.updateWakeRunTemplate(
+        await expectLater(
+          repo.updateWakeRunTemplate(
             'nonexistent-run-key',
             'tpl-001',
             'ver-001',
