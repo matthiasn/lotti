@@ -437,7 +437,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -578,7 +578,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -613,7 +613,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
