@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:super_clipboard/super_clipboard.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AiResponseSummaryModalContent extends StatelessWidget {
   const AiResponseSummaryModalContent(
@@ -13,13 +13,6 @@ class AiResponseSummaryModalContent extends StatelessWidget {
 
   final AiResponseEntry aiResponse;
   final String? linkedFromId;
-
-  static Future<void> _handleLinkTap(String url, String title) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
 
   Widget _buildInfoRow(
     String label,
@@ -231,7 +224,7 @@ class AiResponseSummaryModalContent extends StatelessWidget {
                   child: SelectionArea(
                     child: GptMarkdown(
                       aiResponse.data.response,
-                      onLinkTap: _handleLinkTap,
+                      onLinkTap: handleMarkdownLinkTap,
                     ),
                   ),
                 ),

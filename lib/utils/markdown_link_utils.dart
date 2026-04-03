@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Handles taps on links in markdown content by launching the URL externally.
+///
+/// Skips launch for empty URLs or URLs without a scheme (e.g. no `https://`).
 Future<void> handleMarkdownLinkTap(String url, String title) async {
+  if (url.isEmpty) return;
   final uri = Uri.tryParse(url);
-  if (uri != null) {
+  if (uri != null && uri.hasScheme) {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

@@ -342,7 +342,7 @@ void main() {
       test(
         'gets native location when permission initially denied then granted',
         () async {
-          if (Platform.isLinux) return;
+          if (Platform.isLinux || Platform.isWindows) return;
 
           when(
             () => mockJournalDb.getConfigFlag(recordLocationFlag),
@@ -388,7 +388,7 @@ void main() {
       );
 
       test('returns null when both native and IP geolocation fail', () async {
-        if (Platform.isLinux) return;
+        if (Platform.isLinux || Platform.isWindows) return;
 
         when(
           () => mockJournalDb.getConfigFlag(recordLocationFlag),
@@ -416,7 +416,7 @@ void main() {
       test(
         'returns null when native throws and IP provider returns null',
         () async {
-          if (Platform.isLinux) return;
+          if (Platform.isLinux || Platform.isWindows) return;
 
           when(
             () => mockJournalDb.getConfigFlag(recordLocationFlag),

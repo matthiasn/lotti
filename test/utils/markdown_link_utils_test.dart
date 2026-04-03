@@ -2,23 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-class MockUrlLauncher extends Mock
-    with MockPlatformInterfaceMixin
-    implements UrlLauncherPlatform {}
+import '../mocks/mocks.dart';
 
-class FakeLaunchOptions extends Fake implements LaunchOptions {}
+Future<void> _pumpMarkdownLink(
+  WidgetTester tester, {
+  required String text,
+  required String url,
+  TextStyle style = const TextStyle(fontSize: 14),
+  Color? linkColor,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) {
+            return buildMarkdownLink(
+              context,
+              TextSpan(text: text),
+              url,
+              style,
+              linkColor: linkColor,
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
 
 void main() {
   group('handleMarkdownLinkTap', () {
     late MockUrlLauncher mockUrlLauncher;
+    late UrlLauncherPlatform originalInstance;
 
     setUp(() {
+      originalInstance = UrlLauncherPlatform.instance;
       mockUrlLauncher = MockUrlLauncher();
       UrlLauncherPlatform.instance = mockUrlLauncher;
       registerFallbackValue(FakeLaunchOptions());
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalInstance;
     });
 
     test('launches valid URL externally', () async {
@@ -36,19 +63,16 @@ void main() {
       ).called(1);
     });
 
-    test('does not launch when URL is invalid', () async {
-      when(
-        () => mockUrlLauncher.launchUrl(any(), any()),
-      ).thenAnswer((_) async => true);
-
-      // Uri.tryParse returns non-null for most strings, but an empty
-      // string still produces a valid (empty) Uri. The function only
-      // skips launch when tryParse returns null, which is very rare.
-      // We can verify no crash occurs with odd URLs.
+    test('does not launch when URL is empty', () async {
       await handleMarkdownLinkTap('', '');
 
-      // Even empty string parses as a valid Uri, so launchUrl is called
-      verify(() => mockUrlLauncher.launchUrl(any(), any())).called(1);
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
+    });
+
+    test('does not launch when URL has no scheme', () async {
+      await handleMarkdownLinkTap('example.com/path', '');
+
+      verifyNever(() => mockUrlLauncher.launchUrl(any(), any()));
     });
 
     test('handles URL with special characters', () async {
@@ -72,26 +96,14 @@ void main() {
 
   group('buildMarkdownLink', () {
     testWidgets('renders link with correct styling', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return buildMarkdownLink(
-                  context,
-                  const TextSpan(text: 'Click here'),
-                  'https://example.com',
-                  const TextStyle(fontSize: 14),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Click here',
+        url: 'https://example.com',
       );
 
       expect(find.text('Click here'), findsOneWidget);
 
-      // Verify InkWell with click cursor exists
       final inkWell = tester.widget<InkWell>(find.byType(InkWell));
       expect(inkWell.mouseCursor, SystemMouseCursors.click);
     });
@@ -99,22 +111,11 @@ void main() {
     testWidgets('applies custom link color', (tester) async {
       const customColor = Colors.red;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return buildMarkdownLink(
-                  context,
-                  const TextSpan(text: 'Red link'),
-                  'https://example.com',
-                  const TextStyle(fontSize: 14),
-                  linkColor: customColor,
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Red link',
+        url: 'https://example.com',
+        linkColor: customColor,
       );
 
       final textWidget = tester.widget<Text>(find.byType(Text));
@@ -127,50 +128,25 @@ void main() {
     testWidgets('uses theme primary color when no linkColor specified', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(colorScheme: const ColorScheme.light()),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return buildMarkdownLink(
-                  context,
-                  const TextSpan(text: 'Default link'),
-                  'https://example.com',
-                  const TextStyle(fontSize: 14),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Default link',
+        url: 'https://example.com',
       );
 
       final textWidget = tester.widget<Text>(find.byType(Text));
       final span = textWidget.textSpan! as TextSpan;
-      // Should use theme's primary color
       expect(span.style!.color, isNotNull);
       expect(span.style!.decoration, TextDecoration.underline);
     });
 
     testWidgets('has Semantics with link: true', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return buildMarkdownLink(
-                  context,
-                  const TextSpan(text: 'Accessible link'),
-                  'https://example.com',
-                  const TextStyle(fontSize: 14),
-                );
-              },
-            ),
-          ),
-        ),
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Accessible link',
+        url: 'https://example.com',
       );
 
-      // Find the Semantics widget that wraps our InkWell (has link: true)
       final semanticsWidgets = tester.widgetList<Semantics>(
         find.byType(Semantics),
       );
@@ -182,6 +158,7 @@ void main() {
 
     testWidgets('tapping InkWell triggers URL launch', (tester) async {
       final mockUrlLauncher = MockUrlLauncher();
+      final originalInstance = UrlLauncherPlatform.instance;
       UrlLauncherPlatform.instance = mockUrlLauncher;
       registerFallbackValue(FakeLaunchOptions());
 
@@ -189,21 +166,14 @@ void main() {
         () => mockUrlLauncher.launchUrl(any(), any()),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                return buildMarkdownLink(
-                  context,
-                  const TextSpan(text: 'Tap me'),
-                  'https://example.com',
-                  const TextStyle(fontSize: 14),
-                );
-              },
-            ),
-          ),
-        ),
+      addTearDown(() {
+        UrlLauncherPlatform.instance = originalInstance;
+      });
+
+      await _pumpMarkdownLink(
+        tester,
+        text: 'Tap me',
+        url: 'https://example.com',
       );
 
       await tester.tap(find.byType(InkWell));

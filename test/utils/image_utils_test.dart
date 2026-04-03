@@ -25,12 +25,15 @@ void main() {
     });
 
     test('handles path with nested Documents directory', () {
+      // Note: split('Documents').last is fragile when the separator string
+      // appears multiple times — it returns the segment after the LAST
+      // occurrence. This documents the current behavior; see image_utils.dart.
       const path = '/Users/test/Documents/Lotti/Documents/image.jpg';
-      // split('Documents') returns 3 parts; .last is '/image.jpg'
       expect(getRelativeAssetPath(path), '/image.jpg');
     });
 
     test('handles Android path with nested app_flutter directory', () {
+      // Same fragility applies to the Android split('app_flutter').last path.
       const path =
           '/data/user/0/com.example.app/app_flutter/sub/app_flutter/img.jpg';
       expect(getRelativeAssetPath(path, isAndroid: true), '/img.jpg');
