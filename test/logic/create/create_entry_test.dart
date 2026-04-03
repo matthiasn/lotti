@@ -656,5 +656,54 @@ void main() {
         await autoAssignCategoryAgentWith(mockService, task!);
       },
     );
+
+    test(
+      'autoAssignCategoryAgentWith catches StateError without propagating',
+      () async {
+        const categoryId = 'cat-state-error';
+        const templateId = 'template-state-err';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'State Error Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultTemplateId: templateId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(StateError('Bad state'));
+
+        // Should not throw — the catch block handles all error types.
+        await autoAssignCategoryAgentWith(mockService, task!);
+
+        // Verify the service was indeed called (the error was thrown and caught).
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: task.meta.id,
+            templateId: templateId,
+            allowedCategoryIds: {categoryId},
+            awaitContent: true,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

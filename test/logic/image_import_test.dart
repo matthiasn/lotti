@@ -220,6 +220,44 @@ void main() {
         ),
       );
     });
+
+    test('successfully creates image entry for valid pasted image', () async {
+      final validData = Uint8List.fromList(List<int>.filled(500, 0xFF));
+
+      await importPastedImages(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: 'linked-123',
+        categoryId: 'cat-456',
+      );
+
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: 'linked-123',
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
+
+    test('creates image entry without linkedId or categoryId', () async {
+      final validData = Uint8List.fromList(List<int>.filled(200, 0xAA));
+
+      await importPastedImages(
+        data: validData,
+        fileExtension: 'jpg',
+      );
+
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
   });
 
   group('importDroppedImages', () {
@@ -326,6 +364,36 @@ void main() {
         ),
       ).called(2);
     });
+
+    test('handles exception during import and continues', () async {
+      // Use a non-existent file path to trigger an exception
+      final validFile = await createTestImageFile('good.jpg', 1024);
+      final dropDetails = createDropDetails([
+        XFile('/nonexistent/path/bad.jpg'),
+        XFile(validFile.path),
+      ]);
+
+      await importDroppedImages(data: dropDetails);
+
+      // The bad file causes an error, but the good file still gets imported
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: ImageImportConstants.loggingDomain,
+          subDomain: 'importDroppedImages',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
   });
 
   group('importGeneratedImageBytes', () {
@@ -348,6 +416,50 @@ void main() {
           subDomain: 'importGeneratedImageBytes',
         ),
       ).called(1);
+    });
+
+    test('successfully creates entry and returns its ID', () async {
+      final validData = Uint8List.fromList(List<int>.filled(500, 0xBB));
+
+      final result = await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: 'linked-task-id',
+        categoryId: 'cat-id',
+      );
+
+      // createDbEntity returns true, so createImageEntry returns the entity
+      expect(result, equals('test-id'));
+
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: 'linked-task-id',
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
+
+    test('returns null when entry creation fails', () async {
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalImage>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenThrow(Exception('DB error'));
+
+      final validData = Uint8List.fromList(List<int>.filled(200, 0xCC));
+
+      final result = await importGeneratedImageBytes(
+        data: validData,
+        fileExtension: 'png',
+        linkedId: 'linked-id',
+      );
+
+      expect(result, isNull);
     });
   });
 

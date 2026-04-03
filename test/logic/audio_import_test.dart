@@ -271,6 +271,80 @@ void main() {
       ).called(1);
     });
 
+    test('cleans up copied file when entry creation fails', () async {
+      // Override createDbEntity to throw (simulates creation failure),
+      // which causes SpeechRepository.createAudioEntry to catch and
+      // return null, triggering the cleanup path in importDroppedAudio.
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenThrow(Exception('DB creation failed'));
+
+      final testFile = await createTestAudioFile('cleanup-test.m4a', 1024);
+      final xFile = XFile(testFile.path);
+      final dropDetails = createDropDetails([xFile]);
+
+      await importDroppedAudio(data: dropDetails);
+
+      // Entry creation was attempted (and failed)
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+
+      // Verify cleanup: only the original source file should remain;
+      // the copied target file should have been deleted.
+      final remainingFiles = tempDir
+          .listSync(recursive: true)
+          .whereType<File>();
+      expect(
+        remainingFiles.length,
+        1,
+        reason: 'The copied file should have been deleted',
+      );
+      expect(path.basename(remainingFiles.first.path), 'cleanup-test.m4a');
+    });
+
+    test('handles exception during import and continues', () async {
+      // Include both a bad file and a good file to verify continuation
+      final validFile = await createTestAudioFile('good.m4a', 1024);
+      final dropDetails = createDropDetails([
+        XFile('/nonexistent/path/bad.m4a'),
+        XFile(validFile.path),
+      ]);
+
+      // Should not throw
+      await importDroppedAudio(data: dropDetails);
+
+      // Should log the error for the bad file
+      verify(
+        () => mockLoggingService.captureException(
+          any<Object>(),
+          domain: AudioImportConstants.loggingDomain,
+          subDomain: 'importDroppedAudio',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+
+      // Should still create the entry for the good file
+      verify(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).called(1);
+    });
+
     test('parses timestamp from Lotti filename format', () async {
       final testFile = await createTestAudioFile(
         '2025-10-20_16-49-32-203.m4a',

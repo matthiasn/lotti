@@ -293,6 +293,32 @@ void main() {
         expect(ExifDataExtractor.parseExifDateString('not a date'), isNull);
       });
 
+      test('returns null for input with multiple spaces', () {
+        expect(
+          ExifDataExtractor.parseExifDateString('2023:12:25  14:30:45'),
+          isNull,
+        );
+      });
+
+      test('returns null for date part with too few segments', () {
+        // After splitting on space, the date part '2023:12' becomes '2023-12'
+        // which DateTime.parse rejects when combined with the time part,
+        // exercising the catch block.
+        expect(
+          ExifDataExtractor.parseExifDateString('2023:12 14:30:45'),
+          isNull,
+        );
+      });
+
+      test('returns null when DateTime.parse throws on garbled time', () {
+        // Splits into exactly 2 parts, but the time part is not numeric.
+        // DateTime.parse throws FormatException, exercising the catch block.
+        expect(
+          ExifDataExtractor.parseExifDateString('2023:12:25 aa:bb:cc'),
+          isNull,
+        );
+      });
+
       test('parses ISO-like format if it happens to be valid', () {
         // The function converts ':' to '-' in date part, so if input already
         // has dashes, they remain. This happens to parse successfully.
