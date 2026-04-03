@@ -87,6 +87,23 @@ class _TestConversationRepository extends ConversationRepository {
   }
 }
 
+/// Test subclass of [EvolutionStrategy] that allows directly setting
+/// [latestRecap] to values not reachable through normal tool-call processing
+/// (e.g. empty TLDR).
+class _TestableEvolutionStrategy extends EvolutionStrategy {
+  PendingRitualRecap? _overriddenRecap;
+  bool _recapOverridden = false;
+
+  void overrideRecap(PendingRitualRecap? recap) {
+    _overriddenRecap = recap;
+    _recapOverridden = true;
+  }
+
+  @override
+  PendingRitualRecap? get latestRecap =>
+      _recapOverridden ? _overriddenRecap : super.latestRecap;
+}
+
 void main() {
   late MockAiConfigRepository mockAiConfig;
   late MockCloudInferenceRepository mockCloudInference;
@@ -942,6 +959,146 @@ void main() {
         expect(workflow.activeSessions, isEmpty);
       },
     );
+
+    /// Shared helper: stubs services, adds a proposal to [strategy]
+    /// via a tool call, wires up a workflow + session, calls
+    /// `approveProposal`, and returns the `feedbackSummary` persisted
+    /// on the captured [EvolutionSessionEntity].
+    Future<String?> approveSummaryWith(
+      EvolutionStrategy strategy, {
+      required String versionId,
+    }) async {
+      final newVersion = makeTestTemplateVersion(
+        id: versionId,
+        version: 2,
+        directives: 'Improved directives',
+      );
+
+      when(
+        () => mockTemplateService.createVersion(
+          templateId: any(named: 'templateId'),
+          directives: any(named: 'directives'),
+          authoredBy: any(named: 'authoredBy'),
+          generalDirective: any(named: 'generalDirective'),
+          reportDirective: any(named: 'reportDirective'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      when(
+        () => mockRepository.getEntity(any()),
+      ).thenAnswer((_) async => makeTestEvolutionSession());
+
+      // Add a proposal.
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      final convRepo = _TestConversationRepository();
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: convRepo,
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'test-conv-id',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveProposal(sessionId: 'session-1');
+      expect(result, isNotNull);
+
+      final capturedEntities = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
+
+      final sessionEntities = capturedEntities
+          .whereType<EvolutionSessionEntity>()
+          .toList();
+      expect(sessionEntities, hasLength(1));
+
+      return sessionEntities.first.feedbackSummary;
+    }
+
+    test('uses recap TLDR as feedbackSummary when available', () async {
+      final strategy = EvolutionStrategy();
+
+      // Pre-populate a recap with non-empty TLDR via tool call processing
+      // (must happen before approveSummaryWith, which creates its own
+      // ConversationManager for the proposal).
+      final manager = ConversationManager(conversationId: 'conv-recap')
+        ..initialize();
+      const recapCall = ChatCompletionMessageToolCall(
+        id: 'call-recap',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'publish_ritual_recap',
+          arguments:
+              r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nDetails here."}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [recapCall]);
+      await strategy.processToolCalls(
+        toolCalls: [recapCall],
+        manager: manager,
+      );
+      expect(strategy.latestRecap, isNotNull);
+
+      final summary = await approveSummaryWith(
+        strategy,
+        versionId: 'ver-tldr',
+      );
+      expect(summary, 'Tightened the prompt around brevity.');
+    });
+
+    test('falls back to proposal.rationale when recap TLDR is empty', () async {
+      // Override latestRecap with empty TLDR directly — processToolCalls
+      // rejects empty TLDRs, so we bypass it to test the fallback in
+      // approveProposal's normalizedSummary logic.
+      final strategy = _TestableEvolutionStrategy()
+        ..overrideRecap(
+          const PendingRitualRecap(
+            tldr: '',
+            content: '## Session recap\n\nDetails here.',
+          ),
+        );
+
+      final summary = await approveSummaryWith(
+        strategy,
+        versionId: 'ver-empty-tldr',
+      );
+      // With empty recap TLDR, falls back to proposal.rationale.
+      expect(summary, 'Based on data');
+    });
+
+    test('falls back to proposal.rationale when recap is null', () async {
+      final strategy = EvolutionStrategy();
+
+      final summary = await approveSummaryWith(
+        strategy,
+        versionId: 'ver-no-recap',
+      );
+      // With no recap, normalizedSummary falls back to proposal.rationale.
+      expect(summary, 'Based on data');
+    });
   });
 
   group('rejectProposal', () {
