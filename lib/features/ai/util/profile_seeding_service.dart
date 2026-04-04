@@ -14,6 +14,8 @@ const profileMistralEuId = 'profile-mistral-eu-001';
 const profileAlibabaId = 'profile-alibaba-001';
 const profileLocalId = 'profile-local-001';
 const profileLocalPowerId = 'profile-local-power-001';
+const profileLocalGemmaId = 'profile-local-gemma-001';
+const profileLocalGemmaPowerId = 'profile-local-gemma-power-001';
 
 const _logTag = 'ProfileSeedingService';
 
@@ -251,6 +253,29 @@ class ProfileSeedingService {
       name: 'Local Power (Ollama)',
       thinkingModelId: 'qwen3.5:27b',
       imageRecognitionModelId: 'qwen3.5:27b',
+      desktopOnly: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileLocalGemmaId,
+      name: 'Local Gemma 4 (Ollama)',
+      thinkingModelId: 'gemma4:26b',
+      imageRecognitionModelId: 'gemma4:26b',
+      skillAssignments: [
+        const SkillAssignment(
+          skillId: skillImageAnalysisContextId,
+          automate: true,
+        ),
+      ],
+      isDefault: true,
+      desktopOnly: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileLocalGemmaPowerId,
+      name: 'Local Gemma 4 Power (Ollama)',
+      thinkingModelId: 'gemma4:31b',
+      imageRecognitionModelId: 'gemma4:31b',
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

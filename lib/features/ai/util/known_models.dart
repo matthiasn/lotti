@@ -284,6 +284,44 @@ const List<KnownModel> ollamaModels = [
         'Best local model for higher-end devices (22GB+ RAM).',
   ),
 
+  // Gemma 4 — multimodal with reasoning and tool calling
+  KnownModel(
+    providerModelId: 'gemma4:e4b',
+    name: 'Gemma 4 E4B',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Efficient edge model with 4.5B effective parameters. '
+        '9.6GB download, ~12GB RAM. 128K context. '
+        'Vision, reasoning, and tool calling.',
+  ),
+  KnownModel(
+    providerModelId: 'gemma4:26b',
+    name: 'Gemma 4 26B MoE',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Sparse MoE model with only 3.8B active parameters out of 25.2B total. '
+        '18GB download, ~22GB RAM. 256K context. '
+        'Near-frontier quality at efficient inference speed.',
+  ),
+  KnownModel(
+    providerModelId: 'gemma4:31b',
+    name: 'Gemma 4 31B',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Dense 30.7B model with best benchmark scores. '
+        '20GB download, ~24GB RAM. 256K context. '
+        'Vision, reasoning, and tool calling.',
+  ),
+
   // Embeddings
   KnownModel(
     providerModelId: 'mxbai-embed-large',
