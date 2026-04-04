@@ -34,10 +34,11 @@ ClassifiedFeedback makeTestClassifiedFeedback({
   int totalObservationsScanned = 0,
   int totalDecisionsScanned = 0,
 }) {
+  final effectiveStart = windowStart ?? kAgentTestDate;
   return ClassifiedFeedback(
     items: items ?? [],
-    windowStart: windowStart ?? kAgentTestDate,
-    windowEnd: windowEnd ?? kAgentTestDate.add(const Duration(days: 7)),
+    windowStart: effectiveStart,
+    windowEnd: windowEnd ?? effectiveStart.add(const Duration(days: 7)),
     totalObservationsScanned: totalObservationsScanned,
     totalDecisionsScanned: totalDecisionsScanned,
   );
