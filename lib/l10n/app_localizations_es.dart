@@ -469,7 +469,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String agentPendingWakesActivityTotal(int count) {
-    return '$count despertares en total';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count despertares en total',
+      one: '1 despertar en total',
+    );
+    return '$_temp0';
   }
 
   @override

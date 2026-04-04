@@ -8,15 +8,22 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Compact 24-hour bar chart showing wake-run activity per hour.
-///
-/// Helps diagnose unexpected spikes in agent wake activity by displaying
-/// a per-hour breakdown with reason tooltips.
-class WakeActivityChart extends ConsumerWidget {
+class WakeActivityChart extends ConsumerStatefulWidget {
   const WakeActivityChart({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WakeActivityChart> createState() => _WakeActivityChartState();
+}
+
+class _WakeActivityChartState extends ConsumerState<WakeActivityChart> {
+  int? _selectedIndex;
+
+  static const _chartHeight = 80.0;
+  static const _yAxisWidth = 28.0;
+  static const _xAxisHeight = 16.0;
+
+  @override
+  Widget build(BuildContext context) {
     final activityAsync = ref.watch(hourlyWakeActivityProvider);
     final buckets = activityAsync.value;
 
@@ -27,6 +34,14 @@ class WakeActivityChart extends ConsumerWidget {
     final tokens = context.designTokens;
     final maxCount = buckets.fold<int>(0, (m, b) => math.max(m, b.count));
     final totalWakes = buckets.fold<int>(0, (sum, b) => sum + b.count);
+    final selected = _selectedIndex != null ? buckets[_selectedIndex!] : null;
+    final axisColor = context.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.4,
+    );
+    final labelStyle = context.textTheme.labelSmall?.copyWith(
+      color: context.colorScheme.onSurfaceVariant,
+      fontSize: 10,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,89 +73,198 @@ class WakeActivityChart extends ConsumerWidget {
             ],
           ),
         ),
-        SizedBox(
-          height: 64,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
+          child: SizedBox(
+            height: _chartHeight + _xAxisHeight,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final bucket in buckets)
-                  Expanded(
-                    child: _HourBar(
-                      bucket: bucket,
-                      maxCount: maxCount,
+                // Y-axis labels
+                SizedBox(
+                  width: _yAxisWidth,
+                  height: _chartHeight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('$maxCount', style: labelStyle),
+                      const Spacer(),
+                      if (maxCount > 1)
+                        Text('${maxCount ~/ 2}', style: labelStyle),
+                      if (maxCount > 1) const Spacer(),
+                      Text('0', style: labelStyle),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 2),
+                // Chart area with axes drawn via CustomPaint
+                Expanded(
+                  child: GestureDetector(
+                    onTapUp: (details) => _onTapBar(details, buckets),
+                    child: CustomPaint(
+                      painter: _AxisPainter(
+                        axisColor: axisColor,
+                        chartHeight: _chartHeight,
+                        maxCount: maxCount,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: _chartHeight,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                for (var i = 0; i < buckets.length; i++)
+                                  Expanded(
+                                    child: _HourBar(
+                                      bucket: buckets[i],
+                                      maxCount: maxCount,
+                                      isSelected: _selectedIndex == i,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          // X-axis labels
+                          SizedBox(
+                            height: _xAxisHeight,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                for (final i in const [0, 6, 12, 18, 23])
+                                  if (i < buckets.length)
+                                    Text(
+                                      _fmtHour(buckets[i].hour),
+                                      style: labelStyle,
+                                    ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                ),
               ],
             ),
           ),
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step4,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatHour(buckets.first.hour),
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
+        if (selected != null && selected.count > 0)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step1,
+            ),
+            child: Text(
+              '${_fmtHour(selected.hour)}: '
+              '${selected.count} wakes '
+              '(${selected.reasons.entries.map((e) => '${e.key}: ${e.value}').join(', ')})',
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
               ),
-              Text(
-                _formatHour(buckets.last.hour),
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
         SizedBox(height: tokens.spacing.step2),
       ],
     );
   }
 
-  String _formatHour(DateTime hour) {
+  void _onTapBar(TapUpDetails details, List<HourlyWakeActivity> buckets) {
+    final box = context.findRenderObject()! as RenderBox;
+    final chartWidth = box.size.width - _yAxisWidth - 2;
+    if (chartWidth <= 0) return;
+
+    final relativeX = details.localPosition.dx;
+    if (relativeX < 0 || relativeX > chartWidth) return;
+
+    final index = (relativeX / chartWidth * buckets.length).floor().clamp(
+      0,
+      buckets.length - 1,
+    );
+    setState(() {
+      _selectedIndex = _selectedIndex == index ? null : index;
+    });
+  }
+
+  static String _fmtHour(DateTime hour) {
     return '${hour.hour.toString().padLeft(2, '0')}:00';
   }
+}
+
+class _AxisPainter extends CustomPainter {
+  _AxisPainter({
+    required this.axisColor,
+    required this.chartHeight,
+    required this.maxCount,
+  });
+
+  final Color axisColor;
+  final double chartHeight;
+  final int maxCount;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = axisColor
+      ..strokeWidth = 1;
+
+    canvas
+      ..drawLine(Offset.zero, Offset(0, chartHeight), paint)
+      ..drawLine(
+        Offset(0, chartHeight),
+        Offset(size.width, chartHeight),
+        paint,
+      );
+
+    if (maxCount > 1) {
+      final dashPaint = Paint()
+        ..color = axisColor.withValues(alpha: 0.3)
+        ..strokeWidth = 0.5;
+      final midY = chartHeight / 2;
+      canvas.drawLine(Offset(0, midY), Offset(size.width, midY), dashPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AxisPainter oldDelegate) =>
+      axisColor != oldDelegate.axisColor ||
+      chartHeight != oldDelegate.chartHeight ||
+      maxCount != oldDelegate.maxCount;
 }
 
 class _HourBar extends StatelessWidget {
   const _HourBar({
     required this.bucket,
     required this.maxCount,
+    required this.isSelected,
   });
 
   final HourlyWakeActivity bucket;
   final int maxCount;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final fraction = maxCount > 0 ? bucket.count / maxCount : 0.0;
+    final color = _barColor(context, bucket.count);
 
-    final tooltipLines = <String>[
-      '${_formatHour(bucket.hour)} — ${bucket.count} wakes',
-      ...bucket.reasons.entries.map((e) => '  ${e.key}: ${e.value}'),
-    ];
-
-    return Tooltip(
-      message: tooltipLines.join('\n'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.5),
-        child: FractionallySizedBox(
-          heightFactor: fraction > 0 ? math.max(0.05, fraction) : 0,
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            decoration: BoxDecoration(
-              color: _barColor(context, bucket.count),
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(tokens.radii.xs),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0.5),
+      child: FractionallySizedBox(
+        heightFactor: fraction > 0 ? math.max(0.06, fraction) : 0,
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? color : color.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(tokens.radii.xs),
             ),
+            border: isSelected
+                ? Border.all(
+                    color: context.colorScheme.onSurface.withValues(alpha: 0.6),
+                  )
+                : null,
           ),
         ),
       ),
@@ -152,9 +276,5 @@ class _HourBar extends StatelessWidget {
     if (count >= 10) return context.colorScheme.error;
     if (count >= 5) return context.colorScheme.tertiary;
     return context.colorScheme.primary;
-  }
-
-  String _formatHour(DateTime hour) {
-    return '${hour.hour.toString().padLeft(2, '0')}:00';
   }
 }

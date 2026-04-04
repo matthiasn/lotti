@@ -929,7 +929,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentPendingWakesActivityTotal.
   ///
   /// In en, this message translates to:
-  /// **'{count} total wakes'**
+  /// **'{count, plural, =1{1 total wake} other{{count} total wakes}}'**
   String agentPendingWakesActivityTotal(int count);
 
   /// No description provided for @agentPendingWakesCountdownLabel.

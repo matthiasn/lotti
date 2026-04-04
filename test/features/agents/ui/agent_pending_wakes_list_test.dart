@@ -213,7 +213,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Daily Wednesday March 11th'), findsOneWidget);
-      // "Task Agent" appears as both the agent subtitle and the kind badge.
       expect(find.text('Task Agent'), findsNWidgets(2));
     });
 

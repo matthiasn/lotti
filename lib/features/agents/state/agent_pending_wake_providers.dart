@@ -56,6 +56,17 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   return records;
 });
 
+// ignore: specify_nonobvious_property_types
+final _entryUpdateProvider = StreamProvider.autoDispose.family<void, String>((
+  ref,
+  entryId,
+) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return notifications.updateStream
+      .where((ids) => ids.contains(entryId))
+      .map<void>((_) {});
+});
+
 final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
     FutureProvider.family<String?, String?>((
       ref,
@@ -65,16 +76,7 @@ final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
         return null;
       }
 
-      // Re-fetch when the journal entry is updated (e.g. title is set after
-      // creation), so the UI reactively shows the new title.
-      final notifications = ref.watch(updateNotificationsProvider);
-      ref.watch(
-        StreamProvider<void>((ref) {
-          return notifications.updateStream.where(
-            (ids) => ids.contains(entryId),
-          );
-        }),
-      );
+      ref.watch(_entryUpdateProvider(entryId));
 
       final journalDb = ref.watch(journalDbProvider);
       final entry = await journalDb.journalEntityById(entryId);
@@ -86,10 +88,6 @@ final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
       };
     });
 
-/// Fetches wake runs from the last 24 hours and groups them by hour.
-///
-/// Each bucket includes a per-reason breakdown (subscription, creation, etc.)
-/// to help diagnose unexpected spikes in agent activity.
 final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
   ref,
 ) async {
@@ -97,13 +95,13 @@ final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
 
   final repository = ref.watch(agentRepositoryProvider);
   final now = clock.now();
-  final since = now.subtract(const Duration(hours: 24));
+  final currentHour = DateTime(now.year, now.month, now.day, now.hour);
+  final since = currentHour.subtract(const Duration(hours: 23));
   final runs = await repository.getWakeRunsInWindow(since: since, until: now);
 
-  // Group runs into hourly buckets.
   final buckets = <DateTime, Map<String, int>>{};
   for (final run in runs) {
-    final created = run.createdAt;
+    final created = run.createdAt.toLocal();
     final hourKey = DateTime(
       created.year,
       created.month,
@@ -114,15 +112,9 @@ final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
     reasons[run.reason] = (reasons[run.reason] ?? 0) + 1;
   }
 
-  // Build sorted list covering all 24 hours (even empty ones).
   final result = <HourlyWakeActivity>[];
-  for (var h = 0; h < 24; h++) {
-    final hourStart = DateTime(
-      since.year,
-      since.month,
-      since.day,
-      since.hour + h,
-    );
+  for (var i = 23; i >= 0; i--) {
+    final hourStart = currentHour.subtract(Duration(hours: i));
     final reasons = buckets[hourStart] ?? const {};
     final count = reasons.values.fold<int>(0, (sum, c) => sum + c);
     result.add(

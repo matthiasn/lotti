@@ -346,17 +346,16 @@ void main() {
 
       expect(buckets, hasLength(24));
 
-      // Find the bucket for hour 10 (the hour with 3 wakes).
       final hour10 = buckets.firstWhere(
-        (b) => b.hour == DateTime(2026, 4, 3, 14 + 10 - 14),
-        orElse: () => buckets.firstWhere((b) => b.hour.hour == 10),
+        (b) => b.hour == DateTime(2026, 4, 4, 10),
       );
       expect(hour10.count, 3);
       expect(hour10.reasons['subscription'], 2);
       expect(hour10.reasons['creation'], 1);
 
-      // Find the bucket for hour 12.
-      final hour12 = buckets.firstWhere((b) => b.hour.hour == 12);
+      final hour12 = buckets.firstWhere(
+        (b) => b.hour == DateTime(2026, 4, 4, 12),
+      );
       expect(hour12.count, 1);
       expect(hour12.reasons['subscription'], 1);
     });

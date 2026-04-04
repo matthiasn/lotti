@@ -24,8 +24,6 @@ class AgentPendingWakesList extends ConsumerWidget {
     final wakesAsync = ref.watch(pendingWakeRecordsProvider);
     final tokens = context.designTokens;
 
-    // Show a loading indicator only on the very first load (no previous data).
-    // On subsequent refreshes, keep the previous data visible to avoid flicker.
     final records = wakesAsync.value;
 
     if (wakesAsync.isLoading && records == null) {
@@ -68,6 +66,34 @@ class AgentPendingWakesList extends ConsumerWidget {
 
     return Column(
       children: [
+        if (wakesAsync.hasError)
+          Material(
+            color: context.colorScheme.errorContainer,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: context.colorScheme.onErrorContainer,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Expanded(
+                    child: Text(
+                      context.messages.commonError,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         const WakeActivityChart(),
         Expanded(
           child: ListView.builder(
@@ -204,7 +230,9 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
       pendingWakeTargetTitleProvider(_subjectEntryId(record)),
     );
     final resolvedSubjectTitle = subjectTitleAsync.value;
-    final hasSubjectTitle = resolvedSubjectTitle?.trim().isNotEmpty == true;
+    final hasSubjectTitle =
+        resolvedSubjectTitle?.trim().isNotEmpty == true &&
+        resolvedSubjectTitle != record.agent.displayName;
 
     return ModernBaseCard(
       onTap: () =>

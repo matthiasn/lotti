@@ -239,7 +239,7 @@
   },
   "agentObservationsEmpty": "No observations recorded yet.",
   "agentPendingWakesActivityTitle": "Wake Activity (24h)",
-  "agentPendingWakesActivityTotal": "{count} total wakes",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 total wake} other{{count} total wakes}}",
   "@agentPendingWakesActivityTotal": {
     "placeholders": {
       "count": {

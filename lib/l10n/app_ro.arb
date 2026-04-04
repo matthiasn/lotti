@@ -233,7 +233,7 @@
   },
   "agentObservationsEmpty": "Nu au fost înregistrate observații încă.",
   "agentPendingWakesActivityTitle": "Activitate treziri (24h)",
-  "agentPendingWakesActivityTotal": "{count} treziri în total",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 trezire în total} other{{count} treziri în total}}",
   "agentPendingWakesCountdownLabel": "Numărătoare inversă",
   "agentPendingWakesDeleteTooltip": "Elimină trezirea",
   "agentPendingWakesDueAtLabel": "Programată la",
