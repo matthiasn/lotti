@@ -263,9 +263,6 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState],
           );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => dormantState,
-          );
           when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
@@ -347,9 +344,6 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState, activeState],
           );
-          when(() => repository.getAgentState(dormantId)).thenAnswer(
-            (_) async => dormantState,
-          );
           when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
@@ -381,39 +375,6 @@ void main() {
       });
     });
 
-    test('fast-forward tolerates deleted agent state gracefully', () {
-      final now = DateTime(2024, 3, 15, 10, 30);
-      final dormantState = makeTestState(
-        scheduledWakeAt: DateTime(2024, 3, 13, 6),
-        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
-      );
-
-      fakeAsync((async) {
-        withClock(Clock.fixed(now), () {
-          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
-            (_) async => [dormantState],
-          );
-          // Agent deleted between query and fast-forward.
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => null,
-          );
-
-          final manager = createAndStart();
-          async.flushMicrotasks();
-
-          verifyNever(
-            () => orchestrator.enqueueManualWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-            ),
-          );
-          verifyNever(() => syncService.upsertEntity(any()));
-
-          manager.stop();
-        });
-      });
-    });
-
     test('fast-forward fires onPersistedStateChanged callback', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final dormantState = makeTestState(
@@ -426,9 +387,6 @@ void main() {
         withClock(Clock.fixed(now), () {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState],
-          );
-          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
-            (_) async => dormantState,
           );
           when(
             () => syncService.upsertEntity(any()),

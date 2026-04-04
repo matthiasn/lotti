@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -70,7 +71,7 @@ class ScheduledWakeManager {
         final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
 
         if (!hasPendingActivity && state.lastWakeAt != null) {
-          await _fastForwardSchedule(state.agentId, now);
+          await _fastForwardSchedule(state, now);
           fastForwarded++;
           continue;
         }
@@ -98,10 +99,10 @@ class ScheduledWakeManager {
   /// Advance `scheduledWakeAt` to the next future time slot without
   /// executing a full wake cycle. Used for dormant agents with no
   /// pending activity — avoids unnecessary LLM calls.
-  Future<void> _fastForwardSchedule(String agentId, DateTime now) async {
-    final state = await _repository.getAgentState(agentId);
-    if (state == null) return;
-
+  Future<void> _fastForwardSchedule(
+    AgentStateEntity state,
+    DateTime now,
+  ) async {
     final nextWake = nextLocalDayAtTime(
       now,
       hour: AgentSchedules.projectDailyDigestHour,
@@ -113,10 +114,10 @@ class ScheduledWakeManager {
         updatedAt: now,
       ),
     );
-    onPersistedStateChanged?.call(agentId);
+    onPersistedStateChanged?.call(state.agentId);
 
     _log(
-      'fast-forwarded ${DomainLogger.sanitizeId(agentId)} '
+      'fast-forwarded ${DomainLogger.sanitizeId(state.agentId)} '
       'to $nextWake (no pending activity)',
     );
   }
