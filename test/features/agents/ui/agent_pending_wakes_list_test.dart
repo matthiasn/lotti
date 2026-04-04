@@ -38,6 +38,7 @@ void main() {
       pendingWakeTargetTitleProvider.overrideWith(
         (ref, String? entryId) async => subjectTitles[entryId],
       ),
+      hourlyWakeActivityProvider.overrideWith((ref) async => const []),
       if (agentService != null)
         agentServiceProvider.overrideWith((ref) => agentService),
     ];
@@ -212,7 +213,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Daily Wednesday March 11th'), findsOneWidget);
-      expect(find.text('Task Agent'), findsOneWidget);
+      // "Task Agent" appears as both the agent subtitle and the kind badge.
+      expect(find.text('Task Agent'), findsNWidgets(2));
     });
 
     testWidgets('falls back to the agent display name when no title resolves', (

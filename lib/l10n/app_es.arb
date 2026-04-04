@@ -232,6 +232,8 @@
     }
   },
   "agentObservationsEmpty": "Aún no se han registrado observaciones.",
+  "agentPendingWakesActivityTitle": "Actividad de despertares (24h)",
+  "agentPendingWakesActivityTotal": "{count} despertares en total",
   "agentPendingWakesCountdownLabel": "Cuenta atrás",
   "agentPendingWakesDeleteTooltip": "Eliminar despertar",
   "agentPendingWakesDueAtLabel": "Vence a las",

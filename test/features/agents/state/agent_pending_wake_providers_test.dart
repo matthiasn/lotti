@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -197,12 +198,17 @@ void main() {
     });
 
     ProviderContainer createContainer() {
+      final notifications = UpdateNotifications();
       final container = ProviderContainer(
         overrides: [
           journalDbProvider.overrideWithValue(mockJournalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
       return container;
     }
 
@@ -287,5 +293,104 @@ void main() {
         );
       },
     );
+  });
+
+  group('hourlyWakeActivityProvider', () {
+    test('groups wake runs by hour with reason breakdown', () async {
+      final now = DateTime(2026, 4, 4, 14);
+      final mockRepository = MockAgentRepository();
+      final notifications = UpdateNotifications();
+
+      when(
+        () => mockRepository.getWakeRunsInWindow(
+          since: any(named: 'since'),
+          until: any(named: 'until'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          makeTestWakeRun(
+            runKey: 'run-1',
+            createdAt: DateTime(2026, 4, 4, 10, 5),
+          ),
+          makeTestWakeRun(
+            runKey: 'run-2',
+            createdAt: DateTime(2026, 4, 4, 10, 30),
+          ),
+          makeTestWakeRun(
+            runKey: 'run-3',
+            reason: 'creation',
+            createdAt: DateTime(2026, 4, 4, 10, 45),
+          ),
+          makeTestWakeRun(
+            runKey: 'run-4',
+            createdAt: DateTime(2026, 4, 4, 12, 15),
+          ),
+        ],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
+
+      final buckets = await withClock(
+        Clock.fixed(now),
+        () => container.read(hourlyWakeActivityProvider.future),
+      );
+
+      expect(buckets, hasLength(24));
+
+      // Find the bucket for hour 10 (the hour with 3 wakes).
+      final hour10 = buckets.firstWhere(
+        (b) => b.hour == DateTime(2026, 4, 3, 14 + 10 - 14),
+        orElse: () => buckets.firstWhere((b) => b.hour.hour == 10),
+      );
+      expect(hour10.count, 3);
+      expect(hour10.reasons['subscription'], 2);
+      expect(hour10.reasons['creation'], 1);
+
+      // Find the bucket for hour 12.
+      final hour12 = buckets.firstWhere((b) => b.hour.hour == 12);
+      expect(hour12.count, 1);
+      expect(hour12.reasons['subscription'], 1);
+    });
+
+    test('returns empty buckets when no wake runs exist', () async {
+      final now = DateTime(2026, 4, 4, 14);
+      final mockRepository = MockAgentRepository();
+      final notifications = UpdateNotifications();
+
+      when(
+        () => mockRepository.getWakeRunsInWindow(
+          since: any(named: 'since'),
+          until: any(named: 'until'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
+
+      final buckets = await withClock(
+        Clock.fixed(now),
+        () => container.read(hourlyWakeActivityProvider.future),
+      );
+
+      expect(buckets, hasLength(24));
+      expect(buckets.every((b) => b.count == 0), isTrue);
+    });
   });
 }

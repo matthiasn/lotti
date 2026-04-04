@@ -464,6 +464,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Beobachtungen aufgezeichnet.';
 
   @override
+  String get agentPendingWakesActivityTitle => 'Weckaktivität (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    return '$count Weckvorgänge insgesamt';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Countdown';
 
   @override

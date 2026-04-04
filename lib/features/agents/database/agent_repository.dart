@@ -968,6 +968,14 @@ class AgentRepository {
     return _db.getWakeRunsByTemplateInWindow(templateId, since, until).get();
   }
 
+  /// Fetch all wake runs across all agents within the inclusive window.
+  Future<List<WakeRunLogData>> getWakeRunsInWindow({
+    required DateTime since,
+    required DateTime until,
+  }) {
+    return _db.getWakeRunsInWindow(since, until).get();
+  }
+
   /// Fetch a single wake-run entry by [runKey], or `null` if not found.
   Future<WakeRunLogData?> getWakeRun(String runKey) async {
     final rows = await _db.getWakeRunByKey(runKey).get();

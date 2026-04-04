@@ -232,6 +232,8 @@
     }
   },
   "agentObservationsEmpty": "Aucune observation enregistrée pour le moment.",
+  "agentPendingWakesActivityTitle": "Activité de réveil (24h)",
+  "agentPendingWakesActivityTotal": "{count} réveils au total",
   "agentPendingWakesCountdownLabel": "Compte à rebours",
   "agentPendingWakesDeleteTooltip": "Supprimer le réveil",
   "agentPendingWakesDueAtLabel": "Prévu à",

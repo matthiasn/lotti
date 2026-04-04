@@ -464,6 +464,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu au fost înregistrate observații încă.';
 
   @override
+  String get agentPendingWakesActivityTitle => 'Activitate treziri (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    return '$count treziri în total';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Numărătoare inversă';
 
   @override

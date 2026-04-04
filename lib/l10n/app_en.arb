@@ -238,6 +238,15 @@
     }
   },
   "agentObservationsEmpty": "No observations recorded yet.",
+  "agentPendingWakesActivityTitle": "Wake Activity (24h)",
+  "agentPendingWakesActivityTotal": "{count} total wakes",
+  "@agentPendingWakesActivityTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesCountdownLabel": "Countdown",
   "agentPendingWakesDeleteTooltip": "Remove wake",
   "agentPendingWakesDueAtLabel": "Due at",

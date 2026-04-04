@@ -147,6 +147,8 @@ aggregateWakeRunMetricsByTemplateId: SELECT
 
 getWakeRunsByTemplateInWindow: SELECT * FROM wake_run_log WHERE template_id = :templateId AND created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
 
+getWakeRunsInWindow: SELECT * FROM wake_run_log WHERE created_at >= :since AND created_at <= :until ORDER BY created_at DESC;
+
 getRecentReportsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentReport' AND ae.subtype = 'current' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getRecentObservationsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'agentMessage' AND ae.subtype = 'observation' AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;

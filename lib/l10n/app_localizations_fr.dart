@@ -466,6 +466,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune observation enregistrée pour le moment.';
 
   @override
+  String get agentPendingWakesActivityTitle => 'Activité de réveil (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    return '$count réveils au total';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Compte à rebours';
 
   @override

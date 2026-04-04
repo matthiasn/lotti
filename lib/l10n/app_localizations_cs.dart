@@ -459,6 +459,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentObservationsEmpty => 'No observations recorded yet.';
 
   @override
+  String get agentPendingWakesActivityTitle => 'Aktivita probuzení (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    return '$count probuzení celkem';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Odpočet';
 
   @override

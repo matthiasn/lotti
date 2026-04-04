@@ -142,6 +142,8 @@
       }
     }
   },
+  "agentPendingWakesActivityTitle": "Aktivita probuzení (24h)",
+  "agentPendingWakesActivityTotal": "{count} probuzení celkem",
   "agentPendingWakesCountdownLabel": "Odpočet",
   "agentPendingWakesDeleteTooltip": "Odstranit probuzení",
   "agentPendingWakesDueAtLabel": "Spustí se",
