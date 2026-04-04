@@ -10,16 +10,16 @@ part of 'agent_workflow_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// The template evolution workflow with all dependencies resolved.
 ///
-/// Includes the multi-turn session dependencies ([AgentTemplateService],
-/// [AgentSyncService]) alongside the legacy single-turn dependencies.
+/// Includes the multi-turn session dependencies (AgentTemplateService,
+/// AgentSyncService) alongside the legacy single-turn dependencies.
 
 @ProviderFor(templateEvolutionWorkflow)
 final templateEvolutionWorkflowProvider = TemplateEvolutionWorkflowProvider._();
 
 /// The template evolution workflow with all dependencies resolved.
 ///
-/// Includes the multi-turn session dependencies ([AgentTemplateService],
-/// [AgentSyncService]) alongside the legacy single-turn dependencies.
+/// Includes the multi-turn session dependencies (AgentTemplateService,
+/// AgentSyncService) alongside the legacy single-turn dependencies.
 
 final class TemplateEvolutionWorkflowProvider
     extends
@@ -31,8 +31,8 @@ final class TemplateEvolutionWorkflowProvider
     with $Provider<TemplateEvolutionWorkflow> {
   /// The template evolution workflow with all dependencies resolved.
   ///
-  /// Includes the multi-turn session dependencies ([AgentTemplateService],
-  /// [AgentSyncService]) alongside the legacy single-turn dependencies.
+  /// Includes the multi-turn session dependencies (AgentTemplateService,
+  /// AgentSyncService) alongside the legacy single-turn dependencies.
   TemplateEvolutionWorkflowProvider._()
     : super(
         from: null,

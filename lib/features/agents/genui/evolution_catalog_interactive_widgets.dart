@@ -120,13 +120,37 @@ class CategoryRatingsCard extends StatefulWidget {
 }
 
 class _CategoryRatingsCardState extends State<CategoryRatingsCard> {
-  late final List<String> _categoryKeys;
-  late final Map<String, int> _ratings;
+  late List<String> _categoryKeys;
+  late Map<String, int> _ratings;
   bool _submitted = false;
 
   @override
   void initState() {
     super.initState();
+    _initializeCategoryState();
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryRatingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_sameCategorySpec(oldWidget.categories, widget.categories)) {
+      _initializeCategoryState();
+    }
+  }
+
+  /// Returns true when both lists describe the same categories (by name).
+  static bool _sameCategorySpec(
+    List<Map<String, Object?>> a,
+    List<Map<String, Object?>> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (readString(a[i], 'name') != readString(b[i], 'name')) return false;
+    }
+    return true;
+  }
+
+  void _initializeCategoryState() {
     final rawNames = widget.categories
         .map((cat) => readString(cat, 'name').trim())
         .toList(growable: false);
@@ -156,6 +180,7 @@ class _CategoryRatingsCardState extends State<CategoryRatingsCard> {
     _ratings = {
       for (final key in _categoryKeys) key: 0,
     };
+    _submitted = false;
   }
 
   @override
@@ -360,6 +385,17 @@ class BinaryChoicePromptCard extends StatefulWidget {
 
 class _BinaryChoicePromptCardState extends State<BinaryChoicePromptCard> {
   bool _submitted = false;
+
+  @override
+  void didUpdateWidget(covariant BinaryChoicePromptCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final promptChanged = oldWidget.question != widget.question ||
+        oldWidget.confirmValue != widget.confirmValue ||
+        oldWidget.dismissValue != widget.dismissValue;
+    if (promptChanged) {
+      _submitted = false;
+    }
+  }
 
   void _handleSelect(String value) {
     if (_submitted) return;
