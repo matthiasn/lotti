@@ -920,6 +920,16 @@ abstract class AppLocalizations {
   /// **'No observations recorded yet.'**
   String get agentObservationsEmpty;
 
+  /// No description provided for @agentPendingWakesActivityHourDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})'**
+  String agentPendingWakesActivityHourDetail(
+    String hour,
+    int count,
+    String reasons,
+  );
+
   /// No description provided for @agentPendingWakesActivityTitle.
   ///
   /// In en, this message translates to:

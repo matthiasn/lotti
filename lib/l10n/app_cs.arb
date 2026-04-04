@@ -142,6 +142,7 @@
       }
     }
   },
+  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 probuzení} other{{count} probuzení}} ({reasons})",
   "agentPendingWakesActivityTitle": "Aktivita probuzení (24h)",
   "agentPendingWakesActivityTotal": "{count, plural, =1{1 probuzení celkem} other{{count} probuzení celkem}}",
   "agentPendingWakesCountdownLabel": "Odpočet",

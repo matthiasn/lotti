@@ -2384,6 +2384,50 @@ void main() {
       });
     });
 
+    group('getWakeRunsInWindow', () {
+      test('returns runs within the time window across all agents', () async {
+        final base = DateTime(2026, 4, 4, 10);
+        await repo.insertWakeRun(
+          entry: makeTestWakeRun(
+            runKey: 'r-in-1',
+            agentId: 'agent-a',
+            createdAt: base,
+          ),
+        );
+        await repo.insertWakeRun(
+          entry: makeTestWakeRun(
+            runKey: 'r-in-2',
+            agentId: 'agent-b',
+            createdAt: base.add(const Duration(hours: 1)),
+          ),
+        );
+        await repo.insertWakeRun(
+          entry: makeTestWakeRun(
+            runKey: 'r-outside',
+            agentId: 'agent-a',
+            createdAt: base.subtract(const Duration(days: 2)),
+          ),
+        );
+
+        final runs = await repo.getWakeRunsInWindow(
+          since: base.subtract(const Duration(hours: 1)),
+          until: base.add(const Duration(hours: 2)),
+        );
+
+        expect(runs.map((r) => r.runKey), containsAll(['r-in-1', 'r-in-2']));
+        expect(runs.map((r) => r.runKey), isNot(contains('r-outside')));
+      });
+
+      test('returns empty list when no runs fall in window', () async {
+        final runs = await repo.getWakeRunsInWindow(
+          since: DateTime(2026),
+          until: DateTime(2026, 1, 2),
+        );
+
+        expect(runs, isEmpty);
+      });
+    });
+
     group('templateAssignment link CRUD', () {
       test('templateAssignment link persists and restores correctly', () async {
         final link = model.AgentLink.templateAssignment(

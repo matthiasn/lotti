@@ -80,7 +80,6 @@ class _WakeActivityChartState extends ConsumerState<WakeActivityChart> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Y-axis labels
                 SizedBox(
                   width: _yAxisWidth,
                   height: _chartHeight,
@@ -97,51 +96,47 @@ class _WakeActivityChartState extends ConsumerState<WakeActivityChart> {
                   ),
                 ),
                 const SizedBox(width: 2),
-                // Chart area with axes drawn via CustomPaint
                 Expanded(
-                  child: GestureDetector(
-                    onTapUp: (details) => _onTapBar(details, buckets),
-                    child: CustomPaint(
-                      painter: _AxisPainter(
-                        axisColor: axisColor,
-                        chartHeight: _chartHeight,
-                        maxCount: maxCount,
-                      ),
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            height: _chartHeight,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                for (var i = 0; i < buckets.length; i++)
-                                  Expanded(
-                                    child: _HourBar(
-                                      bucket: buckets[i],
-                                      maxCount: maxCount,
-                                      isSelected: _selectedIndex == i,
-                                    ),
+                  child: CustomPaint(
+                    painter: _AxisPainter(
+                      axisColor: axisColor,
+                      chartHeight: _chartHeight,
+                      maxCount: maxCount,
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: _chartHeight,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              for (var i = 0; i < buckets.length; i++)
+                                Expanded(
+                                  child: _HourBar(
+                                    bucket: buckets[i],
+                                    maxCount: maxCount,
+                                    isSelected: _selectedIndex == i,
+                                    onTap: () => _onBarTap(i),
                                   ),
-                              ],
-                            ),
+                                ),
+                            ],
                           ),
-                          // X-axis labels
-                          SizedBox(
-                            height: _xAxisHeight,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                for (final i in const [0, 6, 12, 18, 23])
-                                  if (i < buckets.length)
-                                    Text(
-                                      _fmtHour(buckets[i].hour),
-                                      style: labelStyle,
-                                    ),
-                              ],
-                            ),
+                        ),
+                        SizedBox(
+                          height: _xAxisHeight,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              for (final i in const [0, 6, 12, 18, 23])
+                                if (i < buckets.length)
+                                  Text(
+                                    _fmtHour(buckets[i].hour),
+                                    style: labelStyle,
+                                  ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -156,9 +151,13 @@ class _WakeActivityChartState extends ConsumerState<WakeActivityChart> {
               vertical: tokens.spacing.step1,
             ),
             child: Text(
-              '${_fmtHour(selected.hour)}: '
-              '${selected.count} wakes '
-              '(${selected.reasons.entries.map((e) => '${e.key}: ${e.value}').join(', ')})',
+              context.messages.agentPendingWakesActivityHourDetail(
+                _fmtHour(selected.hour),
+                selected.count,
+                selected.reasons.entries
+                    .map((e) => '${e.key}: ${e.value}')
+                    .join(', '),
+              ),
               style: context.textTheme.bodySmall?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -169,18 +168,7 @@ class _WakeActivityChartState extends ConsumerState<WakeActivityChart> {
     );
   }
 
-  void _onTapBar(TapUpDetails details, List<HourlyWakeActivity> buckets) {
-    final box = context.findRenderObject()! as RenderBox;
-    final chartWidth = box.size.width - _yAxisWidth - 2;
-    if (chartWidth <= 0) return;
-
-    final relativeX = details.localPosition.dx;
-    if (relativeX < 0 || relativeX > chartWidth) return;
-
-    final index = (relativeX / chartWidth * buckets.length).floor().clamp(
-      0,
-      buckets.length - 1,
-    );
+  void _onBarTap(int index) {
     setState(() {
       _selectedIndex = _selectedIndex == index ? null : index;
     });
@@ -237,34 +225,47 @@ class _HourBar extends StatelessWidget {
     required this.bucket,
     required this.maxCount,
     required this.isSelected,
+    required this.onTap,
   });
 
   final HourlyWakeActivity bucket;
   final int maxCount;
   final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final fraction = maxCount > 0 ? bucket.count / maxCount : 0.0;
     final color = _barColor(context, bucket.count);
+    final hour = '${bucket.hour.hour.toString().padLeft(2, '0')}:00';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0.5),
-      child: FractionallySizedBox(
-        heightFactor: fraction > 0 ? math.max(0.06, fraction) : 0,
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          decoration: BoxDecoration(
-            color: isSelected ? color : color.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(tokens.radii.xs),
+    return Semantics(
+      button: true,
+      label: '$hour: ${bucket.count}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0.5),
+          child: FractionallySizedBox(
+            heightFactor: fraction > 0 ? math.max(0.06, fraction) : 0,
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isSelected ? color : color.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(tokens.radii.xs),
+                ),
+                border: isSelected
+                    ? Border.all(
+                        color: context.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      )
+                    : null,
+              ),
             ),
-            border: isSelected
-                ? Border.all(
-                    color: context.colorScheme.onSurface.withValues(alpha: 0.6),
-                  )
-                : null,
           ),
         ),
       ),

@@ -388,6 +388,67 @@ void main() {
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
+    testWidgets('skips subtitle when subject title matches display name', (
+      tester,
+    ) async {
+      final record = PendingWakeRecord(
+        agent: makeTestIdentity(
+          agentId: 'agent-1',
+          kind: AgentKinds.projectAgent,
+          displayName: 'My Project',
+        ),
+        state: makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'proj-1'),
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        ),
+        type: PendingWakeType.pending,
+        dueAt: kAgentTestDate.add(const Duration(minutes: 5)),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          records: [record],
+          subjectTitles: const {'proj-1': 'My Project'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // "My Project" appears once as titleMedium (not duplicated as subtitle)
+      // plus once in the kind badge area — but kind badge is "Project Agent"
+      // so only the display name text appears once total.
+      expect(find.text('My Project'), findsOneWidget);
+    });
+
+    testWidgets('shows error banner on background refresh failure', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const AgentPendingWakesList(),
+          theme: DesignSystemTheme.light(),
+          overrides: [
+            pendingWakeRecordsProvider.overrideWith((ref) {
+              // Return an AsyncValue that has both data and error (simulating
+              // a failed refresh with previous data still available).
+              return Future<List<PendingWakeRecord>>.error(
+                StateError('refresh failed'),
+              );
+            }),
+            pendingWakeTargetTitleProvider.overrideWith(
+              (ref, String? entryId) async => null,
+            ),
+            hourlyWakeActivityProvider.overrideWith((ref) async => const []),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // When error with no previous data, shows error text
+      final context = tester.element(find.byType(AgentPendingWakesList));
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
     testWidgets('delete failure without a scaffold does not throw', (
       tester,
     ) async {

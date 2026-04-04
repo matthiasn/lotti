@@ -56,16 +56,17 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   return records;
 });
 
-// ignore: specify_nonobvious_property_types
-final _entryUpdateProvider = StreamProvider.autoDispose.family<void, String>((
-  ref,
-  entryId,
-) {
-  final notifications = ref.watch(updateNotificationsProvider);
-  return notifications.updateStream
-      .where((ids) => ids.contains(entryId))
-      .map<void>((_) {});
-});
+final StreamProviderFamily<void, String> _entryUpdateProvider = StreamProvider
+    .autoDispose
+    .family<void, String>((
+      ref,
+      entryId,
+    ) {
+      final notifications = ref.watch(updateNotificationsProvider);
+      return notifications.updateStream
+          .where((ids) => ids.contains(entryId))
+          .map<void>((_) {});
+    });
 
 final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
     FutureProvider.family<String?, String?>((
