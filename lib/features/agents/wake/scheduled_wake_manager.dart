@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// `scheduledWakeAt`. Dormant project agents (no pending activity since
 /// last report) are fast-forwarded to the next future time slot without
 /// executing, avoiding unnecessary LLM calls after prolonged app absence.
+/// Non-project agents (e.g., improver agents) are always enqueued.
 class ScheduledWakeManager {
   ScheduledWakeManager({
     required AgentRepository repository,
@@ -40,6 +42,7 @@ class ScheduledWakeManager {
   Timer? _timer;
   bool _isChecking = false;
 
+  /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
     unawaited(_checkAndEnqueue());
 
@@ -51,6 +54,7 @@ class ScheduledWakeManager {
     _log('started (interval: ${checkInterval.inMinutes}min)');
   }
 
+  /// Stop periodic checking.
   void stop() {
     _timer?.cancel();
     _timer = null;
@@ -68,19 +72,25 @@ class ScheduledWakeManager {
       var fastForwarded = 0;
 
       for (final state in dueStates) {
-        final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
+        try {
+          if (_canFastForward(state)) {
+            await _fastForwardSchedule(state, now);
+            fastForwarded++;
+            continue;
+          }
 
-        if (!hasPendingActivity && state.lastWakeAt != null) {
-          await _fastForwardSchedule(state, now);
-          fastForwarded++;
-          continue;
+          _orchestrator.enqueueManualWake(
+            agentId: state.agentId,
+            reason: WakeReason.scheduled.name,
+          );
+          enqueued++;
+        } catch (e, s) {
+          _logError(
+            'failed to process ${DomainLogger.sanitizeId(state.agentId)}',
+            error: e,
+            stackTrace: s,
+          );
         }
-
-        _orchestrator.enqueueManualWake(
-          agentId: state.agentId,
-          reason: WakeReason.scheduled.name,
-        );
-        enqueued++;
       }
 
       if (dueStates.isNotEmpty) {
@@ -96,9 +106,20 @@ class ScheduledWakeManager {
     }
   }
 
+  /// Whether this agent can be fast-forwarded instead of fully woken.
+  /// Only applies to project agents (identified by `activeProjectId`)
+  /// that have been woken before and have no pending activity.
+  bool _canFastForward(AgentStateEntity state) {
+    final isProjectAgent = state.slots.activeProjectId != null;
+    if (!isProjectAgent) return false;
+
+    final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
+    return !hasPendingActivity && state.lastWakeAt != null;
+  }
+
   /// Advance `scheduledWakeAt` to the next future time slot without
-  /// executing a full wake cycle. Used for dormant agents with no
-  /// pending activity — avoids unnecessary LLM calls.
+  /// executing a full wake cycle. Used for dormant project agents with
+  /// no pending activity — avoids unnecessary LLM calls.
   Future<void> _fastForwardSchedule(
     AgentStateEntity state,
     DateTime now,
@@ -127,11 +148,20 @@ class ScheduledWakeManager {
   }
 
   void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    domainLogger?.error(
-      LogDomains.agentRuntime,
-      message,
-      error: error,
-      stackTrace: stackTrace,
-    );
+    if (domainLogger != null) {
+      domainLogger!.error(
+        LogDomains.agentRuntime,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } else {
+      developer.log(
+        message,
+        name: 'ScheduledWakeManager',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }
