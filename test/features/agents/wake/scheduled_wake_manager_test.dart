@@ -480,6 +480,42 @@ void main() {
         });
       },
     );
+    test('fast-forward preserves agent schedule hour and keeps today slot', () {
+      // now is 5:00 AM, schedule was for 9:00 AM two days ago.
+      // Fast-forward should schedule for TODAY at 9:00 AM, not tomorrow.
+      final now = DateTime(2024, 3, 15, 5);
+      final pastSchedule = DateTime(2024, 3, 13, 9);
+      final dormantState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 9, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          final captured =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          // Today at 9:00 AM, not tomorrow.
+          expect(captured.scheduledWakeAt, DateTime(2024, 3, 15, 9));
+
+          manager.stop();
+        });
+      });
+    });
+
     test('per-agent failure does not stop remaining agents', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);

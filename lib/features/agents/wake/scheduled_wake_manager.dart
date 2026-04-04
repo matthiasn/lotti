@@ -3,10 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -124,10 +122,23 @@ class ScheduledWakeManager {
     AgentStateEntity state,
     DateTime now,
   ) async {
-    final nextWake = nextLocalDayAtTime(
-      now,
-      hour: AgentSchedules.projectDailyDigestHour,
+    final scheduled = state.scheduledWakeAt!;
+    var nextWake = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      scheduled.hour,
+      scheduled.minute,
     );
+    if (!nextWake.isAfter(now)) {
+      nextWake = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        scheduled.hour,
+        scheduled.minute,
+      );
+    }
 
     await _syncService.upsertEntity(
       state.copyWith(
