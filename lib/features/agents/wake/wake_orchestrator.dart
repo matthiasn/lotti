@@ -512,7 +512,10 @@ class WakeOrchestrator {
 
       _log(
         'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
-        'drain scheduled in ${throttleWindow.inSeconds}s',
+        'drain scheduled in ${throttleWindow.inSeconds}s, '
+        'reason=subscription, '
+        'sub=${DomainLogger.sanitizeId(sub.id)}, '
+        'triggers=${matched.map(DomainLogger.sanitizeId).join(',')}',
         subDomain: 'defer',
       );
     }
@@ -757,7 +760,9 @@ class WakeOrchestrator {
 
     _log(
       'executing runKey=${DomainLogger.sanitizeId(job.runKey)}, '
-      'agent=${DomainLogger.sanitizeId(job.agentId)}',
+      'agent=${DomainLogger.sanitizeId(job.agentId)}, '
+      'reason=${job.reason}, '
+      'triggers=${job.triggerTokens.map(DomainLogger.sanitizeId).join(',')}',
       subDomain: 'execute',
     );
 

@@ -465,6 +465,35 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no se han registrado observaciones.';
 
   @override
+  String agentPendingWakesActivityHourDetail(
+    String hour,
+    int count,
+    String reasons,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count despertares',
+      one: '1 despertar',
+    );
+    return '$hour: $_temp0 ($reasons)';
+  }
+
+  @override
+  String get agentPendingWakesActivityTitle => 'Actividad de despertares (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count despertares en total',
+      one: '1 despertar en total',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Cuenta atrás';
 
   @override

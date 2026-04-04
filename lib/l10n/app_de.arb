@@ -232,6 +232,9 @@
     }
   },
   "agentObservationsEmpty": "Noch keine Beobachtungen aufgezeichnet.",
+  "agentPendingWakesActivityHourDetail": "{hour}: {count, plural, =1{1 Weckvorgang} other{{count} Weckvorgänge}} ({reasons})",
+  "agentPendingWakesActivityTitle": "Weckaktivität (24h)",
+  "agentPendingWakesActivityTotal": "{count, plural, =1{1 Weckvorgang insgesamt} other{{count} Weckvorgänge insgesamt}}",
   "agentPendingWakesCountdownLabel": "Countdown",
   "agentPendingWakesDeleteTooltip": "Weckvorgang entfernen",
   "agentPendingWakesDueAtLabel": "Fällig um",

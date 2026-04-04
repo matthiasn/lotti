@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/wake_activity_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -23,59 +24,98 @@ class AgentPendingWakesList extends ConsumerWidget {
     final wakesAsync = ref.watch(pendingWakeRecordsProvider);
     final tokens = context.designTokens;
 
-    return wakesAsync.when(
-      data: (records) {
-        if (records.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.alarm_off_rounded,
-                  size: tokens.spacing.step12,
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-                SizedBox(height: tokens.spacing.step4),
-                Text(
-                  context.messages.agentPendingWakesEmptyList,
-                  style: context.textTheme.titleMedium?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
+    final records = wakesAsync.value;
 
-        return ListView.builder(
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step4,
-            0,
-            tokens.spacing.step4,
-            tokens.spacing.step6,
-          ),
-          itemCount: records.length,
-          itemBuilder: (context, index) {
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-              child: _PendingWakeCard(
-                key: ValueKey(records[index].id),
-                record: records[index],
-              ),
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
+    if (wakesAsync.isLoading && records == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (wakesAsync.hasError && records == null) {
+      return Center(
         child: Text(
           context.messages.commonError,
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
         ),
-      ),
+      );
+    }
+
+    if (records == null || records.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.alarm_off_rounded,
+              size: tokens.spacing.step12,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(height: tokens.spacing.step4),
+            Text(
+              context.messages.agentPendingWakesEmptyList,
+              style: context.textTheme.titleMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        if (wakesAsync.hasError)
+          Material(
+            color: context.colorScheme.errorContainer,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: context.colorScheme.onErrorContainer,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Expanded(
+                    child: Text(
+                      context.messages.commonError,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const WakeActivityChart(),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step4,
+              0,
+              tokens.spacing.step4,
+              tokens.spacing.step6,
+            ),
+            itemCount: records.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+                child: _PendingWakeCard(
+                  key: ValueKey(records[index].id),
+                  record: records[index],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -189,10 +229,10 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
     final subjectTitleAsync = ref.watch(
       pendingWakeTargetTitleProvider(_subjectEntryId(record)),
     );
-    final resolvedSubjectTitle = subjectTitleAsync.asData?.value;
-    final displayTitle = resolvedSubjectTitle?.trim().isNotEmpty == true
-        ? resolvedSubjectTitle!
-        : record.agent.displayName;
+    final resolvedSubjectTitle = subjectTitleAsync.value;
+    final hasSubjectTitle =
+        resolvedSubjectTitle?.trim().isNotEmpty == true &&
+        resolvedSubjectTitle != record.agent.displayName;
 
     return ModernBaseCard(
       onTap: () =>
@@ -227,11 +267,28 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          displayTitle,
-                          style: context.textTheme.titleMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (hasSubjectTitle)
+                              Text(
+                                resolvedSubjectTitle!,
+                                style: context.textTheme.titleMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Text(
+                              record.agent.displayName,
+                              style: hasSubjectTitle
+                                  ? context.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          context.colorScheme.onSurfaceVariant,
+                                    )
+                                  : context.textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                       SizedBox(width: tokens.spacing.step2),

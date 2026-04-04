@@ -464,6 +464,35 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu au fost înregistrate observații încă.';
 
   @override
+  String agentPendingWakesActivityHourDetail(
+    String hour,
+    int count,
+    String reasons,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count treziri',
+      one: '1 trezire',
+    );
+    return '$hour: $_temp0 ($reasons)';
+  }
+
+  @override
+  String get agentPendingWakesActivityTitle => 'Activitate treziri (24h)';
+
+  @override
+  String agentPendingWakesActivityTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count treziri în total',
+      one: '1 trezire în total',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentPendingWakesCountdownLabel => 'Numărătoare inversă';
 
   @override

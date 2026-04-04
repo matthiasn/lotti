@@ -920,6 +920,28 @@ abstract class AppLocalizations {
   /// **'No observations recorded yet.'**
   String get agentObservationsEmpty;
 
+  /// No description provided for @agentPendingWakesActivityHourDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}: {count, plural, =1{1 wake} other{{count} wakes}} ({reasons})'**
+  String agentPendingWakesActivityHourDetail(
+    String hour,
+    int count,
+    String reasons,
+  );
+
+  /// No description provided for @agentPendingWakesActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake Activity (24h)'**
+  String get agentPendingWakesActivityTitle;
+
+  /// No description provided for @agentPendingWakesActivityTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 total wake} other{{count} total wakes}}'**
+  String agentPendingWakesActivityTotal(int count);
+
   /// No description provided for @agentPendingWakesCountdownLabel.
   ///
   /// In en, this message translates to:

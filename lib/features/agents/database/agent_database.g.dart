@@ -3090,6 +3090,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
+  Selectable<WakeRunLogData> getWakeRunsInWindow(
+    DateTime since,
+    DateTime until,
+  ) {
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE created_at >= ?1 AND created_at <= ?2 ORDER BY created_at DESC',
+      variables: [Variable<DateTime>(since), Variable<DateTime>(until)],
+      readsFrom: {wakeRunLog},
+    ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   Selectable<AgentEntity> getRecentReportsByTemplate(
     String templateId,
     int limit,
