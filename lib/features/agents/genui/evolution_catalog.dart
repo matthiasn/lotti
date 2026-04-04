@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_interactive_widgets.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -232,45 +233,6 @@ final _binaryChoicePromptSchema = S.object(
   required: ['question'],
 );
 
-// ── JSON Parsing Helpers ────────────────────────────────────────────────────
-
-/// Reads an integer from a dynamic JSON map, returning [fallback] if the
-/// value is missing or not a number.
-int _readInt(Map<String, Object?> json, String key, [int fallback = 0]) =>
-    (json[key] is num) ? (json[key]! as num).toInt() : fallback;
-
-/// Reads a double from a dynamic JSON map, returning [fallback] if the
-/// value is missing or not a number.
-double _readDouble(
-  Map<String, Object?> json,
-  String key, [
-  double fallback = 0.0,
-]) => (json[key] is num) ? (json[key]! as num).toDouble() : fallback;
-
-/// Reads an optional num from a dynamic JSON map.
-num? _readNumOrNull(Map<String, Object?> json, String key) =>
-    json[key] is num ? json[key]! as num : null;
-
-/// Reads a string from a dynamic JSON map, returning [fallback] if the
-/// value is missing or not a string.
-String _readString(
-  Map<String, Object?> json,
-  String key, [
-  String fallback = '',
-]) => json[key] is String ? json[key]! as String : fallback;
-
-/// Reads an optional string from a dynamic JSON map.
-String? _readStringOrNull(Map<String, Object?> json, String key) =>
-    json[key] is String ? json[key]! as String : null;
-
-/// Reads a list of maps from a dynamic JSON map, filtering out non-map items.
-List<Map<String, Object?>> _readMapList(
-  Map<String, Object?> json,
-  String key,
-) => (json[key] is List)
-    ? (json[key]! as List).whereType<Map<String, Object?>>().toList()
-    : <Map<String, Object?>>[];
-
 // ── Catalog Items ───────────────────────────────────────────────────────────
 
 /// Proposal card with approve/reject actions.
@@ -280,14 +242,14 @@ final evolutionProposalItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final generalDirective = _readString(json, 'generalDirective').trim();
-    final reportDirective = _readString(json, 'reportDirective').trim();
-    final rationale = _readString(json, 'rationale').trim();
-    final currentGeneral = _readStringOrNull(
+    final generalDirective = readString(json, 'generalDirective').trim();
+    final reportDirective = readString(json, 'reportDirective').trim();
+    final rationale = readString(json, 'rationale').trim();
+    final currentGeneral = readStringOrNull(
       json,
       'currentGeneralDirective',
     )?.trim();
-    final currentReport = _readStringOrNull(
+    final currentReport = readStringOrNull(
       json,
       'currentReportDirective',
     )?.trim();
@@ -344,26 +306,26 @@ final evolutionProposalItem = CatalogItem(
             if (hasCurrentDirectives) ...[
               if (currentGeneral != null && currentGeneral.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.step5),
-                _sectionLabel(
+                sectionLabel(
                   context,
                   '${context.messages.agentEvolutionCurrentDirectives}'
                   ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
                 ),
                 const SizedBox(height: 6),
-                _directiveBox(
+                directiveBox(
                   context: context,
                   text: currentGeneral,
                 ),
               ],
               if (currentReport != null && currentReport.isNotEmpty) ...[
                 const SizedBox(height: 14),
-                _sectionLabel(
+                sectionLabel(
                   context,
                   '${context.messages.agentEvolutionCurrentDirectives}'
                   ' — ${context.messages.agentTemplateReportDirectiveLabel}',
                 ),
                 const SizedBox(height: 6),
-                _directiveBox(
+                directiveBox(
                   context: context,
                   text: currentReport,
                 ),
@@ -372,13 +334,13 @@ final evolutionProposalItem = CatalogItem(
             // Proposed directives (after)
             if (generalDirective.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step5),
-              _sectionLabel(
+              sectionLabel(
                 context,
                 '${context.messages.agentEvolutionProposedDirectives}'
                 ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
               ),
               const SizedBox(height: 6),
-              _directiveBox(
+              directiveBox(
                 context: context,
                 text: generalDirective,
                 isHighlighted: true,
@@ -386,13 +348,13 @@ final evolutionProposalItem = CatalogItem(
             ],
             if (reportDirective.isNotEmpty) ...[
               const SizedBox(height: 14),
-              _sectionLabel(
+              sectionLabel(
                 context,
                 '${context.messages.agentEvolutionProposedDirectives}'
                 ' — ${context.messages.agentTemplateReportDirectiveLabel}',
               ),
               const SizedBox(height: 6),
-              _directiveBox(
+              directiveBox(
                 context: context,
                 text: reportDirective,
                 isHighlighted: true,
@@ -400,12 +362,12 @@ final evolutionProposalItem = CatalogItem(
             ],
             if (rationale.isNotEmpty) ...[
               const SizedBox(height: 14),
-              _sectionLabel(
+              sectionLabel(
                 context,
                 context.messages.agentEvolutionProposalRationale,
               ),
               const SizedBox(height: 6),
-              _directiveBox(
+              directiveBox(
                 context: context,
                 text: rationale,
               ),
@@ -428,7 +390,7 @@ final evolutionProposalItem = CatalogItem(
                     ),
                   ),
                 ),
-                _primaryActionButton(
+                primaryActionButton(
                   label: context.messages.agentTemplateEvolveApprove,
                   onPressed: () => itemContext.dispatchEvent(
                     UserActionEvent(
@@ -454,111 +416,15 @@ final evolutionNoteConfirmationItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final kind = _readString(json, 'kind', 'reflection');
-    final content = _readString(json, 'content');
+    final kind = readString(json, 'kind', 'reflection');
+    final content = readString(json, 'content');
 
-    return _EvolutionNoteConfirmationCard(
+    return EvolutionNoteConfirmationCard(
       kind: kind,
       content: content,
     );
   },
 );
-
-/// Expandable card showing a recorded evolution note.
-///
-/// Starts collapsed (2 lines max) and expands to show the full content on tap.
-class _EvolutionNoteConfirmationCard extends StatefulWidget {
-  const _EvolutionNoteConfirmationCard({
-    required this.kind,
-    required this.content,
-  });
-
-  final String kind;
-  final String content;
-
-  @override
-  State<_EvolutionNoteConfirmationCard> createState() =>
-      _EvolutionNoteConfirmationCardState();
-}
-
-class _EvolutionNoteConfirmationCardState
-    extends State<_EvolutionNoteConfirmationCard> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: GestureDetector(
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: ModernBaseCard(
-          gradient: GameyGradients.cardDark(GameyColors.aiCyan),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                _noteKindIcon(widget.kind),
-                size: 18,
-                color: GameyColors.aiCyan,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            context.messages.agentEvolutionNoteRecorded,
-                            style: const TextStyle(
-                              color: GameyColors.aiCyan,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          _expanded ? Icons.expand_less : Icons.expand_more,
-                          size: 16,
-                          color: Colors.white.withValues(alpha: 0.4),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    AnimatedCrossFade(
-                      duration: const Duration(milliseconds: 200),
-                      crossFadeState: _expanded
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      firstChild: Text(
-                        widget.content,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      secondChild: Text(
-                        widget.content,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Inline metrics summary widget.
 final metricsSummaryItem = CatalogItem(
@@ -567,11 +433,11 @@ final metricsSummaryItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final totalWakes = _readInt(json, 'totalWakes');
-    final successRate = _readDouble(json, 'successRate');
-    final failureCount = _readInt(json, 'failureCount');
-    final avgDuration = _readNumOrNull(json, 'averageDurationSeconds');
-    final activeInstances = _readNumOrNull(json, 'activeInstances');
+    final totalWakes = readInt(json, 'totalWakes');
+    final successRate = readDouble(json, 'successRate');
+    final failureCount = readInt(json, 'failureCount');
+    final avgDuration = readNumOrNull(json, 'averageDurationSeconds');
+    final activeInstances = readNumOrNull(json, 'activeInstances');
 
     final context = itemContext.buildContext;
     final messages = context.messages;
@@ -585,22 +451,22 @@ final metricsSummaryItem = CatalogItem(
           spacing: 16,
           runSpacing: 8,
           children: [
-            _metricChip(messages.agentEvolutionMetricWakes, '$totalWakes'),
-            _metricChip(
+            metricChip(messages.agentEvolutionMetricWakes, '$totalWakes'),
+            metricChip(
               messages.agentEvolutionMetricSuccess,
               '${(successRate * 100).toStringAsFixed(0)}%',
             ),
-            _metricChip(
+            metricChip(
               messages.agentEvolutionMetricFailures,
               '$failureCount',
             ),
             if (avgDuration != null)
-              _metricChip(
+              metricChip(
                 messages.agentEvolutionMetricAvgDuration,
                 '${avgDuration.toStringAsFixed(0)}s',
               ),
             if (activeInstances != null)
-              _metricChip(
+              metricChip(
                 messages.agentEvolutionMetricActive,
                 '${activeInstances.toInt()}',
               ),
@@ -618,11 +484,11 @@ final versionComparisonItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final beforeVersion = _readInt(json, 'beforeVersion');
-    final afterVersion = _readInt(json, 'afterVersion');
-    final beforeDirectives = _readString(json, 'beforeDirectives');
-    final afterDirectives = _readString(json, 'afterDirectives');
-    final changesSummary = _readStringOrNull(json, 'changesSummary');
+    final beforeVersion = readInt(json, 'beforeVersion');
+    final afterVersion = readInt(json, 'afterVersion');
+    final beforeDirectives = readString(json, 'beforeDirectives');
+    final afterDirectives = readString(json, 'afterDirectives');
+    final changesSummary = readStringOrNull(json, 'changesSummary');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -652,24 +518,24 @@ final versionComparisonItem = CatalogItem(
               ],
             ),
             const SizedBox(height: 12),
-            _sectionLabel(
+            sectionLabel(
               context,
               '${context.messages.agentEvolutionCurrentDirectives}'
               ' (v$beforeVersion)',
             ),
             const SizedBox(height: 6),
-            _directiveBox(
+            directiveBox(
               context: context,
               text: beforeDirectives,
             ),
             const SizedBox(height: 12),
-            _sectionLabel(
+            sectionLabel(
               context,
               '${context.messages.agentEvolutionProposedDirectives}'
               ' (v$afterVersion)',
             ),
             const SizedBox(height: 6),
-            _directiveBox(
+            directiveBox(
               context: context,
               text: afterDirectives,
               isHighlighted: true,
@@ -699,10 +565,10 @@ final feedbackClassificationItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final items = _readMapList(json, 'items');
-    final positiveCount = _readInt(json, 'positiveCount');
-    final negativeCount = _readInt(json, 'negativeCount');
-    final neutralCount = _readInt(json, 'neutralCount');
+    final items = readMapList(json, 'items');
+    final positiveCount = readInt(json, 'positiveCount');
+    final negativeCount = readInt(json, 'negativeCount');
+    final neutralCount = readInt(json, 'neutralCount');
     final context = itemContext.buildContext;
 
     return Padding(
@@ -762,8 +628,8 @@ final feedbackClassificationItem = CatalogItem(
                   .take(5)
                   .map(
                     (item) => _feedbackLine(
-                      detail: _readString(item, 'detail'),
-                      sentiment: _readString(item, 'sentiment', 'neutral'),
+                      detail: readString(item, 'detail'),
+                      sentiment: readString(item, 'sentiment', 'neutral'),
                     ),
                   ),
               if (items.length > 5)
@@ -793,12 +659,12 @@ final feedbackCategoryBreakdownItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final categories = _readMapList(json, 'categories');
+    final categories = readMapList(json, 'categories');
     final context = itemContext.buildContext;
 
     final totalCount = categories.fold<int>(
       0,
-      (sum, c) => sum + _readInt(c, 'count'),
+      (sum, c) => sum + readInt(c, 'count'),
     );
 
     return Padding(
@@ -830,10 +696,10 @@ final feedbackCategoryBreakdownItem = CatalogItem(
             const SizedBox(height: 10),
             ...categories.map(
               (c) => _categoryBar(
-                name: _readString(c, 'name'),
-                count: _readInt(c, 'count'),
-                positiveCount: _readInt(c, 'positiveCount'),
-                negativeCount: _readInt(c, 'negativeCount'),
+                name: readString(c, 'name'),
+                count: readInt(c, 'count'),
+                positiveCount: readInt(c, 'positiveCount'),
+                negativeCount: readInt(c, 'negativeCount'),
                 totalCount: totalCount,
               ),
             ),
@@ -851,12 +717,12 @@ final sessionProgressItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final sessionNumber = _readInt(json, 'sessionNumber');
-    final totalSessions = _readInt(json, 'totalSessions');
-    final feedbackCount = _readInt(json, 'feedbackCount');
-    final positiveCount = _readInt(json, 'positiveCount');
-    final negativeCount = _readInt(json, 'negativeCount');
-    final status = _readString(json, 'status', 'active');
+    final sessionNumber = readInt(json, 'sessionNumber');
+    final totalSessions = readInt(json, 'totalSessions');
+    final feedbackCount = readInt(json, 'feedbackCount');
+    final positiveCount = readInt(json, 'positiveCount');
+    final negativeCount = readInt(json, 'negativeCount');
+    final status = readString(json, 'status', 'active');
     final context = itemContext.buildContext;
 
     final statusColor = switch (status) {
@@ -903,12 +769,12 @@ final sessionProgressItem = CatalogItem(
             Wrap(
               spacing: 8,
               children: [
-                _metricChip(
+                metricChip(
                   context.messages.agentEvolutionTimelineFeedbackLabel,
                   '$feedbackCount',
                 ),
-                if (positiveCount > 0) _metricChip('+', '$positiveCount'),
-                if (negativeCount > 0) _metricChip('-', '$negativeCount'),
+                if (positiveCount > 0) metricChip('+', '$positiveCount'),
+                if (negativeCount > 0) metricChip('-', '$negativeCount'),
               ],
             ),
           ],
@@ -925,10 +791,10 @@ final categoryRatingsItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final categories = _readMapList(json, 'categories');
+    final categories = readMapList(json, 'categories');
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    return _CategoryRatingsCard(
+    return CategoryRatingsCard(
       categories: categories,
       onSubmit: (ratings) {
         final ratingsJson = jsonEncode(ratings);
@@ -952,14 +818,14 @@ final binaryChoicePromptItem = CatalogItem(
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
 
-    final question = _readString(json, 'question').trim();
+    final question = readString(json, 'question').trim();
     if (question.isEmpty) return const SizedBox.shrink();
 
-    final detail = _readString(json, 'detail').trim();
+    final detail = readString(json, 'detail').trim();
     final context = itemContext.buildContext;
 
-    final confirmLabelRaw = _readStringOrNull(json, 'confirmLabel')?.trim();
-    final dismissLabelRaw = _readStringOrNull(json, 'dismissLabel')?.trim();
+    final confirmLabelRaw = readStringOrNull(json, 'confirmLabel')?.trim();
+    final dismissLabelRaw = readStringOrNull(json, 'dismissLabel')?.trim();
     final confirmLabel = (confirmLabelRaw?.isNotEmpty ?? false)
         ? confirmLabelRaw!
         : context.messages.agentBinaryChoiceYes;
@@ -967,8 +833,8 @@ final binaryChoicePromptItem = CatalogItem(
         ? dismissLabelRaw!
         : context.messages.agentBinaryChoiceNo;
 
-    final confirmValueRaw = _readStringOrNull(json, 'confirmValue')?.trim();
-    final dismissValueRaw = _readStringOrNull(json, 'dismissValue')?.trim();
+    final confirmValueRaw = readStringOrNull(json, 'confirmValue')?.trim();
+    final dismissValueRaw = readStringOrNull(json, 'dismissValue')?.trim();
     final confirmValue = (confirmValueRaw?.isNotEmpty ?? false)
         ? confirmValueRaw!
         : 'confirm';
@@ -976,7 +842,7 @@ final binaryChoicePromptItem = CatalogItem(
         ? dismissValueRaw!
         : 'dismiss';
 
-    return _BinaryChoicePromptCard(
+    return BinaryChoicePromptCard(
       question: question,
       detail: detail,
       confirmLabel: confirmLabel,
@@ -1002,14 +868,14 @@ final highPriorityFeedbackItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final grievances = _readMapList(
+    final grievances = readMapList(
       json,
       'grievances',
-    ).where((item) => _readString(item, 'detail').trim().isNotEmpty).toList();
-    final excellenceNotes = _readMapList(
+    ).where((item) => readString(item, 'detail').trim().isNotEmpty).toList();
+    final excellenceNotes = readMapList(
       json,
       'excellenceNotes',
-    ).where((item) => _readString(item, 'detail').trim().isNotEmpty).toList();
+    ).where((item) => readString(item, 'detail').trim().isNotEmpty).toList();
     if (grievances.isEmpty && excellenceNotes.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1052,8 +918,8 @@ final highPriorityFeedbackItem = CatalogItem(
               const SizedBox(height: 4),
               ...grievances.map(
                 (item) => _highPriorityItemTile(
-                  agentId: _readString(item, 'agentId'),
-                  detail: _readString(item, 'detail'),
+                  agentId: readString(item, 'agentId'),
+                  detail: readString(item, 'detail'),
                   accentColor: GameyColors.primaryRed,
                 ),
               ),
@@ -1068,8 +934,8 @@ final highPriorityFeedbackItem = CatalogItem(
               const SizedBox(height: 4),
               ...excellenceNotes.map(
                 (item) => _highPriorityItemTile(
-                  agentId: _readString(item, 'agentId'),
-                  detail: _readString(item, 'detail'),
+                  agentId: readString(item, 'agentId'),
+                  detail: readString(item, 'detail'),
                   accentColor: GameyColors.primaryGreen,
                 ),
               ),
@@ -1081,428 +947,7 @@ final highPriorityFeedbackItem = CatalogItem(
   },
 );
 
-/// Stateful card that renders star ratings for each feedback category.
-class _CategoryRatingsCard extends StatefulWidget {
-  const _CategoryRatingsCard({
-    required this.categories,
-    required this.onSubmit,
-  });
-
-  final List<Map<String, Object?>> categories;
-  final void Function(Map<String, int> ratings) onSubmit;
-
-  @override
-  State<_CategoryRatingsCard> createState() => _CategoryRatingsCardState();
-}
-
-class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
-  late final List<String> _categoryKeys;
-  late final Map<String, int> _ratings;
-  bool _submitted = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final rawNames = widget.categories
-        .map((cat) => _readString(cat, 'name').trim())
-        .toList(growable: false);
-
-    final seen = <String>{};
-    _categoryKeys = List<String>.generate(rawNames.length, (index) {
-      var key = rawNames[index];
-      if (key.isEmpty) {
-        key = 'category_$index';
-        debugPrint(
-          'CategoryRatings received empty category name at index $index; '
-          'using "$key".',
-        );
-      }
-      if (seen.contains(key)) {
-        final disambiguated = '${key}_$index';
-        debugPrint(
-          'CategoryRatings received duplicate category name "$key"; '
-          'using "$disambiguated".',
-        );
-        key = disambiguated;
-      }
-      seen.add(key);
-      return key;
-    });
-
-    _ratings = {
-      for (final key in _categoryKeys) key: 0,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final messages = context.messages;
-    final colorScheme = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ModernBaseCard(
-        backgroundColor: colorScheme.surfaceContainerLow,
-        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const ModernIconContainer(
-                  icon: Icons.star_rounded,
-                  isCompact: true,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        messages.agentCategoryRatingsTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        messages.agentCategoryRatingsSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...widget.categories.asMap().entries.map((entry) {
-              final index = entry.key;
-              final cat = entry.value;
-              final name = _categoryKeys[index];
-              final label = _readString(cat, 'label');
-              final rating = _ratings[name] ?? 0;
-
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.45,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: List.generate(5, (i) {
-                          final starIndex = i + 1;
-                          final selected = starIndex <= rating;
-                          return Semantics(
-                            label: messages.agentCategoryRatingsStarLabel(
-                              starIndex,
-                              5,
-                            ),
-                            selected: selected,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: _submitted
-                                  ? null
-                                  : () => setState(
-                                      () => _ratings[name] = starIndex,
-                                    ),
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(
-                                  selected
-                                      ? Icons.star_rounded
-                                      : Icons.star_border_rounded,
-                                  size: 26,
-                                  color: selected
-                                      ? colorScheme.tertiary
-                                      : colorScheme.onSurfaceVariant.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text(
-                            messages.agentCategoryRatingsScaleMin,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            messages.agentCategoryRatingsScaleMax,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _submitted
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_rounded,
-                          size: 18,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          messages.agentCategoryRatingsSubmit,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    )
-                  : _primaryActionButton(
-                      label: messages.agentCategoryRatingsSubmit,
-                      onPressed: () {
-                        setState(() => _submitted = true);
-                        widget.onSubmit(_ratings);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BinaryChoicePromptCard extends StatefulWidget {
-  const _BinaryChoicePromptCard({
-    required this.question,
-    required this.detail,
-    required this.confirmLabel,
-    required this.dismissLabel,
-    required this.confirmValue,
-    required this.dismissValue,
-    required this.onSelect,
-  });
-
-  final String question;
-  final String detail;
-  final String confirmLabel;
-  final String dismissLabel;
-  final String confirmValue;
-  final String dismissValue;
-  final ValueChanged<String> onSelect;
-
-  @override
-  State<_BinaryChoicePromptCard> createState() =>
-      _BinaryChoicePromptCardState();
-}
-
-class _BinaryChoicePromptCardState extends State<_BinaryChoicePromptCard> {
-  bool _submitted = false;
-
-  void _handleSelect(String value) {
-    if (_submitted) return;
-    setState(() => _submitted = true);
-    widget.onSelect(value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ModernBaseCard(
-        backgroundColor: colorScheme.surfaceContainerLow,
-        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const ModernIconContainer(
-                  icon: Icons.help_outline_rounded,
-                  isCompact: true,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.question,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (widget.detail.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(
-                widget.detail,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.45,
-                ),
-              ),
-            ],
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.end,
-              children: [
-                DesignSystemButton(
-                  onPressed: _submitted
-                      ? null
-                      : () => _handleSelect(widget.dismissValue),
-                  label: widget.dismissLabel,
-                  variant: DesignSystemButtonVariant.secondary,
-                  size: DesignSystemButtonSize.medium,
-                ),
-                DesignSystemButton(
-                  onPressed: _submitted
-                      ? null
-                      : () => _handleSelect(widget.confirmValue),
-                  label: widget.confirmLabel,
-                  size: DesignSystemButtonSize.medium,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── Private helpers ─────────────────────────────────────────────────────────
-
-Widget _sectionLabel(BuildContext context, String text) {
-  return Text(
-    text,
-    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.2,
-    ),
-  );
-}
-
-Widget _directiveBox({
-  required BuildContext context,
-  required String text,
-  bool isHighlighted = false,
-}) {
-  final colorScheme = Theme.of(context).colorScheme;
-  final tokens = context.designTokens;
-
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: isHighlighted
-          ? colorScheme.primaryContainer.withValues(alpha: 0.22)
-          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-      borderRadius: BorderRadius.circular(tokens.radii.l),
-      border: Border.all(
-        color: isHighlighted
-            ? colorScheme.primary.withValues(alpha: 0.35)
-            : colorScheme.outlineVariant.withValues(alpha: 0.35),
-      ),
-    ),
-    child: AgentMarkdownView(
-      text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: colorScheme.onSurface,
-        height: 1.55,
-      ),
-    ),
-  );
-}
-
-Widget _metricChip(String label, String value) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(
-        value,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      Text(
-        label,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.5),
-          fontSize: 11,
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _primaryActionButton({
-  required String label,
-  required VoidCallback onPressed,
-}) {
-  return DesignSystemButton(
-    onPressed: onPressed,
-    label: label,
-    size: DesignSystemButtonSize.medium,
-  );
-}
-
-IconData _noteKindIcon(String kind) {
-  return switch (kind) {
-    'reflection' => Icons.psychology,
-    'hypothesis' => Icons.lightbulb_outline,
-    'decision' => Icons.gavel,
-    'pattern' => Icons.pattern,
-    _ => Icons.note,
-  };
-}
 
 Widget _sentimentChip(String label, int count, Color color) {
   return Container(

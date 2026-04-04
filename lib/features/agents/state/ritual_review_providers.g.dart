@@ -611,7 +611,7 @@ final class RitualSummaryMetricsProvider
 }
 
 String _$ritualSummaryMetricsHash() =>
-    r'2682d0439e4b7f9028b82d9e2cdba9f3d9adfa1d';
+    r'244d355b6f719bc199e5168fb83c3255aebca336';
 
 /// Compact summary metrics for ritual home and chat header surfaces.
 
