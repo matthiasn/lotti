@@ -389,7 +389,8 @@ class _BinaryChoicePromptCardState extends State<BinaryChoicePromptCard> {
   @override
   void didUpdateWidget(covariant BinaryChoicePromptCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final promptChanged = oldWidget.question != widget.question ||
+    final promptChanged =
+        oldWidget.question != widget.question ||
         oldWidget.confirmValue != widget.confirmValue ||
         oldWidget.dismissValue != widget.dismissValue;
     if (promptChanged) {

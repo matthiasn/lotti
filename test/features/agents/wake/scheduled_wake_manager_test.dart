@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,10 +16,12 @@ void main() {
 
   late MockAgentRepository repository;
   late MockWakeOrchestrator orchestrator;
+  late MockAgentSyncService syncService;
 
   setUp(() {
     repository = MockAgentRepository();
     orchestrator = MockWakeOrchestrator();
+    syncService = MockAgentSyncService();
   });
 
   ScheduledWakeManager createAndStart({
@@ -26,6 +30,7 @@ void main() {
     return ScheduledWakeManager(
       repository: repository,
       orchestrator: orchestrator,
+      syncService: syncService,
       checkInterval: checkInterval,
     )..start();
   }
@@ -239,6 +244,316 @@ void main() {
 
           // Verify it recovered and called again after the error.
           verify(() => repository.getDueScheduledAgentStates(any())).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('fast-forwards dormant project agents without enqueuing a wake', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 13, 6);
+      final dormantState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+            ),
+          );
+
+          final captured =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(captured.scheduledWakeAt, DateTime(2024, 3, 16, 6));
+
+          manager.stop();
+        });
+      });
+    });
+
+    test(
+      'enqueues never-woken project agents even without pending activity',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 14, 6);
+        // lastWakeAt is null → first run, must execute.
+        final neverWokenState = makeTestState(
+          scheduledWakeAt: pastSchedule,
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [neverWokenState],
+            );
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test('mixed batch: fast-forwards dormant, enqueues active', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 13, 6);
+
+      const activeId = 'agent-active';
+      const dormantId = 'agent-dormant';
+
+      final dormantState = makeTestState(
+        agentId: dormantId,
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+      final activeState = makeTestState(
+        agentId: activeId,
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: AgentSlots(
+          activeProjectId: 'project-2',
+          pendingProjectActivityAt: DateTime(2024, 3, 15, 9),
+        ),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState, activeState],
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          // Active agent enqueued.
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: activeId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
+
+          // Dormant agent NOT enqueued.
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: dormantId,
+              reason: any(named: 'reason'),
+            ),
+          );
+
+          // Dormant agent fast-forwarded via syncService.
+          verify(() => syncService.upsertEntity(any())).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('fast-forward fires onPersistedStateChanged callback', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final dormantState = makeTestState(
+        scheduledWakeAt: DateTime(2024, 3, 13, 6),
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+      String? notifiedAgentId;
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = ScheduledWakeManager(
+            repository: repository,
+            orchestrator: orchestrator,
+            syncService: syncService,
+            onPersistedStateChanged: (id) => notifiedAgentId = id,
+          )..start();
+          async.flushMicrotasks();
+
+          expect(notifiedAgentId, kTestAgentId);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('enqueues non-project agents even without pending activity', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 14, 6);
+      // No activeProjectId → not a project agent → always enqueue.
+      final improverState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [improverState],
+          );
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test(
+      'enqueues project agents with pending activity even if previously woken',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 14, 6);
+        final activeState = makeTestState(
+          scheduledWakeAt: pastSchedule,
+          lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+          ),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [activeState],
+            );
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
+        });
+      },
+    );
+    test('fast-forward preserves agent schedule hour and keeps today slot', () {
+      // now is 5:00 AM, schedule was for 9:00 AM two days ago.
+      // Fast-forward should schedule for TODAY at 9:00 AM, not tomorrow.
+      final now = DateTime(2024, 3, 15, 5);
+      final pastSchedule = DateTime(2024, 3, 13, 9);
+      final dormantState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 9, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          final captured =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          // Today at 9:00 AM, not tomorrow.
+          expect(captured.scheduledWakeAt, DateTime(2024, 3, 15, 9));
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('per-agent failure does not stop remaining agents', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 13, 6);
+
+      const failingId = 'agent-failing';
+      const succeedingId = 'agent-succeeding';
+
+      final failingState = makeTestState(
+        agentId: failingId,
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+      final succeedingState = makeTestState(
+        agentId: succeedingId,
+        scheduledWakeAt: pastSchedule,
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [failingState, succeedingState],
+          );
+          // First agent's upsert fails.
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenThrow(Exception('sync error'));
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          // Second agent should still be enqueued despite first failing.
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: succeedingId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
 
           manager.stop();
         });
