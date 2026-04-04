@@ -673,7 +673,7 @@ void main() {
       expect(firstMessage['content'], 'Direct string content');
     });
 
-    test('should skip thinking content in chat completion', () async {
+    test('should capture thinking content wrapped in think tags', () async {
       final messages = [
         const ChatCompletionMessage.user(
           content: ChatCompletionUserMessageContent.string('Test'),
@@ -715,24 +715,13 @@ void main() {
       );
 
       final events = await stream.toList();
+      final allContent = events
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
 
-      // Should have received content but not thinking
-      expect(
-        events.any(
-          (CreateChatCompletionStreamResponse e) =>
-              e.choices?.first.delta?.content?.contains('Actual response') ??
-              false,
-        ),
-        true,
-      );
-      expect(
-        events.any(
-          (CreateChatCompletionStreamResponse e) =>
-              e.choices?.first.delta?.content?.contains('Internal thoughts') ??
-              false,
-        ),
-        false,
-      );
+      // Thinking content is wrapped in <think> tags
+      expect(allContent, contains('<think>Internal thoughts...</think>'));
+      expect(allContent, contains('Actual response'));
     });
 
     test('should handle tool messages correctly', () async {
@@ -2137,7 +2126,7 @@ void main() {
       expect(responses, hasLength(1));
     });
 
-    test('should handle response with thinking content', () async {
+    test('should capture thinking content from response', () async {
       final messages = [
         const ChatCompletionMessage.user(
           content: ChatCompletionUserMessageContent.string('Hello'),
@@ -2149,7 +2138,6 @@ void main() {
       when(() => mockResponse.stream).thenAnswer(
         (_) => http.ByteStream(
           Stream.fromIterable([
-            // Thinking content should be skipped
             utf8.encode(
               '{"message":{"thinking":"processing..."},"done":false}\n',
             ),
@@ -2181,8 +2169,14 @@ void main() {
       );
 
       final responses = await stream.toList();
-      // Should have 1 response (thinking skipped, final response included)
-      expect(responses, hasLength(1));
+      // Should have 3 responses: thinking (with <think> prefix),
+      // </think> closing tag, and final content
+      expect(responses, hasLength(3));
+      final allContent = responses
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
+      expect(allContent, contains('<think>processing...</think>'));
+      expect(allContent, contains('final response'));
     });
   });
 
@@ -2230,6 +2224,199 @@ void main() {
             .toList(),
         throwsA(isA<Exception>()),
       );
+    });
+  });
+
+  group('shouldEnableThinking', () {
+    test('returns true for Gemma 4 models', () {
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('gemma4:e4b'),
+        isTrue,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('gemma4:26b'),
+        isTrue,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('gemma4:31b'),
+        isTrue,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking(
+          'gemma4:26b-a4b-it-q4_K_M',
+        ),
+        isTrue,
+      );
+    });
+
+    test('returns false for non-Gemma 4 models', () {
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('qwen3.5:9b'),
+        isFalse,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('qwen3.5:27b'),
+        isFalse,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('gemma3:12b'),
+        isFalse,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('llama3:8b'),
+        isFalse,
+      );
+      expect(
+        OllamaInferenceRepository.shouldEnableThinking('mxbai-embed-large'),
+        isFalse,
+      );
+    });
+  });
+
+  group('Thinking mode request body', () {
+    late OllamaInferenceRepository thinkingRepo;
+    late MockHttpClient thinkingMockClient;
+
+    setUp(() {
+      thinkingMockClient = MockHttpClient();
+      thinkingRepo = OllamaInferenceRepository(httpClient: thinkingMockClient);
+    });
+
+    test('adds think:true for gemma4 models', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('{"message":{"content":"hi"},"done":true}\n'),
+          ]),
+        ),
+      );
+
+      http.BaseRequest? capturedRequest;
+      when(
+        () => thinkingMockClient.send(any()),
+      ).thenAnswer((invocation) async {
+        capturedRequest = invocation.positionalArguments[0] as http.BaseRequest;
+        return mockResponse;
+      });
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      await thinkingRepo
+          .generateText(
+            prompt: 'Hello',
+            model: 'gemma4:26b',
+            temperature: 0.7,
+            systemMessage: null,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedRequest, isNotNull);
+      final body =
+          jsonDecode((capturedRequest! as http.Request).body)
+              as Map<String, dynamic>;
+      expect(body['think'], isTrue);
+    });
+
+    test('does not add think for non-gemma4 models', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('{"message":{"content":"hi"},"done":true}\n'),
+          ]),
+        ),
+      );
+
+      http.BaseRequest? capturedRequest;
+      when(
+        () => thinkingMockClient.send(any()),
+      ).thenAnswer((invocation) async {
+        capturedRequest = invocation.positionalArguments[0] as http.BaseRequest;
+        return mockResponse;
+      });
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      await thinkingRepo
+          .generateText(
+            prompt: 'Hello',
+            model: 'qwen3.5:9b',
+            temperature: 0.7,
+            systemMessage: null,
+            provider: provider,
+          )
+          .toList();
+
+      expect(capturedRequest, isNotNull);
+      final body =
+          jsonDecode((capturedRequest! as http.Request).body)
+              as Map<String, dynamic>;
+      expect(body.containsKey('think'), isFalse);
+    });
+
+    test('closes thinking block on done when thinking was not followed by '
+        'content', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode(
+              '{"message":{"thinking":"deep thought"},"done":false}\n',
+            ),
+            utf8.encode('{"done":true}\n'),
+          ]),
+        ),
+      );
+
+      when(
+        () => thinkingMockClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final events = await thinkingRepo
+          .generateTextWithMessages(
+            messages: [
+              const ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hi'),
+              ),
+            ],
+            model: 'gemma4:26b',
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+
+      final allContent = events
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
+      expect(allContent, contains('<think>deep thought</think>'));
     });
   });
 }
