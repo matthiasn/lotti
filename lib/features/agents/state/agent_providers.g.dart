@@ -569,7 +569,7 @@ final class ScheduledWakeManagerProvider
 }
 
 String _$scheduledWakeManagerHash() =>
-    r'3652b1b63cd7080347e2abaa86212b1239a04234';
+    r'7e7cb29997d30e6caeca0349e0862bc4a86ba86d';
 
 /// Tracks local project/task changes and marks project reports stale without
 /// waking the project agent immediately.

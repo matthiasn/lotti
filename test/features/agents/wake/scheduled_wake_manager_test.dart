@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,10 +16,12 @@ void main() {
 
   late MockAgentRepository repository;
   late MockWakeOrchestrator orchestrator;
+  late MockAgentSyncService syncService;
 
   setUp(() {
     repository = MockAgentRepository();
     orchestrator = MockWakeOrchestrator();
+    syncService = MockAgentSyncService();
   });
 
   ScheduledWakeManager createAndStart({
@@ -26,6 +30,7 @@ void main() {
     return ScheduledWakeManager(
       repository: repository,
       orchestrator: orchestrator,
+      syncService: syncService,
       checkInterval: checkInterval,
     )..start();
   }
@@ -239,6 +244,237 @@ void main() {
 
           // Verify it recovered and called again after the error.
           verify(() => repository.getDueScheduledAgentStates(any())).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('fast-forwards dormant agents without enqueuing a wake', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 13, 6);
+      final dormantState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
+            (_) async => dormantState,
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+            ),
+          );
+
+          final captured =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(captured.scheduledWakeAt, DateTime(2024, 3, 16, 6));
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('enqueues never-woken agents even without pending activity', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 14, 6);
+      // lastWakeAt is null → first run, must execute.
+      final neverWokenState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [neverWokenState],
+          );
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('mixed batch: fast-forwards dormant, enqueues active', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 13, 6);
+
+      const activeId = 'agent-active';
+      const dormantId = 'agent-dormant';
+
+      final dormantState = makeTestState(
+        agentId: dormantId,
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+      );
+      final activeState = makeTestState(
+        agentId: activeId,
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: AgentSlots(
+          pendingProjectActivityAt: DateTime(2024, 3, 15, 9),
+        ),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState, activeState],
+          );
+          when(() => repository.getAgentState(dormantId)).thenAnswer(
+            (_) async => dormantState,
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          // Active agent enqueued.
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: activeId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
+
+          // Dormant agent NOT enqueued.
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: dormantId,
+              reason: any(named: 'reason'),
+            ),
+          );
+
+          // Dormant agent fast-forwarded via syncService.
+          verify(() => syncService.upsertEntity(any())).called(1);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('fast-forward tolerates deleted agent state gracefully', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final dormantState = makeTestState(
+        scheduledWakeAt: DateTime(2024, 3, 13, 6),
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          // Agent deleted between query and fast-forward.
+          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
+            (_) async => null,
+          );
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verifyNever(
+            () => orchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+            ),
+          );
+          verifyNever(() => syncService.upsertEntity(any()));
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('fast-forward fires onPersistedStateChanged callback', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final dormantState = makeTestState(
+        scheduledWakeAt: DateTime(2024, 3, 13, 6),
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+      );
+      String? notifiedAgentId;
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantState],
+          );
+          when(() => repository.getAgentState(kTestAgentId)).thenAnswer(
+            (_) async => dormantState,
+          );
+          when(
+            () => syncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final manager = ScheduledWakeManager(
+            repository: repository,
+            orchestrator: orchestrator,
+            syncService: syncService,
+            onPersistedStateChanged: (id) => notifiedAgentId = id,
+          )..start();
+          async.flushMicrotasks();
+
+          expect(notifiedAgentId, kTestAgentId);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('enqueues agents with pending activity even if previously woken', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final pastSchedule = DateTime(2024, 3, 14, 6);
+      final activeState = makeTestState(
+        scheduledWakeAt: pastSchedule,
+        lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+        slots: AgentSlots(
+          pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+        ),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [activeState],
+          );
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
 
           manager.stop();
         });

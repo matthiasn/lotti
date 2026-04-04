@@ -1,36 +1,45 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Manages scheduled wakes for agents that need to wake on a time-based
-/// schedule (e.g., weekly one-on-one rituals).
+/// schedule (e.g., daily project digests, weekly one-on-one rituals).
 ///
-/// Periodically checks for agents with a `scheduledWakeAt` in the past and
-/// enqueues manual wakes for them via the [WakeOrchestrator].
+/// On startup and then hourly, queries for agents with overdue
+/// `scheduledWakeAt`. Dormant project agents (no pending activity since
+/// last report) are fast-forwarded to the next future time slot without
+/// executing, avoiding unnecessary LLM calls after prolonged app absence.
 class ScheduledWakeManager {
   ScheduledWakeManager({
     required AgentRepository repository,
     required WakeOrchestrator orchestrator,
+    required AgentSyncService syncService,
     this.checkInterval = const Duration(hours: 1),
+    this.domainLogger,
+    this.onPersistedStateChanged,
   }) : _repository = repository,
-       _orchestrator = orchestrator;
+       _orchestrator = orchestrator,
+       _syncService = syncService;
 
   final AgentRepository _repository;
   final WakeOrchestrator _orchestrator;
+  final AgentSyncService _syncService;
+  final DomainLogger? domainLogger;
+  final void Function(String agentId)? onPersistedStateChanged;
 
-  /// How often the manager checks for due agents.
   final Duration checkInterval;
 
   Timer? _timer;
   bool _isChecking = false;
 
-  /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
-    // Check immediately for any missed wakes (e.g., app was closed).
     unawaited(_checkAndEnqueue());
 
     _timer?.cancel();
@@ -38,28 +47,15 @@ class ScheduledWakeManager {
       unawaited(_checkAndEnqueue());
     });
 
-    developer.log(
-      'Started scheduled wake manager '
-      '(interval: ${checkInterval.inMinutes}min)',
-      name: 'ScheduledWakeManager',
-    );
+    _log('started (interval: ${checkInterval.inMinutes}min)');
   }
 
-  /// Stop periodic checking.
   void stop() {
     _timer?.cancel();
     _timer = null;
-
-    developer.log(
-      'Stopped scheduled wake manager',
-      name: 'ScheduledWakeManager',
-    );
+    _log('stopped');
   }
 
-  /// Check for agents with a due `scheduledWakeAt` and enqueue them.
-  ///
-  /// Uses a single DB query instead of fetching each agent's state
-  /// individually, avoiding an N+1 query pattern.
   Future<void> _checkAndEnqueue() async {
     if (_isChecking) return;
     _isChecking = true;
@@ -67,27 +63,74 @@ class ScheduledWakeManager {
       final now = clock.now();
       final dueStates = await _repository.getDueScheduledAgentStates(now);
 
+      var enqueued = 0;
+      var fastForwarded = 0;
+
       for (final state in dueStates) {
+        final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
+
+        if (!hasPendingActivity && state.lastWakeAt != null) {
+          await _fastForwardSchedule(state.agentId, now);
+          fastForwarded++;
+          continue;
+        }
+
         _orchestrator.enqueueManualWake(
           agentId: state.agentId,
           reason: WakeReason.scheduled.name,
         );
+        enqueued++;
+      }
 
-        developer.log(
-          'Enqueued scheduled wake for ${state.agentId} '
-          '(was due at ${state.scheduledWakeAt})',
-          name: 'ScheduledWakeManager',
+      if (dueStates.isNotEmpty) {
+        _log(
+          'processed ${dueStates.length} due agents: '
+          '$enqueued enqueued, $fastForwarded fast-forwarded',
         );
       }
     } catch (e, s) {
-      developer.log(
-        'Error checking scheduled wakes: $e',
-        name: 'ScheduledWakeManager',
-        error: e,
-        stackTrace: s,
-      );
+      _logError('error checking scheduled wakes', error: e, stackTrace: s);
     } finally {
       _isChecking = false;
     }
+  }
+
+  /// Advance `scheduledWakeAt` to the next future time slot without
+  /// executing a full wake cycle. Used for dormant agents with no
+  /// pending activity — avoids unnecessary LLM calls.
+  Future<void> _fastForwardSchedule(String agentId, DateTime now) async {
+    final state = await _repository.getAgentState(agentId);
+    if (state == null) return;
+
+    final nextWake = nextLocalDayAtTime(
+      now,
+      hour: AgentSchedules.projectDailyDigestHour,
+    );
+
+    await _syncService.upsertEntity(
+      state.copyWith(
+        scheduledWakeAt: nextWake,
+        updatedAt: now,
+      ),
+    );
+    onPersistedStateChanged?.call(agentId);
+
+    _log(
+      'fast-forwarded ${DomainLogger.sanitizeId(agentId)} '
+      'to $nextWake (no pending activity)',
+    );
+  }
+
+  void _log(String message) {
+    domainLogger?.log(LogDomains.agentRuntime, message, subDomain: 'schedule');
+  }
+
+  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
+    domainLogger?.error(
+      LogDomains.agentRuntime,
+      message,
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 }

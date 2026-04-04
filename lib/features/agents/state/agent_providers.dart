@@ -191,9 +191,13 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
 /// The scheduled wake manager for time-based agent wakes.
 @Riverpod(keepAlive: true)
 ScheduledWakeManager scheduledWakeManager(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
   final manager = ScheduledWakeManager(
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
   ref.onDispose(manager.stop);
   return manager;

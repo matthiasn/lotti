@@ -2396,14 +2396,22 @@ void main() {
     test('creates ScheduledWakeManager instance', () {
       final mockRepo = MockAgentRepository();
       final mockOrchestrator = MockWakeOrchestrator();
+      final mockSyncService = MockAgentSyncService();
+      final notifications = UpdateNotifications();
 
       final container = ProviderContainer(
         overrides: [
           agentRepositoryProvider.overrideWithValue(mockRepo),
           wakeOrchestratorProvider.overrideWithValue(mockOrchestrator),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(() {
+        notifications.dispose();
+        container.dispose();
+      });
 
       final manager = container.read(scheduledWakeManagerProvider);
       expect(manager, isA<ScheduledWakeManager>());
