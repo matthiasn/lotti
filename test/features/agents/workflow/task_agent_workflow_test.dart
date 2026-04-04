@@ -14,13 +14,10 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -34,111 +31,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
-
-/// Minimal mock of [ConversationRepository] that avoids Riverpod build().
-///
-/// ConversationRepository is a Riverpod notifier, so we extend it directly and
-/// override the methods the workflow calls rather than using `Mock`.
-class MockConversationRepository extends ConversationRepository {
-  MockConversationRepository(this._mockManager);
-
-  final MockConversationManager _mockManager;
-  final List<String> deletedConversationIds = [];
-
-  /// Delegate for sendMessage — set in tests to control behavior.
-  Future<InferenceUsage?> Function({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    double temperature,
-    ConversationStrategy? strategy,
-  })?
-  sendMessageDelegate;
-
-  @override
-  void build() {
-    // No-op for test mock.
-  }
-
-  @override
-  String createConversation({
-    String? systemMessage,
-    int maxTurns = 20,
-  }) {
-    return 'test-conv-id';
-  }
-
-  @override
-  ConversationManager? getConversation(String conversationId) {
-    return _mockManager;
-  }
-
-  @override
-  void deleteConversation(String conversationId) {
-    deletedConversationIds.add(conversationId);
-  }
-
-  @override
-  Future<InferenceUsage?> sendMessage({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    double temperature = 0.7,
-    ConversationStrategy? strategy,
-  }) async {
-    if (sendMessageDelegate != null) {
-      return sendMessageDelegate!(
-        conversationId: conversationId,
-        message: message,
-        model: model,
-        provider: provider,
-        inferenceRepo: inferenceRepo,
-        tools: tools,
-        temperature: temperature,
-        strategy: strategy,
-      );
-    }
-    return null;
-  }
-}
-
-/// Like [MockConversationRepository] but captures the system message passed
-/// to createConversation.
-class _CapturingConversationRepository extends MockConversationRepository {
-  // ignore: use_super_parameters
-  _CapturingConversationRepository(
-    MockConversationManager mockManager, {
-    required this.onSystemMessage,
-  }) : super(mockManager);
-
-  final void Function(String?) onSystemMessage;
-
-  @override
-  String createConversation({
-    String? systemMessage,
-    int maxTurns = 20,
-  }) {
-    onSystemMessage(systemMessage);
-    return 'test-conv-id';
-  }
-}
-
-/// Like [MockConversationRepository] but returns null from getConversation,
-/// simulating a scenario where the conversation was already cleaned up.
-class _NullManagerConversationRepository extends MockConversationRepository {
-  // ignore: use_super_parameters
-  _NullManagerConversationRepository(MockConversationManager mockManager)
-    : super(mockManager);
-
-  @override
-  ConversationManager? getConversation(String conversationId) => null;
-}
+import 'task_agent_workflow_test_helpers.dart';
 
 void main() {
   late MockAgentRepository mockAgentRepository;
@@ -318,24 +211,13 @@ void main() {
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {
       test('when no template assigned', () async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
 
         // Override default template stub to return null.
         when(
@@ -428,24 +310,13 @@ void main() {
       });
 
       test('when no Gemini provider configured', () async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => []);
@@ -462,24 +333,13 @@ void main() {
       });
 
       test('when template exists but no active version', () async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
 
         // Template exists but active version is null.
         when(
@@ -500,37 +360,17 @@ void main() {
 
     group('successful execute', () {
       setUp(() {
-        // Common stubs for a successful execute path.
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-
-        // Mock manager messages (empty list for final content extraction).
-        when(() => mockConversationManager.messages).thenReturn([]);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
       });
 
       test('creates conversation, sends message, and persists state', () async {
@@ -605,11 +445,11 @@ void main() {
       test('system prompt contains scaffold and template directives', () async {
         String? capturedSystemMessage;
         // Override createConversation to capture the system message.
-        final capturingRepo = _CapturingConversationRepository(
+        final capturingRepo = CapturingConversationRepository(
           mockConversationManager,
           onSystemMessage: (msg) => capturedSystemMessage = msg,
         );
-        final capturingWorkflow = TaskAgentWorkflow(
+        final capturingWorkflow = createTestWorkflow(
           agentRepository: mockAgentRepository,
           conversationRepository: capturingRepo,
           aiInputRepository: mockAiInputRepository,
@@ -667,11 +507,11 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = _CapturingConversationRepository(
+          final capturingRepo = CapturingConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final capturingWorkflow = TaskAgentWorkflow(
+          final capturingWorkflow = createTestWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: capturingRepo,
             aiInputRepository: mockAiInputRepository,
@@ -732,11 +572,11 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = _CapturingConversationRepository(
+          final capturingRepo = CapturingConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final capturingWorkflow = TaskAgentWorkflow(
+          final capturingWorkflow = createTestWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: capturingRepo,
             aiInputRepository: mockAiInputRepository,
@@ -930,14 +770,9 @@ void main() {
           ).captured;
 
           // Find the persisted observation payload entity (has priority key).
-          final payloads = captured
-              .whereType<AgentDomainEntity>()
-              .where(
-                (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-              )
-              .cast<AgentMessagePayloadEntity>()
-              .where((p) => p.content.containsKey('priority'))
-              .toList();
+          final payloads = capturedPayloadEntities(
+            captured,
+          ).where((p) => p.content.containsKey('priority')).toList();
 
           expect(payloads, hasLength(1));
           final payload = payloads.first;
@@ -984,15 +819,10 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final tokenUsageEntities = captured
-              .whereType<AgentDomainEntity>()
-              .where(
-                (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
-              )
-              .toList();
+          final tokenUsageEntities = capturedTokenUsageEntities(captured);
 
           expect(tokenUsageEntities, hasLength(1));
-          final entity = tokenUsageEntities.first as WakeTokenUsageEntity;
+          final entity = tokenUsageEntities.first;
           expect(entity.agentId, agentId);
           expect(entity.runKey, runKey);
           expect(entity.threadId, threadId);
@@ -1018,12 +848,7 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final tokenUsageEntities = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
-            )
-            .toList();
+        final tokenUsageEntities = capturedTokenUsageEntities(captured);
 
         expect(tokenUsageEntities, isEmpty);
       });
@@ -1057,12 +882,7 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final tokenUsageEntities = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
-            )
-            .toList();
+        final tokenUsageEntities = capturedTokenUsageEntities(captured);
 
         expect(tokenUsageEntities, isEmpty);
       });
@@ -1128,24 +948,13 @@ void main() {
 
     group('failed execute', () {
       test('increments consecutiveFailureCount on exception', () async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -1183,33 +992,10 @@ void main() {
         ).captured;
 
         // Find the state entity that was persisted.
-        final stateUpdates = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.map(
-                agent: (_) => false,
-                agentState: (_) => true,
-                agentMessage: (_) => false,
-                agentMessagePayload: (_) => false,
-                agentReport: (_) => false,
-                agentReportHead: (_) => false,
-                agentTemplate: (_) => false,
-                agentTemplateVersion: (_) => false,
-                agentTemplateHead: (_) => false,
-                evolutionSession: (_) => false,
-                evolutionSessionRecap: (_) => false,
-                evolutionNote: (_) => false,
-                changeSet: (_) => false,
-                changeDecision: (_) => false,
-                projectRecommendation: (_) => false,
-                wakeTokenUsage: (_) => false,
-                unknown: (_) => false,
-              ),
-            )
-            .toList();
+        final stateUpdates = capturedStateEntities(captured);
 
         expect(stateUpdates, isNotEmpty);
-        final updatedState = stateUpdates.last as AgentStateEntity;
+        final updatedState = stateUpdates.last;
         expect(
           updatedState.consecutiveFailureCount,
           testAgentState.consecutiveFailureCount + 1,
@@ -1227,24 +1013,13 @@ void main() {
     group('_resolveGeminiProvider edge cases', () {
       /// Stubs common to all provider-resolution tests.
       void stubContextToProviderStep() {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
       }
 
       test('returns error when provider is not an InferenceProvider', () async {
@@ -1304,33 +1079,17 @@ void main() {
 
     group('report and thought persistence', () {
       setUp(() {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
       });
 
       test(
@@ -1486,13 +1245,7 @@ void main() {
 
         // Find the thought payload entity (the one with the LLM response,
         // not the user message payload).
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .toList();
+        final payloads = capturedPayloadEntities(captured);
         // At least 2 payloads: user message + thought.
         expect(payloads.length, greaterThanOrEqualTo(2));
         final thoughtPayload = payloads.firstWhere(
@@ -1710,34 +1463,17 @@ void main() {
         String toolName,
         String arguments,
       ) async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(() => mockConversationManager.messages).thenReturn([]);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
 
         // Stub the task entity lookup used by _executeToolHandler.
         when(
@@ -3135,39 +2871,143 @@ void main() {
           isNot(contains('Prior Critical Observations')),
         );
       });
+
+      test('includes all observations when count is exactly 20', () async {
+        // Create exactly 20 observations ordered newest-first.
+        final observations = List.generate(20, (i) {
+          final hour =
+              19 - i; // Index 0 = newest (hour 19), index 19 = oldest (hour 0).
+          return AgentDomainEntity.agentMessage(
+                id: 'obs-exact-$hour',
+                agentId: agentId,
+                threadId: threadId,
+                kind: AgentMessageKind.observation,
+                createdAt: DateTime(2024, 6, 15, hour),
+                vectorClock: null,
+                contentEntryId: 'pay-exact-$hour',
+                metadata: const AgentMessageMetadata(runKey: runKey),
+              )
+              as AgentMessageEntity;
+        });
+
+        // Stub all 20 payloads.
+        for (var i = 0; i < 20; i++) {
+          when(() => mockAgentRepository.getEntity('pay-exact-$i')).thenAnswer((
+            _,
+          ) async {
+            return AgentDomainEntity.agentMessagePayload(
+              id: 'pay-exact-$i',
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 15, i),
+              vectorClock: null,
+              content: <String, Object?>{'text': 'ExactObs $i'},
+            );
+          });
+        }
+
+        final message = await executeAndCaptureMessage(
+          observations: observations,
+        );
+
+        expect(message, isNotNull);
+        // All 20 observations should appear — none truncated.
+        expect(message, contains('ExactObs 0'));
+        expect(message, contains('ExactObs 19'));
+        expect(message, contains('## Agent Journal'));
+      });
+
+      test('truncates observations to 20 when count is 21', () async {
+        // Create 21 observations ordered newest-first.
+        final observations = List.generate(21, (i) {
+          final hour =
+              20 - i; // Index 0 = newest (hour 20), index 20 = oldest (hour 0).
+          return AgentDomainEntity.agentMessage(
+                id: 'obs-boundary-$hour',
+                agentId: agentId,
+                threadId: threadId,
+                kind: AgentMessageKind.observation,
+                createdAt: DateTime(2024, 6, 15, hour),
+                vectorClock: null,
+                contentEntryId: 'pay-boundary-$hour',
+                metadata: const AgentMessageMetadata(runKey: runKey),
+              )
+              as AgentMessageEntity;
+        });
+
+        // Stub all 21 payloads.
+        for (var i = 0; i <= 20; i++) {
+          when(
+            () => mockAgentRepository.getEntity('pay-boundary-$i'),
+          ).thenAnswer((_) async {
+            return AgentDomainEntity.agentMessagePayload(
+              id: 'pay-boundary-$i',
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 15, i),
+              vectorClock: null,
+              content: <String, Object?>{'text': 'BoundaryObs $i'},
+            );
+          });
+        }
+
+        final message = await executeAndCaptureMessage(
+          observations: observations,
+        );
+
+        expect(message, isNotNull);
+        // The 20 most recent (hours 1-20) should appear.
+        expect(message, contains('BoundaryObs 1'));
+        expect(message, contains('BoundaryObs 20'));
+        // The single oldest observation (hour 0) should be truncated.
+        expect(message, isNot(contains('BoundaryObs 0')));
+      });
+
+      test('filters linked tasks with null or empty IDs gracefully', () async {
+        // Provide linked tasks JSON where some entries have no 'id' or an
+        // empty string 'id'. The production code (lines 1333-1337) filters
+        // these out via whereType<String>().where(id.isNotEmpty).
+        final linkedJson = jsonEncode({
+          'linked_from': [
+            {'id': '', 'title': 'Empty ID Task', 'status': 'OPEN'},
+            {'title': 'Null ID Task', 'status': 'OPEN'},
+            {'id': 'valid-1', 'title': 'Valid Task', 'status': 'OPEN'},
+          ],
+          'linked_to': <Map<String, dynamic>>[],
+        });
+        final message = await executeAndCaptureMessage(
+          linkedTasksJson: linkedJson,
+        );
+
+        expect(message, isNotNull);
+        // The section should still appear because there is one valid linked task.
+        expect(message, contains('## Linked Tasks'));
+        expect(message, contains('Valid Task'));
+        // Entries with missing/empty IDs should not cause errors — the message
+        // should still include the rows (they're serialized), but no report
+        // enrichment happens for them.
+        expect(message, contains('Empty ID Task'));
+        expect(message, contains('Null ID Task'));
+        // No taskAgentId should have been injected for entries without valid IDs.
+        // Valid ID entry also won't have a report since getLinksTo returns [].
+        verifyNever(
+          () => mockAgentRepository.getLinksTo('', type: 'agent_task'),
+        );
+      });
     });
 
     group('tool handler dispatch with real Task', () {
       /// Common stubs for execute path up through sendMessage.
-      void stubFullExecutePath() {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(() => mockConversationManager.messages).thenReturn([]);
+      void stubFullExecutePathLocal() {
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
       }
 
       /// A Task with categoryId matching the agent's allowed set.
@@ -3200,7 +3040,7 @@ void main() {
         String arguments, {
         Task? task,
       }) async {
-        stubFullExecutePath();
+        stubFullExecutePathLocal();
 
         // Return a real Task entity from the DB so tool handler dispatch
         // actually exercises the handler code.
@@ -3313,18 +3153,7 @@ void main() {
           '{}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('update_task_estimate with null minutes is deferred', () async {
@@ -3333,18 +3162,7 @@ void main() {
           '{}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('update_task_due_date with empty dueDate is deferred', () async {
@@ -3353,18 +3171,7 @@ void main() {
           '{"dueDate":""}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('update_task_priority with empty priority is deferred', () async {
@@ -3373,18 +3180,7 @@ void main() {
           '{"priority":""}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('assign_task_labels with non-array labels is deferred', () async {
@@ -3393,18 +3189,7 @@ void main() {
           '{"labels":"not-an-array"}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('assign_task_labels with valid labels is deferred', () async {
@@ -3421,18 +3206,7 @@ void main() {
             addedLabelIds: any(named: 'addedLabelIds'),
           ),
         );
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test(
@@ -3443,18 +3217,7 @@ void main() {
             '{"items":"not an array"}',
           );
           expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
+          verifyDeferredToolResponse(mockConversationManager);
         },
       );
 
@@ -3464,18 +3227,7 @@ void main() {
           '{"items":"not an array"}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('update_checklist_items with empty array is deferred', () async {
@@ -3484,18 +3236,7 @@ void main() {
           '{"items":[]}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test(
@@ -3506,18 +3247,7 @@ void main() {
             '{"items":[]}',
           );
           expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
+          verifyDeferredToolResponse(mockConversationManager);
         },
       );
 
@@ -3551,18 +3281,7 @@ void main() {
           '{"items":[{"isChecked":true}]}',
         );
         expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: anyOf(
-                contains('proposal recorded'),
-                contains('Proposal queued'),
-              ),
-            ),
-          ),
-        ).called(1);
+        verifyDeferredToolResponse(mockConversationManager);
       });
 
       test('update_task_estimate accepts numeric string minutes', () async {
@@ -3683,21 +3402,10 @@ void main() {
           );
           expect(result.success, isTrue);
           // Not executed immediately — deferred to change set.
-          verifyNever(
-            () => mockJournalRepository.updateJournalEntity(any()),
+          verifyToolWasDeferred(
+            mockConversationManager: mockConversationManager,
+            mockJournalRepository: mockJournalRepository,
           );
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
         });
 
         test('update_task_due_date is deferred', () async {
@@ -3707,21 +3415,10 @@ void main() {
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
-          verifyNever(
-            () => mockJournalRepository.updateJournalEntity(any()),
+          verifyToolWasDeferred(
+            mockConversationManager: mockConversationManager,
+            mockJournalRepository: mockJournalRepository,
           );
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
         });
 
         test('update_task_priority is deferred', () async {
@@ -3731,21 +3428,10 @@ void main() {
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
-          verifyNever(
-            () => mockJournalRepository.updateJournalEntity(any()),
+          verifyToolWasDeferred(
+            mockConversationManager: mockConversationManager,
+            mockJournalRepository: mockJournalRepository,
           );
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
         });
 
         test(
@@ -3779,18 +3465,7 @@ void main() {
             task: taskForUpdates,
           );
           expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
+          verifyDeferredToolResponse(mockConversationManager);
         });
 
         test(
@@ -3802,18 +3477,7 @@ void main() {
               task: taskForUpdates,
             );
             expect(result.success, isTrue);
-            verify(
-              () => mockConversationManager.addToolResponse(
-                toolCallId: 'tc-1',
-                response: any(
-                  named: 'response',
-                  that: anyOf(
-                    contains('proposal recorded'),
-                    contains('Proposal queued'),
-                  ),
-                ),
-              ),
-            ).called(1);
+            verifyDeferredToolResponse(mockConversationManager);
           },
         );
 
@@ -3827,21 +3491,10 @@ void main() {
               task: taskForUpdates,
             );
             expect(result.success, isTrue);
-            verifyNever(
-              () => mockJournalRepository.updateJournalEntity(any()),
+            verifyToolWasDeferred(
+              mockConversationManager: mockConversationManager,
+              mockJournalRepository: mockJournalRepository,
             );
-            verify(
-              () => mockConversationManager.addToolResponse(
-                toolCallId: 'tc-1',
-                response: any(
-                  named: 'response',
-                  that: anyOf(
-                    contains('proposal recorded'),
-                    contains('Proposal queued'),
-                  ),
-                ),
-              ),
-            ).called(1);
           },
         );
       });
@@ -3866,18 +3519,7 @@ void main() {
                 checkedBy: any(named: 'checkedBy'),
               ),
             );
-            verify(
-              () => mockConversationManager.addToolResponse(
-                toolCallId: 'tc-1',
-                response: any(
-                  named: 'response',
-                  that: anyOf(
-                    contains('proposal recorded'),
-                    contains('Proposal queued'),
-                  ),
-                ),
-              ),
-            ).called(1);
+            verifyDeferredToolResponse(mockConversationManager);
           },
         );
 
@@ -3888,18 +3530,7 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
+          verifyDeferredToolResponse(mockConversationManager);
         });
 
         test(
@@ -3944,7 +3575,7 @@ void main() {
       test(
         'task entity is not a Task type — set_task_title is still deferred',
         () async {
-          stubFullExecutePath();
+          stubFullExecutePathLocal();
 
           // Return a non-Task journal entity. The strategy defers the tool
           // call regardless — type validation happens at confirmation time.
@@ -4008,51 +3639,27 @@ void main() {
 
           expect(result.success, isTrue);
           // Tool call is deferred — not validated against entity type.
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-2',
-              response: any(
-                named: 'response',
-                that: anyOf(
-                  contains('proposal recorded'),
-                  contains('Proposal queued'),
-                ),
-              ),
-            ),
-          ).called(1);
+          verifyDeferredToolResponse(
+            mockConversationManager,
+            toolCallId: 'tc-2',
+          );
         },
       );
     });
 
     group('_extractFinalAssistantContent', () {
       setUp(() {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
       });
 
       test('picks last assistant message with content', () async {
@@ -4079,13 +3686,7 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .toList();
+        final payloads = capturedPayloadEntities(captured);
         // User message payload + thought payload.
         expect(payloads.length, greaterThanOrEqualTo(2));
         final thoughtPayload = payloads.firstWhere(
@@ -4096,10 +3697,10 @@ void main() {
 
       test('no thought persisted when getConversation returns null', () async {
         // Use a new repository mock that returns null for getConversation.
-        final nullManagerRepo = _NullManagerConversationRepository(
+        final nullManagerRepo = NullManagerConversationRepository(
           mockConversationManager,
         );
-        final nullWorkflow = TaskAgentWorkflow(
+        final nullWorkflow = createTestWorkflow(
           agentRepository: mockAgentRepository,
           conversationRepository: nullManagerRepo,
           aiInputRepository: mockAiInputRepository,
@@ -4126,13 +3727,7 @@ void main() {
         final captured = verify(
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .toList();
+        final payloads = capturedPayloadEntities(captured);
         // User message payload exists, but no thought payload.
         expect(payloads, hasLength(1));
         // Verify it's the user message, not a thought.
@@ -4158,13 +3753,7 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .toList();
+        final payloads = capturedPayloadEntities(captured);
         // Only user message payload, no thought payload.
         expect(payloads, hasLength(1));
         final text = payloads.first.content['text'] as String?;
@@ -4190,13 +3779,7 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .toList();
+        final payloads = capturedPayloadEntities(captured);
         // User message payload + thought payload.
         expect(payloads.length, greaterThanOrEqualTo(2));
         final thoughtPayload = payloads.firstWhere(
@@ -4208,24 +3791,13 @@ void main() {
 
     group('failure state update error handling', () {
       test('swallows error when updating failure count fails', () async {
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
+        stubPreExecuteDefaults(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          testAgentState: testAgentState,
+          agentId: agentId,
+          taskId: taskId,
+        );
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -4269,34 +3841,17 @@ void main() {
     group('syncService pass-through', () {
       test('routes writes through syncService', () async {
         // Set up stubs for a successful execute path.
-        when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
-          () => mockAgentRepository.getLatestReport(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
-        when(
-          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-        ).thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(() => mockConversationManager.messages).thenReturn([]);
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -4357,7 +3912,7 @@ void main() {
         '_logError falls back to developer.log when domainLogger is null',
         () async {
           // Create a workflow without domainLogger.
-          final nullLoggerWorkflow = TaskAgentWorkflow(
+          final nullLoggerWorkflow = createTestWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
             aiInputRepository: mockAiInputRepository,
@@ -4373,34 +3928,17 @@ void main() {
 
           // Set up enough stubs to get into the main try block, then make
           // sendMessage throw to trigger _logError via the outer catch.
-          when(
-            () => mockAgentRepository.getAgentState(agentId),
-          ).thenAnswer((_) async => testAgentState);
-          when(
-            () => mockAgentRepository.getLatestReport(agentId, 'current'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAgentRepository.getMessagesByKind(
-              agentId,
-              AgentMessageKind.observation,
-            ),
-          ).thenAnswer((_) async => []);
-          when(
-            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-          ).thenAnswer((_) async => '{"title":"Test Task"}');
-          when(
-            () => mockAiInputRepository.buildLinkedTasksJson(taskId),
-          ).thenAnswer((_) async => '{}');
-          when(
-            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [geminiModel]);
-          when(
-            () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-          ).thenAnswer((_) async => geminiProvider);
-          when(
-            () => mockAgentRepository.getReportHead(agentId, 'current'),
-          ).thenAnswer((_) async => null);
-          when(() => mockConversationManager.messages).thenReturn([]);
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
 
           // Make sendMessage throw to trigger the outer catch → _logError.
           mockConversationRepository.sendMessageDelegate =

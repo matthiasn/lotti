@@ -9,6 +9,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/sync/vector_clock.dart';
 
+import '../test_utils.dart';
+import 'agent_repository_test_helpers.dart';
+
 void main() {
   late AgentDatabase db;
   late AgentRepository repo;
@@ -16,6 +19,119 @@ void main() {
   final testDate = DateTime(2026, 2, 20);
   const testAgentId = 'agent-001';
   const otherAgentId = 'agent-002';
+
+  // ── Thin local wrappers ────────────────────────────────────────────────────
+  // These delegate to the shared test_utils factories but pin the defaults
+  // expected throughout this file (e.g. testDate, testAgentId, vector clocks).
+
+  AgentIdentityEntity makeAgent({
+    String id = 'entity-agent-001',
+    String agentId = testAgentId,
+  }) => makeTestIdentity(
+    id: id,
+    agentId: agentId,
+    allowedCategoryIds: const {'cat-1', 'cat-2'},
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: const VectorClock({'node-1': 1}),
+  );
+
+  AgentStateEntity makeAgentState({
+    String id = 'entity-state-001',
+    String agentId = testAgentId,
+    int revision = 1,
+  }) => makeTestState(
+    id: id,
+    agentId: agentId,
+    revision: revision,
+    slots: const AgentSlots(activeTaskId: 'task-1'),
+    updatedAt: testDate,
+    vectorClock: const VectorClock({'node-1': 2}),
+  );
+
+  AgentMessageEntity makeMessage({
+    String id = 'entity-msg-001',
+    String agentId = testAgentId,
+    String threadId = 'thread-001',
+    AgentMessageKind kind = AgentMessageKind.thought,
+  }) => makeTestMessage(
+    id: id,
+    agentId: agentId,
+    threadId: threadId,
+    kind: kind,
+    createdAt: testDate,
+    vectorClock: const VectorClock({'node-1': 3}),
+    runKey: 'run-001',
+  );
+
+  AgentReportEntity makeReport({
+    String id = 'entity-report-001',
+    String agentId = testAgentId,
+    String scope = 'daily',
+  }) => makeTestReport(
+    id: id,
+    agentId: agentId,
+    scope: scope,
+    createdAt: testDate,
+    vectorClock: const VectorClock({'node-1': 4}),
+    content: 'All good',
+    confidence: 0.95,
+  );
+
+  AgentReportHeadEntity makeReportHead({
+    String id = 'entity-head-001',
+    String agentId = testAgentId,
+    String scope = 'daily',
+    String reportId = 'entity-report-001',
+  }) => makeTestReportHead(
+    id: id,
+    agentId: agentId,
+    scope: scope,
+    reportId: reportId,
+    updatedAt: testDate,
+    vectorClock: const VectorClock({'node-1': 5}),
+  );
+
+  model.AgentLink makeBasicLink({
+    String id = 'link-001',
+    String fromId = testAgentId,
+    String toId = 'entity-state-001',
+  }) => makeTestBasicLink(
+    id: id,
+    fromId: fromId,
+    toId: toId,
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: const VectorClock({'node-1': 1}),
+  );
+
+  WakeRunLogData makeWakeRun({
+    String runKey = 'run-key-001',
+    String agentId = testAgentId,
+    String status = 'pending',
+  }) => makeTestWakeRun(
+    runKey: runKey,
+    agentId: agentId,
+    reason: 'scheduled',
+    status: status,
+    createdAt: testDate,
+  );
+
+  SagaLogData makeSagaOp({
+    String operationId = 'op-001',
+    String agentId = testAgentId,
+    String runKey = 'run-key-001',
+    String status = 'pending',
+    String toolName = 'create_entry',
+  }) => makeTestSagaOp(
+    operationId: operationId,
+    agentId: agentId,
+    runKey: runKey,
+    status: status,
+    toolName: toolName,
+    createdAt: testDate,
+    updatedAt: testDate,
+  );
 
   setUp(() {
     db = AgentDatabase(inMemoryDatabase: true, background: false);
@@ -25,163 +141,6 @@ void main() {
   tearDown(() async {
     await db.close();
   });
-
-  // ── Shared test factories ───────────────────────────────────────────────────
-
-  AgentIdentityEntity makeAgent({
-    String id = 'entity-agent-001',
-    String agentId = testAgentId,
-  }) {
-    return AgentDomainEntity.agent(
-          id: id,
-          agentId: agentId,
-          kind: 'task_agent',
-          displayName: 'Test Agent',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {'cat-1', 'cat-2'},
-          currentStateId: 'state-001',
-          config: const AgentConfig(),
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: const VectorClock({'node-1': 1}),
-        )
-        as AgentIdentityEntity;
-  }
-
-  AgentStateEntity makeAgentState({
-    String id = 'entity-state-001',
-    String agentId = testAgentId,
-    int revision = 1,
-  }) {
-    return AgentDomainEntity.agentState(
-          id: id,
-          agentId: agentId,
-          revision: revision,
-          slots: const AgentSlots(activeTaskId: 'task-1'),
-          updatedAt: testDate,
-          vectorClock: const VectorClock({'node-1': 2}),
-        )
-        as AgentStateEntity;
-  }
-
-  AgentMessageEntity makeMessage({
-    String id = 'entity-msg-001',
-    String agentId = testAgentId,
-    String threadId = 'thread-001',
-    AgentMessageKind kind = AgentMessageKind.thought,
-  }) {
-    return AgentDomainEntity.agentMessage(
-          id: id,
-          agentId: agentId,
-          threadId: threadId,
-          kind: kind,
-          createdAt: testDate,
-          vectorClock: const VectorClock({'node-1': 3}),
-          metadata: const AgentMessageMetadata(runKey: 'run-001'),
-        )
-        as AgentMessageEntity;
-  }
-
-  AgentReportEntity makeReport({
-    String id = 'entity-report-001',
-    String agentId = testAgentId,
-    String scope = 'daily',
-  }) {
-    return AgentDomainEntity.agentReport(
-          id: id,
-          agentId: agentId,
-          scope: scope,
-          createdAt: testDate,
-          vectorClock: const VectorClock({'node-1': 4}),
-          content: 'All good',
-          confidence: 0.95,
-        )
-        as AgentReportEntity;
-  }
-
-  AgentReportHeadEntity makeReportHead({
-    String id = 'entity-head-001',
-    String agentId = testAgentId,
-    String scope = 'daily',
-    String reportId = 'entity-report-001',
-  }) {
-    return AgentDomainEntity.agentReportHead(
-          id: id,
-          agentId: agentId,
-          scope: scope,
-          reportId: reportId,
-          updatedAt: testDate,
-          vectorClock: const VectorClock({'node-1': 5}),
-        )
-        as AgentReportHeadEntity;
-  }
-
-  model.AgentLink makeBasicLink({
-    String id = 'link-001',
-    String fromId = testAgentId,
-    String toId = 'entity-state-001',
-  }) {
-    return model.AgentLink.basic(
-      id: id,
-      fromId: fromId,
-      toId: toId,
-      createdAt: testDate,
-      updatedAt: testDate,
-      vectorClock: const VectorClock({'node-1': 1}),
-    );
-  }
-
-  model.AgentLink makeProjectLink({
-    String id = 'project-link-001',
-    String fromId = testAgentId,
-    String toId = 'project-001',
-    DateTime? createdAt,
-  }) {
-    final timestamp = createdAt ?? testDate;
-    return model.AgentLink.agentProject(
-      id: id,
-      fromId: fromId,
-      toId: toId,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      vectorClock: const VectorClock({'node-1': 1}),
-    );
-  }
-
-  WakeRunLogData makeWakeRun({
-    String runKey = 'run-key-001',
-    String agentId = testAgentId,
-    String status = 'pending',
-  }) {
-    return WakeRunLogData(
-      runKey: runKey,
-      agentId: agentId,
-      reason: 'scheduled',
-      threadId: 'thread-001',
-      status: status,
-      createdAt: testDate,
-    );
-  }
-
-  SagaLogData makeSagaOp({
-    String operationId = 'op-001',
-    String agentId = testAgentId,
-    String runKey = 'run-key-001',
-    String status = 'pending',
-    String toolName = 'create_entry',
-  }) {
-    return SagaLogData(
-      operationId: operationId,
-      agentId: agentId,
-      runKey: runKey,
-      phase: 'execution',
-      status: status,
-      toolName: toolName,
-      createdAt: testDate,
-      updatedAt: testDate,
-    );
-  }
 
   // ── Entity CRUD ─────────────────────────────────────────────────────────────
 
@@ -440,6 +399,35 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test('handles duplicate agent IDs without duplicating results', () async {
+        await repo.upsertEntity(
+          makeAgentState(id: 'state-dup-1'),
+        );
+        await repo.upsertEntity(
+          AgentDomainEntity.agentState(
+            id: 'state-dup-2',
+            agentId: testAgentId,
+            revision: 2,
+            slots: const AgentSlots(activeTaskId: 'task-dup'),
+            updatedAt: DateTime(2026, 2, 21),
+            vectorClock: const VectorClock({'node-1': 5}),
+          ),
+        );
+
+        final result = await repo.getAgentStatesByAgentIds([
+          testAgentId,
+          testAgentId,
+          testAgentId,
+        ]);
+
+        // Despite three duplicate IDs, only one entry per agent is returned.
+        expect(result.length, 1);
+        expect(result.containsKey(testAgentId), isTrue);
+        // The latest state (DESC ordering + putIfAbsent) should win.
+        expect(result[testAgentId]!.id, 'state-dup-2');
+        expect(result[testAgentId]!.revision, 2);
+      });
+
       test('returns the latest state for each requested agent', () async {
         await repo.upsertEntity(
           makeAgentState(
@@ -620,15 +608,19 @@ void main() {
 
     group('getLatestReport', () {
       test('returns the report pointed to by the head', () async {
-        final report = makeReport();
-        final head = makeReportHead(reportId: report.id);
-        await repo.upsertEntity(report);
-        await repo.upsertEntity(head);
+        final pair = await setupReportWithHead(
+          repo,
+          reportId: 'entity-report-001',
+          headId: 'entity-head-001',
+          agentId: testAgentId,
+          scope: 'daily',
+          content: 'All good',
+        );
 
         final result = await repo.getLatestReport(testAgentId, 'daily');
 
         expect(result, isNotNull);
-        expect(result!.id, report.id);
+        expect(result!.id, pair.report.id);
         expect(result.scope, 'daily');
         expect(result.content, 'All good');
       });
@@ -646,22 +638,20 @@ void main() {
       });
 
       test('returns correct report when multiple scopes exist', () async {
-        final dailyReport = makeReport(id: 'report-daily');
-        final weeklyReport = makeReport(id: 'report-weekly', scope: 'weekly');
-        final dailyHead = makeReportHead(
-          id: 'head-daily',
+        await setupReportWithHead(
+          repo,
           reportId: 'report-daily',
+          headId: 'head-daily',
+          agentId: testAgentId,
+          scope: 'daily',
         );
-        final weeklyHead = makeReportHead(
-          id: 'head-weekly',
-          scope: 'weekly',
+        await setupReportWithHead(
+          repo,
           reportId: 'report-weekly',
+          headId: 'head-weekly',
+          agentId: testAgentId,
+          scope: 'weekly',
         );
-
-        await repo.upsertEntity(dailyReport);
-        await repo.upsertEntity(weeklyReport);
-        await repo.upsertEntity(dailyHead);
-        await repo.upsertEntity(weeklyHead);
 
         final daily = await repo.getLatestReport(testAgentId, 'daily');
         final weekly = await repo.getLatestReport(testAgentId, 'weekly');
@@ -777,27 +767,20 @@ void main() {
 
     group('getLatestReportsByAgentIds', () {
       test('returns the latest report for each agent in scope', () async {
-        final reportA = makeReport(
-          id: 'report-a',
-        );
-        final reportB = makeReport(
-          id: 'report-b',
-          agentId: otherAgentId,
-        );
-        final headA = makeReportHead(
-          id: 'head-a',
+        await setupReportWithHead(
+          repo,
           reportId: 'report-a',
+          headId: 'head-a',
+          agentId: testAgentId,
+          scope: 'daily',
         );
-        final headB = makeReportHead(
-          id: 'head-b',
-          agentId: otherAgentId,
+        await setupReportWithHead(
+          repo,
           reportId: 'report-b',
+          headId: 'head-b',
+          agentId: otherAgentId,
+          scope: 'daily',
         );
-
-        await repo.upsertEntity(reportA);
-        await repo.upsertEntity(reportB);
-        await repo.upsertEntity(headA);
-        await repo.upsertEntity(headB);
 
         final result = await repo.getLatestReportsByAgentIds(
           [testAgentId, otherAgentId],
@@ -878,56 +861,35 @@ void main() {
       test(
         'returns latest current report for newest project-agent link',
         () async {
-          final olderLink = makeProjectLink(
-            id: 'project-link-old',
-            fromId: 'project-agent-old',
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-old',
+            agentId: 'project-agent-old',
+            projectId: 'project-001',
             createdAt: testDate,
           );
-          final newerLink = makeProjectLink(
-            id: 'project-link-new',
-            fromId: 'project-agent-new',
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-new',
+            agentId: 'project-agent-new',
+            projectId: 'project-001',
             createdAt: testDate.add(const Duration(minutes: 1)),
           );
-          final olderReport =
-              AgentDomainEntity.agentReport(
-                    id: 'project-report-old',
-                    agentId: 'project-agent-old',
-                    scope: AgentReportScopes.current,
-                    createdAt: testDate,
-                    vectorClock: null,
-                    content: 'Older project report',
-                  )
-                  as AgentReportEntity;
-          final newerReport =
-              AgentDomainEntity.agentReport(
-                    id: 'project-report-new',
-                    agentId: 'project-agent-new',
-                    scope: AgentReportScopes.current,
-                    createdAt: testDate.add(const Duration(minutes: 1)),
-                    vectorClock: null,
-                    content: 'Newer project report',
-                  )
-                  as AgentReportEntity;
-
-          await repo.upsertLink(olderLink);
-          await repo.upsertLink(newerLink);
-          await repo.upsertEntity(olderReport);
-          await repo.upsertEntity(newerReport);
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'project-head-old',
-              agentId: 'project-agent-old',
-              scope: AgentReportScopes.current,
-              reportId: 'project-report-old',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'project-report-old',
+            headId: 'project-head-old',
+            agentId: 'project-agent-old',
+            createdAt: testDate,
+            content: 'Older project report',
           );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'project-head-new',
-              agentId: 'project-agent-new',
-              scope: AgentReportScopes.current,
-              reportId: 'project-report-new',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'project-report-new',
+            headId: 'project-head-new',
+            agentId: 'project-agent-new',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            content: 'Newer project report',
           );
 
           final result = await repo.getLatestProjectReportForProjectId(
@@ -940,56 +902,35 @@ void main() {
 
       test('uses link id descending as deterministic tie-breaker', () async {
         final timestamp = DateTime(2026, 2, 20, 8);
-        await repo.upsertLink(
-          makeProjectLink(
-            id: 'project-link-b',
-            fromId: 'project-agent-b',
-            createdAt: timestamp,
-          ),
+        await seedProjectAgentLink(
+          repo,
+          linkId: 'project-link-b',
+          agentId: 'project-agent-b',
+          projectId: 'project-001',
+          createdAt: timestamp,
         );
-        await repo.upsertLink(
-          makeProjectLink(
-            id: 'project-link-a',
-            fromId: 'project-agent-a',
-            createdAt: timestamp,
-          ),
+        await seedProjectAgentLink(
+          repo,
+          linkId: 'project-link-a',
+          agentId: 'project-agent-a',
+          projectId: 'project-001',
+          createdAt: timestamp,
         );
-
-        await repo.upsertEntity(
-          AgentDomainEntity.agentReport(
-            id: 'project-report-b',
-            agentId: 'project-agent-b',
-            scope: AgentReportScopes.current,
-            createdAt: timestamp,
-            vectorClock: null,
-            content: 'Report B',
-          ),
+        await setupReportWithHead(
+          repo,
+          reportId: 'project-report-b',
+          headId: 'project-head-b',
+          agentId: 'project-agent-b',
+          createdAt: timestamp,
+          content: 'Report B',
         );
-        await repo.upsertEntity(
-          AgentDomainEntity.agentReport(
-            id: 'project-report-a',
-            agentId: 'project-agent-a',
-            scope: AgentReportScopes.current,
-            createdAt: timestamp,
-            vectorClock: null,
-            content: 'Report A',
-          ),
-        );
-        await repo.upsertEntity(
-          makeReportHead(
-            id: 'project-head-b',
-            agentId: 'project-agent-b',
-            scope: AgentReportScopes.current,
-            reportId: 'project-report-b',
-          ),
-        );
-        await repo.upsertEntity(
-          makeReportHead(
-            id: 'project-head-a',
-            agentId: 'project-agent-a',
-            scope: AgentReportScopes.current,
-            reportId: 'project-report-a',
-          ),
+        await setupReportWithHead(
+          repo,
+          reportId: 'project-report-a',
+          headId: 'project-head-a',
+          agentId: 'project-agent-a',
+          createdAt: timestamp,
+          content: 'Report A',
         );
 
         final result = await repo.getLatestProjectReportForProjectId(
@@ -1006,39 +947,29 @@ void main() {
           // Newest link's agent has no report head at all (getLatestReport
           // returns null), so the method should fall through to the older
           // link that does have a usable report.
-          await repo.upsertLink(
-            makeProjectLink(
-              id: 'project-link-new',
-              fromId: 'project-agent-no-head',
-              createdAt: testDate.add(const Duration(minutes: 1)),
-            ),
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-new',
+            agentId: 'project-agent-no-head',
+            projectId: 'project-001',
+            createdAt: testDate.add(const Duration(minutes: 1)),
           );
-          await repo.upsertLink(
-            makeProjectLink(
-              id: 'project-link-old',
-              fromId: 'project-agent-old',
-              createdAt: testDate,
-            ),
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-old',
+            agentId: 'project-agent-old',
+            projectId: 'project-001',
+            createdAt: testDate,
           );
 
           // Only the older agent gets a report + head.
-          await repo.upsertEntity(
-            AgentDomainEntity.agentReport(
-              id: 'project-report-old',
-              agentId: 'project-agent-old',
-              scope: AgentReportScopes.current,
-              createdAt: testDate,
-              vectorClock: null,
-              content: 'Usable fallback report',
-            ),
-          );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'project-head-old',
-              agentId: 'project-agent-old',
-              scope: AgentReportScopes.current,
-              reportId: 'project-report-old',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'project-report-old',
+            headId: 'project-head-old',
+            agentId: 'project-agent-old',
+            createdAt: testDate,
+            content: 'Usable fallback report',
           );
 
           final result = await repo.getLatestProjectReportForProjectId(
@@ -1052,56 +983,35 @@ void main() {
       test(
         'skips empty report content and falls back to next usable link',
         () async {
-          await repo.upsertLink(
-            makeProjectLink(
-              id: 'project-link-new',
-              fromId: 'project-agent-new',
-              createdAt: testDate.add(const Duration(minutes: 1)),
-            ),
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-new',
+            agentId: 'project-agent-new',
+            projectId: 'project-001',
+            createdAt: testDate.add(const Duration(minutes: 1)),
           );
-          await repo.upsertLink(
-            makeProjectLink(
-              id: 'project-link-old',
-              fromId: 'project-agent-old',
-              createdAt: testDate,
-            ),
+          await seedProjectAgentLink(
+            repo,
+            linkId: 'project-link-old',
+            agentId: 'project-agent-old',
+            projectId: 'project-001',
+            createdAt: testDate,
           );
-
-          await repo.upsertEntity(
-            AgentDomainEntity.agentReport(
-              id: 'project-report-empty',
-              agentId: 'project-agent-new',
-              scope: AgentReportScopes.current,
-              createdAt: testDate.add(const Duration(minutes: 1)),
-              vectorClock: null,
-              content: '   ',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'project-report-empty',
+            headId: 'project-head-empty',
+            agentId: 'project-agent-new',
+            createdAt: testDate.add(const Duration(minutes: 1)),
+            content: '   ',
           );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'project-head-empty',
-              agentId: 'project-agent-new',
-              scope: AgentReportScopes.current,
-              reportId: 'project-report-empty',
-            ),
-          );
-          await repo.upsertEntity(
-            AgentDomainEntity.agentReport(
-              id: 'project-report-usable',
-              agentId: 'project-agent-old',
-              scope: AgentReportScopes.current,
-              createdAt: testDate,
-              vectorClock: null,
-              content: 'Usable project report',
-            ),
-          );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'project-head-usable',
-              agentId: 'project-agent-old',
-              scope: AgentReportScopes.current,
-              reportId: 'project-report-usable',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'project-report-usable',
+            headId: 'project-head-usable',
+            agentId: 'project-agent-old',
+            createdAt: testDate,
+            content: 'Usable project report',
           );
 
           final result = await repo.getLatestProjectReportForProjectId(
@@ -1125,76 +1035,46 @@ void main() {
         () async {
           final timestamp = DateTime(2026, 2, 20, 8);
 
-          await repo.upsertLink(
-            model.AgentLink.agentTask(
-              id: 'task-link-b',
-              fromId: 'task-agent-b',
-              toId: 'task-001',
-              createdAt: timestamp,
-              updatedAt: timestamp,
-              vectorClock: null,
-            ),
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'task-link-b',
+            agentId: 'task-agent-b',
+            taskId: 'task-001',
+            createdAt: timestamp,
           );
-          await repo.upsertLink(
-            model.AgentLink.agentTask(
-              id: 'task-link-a',
-              fromId: 'task-agent-a',
-              toId: 'task-001',
-              createdAt: timestamp,
-              updatedAt: timestamp,
-              vectorClock: null,
-            ),
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'task-link-a',
+            agentId: 'task-agent-a',
+            taskId: 'task-001',
+            createdAt: timestamp,
           );
-          await repo.upsertLink(
-            model.AgentLink.agentTask(
-              id: 'task-link-c',
-              fromId: 'task-agent-c',
-              toId: 'task-002',
-              createdAt: timestamp.add(const Duration(minutes: 1)),
-              updatedAt: timestamp.add(const Duration(minutes: 1)),
-              vectorClock: null,
-            ),
+          await seedTaskAgentLink(
+            repo,
+            linkId: 'task-link-c',
+            agentId: 'task-agent-c',
+            taskId: 'task-002',
+            createdAt: timestamp.add(const Duration(minutes: 1)),
           );
-
-          await repo.upsertEntity(
-            AgentDomainEntity.agentReport(
-              id: 'task-report-b',
-              agentId: 'task-agent-b',
-              scope: AgentReportScopes.current,
-              createdAt: timestamp,
-              vectorClock: null,
-              oneLiner: 'Implementation done, release next',
-              tldr: 'Task B TLDR',
-              content: 'Task B report',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'task-report-b',
+            headId: 'task-head-b',
+            agentId: 'task-agent-b',
+            createdAt: timestamp,
+            oneLiner: 'Implementation done, release next',
+            tldr: 'Task B TLDR',
+            content: 'Task B report',
           );
-          await repo.upsertEntity(
-            AgentDomainEntity.agentReport(
-              id: 'task-report-c',
-              agentId: 'task-agent-c',
-              scope: AgentReportScopes.current,
-              createdAt: timestamp.add(const Duration(minutes: 1)),
-              vectorClock: null,
-              oneLiner: 'Blocked on API review',
-              tldr: 'Task C TLDR',
-              content: 'Task C report',
-            ),
-          );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'task-head-b',
-              agentId: 'task-agent-b',
-              scope: AgentReportScopes.current,
-              reportId: 'task-report-b',
-            ),
-          );
-          await repo.upsertEntity(
-            makeReportHead(
-              id: 'task-head-c',
-              agentId: 'task-agent-c',
-              scope: AgentReportScopes.current,
-              reportId: 'task-report-c',
-            ),
+          await setupReportWithHead(
+            repo,
+            reportId: 'task-report-c',
+            headId: 'task-head-c',
+            agentId: 'task-agent-c',
+            createdAt: timestamp.add(const Duration(minutes: 1)),
+            oneLiner: 'Blocked on API review',
+            tldr: 'Task C TLDR',
+            content: 'Task C report',
           );
 
           final result = await repo.getLatestTaskReportsForTaskIds([
@@ -1215,15 +1095,12 @@ void main() {
       );
 
       test('omits tasks whose primary agent has no current report', () async {
-        await repo.upsertLink(
-          model.AgentLink.agentTask(
-            id: 'task-link-1',
-            fromId: 'task-agent-1',
-            toId: 'task-001',
-            createdAt: testDate,
-            updatedAt: testDate,
-            vectorClock: null,
-          ),
+        await seedTaskAgentLink(
+          repo,
+          linkId: 'task-link-1',
+          agentId: 'task-agent-1',
+          taskId: 'task-001',
+          createdAt: testDate,
         );
 
         final result = await repo.getLatestTaskReportsForTaskIds(['task-001']);
@@ -2254,54 +2131,42 @@ void main() {
     AgentTemplateEntity makeTemplate({
       String id = 'tpl-001',
       String agentId = 'tpl-001',
-    }) {
-      return AgentDomainEntity.agentTemplate(
-            id: id,
-            agentId: agentId,
-            displayName: 'Test Template',
-            kind: AgentTemplateKind.taskAgent,
-            modelId: 'models/gemini-3.1-pro-preview',
-            categoryIds: const {'cat-1'},
-            createdAt: testDate,
-            updatedAt: testDate,
-            vectorClock: const VectorClock({'node-1': 1}),
-          )
-          as AgentTemplateEntity;
-    }
+    }) => makeTestTemplate(
+      id: id,
+      agentId: agentId,
+      categoryIds: const {'cat-1'},
+      modelId: 'models/gemini-3.1-pro-preview',
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: const VectorClock({'node-1': 1}),
+    );
 
     AgentTemplateVersionEntity makeTemplateVersion({
       String id = 'ver-001',
       String agentId = 'tpl-001',
       int version = 1,
       AgentTemplateVersionStatus status = AgentTemplateVersionStatus.active,
-    }) {
-      return AgentDomainEntity.agentTemplateVersion(
-            id: id,
-            agentId: agentId,
-            version: version,
-            status: status,
-            directives: 'Be helpful.',
-            authoredBy: 'user',
-            createdAt: testDate,
-            vectorClock: const VectorClock({'node-1': 1}),
-          )
-          as AgentTemplateVersionEntity;
-    }
+    }) => makeTestTemplateVersion(
+      id: id,
+      agentId: agentId,
+      version: version,
+      status: status,
+      directives: 'Be helpful.',
+      createdAt: testDate,
+      vectorClock: const VectorClock({'node-1': 1}),
+    );
 
     AgentTemplateHeadEntity makeTemplateHead({
       String id = 'head-tpl-001',
       String agentId = 'tpl-001',
       String versionId = 'ver-001',
-    }) {
-      return AgentDomainEntity.agentTemplateHead(
-            id: id,
-            agentId: agentId,
-            versionId: versionId,
-            updatedAt: testDate,
-            vectorClock: const VectorClock({'node-1': 1}),
-          )
-          as AgentTemplateHeadEntity;
-    }
+    }) => makeTestTemplateHead(
+      id: id,
+      agentId: agentId,
+      versionId: versionId,
+      updatedAt: testDate,
+      vectorClock: const VectorClock({'node-1': 1}),
+    );
 
     group('upsertEntity + getEntity roundtrip', () {
       test('agentTemplate variant persists and restores correctly', () async {
@@ -2447,46 +2312,46 @@ void main() {
         expect(run!.templateId, 'tpl-001');
         expect(run.templateVersionId, 'ver-001');
       });
+
+      test('throws StateError when runKey does not exist', () async {
+        await expectLater(
+          repo.updateWakeRunTemplate(
+            'nonexistent-run-key',
+            'tpl-001',
+            'ver-001',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('nonexistent-run-key'),
+            ),
+          ),
+        );
+      });
     });
 
     group('getWakeRunsForTemplate', () {
       test('returns runs matching templateId ordered DESC', () async {
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-old',
-            agentId: testAgentId,
-            reason: 'subscription',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 2, 18),
-            templateId: 'tpl-001',
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-old',
+          templateId: 'tpl-001',
+          createdAt: DateTime(2026, 2, 18),
         );
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-new',
-            agentId: testAgentId,
-            reason: 'subscription',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 2, 20),
-            templateId: 'tpl-001',
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-new',
+          templateId: 'tpl-001',
+          createdAt: DateTime(2026, 2, 20),
         );
         // Different template — should not appear.
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-other',
-            agentId: testAgentId,
-            reason: 'subscription',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 2, 19),
-            templateId: 'tpl-other',
-            templateVersionId: 'ver-other',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-other',
+          templateId: 'tpl-other',
+          createdAt: DateTime(2026, 2, 19),
+          templateVersionId: 'ver-other',
         );
 
         final runs = await repo.getWakeRunsForTemplate('tpl-001');
@@ -2499,17 +2364,11 @@ void main() {
 
       test('respects limit parameter', () async {
         for (var i = 0; i < 5; i++) {
-          await repo.insertWakeRun(
-            entry: WakeRunLogData(
-              runKey: 'run-$i',
-              agentId: testAgentId,
-              reason: 'subscription',
-              threadId: 'thread-001',
-              status: 'completed',
-              createdAt: DateTime(2026, 2, 20, i),
-              templateId: 'tpl-001',
-              templateVersionId: 'ver-001',
-            ),
+          await insertTemplateWakeRun(
+            repo,
+            runKey: 'run-$i',
+            templateId: 'tpl-001',
+            createdAt: DateTime(2026, 2, 20, i),
           );
         }
 
@@ -2750,53 +2609,17 @@ void main() {
     const agentA = 'agent-A';
     const agentB = 'agent-B';
 
-    Future<void> seedTemplateWithInstances() async {
-      // Template entity
-      await repo.upsertEntity(
-        AgentDomainEntity.agentTemplate(
-          id: templateId,
-          agentId: templateId,
-          displayName: 'Test Template',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/gemini-2.5-pro',
-          categoryIds: const {},
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      // Two instances
-      await repo.upsertEntity(
-        makeAgent(id: agentA, agentId: agentA),
-      );
-      await repo.upsertEntity(
-        makeAgent(id: agentB, agentId: agentB),
-      );
-      // Template assignment links
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-ta-A',
-          fromId: templateId,
-          toId: agentA,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-ta-B',
-          fromId: templateId,
-          toId: agentB,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
+    Future<void> seedTplWithInstances() async {
+      await seedTemplateWithInstances(
+        repo,
+        templateId: templateId,
+        instanceAgentIds: [agentA, agentB],
+        testDate: testDate,
       );
     }
 
     test('returns token usage from all instances via JOIN', () async {
-      await seedTemplateWithInstances();
+      await seedTplWithInstances();
 
       // Token usage for agent A
       await repo.upsertEntity(
@@ -2834,7 +2657,7 @@ void main() {
     });
 
     test('returns empty list when no instances have token usage', () async {
-      await seedTemplateWithInstances();
+      await seedTplWithInstances();
 
       final results = await repo.getTokenUsageForTemplate(templateId);
 
@@ -2842,7 +2665,7 @@ void main() {
     });
 
     test('excludes deleted token usage entities', () async {
-      await seedTemplateWithInstances();
+      await seedTplWithInstances();
 
       await repo.upsertEntity(
         AgentDomainEntity.wakeTokenUsage(
@@ -2864,7 +2687,7 @@ void main() {
     });
 
     test('respects limit parameter', () async {
-      await seedTemplateWithInstances();
+      await seedTplWithInstances();
 
       for (var i = 0; i < 5; i++) {
         await repo.upsertEntity(
@@ -2894,37 +2717,17 @@ void main() {
     const templateId = 'tpl-001';
     const agentA = 'agent-A';
 
-    Future<void> seedTemplateWithInstance() async {
-      await repo.upsertEntity(
-        AgentDomainEntity.agentTemplate(
-          id: templateId,
-          agentId: templateId,
-          displayName: 'Test Template',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/gemini-2.5-pro',
-          categoryIds: const {},
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertEntity(
-        makeAgent(id: agentA, agentId: agentA),
-      );
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-ta-A',
-          fromId: templateId,
-          toId: agentA,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
+    Future<void> seedTplWithInstance() async {
+      await seedTemplateWithInstances(
+        repo,
+        templateId: templateId,
+        instanceAgentIds: [agentA],
+        testDate: testDate,
       );
     }
 
     test('returns reports from template instances', () async {
-      await seedTemplateWithInstance();
+      await seedTplWithInstance();
 
       await repo.upsertEntity(
         AgentDomainEntity.agentReport(
@@ -2944,7 +2747,7 @@ void main() {
     });
 
     test('returns empty list when no reports exist', () async {
-      await seedTemplateWithInstance();
+      await seedTplWithInstance();
 
       final results = await repo.getRecentReportsByTemplate(templateId);
 
@@ -2952,7 +2755,7 @@ void main() {
     });
 
     test('respects limit parameter', () async {
-      await seedTemplateWithInstance();
+      await seedTplWithInstance();
 
       for (var i = 0; i < 5; i++) {
         await repo.upsertEntity(
@@ -3238,71 +3041,44 @@ void main() {
       'correctly counts completed/failed runs and excludes other templates',
       () async {
         // Two completed runs for the template.
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-c1',
-            agentId: testAgentId,
-            reason: 'scheduled',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 3, 1, 10),
-            templateId: templateId,
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-c1',
+          templateId: templateId,
+          createdAt: DateTime(2026, 3, 1, 10),
         );
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-c2',
-            agentId: testAgentId,
-            reason: 'scheduled',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 3, 1, 11),
-            templateId: templateId,
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-c2',
+          templateId: templateId,
+          createdAt: DateTime(2026, 3, 1, 11),
         );
 
         // One failed run for the template.
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-f1',
-            agentId: testAgentId,
-            reason: 'scheduled',
-            threadId: 'thread-001',
-            status: 'failed',
-            createdAt: DateTime(2026, 3, 1, 12),
-            templateId: templateId,
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-f1',
+          templateId: templateId,
+          status: 'failed',
+          createdAt: DateTime(2026, 3, 1, 12),
         );
 
         // A pending run — should count as neither success nor failure.
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-p1',
-            agentId: testAgentId,
-            reason: 'scheduled',
-            threadId: 'thread-001',
-            status: 'pending',
-            createdAt: DateTime(2026, 3, 1, 13),
-            templateId: templateId,
-            templateVersionId: 'ver-001',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-p1',
+          templateId: templateId,
+          status: 'pending',
+          createdAt: DateTime(2026, 3, 1, 13),
         );
 
         // Different template — should be excluded entirely.
-        await repo.insertWakeRun(
-          entry: WakeRunLogData(
-            runKey: 'run-other',
-            agentId: testAgentId,
-            reason: 'scheduled',
-            threadId: 'thread-001',
-            status: 'completed',
-            createdAt: DateTime(2026, 3, 1, 14),
-            templateId: 'tpl-other',
-            templateVersionId: 'ver-other',
-          ),
+        await insertTemplateWakeRun(
+          repo,
+          runKey: 'run-other',
+          templateId: 'tpl-other',
+          createdAt: DateTime(2026, 3, 1, 14),
+          templateVersionId: 'ver-other',
         );
 
         final result = await repo.aggregateWakeRunMetrics(templateId);
@@ -3320,41 +3096,24 @@ void main() {
       final middle = DateTime(2026, 3, 1, 12);
       final latest = DateTime(2026, 3, 1, 16);
 
-      await repo.insertWakeRun(
-        entry: WakeRunLogData(
-          runKey: 'run-mid',
-          agentId: testAgentId,
-          reason: 'scheduled',
-          threadId: 'thread-001',
-          status: 'completed',
-          createdAt: middle,
-          templateId: templateId,
-          templateVersionId: 'ver-001',
-        ),
+      await insertTemplateWakeRun(
+        repo,
+        runKey: 'run-mid',
+        templateId: templateId,
+        createdAt: middle,
       );
-      await repo.insertWakeRun(
-        entry: WakeRunLogData(
-          runKey: 'run-early',
-          agentId: testAgentId,
-          reason: 'scheduled',
-          threadId: 'thread-001',
-          status: 'completed',
-          createdAt: earliest,
-          templateId: templateId,
-          templateVersionId: 'ver-001',
-        ),
+      await insertTemplateWakeRun(
+        repo,
+        runKey: 'run-early',
+        templateId: templateId,
+        createdAt: earliest,
       );
-      await repo.insertWakeRun(
-        entry: WakeRunLogData(
-          runKey: 'run-late',
-          agentId: testAgentId,
-          reason: 'scheduled',
-          threadId: 'thread-001',
-          status: 'pending',
-          createdAt: latest,
-          templateId: templateId,
-          templateVersionId: 'ver-001',
-        ),
+      await insertTemplateWakeRun(
+        repo,
+        runKey: 'run-late',
+        templateId: templateId,
+        status: 'pending',
+        createdAt: latest,
       );
 
       final result = await repo.aggregateWakeRunMetrics(templateId);
@@ -3371,50 +3130,17 @@ void main() {
     const agentA = 'agent-sum-A';
     const agentB = 'agent-sum-B';
 
-    Future<void> seedTemplateWithInstances() async {
-      await repo.upsertEntity(
-        AgentDomainEntity.agentTemplate(
-          id: templateId,
-          agentId: templateId,
-          displayName: 'Sum Template',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/gemini-2.5-pro',
-          categoryIds: const {},
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertEntity(
-        makeAgent(id: agentA, agentId: agentA),
-      );
-      await repo.upsertEntity(
-        makeAgent(id: agentB, agentId: agentB),
-      );
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-sum-A',
-          fromId: templateId,
-          toId: agentA,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-sum-B',
-          fromId: templateId,
-          toId: agentB,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
+    Future<void> seedTplWithInstances() async {
+      await seedTemplateWithInstances(
+        repo,
+        templateId: templateId,
+        instanceAgentIds: [agentA, agentB],
+        testDate: testDate,
       );
     }
 
     test('returns zero sums when no token usage records exist', () async {
-      await seedTemplateWithInstances();
+      await seedTplWithInstances();
 
       final result = await repo.sumTokenUsageForTemplate(templateId);
 
@@ -3426,7 +3152,7 @@ void main() {
     test(
       'correctly sums input/output/thoughts tokens across multiple records',
       () async {
-        await seedTemplateWithInstances();
+        await seedTplWithInstances();
 
         await repo.upsertEntity(
           AgentDomainEntity.wakeTokenUsage(
@@ -3486,37 +3212,17 @@ void main() {
     const templateId = 'tpl-since-001';
     const agentA = 'agent-since-A';
 
-    Future<void> seedTemplateWithInstance() async {
-      await repo.upsertEntity(
-        AgentDomainEntity.agentTemplate(
-          id: templateId,
-          agentId: templateId,
-          displayName: 'Since Template',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: 'models/gemini-2.5-pro',
-          categoryIds: const {},
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
-      );
-      await repo.upsertEntity(
-        makeAgent(id: agentA, agentId: agentA),
-      );
-      await repo.upsertLink(
-        model.AgentLink.templateAssignment(
-          id: 'link-since-A',
-          fromId: templateId,
-          toId: agentA,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        ),
+    Future<void> seedTplWithInstance() async {
+      await seedTemplateWithInstances(
+        repo,
+        templateId: templateId,
+        instanceAgentIds: [agentA],
+        testDate: testDate,
       );
     }
 
     test('only sums records created on or after the since date', () async {
-      await seedTemplateWithInstance();
+      await seedTplWithInstance();
 
       final cutoff = DateTime(2026, 3, 15);
 
