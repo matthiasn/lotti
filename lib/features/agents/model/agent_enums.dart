@@ -64,6 +64,28 @@ enum AgentTemplateVersionStatus {
   archived,
 }
 
+/// Lifecycle status of a soul document version.
+enum SoulDocumentVersionStatus {
+  /// This version is the current active version.
+  active,
+
+  /// This version has been superseded.
+  archived,
+}
+
+/// Classification target for agent observations, used to route feedback to the
+/// correct evolution cycle (skill vs. personality).
+enum ObservationTarget {
+  /// Feedback about template skills and operational directives.
+  template,
+
+  /// Feedback about personality and soul.
+  soul,
+
+  /// Feedback that applies to both.
+  both,
+}
+
 /// Status of a wake run in the wake-run log.
 enum WakeRunStatus {
   /// The wake is currently executing.

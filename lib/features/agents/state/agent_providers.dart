@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -241,6 +242,15 @@ AgentTemplateService agentTemplateService(Ref ref) {
   );
 }
 
+/// The soul document service.
+@Riverpod(keepAlive: true)
+SoulDocumentService soulDocumentService(Ref ref) {
+  return SoulDocumentService(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  );
+}
+
 /// The feedback extraction service.
 @Riverpod(keepAlive: true)
 FeedbackExtractionService feedbackExtractionService(Ref ref) {
@@ -362,6 +372,8 @@ Future<void> agentInitialization(Ref ref) async {
     profileSeeder.seedDefaults(),
     SkillSeedingService(aiConfigRepository: aiConfigRepo).seedDefaults(),
   ]);
+  // Seed soul documents and assign to templates (depends on templates above).
+  await ref.read(soulDocumentServiceProvider).seedDefaults();
   // Backfill skill assignments on existing default profiles.
   await profileSeeder.upgradeExisting();
   await Future.wait([

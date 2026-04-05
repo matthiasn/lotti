@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
@@ -395,6 +396,8 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
 }
+
+class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 

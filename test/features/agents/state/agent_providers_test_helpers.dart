@@ -52,6 +52,7 @@ class InitProviderBench {
     required this.mockScheduledWakeManager,
     required this.mockProjectActivityMonitor,
     required this.mockProjectRepository,
+    required this.mockSoulDocumentService,
   });
 
   /// Creates a fully-stubbed bench.  Calls [setUpTestGetIt] internally, so
@@ -73,6 +74,7 @@ class InitProviderBench {
       mockScheduledWakeManager: MockScheduledWakeManager(),
       mockProjectActivityMonitor: MockProjectActivityMonitor(),
       mockProjectRepository: MockProjectRepository(),
+      mockSoulDocumentService: MockSoulDocumentService(),
     ).._stubDefaults();
     return bench;
   }
@@ -90,6 +92,7 @@ class InitProviderBench {
   final MockScheduledWakeManager mockScheduledWakeManager;
   final MockProjectActivityMonitor mockProjectActivityMonitor;
   final MockProjectRepository mockProjectRepository;
+  final MockSoulDocumentService mockSoulDocumentService;
 
   void _stubDefaults() {
     when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
@@ -97,6 +100,7 @@ class InitProviderBench {
     when(mockTaskAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockProjectAgentService.restoreSubscriptions).thenAnswer((_) async {});
     when(mockTemplateService.seedDefaults).thenAnswer((_) async {});
+    when(mockSoulDocumentService.seedDefaults).thenAnswer((_) async {});
     when(
       () => mockTemplateService.getTemplateForAgent(any()),
     ).thenAnswer((_) async => null);
@@ -146,6 +150,9 @@ class InitProviderBench {
         ),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        soulDocumentServiceProvider.overrideWithValue(
+          mockSoulDocumentService,
+        ),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         scheduledWakeManagerProvider.overrideWithValue(
           mockScheduledWakeManager,

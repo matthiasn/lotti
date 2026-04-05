@@ -120,6 +120,8 @@ deleteAgentSagaOps: DELETE FROM saga_log WHERE agent_id = :agentId;
 
 getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' AND deleted_at IS NULL ORDER BY created_at DESC;
 
+getAgentEntitiesByTypeGlobal: SELECT * FROM agent_entities WHERE type = :type AND deleted_at IS NULL ORDER BY updated_at DESC;
+
 getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
 
 getAgentEntitiesInInterval: SELECT * FROM agent_entities WHERE updated_at >= :start AND updated_at < :end ORDER BY updated_at ASC, id ASC LIMIT :limit OFFSET :offset;

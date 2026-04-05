@@ -36,6 +36,9 @@ class AgentDbConversions {
       changeSet: (e) => e.deletedAt,
       changeDecision: (e) => e.deletedAt,
       wakeTokenUsage: (e) => e.deletedAt,
+      soulDocument: (e) => e.deletedAt,
+      soulDocumentVersion: (e) => e.deletedAt,
+      soulDocumentHead: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -98,6 +101,7 @@ class AgentDbConversions {
       templateAssignment: (l) => l.deletedAt,
       improverTarget: (l) => l.deletedAt,
       agentProject: (l) => l.deletedAt,
+      soulAssignment: (l) => l.deletedAt,
     );
 
     return AgentLinksCompanion(
@@ -140,6 +144,9 @@ class AgentDbConversions {
       changeSet: (_) => 'changeSet',
       changeDecision: (_) => 'changeDecision',
       wakeTokenUsage: (_) => 'wakeTokenUsage',
+      soulDocument: (_) => AgentEntityTypes.soulDocument,
+      soulDocumentVersion: (_) => AgentEntityTypes.soulDocumentVersion,
+      soulDocumentHead: (_) => AgentEntityTypes.soulDocumentHead,
       unknown: (_) => 'unknown',
     );
   }
@@ -161,6 +168,7 @@ class AgentDbConversions {
       evolutionNote: (n) => n.kind.name,
       changeSet: (c) => c.status.name,
       changeDecision: (d) => d.verdict.name,
+      soulDocumentVersion: (v) => v.status.name,
     );
   }
 
@@ -187,6 +195,9 @@ class AgentDbConversions {
       changeSet: (e) => e.createdAt,
       changeDecision: (e) => e.createdAt,
       wakeTokenUsage: (e) => e.createdAt,
+      soulDocument: (e) => e.createdAt,
+      soulDocumentVersion: (e) => e.createdAt,
+      soulDocumentHead: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -214,6 +225,9 @@ class AgentDbConversions {
       changeSet: (e) => e.resolvedAt ?? e.createdAt,
       changeDecision: (e) => e.createdAt,
       wakeTokenUsage: (e) => e.createdAt,
+      soulDocument: (e) => e.updatedAt,
+      soulDocumentVersion: (e) => e.createdAt,
+      soulDocumentHead: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -230,6 +244,7 @@ class AgentDbConversions {
       templateAssignment: (_) => AgentLinkTypes.templateAssignment,
       improverTarget: (_) => AgentLinkTypes.improverTarget,
       agentProject: (_) => AgentLinkTypes.agentProject,
+      soulAssignment: (_) => AgentLinkTypes.soulAssignment,
     );
   }
 }

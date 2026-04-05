@@ -342,6 +342,66 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = WakeTokenUsageEntity;
 
+  /// Soul document — reusable personality blueprint for templates.
+  ///
+  /// The [agentId] field stores the soul's own ID (same as [id]), serving
+  /// as a grouping key that links this soul to its versions and head pointer.
+  const factory AgentDomainEntity.soulDocument({
+    required String id,
+    required String agentId,
+    required String displayName,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulDocumentEntity;
+
+  /// Immutable versioned snapshot of a soul's personality directives.
+  ///
+  /// The [agentId] field stores the owning soul document's ID, grouping all
+  /// versions under the same soul. It does **not** reference an agent instance.
+  const factory AgentDomainEntity.soulDocumentVersion({
+    required String id,
+    required String agentId,
+    required int version,
+    required SoulDocumentVersionStatus status,
+    required String authoredBy,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+
+    /// Core personality: tone, warmth, humor, style, communication patterns.
+    required String voiceDirective,
+
+    /// Guardrails on voice — what the personality must never do.
+    @Default('') String toneBounds,
+
+    /// How the personality coaches, mentors, and motivates the user.
+    @Default('') String coachingStyle,
+
+    /// Directness contract — when to push back vs. comply.
+    @Default('') String antiSycophancyPolicy,
+
+    /// Evolution session that produced this version, if any.
+    String? sourceSessionId,
+
+    /// Parent version for diff tracking.
+    String? diffFromVersionId,
+    DateTime? deletedAt,
+  }) = SoulDocumentVersionEntity;
+
+  /// Mutable head pointer for the active soul version.
+  ///
+  /// The [agentId] field stores the owning soul document's ID. It does **not**
+  /// reference an agent instance.
+  const factory AgentDomainEntity.soulDocumentHead({
+    required String id,
+    required String agentId,
+    required String versionId,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulDocumentHeadEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,

@@ -96,6 +96,18 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentProjectLink;
 
+  /// Links a template to its assigned soul document.
+  /// [fromId] = template ID, [toId] = soul document ID.
+  const factory AgentLink.soulAssignment({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulAssignmentLink;
+
   factory AgentLink.fromJson(Map<String, dynamic> json) =>
       _$AgentLinkFromJson(json);
 }

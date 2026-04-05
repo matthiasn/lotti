@@ -2969,6 +2969,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getAgentEntitiesByTypeGlobal(String type) {
+    return customSelect(
+      'SELECT * FROM agent_entities WHERE type = ?1 AND deleted_at IS NULL ORDER BY updated_at DESC',
+      variables: [Variable<String>(type)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getAllAgentEntities() {
     return customSelect(
       'SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC',
