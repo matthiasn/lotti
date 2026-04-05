@@ -43,6 +43,7 @@ abstract final class AgentReportScopes {
 
 abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
+  static const system = 'system';
 }
 
 abstract final class AgentSchedules {

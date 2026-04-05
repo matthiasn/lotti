@@ -708,4 +708,220 @@ void main() {
       expect(companion.threadId, const Value<String?>.absent());
     });
   });
+
+  // ── Soul document conversions ───────────────────────────────────────────
+
+  group('AgentDbConversions — soulDocument entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.soulDocument(
+        id: 'soul-001',
+        agentId: 'soul-001',
+        displayName: 'Laura',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('soul-001'));
+      expect(companion.type, const Value('soulDocument'));
+      expect(companion.subtype, const Value<String?>.absent());
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
+    test('fromEntityRow roundtrips soulDocument variant', () {
+      final entity = AgentDomainEntity.soulDocument(
+        id: 'soul-002',
+        agentId: 'soul-002',
+        displayName: 'Max',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'soul-002',
+        agentId: 'soul-002',
+        type: 'soulDocument',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<SoulDocumentEntity>());
+      final soul = result as SoulDocumentEntity;
+      expect(soul.displayName, 'Max');
+      expect(soul.agentId, 'soul-002');
+    });
+  });
+
+  group('AgentDbConversions — soulDocumentVersion entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.soulDocumentVersion(
+        id: 'sv-001',
+        agentId: 'soul-001',
+        version: 1,
+        status: SoulDocumentVersionStatus.active,
+        authoredBy: 'system',
+        createdAt: createdAt,
+        vectorClock: null,
+        voiceDirective: 'Be warm.',
+        toneBounds: 'No sarcasm.',
+        coachingStyle: 'Gentle.',
+        antiSycophancyPolicy: 'Push back.',
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('sv-001'));
+      expect(companion.type, const Value('soulDocumentVersion'));
+      expect(companion.subtype, const Value('active'));
+      expect(companion.createdAt, Value(createdAt));
+      // Immutable — updatedAt = createdAt.
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test('fromEntityRow roundtrips soulDocumentVersion variant', () {
+      final entity = AgentDomainEntity.soulDocumentVersion(
+        id: 'sv-002',
+        agentId: 'soul-001',
+        version: 2,
+        status: SoulDocumentVersionStatus.archived,
+        authoredBy: 'evolution_agent',
+        createdAt: createdAt,
+        vectorClock: null,
+        voiceDirective: 'Be terse.',
+        toneBounds: 'No fluff.',
+        coachingStyle: 'Direct.',
+        antiSycophancyPolicy: 'Be blunt.',
+        sourceSessionId: 'session-1',
+        diffFromVersionId: 'sv-001',
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'sv-002',
+        agentId: 'soul-001',
+        type: 'soulDocumentVersion',
+        subtype: 'archived',
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<SoulDocumentVersionEntity>());
+      final ver = result as SoulDocumentVersionEntity;
+      expect(ver.version, 2);
+      expect(ver.status, SoulDocumentVersionStatus.archived);
+      expect(ver.voiceDirective, 'Be terse.');
+      expect(ver.toneBounds, 'No fluff.');
+      expect(ver.coachingStyle, 'Direct.');
+      expect(ver.antiSycophancyPolicy, 'Be blunt.');
+      expect(ver.sourceSessionId, 'session-1');
+      expect(ver.diffFromVersionId, 'sv-001');
+    });
+  });
+
+  group('AgentDbConversions — soulDocumentHead entity roundtrip', () {
+    test('toEntityCompanion produces correct companion', () {
+      final entity = AgentDomainEntity.soulDocumentHead(
+        id: 'sh-001',
+        agentId: 'soul-001',
+        versionId: 'sv-001',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('sh-001'));
+      expect(companion.type, const Value('soulDocumentHead'));
+      expect(companion.subtype, const Value<String?>.absent());
+      // Head has no createdAt — falls back to updatedAt.
+      expect(companion.createdAt, Value(updatedAt));
+      expect(companion.updatedAt, Value(updatedAt));
+    });
+
+    test('fromEntityRow roundtrips soulDocumentHead variant', () {
+      final entity = AgentDomainEntity.soulDocumentHead(
+        id: 'sh-002',
+        agentId: 'soul-001',
+        versionId: 'sv-003',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'sh-002',
+        agentId: 'soul-001',
+        type: 'soulDocumentHead',
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<SoulDocumentHeadEntity>());
+      final head = result as SoulDocumentHeadEntity;
+      expect(head.versionId, 'sv-003');
+      expect(head.agentId, 'soul-001');
+    });
+  });
+
+  group('AgentDbConversions — soulAssignment link', () {
+    test('toLinkCompanion handles soulAssignment link correctly', () {
+      final link = model.AgentLink.soulAssignment(
+        id: 'link-sa-001',
+        fromId: 'tpl-001',
+        toId: 'soul-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      expect(companion.id, const Value('link-sa-001'));
+      expect(companion.fromId, const Value('tpl-001'));
+      expect(companion.toId, const Value('soul-001'));
+      expect(companion.type, const Value('soul_assignment'));
+    });
+
+    test('fromLinkRow roundtrips soulAssignment link', () {
+      final link = model.AgentLink.soulAssignment(
+        id: 'link-sa-002',
+        fromId: 'tpl-001',
+        toId: 'soul-002',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      final row = AgentLink(
+        id: 'link-sa-002',
+        fromId: 'tpl-001',
+        toId: 'soul-002',
+        type: 'soul_assignment',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+      expect(result, isA<model.SoulAssignmentLink>());
+      expect(result.fromId, 'tpl-001');
+      expect(result.toId, 'soul-002');
+    });
+  });
 }

@@ -481,6 +481,11 @@ class AgentRepository {
   /// Determine the next version number for a soul document.
   ///
   /// Returns 1 if no versions exist yet.
+  ///
+  /// Note: this uses local `max + 1`, matching the template version pattern
+  /// ([getNextTemplateVersionNumber]). On concurrent multi-device writes the
+  /// version number may collide, but entity IDs remain globally unique via
+  /// UUID. The version number is a display hint, not a uniqueness key.
   Future<int> getNextSoulDocumentVersionNumber(String soulId) async {
     final rows = await _db
         .getAgentEntitiesByType(

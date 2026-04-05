@@ -28,9 +28,16 @@ class SoulDocumentService {
   static const _uuid = Uuid();
   static const _logTag = 'SoulDocumentService';
 
+  static void _requireNonBlank(String fieldName, String value) {
+    if (value.trim().isEmpty) {
+      throw ArgumentError.value(value, fieldName, 'must not be blank');
+    }
+  }
+
   /// Create a new soul document with its initial version and head pointer.
   ///
-  /// Returns the created [SoulDocumentEntity].
+  /// Throws [StateError] if a soul with the given [soulId] already exists.
+  /// Throws [ArgumentError] if required text fields are blank.
   Future<SoulDocumentEntity> createSoul({
     required String displayName,
     required String voiceDirective,
@@ -40,62 +47,73 @@ class SoulDocumentService {
     String antiSycophancyPolicy = '',
     String? soulId,
   }) async {
+    _requireNonBlank('displayName', displayName);
+    _requireNonBlank('voiceDirective', voiceDirective);
+    _requireNonBlank('authoredBy', authoredBy);
+
     final id = soulId ?? _uuid.v4();
     final versionId = _uuid.v4();
     final headId = _uuid.v4();
     final now = clock.now();
 
-    final soul =
-        AgentDomainEntity.soulDocument(
-              id: id,
-              agentId: id,
-              displayName: displayName,
-              createdAt: now,
-              updatedAt: now,
-              vectorClock: null,
-            )
-            as SoulDocumentEntity;
+    return syncService.runInTransaction(() async {
+      final existing = await getSoul(id);
+      if (existing != null) {
+        throw StateError('Soul document $id already exists');
+      }
 
-    final version = AgentDomainEntity.soulDocumentVersion(
-      id: versionId,
-      agentId: id,
-      version: 1,
-      status: SoulDocumentVersionStatus.active,
-      authoredBy: authoredBy,
-      createdAt: now,
-      vectorClock: null,
-      voiceDirective: voiceDirective,
-      toneBounds: toneBounds,
-      coachingStyle: coachingStyle,
-      antiSycophancyPolicy: antiSycophancyPolicy,
-    );
+      final soul =
+          AgentDomainEntity.soulDocument(
+                id: id,
+                agentId: id,
+                displayName: displayName,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              )
+              as SoulDocumentEntity;
 
-    final head = AgentDomainEntity.soulDocumentHead(
-      id: headId,
-      agentId: id,
-      versionId: versionId,
-      updatedAt: now,
-      vectorClock: null,
-    );
+      final version = AgentDomainEntity.soulDocumentVersion(
+        id: versionId,
+        agentId: id,
+        version: 1,
+        status: SoulDocumentVersionStatus.active,
+        authoredBy: authoredBy,
+        createdAt: now,
+        vectorClock: null,
+        voiceDirective: voiceDirective,
+        toneBounds: toneBounds,
+        coachingStyle: coachingStyle,
+        antiSycophancyPolicy: antiSycophancyPolicy,
+      );
 
-    await syncService.runInTransaction(() async {
+      final head = AgentDomainEntity.soulDocumentHead(
+        id: headId,
+        agentId: id,
+        versionId: versionId,
+        updatedAt: now,
+        vectorClock: null,
+      );
+
       await syncService.upsertEntity(soul);
       await syncService.upsertEntity(version);
       await syncService.upsertEntity(head);
+
+      developer.log(
+        'Created soul $id (name: $displayName)',
+        name: _logTag,
+      );
+
+      return soul;
     });
-
-    developer.log(
-      'Created soul $id (name: $displayName)',
-      name: _logTag,
-    );
-
-    return soul;
   }
 
   /// Create a new version of a soul document's personality directives.
   ///
-  /// Archives all existing versions, creates the new active version, and
+  /// Archives the current active version, creates the new active version, and
   /// updates the head pointer (reusing the existing head ID).
+  ///
+  /// Throws [ArgumentError] if required text fields are blank.
   Future<SoulDocumentVersionEntity> createVersion({
     required String soulId,
     required String voiceDirective,
@@ -105,6 +123,9 @@ class SoulDocumentService {
     String antiSycophancyPolicy = '',
     String? sourceSessionId,
   }) async {
+    _requireNonBlank('voiceDirective', voiceDirective);
+    _requireNonBlank('authoredBy', authoredBy);
+
     final now = clock.now();
     final newVersionId = _uuid.v4();
 
@@ -114,15 +135,22 @@ class SoulDocumentService {
         throw StateError('Soul document $soulId not found');
       }
 
-      // Archive ALL non-archived versions.
       final currentHead = await repository.getSoulDocumentHead(soulId);
-      final allVersions = await getVersionHistory(soulId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != SoulDocumentVersionStatus.archived) {
-          final archived = version.copyWith(
-            status: SoulDocumentVersionStatus.archived,
+
+      // Archive the current active version by resolving directly from head,
+      // avoiding a redundant head read via getActiveSoulVersion.
+      if (currentHead != null) {
+        final currentVersion = await repository.getEntity(
+          currentHead.versionId,
+        );
+        final activeVersion = currentVersion?.mapOrNull(
+          soulDocumentVersion: (v) => v,
+        );
+        if (activeVersion != null &&
+            activeVersion.status != SoulDocumentVersionStatus.archived) {
+          await syncService.upsertEntity(
+            activeVersion.copyWith(status: SoulDocumentVersionStatus.archived),
           );
-          await syncService.upsertEntity(archived);
         }
       }
 
@@ -149,7 +177,6 @@ class SoulDocumentService {
               as SoulDocumentVersionEntity;
       await syncService.upsertEntity(newVersion);
 
-      // Update head pointer (reuse existing head ID if present).
       final headId = currentHead?.id ?? _uuid.v4();
       final updatedHead = AgentDomainEntity.soulDocumentHead(
         id: headId,
@@ -210,7 +237,6 @@ class SoulDocumentService {
         throw StateError('No head found for soul $soulId');
       }
 
-      // Validate target version exists and belongs to this soul.
       final versionEntity = await repository.getEntity(versionId);
       final validVersion = versionEntity?.mapOrNull(
         soulDocumentVersion: (v) => v.agentId == soulId ? v : null,
@@ -221,7 +247,6 @@ class SoulDocumentService {
         );
       }
 
-      // Archive all versions.
       final allVersions = await getVersionHistory(soulId, limit: -1);
       for (final version in allVersions) {
         if (version.status != SoulDocumentVersionStatus.archived) {
@@ -231,12 +256,10 @@ class SoulDocumentService {
         }
       }
 
-      // Reactivate target version.
       await syncService.upsertEntity(
         validVersion.copyWith(status: SoulDocumentVersionStatus.active),
       );
 
-      // Update head pointer.
       final updatedHead = head.copyWith(
         versionId: versionId,
         updatedAt: now,
@@ -252,8 +275,8 @@ class SoulDocumentService {
 
   /// Assign a soul document to a template.
   ///
-  /// If the template already has a soul assignment, the existing link is
-  /// soft-deleted and replaced.
+  /// No-op if the template is already assigned to [soulId]. Otherwise,
+  /// soft-deletes any existing assignment and creates a new link.
   Future<void> assignSoulToTemplate(
     String templateId,
     String soulId,
@@ -261,28 +284,19 @@ class SoulDocumentService {
     final now = clock.now();
 
     await syncService.runInTransaction(() async {
-      // Soft-delete any existing soul assignment for this template.
       final existingLinks = await repository.getLinksFrom(
         templateId,
         type: AgentLinkTypes.soulAssignment,
       );
-      for (final link in existingLinks) {
-        final deleted = link.map(
-          basic: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          agentState: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          messagePrev: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          messagePayload: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          toolEffect: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          agentTask: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          templateAssignment: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          improverTarget: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          agentProject: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-          soulAssignment: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        );
-        await syncService.upsertLink(deleted);
+
+      if (existingLinks.any((l) => l.toId == soulId)) {
+        return;
       }
 
-      // Create new assignment link.
+      for (final link in existingLinks) {
+        await syncService.upsertLink(link.softDeleted(now));
+      }
+
       final link = AgentLink.soulAssignment(
         id: _uuid.v4(),
         fromId: templateId,
@@ -304,25 +318,15 @@ class SoulDocumentService {
   Future<void> unassignSoul(String templateId) async {
     final now = clock.now();
 
-    final links = await repository.getLinksFrom(
-      templateId,
-      type: AgentLinkTypes.soulAssignment,
-    );
-    for (final link in links) {
-      final deleted = link.map(
-        basic: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        agentState: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        messagePrev: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        messagePayload: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        toolEffect: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        agentTask: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        templateAssignment: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        improverTarget: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        agentProject: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-        soulAssignment: (l) => l.copyWith(deletedAt: now, updatedAt: now),
+    await syncService.runInTransaction(() async {
+      final links = await repository.getLinksFrom(
+        templateId,
+        type: AgentLinkTypes.soulAssignment,
       );
-      await syncService.upsertLink(deleted);
-    }
+      for (final link in links) {
+        await syncService.upsertLink(link.softDeleted(now));
+      }
+    });
 
     developer.log(
       'Unassigned soul from template $templateId',
@@ -360,109 +364,96 @@ class SoulDocumentService {
 
   // ── seeding ───────────────────────────────────────────────────────────────
 
+  /// Seeded soul configurations, keyed by ID.
+  static const List<({String antiSycophancy, String coaching, String id, String name, String tone, String voice})> _seedConfigs = [
+    (
+      id: lauraSoulId,
+      name: 'Laura',
+      voice: lauraSoulVoiceDirective,
+      tone: lauraSoulToneBounds,
+      coaching: lauraSoulCoachingStyle,
+      antiSycophancy: lauraSoulAntiSycophancyPolicy,
+    ),
+    (
+      id: tomSoulId,
+      name: 'Tom',
+      voice: tomSoulVoiceDirective,
+      tone: tomSoulToneBounds,
+      coaching: tomSoulCoachingStyle,
+      antiSycophancy: tomSoulAntiSycophancyPolicy,
+    ),
+    (
+      id: maxSoulId,
+      name: 'Max',
+      voice: maxSoulVoiceDirective,
+      tone: maxSoulToneBounds,
+      coaching: maxSoulCoachingStyle,
+      antiSycophancy: maxSoulAntiSycophancyPolicy,
+    ),
+    (
+      id: irisSoulId,
+      name: 'Iris',
+      voice: irisSoulVoiceDirective,
+      tone: irisSoulToneBounds,
+      coaching: irisSoulCoachingStyle,
+      antiSycophancy: irisSoulAntiSycophancyPolicy,
+    ),
+    (
+      id: sageSoulId,
+      name: 'Sage',
+      voice: sageSoulVoiceDirective,
+      tone: sageSoulToneBounds,
+      coaching: sageSoulCoachingStyle,
+      antiSycophancy: sageSoulAntiSycophancyPolicy,
+    ),
+    (
+      id: kitSoulId,
+      name: 'Kit',
+      voice: kitSoulVoiceDirective,
+      tone: kitSoulToneBounds,
+      coaching: kitSoulCoachingStyle,
+      antiSycophancy: kitSoulAntiSycophancyPolicy,
+    ),
+  ];
+
+  /// Default soul-to-template assignments.
+  static const List<({String soulId, String templateId})> _seedAssignments = [
+    (templateId: lauraTemplateId, soulId: lauraSoulId),
+    (templateId: tomTemplateId, soulId: tomSoulId),
+    (templateId: projectTemplateId, soulId: lauraSoulId),
+  ];
+
   /// Seed the default soul documents and assign them to seeded templates.
   ///
   /// Idempotent — checks existence before creating. Safe to call on every
   /// app startup.
   Future<void> seedDefaults() async {
-    final souls = await Future.wait([
-      getSoul(lauraSoulId),
-      getSoul(tomSoulId),
-      getSoul(maxSoulId),
-      getSoul(irisSoulId),
-      getSoul(sageSoulId),
-      getSoul(kitSoulId),
-    ]);
+    final existing = await Future.wait(
+      _seedConfigs.map((c) => getSoul(c.id)),
+    );
 
-    final [laura, tom, max, iris, sage, kit] = souls;
-
-    if (laura != null &&
-        tom != null &&
-        max != null &&
-        iris != null &&
-        sage != null &&
-        kit != null) {
-      developer.log('Default souls already seeded, skipping', name: _logTag);
-      return;
+    // Seed missing soul documents.
+    for (var i = 0; i < _seedConfigs.length; i++) {
+      if (existing[i] == null) {
+        final c = _seedConfigs[i];
+        await createSoul(
+          soulId: c.id,
+          displayName: c.name,
+          voiceDirective: c.voice,
+          toneBounds: c.tone,
+          coachingStyle: c.coaching,
+          antiSycophancyPolicy: c.antiSycophancy,
+          authoredBy: AgentAuthors.system,
+        );
+      }
     }
 
-    if (laura == null) {
-      await createSoul(
-        soulId: lauraSoulId,
-        displayName: 'Laura',
-        voiceDirective: lauraSoulVoiceDirective,
-        toneBounds: lauraSoulToneBounds,
-        coachingStyle: lauraSoulCoachingStyle,
-        antiSycophancyPolicy: lauraSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
+    // Always run assignments — assignSoulToTemplate is idempotent (no-op when
+    // already assigned), so this repairs stale or missing links on existing
+    // installs without creating churn.
+    for (final a in _seedAssignments) {
+      await assignSoulToTemplate(a.templateId, a.soulId);
     }
-
-    if (tom == null) {
-      await createSoul(
-        soulId: tomSoulId,
-        displayName: 'Tom',
-        voiceDirective: tomSoulVoiceDirective,
-        toneBounds: tomSoulToneBounds,
-        coachingStyle: tomSoulCoachingStyle,
-        antiSycophancyPolicy: tomSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
-    }
-
-    if (max == null) {
-      await createSoul(
-        soulId: maxSoulId,
-        displayName: 'Max',
-        voiceDirective: maxSoulVoiceDirective,
-        toneBounds: maxSoulToneBounds,
-        coachingStyle: maxSoulCoachingStyle,
-        antiSycophancyPolicy: maxSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
-    }
-
-    if (iris == null) {
-      await createSoul(
-        soulId: irisSoulId,
-        displayName: 'Iris',
-        voiceDirective: irisSoulVoiceDirective,
-        toneBounds: irisSoulToneBounds,
-        coachingStyle: irisSoulCoachingStyle,
-        antiSycophancyPolicy: irisSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
-    }
-
-    if (sage == null) {
-      await createSoul(
-        soulId: sageSoulId,
-        displayName: 'Sage',
-        voiceDirective: sageSoulVoiceDirective,
-        toneBounds: sageSoulToneBounds,
-        coachingStyle: sageSoulCoachingStyle,
-        antiSycophancyPolicy: sageSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
-    }
-
-    if (kit == null) {
-      await createSoul(
-        soulId: kitSoulId,
-        displayName: 'Kit',
-        voiceDirective: kitSoulVoiceDirective,
-        toneBounds: kitSoulToneBounds,
-        coachingStyle: kitSoulCoachingStyle,
-        antiSycophancyPolicy: kitSoulAntiSycophancyPolicy,
-        authoredBy: 'system',
-      );
-    }
-
-    // Assign default souls to seeded templates (idempotent — replaces if
-    // already assigned).
-    await assignSoulToTemplate(lauraTemplateId, lauraSoulId);
-    await assignSoulToTemplate(tomTemplateId, tomSoulId);
-    await assignSoulToTemplate(projectTemplateId, lauraSoulId);
 
     developer.log('Seeded default souls and assignments', name: _logTag);
   }

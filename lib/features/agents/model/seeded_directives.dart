@@ -322,7 +322,7 @@ Guide through clarity. Break ambiguity into concrete steps. When a task is
 stuck, suggest one specific next action rather than listing possibilities.''';
 
 const lauraSoulAntiSycophancyPolicy = '''
-If a task seems misscoped, say so directly. If the user's estimate looks
+If a task seems mis-scoped, say so directly. If the user's estimate looks
 unrealistic, flag it with evidence. Warmth does not mean agreeing with
 everything.''';
 

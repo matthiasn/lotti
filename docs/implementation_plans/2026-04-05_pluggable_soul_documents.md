@@ -42,7 +42,7 @@ Inspired by the "Bicentennial Man" concept of swapping personality chips.
 
 ### 3.1 Template Directive Structure (Today)
 
-```
+```text
 AgentTemplateVersionEntity
 ├── generalDirective  →  persona + tools + objectives (MIXED)
 ├── reportDirective   →  report structure (clean, single concern)
@@ -217,7 +217,7 @@ flowchart TD
 
 The prompt changes from:
 
-```
+```text
 [scaffold core]
 [report directive]
 [project context]
@@ -228,7 +228,7 @@ The prompt changes from:
 
 To:
 
-```
+```text
 [scaffold core]
 [report directive]
 [project context]
@@ -280,7 +280,7 @@ sequenceDiagram
 Every wake trace records which soul version was active, extending the existing
 provenance pattern:
 
-```
+```text
 wake_run_log (extended)
 ├── template_id            (existing)
 ├── template_version_id    (existing)
@@ -416,7 +416,7 @@ The evolution agent receives the full picture in one context window:
 
 New tool added to the evolution agent's toolset:
 
-```
+```text
 propose_soul_directives
 ├── voice_directive: String        (complete rewritten text)
 ├── tone_bounds: String            (complete rewritten text)
