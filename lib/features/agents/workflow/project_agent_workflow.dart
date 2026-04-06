@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
@@ -47,6 +48,7 @@ class ProjectAgentWorkflow {
     required this.journalRepository,
     required this.syncService,
     required this.templateService,
+    this.soulDocumentService,
     this.domainLogger,
     this.onPersistedStateChanged,
   });
@@ -58,6 +60,7 @@ class ProjectAgentWorkflow {
   final CloudInferenceRepository cloudInferenceRepository;
   final JournalRepository journalRepository;
   final AgentTemplateService templateService;
+  final SoulDocumentService? soulDocumentService;
   final DomainLogger? domainLogger;
   final void Function(String agentId)? onPersistedStateChanged;
 
@@ -275,7 +278,7 @@ class ProjectAgentWorkflow {
         cloudRepository: cloudInferenceRepository,
       );
 
-      // Record template provenance on the wake run log.
+      // Record template + soul provenance on the wake run log.
       if (templateCtx != null) {
         try {
           await agentRepository.updateWakeRunTemplate(
@@ -283,6 +286,8 @@ class ProjectAgentWorkflow {
             templateCtx.template.id,
             templateCtx.version.id,
             resolvedModelId: modelId,
+            soulId: templateCtx.soulVersion?.agentId,
+            soulVersionId: templateCtx.soulVersion?.id,
           );
         } catch (e) {
           _logError('failed to record template provenance', error: e);
@@ -576,6 +581,8 @@ class ProjectAgentWorkflow {
           modelId: modelId,
           templateId: templateCtx?.template.id,
           templateVersionId: templateCtx?.version.id,
+          soulDocumentId: templateCtx?.soulVersion?.agentId,
+          soulDocumentVersionId: templateCtx?.soulVersion?.id,
           createdAt: now,
           vectorClock: null,
           inputTokens: usage.inputTokens,
@@ -596,7 +603,23 @@ class ProjectAgentWorkflow {
     final version = await templateService.getActiveVersion(template.id);
     if (version == null) return null;
 
-    return _TemplateContext(template: template, version: version);
+    // Resolve the soul document assigned to this template, if any.
+    SoulDocumentVersionEntity? soulVersion;
+    if (soulDocumentService != null) {
+      try {
+        soulVersion = await soulDocumentService!.resolveActiveSoulForTemplate(
+          template.id,
+        );
+      } catch (e) {
+        _logError('failed to resolve soul for template', error: e);
+      }
+    }
+
+    return _TemplateContext(
+      template: template,
+      version: version,
+      soulVersion: soulVersion,
+    );
   }
 
   String _buildSystemPrompt(_TemplateContext? ctx) {
@@ -663,6 +686,7 @@ immediately.''';
     if (ctx == null) return scaffold;
 
     final version = ctx.version;
+    final soulVersion = ctx.soulVersion;
     final generalDirective = version.generalDirective.trim();
     final reportDirective = version.reportDirective.trim();
     final hasNewDirectives =
@@ -680,16 +704,30 @@ immediately.''';
           ..write(reportDirective);
       }
 
-      final effectiveGeneralDirective = generalDirective.isNotEmpty
-          ? generalDirective
-          : version.directives;
-      if (effectiveGeneralDirective.trim().isNotEmpty) {
-        buf
-          ..writeln()
-          ..writeln()
-          ..writeln('## Your Personality & Directives')
-          ..writeln()
-          ..write(effectiveGeneralDirective);
+      if (soulVersion != null) {
+        // Soul assigned: separate personality from operational directives.
+        _appendSoulPersonality(buf, soulVersion);
+        if (generalDirective.isNotEmpty) {
+          buf
+            ..writeln()
+            ..writeln()
+            ..writeln('## Your Operational Directives')
+            ..writeln()
+            ..write(generalDirective);
+        }
+      } else {
+        // No soul: legacy combined heading.
+        final effectiveGeneralDirective = generalDirective.isNotEmpty
+            ? generalDirective
+            : version.directives;
+        if (effectiveGeneralDirective.trim().isNotEmpty) {
+          buf
+            ..writeln()
+            ..writeln()
+            ..writeln('## Your Personality & Directives')
+            ..writeln()
+            ..write(effectiveGeneralDirective);
+        }
       }
     } else {
       // Legacy fallback: single directives field.
@@ -705,6 +743,38 @@ immediately.''';
     }
 
     return buf.toString();
+  }
+
+  /// Appends soul personality fields to the prompt buffer.
+  static void _appendSoulPersonality(
+    StringBuffer buf,
+    SoulDocumentVersionEntity soul,
+  ) {
+    buf
+      ..writeln()
+      ..writeln()
+      ..writeln('## Your Personality')
+      ..writeln()
+      ..write(soul.voiceDirective);
+
+    if (soul.toneBounds.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.toneBounds);
+    }
+    if (soul.coachingStyle.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.coachingStyle);
+    }
+    if (soul.antiSycophancyPolicy.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.antiSycophancyPolicy);
+    }
   }
 
   String _buildUserMessage({
@@ -1002,7 +1072,15 @@ immediately.''';
 }
 
 class _TemplateContext {
-  const _TemplateContext({required this.template, required this.version});
+  const _TemplateContext({
+    required this.template,
+    required this.version,
+    this.soulVersion,
+  });
+
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
+
+  /// Active soul version for this template, if a soul is assigned.
+  final SoulDocumentVersionEntity? soulVersion;
 }

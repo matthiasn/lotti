@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -90,6 +90,36 @@ class AgentDatabase extends _$AgentDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_saga_log_status_created_at '
             'ON saga_log(status, created_at ASC)',
+          );
+        }
+        if (from < 6) {
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN soul_id TEXT',
+          );
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN soul_version_id TEXT',
+          );
+          // Soft-delete duplicate soul_assignment links per template,
+          // keeping only the most recently created row per from_id.
+          await customStatement('''
+            UPDATE agent_links
+            SET
+              deleted_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE type = 'soul_assignment'
+              AND deleted_at IS NULL
+              AND rowid NOT IN (
+                SELECT MAX(rowid)
+                FROM agent_links
+                WHERE type = 'soul_assignment' AND deleted_at IS NULL
+                GROUP BY from_id
+              )
+          ''');
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS '
+            'idx_unique_soul_per_template '
+            "ON agent_links(from_id) WHERE type = 'soul_assignment' "
+            'AND deleted_at IS NULL',
           );
         }
       },

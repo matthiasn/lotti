@@ -414,7 +414,10 @@ class AgentRepository {
 
   // ── soul document ──────────────────────────────────────────────────────
 
-  /// Fetch a [SoulDocumentEntity] by its ID, or `null` if not found.
+  /// Fetch a [SoulDocumentEntity] by its ID.
+  ///
+  /// Returns `null` if no entity with [soulId] exists or if it is not a
+  /// soul document.
   Future<SoulDocumentEntity?> getSoulDocument(String soulId) async {
     final entity = await getEntity(soulId);
     return entity?.mapOrNull(soulDocument: (e) => e);
@@ -431,8 +434,9 @@ class AgentRepository {
         .toList();
   }
 
-  /// Fetch the [SoulDocumentHeadEntity] for [soulId], or `null` if none
-  /// exists.
+  /// Fetch the [SoulDocumentHeadEntity] for [soulId].
+  ///
+  /// Returns `null` if no head pointer exists for the given soul.
   Future<SoulDocumentHeadEntity?> getSoulDocumentHead(String soulId) async {
     final rows = await _db
         .getAgentEntitiesByType(
@@ -508,11 +512,16 @@ class AgentRepository {
   /// When [resolvedModelId] is provided, it is persisted alongside the
   /// template provenance so that `modelIdForThread` can return the actual
   /// model used even for failed/incomplete wakes.
+  ///
+  /// When [soulId] and [soulVersionId] are provided, soul provenance is
+  /// recorded alongside the template provenance.
   Future<void> updateWakeRunTemplate(
     String runKey,
     String templateId,
     String templateVersionId, {
     String? resolvedModelId,
+    String? soulId,
+    String? soulVersionId,
   }) async {
     final updatedRows =
         await (_db.update(
@@ -523,6 +532,10 @@ class AgentRepository {
             templateVersionId: Value(templateVersionId),
             resolvedModelId: resolvedModelId != null
                 ? Value(resolvedModelId)
+                : const Value.absent(),
+            soulId: soulId != null ? Value(soulId) : const Value.absent(),
+            soulVersionId: soulVersionId != null
+                ? Value(soulVersionId)
                 : const Value.absent(),
           ),
         );

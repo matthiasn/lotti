@@ -138,6 +138,12 @@ void main() {
         () => mockRepo.getEntity(existingHead.versionId),
       ).thenAnswer((_) async => existingVersion);
       when(
+        () => mockRepo.getSoulDocumentVersions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [existingVersion]);
+      when(
         () => mockRepo.getNextSoulDocumentVersionNumber(kTestSoulId),
       ).thenAnswer((_) async => 2);
 

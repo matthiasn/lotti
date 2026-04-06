@@ -324,7 +324,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   ///
   /// Immutable, append-only. Synced via Matrix so usage is visible across
   /// all devices. The [agentId] is the agent instance; [templateId] and
-  /// [templateVersionId] enable per-template aggregation.
+  /// [templateVersionId] enable per-template aggregation. The optional
+  /// [soulDocumentId] and [soulDocumentVersionId] record which personality
+  /// was active during the wake for provenance tracking.
   const factory AgentDomainEntity.wakeTokenUsage({
     required String id,
     required String agentId,
@@ -335,6 +337,8 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     String? templateId,
     String? templateVersionId,
+    String? soulDocumentId,
+    String? soulDocumentVersionId,
     int? inputTokens,
     int? outputTokens,
     int? thoughtsTokens,
@@ -342,10 +346,14 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = WakeTokenUsageEntity;
 
-  /// Soul document — reusable personality blueprint for templates.
+  /// Soul document — reusable personality blueprint that can be assigned to
+  /// one or more agent templates.
   ///
-  /// The [agentId] field stores the soul's own ID (same as [id]), serving
-  /// as a grouping key that links this soul to its versions and head pointer.
+  /// This is the **root entity** of the soul document → version → head
+  /// hierarchy. [agentId] equals [id] here (the generic `agent_entities`
+  /// table uses `agent_id` as a grouping key; for root entities it is
+  /// self-referencing). Versions and the head pointer reference this ID
+  /// in their own [agentId] field to form the parent-child relationship.
   const factory AgentDomainEntity.soulDocument({
     required String id,
     required String agentId,
@@ -358,8 +366,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Immutable versioned snapshot of a soul's personality directives.
   ///
-  /// The [agentId] field stores the owning soul document's ID, grouping all
-  /// versions under the same soul. It does **not** reference an agent instance.
+  /// Child of [SoulDocumentEntity]. [agentId] stores the parent soul
+  /// document's ID (not an agent instance ID), grouping all versions under
+  /// the same soul.
   const factory AgentDomainEntity.soulDocumentVersion({
     required String id,
     required String agentId,
@@ -391,8 +400,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Mutable head pointer for the active soul version.
   ///
-  /// The [agentId] field stores the owning soul document's ID. It does **not**
-  /// reference an agent instance.
+  /// Child of [SoulDocumentEntity]. [agentId] stores the parent soul
+  /// document's ID. [versionId] points to the currently active
+  /// [SoulDocumentVersionEntity].
   const factory AgentDomainEntity.soulDocumentHead({
     required String id,
     required String agentId,

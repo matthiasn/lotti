@@ -186,6 +186,8 @@ void main() {
         any(),
         any(),
         resolvedModelId: any(named: 'resolvedModelId'),
+        soulId: any(named: 'soulId'),
+        soulVersionId: any(named: 'soulVersionId'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -458,6 +460,8 @@ void main() {
               any(),
               any(),
               resolvedModelId: any(named: 'resolvedModelId'),
+              soulId: any(named: 'soulId'),
+              soulVersionId: any(named: 'soulVersionId'),
             ),
           );
         },
@@ -552,6 +556,8 @@ void main() {
             testTemplate.id,
             testTemplateVersion.id,
             resolvedModelId: 'models/test-model-v1',
+            soulId: any(named: 'soulId'),
+            soulVersionId: any(named: 'soulVersionId'),
           ),
         ).called(1);
       });

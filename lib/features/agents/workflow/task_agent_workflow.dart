@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -80,6 +81,7 @@ class TaskAgentWorkflow {
     required this.labelsRepository,
     required this.syncService,
     required this.templateService,
+    this.soulDocumentService,
     this.domainLogger,
     this.embeddingStore,
     this.embeddingRepository,
@@ -101,6 +103,7 @@ class TaskAgentWorkflow {
   final ChecklistRepository checklistRepository;
   final LabelsRepository labelsRepository;
   final AgentTemplateService templateService;
+  final SoulDocumentService? soulDocumentService;
 
   /// Optional domain logger for structured, PII-safe logging.
   final DomainLogger? domainLogger;
@@ -407,15 +410,17 @@ class TaskAgentWorkflow {
         cloudRepository: cloudInferenceRepository,
       );
 
-      // Record template provenance and the resolved model on the wake run
-      // log entry so that modelIdForThread can return an accurate model even
-      // for failed/incomplete wakes that never persist token usage.
+      // Record template + soul provenance and the resolved model on the wake
+      // run log entry so that modelIdForThread can return an accurate model
+      // even for failed/incomplete wakes that never persist token usage.
       try {
         await agentRepository.updateWakeRunTemplate(
           runKey,
           templateCtx.template.id,
           templateCtx.version.id,
           resolvedModelId: modelId,
+          soulId: templateCtx.soulVersion?.agentId,
+          soulVersionId: templateCtx.soulVersion?.id,
         );
       } catch (e) {
         _logError('failed to record template provenance', error: e);
@@ -695,6 +700,8 @@ class TaskAgentWorkflow {
           modelId: modelId,
           templateId: templateCtx.template.id,
           templateVersionId: templateCtx.version.id,
+          soulDocumentId: templateCtx.soulVersion?.agentId,
+          soulDocumentVersionId: templateCtx.soulVersion?.id,
           createdAt: now,
           vectorClock: null,
           inputTokens: usage.inputTokens,
@@ -770,17 +777,42 @@ class TaskAgentWorkflow {
       return null;
     }
 
-    return _TemplateContext(template: template, version: version);
+    // Resolve the soul document assigned to this template, if any.
+    SoulDocumentVersionEntity? soulVersion;
+    if (soulDocumentService != null) {
+      try {
+        soulVersion = await soulDocumentService!.resolveActiveSoulForTemplate(
+          template.id,
+        );
+        if (soulVersion != null) {
+          _log(
+            'resolved soul v${soulVersion.version} for template',
+            subDomain: 'resolve',
+          );
+        }
+      } catch (e) {
+        _logError('failed to resolve soul for template', error: e);
+      }
+    }
+
+    return _TemplateContext(
+      template: template,
+      version: version,
+      soulVersion: soulVersion,
+    );
   }
 
   /// Builds the full system prompt from the scaffold and template directives.
   ///
-  /// When the split directive fields (`generalDirective`, `reportDirective`)
-  /// are populated, they are used instead of the legacy `directives` field.
-  /// The report section in the scaffold is omitted when a custom report
-  /// directive is present, since the template provides its own.
+  /// When a soul document is assigned, personality is injected under
+  /// `## Your Personality` from the soul version fields, and operational
+  /// directives under `## Your Operational Directives` from
+  /// `generalDirective`. When no soul is assigned, the existing
+  /// `## Your Personality & Directives` heading is preserved for backwards
+  /// compatibility.
   String _buildSystemPrompt(_TemplateContext ctx) {
     final version = ctx.version;
+    final soulVersion = ctx.soulVersion;
     final trimmedGeneralDirective = version.generalDirective.trim();
     final trimmedReportDirective = version.reportDirective.trim();
     final trimmedLegacyDirective = version.directives.trim();
@@ -805,16 +837,30 @@ class TaskAgentWorkflow {
         ..write(taskAgentScaffoldProjectContext)
         ..write(taskAgentScaffoldTrailing);
 
-      final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
-          ? trimmedGeneralDirective
-          : trimmedLegacyDirective;
-      if (effectiveGeneralDirective.isNotEmpty) {
-        buf
-          ..writeln()
-          ..writeln()
-          ..writeln('## Your Personality & Directives')
-          ..writeln()
-          ..write(effectiveGeneralDirective);
+      if (soulVersion != null) {
+        // Soul assigned: separate personality from operational directives.
+        _appendSoulPersonality(buf, soulVersion);
+        if (trimmedGeneralDirective.isNotEmpty) {
+          buf
+            ..writeln()
+            ..writeln()
+            ..writeln('## Your Operational Directives')
+            ..writeln()
+            ..write(trimmedGeneralDirective);
+        }
+      } else {
+        // No soul: legacy combined heading.
+        final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
+            ? trimmedGeneralDirective
+            : trimmedLegacyDirective;
+        if (effectiveGeneralDirective.isNotEmpty) {
+          buf
+            ..writeln()
+            ..writeln()
+            ..writeln('## Your Personality & Directives')
+            ..writeln()
+            ..write(effectiveGeneralDirective);
+        }
       }
 
       return buf.toString();
@@ -824,6 +870,38 @@ class TaskAgentWorkflow {
     return '$taskAgentScaffold\n\n'
         '## Your Personality & Directives\n\n'
         '${version.directives}';
+  }
+
+  /// Appends soul personality fields to the prompt buffer.
+  static void _appendSoulPersonality(
+    StringBuffer buf,
+    SoulDocumentVersionEntity soul,
+  ) {
+    buf
+      ..writeln()
+      ..writeln()
+      ..writeln('## Your Personality')
+      ..writeln()
+      ..write(soul.voiceDirective);
+
+    if (soul.toneBounds.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.toneBounds);
+    }
+    if (soul.coachingStyle.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.coachingStyle);
+    }
+    if (soul.antiSycophancyPolicy.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln()
+        ..write(soul.antiSycophancyPolicy);
+    }
   }
 
   /// The rigid scaffold of the Task Agent system prompt, combining all parts.
@@ -1577,8 +1655,15 @@ class _LinkedTaskAgentReport {
 
 /// Resolved template and version pair for prompt composition.
 class _TemplateContext {
-  _TemplateContext({required this.template, required this.version});
+  _TemplateContext({
+    required this.template,
+    required this.version,
+    this.soulVersion,
+  });
 
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
+
+  /// Active soul version for this template, if a soul is assigned.
+  final SoulDocumentVersionEntity? soulVersion;
 }

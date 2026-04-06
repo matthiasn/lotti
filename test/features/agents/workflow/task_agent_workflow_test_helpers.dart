@@ -201,6 +201,7 @@ TaskAgentWorkflow createTestWorkflow({
   required MockLabelsRepository labelsRepository,
   required MockAgentSyncService syncService,
   required MockAgentTemplateService templateService,
+  MockSoulDocumentService? soulDocumentService,
 }) {
   return TaskAgentWorkflow(
     agentRepository: agentRepository,
@@ -214,6 +215,7 @@ TaskAgentWorkflow createTestWorkflow({
     labelsRepository: labelsRepository,
     syncService: syncService,
     templateService: templateService,
+    soulDocumentService: soulDocumentService,
   );
 }
 

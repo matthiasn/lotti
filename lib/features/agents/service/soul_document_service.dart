@@ -110,8 +110,9 @@ class SoulDocumentService {
 
   /// Create a new version of a soul document's personality directives.
   ///
-  /// Archives the current active version, creates the new active version, and
-  /// updates the head pointer (reusing the existing head ID).
+  /// Archives **all** non-archived versions (not just the head-pointed one) to
+  /// ensure consistency after sync races or partial corruption, then creates
+  /// the new active version and updates the head pointer.
   ///
   /// Throws [ArgumentError] if required text fields are blank.
   Future<SoulDocumentVersionEntity> createVersion({
@@ -137,19 +138,14 @@ class SoulDocumentService {
 
       final currentHead = await repository.getSoulDocumentHead(soulId);
 
-      // Archive the current active version by resolving directly from head,
-      // avoiding a redundant head read via getActiveSoulVersion.
-      if (currentHead != null) {
-        final currentVersion = await repository.getEntity(
-          currentHead.versionId,
-        );
-        final activeVersion = currentVersion?.mapOrNull(
-          soulDocumentVersion: (v) => v,
-        );
-        if (activeVersion != null &&
-            activeVersion.status != SoulDocumentVersionStatus.archived) {
+      // Archive ALL non-archived versions to ensure no stale active statuses
+      // survive sync races or partial corruption. Mirrors the template
+      // service's approach in AgentTemplateService.createVersion().
+      final allVersions = await getVersionHistory(soulId, limit: -1);
+      for (final version in allVersions) {
+        if (version.status != SoulDocumentVersionStatus.archived) {
           await syncService.upsertEntity(
-            activeVersion.copyWith(status: SoulDocumentVersionStatus.archived),
+            version.copyWith(status: SoulDocumentVersionStatus.archived),
           );
         }
       }
@@ -275,8 +271,12 @@ class SoulDocumentService {
 
   /// Assign a soul document to a template.
   ///
-  /// No-op if the template is already assigned to [soulId]. Otherwise,
-  /// soft-deletes any existing assignment and creates a new link.
+  /// Soft-deletes **all** existing soul assignment links for this template,
+  /// then creates a fresh link to [soulId]. This ensures exactly one active
+  /// assignment regardless of sync races or prior corruption.
+  ///
+  /// If the only existing link already points at [soulId] and no stale
+  /// parallel links exist, the method is a no-op.
   Future<void> assignSoulToTemplate(
     String templateId,
     String soulId,
@@ -289,7 +289,10 @@ class SoulDocumentService {
         type: AgentLinkTypes.soulAssignment,
       );
 
-      if (existingLinks.any((l) => l.toId == soulId)) {
+      // Only skip if the sole link already points at the requested soul.
+      // If there are multiple links (sync race residue), fall through to
+      // clean them all up.
+      if (existingLinks.length == 1 && existingLinks.first.toId == soulId) {
         return;
       }
 
@@ -337,6 +340,10 @@ class SoulDocumentService {
   /// Resolve the active soul version for a template by following the
   /// assignment link → soul → head → version chain.
   ///
+  /// When multiple assignment links exist (sync race residue), the most
+  /// recently created link is selected using the canonical
+  /// [AgentLinkSelection.orderedPrimaryFirst] tie-breaking strategy.
+  ///
   /// Returns `null` if no soul is assigned or the chain is broken.
   Future<SoulDocumentVersionEntity?> resolveActiveSoulForTemplate(
     String templateId,
@@ -347,7 +354,7 @@ class SoulDocumentService {
     );
     if (links.isEmpty) return null;
 
-    final soulId = links.first.toId;
+    final soulId = links.orderedPrimaryFirst().first.toId;
     return getActiveSoulVersion(soulId);
   }
 
@@ -365,7 +372,17 @@ class SoulDocumentService {
   // ── seeding ───────────────────────────────────────────────────────────────
 
   /// Seeded soul configurations, keyed by ID.
-  static const List<({String antiSycophancy, String coaching, String id, String name, String tone, String voice})> _seedConfigs = [
+  static const List<
+    ({
+      String antiSycophancy,
+      String coaching,
+      String id,
+      String name,
+      String tone,
+      String voice,
+    })
+  >
+  _seedConfigs = [
     (
       id: lauraSoulId,
       name: 'Laura',

@@ -1,6 +1,6 @@
 # Pluggable Soul Documents
 
-Status: Architecture proposal
+Status: In progress (Phases 1–3 complete, Phase 4 next)
 Date: 2026-04-05
 Companion docs:
 - `docs/implementation_plans/2026-02-19_agentic_product_direction.md` (§9.1 Persona/Soul Artifact Contract)
@@ -523,7 +523,7 @@ apply identically.
 
 ## 7. Implementation Plan
 
-### Phase 1: Data Model & Storage (Foundation)
+### Phase 1: Data Model & Storage (Foundation) ✅
 
 **Goal:** New entities exist, serialize correctly, and can be persisted.
 
@@ -551,7 +551,7 @@ apply identically.
 - `lib/features/agents/database/agent_repository.dart`
 - New test files mirroring the above
 
-### Phase 2: Soul Document Service & Seeding
+### Phase 2: Soul Document Service & Seeding ✅
 
 **Goal:** Souls can be created, versioned, assigned to templates, and seeded
 from existing personality content.
@@ -603,7 +603,7 @@ from existing personality content.
 - Template seeding code (where `seedDefaultTemplates` is called)
 - New test files
 
-### Phase 3: Prompt Assembly Refactoring
+### Phase 3: Prompt Assembly Refactoring ✅
 
 **Goal:** Wake prompts cleanly separate personality from skills.
 

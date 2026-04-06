@@ -10,5 +10,6 @@ export 'test_data/entity_factories.dart';
 export 'test_data/evolution_factories.dart';
 export 'test_data/feedback_factories.dart';
 export 'test_data/link_factories.dart';
+export 'test_data/soul_factories.dart';
 export 'test_data/template_factories.dart';
 export 'test_data/wake_factories.dart';

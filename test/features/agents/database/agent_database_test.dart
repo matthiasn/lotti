@@ -110,13 +110,13 @@ void main() {
         );
         addTearDown(db.close);
 
-        // Verify schema version is now 5 (latest).
+        // Verify schema version is now 6 (latest).
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          5,
+          6,
         );
 
         // Verify the new columns exist by querying them
@@ -228,11 +228,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 5.
+      // Verify schema version is now 6 (latest).
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        5,
+        6,
       );
 
       // Verify the partial unique index exists.
@@ -481,11 +481,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 5.
+      // Verify schema version is now 6 (latest).
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        5,
+        6,
       );
 
       // Verify the column exists by selecting it.
@@ -616,7 +616,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          5,
+          6,
         );
 
         final indexes = await db
@@ -637,6 +637,181 @@ void main() {
             'idx_saga_log_status_created_at',
             'idx_wake_run_log_agent_thread',
           ],
+        );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v5 to v6 adds soul columns and unique soul assignment index',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1,
+              UNIQUE(from_id, to_id, type)
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          ..execute('''
+            INSERT INTO wake_run_log
+              (run_key, agent_id, reason, thread_id, status, created_at)
+            VALUES
+              ('run-soul', 'agent-1', 'trigger', 'thread-1', 'pending',
+               '2026-04-06 10:00:00')
+          ''')
+          // Insert two soul_assignment links for the same template (sync
+          // race residue). The migration must soft-delete all but the most
+          // recent before creating the unique partial index.
+          ..execute('''
+            INSERT INTO agent_links
+              (id, from_id, to_id, type, created_at, updated_at,
+               serialized, schema_version)
+            VALUES
+              ('link-old', 'tpl-1', 'soul-A', 'soul_assignment',
+               '2026-01-01', '2026-01-01', '{}', 1)
+          ''')
+          ..execute('''
+            INSERT INTO agent_links
+              (id, from_id, to_id, type, created_at, updated_at,
+               serialized, schema_version)
+            VALUES
+              ('link-new', 'tpl-1', 'soul-B', 'soul_assignment',
+               '2026-02-01', '2026-02-01', '{}', 1)
+          ''');
+
+        rawDb.execute('PRAGMA user_version = 5');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          6,
+        );
+
+        // Verify wake_run_log soul columns exist and are readable.
+        final rows = await db
+            .customSelect(
+              'SELECT run_key, soul_id, soul_version_id FROM wake_run_log',
+            )
+            .get();
+        expect(rows, hasLength(1));
+        expect(rows.first.readNullable<String>('soul_id'), isNull);
+        expect(rows.first.readNullable<String>('soul_version_id'), isNull);
+
+        // Verify wake_run_log soul columns are writable.
+        await db.customStatement('''
+          UPDATE wake_run_log
+          SET soul_id = 'soul-001', soul_version_id = 'sv-001'
+          WHERE run_key = 'run-soul'
+        ''');
+
+        final updated = await db
+            .customSelect(
+              'SELECT soul_id, soul_version_id FROM wake_run_log '
+              "WHERE run_key = 'run-soul'",
+            )
+            .get();
+        expect(updated.first.read<String>('soul_id'), 'soul-001');
+        expect(updated.first.read<String>('soul_version_id'), 'sv-001');
+
+        // Verify dedup: only the most recently inserted link survives.
+        final activeLinks = await db
+            .customSelect(
+              'SELECT id FROM agent_links '
+              "WHERE type = 'soul_assignment' AND deleted_at IS NULL",
+            )
+            .get();
+        expect(activeLinks, hasLength(1));
+        expect(activeLinks.first.read<String>('id'), 'link-new');
+
+        // Verify unique index enforces one active soul per template.
+        final indexes = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_unique_soul_per_template'",
+            )
+            .get();
+        expect(indexes, hasLength(1));
+
+        // A second active soul_assignment for the same template must fail.
+        expect(
+          () async => db.customStatement('''
+            INSERT INTO agent_links
+              (id, from_id, to_id, type, created_at, updated_at,
+               serialized, schema_version)
+            VALUES
+              ('link-dup', 'tpl-1', 'soul-C', 'soul_assignment',
+               '2026-03-01', '2026-03-01', '{}', 1)
+          '''),
+          throwsA(isA<SqliteException>()),
         );
 
         await db.close();
