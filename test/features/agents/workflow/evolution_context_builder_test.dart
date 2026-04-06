@@ -84,7 +84,7 @@ void main() {
     test('contains conversation rules', () {
       final ctx = buildWithDefaults();
 
-      expect(ctx.systemPrompt, contains('propose improved directives'));
+      expect(ctx.systemPrompt, contains('propose_directives'));
       expect(ctx.systemPrompt, contains('core identity'));
       expect(
         ctx.systemPrompt,
@@ -506,6 +506,129 @@ void main() {
         ctx.initialUserMessage,
         isNot(contains('Seed Directive Updates')),
       );
+    });
+  });
+
+  group('soul context', () {
+    test('includes soul personality section when soul version provided', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        currentSoulVersion: makeTestSoulDocumentVersion(
+          voiceDirective: 'Be warm.',
+          toneBounds: 'No sarcasm.',
+          coachingStyle: 'Celebrate wins.',
+          antiSycophancyPolicy: 'Push back.',
+        ),
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Current Soul Personality'),
+      );
+      expect(ctx.initialUserMessage, contains('Be warm.'));
+      expect(ctx.initialUserMessage, contains('No sarcasm.'));
+      expect(ctx.initialUserMessage, contains('Celebrate wins.'));
+      expect(ctx.initialUserMessage, contains('Push back.'));
+    });
+
+    test('omits soul section when no soul assigned', () {
+      final ctx = buildWithDefaults();
+
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('Current Soul Personality')),
+      );
+    });
+
+    test('includes cross-template notice', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        currentSoulVersion: makeTestSoulDocumentVersion(
+          voiceDirective: 'Voice.',
+        ),
+        otherTemplatesUsingSoul: ['Tom Task Agent', 'Project Analyst'],
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Cross-Template Impact Notice'),
+      );
+      expect(ctx.initialUserMessage, contains('Tom Task Agent'));
+      expect(ctx.initialUserMessage, contains('Project Analyst'));
+    });
+
+    test('includes soul version history capped at max', () {
+      final soulVersions = List.generate(
+        8,
+        (i) => makeTestSoulDocumentVersion(
+          id: 'sv-${i + 1}',
+          version: i + 1,
+          voiceDirective: 'Voice v${i + 1}',
+        ),
+      );
+
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        currentSoulVersion: soulVersions.last,
+        recentSoulVersions: soulVersions,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Soul Version History'),
+      );
+      // Should show at most 5 versions.
+      expect(ctx.initialUserMessage, contains('v1'));
+      expect(ctx.initialUserMessage, contains('v5'));
+      expect(ctx.initialUserMessage, isNot(contains('v6')));
+    });
+
+    test('system prompt mentions propose_soul_directives', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        currentSoulVersion: makeTestSoulDocumentVersion(
+          voiceDirective: 'Voice.',
+        ),
+      );
+
+      expect(ctx.systemPrompt, contains('propose_soul_directives'));
+      expect(ctx.systemPrompt, contains('personality changes'));
     });
   });
 }

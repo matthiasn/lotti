@@ -33,6 +33,7 @@ TemplateEvolutionWorkflow templateEvolutionWorkflow(Ref ref) {
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
     updateNotifications: ref.watch(updateNotificationsProvider),
     onSessionCompleted: (templateId, sessionId) async {
       // Resolve the improver agent for this template and schedule its next

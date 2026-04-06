@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
@@ -91,6 +92,7 @@ class TemplateEvolutionWorkflow {
     required this.cloudInferenceRepository,
     this.templateService,
     this.syncService,
+    this.soulDocumentService,
     this.contextBuilder,
     this.updateNotifications,
     this.onSessionCompleted,
@@ -103,6 +105,7 @@ class TemplateEvolutionWorkflow {
   /// Required for multi-turn sessions.
   final AgentTemplateService? templateService;
   final AgentSyncService? syncService;
+  final SoulDocumentService? soulDocumentService;
   final EvolutionContextBuilder? contextBuilder;
 
   /// When provided, fires after local DB writes so UI providers refresh.
@@ -221,6 +224,34 @@ class TemplateEvolutionWorkflow {
         final data = await svc.gatherEvolutionData(templateId);
         sessionNumber = sessionNumberOverride ?? data.nextSessionNumber;
 
+        // Resolve soul context for this template, if assigned.
+        final soulSvc = soulDocumentService;
+        SoulDocumentVersionEntity? currentSoulVersion;
+        var recentSoulVersions = <SoulDocumentVersionEntity>[];
+        var otherTemplatesUsingSoul = <String>[];
+        if (soulSvc != null) {
+          currentSoulVersion = await soulSvc.resolveActiveSoulForTemplate(
+            templateId,
+          );
+          if (currentSoulVersion != null) {
+            final soulId = currentSoulVersion.agentId;
+            recentSoulVersions = await soulSvc.getVersionHistory(soulId);
+            final templateIds = await soulSvc.getTemplatesUsingSoul(soulId);
+            // Exclude the current template from the cross-impact list.
+            final otherIds = templateIds
+                .where((id) => id != templateId)
+                .toList();
+            // Resolve display names for cross-template notice.
+            final otherTemplates = await Future.wait(
+              otherIds.map(svc.getTemplate),
+            );
+            otherTemplatesUsingSoul = otherTemplates
+                .whereType<AgentTemplateEntity>()
+                .map((t) => t.displayName)
+                .toList();
+          }
+        }
+
         ctx = ctxBuilder.build(
           template: template,
           currentVersion: currentVersion,
@@ -231,6 +262,9 @@ class TemplateEvolutionWorkflow {
           metrics: data.metrics,
           changesSinceLastSession: data.changesSinceLastSession,
           observationPayloads: data.observationPayloads,
+          currentSoulVersion: currentSoulVersion,
+          recentSoulVersions: recentSoulVersions,
+          otherTemplatesUsingSoul: otherTemplatesUsingSoul,
         );
       }
 
@@ -256,10 +290,21 @@ class TemplateEvolutionWorkflow {
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
+      // Resolve the active soul version for strategy's before/after comparison.
+      // This is separate from the context builder's soul resolution (which only
+      // runs in the full path) because the strategy always needs current values.
+      final strategySoulVersion = await soulDocumentService
+          ?.resolveActiveSoulForTemplate(templateId);
+
       final strategy = EvolutionStrategy(
         genUiBridge: bridge,
         currentGeneralDirective: currentVersion.generalDirective,
         currentReportDirective: currentVersion.reportDirective,
+        currentVoiceDirective: strategySoulVersion?.voiceDirective ?? '',
+        currentToneBounds: strategySoulVersion?.toneBounds ?? '',
+        currentCoachingStyle: strategySoulVersion?.coachingStyle ?? '',
+        currentAntiSycophancyPolicy:
+            strategySoulVersion?.antiSycophancyPolicy ?? '',
       );
       final conversationId = conversationRepository.createConversation(
         systemMessage: ctx.systemPrompt,
@@ -505,6 +550,81 @@ class TemplateEvolutionWorkflow {
     if (hadProposal) {
       developer.log(
         'Rejected proposal for session $sessionId',
+        name: _logTag,
+      );
+    }
+  }
+
+  /// Approve the current soul proposal, creating a new soul document version.
+  ///
+  /// Returns the created [SoulDocumentVersionEntity], or `null` if there is
+  /// no active soul proposal or the soul service is unavailable.
+  ///
+  /// Does NOT complete the session — skill and soul proposals are independent.
+  Future<SoulDocumentVersionEntity?> approveSoulProposal({
+    required String sessionId,
+  }) async {
+    final active = activeSessions[sessionId];
+    final soulSvc = soulDocumentService;
+    if (active == null || soulSvc == null) return null;
+
+    final proposal = active.strategy.latestSoulProposal;
+    if (proposal == null) return null;
+
+    // Resolve the soul assigned to this template.
+    final currentSoulVersion = await soulSvc.resolveActiveSoulForTemplate(
+      active.templateId,
+    );
+    if (currentSoulVersion == null) {
+      developer.log(
+        'No soul assigned to template ${active.templateId} — '
+        'cannot approve soul proposal',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    final soulId = currentSoulVersion.agentId;
+    final newVersion = await soulSvc.createVersion(
+      soulId: soulId,
+      voiceDirective: proposal.voiceDirective.trim().isNotEmpty
+          ? proposal.voiceDirective
+          : currentSoulVersion.voiceDirective,
+      toneBounds: proposal.toneBounds.trim().isNotEmpty
+          ? proposal.toneBounds
+          : currentSoulVersion.toneBounds,
+      coachingStyle: proposal.coachingStyle.trim().isNotEmpty
+          ? proposal.coachingStyle
+          : currentSoulVersion.coachingStyle,
+      antiSycophancyPolicy: proposal.antiSycophancyPolicy.trim().isNotEmpty
+          ? proposal.antiSycophancyPolicy
+          : currentSoulVersion.antiSycophancyPolicy,
+      authoredBy: AgentAuthors.evolutionAgent,
+      sourceSessionId: sessionId,
+    );
+
+    active.strategy.clearSoulProposal();
+
+    developer.log(
+      'Approved soul proposal for session $sessionId → '
+      'soul version v${newVersion.version}',
+      name: _logTag,
+    );
+
+    return newVersion;
+  }
+
+  /// Reject the current soul proposal, clearing it from the strategy.
+  void rejectSoulProposal({required String sessionId}) {
+    final active = activeSessions[sessionId];
+    if (active == null) return;
+
+    final hadProposal = active.strategy.latestSoulProposal != null;
+    active.strategy.clearSoulProposal();
+
+    if (hadProposal) {
+      developer.log(
+        'Rejected soul proposal for session $sessionId',
         name: _logTag,
       );
     }

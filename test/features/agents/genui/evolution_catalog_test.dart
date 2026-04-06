@@ -34,11 +34,12 @@ void main() {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(10));
+      expect(items, hasLength(11));
       expect(
         items.map((i) => i.name),
         containsAll([
           'EvolutionProposal',
+          'SoulProposal',
           'EvolutionNoteConfirmation',
           'MetricsSummary',
           'VersionComparison',

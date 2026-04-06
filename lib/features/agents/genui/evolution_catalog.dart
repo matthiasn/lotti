@@ -22,6 +22,7 @@ const evolutionCatalogId = 'com.lotti.evolution_catalog';
 Catalog buildEvolutionCatalog() => Catalog(
   [
     evolutionProposalItem,
+    soulProposalItem,
     evolutionNoteConfirmationItem,
     metricsSummaryItem,
     versionComparisonItem,
@@ -54,6 +55,34 @@ final _proposalSchema = S.object(
     ),
   },
   required: ['generalDirective', 'reportDirective', 'rationale'],
+);
+
+final _soulProposalSchema = S.object(
+  properties: {
+    'voiceDirective': S.string(description: 'Proposed voice directive'),
+    'toneBounds': S.string(description: 'Proposed tone bounds'),
+    'coachingStyle': S.string(description: 'Proposed coaching style'),
+    'antiSycophancyPolicy': S.string(
+      description: 'Proposed anti-sycophancy policy',
+    ),
+    'rationale': S.string(description: 'Brief rationale for the changes'),
+    'crossTemplateNotice': S.string(
+      description: 'Impact notice for other templates sharing this soul',
+    ),
+    'currentVoiceDirective': S.string(
+      description: 'Current voice directive for comparison',
+    ),
+    'currentToneBounds': S.string(
+      description: 'Current tone bounds for comparison',
+    ),
+    'currentCoachingStyle': S.string(
+      description: 'Current coaching style for comparison',
+    ),
+    'currentAntiSycophancyPolicy': S.string(
+      description: 'Current anti-sycophancy policy for comparison',
+    ),
+  },
+  required: ['rationale'],
 );
 
 final _noteConfirmationSchema = S.object(
@@ -395,6 +424,196 @@ final evolutionProposalItem = CatalogItem(
                   onPressed: () => itemContext.dispatchEvent(
                     UserActionEvent(
                       name: 'proposal_approved',
+                      sourceComponentId: itemContext.id,
+                      surfaceId: itemContext.surfaceId,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  },
+);
+
+/// Soul personality proposal card with approve/reject actions.
+final soulProposalItem = CatalogItem(
+  name: 'SoulProposal',
+  dataSchema: _soulProposalSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+    final voiceDirective = readString(json, 'voiceDirective').trim();
+    final toneBounds = readString(json, 'toneBounds').trim();
+    final coachingStyle = readString(json, 'coachingStyle').trim();
+    final antiSycophancyPolicy = readString(
+      json,
+      'antiSycophancyPolicy',
+    ).trim();
+    final rationale = readString(json, 'rationale').trim();
+    final crossTemplateNotice = readStringOrNull(
+      json,
+      'crossTemplateNotice',
+    )?.trim();
+    final currentVoice = readStringOrNull(
+      json,
+      'currentVoiceDirective',
+    )?.trim();
+    final currentTone = readStringOrNull(json, 'currentToneBounds')?.trim();
+    final currentCoaching = readStringOrNull(
+      json,
+      'currentCoachingStyle',
+    )?.trim();
+    final currentAntiSycophancy = readStringOrNull(
+      json,
+      'currentAntiSycophancyPolicy',
+    )?.trim();
+    final context = itemContext.buildContext;
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+
+    // Build paired sections: (label, current, proposed) for each field.
+    final fields = <({String label, String? current, String proposed})>[
+      if (voiceDirective.isNotEmpty)
+        (label: 'Voice', current: currentVoice, proposed: voiceDirective),
+      if (toneBounds.isNotEmpty)
+        (label: 'Tone Bounds', current: currentTone, proposed: toneBounds),
+      if (coachingStyle.isNotEmpty)
+        (
+          label: 'Coaching Style',
+          current: currentCoaching,
+          proposed: coachingStyle,
+        ),
+      if (antiSycophancyPolicy.isNotEmpty)
+        (
+          label: 'Anti-Sycophancy',
+          current: currentAntiSycophancy,
+          proposed: antiSycophancyPolicy,
+        ),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+      child: ModernBaseCard(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ModernIconContainer(
+                  icon: Icons.psychology_rounded,
+                  isCompact: true,
+                ),
+                SizedBox(width: tokens.spacing.step4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Soul Personality Proposal',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacing.step2),
+                      Text(
+                        'Proposed personality changes',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // Cross-template impact notice.
+            if (crossTemplateNotice != null &&
+                crossTemplateNotice.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step4),
+              Container(
+                padding: EdgeInsets.all(tokens.spacing.step4),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(tokens.radii.s),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: colorScheme.error,
+                      size: 20,
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: Text(
+                        crossTemplateNotice,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            // Directive fields with before/after.
+            for (final field in fields) ...[
+              SizedBox(height: tokens.spacing.step5),
+              if (field.current != null && field.current!.isNotEmpty) ...[
+                sectionLabel(context, 'Current — ${field.label}'),
+                const SizedBox(height: 6),
+                directiveBox(context: context, text: field.current!),
+                const SizedBox(height: 10),
+              ],
+              sectionLabel(context, 'Proposed — ${field.label}'),
+              const SizedBox(height: 6),
+              directiveBox(
+                context: context,
+                text: field.proposed,
+                isHighlighted: true,
+              ),
+            ],
+            if (rationale.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              sectionLabel(
+                context,
+                context.messages.agentEvolutionProposalRationale,
+              ),
+              const SizedBox(height: 6),
+              directiveBox(context: context, text: rationale),
+            ],
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: tokens.spacing.step4,
+              runSpacing: tokens.spacing.step4,
+              alignment: WrapAlignment.end,
+              children: [
+                DesignSystemButton(
+                  label: context.messages.agentTemplateEvolveReject,
+                  variant: DesignSystemButtonVariant.dangerSecondary,
+                  size: DesignSystemButtonSize.medium,
+                  onPressed: () => itemContext.dispatchEvent(
+                    UserActionEvent(
+                      name: 'soul_proposal_rejected',
+                      sourceComponentId: itemContext.id,
+                      surfaceId: itemContext.surfaceId,
+                    ),
+                  ),
+                ),
+                primaryActionButton(
+                  label: context.messages.agentTemplateEvolveApprove,
+                  onPressed: () => itemContext.dispatchEvent(
+                    UserActionEvent(
+                      name: 'soul_proposal_approved',
                       sourceComponentId: itemContext.id,
                       surfaceId: itemContext.surfaceId,
                     ),

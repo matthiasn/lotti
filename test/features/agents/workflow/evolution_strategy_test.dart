@@ -613,4 +613,155 @@ void main() {
       expect(strategy.latestRecap, isNull);
     });
   });
+
+  group('propose_soul_directives', () {
+    test('captures soul proposal and returns wait action', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Be warm and clear.',
+          'tone_bounds': 'Never be sarcastic.',
+          'coaching_style': 'Celebrate wins.',
+          'anti_sycophancy_policy': 'Push back firmly.',
+          'rationale': 'Personality needs refinement.',
+        },
+      );
+
+      final action = await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(
+        strategy.latestSoulProposal!.voiceDirective,
+        'Be warm and clear.',
+      );
+      expect(strategy.latestSoulProposal!.toneBounds, 'Never be sarcastic.');
+      expect(strategy.latestSoulProposal!.coachingStyle, 'Celebrate wins.');
+      expect(
+        strategy.latestSoulProposal!.antiSycophancyPolicy,
+        'Push back firmly.',
+      );
+      expect(
+        strategy.latestSoulProposal!.rationale,
+        'Personality needs refinement.',
+      );
+    });
+
+    test('rejects when all directive fields are empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': '',
+          'tone_bounds': '  ',
+          'coaching_style': '',
+          'anti_sycophancy_policy': '',
+          'rationale': 'Some rationale.',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNull);
+    });
+
+    test('accepts when only one directive field is non-empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Just voice.',
+          'rationale': 'Voice-only change.',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestSoulProposal!.voiceDirective, 'Just voice.');
+    });
+
+    test('stores soul proposal independently from template proposal', () async {
+      // First, propose template directives.
+      final templateCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'general_directive': 'Skills only.',
+          'report_directive': 'Report format.',
+          'rationale': 'Skill change.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [templateCall],
+        manager: manager,
+      );
+
+      // Then, propose soul directives.
+      final soulCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Soul voice.',
+          'rationale': 'Soul change.',
+        },
+        id: 'call-2',
+      );
+      await strategy.processToolCalls(
+        toolCalls: [soulCall],
+        manager: manager,
+      );
+
+      // Both should coexist.
+      expect(strategy.latestProposal, isNotNull);
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestProposal!.generalDirective, 'Skills only.');
+      expect(strategy.latestSoulProposal!.voiceDirective, 'Soul voice.');
+    });
+
+    test('clearSoulProposal clears only soul state', () async {
+      final soulCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Voice.',
+          'rationale': 'Change.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [soulCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNotNull);
+      strategy.clearSoulProposal();
+      expect(strategy.latestSoulProposal, isNull);
+    });
+
+    test('captures cross-template notice', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'New voice.',
+          'rationale': 'Update.',
+          'cross_template_notice':
+              'Also affects: Laura Project Analyst, Tom Task Agent',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(
+        strategy.latestSoulProposal!.crossTemplateNotice,
+        contains('Laura Project Analyst'),
+      );
+    });
+  });
 }

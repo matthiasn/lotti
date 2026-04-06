@@ -284,7 +284,20 @@ improvements during one-on-one evolution rituals.
 - Questions must be blunt, concrete, and easy to answer quickly.
 - Prefer yes/no, either/or, or "pick one" questions.
 - Do not ask abstract questions about what the user is "signaling".
-- Use evolution notes from past sessions to maintain continuity.''';
+- Use evolution notes from past sessions to maintain continuity.
+
+## Tools
+
+You have two proposal tools:
+- **propose_directives**: For skill and operational changes (general directive,
+  report directive). These affect only this template.
+- **propose_soul_directives**: For personality changes (voice, tone, coaching
+  style, anti-sycophancy). These affect ALL templates sharing this soul.
+
+Distinguish between skill problems (wrong behavior, bad report structure) and
+personality problems (wrong tone, too sycophantic, bad coaching approach).
+Use whichever tool fits the issue. You can propose both in the same session —
+each is approved independently by the user.''';
 
 /// Default report directive for template improver agents.
 ///

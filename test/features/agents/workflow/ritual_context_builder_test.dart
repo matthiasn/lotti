@@ -380,5 +380,54 @@ void main() {
         contains('High-Priority Feedback Protocol'),
       );
     });
+
+    test('forwards soul context to parent builder', () {
+      final soulVersion = makeTestSoulDocumentVersion(
+        voiceDirective: 'Soul voice for ritual.',
+        toneBounds: 'Ritual tone bounds.',
+      );
+
+      final ctx = builder.buildRitualContext(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: [],
+        instanceObservations: [],
+        pastNotes: [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        classifiedFeedback: makeFeedbackWith(),
+        sessionNumber: 1,
+        currentSoulVersion: soulVersion,
+        otherTemplatesUsingSoul: ['Other Template'],
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Current Soul Personality'),
+      );
+      expect(ctx.initialUserMessage, contains('Soul voice for ritual.'));
+      expect(ctx.initialUserMessage, contains('Ritual tone bounds.'));
+      expect(
+        ctx.initialUserMessage,
+        contains('Cross-Template Impact Notice'),
+      );
+      expect(ctx.initialUserMessage, contains('Other Template'));
+    });
+
+    test('ritual system prompt mentions propose_soul_directives', () {
+      final ctx = buildCtx();
+
+      expect(ctx.systemPrompt, contains('propose_soul_directives'));
+      expect(ctx.systemPrompt, contains('personality changes'));
+    });
+
+    test('meta ritual system prompt mentions propose_soul_directives', () {
+      final ctx = buildCtx(isMetaLevel: true);
+
+      expect(ctx.systemPrompt, contains('propose_soul_directives'));
+    });
   });
 }
