@@ -203,6 +203,9 @@ class TemplateEvolutionWorkflow {
 
       final EvolutionContext ctx;
       final int sessionNumber;
+      // Track the resolved soul version across paths so we can reuse it for
+      // the strategy without a redundant database call.
+      SoulDocumentVersionEntity? resolvedSoulVersion;
 
       if (contextOverride != null && sessionNumberOverride != null) {
         // Fast path: use caller-provided context and session number.
@@ -233,6 +236,7 @@ class TemplateEvolutionWorkflow {
           currentSoulVersion = await soulSvc.resolveActiveSoulForTemplate(
             templateId,
           );
+          resolvedSoulVersion = currentSoulVersion;
           if (currentSoulVersion != null) {
             final soulId = currentSoulVersion.agentId;
             recentSoulVersions = await soulSvc.getVersionHistory(soulId);
@@ -291,10 +295,11 @@ class TemplateEvolutionWorkflow {
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
       // Resolve the active soul version for strategy's before/after comparison.
-      // This is separate from the context builder's soul resolution (which only
-      // runs in the full path) because the strategy always needs current values.
-      final strategySoulVersion = await soulDocumentService
-          ?.resolveActiveSoulForTemplate(templateId);
+      // Reuse the version already resolved in the full path; only fetch fresh
+      // when coming from the fast/optimized paths.
+      final strategySoulVersion =
+          resolvedSoulVersion ??
+          await soulDocumentService?.resolveActiveSoulForTemplate(templateId);
 
       final strategy = EvolutionStrategy(
         genUiBridge: bridge,

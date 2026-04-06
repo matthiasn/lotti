@@ -296,7 +296,7 @@ final evolutionProposalItem = CatalogItem(
       child: ModernBaseCard(
         backgroundColor: colorScheme.surfaceContainerLow,
         borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(tokens.spacing.step5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -340,20 +340,20 @@ final evolutionProposalItem = CatalogItem(
                   '${context.messages.agentEvolutionCurrentDirectives}'
                   ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: tokens.spacing.step3),
                 directiveBox(
                   context: context,
                   text: currentGeneral,
                 ),
               ],
               if (currentReport != null && currentReport.isNotEmpty) ...[
-                const SizedBox(height: 14),
+                SizedBox(height: tokens.spacing.step4),
                 sectionLabel(
                   context,
                   '${context.messages.agentEvolutionCurrentDirectives}'
                   ' — ${context.messages.agentTemplateReportDirectiveLabel}',
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: tokens.spacing.step3),
                 directiveBox(
                   context: context,
                   text: currentReport,
@@ -368,7 +368,7 @@ final evolutionProposalItem = CatalogItem(
                 '${context.messages.agentEvolutionProposedDirectives}'
                 ' — ${context.messages.agentTemplateGeneralDirectiveLabel}',
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spacing.step3),
               directiveBox(
                 context: context,
                 text: generalDirective,
@@ -376,13 +376,13 @@ final evolutionProposalItem = CatalogItem(
               ),
             ],
             if (reportDirective.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4),
               sectionLabel(
                 context,
                 '${context.messages.agentEvolutionProposedDirectives}'
                 ' — ${context.messages.agentTemplateReportDirectiveLabel}',
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spacing.step3),
               directiveBox(
                 context: context,
                 text: reportDirective,
@@ -390,18 +390,18 @@ final evolutionProposalItem = CatalogItem(
               ),
             ],
             if (rationale.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4),
               sectionLabel(
                 context,
                 context.messages.agentEvolutionProposalRationale,
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spacing.step3),
               directiveBox(
                 context: context,
                 text: rationale,
               ),
             ],
-            const SizedBox(height: 20),
+            SizedBox(height: tokens.spacing.step5),
             Wrap(
               spacing: tokens.spacing.step4,
               runSpacing: tokens.spacing.step4,
@@ -445,13 +445,12 @@ final soulProposalItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final voiceDirective = readString(json, 'voiceDirective').trim();
-    final toneBounds = readString(json, 'toneBounds').trim();
-    final coachingStyle = readString(json, 'coachingStyle').trim();
-    final antiSycophancyPolicy = readString(
-      json,
-      'antiSycophancyPolicy',
-    ).trim();
+    final voiceDirective =
+        readStringOrNull(json, 'voiceDirective')?.trim() ?? '';
+    final toneBounds = readStringOrNull(json, 'toneBounds')?.trim() ?? '';
+    final coachingStyle = readStringOrNull(json, 'coachingStyle')?.trim() ?? '';
+    final antiSycophancyPolicy =
+        readStringOrNull(json, 'antiSycophancyPolicy')?.trim() ?? '';
     final rationale = readString(json, 'rationale').trim();
     final crossTemplateNotice = readStringOrNull(
       json,
@@ -476,20 +475,29 @@ final soulProposalItem = CatalogItem(
     final tokens = context.designTokens;
 
     // Build paired sections: (label, current, proposed) for each field.
+    final msg = context.messages;
     final fields = <({String label, String? current, String proposed})>[
       if (voiceDirective.isNotEmpty)
-        (label: 'Voice', current: currentVoice, proposed: voiceDirective),
+        (
+          label: msg.agentSoulFieldVoice,
+          current: currentVoice,
+          proposed: voiceDirective,
+        ),
       if (toneBounds.isNotEmpty)
-        (label: 'Tone Bounds', current: currentTone, proposed: toneBounds),
+        (
+          label: msg.agentSoulFieldToneBounds,
+          current: currentTone,
+          proposed: toneBounds,
+        ),
       if (coachingStyle.isNotEmpty)
         (
-          label: 'Coaching Style',
+          label: msg.agentSoulFieldCoachingStyle,
           current: currentCoaching,
           proposed: coachingStyle,
         ),
       if (antiSycophancyPolicy.isNotEmpty)
         (
-          label: 'Anti-Sycophancy',
+          label: msg.agentSoulFieldAntiSycophancy,
           current: currentAntiSycophancy,
           proposed: antiSycophancyPolicy,
         ),
@@ -500,7 +508,7 @@ final soulProposalItem = CatalogItem(
       child: ModernBaseCard(
         backgroundColor: colorScheme.surfaceContainerLow,
         borderColor: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(tokens.spacing.step5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -517,7 +525,7 @@ final soulProposalItem = CatalogItem(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Soul Personality Proposal',
+                        msg.agentSoulProposalTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.onSurface,
                           fontWeight: FontWeight.w800,
@@ -525,7 +533,7 @@ final soulProposalItem = CatalogItem(
                       ),
                       SizedBox(height: tokens.spacing.step2),
                       Text(
-                        'Proposed personality changes',
+                        msg.agentSoulProposalSubtitle,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -569,13 +577,19 @@ final soulProposalItem = CatalogItem(
             for (final field in fields) ...[
               SizedBox(height: tokens.spacing.step5),
               if (field.current != null && field.current!.isNotEmpty) ...[
-                sectionLabel(context, 'Current — ${field.label}'),
-                const SizedBox(height: 6),
+                sectionLabel(
+                  context,
+                  msg.agentEvolutionSoulCurrentField(field.label),
+                ),
+                SizedBox(height: tokens.spacing.step3),
                 directiveBox(context: context, text: field.current!),
-                const SizedBox(height: 10),
+                SizedBox(height: tokens.spacing.step3),
               ],
-              sectionLabel(context, 'Proposed — ${field.label}'),
-              const SizedBox(height: 6),
+              sectionLabel(
+                context,
+                msg.agentEvolutionSoulProposedField(field.label),
+              ),
+              SizedBox(height: tokens.spacing.step3),
               directiveBox(
                 context: context,
                 text: field.proposed,
@@ -583,15 +597,15 @@ final soulProposalItem = CatalogItem(
               ),
             ],
             if (rationale.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: tokens.spacing.step4),
               sectionLabel(
                 context,
-                context.messages.agentEvolutionProposalRationale,
+                msg.agentEvolutionProposalRationale,
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spacing.step3),
               directiveBox(context: context, text: rationale),
             ],
-            const SizedBox(height: 20),
+            SizedBox(height: tokens.spacing.step5),
             Wrap(
               spacing: tokens.spacing.step4,
               runSpacing: tokens.spacing.step4,

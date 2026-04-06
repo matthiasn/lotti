@@ -305,6 +305,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentEvolutionSoulCurrentField(String field) {
+    return 'Aktuell — $field';
+  }
+
+  @override
+  String agentEvolutionSoulProposedField(String field) {
+    return 'Vorgeschlagen — $field';
+  }
+
+  @override
   String get agentEvolutionStatusAbandoned => 'Abgebrochen';
 
   @override
@@ -641,6 +651,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentSettingsTitle => 'Agenten';
+
+  @override
+  String get agentSoulFieldAntiSycophancy => 'Anti-Schmeichelei';
+
+  @override
+  String get agentSoulFieldCoachingStyle => 'Coaching-Stil';
+
+  @override
+  String get agentSoulFieldToneBounds => 'Tonale Grenzen';
+
+  @override
+  String get agentSoulFieldVoice => 'Stimme';
+
+  @override
+  String get agentSoulProposalSubtitle =>
+      'Vorgeschlagene Persönlichkeitsänderungen';
+
+  @override
+  String get agentSoulProposalTitle => 'Seelen-Persönlichkeitsvorschlag';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';

@@ -161,6 +161,22 @@
       }
     }
   },
+  "agentEvolutionSoulCurrentField": "Current — {field}",
+  "@agentEvolutionSoulCurrentField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "agentEvolutionSoulProposedField": "Proposed — {field}",
+  "@agentEvolutionSoulProposedField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "agentEvolutionStatusAbandoned": "Abandoned",
   "agentEvolutionStatusActive": "Active",
   "agentEvolutionStatusCompleted": "Completed",
@@ -321,6 +337,12 @@
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
+  "agentSoulFieldAntiSycophancy": "Anti-Sycophancy",
+  "agentSoulFieldCoachingStyle": "Coaching Style",
+  "agentSoulFieldToneBounds": "Tone Bounds",
+  "agentSoulFieldVoice": "Voice",
+  "agentSoulProposalSubtitle": "Proposed personality changes",
+  "agentSoulProposalTitle": "Soul Personality Proposal",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {
