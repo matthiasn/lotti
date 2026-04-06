@@ -420,7 +420,6 @@ class _AgentTemplateDetailPageState
           clearProfileId: _selectedProfileId == null,
         );
 
-        // Persist soul assignment changes.
         if (_selectedSoulId != _originalSoulId) {
           final soulService = ref.read(soulDocumentServiceProvider);
           if (_selectedSoulId != null) {

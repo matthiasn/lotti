@@ -11,6 +11,8 @@ part of 'soul_query_providers.dart';
 /// List all non-deleted soul documents.
 ///
 /// Each element is a [SoulDocumentEntity].
+/// Relies on manual `ref.invalidate()` at mutation sites (create, delete)
+/// rather than watching the global notification stream.
 
 @ProviderFor(allSoulDocuments)
 final allSoulDocumentsProvider = AllSoulDocumentsProvider._();
@@ -18,6 +20,8 @@ final allSoulDocumentsProvider = AllSoulDocumentsProvider._();
 /// List all non-deleted soul documents.
 ///
 /// Each element is a [SoulDocumentEntity].
+/// Relies on manual `ref.invalidate()` at mutation sites (create, delete)
+/// rather than watching the global notification stream.
 
 final class AllSoulDocumentsProvider
     extends
@@ -32,6 +36,8 @@ final class AllSoulDocumentsProvider
   /// List all non-deleted soul documents.
   ///
   /// Each element is a [SoulDocumentEntity].
+  /// Relies on manual `ref.invalidate()` at mutation sites (create, delete)
+  /// rather than watching the global notification stream.
   AllSoulDocumentsProvider._()
     : super(
         from: null,
@@ -58,7 +64,7 @@ final class AllSoulDocumentsProvider
   }
 }
 
-String _$allSoulDocumentsHash() => r'cb15c0fcf8b611f14a569ee44b3339bf64e3f1f1';
+String _$allSoulDocumentsHash() => r'5265b5a5b8dd3709634f897ffd84020039ec7442';
 
 /// Fetch a single soul document by [soulId].
 ///
@@ -321,7 +327,7 @@ final class SoulVersionHistoryProvider
 }
 
 String _$soulVersionHistoryHash() =>
-    r'eb3f1cbe13d02ad443f60e703912b711c474a8fa';
+    r'90f0383a5e01ac76fecf5895c998594395918660';
 
 /// Fetch the version history for a soul document by [soulId].
 ///

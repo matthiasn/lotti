@@ -1,6 +1,5 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'soul_query_providers.g.dart';
@@ -8,12 +7,12 @@ part 'soul_query_providers.g.dart';
 /// List all non-deleted soul documents.
 ///
 /// Each element is a [SoulDocumentEntity].
+/// Relies on manual `ref.invalidate()` at mutation sites (create, delete)
+/// rather than watching the global notification stream.
 @riverpod
 Future<List<AgentDomainEntity>> allSoulDocuments(Ref ref) async {
-  ref.watch(agentUpdateStreamProvider(agentNotification));
   final service = ref.watch(soulDocumentServiceProvider);
-  final souls = await service.getAllSouls();
-  return souls.cast<AgentDomainEntity>();
+  return service.getAllSouls();
 }
 
 /// Fetch a single soul document by [soulId].
@@ -52,8 +51,7 @@ Future<List<AgentDomainEntity>> soulVersionHistory(
 ) async {
   ref.watch(agentUpdateStreamProvider(soulId));
   final service = ref.watch(soulDocumentServiceProvider);
-  final versions = await service.getVersionHistory(soulId, limit: -1);
-  return versions.cast<AgentDomainEntity>();
+  return service.getVersionHistory(soulId, limit: -1);
 }
 
 /// Resolve the active soul version assigned to a template by [templateId].
