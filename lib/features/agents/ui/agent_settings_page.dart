@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
@@ -34,6 +35,7 @@ class AgentSettingsPage extends ConsumerStatefulWidget {
 enum _AgentSettingsTab {
   templates,
   instances,
+  souls,
   pendingWakes,
 }
 
@@ -80,13 +82,19 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
           ),
         ],
       ),
-      floatingActionButton: _selectedTab == _AgentSettingsTab.templates
-          ? GameyFab(
-              onPressed: () => beamToNamed('/settings/agents/templates/create'),
-              semanticLabel: context.messages.agentTemplateCreateTitle,
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton: switch (_selectedTab) {
+        _AgentSettingsTab.templates => GameyFab(
+          onPressed: () => beamToNamed('/settings/agents/templates/create'),
+          semanticLabel: context.messages.agentTemplateCreateTitle,
+          child: const Icon(Icons.add),
+        ),
+        _AgentSettingsTab.souls => GameyFab(
+          onPressed: () => beamToNamed('/settings/agents/souls/create'),
+          semanticLabel: context.messages.agentSoulCreateTitle,
+          child: const Icon(Icons.add),
+        ),
+        _ => null,
+      },
     );
   }
 }
@@ -114,6 +122,11 @@ class _AgentSettingsTabBar extends StatelessWidget {
       (
         tab: _AgentSettingsTab.instances,
         label: context.messages.agentInstancesTitle,
+        counter: null as String?,
+      ),
+      (
+        tab: _AgentSettingsTab.souls,
+        label: context.messages.agentSoulsTitle,
         counter: null as String?,
       ),
       (
@@ -204,6 +217,7 @@ class _AgentSettingsTabBody extends ConsumerWidget {
       children: const [
         _TemplatesTab(),
         AgentInstancesList(),
+        _SoulsTab(),
         AgentPendingWakesList(),
       ],
     );
@@ -353,6 +367,124 @@ class _TemplateListTile extends ConsumerWidget {
               ),
           ],
         ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+/// Inline souls list for the Souls tab.
+class _SoulsTab extends ConsumerWidget {
+  const _SoulsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final soulsAsync = ref.watch(allSoulDocumentsProvider);
+
+    return soulsAsync.when(
+      data: (souls) => _buildSoulsList(context, souls),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            context.messages.commonError,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: context.colorScheme.error,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoulsList(
+    BuildContext context,
+    List<AgentDomainEntity> souls,
+  ) {
+    if (souls.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.psychology_outlined,
+              size: 64,
+              color: Theme.of(context).disabledColor,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.messages.agentSoulEmptyList,
+              style: context.textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).disabledColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final sorted = souls.whereType<SoulDocumentEntity>().toList()
+      ..sort(
+        (a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      );
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final soul = sorted[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: _SoulListTile(soul: soul),
+        );
+      },
+    );
+  }
+}
+
+class _SoulListTile extends ConsumerWidget {
+  const _SoulListTile({required this.soul});
+
+  final SoulDocumentEntity soul;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeVersionAsync = ref.watch(
+      activeSoulVersionProvider(soul.id),
+    );
+    final versionNumber = activeVersionAsync.value?.mapOrNull(
+      soulDocumentVersion: (v) => v.version,
+    );
+
+    return ModernBaseCard(
+      onTap: () => beamToNamed('/settings/agents/souls/${soul.id}'),
+      padding: EdgeInsets.zero,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Icon(
+          Icons.psychology_rounded,
+          size: 32,
+          color: context.colorScheme.primary,
+        ),
+        title: Text(
+          soul.displayName,
+          style: context.textTheme.titleMedium,
+        ),
+        subtitle: versionNumber != null
+            ? Text(
+                context.messages.agentSoulVersionLabel(versionNumber),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              )
+            : null,
         trailing: Icon(
           Icons.chevron_right,
           color: context.colorScheme.onSurfaceVariant,

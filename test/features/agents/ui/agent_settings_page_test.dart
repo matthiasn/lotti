@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
@@ -33,6 +34,7 @@ void main() {
 
   Widget buildSubject({
     List<AgentDomainEntity> templates = const [],
+    List<AgentDomainEntity> souls = const [],
     List<AgentDomainEntity> agents = const [],
     List<AgentDomainEntity> evolutions = const [],
     List<PendingWakeRecord> pendingWakes = const [],
@@ -49,6 +51,14 @@ void main() {
         activeTemplateVersionProvider.overrideWith(
           (ref, templateId) async => makeTestTemplateVersion(
             agentId: templateId,
+          ),
+        ),
+        allSoulDocumentsProvider.overrideWith(
+          (ref) async => souls,
+        ),
+        activeSoulVersionProvider.overrideWith(
+          (ref, soulId) async => makeTestSoulDocumentVersion(
+            agentId: soulId,
           ),
         ),
         allAgentInstancesProvider.overrideWith(
@@ -451,6 +461,149 @@ void main() {
         }
       });
     }
+
+    testWidgets('switches to Souls tab and shows soul cards', (
+      tester,
+    ) async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-laura',
+        displayName: 'Laura Soul',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(souls: [soul]),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Laura Soul'), findsOneWidget);
+      expect(find.byIcon(Icons.psychology_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows empty state on Souls tab when no souls', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentSoulEmptyList),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
+    });
+
+    testWidgets('shows FAB on Souls tab for creating souls', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.add), findsOneWidget);
+    });
+
+    testWidgets('tapping FAB on Souls tab navigates to soul creation', (
+      tester,
+    ) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add));
+
+      expect(navigatedPath, '/settings/agents/souls/create');
+    });
+
+    testWidgets('tapping soul card navigates to soul detail', (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+
+      final soul = makeTestSoulDocument(
+        id: 'soul-nav',
+        displayName: 'Nav Soul',
+      );
+
+      await tester.pumpWidget(buildSubject(souls: [soul]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nav Soul'));
+      expect(navigatedPath, '/settings/agents/souls/soul-nav');
+    });
+
+    testWidgets('soul card shows version number', (tester) async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-ver',
+        displayName: 'Versioned Soul',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentSettingsPage(),
+          theme: DesignSystemTheme.light(),
+          overrides: [
+            agentTemplatesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            activeTemplateVersionProvider.overrideWith(
+              (ref, templateId) async => null,
+            ),
+            allSoulDocumentsProvider.overrideWith(
+              (ref) async => [soul],
+            ),
+            activeSoulVersionProvider.overrideWith(
+              (ref, soulId) async => makeTestSoulDocumentVersion(
+                agentId: soulId,
+                version: 5,
+              ),
+            ),
+            allAgentInstancesProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            allEvolutionSessionsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            templateForAgentProvider.overrideWith(
+              (ref, agentId) async => null,
+            ),
+            pendingWakeRecordsProvider.overrideWith(
+              (ref) async => const <PendingWakeRecord>[],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentSoulsTitle));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentSoulVersionLabel(5)),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('tapping back chevron calls NavService.beamBack', (
       tester,

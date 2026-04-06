@@ -498,4 +498,85 @@ void main() {
       verifyNever(() => mockSync.upsertLink(any()));
     });
   });
+
+  group('deleteSoul', () {
+    test('soft-deletes soul, versions, and head', () async {
+      final soul = makeTestSoulDocument(id: 'soul-del');
+      final version = makeTestSoulDocumentVersion(
+        id: 'v1',
+        agentId: 'soul-del',
+      );
+      final head = makeTestSoulDocumentHead(
+        id: 'head-1',
+        agentId: 'soul-del',
+        versionId: 'v1',
+      );
+
+      when(
+        () => mockRepo.getLinksTo('soul-del', type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getSoulDocument('soul-del'),
+      ).thenAnswer((_) async => soul);
+      when(
+        // ignore: avoid_redundant_argument_values
+        () => mockRepo.getSoulDocumentVersions('soul-del', limit: -1),
+      ).thenAnswer((_) async => [version]);
+      when(
+        () => mockRepo.getSoulDocumentHead('soul-del'),
+      ).thenAnswer((_) async => head);
+
+      await service.deleteSoul('soul-del');
+
+      // Version soft-deleted.
+      final capturedVersion = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured;
+      expect(capturedVersion, hasLength(3));
+      // Version, head, and soul — all should have deletedAt set.
+      expect(
+        (capturedVersion[0] as SoulDocumentVersionEntity).deletedAt,
+        isNotNull,
+      );
+      expect(
+        (capturedVersion[1] as SoulDocumentHeadEntity).deletedAt,
+        isNotNull,
+      );
+      expect(
+        (capturedVersion[2] as SoulDocumentEntity).deletedAt,
+        isNotNull,
+      );
+    });
+
+    test('throws when templates still assigned', () async {
+      when(
+        () => mockRepo.getLinksTo('soul-del', type: any(named: 'type')),
+      ).thenAnswer(
+        (_) async => [
+          makeTestSoulAssignmentLink(
+            fromId: 'tpl-1',
+            toId: 'soul-del',
+          ),
+        ],
+      );
+
+      expect(
+        () => service.deleteSoul('soul-del'),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('no-ops when soul does not exist', () async {
+      when(
+        () => mockRepo.getLinksTo('ghost', type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getSoulDocument('ghost'),
+      ).thenAnswer((_) async => null);
+
+      await service.deleteSoul('ghost');
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+  });
 }

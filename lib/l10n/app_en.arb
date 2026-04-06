@@ -337,12 +337,50 @@
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
+  "agentSoulAntiSycophancyLabel": "Anti-Sycophancy Policy",
+  "agentSoulAssignedTemplatesTitle": "Assigned Templates",
+  "agentSoulAssignmentLabel": "Soul",
+  "agentSoulCoachingStyleLabel": "Coaching Style",
+  "agentSoulCreatedSuccess": "Soul created",
+  "agentSoulCreateTitle": "Create Soul",
+  "agentSoulDeleteConfirmBody": "This will remove the soul and all its versions.",
+  "agentSoulDeleteConfirmTitle": "Delete Soul",
+  "agentSoulDetailTitle": "Soul Detail",
+  "agentSoulDisplayNameLabel": "Name",
+  "agentSoulEmptyList": "No soul documents yet",
   "agentSoulFieldAntiSycophancy": "Anti-Sycophancy",
   "agentSoulFieldCoachingStyle": "Coaching Style",
   "agentSoulFieldToneBounds": "Tone Bounds",
   "agentSoulFieldVoice": "Voice",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "No soul assigned",
+  "agentSoulNotFound": "Soul not found",
   "agentSoulProposalSubtitle": "Proposed personality changes",
   "agentSoulProposalTitle": "Soul Personality Proposal",
+  "agentSoulRollbackAction": "Roll Back to This Version",
+  "agentSoulRollbackConfirm": "Roll back to version {version}? All templates using this soul will pick up the change.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Select Soul",
+  "agentSoulSettingsTab": "Settings",
+  "agentSoulsTitle": "Souls",
+  "agentSoulToneBoundsLabel": "Tone Bounds",
+  "agentSoulVersionHistoryTitle": "Version History",
+  "agentSoulVersionLabel": "Version {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "New soul version saved",
+  "agentSoulVoiceDirectiveLabel": "Voice Directive",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {

@@ -653,6 +653,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSettingsTitle => 'Agenten';
 
   @override
+  String get agentSoulAntiSycophancyLabel => 'Anti-Speichelleckerei-Richtlinie';
+
+  @override
+  String get agentSoulAssignedTemplatesTitle => 'Zugewiesene Vorlagen';
+
+  @override
+  String get agentSoulAssignmentLabel => 'Seele';
+
+  @override
+  String get agentSoulCoachingStyleLabel => 'Coaching-Stil';
+
+  @override
+  String get agentSoulCreatedSuccess => 'Seele erstellt';
+
+  @override
+  String get agentSoulCreateTitle => 'Seele erstellen';
+
+  @override
+  String get agentSoulDeleteConfirmBody =>
+      'Das entfernt die Seele und alle ihre Versionen.';
+
+  @override
+  String get agentSoulDeleteConfirmTitle => 'Seele löschen';
+
+  @override
+  String get agentSoulDetailTitle => 'Seelen-Details';
+
+  @override
+  String get agentSoulDisplayNameLabel => 'Name';
+
+  @override
+  String get agentSoulEmptyList => 'Noch keine Seelendokumente';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Schmeichelei';
 
   @override
@@ -665,11 +699,54 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSoulFieldVoice => 'Stimme';
 
   @override
+  String get agentSoulInfoTab => 'Info';
+
+  @override
+  String get agentSoulNoneAssigned => 'Keine Seele zugewiesen';
+
+  @override
+  String get agentSoulNotFound => 'Seele nicht gefunden';
+
+  @override
   String get agentSoulProposalSubtitle =>
       'Vorgeschlagene Persönlichkeitsänderungen';
 
   @override
   String get agentSoulProposalTitle => 'Seelen-Persönlichkeitsvorschlag';
+
+  @override
+  String get agentSoulRollbackAction => 'Auf diese Version zurücksetzen';
+
+  @override
+  String agentSoulRollbackConfirm(int version) {
+    return 'Auf Version $version zurücksetzen? Alle Vorlagen, die diese Seele verwenden, werden die Änderung übernehmen.';
+  }
+
+  @override
+  String get agentSoulSelectTitle => 'Seele auswählen';
+
+  @override
+  String get agentSoulSettingsTab => 'Einstellungen';
+
+  @override
+  String get agentSoulsTitle => 'Seelen';
+
+  @override
+  String get agentSoulToneBoundsLabel => 'Tonfall-Grenzen';
+
+  @override
+  String get agentSoulVersionHistoryTitle => 'Versionsverlauf';
+
+  @override
+  String agentSoulVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentSoulVersionSaved => 'Neue Seelenversion gespeichert';
+
+  @override
+  String get agentSoulVoiceDirectiveLabel => 'Stimm-Direktive';
 
   @override
   String get agentStateConsecutiveFailures => 'Aufeinanderfolgende Fehler';

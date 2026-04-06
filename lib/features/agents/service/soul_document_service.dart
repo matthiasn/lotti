@@ -369,6 +369,43 @@ class SoulDocumentService {
     return links.map((l) => l.fromId).toList();
   }
 
+  /// Soft-delete a soul document and all its versions, head, and links.
+  ///
+  /// Checks that no templates are currently using this soul. If any template
+  /// still has an active assignment, throws [StateError].
+  Future<void> deleteSoul(String soulId) async {
+    final templateIds = await getTemplatesUsingSoul(soulId);
+    if (templateIds.isNotEmpty) {
+      throw StateError(
+        'Cannot delete soul $soulId: '
+        '${templateIds.length} template(s) still assigned',
+      );
+    }
+
+    final now = clock.now();
+
+    await syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) return;
+
+      final versions = await getVersionHistory(soulId, limit: -1);
+      for (final version in versions) {
+        await syncService.upsertEntity(
+          version.copyWith(deletedAt: now),
+        );
+      }
+
+      final head = await repository.getSoulDocumentHead(soulId);
+      if (head != null) {
+        await syncService.upsertEntity(head.copyWith(deletedAt: now));
+      }
+
+      await syncService.upsertEntity(soul.copyWith(deletedAt: now));
+    });
+
+    developer.log('Deleted soul $soulId', name: _logTag);
+  }
+
   // ── seeding ───────────────────────────────────────────────────────────────
 
   /// Seeded soul configurations, keyed by ID.

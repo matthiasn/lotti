@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
@@ -74,6 +75,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/templates/create',
     '/settings/agents/templates/:templateId',
     '/settings/agents/templates/:templateId/review',
+    '/settings/agents/souls/create',
+    '/settings/agents/souls/:soulId',
     '/settings/agents/instances/:agentId',
     '/settings/flags',
     '/settings/theming',
@@ -345,6 +348,22 @@ class SettingsLocation extends BeamLocation<BeamState> {
             templateId: state.pathParameters['templateId']!,
           ),
         ),
+      if (pathContains('agents/souls/create'))
+        const BeamPage(
+          key: ValueKey('settings-agents-souls-create'),
+          child: AgentSoulDetailPage(),
+        )
+      else if (pathContains('agents/souls') && pathContainsKey('soulId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-agents-souls-'
+            '${state.pathParameters['soulId']}',
+          ),
+          child: AgentSoulDetailPage(
+            soulId: state.pathParameters['soulId'],
+          ),
+        ),
+
       if (pathContains('agents/instances') && pathContainsKey('agentId'))
         BeamPage(
           key: ValueKey(

@@ -6,11 +6,13 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
+import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -48,6 +50,8 @@ class _AgentTemplateDetailPageState
   late TextEditingController _generalDirectiveController;
   late TextEditingController _reportDirectiveController;
   String? _selectedProfileId;
+  String? _selectedSoulId;
+  bool _didSeedSoulId = false;
   bool _didSeedControllers = false;
   String? _seededVersionId;
   bool _isSaving = false;
@@ -56,12 +60,14 @@ class _AgentTemplateDetailPageState
   // Original values for dirty-state tracking.
   String _originalName = '';
   String? _originalProfileId;
+  String? _originalSoulId;
   String _originalGeneralDirective = '';
   String _originalReportDirective = '';
 
   bool get _isDirty =>
       _nameController.text != _originalName ||
       _selectedProfileId != _originalProfileId ||
+      _selectedSoulId != _originalSoulId ||
       _generalDirectiveController.text != _originalGeneralDirective ||
       _reportDirectiveController.text != _originalReportDirective;
 
@@ -107,11 +113,24 @@ class _AgentTemplateDetailPageState
     final activeVersionAsync = ref.watch(
       activeTemplateVersionProvider(widget.templateId!),
     );
+    final soulVersionAsync = ref.watch(
+      soulForTemplateProvider(widget.templateId!),
+    );
 
     final template = templateAsync.value?.mapOrNull(agentTemplate: (e) => e);
     final activeVersion = activeVersionAsync.value?.mapOrNull(
       agentTemplateVersion: (v) => v,
     );
+
+    // Seed the soul assignment once from the resolved link chain.
+    if (!_didSeedSoulId && soulVersionAsync.hasValue) {
+      final soulVersion = soulVersionAsync.value?.mapOrNull(
+        soulDocumentVersion: (v) => v,
+      );
+      _selectedSoulId = soulVersion?.agentId;
+      _originalSoulId = _selectedSoulId;
+      _didSeedSoulId = true;
+    }
 
     if (templateAsync.isLoading && template == null) {
       return const Scaffold(
@@ -332,6 +351,11 @@ class _AgentTemplateDetailPageState
           onProfileSelected: (id) => setState(() => _selectedProfileId = id),
         ),
         const SizedBox(height: 16),
+        SoulSelector(
+          selectedSoulId: _selectedSoulId,
+          onSoulSelected: (id) => setState(() => _selectedSoulId = id),
+        ),
+        const SizedBox(height: 16),
         LottiTextArea(
           controller: _generalDirectiveController,
           labelText: context.messages.agentTemplateGeneralDirectiveLabel,
@@ -396,6 +420,19 @@ class _AgentTemplateDetailPageState
           clearProfileId: _selectedProfileId == null,
         );
 
+        // Persist soul assignment changes.
+        if (_selectedSoulId != _originalSoulId) {
+          final soulService = ref.read(soulDocumentServiceProvider);
+          if (_selectedSoulId != null) {
+            await soulService.assignSoulToTemplate(
+              widget.templateId!,
+              _selectedSoulId!,
+            );
+          } else {
+            await soulService.unassignSoul(widget.templateId!);
+          }
+        }
+
         // Create a new directive version.
         await templateService.createVersion(
           templateId: widget.templateId!,
@@ -412,6 +449,7 @@ class _AgentTemplateDetailPageState
         );
         _originalName = _nameController.text;
         _originalProfileId = _selectedProfileId;
+        _originalSoulId = _selectedSoulId;
         _originalGeneralDirective = _generalDirectiveController.text;
         _originalReportDirective = _reportDirectiveController.text;
         ref

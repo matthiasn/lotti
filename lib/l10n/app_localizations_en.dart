@@ -644,6 +644,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSettingsTitle => 'Agents';
 
   @override
+  String get agentSoulAntiSycophancyLabel => 'Anti-Sycophancy Policy';
+
+  @override
+  String get agentSoulAssignedTemplatesTitle => 'Assigned Templates';
+
+  @override
+  String get agentSoulAssignmentLabel => 'Soul';
+
+  @override
+  String get agentSoulCoachingStyleLabel => 'Coaching Style';
+
+  @override
+  String get agentSoulCreatedSuccess => 'Soul created';
+
+  @override
+  String get agentSoulCreateTitle => 'Create Soul';
+
+  @override
+  String get agentSoulDeleteConfirmBody =>
+      'This will remove the soul and all its versions.';
+
+  @override
+  String get agentSoulDeleteConfirmTitle => 'Delete Soul';
+
+  @override
+  String get agentSoulDetailTitle => 'Soul Detail';
+
+  @override
+  String get agentSoulDisplayNameLabel => 'Name';
+
+  @override
+  String get agentSoulEmptyList => 'No soul documents yet';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';
 
   @override
@@ -656,10 +690,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSoulFieldVoice => 'Voice';
 
   @override
+  String get agentSoulInfoTab => 'Info';
+
+  @override
+  String get agentSoulNoneAssigned => 'No soul assigned';
+
+  @override
+  String get agentSoulNotFound => 'Soul not found';
+
+  @override
   String get agentSoulProposalSubtitle => 'Proposed personality changes';
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Proposal';
+
+  @override
+  String get agentSoulRollbackAction => 'Roll Back to This Version';
+
+  @override
+  String agentSoulRollbackConfirm(int version) {
+    return 'Roll back to version $version? All templates using this soul will pick up the change.';
+  }
+
+  @override
+  String get agentSoulSelectTitle => 'Select Soul';
+
+  @override
+  String get agentSoulSettingsTab => 'Settings';
+
+  @override
+  String get agentSoulsTitle => 'Souls';
+
+  @override
+  String get agentSoulToneBoundsLabel => 'Tone Bounds';
+
+  @override
+  String get agentSoulVersionHistoryTitle => 'Version History';
+
+  @override
+  String agentSoulVersionLabel(int version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get agentSoulVersionSaved => 'New soul version saved';
+
+  @override
+  String get agentSoulVoiceDirectiveLabel => 'Voice Directive';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';

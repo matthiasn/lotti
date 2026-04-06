@@ -169,6 +169,44 @@
   "agentRitualReviewNoPositiveSignals": "V této záložce nejsou žádné pozitivní signály zpětné vazby",
   "agentRitualReviewNoProposal": "Žádný aktivní návrh",
   "agentRitualReviewPositiveSignals": "Pozitivní",
+  "agentSoulAntiSycophancyLabel": "Zásady proti pochlebování",
+  "agentSoulAssignedTemplatesTitle": "Přiřazené šablony",
+  "agentSoulAssignmentLabel": "Duše",
+  "agentSoulCoachingStyleLabel": "Styl koučování",
+  "agentSoulCreatedSuccess": "Duše vytvořena",
+  "agentSoulCreateTitle": "Vytvořit duši",
+  "agentSoulDeleteConfirmBody": "Tím se odstraní duše a všechny její verze.",
+  "agentSoulDeleteConfirmTitle": "Smazat duši",
+  "agentSoulDetailTitle": "Detail duše",
+  "agentSoulDisplayNameLabel": "Název",
+  "agentSoulEmptyList": "Zatím žádné dokumenty duše",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "Žádná duše přiřazena",
+  "agentSoulNotFound": "Duše nenalezena",
+  "agentSoulRollbackAction": "Vrátit na tuto verzi",
+  "agentSoulRollbackConfirm": "Vrátit na verzi {version}? Všechny šablony používající tuto duši budou ovlivněny.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Vybrat duši",
+  "agentSoulSettingsTab": "Nastavení",
+  "agentSoulsTitle": "Duše",
+  "agentSoulToneBoundsLabel": "Hranice tónu",
+  "agentSoulVersionHistoryTitle": "Historie verzí",
+  "agentSoulVersionLabel": "Verze {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "Nová verze duše uložena",
+  "agentSoulVoiceDirectiveLabel": "Hlasová direktiva",
   "agentStateConsecutiveFailures": "Po sobě jdoucí selhání",
   "agentStateErrorLoading": "Nepodařilo se načíst stav: {error}",
   "@agentStateErrorLoading": {
