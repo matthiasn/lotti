@@ -100,7 +100,9 @@ class AgentDatabase extends _$AgentDatabase {
             'ALTER TABLE wake_run_log ADD COLUMN soul_version_id TEXT',
           );
           // Soft-delete duplicate soul_assignment links per template,
-          // keeping only the most recently created row per from_id.
+          // keeping the most recently created link per from_id. Uses
+          // created_at (then id as tiebreaker) rather than rowid for
+          // deterministic results across SQLite configurations.
           await customStatement('''
             UPDATE agent_links
             SET
@@ -108,11 +110,15 @@ class AgentDatabase extends _$AgentDatabase {
               updated_at = CURRENT_TIMESTAMP
             WHERE type = 'soul_assignment'
               AND deleted_at IS NULL
-              AND rowid NOT IN (
-                SELECT MAX(rowid)
-                FROM agent_links
-                WHERE type = 'soul_assignment' AND deleted_at IS NULL
-                GROUP BY from_id
+              AND id NOT IN (
+                SELECT id FROM (
+                  SELECT id, ROW_NUMBER() OVER (
+                    PARTITION BY from_id
+                    ORDER BY created_at DESC, id DESC
+                  ) AS rn
+                  FROM agent_links
+                  WHERE type = 'soul_assignment' AND deleted_at IS NULL
+                ) ranked WHERE rn = 1
               )
           ''');
           await customStatement(

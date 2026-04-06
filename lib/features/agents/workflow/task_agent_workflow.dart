@@ -778,21 +778,16 @@ class TaskAgentWorkflow {
     }
 
     // Resolve the soul document assigned to this template, if any.
-    SoulDocumentVersionEntity? soulVersion;
-    if (soulDocumentService != null) {
-      try {
-        soulVersion = await soulDocumentService!.resolveActiveSoulForTemplate(
-          template.id,
-        );
-        if (soulVersion != null) {
-          _log(
-            'resolved soul v${soulVersion.version} for template',
-            subDomain: 'resolve',
-          );
-        }
-      } catch (e) {
-        _logError('failed to resolve soul for template', error: e);
-      }
+    // Returns null when no soul is assigned — that's the legitimate fallback.
+    // Exceptions propagate: a broken soul chain is a real error.
+    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
+      template.id,
+    );
+    if (soulVersion != null) {
+      _log(
+        'resolved soul v${soulVersion.version} for template',
+        subDomain: 'resolve',
+      );
     }
 
     return _TemplateContext(

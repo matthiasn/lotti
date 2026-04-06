@@ -773,7 +773,7 @@ void main() {
       );
 
       test(
-        'soul resolution failure is non-fatal and falls back to legacy prompt',
+        'soul resolution failure propagates as exception',
         () async {
           final splitVersion = makeTestTemplateVersion(
             generalDirective: 'Skills directive.',
@@ -789,14 +789,9 @@ void main() {
             ),
           ).thenThrow(Exception('Soul DB error'));
 
-          String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
-            mockConversationManager,
-            onSystemMessage: (msg) => capturedSystemMessage = msg,
-          );
-          final capturingWorkflow = createTestWorkflow(
+          final soulWorkflow = createTestWorkflow(
             agentRepository: mockAgentRepository,
-            conversationRepository: capturingRepo,
+            conversationRepository: mockConversationRepository,
             aiInputRepository: mockAiInputRepository,
             aiConfigRepository: mockAiConfigRepository,
             journalDb: mockJournalDb,
@@ -809,19 +804,20 @@ void main() {
             soulDocumentService: mockSoulService,
           );
 
-          final result = await capturingWorkflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
-
-          // Wake still succeeds.
-          expect(result.success, isTrue);
-          // Falls back to legacy heading.
-          expect(
-            capturedSystemMessage,
-            contains('## Your Personality & Directives'),
+          await expectLater(
+            soulWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Soul DB error'),
+              ),
+            ),
           );
         },
       );

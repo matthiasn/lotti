@@ -604,16 +604,11 @@ class ProjectAgentWorkflow {
     if (version == null) return null;
 
     // Resolve the soul document assigned to this template, if any.
-    SoulDocumentVersionEntity? soulVersion;
-    if (soulDocumentService != null) {
-      try {
-        soulVersion = await soulDocumentService!.resolveActiveSoulForTemplate(
-          template.id,
-        );
-      } catch (e) {
-        _logError('failed to resolve soul for template', error: e);
-      }
-    }
+    // Returns null when no soul is assigned — that's the legitimate fallback.
+    // Exceptions propagate: a broken soul chain is a real error.
+    final soulVersion = await soulDocumentService?.resolveActiveSoulForTemplate(
+      template.id,
+    );
 
     return _TemplateContext(
       template: template,

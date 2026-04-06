@@ -696,7 +696,7 @@ void main() {
       );
 
       test(
-        'soul resolution failure is non-fatal',
+        'soul resolution failure propagates as exception',
         () async {
           final mockSoulService = MockSoulDocumentService();
           when(
@@ -716,14 +716,21 @@ void main() {
             soulDocumentService: mockSoulService,
           );
 
-          final result = await soulWorkflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
+          await expectLater(
+            soulWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Soul DB error'),
+              ),
+            ),
           );
-
-          expect(result.success, isTrue);
         },
       );
 
