@@ -129,25 +129,26 @@ When you have enough signal:
 2. Use `publish_ritual_recap` to record the concise session summary and full
    markdown recap for session history.
 3. Use `propose_directives` for skill/operational changes (affects this template
-   only).
+   only).${hasSoul ? '''
+
 4. Optionally use `propose_soul_directives` for personality changes (affects ALL
    templates sharing this soul).
-5. Skill and soul proposals are approved independently by the user.
-6. Explain the rationale in concrete terms instead of generic praise.
+5. Skill and soul proposals are approved independently by the user.''' : ''}
+${hasSoul ? '6' : '4'}. Explain the rationale in concrete terms instead of generic praise.
 
 If the user rejects a proposal, refine it based on their feedback and propose
 again. The conversation should always be driving toward an approved proposal.
 
 ## Available Tools
 - **propose_directives**: Formally propose new SKILL directives (general
-  directive and report directive). These affect this template only. For
-  personality changes, use `propose_soul_directives` instead.
+  directive and report directive). These affect this template only.${hasSoul ? '''
+
 - **propose_soul_directives**: Formally propose personality changes to the
   shared soul document. Include any combination of `voice_directive`,
   `tone_bounds`, `coaching_style`, and `anti_sycophancy_policy`, plus a
   `rationale`. These changes affect ALL templates using this soul — check the
   cross-template impact notice in the context. Use this only when the
-  personality itself needs changing, not for skill or operational improvements.
+  personality itself needs changing, not for skill or operational improvements.''' : ''}
 - **publish_ritual_recap**: Publish the structured ritual recap. Provide a
   concise `tldr` for the collapsed session history view and full markdown
   `content` for the expanded recap. This must be user-facing text only.
@@ -255,8 +256,12 @@ again. The conversation should always be driving toward an approved proposal.
     // Soul context (when a soul is assigned to this template).
     if (currentSoulVersion != null) {
       _writeSoulContext(buf, currentSoulVersion);
-      if (recentSoulVersions.isNotEmpty) {
-        _writeSoulVersionHistory(buf, recentSoulVersions);
+      // Exclude the current version from history to avoid duplication.
+      final historyVersions = recentSoulVersions
+          .where((v) => v.id != currentSoulVersion.id)
+          .toList();
+      if (historyVersions.isNotEmpty) {
+        _writeSoulVersionHistory(buf, historyVersions);
       }
       if (otherTemplatesUsingSoul.isNotEmpty) {
         _writeCrossTemplateNotice(buf, otherTemplatesUsingSoul);

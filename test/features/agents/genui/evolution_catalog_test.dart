@@ -1500,12 +1500,28 @@ void main() {
     testWidgets('returns shrink widget for non-map data', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          _buildCatalogWidget(soulProposalItem, <String, Object?>{}),
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: 'not a map', // Non-map data triggers is! Map guard
+                id: 'test-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: (_) {},
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'test-surface',
+              );
+              return soulProposalItem.widgetBuilder(itemContext);
+            },
+          ),
         ),
       );
-      // Widget should still build without errors. With empty data,
-      // no directive fields are shown.
+
+      // Should render a zero-size SizedBox from the is! Map guard.
       expect(find.byType(SizedBox), findsWidgets);
+      // No proposal card content should be present.
+      expect(find.text('Approve & Save'), findsNothing);
     });
   });
 }
