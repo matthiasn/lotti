@@ -18,6 +18,7 @@ abstract final class AgentLinkTypes {
   static const templateAssignment = 'template_assignment';
   static const improverTarget = 'improver_target';
   static const agentProject = 'agent_project';
+  static const soulAssignment = 'soul_assignment';
 }
 
 abstract final class AgentEntityTypes {
@@ -31,6 +32,9 @@ abstract final class AgentEntityTypes {
   static const agentTemplateHead = 'agentTemplateHead';
   static const evolutionSessionRecap = 'evolutionSessionRecap';
   static const wakeTokenUsage = 'wakeTokenUsage';
+  static const soulDocument = 'soulDocument';
+  static const soulDocumentVersion = 'soulDocumentVersion';
+  static const soulDocumentHead = 'soulDocumentHead';
 }
 
 abstract final class AgentReportScopes {
@@ -39,6 +43,7 @@ abstract final class AgentReportScopes {
 
 abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
+  static const system = 'system';
 }
 
 abstract final class AgentSchedules {

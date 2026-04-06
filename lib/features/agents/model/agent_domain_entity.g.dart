@@ -707,6 +707,8 @@ WakeTokenUsageEntity _$WakeTokenUsageEntityFromJson(
       : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
   templateId: json['templateId'] as String?,
   templateVersionId: json['templateVersionId'] as String?,
+  soulDocumentId: json['soulDocumentId'] as String?,
+  soulDocumentVersionId: json['soulDocumentVersionId'] as String?,
   inputTokens: (json['inputTokens'] as num?)?.toInt(),
   outputTokens: (json['outputTokens'] as num?)?.toInt(),
   thoughtsTokens: (json['thoughtsTokens'] as num?)?.toInt(),
@@ -729,10 +731,117 @@ Map<String, dynamic> _$WakeTokenUsageEntityToJson(
   'vectorClock': instance.vectorClock,
   'templateId': instance.templateId,
   'templateVersionId': instance.templateVersionId,
+  'soulDocumentId': instance.soulDocumentId,
+  'soulDocumentVersionId': instance.soulDocumentVersionId,
   'inputTokens': instance.inputTokens,
   'outputTokens': instance.outputTokens,
   'thoughtsTokens': instance.thoughtsTokens,
   'cachedInputTokens': instance.cachedInputTokens,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+SoulDocumentEntity _$SoulDocumentEntityFromJson(Map<String, dynamic> json) =>
+    SoulDocumentEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      displayName: json['displayName'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SoulDocumentEntityToJson(SoulDocumentEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'displayName': instance.displayName,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+SoulDocumentVersionEntity _$SoulDocumentVersionEntityFromJson(
+  Map<String, dynamic> json,
+) => SoulDocumentVersionEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  version: (json['version'] as num).toInt(),
+  status: $enumDecode(_$SoulDocumentVersionStatusEnumMap, json['status']),
+  authoredBy: json['authoredBy'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  voiceDirective: json['voiceDirective'] as String,
+  toneBounds: json['toneBounds'] as String? ?? '',
+  coachingStyle: json['coachingStyle'] as String? ?? '',
+  antiSycophancyPolicy: json['antiSycophancyPolicy'] as String? ?? '',
+  sourceSessionId: json['sourceSessionId'] as String?,
+  diffFromVersionId: json['diffFromVersionId'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SoulDocumentVersionEntityToJson(
+  SoulDocumentVersionEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'version': instance.version,
+  'status': _$SoulDocumentVersionStatusEnumMap[instance.status]!,
+  'authoredBy': instance.authoredBy,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'voiceDirective': instance.voiceDirective,
+  'toneBounds': instance.toneBounds,
+  'coachingStyle': instance.coachingStyle,
+  'antiSycophancyPolicy': instance.antiSycophancyPolicy,
+  'sourceSessionId': instance.sourceSessionId,
+  'diffFromVersionId': instance.diffFromVersionId,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$SoulDocumentVersionStatusEnumMap = {
+  SoulDocumentVersionStatus.active: 'active',
+  SoulDocumentVersionStatus.archived: 'archived',
+};
+
+SoulDocumentHeadEntity _$SoulDocumentHeadEntityFromJson(
+  Map<String, dynamic> json,
+) => SoulDocumentHeadEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  versionId: json['versionId'] as String,
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SoulDocumentHeadEntityToJson(
+  SoulDocumentHeadEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'versionId': instance.versionId,
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
   'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };

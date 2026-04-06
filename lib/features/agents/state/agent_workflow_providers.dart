@@ -84,6 +84,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     labelsRepository: ref.watch(labelsRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     embeddingStore: embeddingStore,
     embeddingRepository: embeddingRepository,
@@ -104,6 +105,7 @@ ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
     journalRepository: ref.watch(journalRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );

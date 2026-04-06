@@ -79,6 +79,18 @@ AgentDomainEntity _$AgentDomainEntityFromJson(
           return WakeTokenUsageEntity.fromJson(
             json
           );
+                case 'soulDocument':
+          return SoulDocumentEntity.fromJson(
+            json
+          );
+                case 'soulDocumentVersion':
+          return SoulDocumentVersionEntity.fromJson(
+            json
+          );
+                case 'soulDocumentHead':
+          return SoulDocumentHeadEntity.fromJson(
+            json
+          );
         
           default:
             return AgentUnknownEntity.fromJson(
@@ -168,7 +180,7 @@ extension AgentDomainEntityPatterns on AgentDomainEntity {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AgentIdentityEntity value)?  agent,TResult Function( AgentStateEntity value)?  agentState,TResult Function( AgentMessageEntity value)?  agentMessage,TResult Function( AgentMessagePayloadEntity value)?  agentMessagePayload,TResult Function( AgentReportEntity value)?  agentReport,TResult Function( AgentReportHeadEntity value)?  agentReportHead,TResult Function( AgentTemplateEntity value)?  agentTemplate,TResult Function( AgentTemplateVersionEntity value)?  agentTemplateVersion,TResult Function( AgentTemplateHeadEntity value)?  agentTemplateHead,TResult Function( EvolutionSessionEntity value)?  evolutionSession,TResult Function( EvolutionSessionRecapEntity value)?  evolutionSessionRecap,TResult Function( EvolutionNoteEntity value)?  evolutionNote,TResult Function( ChangeSetEntity value)?  changeSet,TResult Function( ChangeDecisionEntity value)?  changeDecision,TResult Function( ProjectRecommendationEntity value)?  projectRecommendation,TResult Function( WakeTokenUsageEntity value)?  wakeTokenUsage,TResult Function( AgentUnknownEntity value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AgentIdentityEntity value)?  agent,TResult Function( AgentStateEntity value)?  agentState,TResult Function( AgentMessageEntity value)?  agentMessage,TResult Function( AgentMessagePayloadEntity value)?  agentMessagePayload,TResult Function( AgentReportEntity value)?  agentReport,TResult Function( AgentReportHeadEntity value)?  agentReportHead,TResult Function( AgentTemplateEntity value)?  agentTemplate,TResult Function( AgentTemplateVersionEntity value)?  agentTemplateVersion,TResult Function( AgentTemplateHeadEntity value)?  agentTemplateHead,TResult Function( EvolutionSessionEntity value)?  evolutionSession,TResult Function( EvolutionSessionRecapEntity value)?  evolutionSessionRecap,TResult Function( EvolutionNoteEntity value)?  evolutionNote,TResult Function( ChangeSetEntity value)?  changeSet,TResult Function( ChangeDecisionEntity value)?  changeDecision,TResult Function( ProjectRecommendationEntity value)?  projectRecommendation,TResult Function( WakeTokenUsageEntity value)?  wakeTokenUsage,TResult Function( SoulDocumentEntity value)?  soulDocument,TResult Function( SoulDocumentVersionEntity value)?  soulDocumentVersion,TResult Function( SoulDocumentHeadEntity value)?  soulDocumentHead,TResult Function( AgentUnknownEntity value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case AgentIdentityEntity() when agent != null:
@@ -187,7 +199,10 @@ return evolutionNote(_that);case ChangeSetEntity() when changeSet != null:
 return changeSet(_that);case ChangeDecisionEntity() when changeDecision != null:
 return changeDecision(_that);case ProjectRecommendationEntity() when projectRecommendation != null:
 return projectRecommendation(_that);case WakeTokenUsageEntity() when wakeTokenUsage != null:
-return wakeTokenUsage(_that);case AgentUnknownEntity() when unknown != null:
+return wakeTokenUsage(_that);case SoulDocumentEntity() when soulDocument != null:
+return soulDocument(_that);case SoulDocumentVersionEntity() when soulDocumentVersion != null:
+return soulDocumentVersion(_that);case SoulDocumentHeadEntity() when soulDocumentHead != null:
+return soulDocumentHead(_that);case AgentUnknownEntity() when unknown != null:
 return unknown(_that);case _:
   return orElse();
 
@@ -206,7 +221,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AgentIdentityEntity value)  agent,required TResult Function( AgentStateEntity value)  agentState,required TResult Function( AgentMessageEntity value)  agentMessage,required TResult Function( AgentMessagePayloadEntity value)  agentMessagePayload,required TResult Function( AgentReportEntity value)  agentReport,required TResult Function( AgentReportHeadEntity value)  agentReportHead,required TResult Function( AgentTemplateEntity value)  agentTemplate,required TResult Function( AgentTemplateVersionEntity value)  agentTemplateVersion,required TResult Function( AgentTemplateHeadEntity value)  agentTemplateHead,required TResult Function( EvolutionSessionEntity value)  evolutionSession,required TResult Function( EvolutionSessionRecapEntity value)  evolutionSessionRecap,required TResult Function( EvolutionNoteEntity value)  evolutionNote,required TResult Function( ChangeSetEntity value)  changeSet,required TResult Function( ChangeDecisionEntity value)  changeDecision,required TResult Function( ProjectRecommendationEntity value)  projectRecommendation,required TResult Function( WakeTokenUsageEntity value)  wakeTokenUsage,required TResult Function( AgentUnknownEntity value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AgentIdentityEntity value)  agent,required TResult Function( AgentStateEntity value)  agentState,required TResult Function( AgentMessageEntity value)  agentMessage,required TResult Function( AgentMessagePayloadEntity value)  agentMessagePayload,required TResult Function( AgentReportEntity value)  agentReport,required TResult Function( AgentReportHeadEntity value)  agentReportHead,required TResult Function( AgentTemplateEntity value)  agentTemplate,required TResult Function( AgentTemplateVersionEntity value)  agentTemplateVersion,required TResult Function( AgentTemplateHeadEntity value)  agentTemplateHead,required TResult Function( EvolutionSessionEntity value)  evolutionSession,required TResult Function( EvolutionSessionRecapEntity value)  evolutionSessionRecap,required TResult Function( EvolutionNoteEntity value)  evolutionNote,required TResult Function( ChangeSetEntity value)  changeSet,required TResult Function( ChangeDecisionEntity value)  changeDecision,required TResult Function( ProjectRecommendationEntity value)  projectRecommendation,required TResult Function( WakeTokenUsageEntity value)  wakeTokenUsage,required TResult Function( SoulDocumentEntity value)  soulDocument,required TResult Function( SoulDocumentVersionEntity value)  soulDocumentVersion,required TResult Function( SoulDocumentHeadEntity value)  soulDocumentHead,required TResult Function( AgentUnknownEntity value)  unknown,}){
 final _that = this;
 switch (_that) {
 case AgentIdentityEntity():
@@ -225,7 +240,10 @@ return evolutionNote(_that);case ChangeSetEntity():
 return changeSet(_that);case ChangeDecisionEntity():
 return changeDecision(_that);case ProjectRecommendationEntity():
 return projectRecommendation(_that);case WakeTokenUsageEntity():
-return wakeTokenUsage(_that);case AgentUnknownEntity():
+return wakeTokenUsage(_that);case SoulDocumentEntity():
+return soulDocument(_that);case SoulDocumentVersionEntity():
+return soulDocumentVersion(_that);case SoulDocumentHeadEntity():
+return soulDocumentHead(_that);case AgentUnknownEntity():
 return unknown(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -243,7 +261,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AgentIdentityEntity value)?  agent,TResult? Function( AgentStateEntity value)?  agentState,TResult? Function( AgentMessageEntity value)?  agentMessage,TResult? Function( AgentMessagePayloadEntity value)?  agentMessagePayload,TResult? Function( AgentReportEntity value)?  agentReport,TResult? Function( AgentReportHeadEntity value)?  agentReportHead,TResult? Function( AgentTemplateEntity value)?  agentTemplate,TResult? Function( AgentTemplateVersionEntity value)?  agentTemplateVersion,TResult? Function( AgentTemplateHeadEntity value)?  agentTemplateHead,TResult? Function( EvolutionSessionEntity value)?  evolutionSession,TResult? Function( EvolutionSessionRecapEntity value)?  evolutionSessionRecap,TResult? Function( EvolutionNoteEntity value)?  evolutionNote,TResult? Function( ChangeSetEntity value)?  changeSet,TResult? Function( ChangeDecisionEntity value)?  changeDecision,TResult? Function( ProjectRecommendationEntity value)?  projectRecommendation,TResult? Function( WakeTokenUsageEntity value)?  wakeTokenUsage,TResult? Function( AgentUnknownEntity value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AgentIdentityEntity value)?  agent,TResult? Function( AgentStateEntity value)?  agentState,TResult? Function( AgentMessageEntity value)?  agentMessage,TResult? Function( AgentMessagePayloadEntity value)?  agentMessagePayload,TResult? Function( AgentReportEntity value)?  agentReport,TResult? Function( AgentReportHeadEntity value)?  agentReportHead,TResult? Function( AgentTemplateEntity value)?  agentTemplate,TResult? Function( AgentTemplateVersionEntity value)?  agentTemplateVersion,TResult? Function( AgentTemplateHeadEntity value)?  agentTemplateHead,TResult? Function( EvolutionSessionEntity value)?  evolutionSession,TResult? Function( EvolutionSessionRecapEntity value)?  evolutionSessionRecap,TResult? Function( EvolutionNoteEntity value)?  evolutionNote,TResult? Function( ChangeSetEntity value)?  changeSet,TResult? Function( ChangeDecisionEntity value)?  changeDecision,TResult? Function( ProjectRecommendationEntity value)?  projectRecommendation,TResult? Function( WakeTokenUsageEntity value)?  wakeTokenUsage,TResult? Function( SoulDocumentEntity value)?  soulDocument,TResult? Function( SoulDocumentVersionEntity value)?  soulDocumentVersion,TResult? Function( SoulDocumentHeadEntity value)?  soulDocumentHead,TResult? Function( AgentUnknownEntity value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case AgentIdentityEntity() when agent != null:
@@ -262,7 +280,10 @@ return evolutionNote(_that);case ChangeSetEntity() when changeSet != null:
 return changeSet(_that);case ChangeDecisionEntity() when changeDecision != null:
 return changeDecision(_that);case ProjectRecommendationEntity() when projectRecommendation != null:
 return projectRecommendation(_that);case WakeTokenUsageEntity() when wakeTokenUsage != null:
-return wakeTokenUsage(_that);case AgentUnknownEntity() when unknown != null:
+return wakeTokenUsage(_that);case SoulDocumentEntity() when soulDocument != null:
+return soulDocument(_that);case SoulDocumentVersionEntity() when soulDocumentVersion != null:
+return soulDocumentVersion(_that);case SoulDocumentHeadEntity() when soulDocumentHead != null:
+return soulDocumentHead(_that);case AgentUnknownEntity() when unknown != null:
 return unknown(_that);case _:
   return null;
 
@@ -280,7 +301,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)?  agent,TResult Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)?  agentState,TResult Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)?  agentMessage,TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)?  agentMessagePayload,TResult Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)?  agentReport,TResult Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentReportHead,TResult Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)?  agentTemplate,TResult Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)?  agentTemplateVersion,TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTemplateHead,TResult Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)?  evolutionSession,TResult Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)?  evolutionSessionRecap,TResult Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)?  evolutionNote,TResult Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)?  changeSet,TResult Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)?  changeDecision,TResult Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)?  projectRecommendation,TResult Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)?  wakeTokenUsage,TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)?  agent,TResult Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)?  agentState,TResult Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)?  agentMessage,TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)?  agentMessagePayload,TResult Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)?  agentReport,TResult Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentReportHead,TResult Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)?  agentTemplate,TResult Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)?  agentTemplateVersion,TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTemplateHead,TResult Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)?  evolutionSession,TResult Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)?  evolutionSessionRecap,TResult Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)?  evolutionNote,TResult Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)?  changeSet,TResult Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)?  changeDecision,TResult Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)?  projectRecommendation,TResult Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  String? soulDocumentId,  String? soulDocumentVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)?  wakeTokenUsage,TResult Function( String id,  String agentId,  String displayName,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulDocument,TResult Function( String id,  String agentId,  int version,  SoulDocumentVersionStatus status,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String voiceDirective,  String toneBounds,  String coachingStyle,  String antiSycophancyPolicy,  String? sourceSessionId,  String? diffFromVersionId,  DateTime? deletedAt)?  soulDocumentVersion,TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulDocumentHead,TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AgentIdentityEntity() when agent != null:
 return agent(_that.id,_that.agentId,_that.kind,_that.displayName,_that.lifecycle,_that.mode,_that.allowedCategoryIds,_that.currentStateId,_that.config,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt,_that.destroyedAt);case AgentStateEntity() when agentState != null:
@@ -298,7 +319,10 @@ return evolutionNote(_that.id,_that.agentId,_that.sessionId,_that.kind,_that.cre
 return changeSet(_that.id,_that.agentId,_that.taskId,_that.threadId,_that.runKey,_that.status,_that.items,_that.createdAt,_that.vectorClock,_that.resolvedAt,_that.deletedAt);case ChangeDecisionEntity() when changeDecision != null:
 return changeDecision(_that.id,_that.agentId,_that.changeSetId,_that.itemIndex,_that.toolName,_that.verdict,_that.createdAt,_that.vectorClock,_that.taskId,_that.rejectionReason,_that.humanSummary,_that.args,_that.deletedAt);case ProjectRecommendationEntity() when projectRecommendation != null:
 return projectRecommendation(_that.id,_that.agentId,_that.projectId,_that.title,_that.position,_that.status,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.sourceChangeSetId,_that.sourceDecisionId,_that.rationale,_that.priority,_that.resolvedAt,_that.dismissedAt,_that.supersededAt,_that.deletedAt);case WakeTokenUsageEntity() when wakeTokenUsage != null:
-return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case AgentUnknownEntity() when unknown != null:
+return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.soulDocumentId,_that.soulDocumentVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case SoulDocumentEntity() when soulDocument != null:
+return soulDocument(_that.id,_that.agentId,_that.displayName,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulDocumentVersionEntity() when soulDocumentVersion != null:
+return soulDocumentVersion(_that.id,_that.agentId,_that.version,_that.status,_that.authoredBy,_that.createdAt,_that.vectorClock,_that.voiceDirective,_that.toneBounds,_that.coachingStyle,_that.antiSycophancyPolicy,_that.sourceSessionId,_that.diffFromVersionId,_that.deletedAt);case SoulDocumentHeadEntity() when soulDocumentHead != null:
+return soulDocumentHead(_that.id,_that.agentId,_that.versionId,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentUnknownEntity() when unknown != null:
 return unknown(_that.id,_that.agentId,_that.createdAt,_that.vectorClock,_that.deletedAt);case _:
   return orElse();
 
@@ -317,7 +341,7 @@ return unknown(_that.id,_that.agentId,_that.createdAt,_that.vectorClock,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)  agent,required TResult Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)  agentState,required TResult Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)  agentMessage,required TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)  agentMessagePayload,required TResult Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)  agentReport,required TResult Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentReportHead,required TResult Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)  agentTemplate,required TResult Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)  agentTemplateVersion,required TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentTemplateHead,required TResult Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)  evolutionSession,required TResult Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)  evolutionSessionRecap,required TResult Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)  evolutionNote,required TResult Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)  changeSet,required TResult Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)  changeDecision,required TResult Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)  projectRecommendation,required TResult Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)  wakeTokenUsage,required TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)  agent,required TResult Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)  agentState,required TResult Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)  agentMessage,required TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)  agentMessagePayload,required TResult Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)  agentReport,required TResult Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentReportHead,required TResult Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)  agentTemplate,required TResult Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)  agentTemplateVersion,required TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentTemplateHead,required TResult Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)  evolutionSession,required TResult Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)  evolutionSessionRecap,required TResult Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)  evolutionNote,required TResult Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)  changeSet,required TResult Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)  changeDecision,required TResult Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)  projectRecommendation,required TResult Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  String? soulDocumentId,  String? soulDocumentVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)  wakeTokenUsage,required TResult Function( String id,  String agentId,  String displayName,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  soulDocument,required TResult Function( String id,  String agentId,  int version,  SoulDocumentVersionStatus status,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String voiceDirective,  String toneBounds,  String coachingStyle,  String antiSycophancyPolicy,  String? sourceSessionId,  String? diffFromVersionId,  DateTime? deletedAt)  soulDocumentVersion,required TResult Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  soulDocumentHead,required TResult Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)  unknown,}) {final _that = this;
 switch (_that) {
 case AgentIdentityEntity():
 return agent(_that.id,_that.agentId,_that.kind,_that.displayName,_that.lifecycle,_that.mode,_that.allowedCategoryIds,_that.currentStateId,_that.config,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt,_that.destroyedAt);case AgentStateEntity():
@@ -335,7 +359,10 @@ return evolutionNote(_that.id,_that.agentId,_that.sessionId,_that.kind,_that.cre
 return changeSet(_that.id,_that.agentId,_that.taskId,_that.threadId,_that.runKey,_that.status,_that.items,_that.createdAt,_that.vectorClock,_that.resolvedAt,_that.deletedAt);case ChangeDecisionEntity():
 return changeDecision(_that.id,_that.agentId,_that.changeSetId,_that.itemIndex,_that.toolName,_that.verdict,_that.createdAt,_that.vectorClock,_that.taskId,_that.rejectionReason,_that.humanSummary,_that.args,_that.deletedAt);case ProjectRecommendationEntity():
 return projectRecommendation(_that.id,_that.agentId,_that.projectId,_that.title,_that.position,_that.status,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.sourceChangeSetId,_that.sourceDecisionId,_that.rationale,_that.priority,_that.resolvedAt,_that.dismissedAt,_that.supersededAt,_that.deletedAt);case WakeTokenUsageEntity():
-return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case AgentUnknownEntity():
+return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.soulDocumentId,_that.soulDocumentVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case SoulDocumentEntity():
+return soulDocument(_that.id,_that.agentId,_that.displayName,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulDocumentVersionEntity():
+return soulDocumentVersion(_that.id,_that.agentId,_that.version,_that.status,_that.authoredBy,_that.createdAt,_that.vectorClock,_that.voiceDirective,_that.toneBounds,_that.coachingStyle,_that.antiSycophancyPolicy,_that.sourceSessionId,_that.diffFromVersionId,_that.deletedAt);case SoulDocumentHeadEntity():
+return soulDocumentHead(_that.id,_that.agentId,_that.versionId,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentUnknownEntity():
 return unknown(_that.id,_that.agentId,_that.createdAt,_that.vectorClock,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
 
@@ -353,7 +380,7 @@ return unknown(_that.id,_that.agentId,_that.createdAt,_that.vectorClock,_that.de
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)?  agent,TResult? Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)?  agentState,TResult? Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)?  agentMessage,TResult? Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)?  agentMessagePayload,TResult? Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)?  agentReport,TResult? Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentReportHead,TResult? Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)?  agentTemplate,TResult? Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)?  agentTemplateVersion,TResult? Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTemplateHead,TResult? Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)?  evolutionSession,TResult? Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)?  evolutionSessionRecap,TResult? Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)?  evolutionNote,TResult? Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)?  changeSet,TResult? Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)?  changeDecision,TResult? Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)?  projectRecommendation,TResult? Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)?  wakeTokenUsage,TResult? Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String agentId,  String kind,  String displayName,  AgentLifecycle lifecycle,  AgentInteractionMode mode,  Set<String> allowedCategoryIds,  String currentStateId,  AgentConfig config,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt,  DateTime? destroyedAt)?  agent,TResult? Function( String id,  String agentId,  int revision,  AgentSlots slots,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? lastWakeAt,  DateTime? nextWakeAt,  DateTime? sleepUntil,  DateTime? scheduledWakeAt,  String? recentHeadMessageId,  String? latestSummaryMessageId,  int consecutiveFailureCount,  int wakeCounter,  Map<String, int> processedCounterByHost,  bool awaitingContent,  DateTime? deletedAt)?  agentState,TResult? Function( String id,  String agentId,  String threadId,  AgentMessageKind kind,  DateTime createdAt,  VectorClock? vectorClock,  AgentMessageMetadata metadata,  String? prevMessageId,  String? contentEntryId,  String? triggerSourceId,  String? summaryStartMessageId,  String? summaryEndMessageId,  int summaryDepth,  int tokensApprox,  DateTime? deletedAt)?  agentMessage,TResult? Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  Map<String, Object?> content,  String contentType,  DateTime? deletedAt)?  agentMessagePayload,TResult? Function( String id,  String agentId,  String scope,  DateTime createdAt,  VectorClock? vectorClock,  String content,  String? tldr,  String? oneLiner,  double? confidence,  Map<String, Object?> provenance,  DateTime? deletedAt,  String? threadId)?  agentReport,TResult? Function( String id,  String agentId,  String scope,  String reportId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentReportHead,TResult? Function( String id,  String agentId,  String displayName,  AgentTemplateKind kind,  String modelId,  Set<String> categoryIds,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? profileId,  DateTime? deletedAt)?  agentTemplate,TResult? Function( String id,  String agentId,  int version,  AgentTemplateVersionStatus status,  String directives,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String generalDirective,  String reportDirective,  String? modelId,  String? profileId,  DateTime? deletedAt)?  agentTemplateVersion,TResult? Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTemplateHead,TResult? Function( String id,  String agentId,  String templateId,  int sessionNumber,  EvolutionSessionStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? proposedVersionId,  String? feedbackSummary,  double? userRating,  DateTime? completedAt,  DateTime? deletedAt)?  evolutionSession,TResult? Function( String id,  String agentId,  String sessionId,  DateTime createdAt,  VectorClock? vectorClock,  String tldr,  String recapMarkdown,  Map<String, int> categoryRatings,  List<Map<String, String>> transcript,  String? approvedChangeSummary,  DateTime? deletedAt)?  evolutionSessionRecap,TResult? Function( String id,  String agentId,  String sessionId,  EvolutionNoteKind kind,  DateTime createdAt,  VectorClock? vectorClock,  String content,  DateTime? deletedAt)?  evolutionNote,TResult? Function( String id,  String agentId,  String taskId,  String threadId,  String runKey,  ChangeSetStatus status,  List<ChangeItem> items,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? resolvedAt,  DateTime? deletedAt)?  changeSet,TResult? Function( String id,  String agentId,  String changeSetId,  int itemIndex,  String toolName,  ChangeDecisionVerdict verdict,  DateTime createdAt,  VectorClock? vectorClock,  String? taskId,  String? rejectionReason,  String? humanSummary,  Map<String, dynamic>? args,  DateTime? deletedAt)?  changeDecision,TResult? Function( String id,  String agentId,  String projectId,  String title,  int position,  ProjectRecommendationStatus status,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? sourceChangeSetId,  String? sourceDecisionId,  String? rationale,  String? priority,  DateTime? resolvedAt,  DateTime? dismissedAt,  DateTime? supersededAt,  DateTime? deletedAt)?  projectRecommendation,TResult? Function( String id,  String agentId,  String runKey,  String threadId,  String modelId,  DateTime createdAt,  VectorClock? vectorClock,  String? templateId,  String? templateVersionId,  String? soulDocumentId,  String? soulDocumentVersionId,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  DateTime? deletedAt)?  wakeTokenUsage,TResult? Function( String id,  String agentId,  String displayName,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulDocument,TResult? Function( String id,  String agentId,  int version,  SoulDocumentVersionStatus status,  String authoredBy,  DateTime createdAt,  VectorClock? vectorClock,  String voiceDirective,  String toneBounds,  String coachingStyle,  String antiSycophancyPolicy,  String? sourceSessionId,  String? diffFromVersionId,  DateTime? deletedAt)?  soulDocumentVersion,TResult? Function( String id,  String agentId,  String versionId,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulDocumentHead,TResult? Function( String id,  String agentId,  DateTime createdAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  unknown,}) {final _that = this;
 switch (_that) {
 case AgentIdentityEntity() when agent != null:
 return agent(_that.id,_that.agentId,_that.kind,_that.displayName,_that.lifecycle,_that.mode,_that.allowedCategoryIds,_that.currentStateId,_that.config,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt,_that.destroyedAt);case AgentStateEntity() when agentState != null:
@@ -371,7 +398,10 @@ return evolutionNote(_that.id,_that.agentId,_that.sessionId,_that.kind,_that.cre
 return changeSet(_that.id,_that.agentId,_that.taskId,_that.threadId,_that.runKey,_that.status,_that.items,_that.createdAt,_that.vectorClock,_that.resolvedAt,_that.deletedAt);case ChangeDecisionEntity() when changeDecision != null:
 return changeDecision(_that.id,_that.agentId,_that.changeSetId,_that.itemIndex,_that.toolName,_that.verdict,_that.createdAt,_that.vectorClock,_that.taskId,_that.rejectionReason,_that.humanSummary,_that.args,_that.deletedAt);case ProjectRecommendationEntity() when projectRecommendation != null:
 return projectRecommendation(_that.id,_that.agentId,_that.projectId,_that.title,_that.position,_that.status,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.sourceChangeSetId,_that.sourceDecisionId,_that.rationale,_that.priority,_that.resolvedAt,_that.dismissedAt,_that.supersededAt,_that.deletedAt);case WakeTokenUsageEntity() when wakeTokenUsage != null:
-return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case AgentUnknownEntity() when unknown != null:
+return wakeTokenUsage(_that.id,_that.agentId,_that.runKey,_that.threadId,_that.modelId,_that.createdAt,_that.vectorClock,_that.templateId,_that.templateVersionId,_that.soulDocumentId,_that.soulDocumentVersionId,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.deletedAt);case SoulDocumentEntity() when soulDocument != null:
+return soulDocument(_that.id,_that.agentId,_that.displayName,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulDocumentVersionEntity() when soulDocumentVersion != null:
+return soulDocumentVersion(_that.id,_that.agentId,_that.version,_that.status,_that.authoredBy,_that.createdAt,_that.vectorClock,_that.voiceDirective,_that.toneBounds,_that.coachingStyle,_that.antiSycophancyPolicy,_that.sourceSessionId,_that.diffFromVersionId,_that.deletedAt);case SoulDocumentHeadEntity() when soulDocumentHead != null:
+return soulDocumentHead(_that.id,_that.agentId,_that.versionId,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentUnknownEntity() when unknown != null:
 return unknown(_that.id,_that.agentId,_that.createdAt,_that.vectorClock,_that.deletedAt);case _:
   return null;
 
@@ -1900,7 +1930,7 @@ as DateTime?,
 @JsonSerializable()
 
 class WakeTokenUsageEntity implements AgentDomainEntity {
-  const WakeTokenUsageEntity({required this.id, required this.agentId, required this.runKey, required this.threadId, required this.modelId, required this.createdAt, required this.vectorClock, this.templateId, this.templateVersionId, this.inputTokens, this.outputTokens, this.thoughtsTokens, this.cachedInputTokens, this.deletedAt, final  String? $type}): $type = $type ?? 'wakeTokenUsage';
+  const WakeTokenUsageEntity({required this.id, required this.agentId, required this.runKey, required this.threadId, required this.modelId, required this.createdAt, required this.vectorClock, this.templateId, this.templateVersionId, this.soulDocumentId, this.soulDocumentVersionId, this.inputTokens, this.outputTokens, this.thoughtsTokens, this.cachedInputTokens, this.deletedAt, final  String? $type}): $type = $type ?? 'wakeTokenUsage';
   factory WakeTokenUsageEntity.fromJson(Map<String, dynamic> json) => _$WakeTokenUsageEntityFromJson(json);
 
 @override final  String id;
@@ -1912,6 +1942,8 @@ class WakeTokenUsageEntity implements AgentDomainEntity {
 @override final  VectorClock? vectorClock;
  final  String? templateId;
  final  String? templateVersionId;
+ final  String? soulDocumentId;
+ final  String? soulDocumentVersionId;
  final  int? inputTokens;
  final  int? outputTokens;
  final  int? thoughtsTokens;
@@ -1935,16 +1967,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WakeTokenUsageEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.threadId, threadId) || other.threadId == threadId)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&(identical(other.templateVersionId, templateVersionId) || other.templateVersionId == templateVersionId)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WakeTokenUsageEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.runKey, runKey) || other.runKey == runKey)&&(identical(other.threadId, threadId) || other.threadId == threadId)&&(identical(other.modelId, modelId) || other.modelId == modelId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&(identical(other.templateVersionId, templateVersionId) || other.templateVersionId == templateVersionId)&&(identical(other.soulDocumentId, soulDocumentId) || other.soulDocumentId == soulDocumentId)&&(identical(other.soulDocumentVersionId, soulDocumentVersionId) || other.soulDocumentVersionId == soulDocumentVersionId)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,agentId,runKey,threadId,modelId,createdAt,vectorClock,templateId,templateVersionId,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,deletedAt);
+int get hashCode => Object.hash(runtimeType,id,agentId,runKey,threadId,modelId,createdAt,vectorClock,templateId,templateVersionId,soulDocumentId,soulDocumentVersionId,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,deletedAt);
 
 @override
 String toString() {
-  return 'AgentDomainEntity.wakeTokenUsage(id: $id, agentId: $agentId, runKey: $runKey, threadId: $threadId, modelId: $modelId, createdAt: $createdAt, vectorClock: $vectorClock, templateId: $templateId, templateVersionId: $templateVersionId, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, deletedAt: $deletedAt)';
+  return 'AgentDomainEntity.wakeTokenUsage(id: $id, agentId: $agentId, runKey: $runKey, threadId: $threadId, modelId: $modelId, createdAt: $createdAt, vectorClock: $vectorClock, templateId: $templateId, templateVersionId: $templateVersionId, soulDocumentId: $soulDocumentId, soulDocumentVersionId: $soulDocumentVersionId, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, deletedAt: $deletedAt)';
 }
 
 
@@ -1955,7 +1987,7 @@ abstract mixin class $WakeTokenUsageEntityCopyWith<$Res> implements $AgentDomain
   factory $WakeTokenUsageEntityCopyWith(WakeTokenUsageEntity value, $Res Function(WakeTokenUsageEntity) _then) = _$WakeTokenUsageEntityCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String agentId, String runKey, String threadId, String modelId, DateTime createdAt, VectorClock? vectorClock, String? templateId, String? templateVersionId, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, DateTime? deletedAt
+ String id, String agentId, String runKey, String threadId, String modelId, DateTime createdAt, VectorClock? vectorClock, String? templateId, String? templateVersionId, String? soulDocumentId, String? soulDocumentVersionId, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, DateTime? deletedAt
 });
 
 
@@ -1972,7 +2004,7 @@ class _$WakeTokenUsageEntityCopyWithImpl<$Res>
 
 /// Create a copy of AgentDomainEntity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,Object? runKey = null,Object? threadId = null,Object? modelId = null,Object? createdAt = null,Object? vectorClock = freezed,Object? templateId = freezed,Object? templateVersionId = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? deletedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,Object? runKey = null,Object? threadId = null,Object? modelId = null,Object? createdAt = null,Object? vectorClock = freezed,Object? templateId = freezed,Object? templateVersionId = freezed,Object? soulDocumentId = freezed,Object? soulDocumentVersionId = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? deletedAt = freezed,}) {
   return _then(WakeTokenUsageEntity(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
@@ -1983,11 +2015,286 @@ as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: 
 as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock?,templateId: freezed == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
 as String?,templateVersionId: freezed == templateVersionId ? _self.templateVersionId : templateVersionId // ignore: cast_nullable_to_non_nullable
+as String?,soulDocumentId: freezed == soulDocumentId ? _self.soulDocumentId : soulDocumentId // ignore: cast_nullable_to_non_nullable
+as String?,soulDocumentVersionId: freezed == soulDocumentVersionId ? _self.soulDocumentVersionId : soulDocumentVersionId // ignore: cast_nullable_to_non_nullable
 as String?,inputTokens: freezed == inputTokens ? _self.inputTokens : inputTokens // ignore: cast_nullable_to_non_nullable
 as int?,outputTokens: freezed == outputTokens ? _self.outputTokens : outputTokens // ignore: cast_nullable_to_non_nullable
 as int?,thoughtsTokens: freezed == thoughtsTokens ? _self.thoughtsTokens : thoughtsTokens // ignore: cast_nullable_to_non_nullable
 as int?,cachedInputTokens: freezed == cachedInputTokens ? _self.cachedInputTokens : cachedInputTokens // ignore: cast_nullable_to_non_nullable
 as int?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SoulDocumentEntity implements AgentDomainEntity {
+  const SoulDocumentEntity({required this.id, required this.agentId, required this.displayName, required this.createdAt, required this.updatedAt, required this.vectorClock, this.deletedAt, final  String? $type}): $type = $type ?? 'soulDocument';
+  factory SoulDocumentEntity.fromJson(Map<String, dynamic> json) => _$SoulDocumentEntityFromJson(json);
+
+@override final  String id;
+@override final  String agentId;
+ final  String displayName;
+ final  DateTime createdAt;
+ final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SoulDocumentEntityCopyWith<SoulDocumentEntity> get copyWith => _$SoulDocumentEntityCopyWithImpl<SoulDocumentEntity>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SoulDocumentEntityToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SoulDocumentEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,agentId,displayName,createdAt,updatedAt,vectorClock,deletedAt);
+
+@override
+String toString() {
+  return 'AgentDomainEntity.soulDocument(id: $id, agentId: $agentId, displayName: $displayName, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SoulDocumentEntityCopyWith<$Res> implements $AgentDomainEntityCopyWith<$Res> {
+  factory $SoulDocumentEntityCopyWith(SoulDocumentEntity value, $Res Function(SoulDocumentEntity) _then) = _$SoulDocumentEntityCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String agentId, String displayName, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$SoulDocumentEntityCopyWithImpl<$Res>
+    implements $SoulDocumentEntityCopyWith<$Res> {
+  _$SoulDocumentEntityCopyWithImpl(this._self, this._then);
+
+  final SoulDocumentEntity _self;
+  final $Res Function(SoulDocumentEntity) _then;
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,Object? displayName = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,}) {
+  return _then(SoulDocumentEntity(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SoulDocumentVersionEntity implements AgentDomainEntity {
+  const SoulDocumentVersionEntity({required this.id, required this.agentId, required this.version, required this.status, required this.authoredBy, required this.createdAt, required this.vectorClock, required this.voiceDirective, this.toneBounds = '', this.coachingStyle = '', this.antiSycophancyPolicy = '', this.sourceSessionId, this.diffFromVersionId, this.deletedAt, final  String? $type}): $type = $type ?? 'soulDocumentVersion';
+  factory SoulDocumentVersionEntity.fromJson(Map<String, dynamic> json) => _$SoulDocumentVersionEntityFromJson(json);
+
+@override final  String id;
+@override final  String agentId;
+ final  int version;
+ final  SoulDocumentVersionStatus status;
+ final  String authoredBy;
+ final  DateTime createdAt;
+@override final  VectorClock? vectorClock;
+/// Core personality: tone, warmth, humor, style, communication patterns.
+ final  String voiceDirective;
+/// Guardrails on voice — what the personality must never do.
+@JsonKey() final  String toneBounds;
+/// How the personality coaches, mentors, and motivates the user.
+@JsonKey() final  String coachingStyle;
+/// Directness contract — when to push back vs. comply.
+@JsonKey() final  String antiSycophancyPolicy;
+/// Evolution session that produced this version, if any.
+ final  String? sourceSessionId;
+/// Parent version for diff tracking.
+ final  String? diffFromVersionId;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SoulDocumentVersionEntityCopyWith<SoulDocumentVersionEntity> get copyWith => _$SoulDocumentVersionEntityCopyWithImpl<SoulDocumentVersionEntity>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SoulDocumentVersionEntityToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SoulDocumentVersionEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.version, version) || other.version == version)&&(identical(other.status, status) || other.status == status)&&(identical(other.authoredBy, authoredBy) || other.authoredBy == authoredBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.voiceDirective, voiceDirective) || other.voiceDirective == voiceDirective)&&(identical(other.toneBounds, toneBounds) || other.toneBounds == toneBounds)&&(identical(other.coachingStyle, coachingStyle) || other.coachingStyle == coachingStyle)&&(identical(other.antiSycophancyPolicy, antiSycophancyPolicy) || other.antiSycophancyPolicy == antiSycophancyPolicy)&&(identical(other.sourceSessionId, sourceSessionId) || other.sourceSessionId == sourceSessionId)&&(identical(other.diffFromVersionId, diffFromVersionId) || other.diffFromVersionId == diffFromVersionId)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,agentId,version,status,authoredBy,createdAt,vectorClock,voiceDirective,toneBounds,coachingStyle,antiSycophancyPolicy,sourceSessionId,diffFromVersionId,deletedAt);
+
+@override
+String toString() {
+  return 'AgentDomainEntity.soulDocumentVersion(id: $id, agentId: $agentId, version: $version, status: $status, authoredBy: $authoredBy, createdAt: $createdAt, vectorClock: $vectorClock, voiceDirective: $voiceDirective, toneBounds: $toneBounds, coachingStyle: $coachingStyle, antiSycophancyPolicy: $antiSycophancyPolicy, sourceSessionId: $sourceSessionId, diffFromVersionId: $diffFromVersionId, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SoulDocumentVersionEntityCopyWith<$Res> implements $AgentDomainEntityCopyWith<$Res> {
+  factory $SoulDocumentVersionEntityCopyWith(SoulDocumentVersionEntity value, $Res Function(SoulDocumentVersionEntity) _then) = _$SoulDocumentVersionEntityCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String agentId, int version, SoulDocumentVersionStatus status, String authoredBy, DateTime createdAt, VectorClock? vectorClock, String voiceDirective, String toneBounds, String coachingStyle, String antiSycophancyPolicy, String? sourceSessionId, String? diffFromVersionId, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$SoulDocumentVersionEntityCopyWithImpl<$Res>
+    implements $SoulDocumentVersionEntityCopyWith<$Res> {
+  _$SoulDocumentVersionEntityCopyWithImpl(this._self, this._then);
+
+  final SoulDocumentVersionEntity _self;
+  final $Res Function(SoulDocumentVersionEntity) _then;
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,Object? version = null,Object? status = null,Object? authoredBy = null,Object? createdAt = null,Object? vectorClock = freezed,Object? voiceDirective = null,Object? toneBounds = null,Object? coachingStyle = null,Object? antiSycophancyPolicy = null,Object? sourceSessionId = freezed,Object? diffFromVersionId = freezed,Object? deletedAt = freezed,}) {
+  return _then(SoulDocumentVersionEntity(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,version: null == version ? _self.version : version // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SoulDocumentVersionStatus,authoredBy: null == authoredBy ? _self.authoredBy : authoredBy // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,voiceDirective: null == voiceDirective ? _self.voiceDirective : voiceDirective // ignore: cast_nullable_to_non_nullable
+as String,toneBounds: null == toneBounds ? _self.toneBounds : toneBounds // ignore: cast_nullable_to_non_nullable
+as String,coachingStyle: null == coachingStyle ? _self.coachingStyle : coachingStyle // ignore: cast_nullable_to_non_nullable
+as String,antiSycophancyPolicy: null == antiSycophancyPolicy ? _self.antiSycophancyPolicy : antiSycophancyPolicy // ignore: cast_nullable_to_non_nullable
+as String,sourceSessionId: freezed == sourceSessionId ? _self.sourceSessionId : sourceSessionId // ignore: cast_nullable_to_non_nullable
+as String?,diffFromVersionId: freezed == diffFromVersionId ? _self.diffFromVersionId : diffFromVersionId // ignore: cast_nullable_to_non_nullable
+as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class SoulDocumentHeadEntity implements AgentDomainEntity {
+  const SoulDocumentHeadEntity({required this.id, required this.agentId, required this.versionId, required this.updatedAt, required this.vectorClock, this.deletedAt, final  String? $type}): $type = $type ?? 'soulDocumentHead';
+  factory SoulDocumentHeadEntity.fromJson(Map<String, dynamic> json) => _$SoulDocumentHeadEntityFromJson(json);
+
+@override final  String id;
+@override final  String agentId;
+ final  String versionId;
+ final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SoulDocumentHeadEntityCopyWith<SoulDocumentHeadEntity> get copyWith => _$SoulDocumentHeadEntityCopyWithImpl<SoulDocumentHeadEntity>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SoulDocumentHeadEntityToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SoulDocumentHeadEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.versionId, versionId) || other.versionId == versionId)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,agentId,versionId,updatedAt,vectorClock,deletedAt);
+
+@override
+String toString() {
+  return 'AgentDomainEntity.soulDocumentHead(id: $id, agentId: $agentId, versionId: $versionId, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SoulDocumentHeadEntityCopyWith<$Res> implements $AgentDomainEntityCopyWith<$Res> {
+  factory $SoulDocumentHeadEntityCopyWith(SoulDocumentHeadEntity value, $Res Function(SoulDocumentHeadEntity) _then) = _$SoulDocumentHeadEntityCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String agentId, String versionId, DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$SoulDocumentHeadEntityCopyWithImpl<$Res>
+    implements $SoulDocumentHeadEntityCopyWith<$Res> {
+  _$SoulDocumentHeadEntityCopyWithImpl(this._self, this._then);
+
+  final SoulDocumentHeadEntity _self;
+  final $Res Function(SoulDocumentHeadEntity) _then;
+
+/// Create a copy of AgentDomainEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? agentId = null,Object? versionId = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,}) {
+  return _then(SoulDocumentHeadEntity(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
+as String,versionId: null == versionId ? _self.versionId : versionId // ignore: cast_nullable_to_non_nullable
+as String,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

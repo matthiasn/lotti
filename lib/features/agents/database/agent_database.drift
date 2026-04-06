@@ -36,6 +36,7 @@ CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
 CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
 CREATE INDEX idx_agent_links_type ON agent_links(type);
 CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
+CREATE UNIQUE INDEX idx_unique_soul_per_template ON agent_links(from_id) WHERE type = 'soul_assignment' AND deleted_at IS NULL;
 CREATE INDEX idx_agent_links_active_from_type_to ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
@@ -53,6 +54,8 @@ CREATE TABLE wake_run_log (
   template_id TEXT,
   template_version_id TEXT,
   resolved_model_id TEXT,
+  soul_id TEXT,
+  soul_version_id TEXT,
   user_rating REAL,
   rated_at DATETIME
 );
@@ -119,6 +122,8 @@ deleteAgentWakeRuns: DELETE FROM wake_run_log WHERE agent_id = :agentId;
 deleteAgentSagaOps: DELETE FROM saga_log WHERE agent_id = :agentId;
 
 getAllAgentTemplates: SELECT * FROM agent_entities WHERE type = 'agentTemplate' AND deleted_at IS NULL ORDER BY created_at DESC;
+
+getAgentEntitiesByTypeGlobal: SELECT * FROM agent_entities WHERE type = :type AND deleted_at IS NULL ORDER BY updated_at DESC;
 
 getAllAgentEntities: SELECT * FROM agent_entities WHERE deleted_at IS NULL ORDER BY created_at ASC;
 

@@ -726,6 +726,59 @@ final class AgentTemplateServiceProvider
 String _$agentTemplateServiceHash() =>
     r'104340be1f31a3ca3b8a0e5b3726a0084969940b';
 
+/// The soul document service.
+
+@ProviderFor(soulDocumentService)
+final soulDocumentServiceProvider = SoulDocumentServiceProvider._();
+
+/// The soul document service.
+
+final class SoulDocumentServiceProvider
+    extends
+        $FunctionalProvider<
+          SoulDocumentService,
+          SoulDocumentService,
+          SoulDocumentService
+        >
+    with $Provider<SoulDocumentService> {
+  /// The soul document service.
+  SoulDocumentServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'soulDocumentServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$soulDocumentServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<SoulDocumentService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SoulDocumentService create(Ref ref) {
+    return soulDocumentService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SoulDocumentService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SoulDocumentService>(value),
+    );
+  }
+}
+
+String _$soulDocumentServiceHash() =>
+    r'eca54a9f9beab414e084c1a2a0f589a1474f0939';
+
 /// The feedback extraction service.
 
 @ProviderFor(feedbackExtractionService)
@@ -899,4 +952,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'65c633aa15a10f6b5780b4a5c4e4d699bd0a923a';
+    r'c788725c5510e8a9c7bc62413f3ccc9fcbd01921';

@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -90,6 +90,42 @@ class AgentDatabase extends _$AgentDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_saga_log_status_created_at '
             'ON saga_log(status, created_at ASC)',
+          );
+        }
+        if (from < 6) {
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN soul_id TEXT',
+          );
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN soul_version_id TEXT',
+          );
+          // Soft-delete duplicate soul_assignment links per template,
+          // keeping the most recently created link per from_id. Uses
+          // created_at (then id as tiebreaker) rather than rowid for
+          // deterministic results across SQLite configurations.
+          await customStatement('''
+            UPDATE agent_links
+            SET
+              deleted_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE type = 'soul_assignment'
+              AND deleted_at IS NULL
+              AND id NOT IN (
+                SELECT id FROM (
+                  SELECT id, ROW_NUMBER() OVER (
+                    PARTITION BY from_id
+                    ORDER BY created_at DESC, id DESC
+                  ) AS rn
+                  FROM agent_links
+                  WHERE type = 'soul_assignment' AND deleted_at IS NULL
+                ) ranked WHERE rn = 1
+              )
+          ''');
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS '
+            'idx_unique_soul_per_template '
+            "ON agent_links(from_id) WHERE type = 'soul_assignment' "
+            'AND deleted_at IS NULL',
           );
         }
       },

@@ -412,16 +412,116 @@ class AgentRepository {
     return versions.isEmpty ? 1 : versions.reduce((a, b) => a > b ? a : b) + 1;
   }
 
+  // ── soul document ──────────────────────────────────────────────────────
+
+  /// Fetch a [SoulDocumentEntity] by its ID.
+  ///
+  /// Returns `null` if no entity with [soulId] exists or if it is not a
+  /// soul document.
+  Future<SoulDocumentEntity?> getSoulDocument(String soulId) async {
+    final entity = await getEntity(soulId);
+    return entity?.mapOrNull(soulDocument: (e) => e);
+  }
+
+  /// Fetch all [SoulDocumentEntity] records (the soul palette).
+  Future<List<SoulDocumentEntity>> getAllSoulDocuments() async {
+    final rows = await _db
+        .getAgentEntitiesByTypeGlobal(AgentEntityTypes.soulDocument)
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<SoulDocumentEntity>()
+        .toList();
+  }
+
+  /// Fetch the [SoulDocumentHeadEntity] for [soulId].
+  ///
+  /// Returns `null` if no head pointer exists for the given soul.
+  Future<SoulDocumentHeadEntity?> getSoulDocumentHead(String soulId) async {
+    final rows = await _db
+        .getAgentEntitiesByType(
+          soulId,
+          AgentEntityTypes.soulDocumentHead,
+          1,
+        )
+        .get();
+    if (rows.isEmpty) return null;
+    final entity = AgentDbConversions.fromEntityRow(rows.first);
+    return entity.mapOrNull(soulDocumentHead: (e) => e);
+  }
+
+  /// Resolve the active [SoulDocumentVersionEntity] for [soulId] by following
+  /// the head pointer.
+  ///
+  /// Returns `null` if no head or no version entity is found.
+  Future<SoulDocumentVersionEntity?> getActiveSoulDocumentVersion(
+    String soulId,
+  ) async {
+    final head = await getSoulDocumentHead(soulId);
+    if (head == null) return null;
+
+    final entity = await getEntity(head.versionId);
+    return entity?.mapOrNull(soulDocumentVersion: (e) => e);
+  }
+
+  /// Fetch version history for a soul document, newest first.
+  Future<List<SoulDocumentVersionEntity>> getSoulDocumentVersions(
+    String soulId, {
+    int limit = -1,
+  }) async {
+    final rows = await _db
+        .getAgentEntitiesByType(
+          soulId,
+          AgentEntityTypes.soulDocumentVersion,
+          limit,
+        )
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<SoulDocumentVersionEntity>()
+        .toList();
+  }
+
+  /// Determine the next version number for a soul document.
+  ///
+  /// Returns 1 if no versions exist yet.
+  ///
+  /// Note: this uses local `max + 1`, matching the template version pattern
+  /// ([getNextTemplateVersionNumber]). On concurrent multi-device writes the
+  /// version number may collide, but entity IDs remain globally unique via
+  /// UUID. The version number is a display hint, not a uniqueness key.
+  Future<int> getNextSoulDocumentVersionNumber(String soulId) async {
+    final rows = await _db
+        .getAgentEntitiesByType(
+          soulId,
+          AgentEntityTypes.soulDocumentVersion,
+          -1,
+        )
+        .get();
+    if (rows.isEmpty) return 1;
+
+    final versions = rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<SoulDocumentVersionEntity>()
+        .map((v) => v.version);
+    return versions.isEmpty ? 1 : versions.reduce((a, b) => a > b ? a : b) + 1;
+  }
+
   /// Update the template-related columns on a wake-run log entry.
   ///
   /// When [resolvedModelId] is provided, it is persisted alongside the
   /// template provenance so that `modelIdForThread` can return the actual
   /// model used even for failed/incomplete wakes.
+  ///
+  /// When [soulId] and [soulVersionId] are provided, soul provenance is
+  /// recorded alongside the template provenance.
   Future<void> updateWakeRunTemplate(
     String runKey,
     String templateId,
     String templateVersionId, {
     String? resolvedModelId,
+    String? soulId,
+    String? soulVersionId,
   }) async {
     final updatedRows =
         await (_db.update(
@@ -432,6 +532,10 @@ class AgentRepository {
             templateVersionId: Value(templateVersionId),
             resolvedModelId: resolvedModelId != null
                 ? Value(resolvedModelId)
+                : const Value.absent(),
+            soulId: soulId != null ? Value(soulId) : const Value.absent(),
+            soulVersionId: soulVersionId != null
+                ? Value(soulVersionId)
                 : const Value.absent(),
           ),
         );

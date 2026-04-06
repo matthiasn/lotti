@@ -30,9 +30,10 @@ import '../test_utils.dart';
 
 /// Minimal mock of [ConversationRepository] for workflow tests.
 class _MockConversationRepository extends ConversationRepository {
-  _MockConversationRepository(this._mockManager);
+  _MockConversationRepository(this._mockManager, {this.onSystemMessage});
 
   final MockConversationManager _mockManager;
+  final void Function(String?)? onSystemMessage;
   final List<String> deletedConversationIds = [];
 
   Future<InferenceUsage?> Function({
@@ -52,6 +53,7 @@ class _MockConversationRepository extends ConversationRepository {
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
+    onSystemMessage?.call(systemMessage);
     return 'test-conv-id';
   }
 
@@ -186,6 +188,8 @@ void main() {
         any(),
         any(),
         resolvedModelId: any(named: 'resolvedModelId'),
+        soulId: any(named: 'soulId'),
+        soulVersionId: any(named: 'soulVersionId'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -458,6 +462,8 @@ void main() {
               any(),
               any(),
               resolvedModelId: any(named: 'resolvedModelId'),
+              soulId: any(named: 'soulId'),
+              soulVersionId: any(named: 'soulVersionId'),
             ),
           );
         },
@@ -552,9 +558,260 @@ void main() {
             testTemplate.id,
             testTemplateVersion.id,
             resolvedModelId: 'models/test-model-v1',
+            soulId: any(named: 'soulId'),
+            soulVersionId: any(named: 'soulVersionId'),
           ),
         ).called(1);
       });
+
+      test(
+        'system prompt separates personality from skills when soul assigned',
+        () async {
+          final splitVersion = makeTestTemplateVersion(
+            generalDirective: 'Monitor project health.',
+          );
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer((_) async => splitVersion);
+
+          final mockSoulService = MockSoulDocumentService();
+          final soulVersion = makeTestSoulDocumentVersion(
+            voiceDirective: 'Be calm and methodical.',
+            toneBounds: 'Never be alarmist.',
+            coachingStyle: 'Frame reports as learning moments.',
+            antiSycophancyPolicy: 'Surface overcommitment.',
+          );
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenAnswer((_) async => soulVersion);
+
+          String? capturedSystemMessage;
+          final capturingRepo = _MockConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final soulWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            soulDocumentService: mockSoulService,
+          );
+
+          await soulWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedSystemMessage, isNotNull);
+          // Soul personality under separate heading.
+          expect(capturedSystemMessage, contains('## Your Personality'));
+          expect(
+            capturedSystemMessage,
+            contains('Be calm and methodical.'),
+          );
+          expect(capturedSystemMessage, contains('Never be alarmist.'));
+          expect(
+            capturedSystemMessage,
+            contains('Frame reports as learning moments.'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('Surface overcommitment.'),
+          );
+          // Operational directives under separate heading.
+          expect(
+            capturedSystemMessage,
+            contains('## Your Operational Directives'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('Monitor project health.'),
+          );
+          // Combined heading must NOT appear.
+          expect(
+            capturedSystemMessage,
+            isNot(contains('## Your Personality & Directives')),
+          );
+        },
+      );
+
+      test(
+        'system prompt uses legacy heading when no soul assigned',
+        () async {
+          final splitVersion = makeTestTemplateVersion(
+            generalDirective: 'Skills only.',
+          );
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer((_) async => splitVersion);
+
+          final mockSoulService = MockSoulDocumentService();
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenAnswer((_) async => null);
+
+          String? capturedSystemMessage;
+          final capturingRepo = _MockConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final soulWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            soulDocumentService: mockSoulService,
+          );
+
+          await soulWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(capturedSystemMessage, isNotNull);
+          expect(
+            capturedSystemMessage,
+            contains('## Your Personality & Directives'),
+          );
+          expect(
+            capturedSystemMessage,
+            isNot(contains('## Your Operational Directives')),
+          );
+        },
+      );
+
+      test(
+        'soul resolution failure propagates as exception',
+        () async {
+          final mockSoulService = MockSoulDocumentService();
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenThrow(Exception('Soul DB error'));
+
+          final soulWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            soulDocumentService: mockSoulService,
+          );
+
+          await expectLater(
+            soulWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Soul DB error'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'token usage and wake run record soul provenance',
+        () async {
+          final splitVersion = makeTestTemplateVersion(
+            generalDirective: 'Monitor.',
+          );
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer((_) async => splitVersion);
+
+          final mockSoulService = MockSoulDocumentService();
+          final soulVersion = makeTestSoulDocumentVersion(
+            id: 'sv-proj-001',
+            agentId: 'soul-proj-001',
+            voiceDirective: 'Project voice.',
+          );
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenAnswer((_) async => soulVersion);
+
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async =>
+                  const InferenceUsage(inputTokens: 40, outputTokens: 20);
+
+          final soulWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            soulDocumentService: mockSoulService,
+          );
+
+          await soulWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          // Verify soul provenance in wake run.
+          verify(
+            () => mockAgentRepository.updateWakeRunTemplate(
+              runKey,
+              testTemplate.id,
+              splitVersion.id,
+              resolvedModelId: any(named: 'resolvedModelId'),
+              soulId: 'soul-proj-001',
+              soulVersionId: 'sv-proj-001',
+            ),
+          ).called(1);
+
+          // Verify soul provenance in token usage.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final tokenUsages = captured
+              .whereType<AgentDomainEntity>()
+              .whereType<WakeTokenUsageEntity>()
+              .toList();
+          expect(tokenUsages, isNotEmpty);
+          expect(tokenUsages.first.soulDocumentId, 'soul-proj-001');
+          expect(tokenUsages.first.soulDocumentVersionId, 'sv-proj-001');
+        },
+      );
 
       test('cleans up conversation even on failure', () async {
         mockConversationRepository.sendMessageDelegate =

@@ -96,6 +96,18 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentProjectLink;
 
+  /// Links a template to its assigned soul document.
+  /// [fromId] = template ID, [toId] = soul document ID.
+  const factory AgentLink.soulAssignment({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulAssignmentLink;
+
   factory AgentLink.fromJson(Map<String, dynamic> json) =>
       _$AgentLinkFromJson(json);
 }
@@ -130,4 +142,24 @@ extension AgentLinkSelection on List<AgentLink> {
     final sorted = orderedPrimaryFirst();
     return sorted.first;
   }
+}
+
+/// Soft-delete helper for [AgentLink] union variants.
+///
+/// Freezed unions require exhaustive `.map()` calls even when every case does
+/// the same thing. This extension centralizes the boilerplate.
+extension AgentLinkSoftDelete on AgentLink {
+  /// Returns a copy with [deletedAt] and [updatedAt] set to [at].
+  AgentLink softDeleted(DateTime at) => map(
+    basic: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentState: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    messagePrev: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    messagePayload: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    toolEffect: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentTask: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    templateAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    soulAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+  );
 }

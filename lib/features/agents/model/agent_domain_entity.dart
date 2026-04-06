@@ -324,7 +324,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   ///
   /// Immutable, append-only. Synced via Matrix so usage is visible across
   /// all devices. The [agentId] is the agent instance; [templateId] and
-  /// [templateVersionId] enable per-template aggregation.
+  /// [templateVersionId] enable per-template aggregation. The optional
+  /// [soulDocumentId] and [soulDocumentVersionId] record which personality
+  /// was active during the wake for provenance tracking.
   const factory AgentDomainEntity.wakeTokenUsage({
     required String id,
     required String agentId,
@@ -335,12 +337,80 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     String? templateId,
     String? templateVersionId,
+    String? soulDocumentId,
+    String? soulDocumentVersionId,
     int? inputTokens,
     int? outputTokens,
     int? thoughtsTokens,
     int? cachedInputTokens,
     DateTime? deletedAt,
   }) = WakeTokenUsageEntity;
+
+  /// Soul document — reusable personality blueprint that can be assigned to
+  /// one or more agent templates.
+  ///
+  /// This is the **root entity** of the soul document → version → head
+  /// hierarchy. [agentId] equals [id] here (the generic `agent_entities`
+  /// table uses `agent_id` as a grouping key; for root entities it is
+  /// self-referencing). Versions and the head pointer reference this ID
+  /// in their own [agentId] field to form the parent-child relationship.
+  const factory AgentDomainEntity.soulDocument({
+    required String id,
+    required String agentId,
+    required String displayName,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulDocumentEntity;
+
+  /// Immutable versioned snapshot of a soul's personality directives.
+  ///
+  /// Child of [SoulDocumentEntity]. [agentId] stores the parent soul
+  /// document's ID (not an agent instance ID), grouping all versions under
+  /// the same soul.
+  const factory AgentDomainEntity.soulDocumentVersion({
+    required String id,
+    required String agentId,
+    required int version,
+    required SoulDocumentVersionStatus status,
+    required String authoredBy,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+
+    /// Core personality: tone, warmth, humor, style, communication patterns.
+    required String voiceDirective,
+
+    /// Guardrails on voice — what the personality must never do.
+    @Default('') String toneBounds,
+
+    /// How the personality coaches, mentors, and motivates the user.
+    @Default('') String coachingStyle,
+
+    /// Directness contract — when to push back vs. comply.
+    @Default('') String antiSycophancyPolicy,
+
+    /// Evolution session that produced this version, if any.
+    String? sourceSessionId,
+
+    /// Parent version for diff tracking.
+    String? diffFromVersionId,
+    DateTime? deletedAt,
+  }) = SoulDocumentVersionEntity;
+
+  /// Mutable head pointer for the active soul version.
+  ///
+  /// Child of [SoulDocumentEntity]. [agentId] stores the parent soul
+  /// document's ID. [versionId] points to the currently active
+  /// [SoulDocumentVersionEntity].
+  const factory AgentDomainEntity.soulDocumentHead({
+    required String id,
+    required String agentId,
+    required String versionId,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = SoulDocumentHeadEntity;
 
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
