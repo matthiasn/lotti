@@ -1244,6 +1244,92 @@ void main() {
       expect(strategy.latestSoulProposal, isNull);
       // Session still active — not completed by soul approval.
       expect(workflow.activeSessions, hasLength(1));
+      // Strategy baseline should be refreshed to the new version's values.
+      expect(strategy.currentVoiceDirective, 'Updated voice.');
+    });
+
+    test('refreshes strategy soul baseline after approval', () async {
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        id: 'sv-active',
+        voiceDirective: 'Old voice.',
+        toneBounds: 'Old bounds.',
+        coachingStyle: 'Old coaching.',
+        antiSycophancyPolicy: 'Old policy.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => soulVersion);
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'sv-new',
+        version: 2,
+        voiceDirective: 'New voice.',
+        toneBounds: 'New bounds.',
+        coachingStyle: 'New coaching.',
+        antiSycophancyPolicy: 'New policy.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      final strategy = EvolutionStrategy(
+        currentVoiceDirective: 'Old voice.',
+        currentToneBounds: 'Old bounds.',
+        currentCoachingStyle: 'Old coaching.',
+        currentAntiSycophancyPolicy: 'Old policy.',
+      );
+      final manager = ConversationManager(conversationId: 'conv-refresh')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-refresh',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments:
+              '{"voice_directive":"New voice.",'
+              ' "tone_bounds":"New bounds.",'
+              ' "coaching_style":"New coaching.",'
+              ' "anti_sycophancy_policy":"New policy.",'
+              ' "rationale":"Full update."}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+
+      workflow.activeSessions['session-refresh'] = ActiveEvolutionSession(
+        sessionId: 'session-refresh',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-refresh',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      await workflow.approveSoulProposal(sessionId: 'session-refresh');
+
+      // Strategy baseline should be updated to the new version's values.
+      expect(strategy.currentVoiceDirective, 'New voice.');
+      expect(strategy.currentToneBounds, 'New bounds.');
+      expect(strategy.currentCoachingStyle, 'New coaching.');
+      expect(strategy.currentAntiSycophancyPolicy, 'New policy.');
     });
 
     test('falls back to current values for empty proposal fields', () async {

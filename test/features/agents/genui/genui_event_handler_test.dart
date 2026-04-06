@@ -273,6 +273,13 @@ void main() {
     });
 
     test('does not call callback when onSoulProposalAction is null', () async {
+      final events = <(String, String)>[];
+      handler
+        ..onSoulProposalAction = (surfaceId, action) {
+          events.add((surfaceId, action));
+        }
+        ..onSoulProposalAction = null;
+
       bridge.handleToolCall({
         'surfaceId': 'soul-surface-3',
         'rootType': 'SoulProposal',
@@ -285,7 +292,7 @@ void main() {
       );
 
       await Future<void>.value();
-      // No exception = pass.
+      expect(events, isEmpty);
     });
   });
 }

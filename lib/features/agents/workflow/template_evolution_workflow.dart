@@ -608,7 +608,14 @@ class TemplateEvolutionWorkflow {
       sourceSessionId: sessionId,
     );
 
-    active.strategy.clearSoulProposal();
+    active.strategy
+      ..clearSoulProposal()
+      // Refresh the strategy's baseline so any subsequent soul proposals in
+      // this session show diffs against the newly approved values.
+      ..currentVoiceDirective = newVersion.voiceDirective
+      ..currentToneBounds = newVersion.toneBounds
+      ..currentCoachingStyle = newVersion.coachingStyle
+      ..currentAntiSycophancyPolicy = newVersion.antiSycophancyPolicy;
 
     developer.log(
       'Approved soul proposal for session $sessionId → '

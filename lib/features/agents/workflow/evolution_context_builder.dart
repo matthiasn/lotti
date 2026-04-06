@@ -36,6 +36,7 @@ class EvolutionContextBuilder {
   static const maxInstanceReports = 10;
   static const maxInstanceObservations = 10;
   static const maxPastNotes = 30;
+  static const maxCrossTemplateNames = 10;
 
   /// Build the evolution context from all available data sources.
   EvolutionContext build({
@@ -500,11 +501,15 @@ again. The conversation should always be driving toward an approved proposal.
     StringBuffer buf,
     List<String> otherTemplateNames,
   ) {
+    final shown = otherTemplateNames.take(maxCrossTemplateNames).toList();
+    final hiddenCount = otherTemplateNames.length - shown.length;
+
     buf
       ..writeln('## Cross-Template Impact Notice')
       ..writeln(
         'This soul is shared by ${otherTemplateNames.length} other '
-        'template(s): ${otherTemplateNames.join(", ")}.',
+        'template(s): ${shown.join(", ")}'
+        '${hiddenCount > 0 ? ', and $hiddenCount more' : ''}.',
       )
       ..writeln(
         'Any personality changes proposed via `propose_soul_directives` '

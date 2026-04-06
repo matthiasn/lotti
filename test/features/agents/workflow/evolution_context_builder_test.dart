@@ -575,6 +575,35 @@ void main() {
       expect(ctx.initialUserMessage, contains('Project Analyst'));
     });
 
+    test('caps cross-template names and shows overflow count', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(),
+        currentVersion: makeTestTemplateVersion(
+          generalDirective: 'Skills.',
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+        currentSoulVersion: makeTestSoulDocumentVersion(
+          voiceDirective: 'Voice.',
+        ),
+        otherTemplatesUsingSoul: List.generate(
+          15,
+          (i) => 'Template ${i + 1}',
+        ),
+      );
+
+      // First 10 should appear, remaining 5 should be summarized.
+      expect(ctx.initialUserMessage, contains('Template 1'));
+      expect(ctx.initialUserMessage, contains('Template 10'));
+      expect(ctx.initialUserMessage, contains('and 5 more'));
+      // Template 11+ should NOT appear as individual names.
+      expect(ctx.initialUserMessage, isNot(contains('Template 11,')));
+    });
+
     test('includes soul version history capped at max', () {
       final soulVersions = List.generate(
         8,

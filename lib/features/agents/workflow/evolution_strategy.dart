@@ -91,10 +91,13 @@ class EvolutionStrategy extends ConversationStrategy {
 
   /// Current soul directive values from the active soul version, used to
   /// show a before/after comparison in the soul proposal card.
-  final String currentVoiceDirective;
-  final String currentToneBounds;
-  final String currentCoachingStyle;
-  final String currentAntiSycophancyPolicy;
+  ///
+  /// Mutable so they can be refreshed after a soul proposal is approved
+  /// within the same session.
+  String currentVoiceDirective;
+  String currentToneBounds;
+  String currentCoachingStyle;
+  String currentAntiSycophancyPolicy;
 
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
@@ -251,6 +254,14 @@ class EvolutionStrategy extends ConversationStrategy {
     final antiSycophancyPolicy = _readStringArg(args, 'anti_sycophancy_policy');
     final rationale = _readStringArg(args, 'rationale');
     final crossTemplateNotice = _readStringArg(args, 'cross_template_notice');
+
+    if (rationale.trim().isEmpty) {
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: rationale must be non-empty.',
+      );
+      return;
+    }
 
     if (voiceDirective.trim().isEmpty &&
         toneBounds.trim().isEmpty &&

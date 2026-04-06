@@ -1477,6 +1477,26 @@ void main() {
       );
     });
 
+    testWidgets('returns shrink when all directive fields are empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': '',
+            'toneBounds': '',
+            'coachingStyle': '',
+            'antiSycophancyPolicy': '',
+            'rationale': 'Some rationale.',
+          }),
+        ),
+      );
+
+      // No approve/reject buttons should be shown.
+      expect(find.text('Approve & Save'), findsNothing);
+      expect(find.text('Reject'), findsNothing);
+    });
+
     testWidgets('returns shrink widget for non-map data', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(

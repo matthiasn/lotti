@@ -650,6 +650,23 @@ void main() {
       );
     });
 
+    test('rejects when rationale is empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Valid voice.',
+          'rationale': '  ',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNull);
+    });
+
     test('rejects when all directive fields are empty', () async {
       final toolCall = makeToolCall(
         name: 'propose_soul_directives',
@@ -725,7 +742,21 @@ void main() {
     });
 
     test('clearSoulProposal clears only soul state', () async {
+      final templateCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'general_directive': 'Template stays.',
+          'report_directive': '',
+          'rationale': 'Template rationale.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [templateCall],
+        manager: manager,
+      );
+
       final soulCall = makeToolCall(
+        id: 'call-2',
         name: 'propose_soul_directives',
         args: {
           'voice_directive': 'Voice.',
@@ -738,8 +769,10 @@ void main() {
       );
 
       expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestProposal, isNotNull);
       strategy.clearSoulProposal();
       expect(strategy.latestSoulProposal, isNull);
+      expect(strategy.latestProposal!.generalDirective, 'Template stays.');
     });
 
     test('captures cross-template notice', () async {
@@ -807,6 +840,15 @@ void main() {
       final surfaceIds = bridge.drainPendingSurfaceIds();
       expect(surfaceIds, hasLength(1));
       expect(surfaceIds.first, startsWith('soul-proposal-'));
+
+      // Verify proposal fields match the tool call args — ensuring the
+      // bridge received the correct data (not a fallback rootType).
+      final proposal = strategyWithBridge.latestSoulProposal!;
+      expect(proposal.voiceDirective, 'Be warm and empathetic.');
+      expect(proposal.toneBounds, 'Stay professional.');
+      expect(proposal.coachingStyle, 'Celebrate wins.');
+      expect(proposal.antiSycophancyPolicy, 'Push back firmly.');
+      expect(proposal.rationale, 'Refinement.');
     });
 
     test('empty directives do not create surface', () async {

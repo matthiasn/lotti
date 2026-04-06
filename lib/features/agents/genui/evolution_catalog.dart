@@ -503,6 +503,8 @@ final soulProposalItem = CatalogItem(
         ),
     ];
 
+    if (fields.isEmpty) return const SizedBox.shrink();
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
       child: ModernBaseCard(
