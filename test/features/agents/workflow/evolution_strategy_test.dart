@@ -764,4 +764,99 @@ void main() {
       );
     });
   });
+
+  group('auto-surface on propose_soul_directives', () {
+    late GenUiBridge bridge;
+    late EvolutionStrategy strategyWithBridge;
+    late ConversationManager bridgeManager;
+
+    setUp(() {
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      bridge = GenUiBridge(processor: processor);
+      strategyWithBridge = EvolutionStrategy(
+        genUiBridge: bridge,
+        currentVoiceDirective: 'Old voice.',
+        currentToneBounds: 'Old bounds.',
+        currentCoachingStyle: 'Old coaching.',
+        currentAntiSycophancyPolicy: 'Old policy.',
+      );
+      bridgeManager = ConversationManager(conversationId: 'test-soul-auto')
+        ..initialize(systemMessage: 'You are an evolution agent.');
+    });
+
+    test('creates a GenUI surface with current values', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Be warm and empathetic.',
+          'tone_bounds': 'Stay professional.',
+          'coaching_style': 'Celebrate wins.',
+          'anti_sycophancy_policy': 'Push back firmly.',
+          'rationale': 'Refinement.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestSoulProposal, isNotNull);
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(1));
+      expect(surfaceIds.first, startsWith('soul-proposal-'));
+    });
+
+    test('empty directives do not create surface', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': '  ',
+          'tone_bounds': '',
+          'coaching_style': '',
+          'anti_sycophancy_policy': '',
+          'rationale': 'Whatever.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestSoulProposal, isNull);
+      expect(bridge.drainPendingSurfaceIds(), isEmpty);
+    });
+
+    test('bridge exception does not prevent proposal recording', () async {
+      // Create a strategy with a bridge that has no catalog items,
+      // causing handleToolCall to fail on unknown rootType processing.
+      final emptyProcessor = A2uiMessageProcessor(catalogs: []);
+      final brokenBridge = GenUiBridge(processor: emptyProcessor);
+      final strat = EvolutionStrategy(genUiBridge: brokenBridge);
+      final mgr = ConversationManager(conversationId: 'test-broken')
+        ..initialize();
+
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Some voice.',
+          'rationale': 'Change.',
+        },
+      );
+      mgr.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strat.processToolCalls(
+        toolCalls: [toolCall],
+        manager: mgr,
+      );
+
+      // Proposal should still be recorded despite bridge failure.
+      expect(strat.latestSoulProposal, isNotNull);
+      expect(strat.latestSoulProposal!.voiceDirective, 'Some voice.');
+    });
+  });
 }

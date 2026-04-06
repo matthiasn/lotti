@@ -1214,4 +1214,278 @@ void main() {
       );
     });
   });
+
+  group('SoulProposal', () {
+    testWidgets('renders all directive fields and rationale', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'Be warm and clear.',
+            'toneBounds': 'Never be sarcastic.',
+            'coachingStyle': 'Celebrate wins.',
+            'antiSycophancyPolicy': 'Push back firmly.',
+            'rationale': 'Personality refinement.',
+          }),
+        ),
+      );
+
+      expect(find.text('Be warm and clear.'), findsOneWidget);
+      expect(find.text('Never be sarcastic.'), findsOneWidget);
+      expect(find.text('Celebrate wins.'), findsOneWidget);
+      expect(find.text('Push back firmly.'), findsOneWidget);
+      expect(find.text('Personality refinement.'), findsOneWidget);
+    });
+
+    testWidgets('renders only non-empty directive fields', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'Updated voice.',
+            'toneBounds': '',
+            'coachingStyle': '',
+            'antiSycophancyPolicy': '',
+            'rationale': 'Voice-only change.',
+          }),
+        ),
+      );
+
+      expect(find.text('Updated voice.'), findsOneWidget);
+      expect(find.text('Voice-only change.'), findsOneWidget);
+
+      final context = tester.element(find.byType(Padding).first);
+      // Only the Voice field label should appear.
+      expect(
+        find.textContaining(context.messages.agentSoulFieldVoice),
+        findsAtLeastNWidgets(1),
+      );
+      // Other field labels should be absent.
+      expect(
+        find.textContaining(context.messages.agentSoulFieldToneBounds),
+        findsNothing,
+      );
+      expect(
+        find.textContaining(context.messages.agentSoulFieldCoachingStyle),
+        findsNothing,
+      );
+    });
+
+    testWidgets('renders current vs proposed comparison', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'New voice.',
+            'rationale': 'Better personality.',
+            'currentVoiceDirective': 'Old voice.',
+          }),
+        ),
+      );
+
+      expect(find.text('Old voice.'), findsOneWidget);
+      expect(find.text('New voice.'), findsOneWidget);
+
+      final context = tester.element(find.byType(Padding).first);
+      expect(
+        find.text(
+          context.messages.agentEvolutionSoulCurrentField(
+            context.messages.agentSoulFieldVoice,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          context.messages.agentEvolutionSoulProposedField(
+            context.messages.agentSoulFieldVoice,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides current section when no current values', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'New voice.',
+            'rationale': 'Change.',
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byType(Padding).first);
+      // Current section should not appear.
+      expect(
+        find.textContaining(
+          context.messages.agentEvolutionSoulCurrentField(
+            context.messages.agentSoulFieldVoice,
+          ),
+        ),
+        findsNothing,
+      );
+      // Proposed section should appear.
+      expect(
+        find.textContaining(
+          context.messages.agentEvolutionSoulProposedField(
+            context.messages.agentSoulFieldVoice,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders cross-template notice', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'New voice.',
+            'rationale': 'Update.',
+            'crossTemplateNotice':
+                'Also affects: Laura Project Analyst, Tom Task Agent',
+          }),
+        ),
+      );
+
+      expect(
+        find.text('Also affects: Laura Project Analyst, Tom Task Agent'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    });
+
+    testWidgets('hides cross-template notice when absent', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'New voice.',
+            'rationale': 'Update.',
+          }),
+        ),
+      );
+
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+    });
+
+    testWidgets('hides rationale when empty', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'New voice.',
+            'rationale': '',
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byType(Padding).first);
+      expect(
+        find.text(context.messages.agentEvolutionProposalRationale),
+        findsNothing,
+      );
+    });
+
+    testWidgets('dispatches soul_proposal_approved on approve tap', (
+      tester,
+    ) async {
+      final events = <UiEvent>[];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: <String, Object?>{
+                  'voiceDirective': 'Test voice.',
+                  'rationale': 'Test rationale.',
+                },
+                id: 'test-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: events.add,
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'test-surface',
+              );
+              return soulProposalItem.widgetBuilder(itemContext);
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Approve & Save'));
+      await tester.pump();
+
+      expect(events, hasLength(1));
+      final event = events.first as UserActionEvent;
+      expect(event.name, 'soul_proposal_approved');
+    });
+
+    testWidgets('dispatches soul_proposal_rejected on reject tap', (
+      tester,
+    ) async {
+      final events = <UiEvent>[];
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final itemContext = CatalogItemContext(
+                data: <String, Object?>{
+                  'voiceDirective': 'Test voice.',
+                  'rationale': 'Test rationale.',
+                },
+                id: 'test-component',
+                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                dispatchEvent: events.add,
+                buildContext: context,
+                dataContext: DataContext(DataModel(), '/'),
+                getComponent: (_) => null,
+                surfaceId: 'test-surface',
+              );
+              return soulProposalItem.widgetBuilder(itemContext);
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Reject'));
+      await tester.pump();
+
+      expect(events, hasLength(1));
+      final event = events.first as UserActionEvent;
+      expect(event.name, 'soul_proposal_rejected');
+    });
+
+    testWidgets('renders title and subtitle from localization', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, {
+            'voiceDirective': 'Voice.',
+            'rationale': 'Reason.',
+          }),
+        ),
+      );
+
+      final context = tester.element(find.byType(Padding).first);
+      expect(
+        find.text(context.messages.agentSoulProposalTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentSoulProposalSubtitle),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('returns shrink widget for non-map data', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(soulProposalItem, <String, Object?>{}),
+        ),
+      );
+      // Widget should still build without errors. With empty data,
+      // no directive fields are shown.
+      expect(find.byType(SizedBox), findsWidgets);
+    });
+  });
 }

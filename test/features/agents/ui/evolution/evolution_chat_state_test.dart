@@ -1814,4 +1814,302 @@ void main() {
       expect(updated.currentDirectives, isNull);
     });
   });
+
+  group('approveSoulProposal', () {
+    test('adds success system message when soul version is created', () async {
+      final soulVersion = makeTestSoulDocumentVersion(version: 3);
+
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => 'Review the soul proposal.');
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(
+        ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-1',
+          strategy: EvolutionStrategy(),
+          modelId: 'model-1',
+        ),
+      );
+
+      when(
+        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+      ).thenReturn(null);
+
+      when(
+        () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+      ).thenAnswer((_) async => soulVersion);
+
+      when(
+        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+      ).thenAnswer((_) async {});
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      await withClock(
+        testClock,
+        () => container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .approveSoulProposal(),
+      );
+
+      final data = container
+          .read(evolutionChatStateProvider(kTestTemplateId))
+          .value!;
+
+      final systemMessages = data.messages
+          .whereType<EvolutionSystemMessage>()
+          .toList();
+      expect(
+        systemMessages.any((m) => m.text == 'soul_version_created:v3'),
+        isTrue,
+      );
+
+      verify(
+        () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+      ).called(1);
+    });
+
+    test('adds failure system message when approve returns null', () async {
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => 'Review the soul proposal.');
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(
+        ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-1',
+          strategy: EvolutionStrategy(),
+          modelId: 'model-1',
+        ),
+      );
+
+      when(
+        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+      ).thenReturn(null);
+
+      when(
+        () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+      ).thenAnswer((_) async => null);
+
+      when(
+        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+      ).thenAnswer((_) async {});
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      await withClock(
+        testClock,
+        () => container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .approveSoulProposal(),
+      );
+
+      final data = container
+          .read(evolutionChatStateProvider(kTestTemplateId))
+          .value!;
+
+      final systemMessages = data.messages
+          .whereType<EvolutionSystemMessage>()
+          .toList();
+      expect(
+        systemMessages.any((m) => m.text == 'soul_proposal_failed'),
+        isTrue,
+      );
+    });
+
+    test('handles exception without crashing', () async {
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => 'Review the soul proposal.');
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(
+        ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-1',
+          strategy: EvolutionStrategy(),
+          modelId: 'model-1',
+        ),
+      );
+
+      when(
+        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+      ).thenReturn(null);
+
+      when(
+        () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
+      ).thenThrow(Exception('Soul service error'));
+
+      when(
+        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+      ).thenAnswer((_) async {});
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      // Should not throw.
+      await withClock(
+        testClock,
+        () => container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .approveSoulProposal(),
+      );
+
+      // State should still be valid — no crash.
+      final data = container
+          .read(evolutionChatStateProvider(kTestTemplateId))
+          .value;
+      expect(data, isNotNull);
+    });
+
+    test('no-op when session data is null', () async {
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => null);
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(null);
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      // approveSoulProposal should be a no-op when sessionId is null.
+      await withClock(
+        testClock,
+        () => container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .approveSoulProposal(),
+      );
+
+      verifyNever(
+        () => mockWorkflow.approveSoulProposal(
+          sessionId: any(named: 'sessionId'),
+        ),
+      );
+    });
+  });
+
+  group('rejectSoulProposal', () {
+    test('adds rejection system message', () async {
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => 'Review the soul proposal.');
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(
+        ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'conv-1',
+          strategy: EvolutionStrategy(),
+          modelId: 'model-1',
+        ),
+      );
+
+      when(
+        () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
+      ).thenReturn(null);
+
+      when(
+        () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
+      ).thenReturn(null);
+
+      when(
+        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
+      ).thenAnswer((_) async {});
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      withClock(testClock, () {
+        container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .rejectSoulProposal();
+      });
+
+      final data = container
+          .read(evolutionChatStateProvider(kTestTemplateId))
+          .value!;
+
+      final systemMessages = data.messages
+          .whereType<EvolutionSystemMessage>()
+          .toList();
+      expect(
+        systemMessages.any((m) => m.text == 'soul_proposal_rejected'),
+        isTrue,
+      );
+
+      verify(
+        () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
+      ).called(1);
+    });
+
+    test('no-op when session data is null', () async {
+      when(
+        () => mockWorkflow.startSession(templateId: kTestTemplateId),
+      ).thenAnswer((_) async => null);
+
+      when(
+        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+      ).thenReturn(null);
+
+      container = createContainer();
+      await withClock(
+        testClock,
+        () => container.read(
+          evolutionChatStateProvider(kTestTemplateId).future,
+        ),
+      );
+
+      withClock(testClock, () {
+        container
+            .read(evolutionChatStateProvider(kTestTemplateId).notifier)
+            .rejectSoulProposal();
+      });
+
+      verifyNever(
+        () => mockWorkflow.rejectSoulProposal(
+          sessionId: any(named: 'sessionId'),
+        ),
+      );
+    });
+  });
 }
