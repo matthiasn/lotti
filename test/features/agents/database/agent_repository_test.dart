@@ -2313,6 +2313,24 @@ void main() {
         expect(run.templateVersionId, 'ver-001');
       });
 
+      test('sets soul provenance columns on wake run', () async {
+        await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-soul'));
+
+        await repo.updateWakeRunTemplate(
+          'run-soul',
+          'tpl-001',
+          'ver-001',
+          soulId: 'soul-001',
+          soulVersionId: 'sv-001',
+        );
+
+        final run = await repo.getWakeRun('run-soul');
+        expect(run, isNotNull);
+        expect(run!.templateId, 'tpl-001');
+        expect(run.soulId, 'soul-001');
+        expect(run.soulVersionId, 'sv-001');
+      });
+
       test('throws StateError when runKey does not exist', () async {
         await expectLater(
           repo.updateWakeRunTemplate(

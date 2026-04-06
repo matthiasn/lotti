@@ -422,4 +422,108 @@ void main() {
       },
     );
   });
+
+  group('AgentLinkSoftDelete extension', () {
+    final deletedAt = DateTime(2026, 4, 6, 15);
+
+    test('softDeleted sets deletedAt and updatedAt on every variant', () {
+      final variants = <AgentLink>[
+        AgentLink.basic(
+          id: 'l1',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentState(
+          id: 'l2',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.messagePrev(
+          id: 'l3',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.messagePayload(
+          id: 'l4',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.toolEffect(
+          id: 'l5',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentTask(
+          id: 'l6',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.templateAssignment(
+          id: 'l7',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.improverTarget(
+          id: 'l8',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.agentProject(
+          id: 'l9',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+        AgentLink.soulAssignment(
+          id: 'l10',
+          fromId: 'a',
+          toId: 'b',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+      ];
+
+      for (final link in variants) {
+        final deleted = link.softDeleted(deletedAt);
+        expect(deleted.deletedAt, deletedAt, reason: '${link.runtimeType}');
+        expect(deleted.updatedAt, deletedAt, reason: '${link.runtimeType}');
+        // Other fields unchanged.
+        expect(deleted.id, link.id, reason: '${link.runtimeType}');
+        expect(deleted.fromId, link.fromId, reason: '${link.runtimeType}');
+        expect(deleted.toId, link.toId, reason: '${link.runtimeType}');
+        expect(
+          deleted.createdAt,
+          link.createdAt,
+          reason: '${link.runtimeType}',
+        );
+      }
+    });
+  });
 }

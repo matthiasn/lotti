@@ -2842,6 +2842,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_unique_improver_per_template',
     'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL',
   );
+  late final Index idxUniqueSoulPerTemplate = Index(
+    'idx_unique_soul_per_template',
+    'CREATE UNIQUE INDEX idx_unique_soul_per_template ON agent_links (from_id) WHERE type = \'soul_assignment\' AND deleted_at IS NULL',
+  );
   late final Index idxAgentLinksActiveFromTypeTo = Index(
     'idx_agent_links_active_from_type_to',
     'CREATE INDEX idx_agent_links_active_from_type_to ON agent_links (from_id, type, to_id) WHERE deleted_at IS NULL',
@@ -3451,6 +3455,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentLinksTo,
     idxAgentLinksType,
     idxUniqueImproverPerTemplate,
+    idxUniqueSoulPerTemplate,
     idxAgentLinksActiveFromTypeTo,
     wakeRunLog,
     idxWakeRunLogAgent,

@@ -819,6 +819,77 @@ void main() {
     );
   });
 
+  group('AgentDatabase fresh install', () {
+    test('creates idx_unique_soul_per_template index on new DB', () async {
+      final db = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+      addTearDown(db.close);
+
+      final indexes = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name = 'idx_unique_soul_per_template'",
+          )
+          .get();
+      expect(indexes, hasLength(1));
+
+      // Verify it enforces one active soul per template.
+      await db.customStatement('''
+        INSERT INTO agent_links
+          (id, from_id, to_id, type, created_at, updated_at,
+           serialized, schema_version)
+        VALUES
+          ('link-1', 'tpl-1', 'soul-A', 'soul_assignment',
+           '2026-01-01', '2026-01-01', '{}', 1)
+      ''');
+
+      expect(
+        () async => db.customStatement('''
+          INSERT INTO agent_links
+            (id, from_id, to_id, type, created_at, updated_at,
+             serialized, schema_version)
+          VALUES
+            ('link-2', 'tpl-1', 'soul-B', 'soul_assignment',
+             '2026-02-01', '2026-02-01', '{}', 1)
+        '''),
+        throwsA(isA<SqliteException>()),
+      );
+
+      await db.close();
+    });
+
+    test('creates soul_id and soul_version_id columns on new DB', () async {
+      final db = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+      addTearDown(db.close);
+
+      // Verify columns exist by inserting and querying.
+      await db.customStatement('''
+        INSERT INTO wake_run_log
+          (run_key, agent_id, reason, thread_id, status, created_at,
+           soul_id, soul_version_id)
+        VALUES
+          ('run-fresh', 'agent-1', 'trigger', 'thread-1', 'pending',
+           '2026-04-06 10:00:00', 'soul-001', 'sv-001')
+      ''');
+
+      final rows = await db
+          .customSelect(
+            'SELECT soul_id, soul_version_id FROM wake_run_log '
+            "WHERE run_key = 'run-fresh'",
+          )
+          .get();
+      expect(rows.first.read<String>('soul_id'), 'soul-001');
+      expect(rows.first.read<String>('soul_version_id'), 'sv-001');
+
+      await db.close();
+    });
+  });
+
   group('AgentDatabase streaming and counting', () {
     late AgentDatabase db;
 
