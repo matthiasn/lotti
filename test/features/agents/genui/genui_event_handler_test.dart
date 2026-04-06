@@ -223,4 +223,76 @@ void main() {
       expect(events, isEmpty);
     });
   });
+
+  group('soul proposal events', () {
+    test('routes soul_proposal_approved to callback', () async {
+      final events = <(String, String)>[];
+      handler.onSoulProposalAction = (surfaceId, action) {
+        events.add((surfaceId, action));
+      };
+
+      bridge.handleToolCall({
+        'surfaceId': 'soul-surface-1',
+        'rootType': 'SoulProposal',
+        'data': {'rationale': 'Test.'},
+      });
+
+      dispatchAction(
+        name: 'soul_proposal_approved',
+        surfaceId: 'soul-surface-1',
+      );
+
+      await Future<void>.value();
+
+      expect(events, hasLength(1));
+      expect(events.first.$1, 'soul-surface-1');
+      expect(events.first.$2, 'soul_proposal_approved');
+    });
+
+    test('routes soul_proposal_rejected to callback', () async {
+      final events = <(String, String)>[];
+      handler.onSoulProposalAction = (surfaceId, action) {
+        events.add((surfaceId, action));
+      };
+
+      bridge.handleToolCall({
+        'surfaceId': 'soul-surface-2',
+        'rootType': 'SoulProposal',
+        'data': {'rationale': 'Test.'},
+      });
+
+      dispatchAction(
+        name: 'soul_proposal_rejected',
+        surfaceId: 'soul-surface-2',
+      );
+
+      await Future<void>.value();
+
+      expect(events, hasLength(1));
+      expect(events.first.$2, 'soul_proposal_rejected');
+    });
+
+    test('does not call callback when onSoulProposalAction is null', () async {
+      final events = <(String, String)>[];
+      handler
+        ..onSoulProposalAction = (surfaceId, action) {
+          events.add((surfaceId, action));
+        }
+        ..onSoulProposalAction = null;
+
+      bridge.handleToolCall({
+        'surfaceId': 'soul-surface-3',
+        'rootType': 'SoulProposal',
+        'data': {'rationale': 'Test.'},
+      });
+
+      dispatchAction(
+        name: 'soul_proposal_approved',
+        surfaceId: 'soul-surface-3',
+      );
+
+      await Future<void>.value();
+      expect(events, isEmpty);
+    });
+  });
 }

@@ -282,12 +282,16 @@ class ProjectAgentStrategy extends ConversationStrategy {
         final category = _parseObservationCategory(
           item['category'] is String ? item['category'] as String : null,
         );
+        final target = _parseObservationTarget(
+          item['target'] is String ? item['target'] as String : null,
+        );
 
         _observations.add(
           ObservationRecord(
             text: text,
             priority: priority,
             category: category,
+            target: target,
           ),
         );
         accepted++;
@@ -319,6 +323,15 @@ class ProjectAgentStrategy extends ConversationStrategy {
       if (value.name.toLowerCase() == normalized) return value;
     }
     return ObservationCategory.operational;
+  }
+
+  ObservationTarget _parseObservationTarget(String? raw) {
+    if (raw == null) return ObservationTarget.template;
+    final normalized = raw.trim().toLowerCase();
+    for (final value in ObservationTarget.values) {
+      if (value.name.toLowerCase() == normalized) return value;
+    }
+    return ObservationTarget.template;
   }
 
   // ── Error helpers ──────────────────────────────────────────────────────────

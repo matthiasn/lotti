@@ -13,11 +13,17 @@ class GenUiEventHandler {
 
   final A2uiMessageProcessor processor;
 
-  /// Called when the user taps approve or reject on a proposal surface.
+  /// Called when the user taps approve or reject on a skill proposal surface.
   ///
   /// The `action` parameter is the event name: `proposal_approved` or
   /// `proposal_rejected`.
   void Function(String surfaceId, String action)? onProposalAction;
+
+  /// Called when the user taps approve or reject on a soul proposal surface.
+  ///
+  /// The `action` parameter is the event name: `soul_proposal_approved` or
+  /// `soul_proposal_rejected`.
+  void Function(String surfaceId, String action)? onSoulProposalAction;
 
   /// Called when the user submits category ratings.
   void Function(String surfaceId, Map<String, int> ratings)? onRatingsSubmitted;
@@ -46,6 +52,9 @@ class GenUiEventHandler {
       final name = action.name;
       if (name == 'proposal_approved' || name == 'proposal_rejected') {
         onProposalAction?.call(action.surfaceId, name);
+      } else if (name == 'soul_proposal_approved' ||
+          name == 'soul_proposal_rejected') {
+        onSoulProposalAction?.call(action.surfaceId, name);
       } else if (name == 'ratings_submitted') {
         final ratingsJson = action.sourceComponentId;
         try {

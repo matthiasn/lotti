@@ -1378,6 +1378,49 @@ void main() {
         expect(obs.single.priority, ObservationPriority.routine);
         expect(obs.single.category, ObservationCategory.operational);
       });
+
+      test('parses observation target field', () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-target',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'record_observations',
+              arguments: jsonEncode({
+                'observations': [
+                  {
+                    'text': 'Soul feedback.',
+                    'target': 'soul',
+                  },
+                  {
+                    'text': 'Both feedback.',
+                    'target': 'both',
+                  },
+                  {
+                    'text': 'Template feedback.',
+                    'target': 'template',
+                  },
+                  {
+                    'text': 'Default target.',
+                  },
+                ],
+              }),
+            ),
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs, hasLength(4));
+        expect(obs[0].target, ObservationTarget.soul);
+        expect(obs[1].target, ObservationTarget.both);
+        expect(obs[2].target, ObservationTarget.template);
+        expect(obs[3].target, ObservationTarget.template);
+      });
     });
 
     group('deferred tools with changeSetBuilder', () {

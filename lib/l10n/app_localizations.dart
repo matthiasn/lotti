@@ -633,6 +633,18 @@ abstract class AppLocalizations {
   /// **'Evolution #{sessionNumber}'**
   String agentEvolutionSessionTitle(int sessionNumber);
 
+  /// No description provided for @agentEvolutionSoulCurrentField.
+  ///
+  /// In en, this message translates to:
+  /// **'Current — {field}'**
+  String agentEvolutionSoulCurrentField(String field);
+
+  /// No description provided for @agentEvolutionSoulProposedField.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed — {field}'**
+  String agentEvolutionSoulProposedField(String field);
+
   /// No description provided for @agentEvolutionStatusAbandoned.
   ///
   /// In en, this message translates to:
@@ -1199,6 +1211,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agents'**
   String get agentSettingsTitle;
+
+  /// No description provided for @agentSoulFieldAntiSycophancy.
+  ///
+  /// In en, this message translates to:
+  /// **'Anti-Sycophancy'**
+  String get agentSoulFieldAntiSycophancy;
+
+  /// No description provided for @agentSoulFieldCoachingStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coaching Style'**
+  String get agentSoulFieldCoachingStyle;
+
+  /// No description provided for @agentSoulFieldToneBounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Tone Bounds'**
+  String get agentSoulFieldToneBounds;
+
+  /// No description provided for @agentSoulFieldVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get agentSoulFieldVoice;
+
+  /// No description provided for @agentSoulProposalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed personality changes'**
+  String get agentSoulProposalSubtitle;
+
+  /// No description provided for @agentSoulProposalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul Personality Proposal'**
+  String get agentSoulProposalTitle;
 
   /// No description provided for @agentStateConsecutiveFailures.
   ///

@@ -155,6 +155,22 @@
       }
     }
   },
+  "agentEvolutionSoulCurrentField": "Actual — {field}",
+  "@agentEvolutionSoulCurrentField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "agentEvolutionSoulProposedField": "Propuesto — {field}",
+  "@agentEvolutionSoulProposedField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "agentEvolutionStatusAbandoned": "Abandonado",
   "agentEvolutionStatusActive": "Activo",
   "agentEvolutionStatusCompleted": "Completado",
@@ -292,6 +308,12 @@
   "agentSessionProgressTitle": "Progreso de sesión",
   "agentSettingsSubtitle": "Plantillas, instancias y monitoreo",
   "agentSettingsTitle": "Agentes",
+  "agentSoulFieldAntiSycophancy": "Anti-adulación",
+  "agentSoulFieldCoachingStyle": "Estilo de coaching",
+  "agentSoulFieldToneBounds": "Límites de tono",
+  "agentSoulFieldVoice": "Voz",
+  "agentSoulProposalSubtitle": "Cambios de personalidad propuestos",
+  "agentSoulProposalTitle": "Propuesta de personalidad del alma",
   "agentStateConsecutiveFailures": "Fallos consecutivos",
   "agentStateErrorLoading": "Error al cargar el estado: {error}",
   "@agentStateErrorLoading": {

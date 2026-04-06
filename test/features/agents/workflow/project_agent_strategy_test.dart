@@ -361,6 +361,57 @@ void main() {
           ObservationCategory.operational,
         );
       });
+
+      test('parses observation target field', () async {
+        final toolCalls = [
+          _makeToolCall(
+            name: ProjectAgentToolNames.recordObservations,
+            args: {
+              'observations': [
+                {'text': 'Soul issue.', 'target': 'soul'},
+                {'text': 'Both issue.', 'target': 'both'},
+                {'text': 'Template issue.', 'target': 'template'},
+                {'text': 'Default target.'},
+              ],
+            },
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        final obs = strategy.extractObservations();
+        expect(obs, hasLength(4));
+        expect(obs[0].target, ObservationTarget.soul);
+        expect(obs[1].target, ObservationTarget.both);
+        expect(obs[2].target, ObservationTarget.template);
+        expect(obs[3].target, ObservationTarget.template);
+      });
+
+      test('defaults unknown target to template', () async {
+        final toolCalls = [
+          _makeToolCall(
+            name: ProjectAgentToolNames.recordObservations,
+            args: {
+              'observations': [
+                {'text': 'Test', 'target': 'banana'},
+              ],
+            },
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(
+          strategy.extractObservations()[0].target,
+          ObservationTarget.template,
+        );
+      });
     });
 
     group('deferred tools', () {

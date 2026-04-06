@@ -20,6 +20,25 @@ class PendingProposal {
   final String rationale;
 }
 
+/// Holds a pending soul directive proposal from the evolution agent.
+class PendingSoulProposal {
+  const PendingSoulProposal({
+    required this.voiceDirective,
+    required this.toneBounds,
+    required this.coachingStyle,
+    required this.antiSycophancyPolicy,
+    required this.rationale,
+    this.crossTemplateNotice,
+  });
+
+  final String voiceDirective;
+  final String toneBounds;
+  final String coachingStyle;
+  final String antiSycophancyPolicy;
+  final String rationale;
+  final String? crossTemplateNotice;
+}
+
 /// Holds a structured recap for the current ritual.
 class PendingRitualRecap {
   const PendingRitualRecap({
@@ -56,6 +75,10 @@ class EvolutionStrategy extends ConversationStrategy {
     this.genUiBridge,
     this.currentGeneralDirective = '',
     this.currentReportDirective = '',
+    this.currentVoiceDirective = '',
+    this.currentToneBounds = '',
+    this.currentCoachingStyle = '',
+    this.currentAntiSycophancyPolicy = '',
   });
 
   /// Optional GenUI bridge for handling `render_surface` tool calls.
@@ -66,12 +89,26 @@ class EvolutionStrategy extends ConversationStrategy {
   final String currentGeneralDirective;
   final String currentReportDirective;
 
+  /// Current soul directive values from the active soul version, used to
+  /// show a before/after comparison in the soul proposal card.
+  ///
+  /// Mutable so they can be refreshed after a soul proposal is approved
+  /// within the same session.
+  String currentVoiceDirective;
+  String currentToneBounds;
+  String currentCoachingStyle;
+  String currentAntiSycophancyPolicy;
+
   final List<PendingNote> _pendingNotes = [];
   PendingProposal? _latestProposal;
+  PendingSoulProposal? _latestSoulProposal;
   PendingRitualRecap? _latestRecap;
 
   /// The most recent proposal from the evolution agent, if any.
   PendingProposal? get latestProposal => _latestProposal;
+
+  /// The most recent soul proposal from the evolution agent, if any.
+  PendingSoulProposal? get latestSoulProposal => _latestSoulProposal;
 
   /// The latest structured ritual recap, if any.
   PendingRitualRecap? get latestRecap => _latestRecap;
@@ -82,6 +119,11 @@ class EvolutionStrategy extends ConversationStrategy {
   /// Clear the current proposal (e.g., after rejection).
   void clearProposal() {
     _latestProposal = null;
+  }
+
+  /// Clear the current soul proposal (e.g., after rejection).
+  void clearSoulProposal() {
+    _latestSoulProposal = null;
   }
 
   /// Removes and returns the first pending note.
@@ -122,6 +164,8 @@ class EvolutionStrategy extends ConversationStrategy {
       switch (name) {
         case EvolutionToolNames.proposeDirectives:
           _handleProposeDirectives(args, call.id, manager);
+        case EvolutionToolNames.proposeSoulDirectives:
+          _handleProposeSoulDirectives(args, call.id, manager);
         case EvolutionToolNames.publishRitualRecap:
           _handlePublishRitualRecap(args, call.id, manager);
         case EvolutionToolNames.recordEvolutionNote:
@@ -196,6 +240,79 @@ class EvolutionStrategy extends ConversationStrategy {
     manager.addToolResponse(
       toolCallId: callId,
       response: 'Proposal recorded. Waiting for user review.',
+    );
+  }
+
+  void _handleProposeSoulDirectives(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) {
+    final voiceDirective = _readStringArg(args, 'voice_directive');
+    final toneBounds = _readStringArg(args, 'tone_bounds');
+    final coachingStyle = _readStringArg(args, 'coaching_style');
+    final antiSycophancyPolicy = _readStringArg(args, 'anti_sycophancy_policy');
+    final rationale = _readStringArg(args, 'rationale');
+    final crossTemplateNotice = _readStringArg(args, 'cross_template_notice');
+
+    if (rationale.trim().isEmpty) {
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: rationale must be non-empty.',
+      );
+      return;
+    }
+
+    if (voiceDirective.trim().isEmpty &&
+        toneBounds.trim().isEmpty &&
+        coachingStyle.trim().isEmpty &&
+        antiSycophancyPolicy.trim().isEmpty) {
+      manager.addToolResponse(
+        toolCallId: callId,
+        response: 'Error: at least one soul directive field must be non-empty.',
+      );
+      return;
+    }
+
+    _latestSoulProposal = PendingSoulProposal(
+      voiceDirective: voiceDirective,
+      toneBounds: toneBounds,
+      coachingStyle: coachingStyle,
+      antiSycophancyPolicy: antiSycophancyPolicy,
+      rationale: rationale,
+      crossTemplateNotice: crossTemplateNotice.trim().isEmpty
+          ? null
+          : crossTemplateNotice,
+    );
+
+    // Auto-render a GenUI soul proposal surface.
+    final bridge = genUiBridge;
+    if (bridge != null) {
+      try {
+        bridge.handleToolCall({
+          'surfaceId': 'soul-proposal-${callId.hashCode.toRadixString(16)}',
+          'rootType': 'SoulProposal',
+          'data': {
+            'voiceDirective': voiceDirective,
+            'toneBounds': toneBounds,
+            'coachingStyle': coachingStyle,
+            'antiSycophancyPolicy': antiSycophancyPolicy,
+            'rationale': rationale,
+            'crossTemplateNotice': crossTemplateNotice,
+            'currentVoiceDirective': currentVoiceDirective,
+            'currentToneBounds': currentToneBounds,
+            'currentCoachingStyle': currentCoachingStyle,
+            'currentAntiSycophancyPolicy': currentAntiSycophancyPolicy,
+          },
+        });
+      } catch (_) {
+        // Best-effort rendering: proposal is recorded regardless.
+      }
+    }
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: 'Soul proposal recorded. Waiting for user review.',
     );
   }
 

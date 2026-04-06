@@ -303,6 +303,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentEvolutionSoulCurrentField(String field) {
+    return 'Curent — $field';
+  }
+
+  @override
+  String agentEvolutionSoulProposedField(String field) {
+    return 'Propus — $field';
+  }
+
+  @override
   String get agentEvolutionStatusAbandoned => 'Abandonat';
 
   @override
@@ -642,6 +652,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentSettingsTitle => 'Agenți';
+
+  @override
+  String get agentSoulFieldAntiSycophancy => 'Anti-lingușire';
+
+  @override
+  String get agentSoulFieldCoachingStyle => 'Stil de coaching';
+
+  @override
+  String get agentSoulFieldToneBounds => 'Limite de ton';
+
+  @override
+  String get agentSoulFieldVoice => 'Voce';
+
+  @override
+  String get agentSoulProposalSubtitle => 'Modificări de personalitate propuse';
+
+  @override
+  String get agentSoulProposalTitle =>
+      'Propunere de personalitate a sufletului';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';

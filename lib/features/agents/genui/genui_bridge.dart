@@ -87,9 +87,13 @@ class GenUiBridge {
 
     const supportedRootTypes = {
       'EvolutionProposal',
+      'SoulProposal',
       'EvolutionNoteConfirmation',
       'MetricsSummary',
       'VersionComparison',
+      'FeedbackClassification',
+      'FeedbackCategoryBreakdown',
+      'SessionProgress',
       'CategoryRatings',
       'BinaryChoicePrompt',
       'HighPriorityFeedback',

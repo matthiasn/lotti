@@ -1172,6 +1172,399 @@ void main() {
     });
   });
 
+  group('approveSoulProposal', () {
+    test('creates soul version and clears proposal', () async {
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        id: 'sv-active',
+        voiceDirective: 'Current voice.',
+        toneBounds: 'Current bounds.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => soulVersion);
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'sv-new',
+        version: 2,
+        voiceDirective: 'Updated voice.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-soul')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-soul',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments:
+              '{"voice_directive":"Updated voice.","rationale":"Reason"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+      expect(strategy.latestSoulProposal, isNotNull);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+
+      workflow.activeSessions['session-soul'] = ActiveEvolutionSession(
+        sessionId: 'session-soul',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-soul',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveSoulProposal(
+        sessionId: 'session-soul',
+      );
+
+      expect(result, isNotNull);
+      expect(result!.id, 'sv-new');
+      expect(strategy.latestSoulProposal, isNull);
+      // Session still active — not completed by soul approval.
+      expect(workflow.activeSessions, hasLength(1));
+      // Strategy baseline should be refreshed to the new version's values.
+      expect(strategy.currentVoiceDirective, 'Updated voice.');
+    });
+
+    test('refreshes strategy soul baseline after approval', () async {
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        id: 'sv-active',
+        voiceDirective: 'Old voice.',
+        toneBounds: 'Old bounds.',
+        coachingStyle: 'Old coaching.',
+        antiSycophancyPolicy: 'Old policy.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => soulVersion);
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'sv-new',
+        version: 2,
+        voiceDirective: 'New voice.',
+        toneBounds: 'New bounds.',
+        coachingStyle: 'New coaching.',
+        antiSycophancyPolicy: 'New policy.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      final strategy = EvolutionStrategy(
+        currentVoiceDirective: 'Old voice.',
+        currentToneBounds: 'Old bounds.',
+        currentCoachingStyle: 'Old coaching.',
+        currentAntiSycophancyPolicy: 'Old policy.',
+      );
+      final manager = ConversationManager(conversationId: 'conv-refresh')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-refresh',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments:
+              '{"voice_directive":"New voice.",'
+              ' "tone_bounds":"New bounds.",'
+              ' "coaching_style":"New coaching.",'
+              ' "anti_sycophancy_policy":"New policy.",'
+              ' "rationale":"Full update."}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+
+      workflow.activeSessions['session-refresh'] = ActiveEvolutionSession(
+        sessionId: 'session-refresh',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-refresh',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      await workflow.approveSoulProposal(sessionId: 'session-refresh');
+
+      // Strategy baseline should be updated to the new version's values.
+      expect(strategy.currentVoiceDirective, 'New voice.');
+      expect(strategy.currentToneBounds, 'New bounds.');
+      expect(strategy.currentCoachingStyle, 'New coaching.');
+      expect(strategy.currentAntiSycophancyPolicy, 'New policy.');
+    });
+
+    test('falls back to current values for empty proposal fields', () async {
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        id: 'sv-active',
+        voiceDirective: 'Current voice.',
+        toneBounds: 'Current bounds.',
+        coachingStyle: 'Current coaching.',
+        antiSycophancyPolicy: 'Current policy.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => soulVersion);
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'sv-new',
+        version: 2,
+        voiceDirective: 'Updated voice.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      // Propose only voice — other fields are empty.
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-merge')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-merge',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+
+      workflow.activeSessions['session-merge'] = ActiveEvolutionSession(
+        sessionId: 'session-merge',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-merge',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      await workflow.approveSoulProposal(sessionId: 'session-merge');
+
+      // Verify createVersion was called with the merged values:
+      // - voiceDirective: "New voice." (from proposal)
+      // - toneBounds, coachingStyle, antiSycophancyPolicy: current values
+      final captured = verify(
+        () => mockSoulService.createVersion(
+          soulId: captureAny(named: 'soulId'),
+          voiceDirective: captureAny(named: 'voiceDirective'),
+          authoredBy: captureAny(named: 'authoredBy'),
+          toneBounds: captureAny(named: 'toneBounds'),
+          coachingStyle: captureAny(named: 'coachingStyle'),
+          antiSycophancyPolicy: captureAny(named: 'antiSycophancyPolicy'),
+          sourceSessionId: captureAny(named: 'sourceSessionId'),
+        ),
+      ).captured;
+
+      // captured is a flat list: [soulId, voice, authoredBy, tone, coaching,
+      //                           antiSycophancy, sourceSessionId]
+      final voice = captured[1] as String;
+      final tone = captured[3] as String;
+      final coaching = captured[4] as String;
+      final antiSycophancy = captured[5] as String;
+
+      expect(voice, 'New voice.');
+      expect(tone, 'Current bounds.');
+      expect(coaching, 'Current coaching.');
+      expect(antiSycophancy, 'Current policy.');
+    });
+
+    test('returns null when no soul proposal exists', () async {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: MockSoulDocumentService(),
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveSoulProposal(
+        sessionId: 'session-1',
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when no soul service available', () async {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: EvolutionStrategy(),
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveSoulProposal(
+        sessionId: 'session-1',
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when no soul assigned to template', () async {
+      final mockSoulService = MockSoulDocumentService();
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => null);
+
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-no-soul')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-ns',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments: '{"voice_directive":"V","rationale":"R"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        soulDocumentService: mockSoulService,
+      );
+
+      workflow.activeSessions['session-ns'] = ActiveEvolutionSession(
+        sessionId: 'session-ns',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-no-soul',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      final result = await workflow.approveSoulProposal(
+        sessionId: 'session-ns',
+      );
+
+      expect(result, isNull);
+    });
+  });
+
+  group('rejectSoulProposal', () {
+    test('clears soul proposal from strategy', () async {
+      final strategy = EvolutionStrategy();
+      final manager = ConversationManager(conversationId: 'conv-1')
+        ..initialize();
+      const toolCall = ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: 'propose_soul_directives',
+          arguments: '{"voice_directive":"V","rationale":"R"}',
+        ),
+      );
+      manager.addAssistantMessage(toolCalls: [toolCall]);
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+      expect(strategy.latestSoulProposal, isNotNull);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      );
+
+      workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+        sessionId: 'session-1',
+        templateId: kTestTemplateId,
+        conversationId: 'conv-1',
+        strategy: strategy,
+        modelId: 'model',
+      );
+
+      workflow.rejectSoulProposal(sessionId: 'session-1');
+
+      expect(strategy.latestSoulProposal, isNull);
+      expect(workflow.activeSessions, hasLength(1));
+    });
+
+    test('is safe for unknown session', () {
+      TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: MockAiConfigRepository(),
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+      ).rejectSoulProposal(sessionId: 'nonexistent');
+    });
+  });
+
   group('abandonSession', () {
     late MockAgentSyncService mockSyncService;
     late MockAgentTemplateService mockTemplateService;
@@ -2038,6 +2431,129 @@ void main() {
       verify(
         () => mockTemplateService.gatherEvolutionData(kTestTemplateId),
       ).called(1);
+    });
+  });
+
+  group('startSession soul context resolution', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('resolves soul version and populates strategy', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final mockSoulService = MockSoulDocumentService();
+      final soulVersion = makeTestSoulDocumentVersion(
+        voiceDirective: 'Warm and clear.',
+        toneBounds: 'Never sarcastic.',
+        coachingStyle: 'Celebrate wins.',
+        antiSycophancyPolicy: 'Push back firmly.',
+      );
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(any()),
+      ).thenAnswer((_) async => soulVersion);
+      when(
+        () => mockSoulService.getVersionHistory(any()),
+      ).thenAnswer((_) async => <SoulDocumentVersionEntity>[soulVersion]);
+      when(
+        () => mockSoulService.getTemplatesUsingSoul(any()),
+      ).thenAnswer((_) async => <String>[kTestTemplateId]);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      expect(workflow.activeSessions, hasLength(1));
+      final session = workflow.activeSessions.values.first;
+      // Strategy should have current soul values for before/after comparison.
+      expect(session.strategy.currentVoiceDirective, 'Warm and clear.');
+      expect(session.strategy.currentToneBounds, 'Never sarcastic.');
+      expect(session.strategy.currentCoachingStyle, 'Celebrate wins.');
+      expect(
+        session.strategy.currentAntiSycophancyPolicy,
+        'Push back firmly.',
+      );
+
+      // Should have resolved exactly once (reused in strategy).
+      verify(
+        () => mockSoulService.resolveActiveSoulForTemplate(kTestTemplateId),
+      ).called(1);
+    });
+
+    test('strategy has empty soul values when no soul assigned', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final mockSoulService = MockSoulDocumentService();
+      when(
+        () => mockSoulService.resolveActiveSoulForTemplate(any()),
+      ).thenAnswer((_) async => null);
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      expect(workflow.activeSessions, hasLength(1));
+      final session = workflow.activeSessions.values.first;
+      expect(session.strategy.currentVoiceDirective, isEmpty);
+      expect(session.strategy.currentToneBounds, isEmpty);
+      expect(session.strategy.currentCoachingStyle, isEmpty);
+      expect(session.strategy.currentAntiSycophancyPolicy, isEmpty);
+    });
+
+    test('strategy has empty soul values when no soul service', () async {
+      stubFullSessionContext(
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        // No soul service
+      );
+
+      await workflow.startSession(templateId: kTestTemplateId);
+
+      expect(workflow.activeSessions, hasLength(1));
+      final session = workflow.activeSessions.values.first;
+      expect(session.strategy.currentVoiceDirective, isEmpty);
+      expect(session.strategy.currentToneBounds, isEmpty);
     });
   });
 

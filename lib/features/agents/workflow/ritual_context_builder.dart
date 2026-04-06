@@ -35,6 +35,9 @@ class RitualContextBuilder extends EvolutionContextBuilder {
     required int sessionNumber,
     Map<String, AgentMessagePayloadEntity> observationPayloads = const {},
     bool isMetaLevel = false,
+    SoulDocumentVersionEntity? currentSoulVersion,
+    List<SoulDocumentVersionEntity> recentSoulVersions = const [],
+    List<String> otherTemplatesUsingSoul = const [],
   }) {
     // Build the standard user message from the parent builder.
     final baseContext = build(
@@ -47,6 +50,9 @@ class RitualContextBuilder extends EvolutionContextBuilder {
       metrics: metrics,
       changesSinceLastSession: changesSinceLastSession,
       observationPayloads: observationPayloads,
+      currentSoulVersion: currentSoulVersion,
+      recentSoulVersions: recentSoulVersions,
+      otherTemplatesUsingSoul: otherTemplatesUsingSoul,
     );
 
     // Extend the user message with ritual-specific sections.
@@ -143,8 +149,10 @@ When you have enough signal:
    and formulate proposals.
 
 ## Available Tools
-- **propose_directives**: Formally propose new directives. Include the
-  complete rewritten text and a rationale for the changes.
+- **propose_directives**: Formally propose new SKILL directives. These affect
+  this template only. For personality changes, use `propose_soul_directives`.
+- **propose_soul_directives**: Formally propose personality changes to the
+  shared soul document. These affect ALL templates using this soul.
 - **publish_ritual_recap**: Publish the structured ritual recap. Provide a
   concise `tldr` for the collapsed session history view and full markdown
   `content` for the expanded recap. This must be user-facing text only.
@@ -228,14 +236,19 @@ When you have enough signal:
 1. Propose the smallest directive changes that address the problem.
 2. Use `publish_ritual_recap` to record the concise session summary and full
    markdown recap for session history.
-3. Use `propose_directives` with the complete rewritten text and rationale.
+3. Use `propose_directives` for skill/operational changes (this template only).
+4. Optionally use `propose_soul_directives` for personality changes (affects ALL
+   templates sharing this soul).
+5. Skill and soul proposals are approved independently by the user.
 
 If the user rejects a proposal, refine it based on their feedback and propose
 again. The conversation should always be driving toward an approved proposal.
 
 ## Available Tools
-- **propose_directives**: Formally propose new directives. Include the complete
-  rewritten text and a rationale for the changes.
+- **propose_directives**: Formally propose new SKILL directives. These affect
+  this template only. For personality changes, use `propose_soul_directives`.
+- **propose_soul_directives**: Formally propose personality changes to the
+  shared soul document. These affect ALL templates using this soul.
 - **publish_ritual_recap**: Publish the structured ritual recap. Provide a
   concise `tldr` for the collapsed session history view and full markdown
   `content` for the expanded recap. This must be user-facing text only.

@@ -45,6 +45,9 @@ void main() {
       final rootType = properties['rootType'] as Map<String, dynamic>;
       final enumValues = rootType['enum'] as List<dynamic>;
 
+      // The enum lists types the LLM can render directly via render_surface.
+      // Auto-rendered types like SoulProposal are handled by the strategy
+      // internally and don't need to be in the LLM's tool enum.
       expect(
         enumValues,
         containsAll([
@@ -52,7 +55,9 @@ void main() {
           'EvolutionNoteConfirmation',
           'MetricsSummary',
           'VersionComparison',
+          'CategoryRatings',
           'BinaryChoicePrompt',
+          'HighPriorityFeedback',
         ]),
       );
     });

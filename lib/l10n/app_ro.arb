@@ -155,6 +155,22 @@
       }
     }
   },
+  "agentEvolutionSoulCurrentField": "Curent — {field}",
+  "@agentEvolutionSoulCurrentField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "agentEvolutionSoulProposedField": "Propus — {field}",
+  "@agentEvolutionSoulProposedField": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
   "agentEvolutionStatusAbandoned": "Abandonat",
   "agentEvolutionStatusActive": "Activ",
   "agentEvolutionStatusCompleted": "Finalizat",
@@ -292,6 +308,12 @@
   "agentSessionProgressTitle": "Progresul sesiunii",
   "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
   "agentSettingsTitle": "Agenți",
+  "agentSoulFieldAntiSycophancy": "Anti-lingușire",
+  "agentSoulFieldCoachingStyle": "Stil de coaching",
+  "agentSoulFieldToneBounds": "Limite de ton",
+  "agentSoulFieldVoice": "Voce",
+  "agentSoulProposalSubtitle": "Modificări de personalitate propuse",
+  "agentSoulProposalTitle": "Propunere de personalitate a sufletului",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
   "@agentStateErrorLoading": {

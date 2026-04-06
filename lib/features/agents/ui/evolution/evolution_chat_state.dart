@@ -153,6 +153,14 @@ class EvolutionChatState extends _$EvolutionChatState {
       }
     };
 
+    session.eventHandler?.onSoulProposalAction = (surfaceId, action) {
+      if (action == 'soul_proposal_approved') {
+        approveSoulProposal();
+      } else if (action == 'soul_proposal_rejected') {
+        rejectSoulProposal();
+      }
+    };
+
     // Wire up category ratings handler.
     session.eventHandler?.onRatingsSubmitted = (surfaceId, ratings) {
       _handleRatingsSubmitted(ratings);
@@ -164,6 +172,7 @@ class EvolutionChatState extends _$EvolutionChatState {
     ref.onDispose(() {
       // Remove GenUI event handler callbacks to avoid calling disposed notifier.
       session.eventHandler?.onProposalAction = null;
+      session.eventHandler?.onSoulProposalAction = null;
       session.eventHandler?.onRatingsSubmitted = null;
       session.eventHandler?.onBinaryChoiceSubmitted = null;
       // Abandon session on dispose if still active.
@@ -504,6 +513,65 @@ class EvolutionChatState extends _$EvolutionChatState {
           ...data.messages,
           EvolutionChatMessage.system(
             text: 'proposal_rejected',
+            timestamp: clock.now(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Approve the current soul proposal.
+  Future<void> approveSoulProposal() async {
+    final data = state.value;
+    if (data == null || data.sessionId == null) return;
+
+    final workflow = ref.read(templateEvolutionWorkflowProvider);
+    try {
+      final newVersion = await workflow.approveSoulProposal(
+        sessionId: data.sessionId!,
+      );
+
+      final current = state.value;
+      if (current != null) {
+        state = AsyncData(
+          current.copyWith(
+            messages: [
+              ...current.messages,
+              EvolutionChatMessage.system(
+                text: newVersion != null
+                    ? 'soul_version_created:v${newVersion.version}'
+                    : 'soul_proposal_failed',
+                timestamp: clock.now(),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e, s) {
+      developer.log(
+        'approveSoulProposal failed',
+        name: _logTag,
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  /// Reject the current soul proposal.
+  void rejectSoulProposal() {
+    final data = state.value;
+    if (data == null || data.sessionId == null) return;
+
+    ref
+        .read(templateEvolutionWorkflowProvider)
+        .rejectSoulProposal(sessionId: data.sessionId!);
+
+    state = AsyncData(
+      data.copyWith(
+        messages: [
+          ...data.messages,
+          EvolutionChatMessage.system(
+            text: 'soul_proposal_rejected',
             timestamp: clock.now(),
           ),
         ],

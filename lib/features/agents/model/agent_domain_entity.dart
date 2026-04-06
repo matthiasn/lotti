@@ -209,6 +209,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime updatedAt,
     required VectorClock? vectorClock,
     String? proposedVersionId,
+    String? proposedSoulVersionId,
     String? feedbackSummary,
     double? userRating,
     DateTime? completedAt,

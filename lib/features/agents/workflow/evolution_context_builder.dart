@@ -36,6 +36,7 @@ class EvolutionContextBuilder {
   static const maxInstanceReports = 10;
   static const maxInstanceObservations = 10;
   static const maxPastNotes = 30;
+  static const maxCrossTemplateNames = 10;
 
   /// Build the evolution context from all available data sources.
   EvolutionContext build({
@@ -48,9 +49,12 @@ class EvolutionContextBuilder {
     required TemplatePerformanceMetrics metrics,
     required int changesSinceLastSession,
     Map<String, AgentMessagePayloadEntity> observationPayloads = const {},
+    SoulDocumentVersionEntity? currentSoulVersion,
+    List<SoulDocumentVersionEntity> recentSoulVersions = const [],
+    List<String> otherTemplatesUsingSoul = const [],
   }) {
     return EvolutionContext(
-      systemPrompt: _buildSystemPrompt(),
+      systemPrompt: _buildSystemPrompt(hasSoul: currentSoulVersion != null),
       initialUserMessage: _buildUserMessage(
         template: template,
         currentVersion: currentVersion,
@@ -61,11 +65,14 @@ class EvolutionContextBuilder {
         metrics: metrics,
         changesSinceLastSession: changesSinceLastSession,
         observationPayloads: observationPayloads,
+        currentSoulVersion: currentSoulVersion,
+        recentSoulVersions: recentSoulVersions,
+        otherTemplatesUsingSoul: otherTemplatesUsingSoul,
       ),
     );
   }
 
-  String _buildSystemPrompt() {
+  String _buildSystemPrompt({bool hasSoul = false}) {
     return '''
 You are an evolution agent — a prompt engineering specialist responsible for
 continuously improving an agent template's directives over time.
@@ -121,15 +128,27 @@ When you have enough signal:
 1. Make the smallest directive changes that address the problem.
 2. Use `publish_ritual_recap` to record the concise session summary and full
    markdown recap for session history.
-3. Use `propose_directives` to formally propose improved directives.
-4. Explain the rationale in concrete terms instead of generic praise.
+3. Use `propose_directives` for skill/operational changes (affects this template
+   only).${hasSoul ? '''
+
+4. Optionally use `propose_soul_directives` for personality changes (affects ALL
+   templates sharing this soul).
+5. Skill and soul proposals are approved independently by the user.''' : ''}
+${hasSoul ? '6' : '4'}. Explain the rationale in concrete terms instead of generic praise.
 
 If the user rejects a proposal, refine it based on their feedback and propose
 again. The conversation should always be driving toward an approved proposal.
 
 ## Available Tools
-- **propose_directives**: Formally propose new directives. Include the complete
-  rewritten text and a rationale for the changes.
+- **propose_directives**: Formally propose new SKILL directives (general
+  directive and report directive). These affect this template only.${hasSoul ? '''
+
+- **propose_soul_directives**: Formally propose personality changes to the
+  shared soul document. Include any combination of `voice_directive`,
+  `tone_bounds`, `coaching_style`, and `anti_sycophancy_policy`, plus a
+  `rationale`. These changes affect ALL templates using this soul — check the
+  cross-template impact notice in the context. Use this only when the
+  personality itself needs changing, not for skill or operational improvements.''' : ''}
 - **publish_ritual_recap**: Publish the structured ritual recap. Provide a
   concise `tldr` for the collapsed session history view and full markdown
   `content` for the expanded recap. This must be user-facing text only.
@@ -195,6 +214,9 @@ again. The conversation should always be driving toward an approved proposal.
     required TemplatePerformanceMetrics metrics,
     required int changesSinceLastSession,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    SoulDocumentVersionEntity? currentSoulVersion,
+    List<SoulDocumentVersionEntity> recentSoulVersions = const [],
+    List<String> otherTemplatesUsingSoul = const [],
   }) {
     final buf = StringBuffer()
       ..writeln('# Evolution Session: ${template.displayName}')
@@ -229,6 +251,21 @@ again. The conversation should always be driving toward an approved proposal.
         ..writeln('## Current Directives (v${currentVersion.version})')
         ..writeln(currentVersion.directives)
         ..writeln();
+    }
+
+    // Soul context (when a soul is assigned to this template).
+    if (currentSoulVersion != null) {
+      _writeSoulContext(buf, currentSoulVersion);
+      // Exclude the current version from history to avoid duplication.
+      final historyVersions = recentSoulVersions
+          .where((v) => v.id != currentSoulVersion.id)
+          .toList();
+      if (historyVersions.isNotEmpty) {
+        _writeSoulVersionHistory(buf, historyVersions);
+      }
+      if (otherTemplatesUsingSoul.isNotEmpty) {
+        _writeCrossTemplateNotice(buf, otherTemplatesUsingSoul);
+      }
     }
 
     // Seed directive changelog — show entries newer than the active version,
@@ -278,7 +315,8 @@ again. The conversation should always be driving toward an approved proposal.
       'missed opportunity. Treat aggregate metrics as background only. '
       'Record any evolution notes, ask only the questions you need, and use '
       'category ratings only if they help resolve a trade-off before '
-      'proposing directive changes.',
+      'proposing changes. Use `propose_directives` for skill changes and '
+      '`propose_soul_directives` for personality changes.',
     );
 
     return buf.toString();
@@ -413,5 +451,75 @@ again. The conversation should always be driving toward an approved proposal.
   static String shortId(String id) {
     if (id.length <= 8) return id;
     return id.substring(0, 8);
+  }
+
+  // ── soul context helpers ───────────────────────────────────────────────
+
+  static void _writeSoulContext(
+    StringBuffer buf,
+    SoulDocumentVersionEntity soul,
+  ) {
+    buf
+      ..writeln('## Current Soul Personality (v${soul.version})')
+      ..writeln()
+      ..writeln('### Voice Directive')
+      ..writeln(soul.voiceDirective);
+
+    if (soul.toneBounds.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('### Tone Bounds')
+        ..writeln(soul.toneBounds);
+    }
+    if (soul.coachingStyle.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('### Coaching Style')
+        ..writeln(soul.coachingStyle);
+    }
+    if (soul.antiSycophancyPolicy.trim().isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('### Anti-Sycophancy Policy')
+        ..writeln(soul.antiSycophancyPolicy);
+    }
+    buf.writeln();
+  }
+
+  static void _writeSoulVersionHistory(
+    StringBuffer buf,
+    List<SoulDocumentVersionEntity> versions,
+  ) {
+    final capped = versions.take(maxVersionHistory).toList();
+    buf.writeln('## Soul Version History');
+    for (final v in capped) {
+      buf.writeln(
+        '- v${v.version} (${v.status.name}, '
+        'by ${v.authoredBy}, '
+        '${v.createdAt.toIso8601String().substring(0, 10)})',
+      );
+    }
+    buf.writeln();
+  }
+
+  static void _writeCrossTemplateNotice(
+    StringBuffer buf,
+    List<String> otherTemplateNames,
+  ) {
+    final shown = otherTemplateNames.take(maxCrossTemplateNames).toList();
+    final hiddenCount = otherTemplateNames.length - shown.length;
+
+    buf
+      ..writeln('## Cross-Template Impact Notice')
+      ..writeln(
+        'This soul is shared by ${otherTemplateNames.length} other '
+        'template(s): ${shown.join(", ")}'
+        '${hiddenCount > 0 ? ', and $hiddenCount more' : ''}.',
+      )
+      ..writeln(
+        'Any personality changes proposed via `propose_soul_directives` '
+        'will affect ALL templates using this soul.',
+      )
+      ..writeln();
   }
 }

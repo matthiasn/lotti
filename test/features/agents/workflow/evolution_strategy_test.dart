@@ -613,4 +613,292 @@ void main() {
       expect(strategy.latestRecap, isNull);
     });
   });
+
+  group('propose_soul_directives', () {
+    test('captures soul proposal and returns wait action', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Be warm and clear.',
+          'tone_bounds': 'Never be sarcastic.',
+          'coaching_style': 'Celebrate wins.',
+          'anti_sycophancy_policy': 'Push back firmly.',
+          'rationale': 'Personality needs refinement.',
+        },
+      );
+
+      final action = await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.wait);
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(
+        strategy.latestSoulProposal!.voiceDirective,
+        'Be warm and clear.',
+      );
+      expect(strategy.latestSoulProposal!.toneBounds, 'Never be sarcastic.');
+      expect(strategy.latestSoulProposal!.coachingStyle, 'Celebrate wins.');
+      expect(
+        strategy.latestSoulProposal!.antiSycophancyPolicy,
+        'Push back firmly.',
+      );
+      expect(
+        strategy.latestSoulProposal!.rationale,
+        'Personality needs refinement.',
+      );
+    });
+
+    test('rejects when rationale is empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Valid voice.',
+          'rationale': '  ',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNull);
+    });
+
+    test('rejects when all directive fields are empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': '',
+          'tone_bounds': '  ',
+          'coaching_style': '',
+          'anti_sycophancy_policy': '',
+          'rationale': 'Some rationale.',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNull);
+    });
+
+    test('accepts when only one directive field is non-empty', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Just voice.',
+          'rationale': 'Voice-only change.',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestSoulProposal!.voiceDirective, 'Just voice.');
+    });
+
+    test('stores soul proposal independently from template proposal', () async {
+      // First, propose template directives.
+      final templateCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'general_directive': 'Skills only.',
+          'report_directive': 'Report format.',
+          'rationale': 'Skill change.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [templateCall],
+        manager: manager,
+      );
+
+      // Then, propose soul directives.
+      final soulCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Soul voice.',
+          'rationale': 'Soul change.',
+        },
+        id: 'call-2',
+      );
+      await strategy.processToolCalls(
+        toolCalls: [soulCall],
+        manager: manager,
+      );
+
+      // Both should coexist.
+      expect(strategy.latestProposal, isNotNull);
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestProposal!.generalDirective, 'Skills only.');
+      expect(strategy.latestSoulProposal!.voiceDirective, 'Soul voice.');
+    });
+
+    test('clearSoulProposal clears only soul state', () async {
+      final templateCall = makeToolCall(
+        name: 'propose_directives',
+        args: {
+          'general_directive': 'Template stays.',
+          'report_directive': '',
+          'rationale': 'Template rationale.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [templateCall],
+        manager: manager,
+      );
+
+      final soulCall = makeToolCall(
+        id: 'call-2',
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Voice.',
+          'rationale': 'Change.',
+        },
+      );
+      await strategy.processToolCalls(
+        toolCalls: [soulCall],
+        manager: manager,
+      );
+
+      expect(strategy.latestSoulProposal, isNotNull);
+      expect(strategy.latestProposal, isNotNull);
+      strategy.clearSoulProposal();
+      expect(strategy.latestSoulProposal, isNull);
+      expect(strategy.latestProposal!.generalDirective, 'Template stays.');
+    });
+
+    test('captures cross-template notice', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'New voice.',
+          'rationale': 'Update.',
+          'cross_template_notice':
+              'Also affects: Laura Project Analyst, Tom Task Agent',
+        },
+      );
+
+      await strategy.processToolCalls(
+        toolCalls: [toolCall],
+        manager: manager,
+      );
+
+      expect(
+        strategy.latestSoulProposal!.crossTemplateNotice,
+        contains('Laura Project Analyst'),
+      );
+    });
+  });
+
+  group('auto-surface on propose_soul_directives', () {
+    late GenUiBridge bridge;
+    late EvolutionStrategy strategyWithBridge;
+    late ConversationManager bridgeManager;
+
+    setUp(() {
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      bridge = GenUiBridge(processor: processor);
+      strategyWithBridge = EvolutionStrategy(
+        genUiBridge: bridge,
+        currentVoiceDirective: 'Old voice.',
+        currentToneBounds: 'Old bounds.',
+        currentCoachingStyle: 'Old coaching.',
+        currentAntiSycophancyPolicy: 'Old policy.',
+      );
+      bridgeManager = ConversationManager(conversationId: 'test-soul-auto')
+        ..initialize(systemMessage: 'You are an evolution agent.');
+    });
+
+    test('creates a GenUI surface with current values', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Be warm and empathetic.',
+          'tone_bounds': 'Stay professional.',
+          'coaching_style': 'Celebrate wins.',
+          'anti_sycophancy_policy': 'Push back firmly.',
+          'rationale': 'Refinement.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestSoulProposal, isNotNull);
+      final surfaceIds = bridge.drainPendingSurfaceIds();
+      expect(surfaceIds, hasLength(1));
+      expect(surfaceIds.first, startsWith('soul-proposal-'));
+
+      // Verify proposal fields match the tool call args — ensuring the
+      // bridge received the correct data (not a fallback rootType).
+      final proposal = strategyWithBridge.latestSoulProposal!;
+      expect(proposal.voiceDirective, 'Be warm and empathetic.');
+      expect(proposal.toneBounds, 'Stay professional.');
+      expect(proposal.coachingStyle, 'Celebrate wins.');
+      expect(proposal.antiSycophancyPolicy, 'Push back firmly.');
+      expect(proposal.rationale, 'Refinement.');
+    });
+
+    test('empty directives do not create surface', () async {
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': '  ',
+          'tone_bounds': '',
+          'coaching_style': '',
+          'anti_sycophancy_policy': '',
+          'rationale': 'Whatever.',
+        },
+      );
+      bridgeManager.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strategyWithBridge.processToolCalls(
+        toolCalls: [toolCall],
+        manager: bridgeManager,
+      );
+
+      expect(strategyWithBridge.latestSoulProposal, isNull);
+      expect(bridge.drainPendingSurfaceIds(), isEmpty);
+    });
+
+    test('bridge exception does not prevent proposal recording', () async {
+      // Create a strategy with a bridge that has no catalog items,
+      // causing handleToolCall to fail on unknown rootType processing.
+      final emptyProcessor = A2uiMessageProcessor(catalogs: []);
+      final brokenBridge = GenUiBridge(processor: emptyProcessor);
+      final strat = EvolutionStrategy(genUiBridge: brokenBridge);
+      final mgr = ConversationManager(conversationId: 'test-broken')
+        ..initialize();
+
+      final toolCall = makeToolCall(
+        name: 'propose_soul_directives',
+        args: {
+          'voice_directive': 'Some voice.',
+          'rationale': 'Change.',
+        },
+      );
+      mgr.addAssistantMessage(toolCalls: [toolCall]);
+
+      await strat.processToolCalls(
+        toolCalls: [toolCall],
+        manager: mgr,
+      );
+
+      // Proposal should still be recorded despite bridge failure.
+      expect(strat.latestSoulProposal, isNotNull);
+      expect(strat.latestSoulProposal!.voiceDirective, 'Some voice.');
+    });
+  });
 }
