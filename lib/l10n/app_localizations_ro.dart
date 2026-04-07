@@ -688,6 +688,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulEmptyList => 'Nu există încă suflete';
 
   @override
+  String get agentSoulEvolutionHistoryTitle => 'Istoricul evoluției sufletului';
+
+  @override
+  String get agentSoulEvolutionNoSessions =>
+      'Nu există încă sesiuni de evoluție a sufletului';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-lingușire';
 
   @override
@@ -714,6 +721,20 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get agentSoulProposalTitle =>
       'Propunere de personalitate a sufletului';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Rafinați personalitatea în toate șabloanele care partajează acest suflet. Agentul de evoluție vede feedback-ul de la fiecare șablon care folosește această personalitate.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Începeți revizuirea personalității';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Începeți o sesiune axată pe personalitate pentru a examina feedback-ul și a evolua vocea, tonul, stilul de coaching și sinceritatea.';
+
+  @override
+  String get agentSoulReviewTitle => 'Suflet 1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Revino la această versiune';

@@ -83,6 +83,9 @@ void main() {
         allSoulDocumentsProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
+        soulEvolutionSessionHistoryProvider.overrideWith(
+          (ref, id) async => [],
+        ),
         ...extraOverrides,
       ],
     );

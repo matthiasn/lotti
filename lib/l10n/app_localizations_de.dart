@@ -687,6 +687,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSoulEmptyList => 'Noch keine Seelendokumente';
 
   @override
+  String get agentSoulEvolutionHistoryTitle => 'Seelen-Evolutionsverlauf';
+
+  @override
+  String get agentSoulEvolutionNoSessions =>
+      'Noch keine Seelen-Evolutionssitzungen';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Schmeichelei';
 
   @override
@@ -713,6 +720,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Seelen-Persönlichkeitsvorschlag';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Verfeinere die Persönlichkeit über alle Vorlagen hinweg, die diese Seele teilen. Der Evolutionsagent sieht Feedback von jeder Vorlage, die diese Persönlichkeit verwendet.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Persönlichkeitsüberprüfung starten';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Starte eine persönlichkeitsfokussierte Sitzung, um Feedback durchzugehen und Stimme, Ton, Coaching-Stil und Direktheit weiterzuentwickeln.';
+
+  @override
+  String get agentSoulReviewTitle => 'Seelen-1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Auf diese Version zurücksetzen';

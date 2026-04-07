@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 
@@ -31,10 +32,12 @@ class FeedbackExtractionService {
   FeedbackExtractionService({
     required this.agentRepository,
     required this.templateService,
+    this.soulDocumentService,
   });
 
   final AgentRepository agentRepository;
   final AgentTemplateService templateService;
+  final SoulDocumentService? soulDocumentService;
 
   /// Inclusive date-range check shared by all extraction stages.
   static bool _isInWindow(DateTime dt, DateTime since, DateTime until) =>
@@ -712,5 +715,37 @@ class FeedbackExtractionService {
       agentId: session.agentId,
       sourceEntityId: session.id,
     );
+  }
+
+  /// Extract and aggregate feedback across ALL templates sharing a soul.
+  ///
+  /// Returns a map of template ID → [ClassifiedFeedback] for use by the
+  /// soul evolution context builder, which groups feedback by source template.
+  Future<Map<String, ClassifiedFeedback>> extractForSoul({
+    required String soulId,
+    required DateTime since,
+    DateTime? until,
+  }) async {
+    final effectiveUntil = until ?? clock.now();
+    final soulService = soulDocumentService;
+    if (soulService == null) {
+      return {};
+    }
+
+    final templateIds = await soulService.getTemplatesUsingSoul(soulId);
+    if (templateIds.isEmpty) {
+      return {};
+    }
+
+    final results = await Future.wait(
+      templateIds.map(
+        (id) async => MapEntry(
+          id,
+          await extract(templateId: id, since: since, until: effectiveUntil),
+        ),
+      ),
+    );
+
+    return Map.fromEntries(results);
   }
 }

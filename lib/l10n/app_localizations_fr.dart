@@ -689,6 +689,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentSoulEmptyList => 'Pas encore de documents d\'âme';
 
   @override
+  String get agentSoulEvolutionHistoryTitle =>
+      'Historique d\'évolution de l\'âme';
+
+  @override
+  String get agentSoulEvolutionNoSessions =>
+      'Pas encore de sessions d\'évolution de l\'âme';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-flagornerie';
 
   @override
@@ -715,6 +723,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Proposition de personnalité de l\'âme';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Affine la personnalité dans tous les modèles partageant cette âme. L\'agent d\'évolution voit les retours de chaque modèle qui utilise cette personnalité.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Lancer la revue de personnalité';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Lance une session axée sur la personnalité pour examiner les retours et faire évoluer la voix, le ton, le style de coaching et la franchise.';
+
+  @override
+  String get agentSoulReviewTitle => 'Âme 1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Revenir à cette version';

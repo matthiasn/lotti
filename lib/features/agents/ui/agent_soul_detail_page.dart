@@ -7,7 +7,9 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -226,7 +228,16 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
                         label: context.messages.agentTemplateSaveNewVersion,
                       ),
                     ]
-                  : [],
+                  : [
+                      LottiPrimaryButton(
+                        onPressed: () => beamToNamed(
+                          '/settings/agents/souls/'
+                          '${widget.soulId}/review',
+                        ),
+                        label: context.messages.agentSoulReviewTitle,
+                        icon: Icons.rate_review,
+                      ),
+                    ],
             )
           : null,
     );
@@ -467,6 +478,8 @@ class _InfoTabContent extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _SoulEvolutionHistorySection(soulId: soulId),
+        const SizedBox(height: 24),
         _VersionHistorySection(soulId: soulId),
         const SizedBox(height: 24),
         _AssignedTemplatesSection(soulId: soulId),
@@ -636,6 +649,51 @@ class _VersionTile extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SoulEvolutionHistorySection extends ConsumerWidget {
+  const _SoulEvolutionHistorySection({required this.soulId});
+
+  final String soulId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(
+      soulEvolutionSessionHistoryProvider(soulId),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.messages.agentSoulEvolutionHistoryTitle,
+          style: context.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingSmall),
+        historyAsync.when(
+          data: (entries) {
+            if (entries.isEmpty) {
+              return Text(
+                context.messages.agentSoulEvolutionNoSessions,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                ),
+              );
+            }
+            return Column(
+              children: entries
+                  .map((entry) => RitualSessionHistoryCard(entry: entry))
+                  .toList(),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => Text(context.messages.commonError),
+        ),
+      ],
     );
   }
 }

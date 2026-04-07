@@ -830,7 +830,7 @@ final class FeedbackExtractionServiceProvider
 }
 
 String _$feedbackExtractionServiceHash() =>
-    r'a5de05f01a608ba127a146f540f7ec515ec0cfd2';
+    r'560af5a2c201ce3e8f7f991a6429ef12d5bd61ee';
 
 /// The improver agent service.
 

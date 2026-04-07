@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.945] - 2026-04-08
+### Added
+- Standalone soul evolution: dedicated 1-on-1 sessions focused on personality
+  refinement, aggregating feedback from all templates sharing a soul. Accessible
+  via "Soul 1-on-1" on the soul detail page, with its own review page and
+  session history.
+
 ## [0.9.944] - 2026-04-08
 ### Added
 - Desktop zoom: Cmd+/- keyboard shortcuts and View menu items for

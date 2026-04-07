@@ -68,7 +68,7 @@ final class TemplateEvolutionWorkflowProvider
 }
 
 String _$templateEvolutionWorkflowHash() =>
-    r'eea3c99307bf117203be9638c06c1c86e38a316b';
+    r'32ca88370788579d0525b0aab76ae846ec6c0d37';
 
 /// The improver agent workflow with all dependencies resolved.
 

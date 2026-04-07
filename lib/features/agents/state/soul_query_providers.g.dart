@@ -535,3 +535,270 @@ final class TemplatesUsingSoulFamily extends $Family
   @override
   String toString() => r'templatesUsingSoulProvider';
 }
+
+/// All evolution sessions for a soul (newest first).
+
+@ProviderFor(soulEvolutionSessions)
+final soulEvolutionSessionsProvider = SoulEvolutionSessionsFamily._();
+
+/// All evolution sessions for a soul (newest first).
+
+final class SoulEvolutionSessionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AgentDomainEntity>>,
+          List<AgentDomainEntity>,
+          FutureOr<List<AgentDomainEntity>>
+        >
+    with
+        $FutureModifier<List<AgentDomainEntity>>,
+        $FutureProvider<List<AgentDomainEntity>> {
+  /// All evolution sessions for a soul (newest first).
+  SoulEvolutionSessionsProvider._({
+    required SoulEvolutionSessionsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'soulEvolutionSessionsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$soulEvolutionSessionsHash();
+
+  @override
+  String toString() {
+    return r'soulEvolutionSessionsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<AgentDomainEntity>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<AgentDomainEntity>> create(Ref ref) {
+    final argument = this.argument as String;
+    return soulEvolutionSessions(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SoulEvolutionSessionsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$soulEvolutionSessionsHash() =>
+    r'fd6dded2f6d0b4d86e12f8841481f26b72854e4b';
+
+/// All evolution sessions for a soul (newest first).
+
+final class SoulEvolutionSessionsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
+  SoulEvolutionSessionsFamily._()
+    : super(
+        retry: null,
+        name: r'soulEvolutionSessionsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// All evolution sessions for a soul (newest first).
+
+  SoulEvolutionSessionsProvider call(String soulId) =>
+      SoulEvolutionSessionsProvider._(argument: soulId, from: this);
+
+  @override
+  String toString() => r'soulEvolutionSessionsProvider';
+}
+
+/// Active (pending) evolution session for a soul, or `null`.
+
+@ProviderFor(pendingSoulEvolution)
+final pendingSoulEvolutionProvider = PendingSoulEvolutionFamily._();
+
+/// Active (pending) evolution session for a soul, or `null`.
+
+final class PendingSoulEvolutionProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AgentDomainEntity?>,
+          AgentDomainEntity?,
+          FutureOr<AgentDomainEntity?>
+        >
+    with
+        $FutureModifier<AgentDomainEntity?>,
+        $FutureProvider<AgentDomainEntity?> {
+  /// Active (pending) evolution session for a soul, or `null`.
+  PendingSoulEvolutionProvider._({
+    required PendingSoulEvolutionFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'pendingSoulEvolutionProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingSoulEvolutionHash();
+
+  @override
+  String toString() {
+    return r'pendingSoulEvolutionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<AgentDomainEntity?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<AgentDomainEntity?> create(Ref ref) {
+    final argument = this.argument as String;
+    return pendingSoulEvolution(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PendingSoulEvolutionProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$pendingSoulEvolutionHash() =>
+    r'86fed9a4a02ffc3df1178541e2d09acb2955714c';
+
+/// Active (pending) evolution session for a soul, or `null`.
+
+final class PendingSoulEvolutionFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
+  PendingSoulEvolutionFamily._()
+    : super(
+        retry: null,
+        name: r'pendingSoulEvolutionProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Active (pending) evolution session for a soul, or `null`.
+
+  PendingSoulEvolutionProvider call(String soulId) =>
+      PendingSoulEvolutionProvider._(argument: soulId, from: this);
+
+  @override
+  String toString() => r'pendingSoulEvolutionProvider';
+}
+
+/// History entries for past soul evolution sessions.
+
+@ProviderFor(soulEvolutionSessionHistory)
+final soulEvolutionSessionHistoryProvider =
+    SoulEvolutionSessionHistoryFamily._();
+
+/// History entries for past soul evolution sessions.
+
+final class SoulEvolutionSessionHistoryProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<RitualSessionHistoryEntry>>,
+          List<RitualSessionHistoryEntry>,
+          FutureOr<List<RitualSessionHistoryEntry>>
+        >
+    with
+        $FutureModifier<List<RitualSessionHistoryEntry>>,
+        $FutureProvider<List<RitualSessionHistoryEntry>> {
+  /// History entries for past soul evolution sessions.
+  SoulEvolutionSessionHistoryProvider._({
+    required SoulEvolutionSessionHistoryFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'soulEvolutionSessionHistoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$soulEvolutionSessionHistoryHash();
+
+  @override
+  String toString() {
+    return r'soulEvolutionSessionHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<RitualSessionHistoryEntry>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<RitualSessionHistoryEntry>> create(Ref ref) {
+    final argument = this.argument as String;
+    return soulEvolutionSessionHistory(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SoulEvolutionSessionHistoryProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$soulEvolutionSessionHistoryHash() =>
+    r'492aba328eca18a314bb884ca9cbda3bda0c8aa9';
+
+/// History entries for past soul evolution sessions.
+
+final class SoulEvolutionSessionHistoryFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<RitualSessionHistoryEntry>>,
+          String
+        > {
+  SoulEvolutionSessionHistoryFamily._()
+    : super(
+        retry: null,
+        name: r'soulEvolutionSessionHistoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// History entries for past soul evolution sessions.
+
+  SoulEvolutionSessionHistoryProvider call(String soulId) =>
+      SoulEvolutionSessionHistoryProvider._(argument: soulId, from: this);
+
+  @override
+  String toString() => r'soulEvolutionSessionHistoryProvider';
+}

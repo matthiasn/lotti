@@ -679,6 +679,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulEmptyList => 'Zatím žádné duše';
 
   @override
+  String get agentSoulEvolutionHistoryTitle => 'Historie vývoje duše';
+
+  @override
+  String get agentSoulEvolutionNoSessions => 'Zatím žádné relace vývoje duše';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';
 
   @override
@@ -704,6 +710,20 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Proposal';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Uprav osobnost napříč všemi šablonami sdílejícími tuto duši. Agent pro vývoj vidí zpětnou vazbu z každé šablony, která tuto osobnost používá.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Zahájit revizi osobnosti';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Zahaj relaci zaměřenou na osobnost, kde projdeš zpětnou vazbu a rozviješ hlas, tón, styl koučování a přímost.';
+
+  @override
+  String get agentSoulReviewTitle => 'Duše 1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Vrátit na tuto verzi';

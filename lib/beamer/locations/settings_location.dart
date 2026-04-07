@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
@@ -77,6 +78,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/templates/:templateId/review',
     '/settings/agents/souls/create',
     '/settings/agents/souls/:soulId',
+    '/settings/agents/souls/:soulId/review',
     '/settings/agents/instances/:agentId',
     '/settings/flags',
     '/settings/theming',
@@ -352,6 +354,18 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-agents-souls-create'),
           child: AgentSoulDetailPage(),
+        )
+      else if (pathContains('agents/souls') &&
+          pathContainsKey('soulId') &&
+          path.endsWith('/review'))
+        BeamPage(
+          key: ValueKey(
+            'settings-agents-souls-review-'
+            '${state.pathParameters['soulId']}',
+          ),
+          child: SoulEvolutionReviewPage(
+            soulId: state.pathParameters['soulId']!,
+          ),
         )
       else if (pathContains('agents/souls') && pathContainsKey('soulId'))
         BeamPage(

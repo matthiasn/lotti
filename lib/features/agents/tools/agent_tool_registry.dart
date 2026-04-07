@@ -596,6 +596,14 @@ class AgentToolRegistry {
     ),
   ];
 
+  /// Tools available to the soul evolution agent during standalone soul
+  /// 1-on-1 sessions. Excludes `propose_directives` since soul sessions
+  /// cannot change template skills.
+  static final List<AgentToolDefinition> soulEvolutionAgentTools =
+      evolutionAgentTools
+          .where((t) => t.name != EvolutionToolNames.proposeDirectives)
+          .toList(growable: false);
+
   /// Tools available to the evolution agent during 1-on-1 sessions.
   static const evolutionAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
