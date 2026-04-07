@@ -48,9 +48,13 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
           SizedBox(height: tokens.spacing.step5),
           pendingAsync.when(
             data: (entity) {
+              final hasTemplates =
+                  templatesAsync.value?.isNotEmpty ?? false;
               final session = entity is EvolutionSessionEntity ? entity : null;
               if (session == null) {
-                return _StartCard(onPressed: () => _openChat(context));
+                return _StartCard(
+                  onPressed: hasTemplates ? () => _openChat(context) : null,
+                );
               }
               return _PendingSessionCard(
                 session: session,
@@ -59,7 +63,9 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
             },
             loading: () => const SizedBox.shrink(),
             error: (_, _) => _StartCard(
-              onPressed: () => _openChat(context),
+              onPressed: (templatesAsync.value?.isNotEmpty ?? false)
+                  ? () => _openChat(context)
+                  : null,
             ),
           ),
           SizedBox(height: tokens.spacing.step4),
@@ -204,9 +210,9 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _StartCard extends StatelessWidget {
-  const _StartCard({required this.onPressed});
+  const _StartCard({this.onPressed});
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
