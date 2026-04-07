@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +6,6 @@ import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
-import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -20,7 +17,7 @@ import '../../test_utils.dart';
 
 /// Strategy subclass exposing a settable soul proposal for test purposes.
 class _TestableEvolutionStrategy extends EvolutionStrategy {
-  _TestableEvolutionStrategy({super.genUiBridge});
+  _TestableEvolutionStrategy();
 
   PendingSoulProposal? testSoulProposal;
 
@@ -68,7 +65,7 @@ void main() {
     return c;
   }
 
-  ActiveEvolutionSession _makeSession({
+  ActiveEvolutionSession makeSession({
     String sessionId = 'session-1',
     String templateId = kTestSoulId,
     String conversationId = 'conv-1',
@@ -82,11 +79,11 @@ void main() {
   );
 
   /// Stubs the workflow for a successful session start returning [response].
-  void _stubSuccessfulStart({
+  void stubSuccessfulStart({
     String response = 'Hello!',
     ActiveEvolutionSession? session,
   }) {
-    final activeSession = session ?? _makeSession();
+    final activeSession = session ?? makeSession();
     when(
       () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
     ).thenAnswer((_) async => response);
@@ -103,7 +100,7 @@ void main() {
       test(
         'starts soul session and returns data with opening message',
         () async {
-          _stubSuccessfulStart(
+          stubSuccessfulStart(
             response: 'Welcome to the soul evolution session!',
           );
 
@@ -172,7 +169,7 @@ void main() {
 
           when(
             () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(_makeSession());
+          ).thenReturn(makeSession());
 
           when(
             () => mockWorkflow.abandonSession(sessionId: 'session-1'),
@@ -201,7 +198,7 @@ void main() {
 
     group('sendMessage', () {
       test('sends user message and receives response', () async {
-        _stubSuccessfulStart();
+        stubSuccessfulStart();
 
         when(() => mockWorkflow.getSession(any())).thenReturn(null);
 
@@ -267,7 +264,7 @@ void main() {
             modelId: 'model-1',
           );
 
-          _stubSuccessfulStart(session: sessionWithProposal);
+          stubSuccessfulStart(session: sessionWithProposal);
           when(
             () => mockWorkflow.getSession('session-1'),
           ).thenReturn(sessionWithProposal);
@@ -364,7 +361,7 @@ void main() {
       test('creates soul version and completes session', () async {
         final soulVersion = makeTestSoulDocumentVersion(version: 2);
 
-        _stubSuccessfulStart();
+        stubSuccessfulStart();
         when(
           () => mockWorkflow.getCurrentRecap(sessionId: 'session-1'),
         ).thenReturn(
@@ -431,7 +428,7 @@ void main() {
       });
 
       test('returns false when completeSoulSession returns null', () async {
-        _stubSuccessfulStart();
+        stubSuccessfulStart();
         when(
           () => mockWorkflow.getCurrentRecap(sessionId: 'session-1'),
         ).thenReturn(null);
@@ -497,7 +494,7 @@ void main() {
 
     group('rejectSoulProposal', () {
       test('clears proposal and adds system message', () async {
-        _stubSuccessfulStart();
+        stubSuccessfulStart();
         when(
           () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
         ).thenReturn(null);
@@ -569,7 +566,7 @@ void main() {
 
     group('endSession', () {
       test('abandons session and adds system message', () async {
-        _stubSuccessfulStart();
+        stubSuccessfulStart();
 
         container = createContainer();
         await withClock(

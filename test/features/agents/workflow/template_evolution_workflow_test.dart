@@ -3329,4 +3329,292 @@ void main() {
       expect(abandonedEntities, isEmpty);
     });
   });
+
+  group('startSoulSession', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    TemplateEvolutionWorkflow buildSoulWorkflow({
+      _TestConversationRepository? convRepo,
+    }) {
+      return TemplateEvolutionWorkflow(
+        conversationRepository:
+            convRepo ??
+            _TestConversationRepository(
+              assistantResponse: 'Hi! How has my tone been landing?',
+            ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+      );
+    }
+
+    void stubSoulContext() {
+      stubProviderResolution();
+      when(() => mockSoulService.getSoul(any())).thenAnswer(
+        (_) async => makeTestSoulDocument(),
+      );
+      when(() => mockSoulService.getActiveSoulVersion(any())).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(),
+      );
+      when(() => mockSoulService.getTemplatesUsingSoul(any())).thenAnswer(
+        (_) async => [kTestTemplateId],
+      );
+      when(() => mockSoulService.getVersionHistory(any())).thenAnswer(
+        (_) async => <SoulDocumentVersionEntity>[],
+      );
+      when(() => mockTemplateService.getTemplate(any())).thenAnswer(
+        (_) async => makeTestTemplate(),
+      );
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionNoteEntity>[]);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    }
+
+    test('creates soul session and returns response', () async {
+      stubSoulContext();
+      final workflow = buildSoulWorkflow();
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(response, 'Hi! How has my tone been landing?');
+      expect(workflow.activeSessions, hasLength(1));
+
+      final session = workflow.activeSessions.values.first;
+      expect(session.templateId, kTestSoulId);
+
+      // Verify session entity was persisted.
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
+      final sessionEntity = captured.whereType<EvolutionSessionEntity>().first;
+      expect(sessionEntity.agentId, kTestSoulId);
+      expect(sessionEntity.templateId, kTestSoulId);
+      expect(sessionEntity.status, EvolutionSessionStatus.active);
+      expect(sessionEntity.sessionNumber, 1);
+    });
+
+    test('returns null when soul not found', () async {
+      stubProviderResolution();
+      when(() => mockSoulService.getSoul(any())).thenAnswer((_) async => null);
+
+      final workflow = buildSoulWorkflow();
+      final response = await workflow.startSoulSession(soulId: 'missing');
+
+      expect(response, isNull);
+      expect(workflow.activeSessions, isEmpty);
+    });
+
+    test('returns null when no templates use the soul', () async {
+      stubSoulContext();
+      when(
+        () => mockSoulService.getTemplatesUsingSoul(any()),
+      ).thenAnswer((_) async => []);
+
+      final workflow = buildSoulWorkflow();
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(response, isNull);
+    });
+
+    test('returns null when soul has no active version', () async {
+      stubSoulContext();
+      when(
+        () => mockSoulService.getActiveSoulVersion(any()),
+      ).thenAnswer((_) async => null);
+
+      final workflow = buildSoulWorkflow();
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(response, isNull);
+    });
+
+    test('prevents concurrent sessions for same soul', () async {
+      stubSoulContext();
+      final workflow = buildSoulWorkflow();
+
+      await workflow.startSoulSession(soulId: kTestSoulId);
+      final second = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(second, isNull);
+      expect(workflow.activeSessions, hasLength(1));
+    });
+
+    test('getActiveSessionForSoul finds session', () async {
+      stubSoulContext();
+      final workflow = buildSoulWorkflow();
+
+      await workflow.startSoulSession(soulId: kTestSoulId);
+
+      final session = workflow.getActiveSessionForSoul(kTestSoulId);
+      expect(session, isNotNull);
+      expect(session!.templateId, kTestSoulId);
+    });
+  });
+
+  group('completeSoulSession', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    TemplateEvolutionWorkflow buildSoulWorkflow({
+      _TestConversationRepository? convRepo,
+    }) {
+      return TemplateEvolutionWorkflow(
+        conversationRepository:
+            convRepo ??
+            _TestConversationRepository(
+              assistantResponse: 'Soul session started.',
+            ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+      );
+    }
+
+    void stubSoulContext() {
+      stubProviderResolution();
+      when(() => mockSoulService.getSoul(any())).thenAnswer(
+        (_) async => makeTestSoulDocument(),
+      );
+      when(() => mockSoulService.getActiveSoulVersion(any())).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(),
+      );
+      when(() => mockSoulService.getTemplatesUsingSoul(any())).thenAnswer(
+        (_) async => [kTestTemplateId],
+      );
+      when(() => mockSoulService.getVersionHistory(any())).thenAnswer(
+        (_) async => <SoulDocumentVersionEntity>[],
+      );
+      when(() => mockTemplateService.getTemplate(any())).thenAnswer(
+        (_) async => makeTestTemplate(),
+      );
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionNoteEntity>[]);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    }
+
+    test('returns null when no active session', () async {
+      final workflow = buildSoulWorkflow();
+      final result = await workflow.completeSoulSession(
+        sessionId: 'nonexistent',
+      );
+      expect(result, isNull);
+    });
+
+    test('creates soul version on approval', () async {
+      stubSoulContext();
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'new-version',
+        version: 2,
+        voiceDirective: 'Updated voice.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      // Need a session entity for the completion path.
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+
+      // Inject a soul proposal into the strategy via processToolCalls.
+      final session = workflow.activeSessions.values.first;
+      final manager = ConversationManager(
+        conversationId: 'test',
+        maxTurns: 1,
+      )..initialize();
+      await session.strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"Updated voice.", '
+                  '"rationale":"Warmer tone needed."}',
+            ),
+          ),
+        ],
+        manager: manager,
+      );
+
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+      );
+
+      expect(result, isNotNull);
+      expect(result!.version, 2);
+
+      // Session should be cleaned up.
+      expect(workflow.activeSessions, isEmpty);
+    });
+
+    test('returns null when no soul proposal pending', () async {
+      stubSoulContext();
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+
+      final session = workflow.activeSessions.values.first;
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+      );
+
+      expect(result, isNull);
+    });
+  });
 }

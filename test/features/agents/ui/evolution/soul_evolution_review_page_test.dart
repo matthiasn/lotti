@@ -30,7 +30,7 @@ void main() {
     final defaultSoul = soul ?? makeTestSoulDocument(displayName: 'Laura');
 
     return makeTestableWidgetNoScroll(
-      SoulEvolutionReviewPage(soulId: kTestSoulId),
+      const SoulEvolutionReviewPage(soulId: kTestSoulId),
       mediaQueryData: mediaQueryData,
       overrides: [
         soulDocumentProvider.overrideWith(
@@ -114,7 +114,6 @@ void main() {
       final session = makeTestEvolutionSession(
         agentId: kTestSoulId,
         templateId: kTestSoulId,
-        status: EvolutionSessionStatus.active,
       );
 
       await tester.pumpWidget(
