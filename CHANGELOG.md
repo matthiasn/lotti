@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.942] - 2026-04-07
+### Added
+- Soul evolution UI: standalone soul evolution page with an interactive
+  evolution catalog, soul selector, and a conversation-based refinement
+  workflow that lets users iteratively shape agent soul documents from
+  templates.
+- Pluggable soul document: soul documents can now be customized per agent
+  template, decoupling soul content from the shared default.
+- One-on-one v2: redesigned agent one-on-one conversation experience.
+- Manual planning flow: new "Set time blocks" step for manual daily planning.
+- Customer care dashboard: new frontend with admin authentication.
+
+### Changed
+- Settings page restyled to use design system list items, matching the
+  current Figma visual language.
+- Context menu component aligned with Figma design specifications.
+- Projects tab: task rows now display agent one-liner summaries, follow-up
+  tasks automatically inherit the parent project, and the layout alignment
+  and scroll behaviour have been improved.
+- Pending agent wakes UX: improved wake card presentation and prevented
+  redundant wake scheduling.
+
+### Fixed
+- Agents no longer trigger self-notification loops.
+- Projects page no longer flickers during live data refreshes.
+
 ## [0.9.941] - 2026-04-02
 ### Changed
 - Agents settings: added a `Pending Wakes` dashboard under `Settings > Agents`

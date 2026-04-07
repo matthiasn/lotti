@@ -550,6 +550,14 @@ void main() {
 
     testWidgets('calls createVersion on save in edit mode', (tester) async {
       when(
+        () => mockSoulService.updateSoul(
+          soulId: any(named: 'soulId'),
+          displayName: any(named: 'displayName'),
+        ),
+      ).thenAnswer(
+        (_) async => makeTestSoulDocument(id: 'soul-save'),
+      );
+      when(
         () => mockSoulService.createVersion(
           soulId: any(named: 'soulId'),
           voiceDirective: any(named: 'voiceDirective'),

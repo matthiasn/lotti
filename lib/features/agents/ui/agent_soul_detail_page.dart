@@ -157,6 +157,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
       _snapshotOriginals();
       _didSeedControllers = true;
     } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
+      _nameController.text = soul.displayName;
       _voiceDirectiveController.text = activeVersion.voiceDirective;
       _toneBoundsController.text = activeVersion.toneBounds;
       _coachingStyleController.text = activeVersion.coachingStyle;
@@ -372,6 +373,10 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
         ref.invalidate(allSoulDocumentsProvider);
         Navigator.of(context).pop();
       } else {
+        await soulService.updateSoul(
+          soulId: widget.soulId!,
+          displayName: name,
+        );
         await soulService.createVersion(
           soulId: widget.soulId!,
           voiceDirective: voice,
@@ -387,11 +392,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
           ),
         );
         _snapshotOriginals();
-        ref
-          ..invalidate(allSoulDocumentsProvider)
-          ..invalidate(soulDocumentProvider(widget.soulId!))
-          ..invalidate(activeSoulVersionProvider(widget.soulId!))
-          ..invalidate(soulVersionHistoryProvider(widget.soulId!));
+        ref.invalidate(allSoulDocumentsProvider);
       }
     } catch (e, s) {
       developer.log(
@@ -619,9 +620,6 @@ class _VersionTile extends ConsumerWidget {
                   soulId: soulId,
                   versionId: version.id,
                 );
-                ref
-                  ..invalidate(activeSoulVersionProvider(soulId))
-                  ..invalidate(soulVersionHistoryProvider(soulId));
               } catch (e, s) {
                 developer.log(
                   'Rollback failed',

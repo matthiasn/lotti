@@ -197,6 +197,28 @@ class SoulDocumentService {
     return repository.getSoulDocument(soulId);
   }
 
+  /// Update mutable fields on a soul document (currently just display name).
+  Future<SoulDocumentEntity> updateSoul({
+    required String soulId,
+    String? displayName,
+  }) async {
+    final now = clock.now();
+
+    return syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) {
+        throw StateError('Soul document $soulId not found');
+      }
+
+      final updated = soul.copyWith(
+        displayName: displayName ?? soul.displayName,
+        updatedAt: now,
+      );
+      await syncService.upsertEntity(updated);
+      return updated;
+    });
+  }
+
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() async {
     return repository.getAllSoulDocuments();
