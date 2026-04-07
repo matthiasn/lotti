@@ -1,6 +1,6 @@
 # Pluggable Soul Documents
 
-Status: In progress (Phases 1–3 complete, Phase 4 next)
+Status: Complete (all phases implemented)
 Date: 2026-04-05
 Companion docs:
 - `docs/implementation_plans/2026-02-19_agentic_product_direction.md` (§9.1 Persona/Soul Artifact Contract)
@@ -640,7 +640,7 @@ flowchart TD
 - `lib/features/agents/database/agent_database.drift` (wake run log columns)
 - Existing test files for both workflows
 
-### Phase 4: Unified Evolution — Soul Tool & Context
+### Phase 4: Unified Evolution — Soul Tool & Context ✅
 
 **Goal:** The existing 1-on-1 ritual becomes a one-stop shop that can evolve
 both skills and personality in a single conversation.
@@ -680,7 +680,7 @@ both skills and personality in a single conversation.
 - `lib/features/agents/model/agent_enums.dart`
 - Existing and new test files
 
-### Phase 5: UI & Settings
+### Phase 5: UI & Settings ✅
 
 **Goal:** Users can view, create, assign, and swap souls through the settings
 UI.
@@ -706,7 +706,7 @@ UI.
 - New: `lib/features/agents/state/soul_providers.dart`
 - Widget test files
 
-### Phase 6: Migration & Documentation
+### Phase 6: Migration & Documentation ✅
 
 **Goal:** Existing templates seamlessly adopt the new architecture.
 

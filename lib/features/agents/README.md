@@ -91,6 +91,8 @@ flowchart TD
 landing page now exposes three runtime views:
 
 - `Templates`: reusable agent definitions and version heads
+- `Souls`: pluggable personality documents with version history and template
+  assignments
 - `Instances`: persisted agent identities and evolution sessions
 - `Pending Wakes`: live wake timers derived from persisted `AgentStateEntity`
   records
@@ -146,6 +148,8 @@ Persisted agent-side entities include:
   `AgentTemplateHeadEntity`
 - `EvolutionSessionEntity`, `EvolutionSessionRecapEntity`, and
   `EvolutionNoteEntity`
+- `SoulDocumentEntity`, `SoulDocumentVersionEntity`, and
+  `SoulDocumentHeadEntity`
 - `ChangeSetEntity` and `ChangeDecisionEntity`
 - `ProjectRecommendationEntity`
 - `WakeTokenUsageEntity`
@@ -157,6 +161,7 @@ Persisted links include:
 - `agent_project`
 - `template_assignment`
 - `improver_target`
+- `soul_assignment`
 
 The journal database is read on demand during wakes. The agents feature does
 not mirror full task or project state into `agent.sqlite`; it persists the
@@ -572,14 +577,17 @@ only exposes the retained signals:
 - mean time to resolution
 - 30-day wake activity buckets
 
-`TemplateEvolutionWorkflow` is the multi-turn session runtime. It:
+`TemplateEvolutionWorkflow` is the multi-turn session runtime. It handles both
+template evolution (skill changes) and soul evolution (personality changes):
 
-1. gathers template context and metrics
+1. gathers template context, metrics, and soul context
 2. creates an `EvolutionSessionEntity`
 3. starts a conversation with `EvolutionStrategy`
 4. records evolution notes, structured ritual recap state, and proposal state
-5. creates a new template version only after approval
-6. persists an `EvolutionSessionRecapEntity` from the explicit
+5. creates a new template version only after approval (`propose_directives`)
+6. can also create a new soul version (`propose_soul_directives`) — this
+   affects all templates sharing the soul
+7. persists an `EvolutionSessionRecapEntity` from the explicit
    `publish_ritual_recap` tool payload plus the approved-change rationale,
    ratings, and transcript snapshot
 
@@ -626,6 +634,92 @@ flowchart TD
   Recap --> Reschedule
 ```
 
+## Soul Documents
+
+Soul documents decouple agent personality from template skills. A soul contains
+four structured personality fields — `voiceDirective`, `toneBounds`,
+`coachingStyle`, and `antiSycophancyPolicy` — that define how an agent
+communicates. Templates define what an agent does (skills); souls define who it
+is (personality).
+
+```mermaid
+erDiagram
+    SoulDocument ||--o{ SoulDocumentVersion : "has versions"
+    SoulDocument ||--|| SoulDocumentHead : "active version pointer"
+    AgentTemplate }o--|| SoulDocument : "SoulAssignmentLink"
+    AgentTemplate ||--o{ AgentTemplateVersion : "has versions (skills only)"
+```
+
+Key invariant: one active soul per template. Multiple templates can share the
+same soul. Instances inherit their soul through their template assignment.
+
+`SoulDocumentService` manages the lifecycle:
+
+- `createSoul()` → creates entity + initial version + head
+- `createVersion()` → archives old versions, creates new active version
+- `assignSoulToTemplate()` → creates/replaces `SoulAssignmentLink`
+- `resolveActiveSoulForTemplate()` → link → head → version chain
+- `getTemplatesUsingSoul()` → reverse lookup
+
+At wake time, `TaskAgentWorkflow` and `ProjectAgentWorkflow` resolve the active
+soul for the template and inject personality fields into the system prompt under
+`## Your Personality`, while skills go under `## Your Operational Directives`.
+Templates without a soul assignment fall back to the legacy
+`## Your Personality & Directives` format.
+
+Six seeded souls are available as a personality palette: Laura, Tom, Max, Iris,
+Sage, and Kit. Laura and Tom are pre-assigned to their respective templates;
+the others are available for manual assignment.
+
+### Standalone Soul Evolution
+
+Soul personality can be evolved in two ways:
+
+1. **During a template ritual** — the template evolution agent can
+   opportunistically propose soul changes via `propose_soul_directives`
+   alongside skill changes
+2. **Standalone soul session** — a dedicated 1-on-1 focused exclusively on
+   personality refinement
+
+Standalone soul sessions are started from the soul detail page via the
+"Soul 1-on-1" button. The flow:
+
+1. `TemplateEvolutionWorkflow.startSoulSession(soulId)` aggregates feedback
+   from all templates sharing the soul via
+   `FeedbackExtractionService.extractForSoul()`
+2. `SoulEvolutionContextBuilder` builds personality-focused LLM context with
+   cross-template feedback grouped by source template
+3. Only `propose_soul_directives` is available (no `propose_directives`)
+4. `completeSoulSession()` creates a new `SoulDocumentVersionEntity`
+
+The UI mirrors the template evolution flow:
+
+- `SoulEvolutionReviewPage`: history-first home with start card and session
+  history
+- `SoulEvolutionChatPage`: multi-turn conversation with the personality
+  evolution agent
+- `SoulEvolutionChatState`: Riverpod notifier managing session lifecycle
+
+Session entities reuse `EvolutionSessionEntity` with `agentId=soulId` and
+`templateId=soulId`.
+
+```mermaid
+flowchart TD
+  SoulDetail["Soul detail page"] --> Review["SoulEvolutionReviewPage"]
+  Review --> Chat["SoulEvolutionChatPage"]
+  Chat --> Start["startSoulSession(soulId)"]
+  Start --> Feedback["FeedbackExtractionService.extractForSoul()"]
+  Feedback --> T1["extract(template1)"]
+  Feedback --> T2["extract(template2)"]
+  T1 --> Merge["Merged feedback by template"]
+  T2 --> Merge
+  Merge --> Context["SoulEvolutionContextBuilder"]
+  Context --> LLM["Conversation with personality evolution agent"]
+  LLM --> Approve{"Soul proposal approved?"}
+  Approve -->|Yes| Version["Create SoulDocumentVersionEntity"]
+  Approve -->|No| Continue["Continue conversation or abandon"]
+```
+
 ## Sync and Privacy
 
 `AgentSyncService` wraps local agent writes. It stamps vector clocks and buffers
@@ -663,22 +757,7 @@ For provider selection and residency details, see [../ai/README.md](../ai/README
 
 ## Planned Improvements
 
-One future direction is still worth tracking explicitly: splitting persona from
-operational directives into a dedicated `SOUL.md`-style artifact.
-
-Current state:
-
-- personality, posture, and operating contract still live together inside the
-  template directive stack
-
-Why that is still on the roadmap:
-
-- it would make identity changes easier to review
-- it would allow one persona to be reused across multiple templates
-- it would reduce churn when only tone or persona changes but the task contract
-  does not
-
-Another planned improvement is activating message-memory compaction on top of
+One planned improvement is activating message-memory compaction on top of
 the summary scaffolding that already exists in the model.
 
 Current state:

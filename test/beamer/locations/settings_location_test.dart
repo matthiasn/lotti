@@ -97,6 +97,7 @@ void main() {
         '/settings/agents/templates/:templateId/review',
         '/settings/agents/souls/create',
         '/settings/agents/souls/:soulId',
+        '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
