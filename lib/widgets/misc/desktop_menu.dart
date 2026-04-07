@@ -114,7 +114,7 @@ class DesktopMenuWrapper extends StatelessWidget {
                   PlatformMenuItem(
                     label: context.messages.viewMenuZoomIn,
                     shortcut: const SingleActivator(
-                      LogicalKeyboardKey.equal,
+                      LogicalKeyboardKey.add,
                       meta: true,
                     ),
                     onSelected: onZoomIn,

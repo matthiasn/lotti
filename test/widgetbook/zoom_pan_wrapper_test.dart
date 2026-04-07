@@ -142,18 +142,27 @@ void main() {
       expect(result, KeyEventResult.ignored);
     });
 
-    testWidgets('Cmd+= zooms in', (tester) async {
+    testWidgets('Cmd++ zooms in', (tester) async {
       final key = GlobalKey<ZoomPanWrapperState>();
       await _pumpWrapper(tester, key: key);
 
       final initialScale = key.currentState!.currentScale;
 
-      // Hold meta then press =
+      // Simulate Cmd++ via handleKeyEvent directly because
+      // LogicalKeyboardKey.add has no physical key mapping in the
+      // test framework.
       await tester.sendKeyDownEvent(_modifierKey);
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.equal);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.equal);
+      final result = key.currentState!.handleKeyEvent(
+        FocusNode(),
+        const KeyDownEvent(
+          physicalKey: PhysicalKeyboardKey.numpadAdd,
+          logicalKey: LogicalKeyboardKey.add,
+          timeStamp: Duration.zero,
+        ),
+      );
       await tester.sendKeyUpEvent(_modifierKey);
 
+      expect(result, KeyEventResult.handled);
       expect(
         key.currentState!.controller.value.getMaxScaleOnAxis(),
         greaterThan(initialScale),

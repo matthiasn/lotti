@@ -43,8 +43,7 @@ class ZoomPanWrapperState extends State<ZoomPanWrapper> {
         HardwareKeyboard.instance.isControlPressed;
     if (!isModifierPressed) return KeyEventResult.ignored;
 
-    if (event.logicalKey == LogicalKeyboardKey.equal ||
-        event.logicalKey == LogicalKeyboardKey.add) {
+    if (event.logicalKey == LogicalKeyboardKey.add) {
       applyScale(currentScale + zoomStep);
       return KeyEventResult.handled;
     }
