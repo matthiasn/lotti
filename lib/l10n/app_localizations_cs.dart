@@ -676,7 +676,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulDisplayNameLabel => 'Název';
 
   @override
-  String get agentSoulEmptyList => 'Zatím žádné dokumenty duše';
+  String get agentSoulEmptyList => 'Zatím žádné duše';
 
   @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';

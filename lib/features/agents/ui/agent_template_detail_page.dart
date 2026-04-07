@@ -123,12 +123,13 @@ class _AgentTemplateDetailPageState
     );
 
     // Seed the soul assignment once from the resolved link chain.
+    // Guard: skip if the user already picked a soul before the provider loaded.
     if (!_didSeedSoulId && soulVersionAsync.hasValue) {
       final soulVersion = soulVersionAsync.value?.mapOrNull(
         soulDocumentVersion: (v) => v,
       );
-      _selectedSoulId = soulVersion?.agentId;
-      _originalSoulId = _selectedSoulId;
+      _selectedSoulId ??= soulVersion?.agentId;
+      _originalSoulId = soulVersion?.agentId;
       _didSeedSoulId = true;
     }
 
@@ -387,7 +388,7 @@ class _AgentTemplateDetailPageState
       final reportDirective = _reportDirectiveController.text.trim();
 
       if (widget.isCreateMode) {
-        await templateService.createTemplate(
+        final created = await templateService.createTemplate(
           displayName: name,
           kind: AgentTemplateKind.taskAgent,
           modelId: kDefaultAgentTemplateModelId,
@@ -397,6 +398,15 @@ class _AgentTemplateDetailPageState
           reportDirective: reportDirective,
           authoredBy: 'user',
         );
+
+        if (_selectedSoulId != null) {
+          final soulService = ref.read(soulDocumentServiceProvider);
+          await soulService.assignSoulToTemplate(
+            created.id,
+            _selectedSoulId!,
+          );
+        }
+
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

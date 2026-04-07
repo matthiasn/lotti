@@ -198,10 +198,17 @@ class SoulDocumentService {
   }
 
   /// Update mutable fields on a soul document (currently just display name).
+  ///
+  /// Rejects blank display names and skips the write when nothing changed.
   Future<SoulDocumentEntity> updateSoul({
     required String soulId,
     String? displayName,
   }) async {
+    final trimmed = displayName?.trim();
+    if (trimmed != null && trimmed.isEmpty) {
+      throw ArgumentError('displayName must not be blank');
+    }
+
     final now = clock.now();
 
     return syncService.runInTransaction(() async {
@@ -210,8 +217,11 @@ class SoulDocumentService {
         throw StateError('Soul document $soulId not found');
       }
 
+      final newName = trimmed ?? soul.displayName;
+      if (newName == soul.displayName) return soul;
+
       final updated = soul.copyWith(
-        displayName: displayName ?? soul.displayName,
+        displayName: newName,
         updatedAt: now,
       );
       await syncService.upsertEntity(updated);
@@ -406,9 +416,9 @@ class SoulDocumentService {
 
     final now = clock.now();
 
-    await syncService.runInTransaction(() async {
+    final deleted = await syncService.runInTransaction(() async {
       final soul = await getSoul(soulId);
-      if (soul == null) return;
+      if (soul == null) return false;
 
       final versions = await getVersionHistory(soulId, limit: -1);
       for (final version in versions) {
@@ -423,9 +433,12 @@ class SoulDocumentService {
       }
 
       await syncService.upsertEntity(soul.copyWith(deletedAt: now));
+      return true;
     });
 
-    developer.log('Deleted soul $soulId', name: _logTag);
+    if (deleted) {
+      developer.log('Deleted soul $soulId', name: _logTag);
+    }
   }
 
   // ── seeding ───────────────────────────────────────────────────────────────

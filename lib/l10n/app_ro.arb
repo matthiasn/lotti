@@ -313,12 +313,12 @@
   "agentSoulAssignmentLabel": "Suflet",
   "agentSoulCoachingStyleLabel": "Stil de coaching",
   "agentSoulCreatedSuccess": "Suflet creat",
-  "agentSoulCreateTitle": "Creați un suflet",
+  "agentSoulCreateTitle": "Creează un suflet",
   "agentSoulDeleteConfirmBody": "Aceasta va elimina sufletul și toate versiunile sale.",
-  "agentSoulDeleteConfirmTitle": "Ștergeți sufletul",
+  "agentSoulDeleteConfirmTitle": "Șterge sufletul",
   "agentSoulDetailTitle": "Detalii suflet",
   "agentSoulDisplayNameLabel": "Nume",
-  "agentSoulEmptyList": "Nu există încă documente de suflet",
+  "agentSoulEmptyList": "Nu există încă suflete",
   "agentSoulFieldAntiSycophancy": "Anti-lingușire",
   "agentSoulFieldCoachingStyle": "Stil de coaching",
   "agentSoulFieldToneBounds": "Limite de ton",
@@ -328,8 +328,8 @@
   "agentSoulNotFound": "Suflet negăsit",
   "agentSoulProposalSubtitle": "Modificări de personalitate propuse",
   "agentSoulProposalTitle": "Propunere de personalitate a sufletului",
-  "agentSoulRollbackAction": "Reveniți la această versiune",
-  "agentSoulRollbackConfirm": "Reveniți la versiunea {version}? Toate șabloanele care folosesc acest suflet vor prelua modificarea.",
+  "agentSoulRollbackAction": "Revino la această versiune",
+  "agentSoulRollbackConfirm": "Revino la versiunea {version}? Toate șabloanele care folosesc acest suflet vor prelua modificarea.",
   "@agentSoulRollbackConfirm": {
     "placeholders": {
       "version": {
@@ -337,7 +337,7 @@
       }
     }
   },
-  "agentSoulSelectTitle": "Selectați un suflet",
+  "agentSoulSelectTitle": "Selectează un suflet",
   "agentSoulSettingsTab": "Setări",
   "agentSoulsTitle": "Suflete",
   "agentSoulToneBoundsLabel": "Limite de ton",

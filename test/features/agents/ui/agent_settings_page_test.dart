@@ -508,7 +508,10 @@ void main() {
       await tester.tap(find.text(context.messages.agentSoulsTitle));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(
+        find.byTooltip(context.messages.agentSoulCreateTitle),
+        findsOneWidget,
+      );
     });
 
     testWidgets('tapping FAB on Souls tab navigates to soul creation', (

@@ -24,6 +24,8 @@ class SoulSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final soulsAsync = ref.watch(allSoulDocumentsProvider);
 
+    final isLoading = soulsAsync.isLoading && !soulsAsync.hasValue;
+
     final souls = switch (soulsAsync) {
       AsyncData(:final value) => value.whereType<SoulDocumentEntity>().toList(),
       _ => <SoulDocumentEntity>[],
@@ -32,6 +34,29 @@ class SoulSelector extends ConsumerWidget {
     final selected = selectedSoulId != null
         ? souls.where((s) => s.id == selectedSoulId).firstOrNull
         : null;
+
+    // Resolve display text: show the soul name, a loading indicator, or the
+    // "none assigned" placeholder depending on state.
+    final Widget displayChild;
+    if (isLoading) {
+      displayChild = const SizedBox(
+        height: 16,
+        width: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (selected != null) {
+      displayChild = Text(
+        selected.displayName,
+        style: context.textTheme.bodyLarge,
+      );
+    } else {
+      displayChild = Text(
+        context.messages.agentSoulNoneAssigned,
+        style: context.textTheme.bodyLarge?.copyWith(
+          color: context.colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
+      );
+    }
 
     return InkWell(
       onTap: souls.isNotEmpty ? () => _showSoulPicker(context, souls) : null,
@@ -53,19 +78,9 @@ class SoulSelector extends ConsumerWidget {
               const Icon(Icons.arrow_drop_down),
             ],
           ),
-          enabled: souls.isNotEmpty,
+          enabled: !isLoading && souls.isNotEmpty,
         ),
-        child: selected != null
-            ? Text(
-                selected.displayName,
-                style: context.textTheme.bodyLarge,
-              )
-            : Text(
-                context.messages.agentSoulNoneAssigned,
-                style: context.textTheme.bodyLarge?.copyWith(
-                  color: context.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
+        child: displayChild,
       ),
     );
   }

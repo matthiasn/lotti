@@ -669,14 +669,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulCreatedSuccess => 'Suflet creat';
 
   @override
-  String get agentSoulCreateTitle => 'Creați un suflet';
+  String get agentSoulCreateTitle => 'Creează un suflet';
 
   @override
   String get agentSoulDeleteConfirmBody =>
       'Aceasta va elimina sufletul și toate versiunile sale.';
 
   @override
-  String get agentSoulDeleteConfirmTitle => 'Ștergeți sufletul';
+  String get agentSoulDeleteConfirmTitle => 'Șterge sufletul';
 
   @override
   String get agentSoulDetailTitle => 'Detalii suflet';
@@ -685,7 +685,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulDisplayNameLabel => 'Nume';
 
   @override
-  String get agentSoulEmptyList => 'Nu există încă documente de suflet';
+  String get agentSoulEmptyList => 'Nu există încă suflete';
 
   @override
   String get agentSoulFieldAntiSycophancy => 'Anti-lingușire';
@@ -716,15 +716,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propunere de personalitate a sufletului';
 
   @override
-  String get agentSoulRollbackAction => 'Reveniți la această versiune';
+  String get agentSoulRollbackAction => 'Revino la această versiune';
 
   @override
   String agentSoulRollbackConfirm(int version) {
-    return 'Reveniți la versiunea $version? Toate șabloanele care folosesc acest suflet vor prelua modificarea.';
+    return 'Revino la versiunea $version? Toate șabloanele care folosesc acest suflet vor prelua modificarea.';
   }
 
   @override
-  String get agentSoulSelectTitle => 'Selectați un suflet';
+  String get agentSoulSelectTitle => 'Selectează un suflet';
 
   @override
   String get agentSoulSettingsTab => 'Setări';
