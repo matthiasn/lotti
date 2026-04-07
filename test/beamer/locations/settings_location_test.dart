@@ -5,6 +5,7 @@ import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
@@ -562,6 +563,43 @@ void main() {
       expect(pages[2].child, isA<AgentDetailPage>());
       final detailPage = pages[2].child as AgentDetailPage;
       expect(detailPage.agentId, 'agent-456');
+    });
+
+    test('buildPages builds AgentSoulDetailPage for create', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/agents/souls/create'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentSoulDetailPage>());
+    });
+
+    test('buildPages builds AgentSoulDetailPage with soulId', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/agents/souls/soul-789'),
+      );
+      final location = SettingsLocation(routeInformation);
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'soulId': 'soul-789'},
+      );
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentSoulDetailPage>());
+      final detailPage = pages[2].child as AgentSoulDetailPage;
+      expect(detailPage.soulId, 'soul-789');
     });
 
     test('buildPages builds FlagsPage', () {

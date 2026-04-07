@@ -607,5 +607,277 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets('shows error when soul fetch fails', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentSoulDetailPage(soulId: 'soul-error'),
+          theme: DesignSystemTheme.light(),
+          overrides: [
+            soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+            soulDocumentProvider.overrideWith(
+              (ref, id) => throw Exception('fetch failed'),
+            ),
+            activeSoulVersionProvider.overrideWith(
+              (ref, id) async => null,
+            ),
+            soulVersionHistoryProvider.overrideWith(
+              (ref, id) async => <AgentDomainEntity>[],
+            ),
+            templatesUsingSoulProvider.overrideWith(
+              (ref, id) async => <String>[],
+            ),
+            allSoulDocumentsProvider.overrideWith(
+              (ref) async => <AgentDomainEntity>[],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('delete confirmation calls deleteSoul and navigates back', (
+      tester,
+    ) async {
+      when(
+        () => mockSoulService.deleteSoul(any()),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        buildEditSubject(soulId: 'soul-del-confirm'),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Switch to Info tab and tap delete.
+      await tester.tap(find.text(context.messages.agentSoulInfoTab));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Confirm the dialog by tapping the delete button.
+      // The dialog has a delete button distinct from the one on the page.
+      await tester.tap(find.text(context.messages.deleteButton).last);
+      await tester.pumpAndSettle();
+
+      verify(() => mockSoulService.deleteSoul('soul-del-confirm')).called(1);
+    });
+
+    testWidgets('delete failure shows error snackbar', (tester) async {
+      when(
+        () => mockSoulService.deleteSoul(any()),
+      ).thenThrow(Exception('delete failed'));
+
+      await tester.pumpWidget(
+        buildEditSubject(soulId: 'soul-del-fail'),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Switch to Info tab and tap delete.
+      await tester.tap(find.text(context.messages.agentSoulInfoTab));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      // Confirm delete in the dialog.
+      await tester.tap(find.text(context.messages.deleteButton).last);
+      await tester.pumpAndSettle();
+
+      // Error snackbar should appear.
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('rollback confirmation calls rollbackToVersion', (
+      tester,
+    ) async {
+      when(
+        () => mockSoulService.rollbackToVersion(
+          soulId: any(named: 'soulId'),
+          versionId: any(named: 'versionId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final activeVersion = makeTestSoulDocumentVersion(
+        id: 'v2',
+        agentId: 'soul-rb-confirm',
+        version: 2,
+        // ignore: avoid_redundant_argument_values
+        status: SoulDocumentVersionStatus.active,
+      );
+      final archivedVersion = makeTestSoulDocumentVersion(
+        id: 'v1',
+        agentId: 'soul-rb-confirm',
+        // ignore: avoid_redundant_argument_values
+        version: 1,
+        status: SoulDocumentVersionStatus.archived,
+      );
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          soulId: 'soul-rb-confirm',
+          activeVersion: activeVersion,
+          versionHistory: [activeVersion, archivedVersion],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Switch to Info tab.
+      await tester.tap(find.text(context.messages.agentSoulInfoTab));
+      await tester.pumpAndSettle();
+
+      // Tap the restore icon on the archived version.
+      await tester.tap(find.byIcon(Icons.restore));
+      await tester.pumpAndSettle();
+
+      // Confirm the rollback dialog.
+      await tester.tap(
+        find.text(context.messages.agentSoulRollbackAction).last,
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockSoulService.rollbackToVersion(
+          soulId: 'soul-rb-confirm',
+          versionId: 'v1',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('rollback failure shows error snackbar', (tester) async {
+      when(
+        () => mockSoulService.rollbackToVersion(
+          soulId: any(named: 'soulId'),
+          versionId: any(named: 'versionId'),
+        ),
+      ).thenThrow(Exception('rollback failed'));
+
+      final activeVersion = makeTestSoulDocumentVersion(
+        id: 'v2',
+        agentId: 'soul-rb-fail',
+        version: 2,
+        // ignore: avoid_redundant_argument_values
+        status: SoulDocumentVersionStatus.active,
+      );
+      final archivedVersion = makeTestSoulDocumentVersion(
+        id: 'v1',
+        agentId: 'soul-rb-fail',
+        // ignore: avoid_redundant_argument_values
+        version: 1,
+        status: SoulDocumentVersionStatus.archived,
+      );
+
+      await tester.pumpWidget(
+        buildEditSubject(
+          soulId: 'soul-rb-fail',
+          activeVersion: activeVersion,
+          versionHistory: [activeVersion, archivedVersion],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Switch to Info tab.
+      await tester.tap(find.text(context.messages.agentSoulInfoTab));
+      await tester.pumpAndSettle();
+
+      // Tap the restore icon on the archived version.
+      await tester.tap(find.byIcon(Icons.restore));
+      await tester.pumpAndSettle();
+
+      // Confirm the rollback dialog.
+      await tester.tap(
+        find.text(context.messages.agentSoulRollbackAction).last,
+      );
+      await tester.pumpAndSettle();
+
+      // Error snackbar should appear.
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('save failure in edit mode shows error snackbar', (
+      tester,
+    ) async {
+      when(
+        () => mockSoulService.updateSoul(
+          soulId: any(named: 'soulId'),
+          displayName: any(named: 'displayName'),
+        ),
+      ).thenAnswer(
+        (_) async => makeTestSoulDocument(id: 'soul-save-fail'),
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenThrow(Exception('save failed'));
+
+      await tester.pumpWidget(
+        buildEditSubject(soulId: 'soul-save-fail'),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Modify voice directive to make form dirty.
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) =>
+              w is TextField &&
+              w.decoration?.labelText ==
+                  context.messages.agentSoulVoiceDirectiveLabel,
+        ),
+        'Will fail',
+      );
+      await tester.pump();
+
+      // Tap save.
+      await tester.tap(find.text(context.messages.agentTemplateSaveNewVersion));
+      await tester.pumpAndSettle();
+
+      // Error snackbar should appear.
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets(
+      'Info tab shows none-assigned text when no templates use soul',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildEditSubject(
+            soulId: 'soul-no-templates',
+            assignedTemplateIds: [],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        // Switch to Info tab.
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(context.messages.agentTemplateNoneAssigned),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
