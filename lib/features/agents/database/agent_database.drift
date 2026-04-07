@@ -18,6 +18,7 @@ CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
 CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
+CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
 
 CREATE TABLE agent_links (
   id TEXT NOT NULL PRIMARY KEY,
@@ -193,6 +194,8 @@ sumTokenUsageByTemplateSince: SELECT
   CAST(COALESCE(SUM(json_extract(ae.serialized, '$.outputTokens')), 0) AS INT) AS total_output,
   CAST(COALESCE(SUM(json_extract(ae.serialized, '$.thoughtsTokens')), 0) AS INT) AS total_thoughts
   FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'wakeTokenUsage' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL;
+
+getGlobalTokenUsageSince: SELECT * FROM agent_entities WHERE type = 'wakeTokenUsage' AND created_at >= :since AND deleted_at IS NULL ORDER BY created_at DESC;
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 

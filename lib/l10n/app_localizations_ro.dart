@@ -1005,6 +1005,84 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Treziri';
 
   @override
+  String get agentStatsTabTitle => 'Statistici';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Utilizare zilnică';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Utilizați mai multe tokenuri astăzi decât de obicei la $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Utilizați mai puține tokenuri astăzi decât de obicei la $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Medie';
+
+  @override
+  String get agentStatsTodayLabel => 'Astăzi';
+
+  @override
+  String get agentStatsAllDayLegend => 'Toată ziua';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Zilnic până la $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Activitatea agenților';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Activ de $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de treziri',
+      few: '$count treziri',
+      one: '1 trezire',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage =>
+      'Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.';
+
+  @override
+  String get agentStatsTokensUnit => 'tokenuri';
+
+  @override
+  String get agentStatsWeekTotalLabel => 'Total 7 zile';
+
+  @override
+  String get agentStatsInputLabel => 'Intrare';
+
+  @override
+  String get agentStatsOutputLabel => 'Ieșire';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Gânduri';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Rată cache';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokenuri / trezire';
+
+  @override
+  String get agentStatsWakesLabel => 'Treziri';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Sugestii de acțiuni';
 
   @override

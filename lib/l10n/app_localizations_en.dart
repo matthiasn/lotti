@@ -990,6 +990,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Wakes';
 
   @override
+  String get agentStatsTabTitle => 'Stats';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Daily Usage';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'You\'re using more tokens today than you usually do by $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'You\'re using fewer tokens today than you usually do by $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Average';
+
+  @override
+  String get agentStatsTodayLabel => 'Today';
+
+  @override
+  String get agentStatsAllDayLegend => 'All Day';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Daily by $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Agent Activity';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Active for $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wakes',
+      one: '1 wake',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage => 'No token usage recorded in the past 7 days.';
+
+  @override
+  String get agentStatsTokensUnit => 'tokens';
+
+  @override
+  String get agentStatsWeekTotalLabel => '7-Day Total';
+
+  @override
+  String get agentStatsInputLabel => 'Input';
+
+  @override
+  String get agentStatsOutputLabel => 'Output';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Thoughts';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Cache Rate';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokens / Wake';
+
+  @override
+  String get agentStatsWakesLabel => 'Wakes';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Action Item Suggestions';
 
   @override

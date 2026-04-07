@@ -4,14 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/daily_token_usage.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -79,13 +82,47 @@ void main() {
         pendingWakeTargetTitleProvider.overrideWith(
           (ref, String? entryId) async => subjectTitles[entryId],
         ),
+        hourlyWakeActivityProvider.overrideWith((ref) async => const []),
+        dailyTokenUsageProvider.overrideWith(
+          (ref, days) async => const <DailyTokenUsage>[],
+        ),
+        tokenUsageComparisonProvider.overrideWith(
+          (ref, days) async => const TokenUsageComparison(
+            averageTokensByTimeOfDay: 0,
+            todayTokens: 0,
+          ),
+        ),
+        dailyTokenUsageByModelProvider.overrideWith(
+          (ref, days) async => const <String, List<DailyTokenUsage>>{},
+        ),
+        tokenSourceBreakdownProvider.overrideWith(
+          (ref) async => const <TokenSourceBreakdown>[],
+        ),
         ...extraOverrides,
       ],
     );
   }
 
   group('AgentSettingsPage', () {
-    testWidgets('shows Templates tab by default with template cards', (
+    testWidgets('shows Stats tab by default', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      expect(
+        find.text(context.messages.agentStatsTabTitle),
+        findsOneWidget,
+      );
+      // TokenStatsTab must be on-stage (active), not just mounted offstage.
+      expect(find.byType(TokenStatsTab), findsOneWidget);
+      // The daily usage heading is unique to the Stats tab content.
+      expect(
+        find.text(context.messages.agentStatsDailyUsageHeading),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('switches to Templates tab and shows template cards', (
       tester,
     ) async {
       final laura = makeTestTemplate(
@@ -105,10 +142,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
-      expect(
-        find.text(context.messages.agentTemplatesTitle),
-        findsOneWidget,
-      );
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(find.text('Laura'), findsOneWidget);
       expect(find.text('Tom'), findsOneWidget);
     });
@@ -118,6 +154,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(
         find.text(context.messages.agentTemplateEmptyList),
         findsOneWidget,
@@ -257,6 +296,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(
         find.text(context.messages.agentTemplateKindTaskAgent),
         findsOneWidget,
@@ -278,6 +320,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(
         find.text(context.messages.agentTemplateKindImprover),
         findsOneWidget,
@@ -286,6 +331,10 @@ void main() {
 
     testWidgets('has FAB for creating templates', (tester) async {
       await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.add), findsOneWidget);
@@ -320,12 +369,33 @@ void main() {
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
             ),
+            hourlyWakeActivityProvider.overrideWith(
+              (ref) async => const [],
+            ),
+            dailyTokenUsageProvider.overrideWith(
+              (ref, days) async => const <DailyTokenUsage>[],
+            ),
+            tokenUsageComparisonProvider.overrideWith(
+              (ref, days) async => const TokenUsageComparison(
+                averageTokensByTimeOfDay: 0,
+                todayTokens: 0,
+              ),
+            ),
+            dailyTokenUsageByModelProvider.overrideWith(
+              (ref, days) async => const <String, List<DailyTokenUsage>>{},
+            ),
+            tokenSourceBreakdownProvider.overrideWith(
+              (ref) async => const <TokenSourceBreakdown>[],
+            ),
           ],
         ),
       );
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(
         find.text(context.messages.commonError),
         findsOneWidget,
@@ -368,12 +438,33 @@ void main() {
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
             ),
+            hourlyWakeActivityProvider.overrideWith(
+              (ref) async => const [],
+            ),
+            dailyTokenUsageProvider.overrideWith(
+              (ref, days) async => const <DailyTokenUsage>[],
+            ),
+            tokenUsageComparisonProvider.overrideWith(
+              (ref, days) async => const TokenUsageComparison(
+                averageTokensByTimeOfDay: 0,
+                todayTokens: 0,
+              ),
+            ),
+            dailyTokenUsageByModelProvider.overrideWith(
+              (ref, days) async => const <String, List<DailyTokenUsage>>{},
+            ),
+            tokenSourceBreakdownProvider.overrideWith(
+              (ref) async => const <TokenSourceBreakdown>[],
+            ),
           ],
         ),
       );
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
+      await tester.pumpAndSettle();
+
       expect(
         find.text(context.messages.agentTemplateVersionLabel(3)),
         findsOneWidget,
@@ -385,6 +476,10 @@ void main() {
       beamToNamedOverride = (path) => navigatedPath = path;
 
       await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.add));
@@ -405,6 +500,10 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(templates: [template]));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSettingsPage));
+      await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Nav Template'));
@@ -452,6 +551,10 @@ void main() {
             ],
           ),
         );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSettingsPage));
+        await tester.tap(find.text(context.messages.agentTemplatesTitle));
         await tester.pumpAndSettle();
 
         if (expectVisible) {
@@ -592,6 +695,24 @@ void main() {
             ),
             pendingWakeRecordsProvider.overrideWith(
               (ref) async => const <PendingWakeRecord>[],
+            ),
+            hourlyWakeActivityProvider.overrideWith(
+              (ref) async => const [],
+            ),
+            dailyTokenUsageProvider.overrideWith(
+              (ref, days) async => const <DailyTokenUsage>[],
+            ),
+            tokenUsageComparisonProvider.overrideWith(
+              (ref, days) async => const TokenUsageComparison(
+                averageTokensByTimeOfDay: 0,
+                todayTokens: 0,
+              ),
+            ),
+            dailyTokenUsageByModelProvider.overrideWith(
+              (ref, days) async => const <String, List<DailyTokenUsage>>{},
+            ),
+            tokenSourceBreakdownProvider.overrideWith(
+              (ref) async => const <TokenSourceBreakdown>[],
             ),
           ],
         ),

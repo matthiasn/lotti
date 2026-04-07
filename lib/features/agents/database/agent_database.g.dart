@@ -2825,6 +2825,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_thread',
     'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
   );
+  late final Index idxAgentEntitiesTokenUsageSince = Index(
+    'idx_agent_entities_token_usage_since',
+    'CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities (type, created_at DESC) WHERE type = \'wakeTokenUsage\' AND deleted_at IS NULL',
+  );
   late final AgentLinks agentLinks = AgentLinks(this);
   late final Index idxAgentLinksFrom = Index(
     'idx_agent_links_from',
@@ -3392,6 +3396,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     );
   }
 
+  Selectable<AgentEntity> getGlobalTokenUsageSince(DateTime since) {
+    return customSelect(
+      'SELECT * FROM agent_entities WHERE type = \'wakeTokenUsage\' AND created_at >= ?1 AND deleted_at IS NULL ORDER BY created_at DESC',
+      variables: [Variable<DateTime>(since)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',
@@ -3450,6 +3462,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
     idxAgentEntitiesThread,
+    idxAgentEntitiesTokenUsageSince,
     agentLinks,
     idxAgentLinksFrom,
     idxAgentLinksTo,

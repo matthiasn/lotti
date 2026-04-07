@@ -1002,6 +1002,83 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Despertares';
 
   @override
+  String get agentStatsTabTitle => 'Estadísticas';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Uso diario';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Hoy estás usando más tokens de lo habitual a las $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Hoy estás usando menos tokens de lo habitual a las $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Promedio';
+
+  @override
+  String get agentStatsTodayLabel => 'Hoy';
+
+  @override
+  String get agentStatsAllDayLegend => 'Todo el día';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Diario hasta las $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Actividad de agentes';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Activo durante $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count despertares',
+      one: '1 despertar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage =>
+      'No se registró uso de tokens en los últimos 7 días.';
+
+  @override
+  String get agentStatsTokensUnit => 'tokens';
+
+  @override
+  String get agentStatsWeekTotalLabel => 'Total 7 días';
+
+  @override
+  String get agentStatsInputLabel => 'Entrada';
+
+  @override
+  String get agentStatsOutputLabel => 'Salida';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Pensamientos';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Tasa de caché';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokens / despertar';
+
+  @override
+  String get agentStatsWakesLabel => 'Despertares';
+
+  @override
   String get aiAssistantActionItemSuggestions =>
       'Sugerencias de elementos de acción';
 

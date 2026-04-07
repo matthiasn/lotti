@@ -415,6 +415,7 @@ EvolutionSessionEntity _$EvolutionSessionEntityFromJson(
       ? null
       : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
   proposedVersionId: json['proposedVersionId'] as String?,
+  proposedSoulVersionId: json['proposedSoulVersionId'] as String?,
   feedbackSummary: json['feedbackSummary'] as String?,
   userRating: (json['userRating'] as num?)?.toDouble(),
   completedAt: json['completedAt'] == null
@@ -438,6 +439,7 @@ Map<String, dynamic> _$EvolutionSessionEntityToJson(
   'updatedAt': instance.updatedAt.toIso8601String(),
   'vectorClock': instance.vectorClock,
   'proposedVersionId': instance.proposedVersionId,
+  'proposedSoulVersionId': instance.proposedSoulVersionId,
   'feedbackSummary': instance.feedbackSummary,
   'userRating': instance.userRating,
   'completedAt': instance.completedAt?.toIso8601String(),

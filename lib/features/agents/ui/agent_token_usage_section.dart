@@ -146,7 +146,7 @@ class _WideTokenUsageLayout extends StatelessWidget {
         for (final summary in summaries)
           TableRow(
             children: [
-              _cell(_shortModelName(summary.modelId), modelStyle),
+              _cell(shortModelName(summary.modelId), modelStyle),
               _cell(numberFormat.format(summary.inputTokens), valueStyle),
               _cell(numberFormat.format(summary.outputTokens), valueStyle),
               _cell(numberFormat.format(summary.thoughtsTokens), valueStyle),
@@ -260,7 +260,7 @@ class _ModelCard extends StatelessWidget {
 
     final title = isTotal
         ? messages.agentTokenUsageTotalTokens
-        : _shortModelName(summary.modelId);
+        : shortModelName(summary.modelId);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +324,7 @@ class _ModelCard extends StatelessWidget {
 }
 
 /// Shorten model IDs like "models/gemini-2.5-pro" to "gemini-2.5-pro".
-String _shortModelName(String modelId) {
+String shortModelName(String modelId) {
   final lastSlash = modelId.lastIndexOf('/');
   if (lastSlash >= 0 && lastSlash < modelId.length - 1) {
     return modelId.substring(lastSlash + 1);

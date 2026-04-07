@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.943" date="2026-04-07">
+      <description>
+          <p>Token usage Stats tab in Agents Settings: iOS battery-usage-inspired dashboard showing 7-day and 30-day token consumption with interactive bar charts, average vs. today comparison, per-model breakdowns, and per-template source activity with high-usage alerts.</p>
+          <p>Wake activity chart migrated into the new Stats tab for a unified view.</p>
+      </description>
+    </release>
     <release version="0.9.942" date="2026-04-07">
       <description>
           <p>Soul evolution UI: standalone soul evolution page with an interactive evolution catalog, soul selector, and a conversation-based refinement workflow for iteratively shaping agent soul documents from templates.</p>
