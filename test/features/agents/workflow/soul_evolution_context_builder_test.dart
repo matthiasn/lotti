@@ -23,13 +23,15 @@ void main() {
         sessionNumber: 1,
       );
 
-      expect(ctx.systemPrompt, contains('personality evolution agent'));
+      expect(ctx.systemPrompt, contains('Test Soul'));
+      expect(ctx.systemPrompt, contains('Be warm and clear.'));
       expect(ctx.systemPrompt, contains('propose_soul_directives'));
       expect(ctx.systemPrompt, contains('publish_ritual_recap'));
       expect(ctx.systemPrompt, contains('record_evolution_note'));
+      expect(ctx.systemPrompt, contains('CategoryRatings'));
     });
 
-    test('does not mention propose_directives', () {
+    test('does not mention propose_directives as standalone tool', () {
       final ctx = builder.build(
         soul: makeTestSoulDocument(),
         currentVersion: makeTestSoulDocumentVersion(),
@@ -40,7 +42,34 @@ void main() {
         sessionNumber: 1,
       );
 
-      expect(ctx.systemPrompt, isNot(contains('propose_directives')));
+      // Should contain propose_soul_directives but not the
+      // template-only propose_directives as a standalone tool reference.
+      expect(ctx.systemPrompt, contains('propose_soul_directives'));
+      expect(
+        ctx.systemPrompt,
+        isNot(contains('**propose_directives**')),
+      );
+    });
+
+    test('instructs agent to produce visible text', () {
+      final ctx = builder.build(
+        soul: makeTestSoulDocument(),
+        currentVersion: makeTestSoulDocumentVersion(),
+        recentVersions: [],
+        affectedTemplates: [],
+        feedbackByTemplate: {},
+        pastNotes: [],
+        sessionNumber: 1,
+      );
+
+      expect(
+        ctx.systemPrompt,
+        contains('MUST Contain Visible Text'),
+      );
+      expect(
+        ctx.systemPrompt,
+        contains('Greet the user warmly'),
+      );
     });
 
     test('mentions cross-template impact', () {
