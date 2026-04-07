@@ -1525,4 +1525,144 @@ void main() {
       expect(find.text('Approve & Save'), findsNothing);
     });
   });
+
+  group('ABComparison', () {
+    testWidgets('renders question and both options', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {
+            'question': 'Which tone works better during a crisis?',
+            'optionA': 'We hit some hurdles but we are making progress!',
+            'optionB': 'Sync reliability is below 100%. Critical failure.',
+            'labelA': 'Encouraging',
+            'labelB': 'Fact-first',
+          }),
+        ),
+      );
+
+      expect(
+        find.text('Which tone works better during a crisis?'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('We hit some hurdles but we are making progress!'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Sync reliability is below 100%. Critical failure.'),
+        findsOneWidget,
+      );
+      expect(find.text('· Encouraging'), findsOneWidget);
+      expect(find.text('· Fact-first'), findsOneWidget);
+    });
+
+    testWidgets('returns SizedBox when question is empty', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {
+            'question': '',
+            'optionA': 'Some text',
+            'optionB': 'Other text',
+          }),
+        ),
+      );
+
+      expect(find.byType(SizedBox), findsWidgets);
+      expect(find.text('Some text'), findsNothing);
+    });
+
+    testWidgets('returns SizedBox when optionA is empty', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {
+            'question': 'Which?',
+            'optionA': '',
+            'optionB': 'Option B text',
+          }),
+        ),
+      );
+
+      expect(find.text('Option B text'), findsNothing);
+    });
+
+    testWidgets('returns SizedBox when optionB is empty', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {
+            'question': 'Which?',
+            'optionA': 'Option A text',
+            'optionB': '',
+          }),
+        ),
+      );
+
+      expect(find.text('Option A text'), findsNothing);
+    });
+
+    testWidgets('returns SizedBox for non-map data', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {}),
+        ),
+      );
+
+      expect(find.byType(SizedBox), findsWidgets);
+    });
+
+    testWidgets('works without labels', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(abComparisonCardItem, {
+            'question': 'Which?',
+            'optionA': 'Phrasing A',
+            'optionB': 'Phrasing B',
+          }),
+        ),
+      );
+
+      expect(find.text('Phrasing A'), findsOneWidget);
+      expect(find.text('Phrasing B'), findsOneWidget);
+      expect(find.text('Option A'), findsOneWidget);
+      expect(find.text('Option B'), findsOneWidget);
+    });
+
+    testWidgets('dispatches event on selection', (tester) async {
+      final events = <UiEvent>[];
+      final widget = Builder(
+        builder: (context) {
+          final itemContext = CatalogItemContext(
+            data: {
+              'question': 'Which?',
+              'optionA': 'Warm phrasing.',
+              'optionB': 'Direct phrasing.',
+              'labelA': 'Warm',
+              'labelB': 'Direct',
+            },
+            id: 'test-component',
+            buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+            dispatchEvent: events.add,
+            buildContext: context,
+            dataContext: DataContext(DataModel(), '/'),
+            getComponent: (_) => null,
+            surfaceId: 'test-surface',
+          );
+          return abComparisonCardItem.widgetBuilder(itemContext);
+        },
+      );
+
+      await tester.pumpWidget(makeTestableWidget(widget));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Choose A'));
+      await tester.pumpAndSettle();
+
+      expect(events, hasLength(1));
+      final event = events.first as UserActionEvent;
+      expect(event.name, 'ab_comparison_submitted');
+
+      final payload =
+          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+      expect(payload['value'], contains('Option A'));
+    });
+  });
 }
