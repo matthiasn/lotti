@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/widgetbook/mock_data.dart';
+import 'package:lotti/widgetbook/zoom_pan_wrapper.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 void main() {
@@ -45,7 +46,6 @@ class WidgetbookApp extends StatelessWidget {
         InspectorAddon(),
         GridAddon(100),
         AlignmentAddon(),
-        ZoomAddon(),
         MaterialThemeAddon(
           themes: [lightTheme, darkTheme],
           initialTheme: darkTheme,
@@ -58,7 +58,7 @@ class WidgetbookApp extends StatelessWidget {
           FlutterQuillLocalizations.delegate,
         ],
         home: Scaffold(
-          body: child,
+          body: ZoomPanWrapper(child: child),
         ),
       ),
       directories: [

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.944" date="2026-04-08">
+      <description>
+          <p>Desktop zoom: Cmd+/- keyboard shortcuts and View menu items for zooming the app UI in and out, with Cmd+0 to reset. Zoom level persists across sessions.</p>
+      </description>
+    </release>
     <release version="0.9.943" date="2026-04-07">
       <description>
           <p>Token usage Stats tab in Agents Settings: iOS battery-usage-inspired dashboard showing 7-day and 30-day token consumption with interactive bar charts, average vs. today comparison, per-model breakdowns, and per-template source activity with high-usage alerts.</p>

@@ -2320,6 +2320,9 @@
     }
   },
   "viewMenuTitle": "Zobrazit",
+  "viewMenuZoomIn": "Přiblížit",
+  "viewMenuZoomOut": "Oddálit",
+  "viewMenuZoomReset": "Skutečná velikost",
   "whatsNewDoneButton": "Hotovo",
   "whatsNewSkipButton": "Přeskočit"
 }

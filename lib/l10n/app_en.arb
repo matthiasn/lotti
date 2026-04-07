@@ -2809,6 +2809,9 @@
     }
   },
   "viewMenuTitle": "View",
+  "viewMenuZoomIn": "Zoom In",
+  "viewMenuZoomOut": "Zoom Out",
+  "viewMenuZoomReset": "Actual Size",
   "whatsNewDoneButton": "Done",
   "whatsNewSkipButton": "Skip"
 }

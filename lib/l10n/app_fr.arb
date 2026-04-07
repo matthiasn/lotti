@@ -2583,6 +2583,9 @@
     }
   },
   "viewMenuTitle": "Affichage",
+  "viewMenuZoomIn": "Agrandir",
+  "viewMenuZoomOut": "Réduire",
+  "viewMenuZoomReset": "Taille réelle",
   "whatsNewDoneButton": "Terminé",
   "whatsNewSkipButton": "Ignorer"
 }

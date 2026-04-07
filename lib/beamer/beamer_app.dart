@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -31,6 +32,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -419,24 +421,30 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         child: TooltipVisibility(
           visible: enableTooltips,
           child: DesktopMenuWrapper(
-            child: MaterialApp.router(
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: themingState.lightTheme,
-              darkTheme: themingState.darkTheme,
-              themeMode: themingState.themeMode,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                FormBuilderLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-                FlutterQuillLocalizations.delegate,
-              ],
-              debugShowCheckedModeBanner: false,
-              routerDelegate: routerDelegate,
-              routeInformationParser: BeamerParser(),
-              backButtonDispatcher: BeamerBackButtonDispatcher(
-                delegate: routerDelegate,
+            onZoomIn: ref.watch(zoomControllerProvider.notifier).zoomIn,
+            onZoomOut: ref.watch(zoomControllerProvider.notifier).zoomOut,
+            onZoomReset: ref.watch(zoomControllerProvider.notifier).resetZoom,
+            child: ZoomWrapper(
+              scale: ref.watch(zoomControllerProvider),
+              child: MaterialApp.router(
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: themingState.lightTheme,
+                darkTheme: themingState.darkTheme,
+                themeMode: themingState.themeMode,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  FormBuilderLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                  FlutterQuillLocalizations.delegate,
+                ],
+                debugShowCheckedModeBanner: false,
+                routerDelegate: routerDelegate,
+                routeInformationParser: BeamerParser(),
+                backButtonDispatcher: BeamerBackButtonDispatcher(
+                  delegate: routerDelegate,
+                ),
               ),
             ),
           ),

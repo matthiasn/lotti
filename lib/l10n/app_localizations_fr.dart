@@ -6308,6 +6308,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get viewMenuTitle => 'Affichage';
 
   @override
+  String get viewMenuZoomIn => 'Agrandir';
+
+  @override
+  String get viewMenuZoomOut => 'Réduire';
+
+  @override
+  String get viewMenuZoomReset => 'Taille réelle';
+
+  @override
   String get whatsNewDoneButton => 'Terminé';
 
   @override

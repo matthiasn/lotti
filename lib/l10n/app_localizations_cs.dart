@@ -6188,6 +6188,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get viewMenuTitle => 'Zobrazit';
 
   @override
+  String get viewMenuZoomIn => 'Přiblížit';
+
+  @override
+  String get viewMenuZoomOut => 'Oddálit';
+
+  @override
+  String get viewMenuZoomReset => 'Skutečná velikost';
+
+  @override
   String get whatsNewDoneButton => 'Hotovo';
 
   @override

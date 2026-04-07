@@ -1,14 +1,37 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:beamer/beamer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/settings/state/zoom_controller.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/misc/zoom_wrapper.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+import '../mocks/sync_config_test_mocks.dart';
+import '../widget_test_utils.dart';
 
 void main() {
   group('MyBeamerApp theming', () {
@@ -266,9 +289,212 @@ void main() {
       expect(pointerUpCount, 1);
     });
   });
+
+  group('MyBeamerApp zoom wiring', () {
+    late MockNavService mockNavService;
+
+    Future<BeamerDelegate> createEmptyDelegate(String path) async {
+      final delegate = BeamerDelegate(
+        setBrowserTabTitle: false,
+        initialPath: path,
+        locationBuilder: (routeInformation, _) => _EmptyLocation(
+          routeInformation,
+        ),
+      );
+      await delegate.setNewRoutePath(
+        RouteInformation(uri: Uri.parse(path)),
+      );
+      return delegate;
+    }
+
+    Future<void> stubNavService(MockNavService nav) async {
+      final delegates = <String, BeamerDelegate>{};
+      for (final path in [
+        '/tasks',
+        '/projects',
+        '/calendar',
+        '/habits',
+        '/dashboards',
+        '/journal',
+        '/settings',
+      ]) {
+        delegates[path] = await createEmptyDelegate(path);
+      }
+
+      when(
+        () => nav.getIndexStream(),
+      ).thenAnswer((_) => const Stream<int>.empty());
+      when(() => nav.tasksDelegate).thenReturn(delegates['/tasks']!);
+      when(() => nav.projectsDelegate).thenReturn(delegates['/projects']!);
+      when(() => nav.calendarDelegate).thenReturn(delegates['/calendar']!);
+      when(() => nav.habitsDelegate).thenReturn(delegates['/habits']!);
+      when(() => nav.dashboardsDelegate).thenReturn(delegates['/dashboards']!);
+      when(() => nav.journalDelegate).thenReturn(delegates['/journal']!);
+      when(() => nav.settingsDelegate).thenReturn(delegates['/settings']!);
+      when(() => nav.isProjectsPageEnabled).thenReturn(false);
+      when(() => nav.isDailyOsPageEnabled).thenReturn(false);
+      when(() => nav.isHabitsPageEnabled).thenReturn(false);
+      when(() => nav.isDashboardsPageEnabled).thenReturn(false);
+      when(() => nav.tapIndex(any())).thenReturn(null);
+    }
+
+    setUp(() async {
+      mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/');
+      await stubNavService(mockNavService);
+
+      final mockTimeService = MockTimeService();
+      when(mockTimeService.getStream).thenAnswer(
+        (_) => const Stream<JournalEntity?>.empty(),
+      );
+
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<NavService>(mockNavService)
+            ..registerSingleton<SyncDatabase>(mockSyncDatabaseWithCount(0))
+            ..registerSingleton<TimeService>(mockTimeService)
+            ..registerSingleton<UserActivityService>(UserActivityService());
+        },
+      );
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    testWidgets(
+      'passes zoom controller to DesktopMenuWrapper and ZoomWrapper',
+      (tester) async {
+        if (Platform.isMacOS) {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        }
+
+        final mockMatrix = MockMatrixService();
+        when(
+          mockMatrix.getIncomingKeyVerificationStream,
+        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+        when(
+          () => mockMatrix.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+
+        final mockOutboxService = MockOutboxService();
+        when(
+          () => mockOutboxService.notLoggedInGateStream,
+        ).thenAnswer((_) => const Stream<void>.empty());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              themingControllerProvider.overrideWith(
+                _ReadyThemingController.new,
+              ),
+              enableTooltipsProvider.overrideWith(
+                (ref) => Stream.value(true),
+              ),
+              zoomControllerProvider.overrideWith(
+                _TestZoomController.new,
+              ),
+              agentInitializationProvider.overrideWith((ref) async {}),
+              matrixServiceProvider.overrideWithValue(mockMatrix),
+              loginStateStreamProvider.overrideWith(
+                (ref) => Stream.value(LoginState.loggedIn),
+              ),
+              outboxServiceProvider.overrideWithValue(mockOutboxService),
+              aiSetupPromptServiceProvider.overrideWith(
+                _MockAiSetupPromptService.new,
+              ),
+              audioRecorderControllerProvider.overrideWith(
+                () => _TestAudioRecorderController(
+                  AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: false,
+                  ),
+                ),
+              ),
+              shouldAutoShowWhatsNewProvider.overrideWith(
+                (ref) async => false,
+              ),
+            ],
+            child: MyBeamerApp(navService: mockNavService),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Verify zoom widgets are in the tree
+        expect(find.byType(DesktopMenuWrapper), findsOneWidget);
+        expect(find.byType(ZoomWrapper), findsOneWidget);
+
+        // Verify zoom callbacks are wired (non-null)
+        final wrapper = tester.widget<DesktopMenuWrapper>(
+          find.byType(DesktopMenuWrapper),
+        );
+        expect(wrapper.onZoomIn, isNotNull);
+        expect(wrapper.onZoomOut, isNotNull);
+        expect(wrapper.onZoomReset, isNotNull);
+
+        // Verify ZoomWrapper receives the scale from the controller
+        final zoomWrapper = tester.widget<ZoomWrapper>(
+          find.byType(ZoomWrapper),
+        );
+        expect(zoomWrapper.scale, defaultZoomScale);
+
+        // Clean up — drain pending timers from provider initialization
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        if (Platform.isMacOS) {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
+  });
+}
+
+class _EmptyLocation extends BeamLocation<BeamState> {
+  _EmptyLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return const [
+      BeamPage(key: ValueKey('empty'), child: SizedBox.shrink()),
+    ];
+  }
+
+  @override
+  List<Pattern> get pathPatterns => ['*'];
 }
 
 class _LoadingThemingController extends ThemingController {
   @override
   ThemingState build() => const ThemingState();
+}
+
+class _ReadyThemingController extends ThemingController {
+  @override
+  ThemingState build() => ThemingState(
+    darkTheme: ThemeData.dark(),
+    lightTheme: ThemeData.light(),
+  );
+}
+
+class _TestZoomController extends ZoomController {
+  @override
+  double build() => defaultZoomScale;
+}
+
+class _MockAiSetupPromptService extends AiSetupPromptService {
+  @override
+  Future<bool> build() async => false;
+}
+
+class _TestAudioRecorderController extends AudioRecorderController {
+  _TestAudioRecorderController(this.stateOverride);
+  final AudioRecorderState stateOverride;
+
+  @override
+  AudioRecorderState build() => stateOverride;
 }
