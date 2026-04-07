@@ -632,6 +632,61 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
+  "agentStatsTabTitle": "Stats",
+  "agentStatsDailyUsageHeading": "Daily Usage",
+  "agentStatsUsageAboveAverage": "You're using more tokens today than you usually do by {time}.",
+  "@agentStatsUsageAboveAverage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsUsageBelowAverage": "You're using fewer tokens today than you usually do by {time}.",
+  "@agentStatsUsageBelowAverage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsAverageLabel": "Average",
+  "agentStatsTodayLabel": "Today",
+  "agentStatsAllDayLegend": "All Day",
+  "agentStatsByTimeLegend": "Daily by {time}",
+  "@agentStatsByTimeLegend": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceActivityHeading": "Agent Activity",
+  "agentStatsSourceActiveFor": "Active for {duration}",
+  "@agentStatsSourceActiveFor": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
+  "@agentStatsSourceWakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsNoUsage": "No token usage recorded in the past 7 days.",
+  "agentStatsTokensUnit": "tokens",
+  "agentStatsWeekTotalLabel": "7-Day Total",
+  "agentStatsInputLabel": "Input",
+  "agentStatsOutputLabel": "Output",
+  "agentStatsThoughtsLabel": "Thoughts",
+  "agentStatsCacheRateLabel": "Cache Rate",
+  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
+  "agentStatsWakesLabel": "Wakes",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",

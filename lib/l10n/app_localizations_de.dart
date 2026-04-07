@@ -1004,6 +1004,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Aufwachvorgänge';
 
   @override
+  String get agentStatsTabTitle => 'Statistiken';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Tägliche Nutzung';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Du verwendest heute mehr Tokens als gewöhnlich um $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Du verwendest heute weniger Tokens als gewöhnlich um $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Durchschnitt';
+
+  @override
+  String get agentStatsTodayLabel => 'Heute';
+
+  @override
+  String get agentStatsAllDayLegend => 'Ganzer Tag';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Täglich bis $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Agentenaktivität';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Aktiv seit $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufwachvorgänge',
+      one: '1 Aufwachvorgang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage =>
+      'Keine Token-Nutzung in den letzten 7 Tagen erfasst.';
+
+  @override
+  String get agentStatsTokensUnit => 'Tokens';
+
+  @override
+  String get agentStatsWeekTotalLabel => '7-Tage-Gesamt';
+
+  @override
+  String get agentStatsInputLabel => 'Eingabe';
+
+  @override
+  String get agentStatsOutputLabel => 'Ausgabe';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Gedanken';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Cache-Rate';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokens / Aufwachen';
+
+  @override
+  String get agentStatsWakesLabel => 'Aufwachvorgänge';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Vorschläge für Aktionspunkte';
 
   @override

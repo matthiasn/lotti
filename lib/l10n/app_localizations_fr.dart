@@ -1005,6 +1005,83 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Réveils';
 
   @override
+  String get agentStatsTabTitle => 'Statistiques';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Utilisation quotidienne';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Tu utilises plus de tokens aujourd\'hui que d\'habitude à $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Tu utilises moins de tokens aujourd\'hui que d\'habitude à $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Moyenne';
+
+  @override
+  String get agentStatsTodayLabel => 'Aujourd\'hui';
+
+  @override
+  String get agentStatsAllDayLegend => 'Toute la journée';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Quotidien jusqu\'à $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Activité des agents';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Actif depuis $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réveils',
+      one: '1 réveil',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage =>
+      'Aucune utilisation de tokens enregistrée au cours des 7 derniers jours.';
+
+  @override
+  String get agentStatsTokensUnit => 'tokens';
+
+  @override
+  String get agentStatsWeekTotalLabel => 'Total 7 jours';
+
+  @override
+  String get agentStatsInputLabel => 'Entrée';
+
+  @override
+  String get agentStatsOutputLabel => 'Sortie';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Réflexions';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Taux de cache';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokens / réveil';
+
+  @override
+  String get agentStatsWakesLabel => 'Réveils';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Suggestions d\'actions';
 
   @override

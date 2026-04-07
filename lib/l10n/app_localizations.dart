@@ -1842,6 +1842,126 @@ abstract class AppLocalizations {
   /// **'Wakes'**
   String get agentTokenUsageWakeCount;
 
+  /// No description provided for @agentStatsTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats'**
+  String get agentStatsTabTitle;
+
+  /// No description provided for @agentStatsDailyUsageHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Usage'**
+  String get agentStatsDailyUsageHeading;
+
+  /// No description provided for @agentStatsUsageAboveAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using more tokens today than you usually do by {time}.'**
+  String agentStatsUsageAboveAverage(String time);
+
+  /// No description provided for @agentStatsUsageBelowAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using fewer tokens today than you usually do by {time}.'**
+  String agentStatsUsageBelowAverage(String time);
+
+  /// No description provided for @agentStatsAverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get agentStatsAverageLabel;
+
+  /// No description provided for @agentStatsTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get agentStatsTodayLabel;
+
+  /// No description provided for @agentStatsAllDayLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'All Day'**
+  String get agentStatsAllDayLegend;
+
+  /// No description provided for @agentStatsByTimeLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily by {time}'**
+  String agentStatsByTimeLegend(String time);
+
+  /// No description provided for @agentStatsSourceActivityHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Activity'**
+  String get agentStatsSourceActivityHeading;
+
+  /// No description provided for @agentStatsSourceActiveFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Active for {duration}'**
+  String agentStatsSourceActiveFor(String duration);
+
+  /// No description provided for @agentStatsSourceWakes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 wake} other{{count} wakes}}'**
+  String agentStatsSourceWakes(int count);
+
+  /// No description provided for @agentStatsNoUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'No token usage recorded in the past 7 days.'**
+  String get agentStatsNoUsage;
+
+  /// No description provided for @agentStatsTokensUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens'**
+  String get agentStatsTokensUnit;
+
+  /// No description provided for @agentStatsWeekTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'7-Day Total'**
+  String get agentStatsWeekTotalLabel;
+
+  /// No description provided for @agentStatsInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get agentStatsInputLabel;
+
+  /// No description provided for @agentStatsOutputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get agentStatsOutputLabel;
+
+  /// No description provided for @agentStatsThoughtsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts'**
+  String get agentStatsThoughtsLabel;
+
+  /// No description provided for @agentStatsCacheRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache Rate'**
+  String get agentStatsCacheRateLabel;
+
+  /// No description provided for @agentStatsTokensPerWakeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens / Wake'**
+  String get agentStatsTokensPerWakeLabel;
+
+  /// No description provided for @agentStatsWakesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentStatsWakesLabel;
+
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///
   /// In en, this message translates to:

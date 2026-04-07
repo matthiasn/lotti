@@ -1143,6 +1143,21 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch all token usage records across all agents created on or after
+  /// [since].
+  ///
+  /// Used by the global token stats view to compute daily aggregates without
+  /// filtering by template or agent.
+  Future<List<WakeTokenUsageEntity>> getGlobalTokenUsageSince({
+    required DateTime since,
+  }) async {
+    final rows = await _db.getGlobalTokenUsageSince(since).get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<WakeTokenUsageEntity>()
+        .toList();
+  }
+
   /// Mark any wake runs still in `running` status as `abandoned`.
   ///
   /// Called on startup to clean up runs left behind by a hot restart or crash.

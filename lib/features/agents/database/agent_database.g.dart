@@ -3392,6 +3392,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     );
   }
 
+  Selectable<AgentEntity> getGlobalTokenUsageSince(DateTime since) {
+    return customSelect(
+      'SELECT * FROM agent_entities WHERE type = \'wakeTokenUsage\' AND created_at >= ?1 AND deleted_at IS NULL ORDER BY created_at DESC',
+      variables: [Variable<DateTime>(since)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getDueScheduledAgentStates(String nowIso) {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agentState\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledWakeAt\') <= ?1',

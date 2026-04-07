@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -33,6 +34,7 @@ class AgentSettingsPage extends ConsumerStatefulWidget {
 }
 
 enum _AgentSettingsTab {
+  stats,
   templates,
   instances,
   souls,
@@ -40,7 +42,7 @@ enum _AgentSettingsTab {
 }
 
 class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
-  _AgentSettingsTab _selectedTab = _AgentSettingsTab.templates;
+  _AgentSettingsTab _selectedTab = _AgentSettingsTab.stats;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +116,11 @@ class _AgentSettingsTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final tabs = [
+      (
+        tab: _AgentSettingsTab.stats,
+        label: context.messages.agentStatsTabTitle,
+        counter: null as String?,
+      ),
       (
         tab: _AgentSettingsTab.templates,
         label: context.messages.agentTemplatesTitle,
@@ -215,6 +222,7 @@ class _AgentSettingsTabBody extends ConsumerWidget {
     return IndexedStack(
       index: selectedTab.index,
       children: const [
+        TokenStatsTab(),
         _TemplatesTab(),
         AgentInstancesList(),
         _SoulsTab(),

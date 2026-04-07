@@ -993,6 +993,84 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Probuzení';
 
   @override
+  String get agentStatsTabTitle => 'Statistiky';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Denní využití';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Dnes používáš více tokenů, než je obvyklé v $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Dnes používáš méně tokenů, než je obvyklé v $time.';
+  }
+
+  @override
+  String get agentStatsAverageLabel => 'Průměr';
+
+  @override
+  String get agentStatsTodayLabel => 'Dnes';
+
+  @override
+  String get agentStatsAllDayLegend => 'Celý den';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Denně do $time';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Aktivita agentů';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Aktivní po dobu $duration';
+  }
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count probuzení',
+      few: '$count probuzení',
+      one: '1 probuzení',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsNoUsage =>
+      'Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.';
+
+  @override
+  String get agentStatsTokensUnit => 'tokeny';
+
+  @override
+  String get agentStatsWeekTotalLabel => 'Celkem za 7 dní';
+
+  @override
+  String get agentStatsInputLabel => 'Vstup';
+
+  @override
+  String get agentStatsOutputLabel => 'Výstup';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Myšlenky';
+
+  @override
+  String get agentStatsCacheRateLabel => 'Míra cache';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokeny / probuzení';
+
+  @override
+  String get agentStatsWakesLabel => 'Probuzení';
+
+  @override
   String get aiAssistantActionItemSuggestions => 'Návrhy akčních položek';
 
   @override
