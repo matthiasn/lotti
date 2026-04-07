@@ -188,6 +188,81 @@ void main() {
       expect(find.text('Refined the voice directive.'), findsOneWidget);
     });
 
+    testWidgets('hides template count badge when no templates', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(templateIds: []));
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
+      // The template count badge should not be present when count is 0.
+      expect(
+        find.text(context.messages.agentSoulReviewTemplateCount(0)),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows start card when pending session returns null', (
+      tester,
+    ) async {
+      // When the pending provider returns null explicitly (no active session),
+      // the _StartCard is displayed — this tests the data-path for null entity.
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: () async => null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
+      expect(
+        find.text(context.messages.agentSoulReviewStartHint),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows error text when history provider fails', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 1600),
+          ),
+          historyOverride: () => throw Exception('history error'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
+      await tester.scrollUntilVisible(
+        find.text(context.messages.commonError),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('shows pending session card with feedback summary', (
+      tester,
+    ) async {
+      final session = makeTestEvolutionSession(
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        feedbackSummary: 'Voice was too formal last session.',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(pendingOverride: () async => session),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Voice was too formal last session.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows loading card during async load', (tester) async {
       await tester.pumpWidget(
         buildSubject(

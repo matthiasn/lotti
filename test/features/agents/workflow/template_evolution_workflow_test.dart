@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -3666,6 +3667,350 @@ void main() {
       // Session should still be in active map (not cleaned up on failure).
       expect(workflow.activeSessions, hasLength(1));
     });
+
+    test('completes session entity and persists recap', () async {
+      stubSoulContext();
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'new-version-2',
+        version: 2,
+        voiceDirective: 'Updated voice.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+
+      // Return a session entity so the completion path updates it.
+      final existingSession = makeTestEvolutionSession(
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+      );
+      when(() => mockRepository.getEntity(any())).thenAnswer(
+        (_) async => existingSession,
+      );
+
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+
+      // Inject a soul proposal.
+      final session = workflow.activeSessions.values.first;
+      final manager = ConversationManager(
+        conversationId: 'test',
+        maxTurns: 1,
+      )..initialize();
+      await session.strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"Updated voice.",'
+                  ' "rationale":"Warmer tone needed."}',
+            ),
+          ),
+          const ChatCompletionMessageToolCall(
+            id: 'call-2',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'publish_ritual_recap',
+              arguments:
+                  '{"tldr":"Refined voice", '
+                  r'"content":"## Recap\n\nRefined the voice."}',
+            ),
+          ),
+        ],
+        manager: manager,
+      );
+
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+        categoryRatings: {'language': 4, 'tone': 3},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.version, 2);
+
+      // Verify session entity was completed (upsert called multiple times).
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
+
+      // Find the completed session entity.
+      final completedSession = captured
+          .whereType<EvolutionSessionEntity>()
+          .where(
+            (s) => s.status == EvolutionSessionStatus.completed,
+          );
+      expect(completedSession, isNotEmpty);
+      expect(completedSession.first.proposedSoulVersionId, 'new-version-2');
+      expect(completedSession.first.userRating, 3.5); // avg of 4 and 3
+
+      // Verify recap entity was persisted.
+      final recapEntities = captured.whereType<EvolutionSessionRecapEntity>();
+      expect(recapEntities, isNotEmpty);
+
+      // Session should be cleaned up.
+      expect(workflow.activeSessions, isEmpty);
+    });
+
+    test(
+      'returns null when no active soul version during completion',
+      () async {
+        stubSoulContext();
+
+        // Override to return null for getActiveSoulVersion during completion.
+        when(
+          () => mockSoulService.getActiveSoulVersion(any()),
+        ).thenAnswer((_) async => null);
+
+        final convRepo = _TestConversationRepository(
+          assistantResponse: 'Soul session started.',
+        );
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: convRepo,
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+        );
+
+        // Manually inject a session to bypass startSoulSession which also
+        // checks for active version.
+        final strategy = EvolutionStrategy();
+        const sessionId = 'manual-session';
+        workflow.activeSessions[sessionId] = ActiveEvolutionSession(
+          sessionId: sessionId,
+          templateId: kTestSoulId,
+          conversationId: 'conv-1',
+          strategy: strategy,
+          modelId: 'model-1',
+        );
+
+        // Inject a soul proposal.
+        final manager = ConversationManager(
+          conversationId: 'test',
+          maxTurns: 1,
+        )..initialize();
+        await strategy.processToolCalls(
+          toolCalls: [
+            const ChatCompletionMessageToolCall(
+              id: 'call-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'propose_soul_directives',
+                arguments:
+                    '{"voice_directive":"New voice.",'
+                    ' "rationale":"Better."}',
+              ),
+            ),
+          ],
+          manager: manager,
+        );
+
+        final result = await workflow.completeSoulSession(
+          sessionId: sessionId,
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test('fires onSessionCompleted callback', () async {
+      stubSoulContext();
+
+      final newVersion = makeTestSoulDocumentVersion(
+        id: 'cb-version',
+        version: 2,
+        voiceDirective: 'Updated.',
+      );
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenAnswer((_) async => newVersion);
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+
+      String? capturedTemplateId;
+      String? capturedSessionId;
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Soul session started.',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+        onSessionCompleted: (templateId, sessionId) {
+          capturedTemplateId = templateId;
+          capturedSessionId = sessionId;
+        },
+      );
+
+      await workflow.startSoulSession(soulId: kTestSoulId);
+      final session = workflow.activeSessions.values.first;
+
+      // Inject a soul proposal.
+      final manager = ConversationManager(
+        conversationId: 'test',
+        maxTurns: 1,
+      )..initialize();
+      await session.strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"Updated.",'
+                  ' "rationale":"Better."}',
+            ),
+          ),
+        ],
+        manager: manager,
+      );
+
+      await workflow.completeSoulSession(sessionId: session.sessionId);
+
+      expect(capturedTemplateId, kTestSoulId);
+      expect(capturedSessionId, session.sessionId);
+    });
+  });
+
+  group('startSoulSession with feedback extraction', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+    late MockFeedbackExtractionService mockFeedbackService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      mockFeedbackService = MockFeedbackExtractionService();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    void stubSoulContextWithFeedback() {
+      stubProviderResolution();
+      when(() => mockSoulService.getSoul(any())).thenAnswer(
+        (_) async => makeTestSoulDocument(),
+      );
+      when(() => mockSoulService.getActiveSoulVersion(any())).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(),
+      );
+      when(() => mockSoulService.getTemplatesUsingSoul(any())).thenAnswer(
+        (_) async => [kTestTemplateId],
+      );
+      when(() => mockSoulService.getVersionHistory(any())).thenAnswer(
+        (_) async => <SoulDocumentVersionEntity>[],
+      );
+      when(() => mockTemplateService.getTemplate(any())).thenAnswer(
+        (_) async => makeTestTemplate(),
+      );
+      when(
+        () => mockTemplateService.getRecentEvolutionNotes(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionNoteEntity>[]);
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <EvolutionSessionEntity>[]);
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    }
+
+    test('invokes feedback extraction service when available', () async {
+      stubSoulContextWithFeedback();
+      when(
+        () => mockFeedbackService.extractForSoul(
+          soulId: any(named: 'soulId'),
+          since: any(named: 'since'),
+          until: any(named: 'until'),
+        ),
+      ).thenAnswer(
+        (_) async => <String, ClassifiedFeedback>{},
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(
+          assistantResponse: 'Hello from soul session.',
+        ),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+        feedbackService: mockFeedbackService,
+      );
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+      expect(response, 'Hello from soul session.');
+      verify(
+        () => mockFeedbackService.extractForSoul(
+          soulId: kTestSoulId,
+          since: any(named: 'since'),
+          until: any(named: 'until'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'continues session start when feedback extraction fails',
+      () async {
+        stubSoulContextWithFeedback();
+        when(
+          () => mockFeedbackService.extractForSoul(
+            soulId: any(named: 'soulId'),
+            since: any(named: 'since'),
+            until: any(named: 'until'),
+          ),
+        ).thenThrow(Exception('feedback extraction error'));
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(
+            assistantResponse: 'Hello despite error.',
+          ),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+          soulDocumentService: mockSoulService,
+          feedbackService: mockFeedbackService,
+        );
+
+        final response = await workflow.startSoulSession(soulId: kTestSoulId);
+
+        // Session should still start despite feedback extraction failure.
+        expect(response, 'Hello despite error.');
+        expect(workflow.activeSessions, hasLength(1));
+      },
+    );
   });
 
   group('startSoulSession — error paths', () {

@@ -229,6 +229,71 @@ void main() {
       expect(input.enabled, isFalse);
     });
 
+    testWidgets('resolves session_error token', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'session_error',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionError),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders unknown system token as-is', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'some_unknown_token',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('some_unknown_token'), findsOneWidget);
+    });
+
+    testWidgets(
+      'renders SizedBox.shrink for surface message without processor',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            chatStateBuilder: (_) async => EvolutionChatData(
+              sessionId: 'session-1',
+              messages: [
+                EvolutionChatMessage.surface(
+                  surfaceId: 'test-surface-1',
+                  timestamp: DateTime(2024, 3, 15),
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // With no processor, surface messages render as SizedBox.shrink
+        // and no EvolutionChatBubble should be present for it.
+        expect(find.byType(EvolutionChatBubble), findsNothing);
+      },
+    );
+
     testWidgets('shows loading indicator when waiting', (tester) async {
       await tester.pumpWidget(
         buildSubject(
