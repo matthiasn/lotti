@@ -2583,6 +2583,9 @@
     }
   },
   "viewMenuTitle": "Vizualizare",
+  "viewMenuZoomIn": "Mărire",
+  "viewMenuZoomOut": "Micșorare",
+  "viewMenuZoomReset": "Dimensiune reală",
   "whatsNewDoneButton": "Gata",
   "whatsNewSkipButton": "Omite"
 }

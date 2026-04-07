@@ -2583,6 +2583,9 @@
     }
   },
   "viewMenuTitle": "Ansicht",
+  "viewMenuZoomIn": "Vergrößern",
+  "viewMenuZoomOut": "Verkleinern",
+  "viewMenuZoomReset": "Originalgröße",
   "whatsNewDoneButton": "Fertig",
   "whatsNewSkipButton": "Überspringen"
 }

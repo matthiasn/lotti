@@ -10951,6 +10951,24 @@ abstract class AppLocalizations {
   /// **'View'**
   String get viewMenuTitle;
 
+  /// No description provided for @viewMenuZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom In'**
+  String get viewMenuZoomIn;
+
+  /// No description provided for @viewMenuZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom Out'**
+  String get viewMenuZoomOut;
+
+  /// No description provided for @viewMenuZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Size'**
+  String get viewMenuZoomReset;
+
   /// No description provided for @whatsNewDoneButton.
   ///
   /// In en, this message translates to:

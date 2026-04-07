@@ -6294,6 +6294,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get viewMenuTitle => 'Vista';
 
   @override
+  String get viewMenuZoomIn => 'Ampliar';
+
+  @override
+  String get viewMenuZoomOut => 'Reducir';
+
+  @override
+  String get viewMenuZoomReset => 'Tamaño real';
+
+  @override
   String get whatsNewDoneButton => 'Listo';
 
   @override

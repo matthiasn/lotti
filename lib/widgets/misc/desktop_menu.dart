@@ -10,10 +10,16 @@ import 'package:lotti/services/nav_service.dart';
 class DesktopMenuWrapper extends StatelessWidget {
   const DesktopMenuWrapper({
     required this.child,
+    this.onZoomIn,
+    this.onZoomOut,
+    this.onZoomReset,
     super.key,
   });
 
   final Widget child;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
+  final VoidCallback? onZoomReset;
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +111,30 @@ class DesktopMenuWrapper extends StatelessWidget {
               PlatformMenu(
                 label: context.messages.viewMenuTitle,
                 menus: [
+                  PlatformMenuItem(
+                    label: context.messages.viewMenuZoomIn,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.equal,
+                      meta: true,
+                    ),
+                    onSelected: onZoomIn,
+                  ),
+                  PlatformMenuItem(
+                    label: context.messages.viewMenuZoomOut,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.minus,
+                      meta: true,
+                    ),
+                    onSelected: onZoomOut,
+                  ),
+                  PlatformMenuItem(
+                    label: context.messages.viewMenuZoomReset,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.digit0,
+                      meta: true,
+                    ),
+                    onSelected: onZoomReset,
+                  ),
                   const PlatformProvidedMenuItem(
                     type: PlatformProvidedMenuItemType.toggleFullScreen,
                   ),

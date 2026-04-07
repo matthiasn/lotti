@@ -6223,6 +6223,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get viewMenuTitle => 'Vizualizare';
 
   @override
+  String get viewMenuZoomIn => 'Mărire';
+
+  @override
+  String get viewMenuZoomOut => 'Micșorare';
+
+  @override
+  String get viewMenuZoomReset => 'Dimensiune reală';
+
+  @override
   String get whatsNewDoneButton => 'Gata';
 
   @override

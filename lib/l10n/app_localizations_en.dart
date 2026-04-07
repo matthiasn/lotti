@@ -6111,6 +6111,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewMenuTitle => 'View';
 
   @override
+  String get viewMenuZoomIn => 'Zoom In';
+
+  @override
+  String get viewMenuZoomOut => 'Zoom Out';
+
+  @override
+  String get viewMenuZoomReset => 'Actual Size';
+
+  @override
   String get whatsNewDoneButton => 'Done';
 
   @override
