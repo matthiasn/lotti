@@ -678,6 +678,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSoulEmptyList => 'No soul documents yet';
 
   @override
+  String get agentSoulEvolutionHistoryTitle => 'Soul Evolution History';
+
+  @override
+  String get agentSoulEvolutionNoSessions => 'No soul evolution sessions yet';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';
 
   @override
@@ -703,6 +709,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Proposal';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Start Personality Review';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.';
+
+  @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count templates sharing this soul',
+      one: '1 template sharing this soul',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentSoulReviewTitle => 'Soul 1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Roll Back to This Version';

@@ -1532,4 +1532,94 @@ void main() {
       expect(evoItems, isEmpty);
     });
   });
+
+  group('extractForSoul', () {
+    late MockSoulDocumentService mockSoulService;
+
+    setUp(() {
+      mockSoulService = MockSoulDocumentService();
+      service = FeedbackExtractionService(
+        agentRepository: mockRepo,
+        templateService: mockTemplateService,
+        soulDocumentService: mockSoulService,
+      );
+    });
+
+    test('returns empty map when no templates use the soul', () async {
+      when(
+        () => mockSoulService.getTemplatesUsingSoul(any()),
+      ).thenAnswer((_) async => []);
+
+      final result = await service.extractForSoul(
+        soulId: 'soul-1',
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty map when soulDocumentService is null', () async {
+      final serviceWithoutSoul = FeedbackExtractionService(
+        agentRepository: mockRepo,
+        templateService: mockTemplateService,
+      );
+
+      final result = await serviceWithoutSoul.extractForSoul(
+        soulId: 'soul-1',
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('aggregates feedback from single template', () async {
+      when(
+        () => mockSoulService.getTemplatesUsingSoul('soul-1'),
+      ).thenAnswer((_) async => ['template-1']);
+      stubEmptyData();
+
+      // Add one observation with payload.
+      final obs = makeTestMessage(
+        id: 'obs-1',
+        agentId: 'agent-1',
+        kind: AgentMessageKind.observation,
+        createdAt: DateTime(2024, 3, 15),
+      );
+      when(
+        () => mockTemplateService.getRecentInstanceObservations(
+          'template-1',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [obs]);
+
+      final result = await service.extractForSoul(
+        soulId: 'soul-1',
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result, hasLength(1));
+      expect(result.containsKey('template-1'), isTrue);
+      expect(result['template-1']!.items, hasLength(1));
+    });
+
+    test('aggregates feedback from multiple templates', () async {
+      when(
+        () => mockSoulService.getTemplatesUsingSoul('soul-1'),
+      ).thenAnswer((_) async => ['template-1', 'template-2']);
+      stubEmptyData();
+
+      final result = await service.extractForSoul(
+        soulId: 'soul-1',
+        since: windowStart,
+        until: windowEnd,
+      );
+
+      expect(result, hasLength(2));
+      expect(result.containsKey('template-1'), isTrue);
+      expect(result.containsKey('template-2'), isTrue);
+    });
+  });
 }

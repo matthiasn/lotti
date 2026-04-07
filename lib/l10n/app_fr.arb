@@ -319,6 +319,8 @@
   "agentSoulDetailTitle": "Détail de l'âme",
   "agentSoulDisplayNameLabel": "Nom",
   "agentSoulEmptyList": "Pas encore de documents d'âme",
+  "agentSoulEvolutionHistoryTitle": "Historique d'évolution de l'âme",
+  "agentSoulEvolutionNoSessions": "Pas encore de sessions d'évolution de l'âme",
   "agentSoulFieldAntiSycophancy": "Anti-flagornerie",
   "agentSoulFieldCoachingStyle": "Style de coaching",
   "agentSoulFieldToneBounds": "Limites de ton",
@@ -328,6 +330,18 @@
   "agentSoulNotFound": "Âme introuvable",
   "agentSoulProposalSubtitle": "Changements de personnalité proposés",
   "agentSoulProposalTitle": "Proposition de personnalité de l'âme",
+  "agentSoulReviewHeroSubtitle": "Affine la personnalité dans tous les modèles partageant cette âme. L'agent d'évolution voit les retours de chaque modèle qui utilise cette personnalité.",
+  "agentSoulReviewStartAction": "Lancer la revue de personnalité",
+  "agentSoulReviewStartHint": "Lance une session axée sur la personnalité pour examiner les retours et faire évoluer la voix, le ton, le style de coaching et la franchise.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 modèle partage cette âme} other{{count} modèles partagent cette âme}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulReviewTitle": "Âme 1-on-1",
   "agentSoulRollbackAction": "Revenir à cette version",
   "agentSoulRollbackConfirm": "Revenir à la version {version} ? Tous les modèles utilisant cette âme seront affectés.",
   "@agentSoulRollbackConfirm": {

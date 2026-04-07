@@ -319,6 +319,8 @@
   "agentSoulDetailTitle": "Detalii suflet",
   "agentSoulDisplayNameLabel": "Nume",
   "agentSoulEmptyList": "Nu există încă suflete",
+  "agentSoulEvolutionHistoryTitle": "Istoricul evoluției sufletului",
+  "agentSoulEvolutionNoSessions": "Nu există încă sesiuni de evoluție a sufletului",
   "agentSoulFieldAntiSycophancy": "Anti-lingușire",
   "agentSoulFieldCoachingStyle": "Stil de coaching",
   "agentSoulFieldToneBounds": "Limite de ton",
@@ -328,6 +330,18 @@
   "agentSoulNotFound": "Suflet negăsit",
   "agentSoulProposalSubtitle": "Modificări de personalitate propuse",
   "agentSoulProposalTitle": "Propunere de personalitate a sufletului",
+  "agentSoulReviewHeroSubtitle": "Rafinează personalitatea în toate șabloanele care partajează acest suflet. Agentul de evoluție vede feedback-ul de la fiecare șablon care folosește această personalitate.",
+  "agentSoulReviewStartAction": "Începe revizuirea personalității",
+  "agentSoulReviewStartHint": "Începe o sesiune axată pe personalitate pentru a examina feedback-ul și a evolua vocea, tonul, stilul de coaching și sinceritatea.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 șablon partajează acest suflet} other{{count} șabloane partajează acest suflet}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulReviewTitle": "Suflet 1-on-1",
   "agentSoulRollbackAction": "Revino la această versiune",
   "agentSoulRollbackConfirm": "Revino la versiunea {version}? Toate șabloanele care folosesc acest suflet vor prelua modificarea.",
   "@agentSoulRollbackConfirm": {

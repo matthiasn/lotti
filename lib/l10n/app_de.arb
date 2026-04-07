@@ -319,6 +319,8 @@
   "agentSoulDetailTitle": "Seelen-Details",
   "agentSoulDisplayNameLabel": "Name",
   "agentSoulEmptyList": "Noch keine Seelendokumente",
+  "agentSoulEvolutionHistoryTitle": "Seelen-Evolutionsverlauf",
+  "agentSoulEvolutionNoSessions": "Noch keine Seelen-Evolutionssitzungen",
   "agentSoulFieldAntiSycophancy": "Anti-Schmeichelei",
   "agentSoulFieldCoachingStyle": "Coaching-Stil",
   "agentSoulFieldToneBounds": "Tonale Grenzen",
@@ -328,6 +330,18 @@
   "agentSoulNotFound": "Seele nicht gefunden",
   "agentSoulProposalSubtitle": "Vorgeschlagene Persönlichkeitsänderungen",
   "agentSoulProposalTitle": "Seelen-Persönlichkeitsvorschlag",
+  "agentSoulReviewHeroSubtitle": "Verfeinere die Persönlichkeit über alle Vorlagen hinweg, die diese Seele teilen. Der Evolutionsagent sieht Feedback von jeder Vorlage, die diese Persönlichkeit verwendet.",
+  "agentSoulReviewStartAction": "Persönlichkeitsüberprüfung starten",
+  "agentSoulReviewStartHint": "Starte eine persönlichkeitsfokussierte Sitzung, um Feedback durchzugehen und Stimme, Ton, Coaching-Stil und Direktheit weiterzuentwickeln.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 Vorlage teilt diese Seele} other{{count} Vorlagen teilen diese Seele}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulReviewTitle": "Seelen-1-on-1",
   "agentSoulRollbackAction": "Auf diese Version zurücksetzen",
   "agentSoulRollbackConfirm": "Auf Version {version} zurücksetzen? Alle Vorlagen, die diese Seele verwenden, werden die Änderung übernehmen.",
   "@agentSoulRollbackConfirm": {

@@ -1,4 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -76,4 +78,61 @@ Future<List<String>> templatesUsingSoul(
   ref.watch(agentUpdateStreamProvider(soulId));
   final service = ref.watch(soulDocumentServiceProvider);
   return service.getTemplatesUsingSoul(soulId);
+}
+
+/// All evolution sessions for a soul (newest first).
+@riverpod
+Future<List<AgentDomainEntity>> soulEvolutionSessions(
+  Ref ref,
+  String soulId,
+) async {
+  ref.watch(agentUpdateStreamProvider(soulId));
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  return templateService.getEvolutionSessions(soulId, limit: 100);
+}
+
+/// Active (pending) evolution session for a soul, or `null`.
+@riverpod
+Future<AgentDomainEntity?> pendingSoulEvolution(
+  Ref ref,
+  String soulId,
+) async {
+  final sessions = await ref.watch(
+    soulEvolutionSessionsProvider(soulId).future,
+  );
+  final typed = sessions.whereType<EvolutionSessionEntity>().toList();
+  final newest = typed.firstOrNull;
+  if (newest != null && newest.status == EvolutionSessionStatus.active) {
+    return newest;
+  }
+  return null;
+}
+
+/// History entries for past soul evolution sessions.
+@riverpod
+Future<List<RitualSessionHistoryEntry>> soulEvolutionSessionHistory(
+  Ref ref,
+  String soulId,
+) async {
+  ref.watch(agentUpdateStreamProvider(soulId));
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final (sessions, recaps) = await (
+    ref.watch(soulEvolutionSessionsProvider(soulId).future),
+    templateService.getEvolutionSessionRecaps(soulId),
+  ).wait;
+
+  final recapBySessionId = {
+    for (final recap in recaps) recap.sessionId: recap,
+  };
+
+  return sessions
+      .whereType<EvolutionSessionEntity>()
+      .where((s) => s.status != EvolutionSessionStatus.active)
+      .map(
+        (s) => RitualSessionHistoryEntry(
+          session: s,
+          recap: recapBySessionId[s.id],
+        ),
+      )
+      .toList();
 }

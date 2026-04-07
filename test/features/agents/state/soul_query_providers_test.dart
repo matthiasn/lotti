@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
+
+class MockAgentTemplateService extends Mock implements AgentTemplateService {}
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
@@ -219,6 +223,258 @@ void main() {
 
       final result = await container.read(
         templatesUsingSoulProvider('soul-1').future,
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('soulEvolutionSessionsProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createContainerWithTemplate() {
+      return ProviderContainer(
+        overrides: [
+          soulDocumentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        ],
+      );
+    }
+
+    test('returns evolution sessions for soul', () async {
+      final session = makeTestEvolutionSession(
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [session]);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        soulEvolutionSessionsProvider(kTestSoulId).future,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0], isA<EvolutionSessionEntity>());
+    });
+
+    test('returns empty list when no sessions', () async {
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        soulEvolutionSessionsProvider(kTestSoulId).future,
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('pendingSoulEvolutionProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createContainerWithTemplate() {
+      return ProviderContainer(
+        overrides: [
+          soulDocumentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        ],
+      );
+    }
+
+    test('returns active session when newest is active', () async {
+      final activeSession = makeTestEvolutionSession(
+        id: 'session-1',
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        // ignore: avoid_redundant_argument_values
+        status: EvolutionSessionStatus.active,
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [activeSession]);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        pendingSoulEvolutionProvider(kTestSoulId).future,
+      );
+
+      expect(result, isA<EvolutionSessionEntity>());
+      expect(
+        (result! as EvolutionSessionEntity).id,
+        'session-1',
+      );
+    });
+
+    test('returns null when newest is completed', () async {
+      final completedSession = makeTestEvolutionSession(
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        status: EvolutionSessionStatus.completed,
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [completedSession]);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        pendingSoulEvolutionProvider(kTestSoulId).future,
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when no sessions', () async {
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        pendingSoulEvolutionProvider(kTestSoulId).future,
+      );
+
+      expect(result, isNull);
+    });
+  });
+
+  group('soulEvolutionSessionHistoryProvider', () {
+    late MockAgentTemplateService mockTemplateService;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+    });
+
+    ProviderContainer createContainerWithTemplate() {
+      return ProviderContainer(
+        overrides: [
+          soulDocumentServiceProvider.overrideWithValue(mockService),
+          agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+        ],
+      );
+    }
+
+    test('returns completed sessions with recaps', () async {
+      final session = makeTestEvolutionSession(
+        id: 'session-1',
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        status: EvolutionSessionStatus.completed,
+      );
+      final recap = makeTestEvolutionSessionRecap(
+        agentId: kTestSoulId,
+        sessionId: 'session-1',
+        tldr: 'Adjusted warmth',
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [session]);
+      when(
+        () => mockTemplateService.getEvolutionSessionRecaps(kTestSoulId),
+      ).thenAnswer((_) async => [recap]);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        soulEvolutionSessionHistoryProvider(kTestSoulId).future,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].session.id, 'session-1');
+      expect(result[0].recap?.tldr, 'Adjusted warmth');
+    });
+
+    test('excludes active sessions from history', () async {
+      final active = makeTestEvolutionSession(
+        id: 'session-active',
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        // ignore: avoid_redundant_argument_values
+        status: EvolutionSessionStatus.active,
+      );
+      final completed = makeTestEvolutionSession(
+        id: 'session-done',
+        agentId: kTestSoulId,
+        templateId: kTestSoulId,
+        status: EvolutionSessionStatus.completed,
+      );
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [active, completed]);
+      when(
+        () => mockTemplateService.getEvolutionSessionRecaps(kTestSoulId),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        soulEvolutionSessionHistoryProvider(kTestSoulId).future,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].session.id, 'session-done');
+    });
+
+    test('returns empty when no completed sessions', () async {
+      when(
+        () => mockTemplateService.getEvolutionSessions(
+          kTestSoulId,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockTemplateService.getEvolutionSessionRecaps(kTestSoulId),
+      ).thenAnswer((_) async => []);
+
+      final container = createContainerWithTemplate();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        soulEvolutionSessionHistoryProvider(kTestSoulId).future,
       );
 
       expect(result, isEmpty);

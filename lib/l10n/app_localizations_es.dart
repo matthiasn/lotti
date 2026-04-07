@@ -687,6 +687,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentSoulEmptyList => 'Aún no hay documentos de alma';
 
   @override
+  String get agentSoulEvolutionHistoryTitle =>
+      'Historial de evolución del alma';
+
+  @override
+  String get agentSoulEvolutionNoSessions =>
+      'Aún no hay sesiones de evolución del alma';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-adulación';
 
   @override
@@ -712,6 +720,31 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Propuesta de personalidad del alma';
+
+  @override
+  String get agentSoulReviewHeroSubtitle =>
+      'Refina la personalidad en todas las plantillas que comparten esta alma. El agente de evolución ve los comentarios de cada plantilla que usa esta personalidad.';
+
+  @override
+  String get agentSoulReviewStartAction => 'Iniciar revisión de personalidad';
+
+  @override
+  String get agentSoulReviewStartHint =>
+      'Inicia una sesión enfocada en la personalidad para revisar comentarios y evolucionar la voz, el tono, el estilo de coaching y la franqueza.';
+
+  @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count plantillas comparten esta alma',
+      one: '1 plantilla comparte esta alma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentSoulReviewTitle => 'Alma 1-on-1';
 
   @override
   String get agentSoulRollbackAction => 'Volver a esta versión';

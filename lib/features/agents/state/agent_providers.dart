@@ -257,6 +257,7 @@ FeedbackExtractionService feedbackExtractionService(Ref ref) {
   return FeedbackExtractionService(
     agentRepository: ref.watch(agentRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
+    soulDocumentService: ref.watch(soulDocumentServiceProvider),
   );
 }
 

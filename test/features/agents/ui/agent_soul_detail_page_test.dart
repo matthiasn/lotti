@@ -83,6 +83,9 @@ void main() {
         allSoulDocumentsProvider.overrideWith(
           (ref) async => <AgentDomainEntity>[],
         ),
+        soulEvolutionSessionHistoryProvider.overrideWith(
+          (ref, id) async => [],
+        ),
         ...extraOverrides,
       ],
     );
@@ -841,6 +844,99 @@ void main() {
 
       // Error snackbar should appear.
       expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('review button navigates to soul review page', (
+      tester,
+    ) async {
+      String? capturedRoute;
+      beamToNamedOverride = (path) => capturedRoute = path;
+
+      await tester.pumpWidget(
+        buildEditSubject(soulId: 'soul-nav'),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Form is not dirty, so the review button should be visible.
+      expect(
+        find.text(context.messages.agentSoulReviewTitle),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text(context.messages.agentSoulReviewTitle));
+      await tester.pumpAndSettle();
+
+      expect(capturedRoute, '/settings/agents/souls/soul-nav/review');
+    });
+
+    testWidgets('create mode save error shows snackbar', (tester) async {
+      when(
+        () => mockSoulService.createSoul(
+          displayName: any(named: 'displayName'),
+          voiceDirective: any(named: 'voiceDirective'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          authoredBy: any(named: 'authoredBy'),
+        ),
+      ).thenThrow(Exception('create failed'));
+
+      await tester.pumpWidget(buildCreateSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+
+      // Enter required fields.
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) =>
+              w is TextField &&
+              w.decoration?.labelText ==
+                  context.messages.agentSoulDisplayNameLabel,
+        ),
+        'Failing Soul',
+      );
+      await tester.pump();
+
+      await tester.enterText(
+        find.byWidgetPredicate(
+          (w) =>
+              w is TextField &&
+              w.decoration?.labelText ==
+                  context.messages.agentSoulVoiceDirectiveLabel,
+        ),
+        'Be kind',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text(context.messages.createButton));
+      await tester.pumpAndSettle();
+
+      // Error snackbar should appear.
+      expect(find.text(context.messages.commonError), findsOneWidget);
+    });
+
+    testWidgets('Info tab shows evolution history section', (tester) async {
+      await tester.pumpWidget(
+        buildEditSubject(soulId: 'soul-evo-history'),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AgentSoulDetailPage));
+      await tester.tap(find.text(context.messages.agentSoulInfoTab));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentSoulEvolutionHistoryTitle),
+        findsOneWidget,
+      );
+      // With no sessions, the empty state text should appear.
+      expect(
+        find.text(context.messages.agentSoulEvolutionNoSessions),
+        findsOneWidget,
+      );
     });
 
     testWidgets(

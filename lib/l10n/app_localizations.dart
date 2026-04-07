@@ -1278,6 +1278,18 @@ abstract class AppLocalizations {
   /// **'No soul documents yet'**
   String get agentSoulEmptyList;
 
+  /// No description provided for @agentSoulEvolutionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul Evolution History'**
+  String get agentSoulEvolutionHistoryTitle;
+
+  /// No description provided for @agentSoulEvolutionNoSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'No soul evolution sessions yet'**
+  String get agentSoulEvolutionNoSessions;
+
   /// No description provided for @agentSoulFieldAntiSycophancy.
   ///
   /// In en, this message translates to:
@@ -1331,6 +1343,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Soul Personality Proposal'**
   String get agentSoulProposalTitle;
+
+  /// No description provided for @agentSoulReviewHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.'**
+  String get agentSoulReviewHeroSubtitle;
+
+  /// No description provided for @agentSoulReviewStartAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Personality Review'**
+  String get agentSoulReviewStartAction;
+
+  /// No description provided for @agentSoulReviewStartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.'**
+  String get agentSoulReviewStartHint;
+
+  /// No description provided for @agentSoulReviewTemplateCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 template sharing this soul} other{{count} templates sharing this soul}}'**
+  String agentSoulReviewTemplateCount(int count);
+
+  /// No description provided for @agentSoulReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul 1-on-1'**
+  String get agentSoulReviewTitle;
 
   /// No description provided for @agentSoulRollbackAction.
   ///

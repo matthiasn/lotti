@@ -9,13 +9,16 @@ import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
+import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -93,6 +96,7 @@ class TemplateEvolutionWorkflow {
     this.templateService,
     this.syncService,
     this.soulDocumentService,
+    this.feedbackService,
     this.contextBuilder,
     this.updateNotifications,
     this.onSessionCompleted,
@@ -106,6 +110,7 @@ class TemplateEvolutionWorkflow {
   final AgentTemplateService? templateService;
   final AgentSyncService? syncService;
   final SoulDocumentService? soulDocumentService;
+  final FeedbackExtractionService? feedbackService;
   final EvolutionContextBuilder? contextBuilder;
 
   /// When provided, fires after local DB writes so UI providers refresh.
@@ -745,6 +750,355 @@ class TemplateEvolutionWorkflow {
     return null;
   }
 
+  /// Get the active session for a soul, if any.
+  ///
+  /// Soul sessions use `templateId = soulId` in [ActiveEvolutionSession].
+  ActiveEvolutionSession? getActiveSessionForSoul(String soulId) =>
+      getActiveSessionForTemplate(soulId);
+
+  // ── Standalone soul evolution ─────────────────────────────────────────────
+
+  /// Start a standalone soul evolution session for [soulId].
+  ///
+  /// Aggregates feedback from ALL templates sharing this soul, builds a
+  /// personality-focused context, and starts the conversation. Returns the
+  /// assistant's opening response, or `null` if setup fails.
+  Future<String?> startSoulSession({required String soulId}) async {
+    final soulSvc = soulDocumentService;
+    final svc = templateService;
+    final sync = syncService;
+    final fbService = feedbackService;
+    if (soulSvc == null || svc == null || sync == null) {
+      developer.log(
+        'soulDocumentService, templateService, and syncService are '
+        'required for soul sessions',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    // Only one active session per soul at a time.
+    if (getActiveSessionForSoul(soulId) != null) {
+      developer.log(
+        'Session already active for soul $soulId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    // Resolve soul document and active version.
+    final soul = await soulSvc.getSoul(soulId);
+    if (soul == null) {
+      developer.log('Soul $soulId not found', name: _logTag);
+      return null;
+    }
+
+    final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
+    if (currentVersion == null) {
+      developer.log(
+        'No active version for soul $soulId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    // Use the first template's model for inference, or fall back.
+    final templateIds = await soulSvc.getTemplatesUsingSoul(soulId);
+    String? modelId;
+    final affectedTemplates = <({String templateId, String displayName})>[];
+    for (final templateId in templateIds) {
+      final template = await svc.getTemplate(templateId);
+      if (template != null) {
+        modelId ??= template.modelId;
+        affectedTemplates.add((
+          templateId: templateId,
+          displayName: template.displayName,
+        ));
+      }
+    }
+
+    if (modelId == null) {
+      developer.log(
+        'No templates using soul $soulId — cannot determine model',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    final provider = await resolveInferenceProvider(
+      modelId: modelId,
+      aiConfigRepository: aiConfigRepository,
+      logTag: _logTag,
+    );
+    if (provider == null) {
+      developer.log(
+        'Cannot resolve provider for model $modelId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    final sessionId = _uuid.v4();
+    try {
+      // Abandon stale sessions for this soul.
+      await _abandonStaleActiveSessions(
+        templateId: soulId,
+        currentSessionId: sessionId,
+      );
+
+      // Gather soul version history.
+      final recentVersions = await soulSvc.getVersionHistory(soulId);
+
+      // Aggregate feedback across all templates.
+      var feedbackByTemplate = <String, ClassifiedFeedback>{};
+      if (fbService != null) {
+        try {
+          final now = clock.now();
+          final since = now.subtract(const Duration(days: 7));
+          feedbackByTemplate = await fbService.extractForSoul(
+            soulId: soulId,
+            since: since,
+            until: now,
+          );
+        } catch (e, s) {
+          developer.log(
+            'Feedback aggregation failed for soul $soulId',
+            name: _logTag,
+            error: e,
+            stackTrace: s,
+          );
+        }
+      }
+
+      // Gather past soul evolution notes.
+      final pastNotes = await svc.getRecentEvolutionNotes(soulId);
+
+      // Compute session number.
+      final existingSessions = await svc.getEvolutionSessions(soulId);
+      final sessionNumber =
+          existingSessions.fold(
+            0,
+            (max, s) => s.sessionNumber > max ? s.sessionNumber : max,
+          ) +
+          1;
+
+      // Build soul-focused context.
+      final ctx = SoulEvolutionContextBuilder().build(
+        soul: soul,
+        currentVersion: currentVersion,
+        recentVersions: recentVersions,
+        affectedTemplates: affectedTemplates,
+        feedbackByTemplate: feedbackByTemplate,
+        pastNotes: pastNotes,
+        sessionNumber: sessionNumber,
+      );
+
+      // Create session entity with agentId=soulId, templateId=soulId.
+      final now = clock.now();
+      final session =
+          AgentDomainEntity.evolutionSession(
+                id: sessionId,
+                agentId: soulId,
+                templateId: soulId,
+                sessionNumber: sessionNumber,
+                status: EvolutionSessionStatus.active,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              )
+              as EvolutionSessionEntity;
+      await sync.upsertEntity(session);
+
+      // Set up GenUI infrastructure.
+      final catalog = buildEvolutionCatalog();
+      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final bridge = GenUiBridge(processor: processor);
+      final eventHandler = GenUiEventHandler(processor: processor)..listen();
+
+      // Strategy with soul fields populated, no template directives.
+      final strategy = EvolutionStrategy(
+        genUiBridge: bridge,
+        currentVoiceDirective: currentVersion.voiceDirective,
+        currentToneBounds: currentVersion.toneBounds,
+        currentCoachingStyle: currentVersion.coachingStyle,
+        currentAntiSycophancyPolicy: currentVersion.antiSycophancyPolicy,
+      );
+
+      final conversationId = conversationRepository.createConversation(
+        systemMessage: ctx.systemPrompt,
+      );
+
+      activeSessions[sessionId] = ActiveEvolutionSession(
+        sessionId: sessionId,
+        templateId: soulId,
+        conversationId: conversationId,
+        strategy: strategy,
+        modelId: modelId,
+        processor: processor,
+        genUiBridge: bridge,
+        eventHandler: eventHandler,
+      );
+
+      // Soul sessions only get soul tools (no propose_directives).
+      await conversationRepository.sendMessage(
+        conversationId: conversationId,
+        message: ctx.initialUserMessage,
+        model: modelId,
+        provider: provider,
+        inferenceRepo: CloudInferenceWrapper(
+          cloudRepository: cloudInferenceRepository,
+        ),
+        tools: _buildSoulToolDefinitions(bridge: bridge),
+        strategy: strategy,
+      );
+
+      _notifyUpdate(soulId);
+
+      return _extractLastAssistantContent(conversationId);
+    } catch (e, s) {
+      developer.log(
+        'Failed to start soul session',
+        name: _logTag,
+        error: e,
+        stackTrace: s,
+      );
+      await abandonSession(sessionId: sessionId);
+      return null;
+    }
+  }
+
+  /// Complete a standalone soul session by approving the soul proposal.
+  ///
+  /// Creates a new [SoulDocumentVersionEntity], persists notes and recap,
+  /// completes the session entity. Returns the new version, or `null`.
+  Future<SoulDocumentVersionEntity?> completeSoulSession({
+    required String sessionId,
+    Map<String, int> categoryRatings = const {},
+  }) async {
+    final active = activeSessions[sessionId];
+    final soulSvc = soulDocumentService;
+    final sync = syncService;
+    if (active == null || soulSvc == null || sync == null) return null;
+
+    final proposal = active.strategy.latestSoulProposal;
+    if (proposal == null) {
+      developer.log(
+        'No soul proposal to approve for $sessionId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    try {
+      final soulId =
+          active.templateId; // templateId == soulId for soul sessions
+
+      // Resolve current soul version to fill in unchanged fields.
+      final currentVersion = await soulSvc.getActiveSoulVersion(soulId);
+      if (currentVersion == null) {
+        developer.log(
+          'No active soul version for $soulId',
+          name: _logTag,
+        );
+        return null;
+      }
+
+      final newVersion = await soulSvc.createVersion(
+        soulId: soulId,
+        voiceDirective: proposal.voiceDirective.trim().isNotEmpty
+            ? proposal.voiceDirective
+            : currentVersion.voiceDirective,
+        toneBounds: proposal.toneBounds.trim().isNotEmpty
+            ? proposal.toneBounds
+            : currentVersion.toneBounds,
+        coachingStyle: proposal.coachingStyle.trim().isNotEmpty
+            ? proposal.coachingStyle
+            : currentVersion.coachingStyle,
+        antiSycophancyPolicy: proposal.antiSycophancyPolicy.trim().isNotEmpty
+            ? proposal.antiSycophancyPolicy
+            : currentVersion.antiSycophancyPolicy,
+        authoredBy: AgentAuthors.evolutionAgent,
+        sourceSessionId: sessionId,
+      );
+
+      // Persist notes.
+      await _persistNotes(
+        strategy: active.strategy,
+        templateId: soulId,
+        sessionId: sessionId,
+        sync: sync,
+      );
+
+      // Build and persist recap.
+      final recap = _buildSoulSessionRecapEntity(
+        active: active,
+        proposal: proposal,
+        categoryRatings: categoryRatings,
+      );
+      if (recap != null) {
+        await sync.upsertEntity(recap);
+      }
+
+      // Complete session entity.
+      final now = clock.now();
+      final sessionEntity = await _getSessionEntity(sessionId);
+      if (sessionEntity != null) {
+        final normalizedRating = _averageCategoryRating(categoryRatings);
+        final recapTldr = recap?.tldr.trim();
+        final normalizedSummary = (recapTldr != null && recapTldr.isNotEmpty)
+            ? recapTldr
+            : proposal.rationale;
+        await sync.upsertEntity(
+          sessionEntity.copyWith(
+            status: EvolutionSessionStatus.completed,
+            proposedSoulVersionId: newVersion.id,
+            feedbackSummary: normalizedSummary,
+            userRating: normalizedRating,
+            completedAt: now,
+            updatedAt: now,
+          ),
+        );
+      }
+
+      // Clear strategy state.
+      active.strategy
+        ..clearSoulProposal()
+        ..currentVoiceDirective = newVersion.voiceDirective
+        ..currentToneBounds = newVersion.toneBounds
+        ..currentCoachingStyle = newVersion.coachingStyle
+        ..currentAntiSycophancyPolicy = newVersion.antiSycophancyPolicy;
+
+      _cleanupSession(sessionId);
+      _notifyUpdate(soulId);
+
+      try {
+        onSessionCompleted?.call(soulId, sessionId);
+      } catch (e, s) {
+        developer.log(
+          'onSessionCompleted failed for soul session $sessionId',
+          name: _logTag,
+          error: e,
+          stackTrace: s,
+        );
+      }
+
+      developer.log(
+        'Completed soul session $sessionId → version v${newVersion.version}',
+        name: _logTag,
+      );
+
+      return newVersion;
+    } catch (e, s) {
+      developer.log(
+        'completeSoulSession failed for $sessionId',
+        name: _logTag,
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
+
   // ── Multi-turn helpers ──────────────────────────────────────────────────────
 
   /// Marks any active evolution sessions for [templateId] as abandoned,
@@ -973,5 +1327,63 @@ class TemplateEvolutionWorkflow {
     }
 
     return tools;
+  }
+
+  /// Soul session tool definitions — excludes `propose_directives`.
+  List<ChatCompletionTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
+    final tools = AgentToolRegistry.soulEvolutionAgentTools.map((def) {
+      return ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(
+          name: def.name,
+          description: def.description,
+          parameters: def.parameters,
+        ),
+      );
+    }).toList();
+
+    if (bridge != null) {
+      tools.add(bridge.toolDefinition);
+    }
+
+    return tools;
+  }
+
+  EvolutionSessionRecapEntity? _buildSoulSessionRecapEntity({
+    required ActiveEvolutionSession active,
+    required PendingSoulProposal proposal,
+    required Map<String, int> categoryRatings,
+  }) {
+    final manager = conversationRepository.getConversation(
+      active.conversationId,
+    );
+    final transcript = _snapshotTranscript(manager?.messages ?? const []);
+    final structuredRecap = active.strategy.latestRecap;
+    final recapMarkdown = structuredRecap?.content.trim() ?? '';
+    final recapTldr = structuredRecap?.tldr.trim() ?? proposal.rationale.trim();
+    final approvedChangeSummary = proposal.rationale.trim();
+
+    if (recapMarkdown.isEmpty &&
+        recapTldr.isEmpty &&
+        approvedChangeSummary.isEmpty &&
+        transcript.isEmpty) {
+      return null;
+    }
+
+    return AgentDomainEntity.evolutionSessionRecap(
+          id: evolutionSessionRecapId(active.sessionId),
+          agentId: active.templateId,
+          sessionId: active.sessionId,
+          createdAt: clock.now(),
+          vectorClock: null,
+          tldr: recapTldr,
+          recapMarkdown: recapMarkdown,
+          categoryRatings: Map.unmodifiable(categoryRatings),
+          transcript: transcript,
+          approvedChangeSummary: approvedChangeSummary.isEmpty
+              ? null
+              : approvedChangeSummary,
+        )
+        as EvolutionSessionRecapEntity;
   }
 }

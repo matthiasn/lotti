@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
@@ -97,6 +99,7 @@ void main() {
         '/settings/agents/templates/:templateId/review',
         '/settings/agents/souls/create',
         '/settings/agents/souls/:soulId',
+        '/settings/agents/souls/:soulId/review',
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
@@ -797,6 +800,67 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AdvancedSettingsPage>());
       expect(pages[2].child, isA<MaintenancePage>());
+    });
+
+    test('buildPages builds SoulEvolutionReviewPage for soul review', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/agents/souls/soul-789/review'),
+      );
+      final location = SettingsLocation(routeInformation);
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'soulId': 'soul-789'},
+      );
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<SoulEvolutionReviewPage>());
+      final reviewPage = pages[2].child as SoulEvolutionReviewPage;
+      expect(reviewPage.soulId, 'soul-789');
+    });
+
+    test('buildPages builds EvolutionReviewPage for template review', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/agents/templates/tmpl-123/review'),
+      );
+      final location = SettingsLocation(routeInformation);
+      var beamState = BeamState.fromRouteInformation(routeInformation);
+      beamState = beamState.copyWith(
+        pathParameters: {'templateId': 'tmpl-123'},
+      );
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      // Settings + Agents + Template detail + Review
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<AgentSettingsPage>());
+      expect(pages[2].child, isA<AgentTemplateDetailPage>());
+      expect(pages[3].child, isA<EvolutionReviewPage>());
+      final reviewPage = pages[3].child as EvolutionReviewPage;
+      expect(reviewPage.templateId, 'tmpl-123');
+    });
+
+    test('buildPages builds BackfillSettingsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/sync/backfill'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<SyncSettingsPage>());
+      // Third page is BackfillSettingsPage
+      expect(pages[2].child, isA<Widget>());
     });
 
     test('categories navigation stack has list page', () {
