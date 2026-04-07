@@ -373,12 +373,9 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
         ref.invalidate(allSoulDocumentsProvider);
         Navigator.of(context).pop();
       } else {
-        await soulService.updateSoul(
+        await soulService.updateSoulAndCreateVersion(
           soulId: widget.soulId!,
           displayName: name,
-        );
-        await soulService.createVersion(
-          soulId: widget.soulId!,
           voiceDirective: voice,
           toneBounds: tone,
           coachingStyle: coaching,

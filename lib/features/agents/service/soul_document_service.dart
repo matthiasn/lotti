@@ -229,6 +229,95 @@ class SoulDocumentService {
     });
   }
 
+  /// Atomically update the soul display name and create a new version.
+  ///
+  /// Both writes happen in one transaction so neither is committed alone.
+  Future<SoulDocumentVersionEntity> updateSoulAndCreateVersion({
+    required String soulId,
+    required String displayName,
+    required String voiceDirective,
+    required String authoredBy,
+    String toneBounds = '',
+    String coachingStyle = '',
+    String antiSycophancyPolicy = '',
+  }) async {
+    final trimmedName = displayName.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('displayName must not be blank');
+    }
+    _requireNonBlank('voiceDirective', voiceDirective);
+    _requireNonBlank('authoredBy', authoredBy);
+
+    final now = clock.now();
+    final newVersionId = _uuid.v4();
+
+    return syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) {
+        throw StateError('Soul document $soulId not found');
+      }
+
+      // Update display name if changed.
+      if (trimmedName != soul.displayName) {
+        final updated = soul.copyWith(
+          displayName: trimmedName,
+          updatedAt: now,
+        );
+        await syncService.upsertEntity(updated);
+      }
+
+      // Archive all non-archived versions.
+      final currentHead = await repository.getSoulDocumentHead(soulId);
+      final allVersions = await getVersionHistory(soulId, limit: -1);
+      for (final version in allVersions) {
+        if (version.status != SoulDocumentVersionStatus.archived) {
+          await syncService.upsertEntity(
+            version.copyWith(status: SoulDocumentVersionStatus.archived),
+          );
+        }
+      }
+
+      final nextVersion = await repository.getNextSoulDocumentVersionNumber(
+        soulId,
+      );
+
+      final newVersion =
+          AgentDomainEntity.soulDocumentVersion(
+                id: newVersionId,
+                agentId: soulId,
+                version: nextVersion,
+                status: SoulDocumentVersionStatus.active,
+                authoredBy: authoredBy,
+                createdAt: now,
+                vectorClock: null,
+                voiceDirective: voiceDirective,
+                toneBounds: toneBounds,
+                coachingStyle: coachingStyle,
+                antiSycophancyPolicy: antiSycophancyPolicy,
+                diffFromVersionId: currentHead?.versionId,
+              )
+              as SoulDocumentVersionEntity;
+      await syncService.upsertEntity(newVersion);
+
+      final headId = currentHead?.id ?? _uuid.v4();
+      final updatedHead = AgentDomainEntity.soulDocumentHead(
+        id: headId,
+        agentId: soulId,
+        versionId: newVersionId,
+        updatedAt: now,
+        vectorClock: null,
+      );
+      await syncService.upsertEntity(updatedHead);
+
+      developer.log(
+        'Updated soul $soulId and created version $nextVersion',
+        name: _logTag,
+      );
+
+      return newVersion;
+    });
+  }
+
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() async {
     return repository.getAllSoulDocuments();
