@@ -501,4 +501,29 @@ void main() {
       });
     });
   });
+
+  group('soulEvolutionAgentTools', () {
+    test('excludes propose_directives', () {
+      final tools = AgentToolRegistry.soulEvolutionAgentTools;
+
+      final names = tools.map((t) => t.name).toList();
+      expect(names, isNot(contains('propose_directives')));
+    });
+
+    test('includes propose_soul_directives and other evolution tools', () {
+      final tools = AgentToolRegistry.soulEvolutionAgentTools;
+      final names = tools.map((t) => t.name).toSet();
+
+      expect(names, contains('propose_soul_directives'));
+      expect(names, contains('record_evolution_note'));
+      expect(names, contains('publish_ritual_recap'));
+    });
+
+    test('has fewer tools than evolutionAgentTools', () {
+      expect(
+        AgentToolRegistry.soulEvolutionAgentTools.length,
+        lessThan(AgentToolRegistry.evolutionAgentTools.length),
+      );
+    });
+  });
 }

@@ -48,8 +48,7 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
           SizedBox(height: tokens.spacing.step5),
           pendingAsync.when(
             data: (entity) {
-              final hasTemplates =
-                  templatesAsync.value?.isNotEmpty ?? false;
+              final hasTemplates = templatesAsync.value?.isNotEmpty ?? false;
               final session = entity is EvolutionSessionEntity ? entity : null;
               if (session == null) {
                 return _StartCard(

@@ -250,6 +250,5 @@ void main() {
 
       expect(find.text('...'), findsOneWidget);
     });
-
   });
 }
