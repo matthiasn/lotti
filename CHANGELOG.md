@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.943] - 2026-04-07
+### Added
+- Token usage Stats tab in Agents Settings — iOS battery-usage-inspired
+  dashboard showing 7-day and 30-day token consumption with interactive
+  bar charts, average vs. today comparison, per-model breakdowns, and
+  per-template source activity with high-usage alerts.
+- Wake activity chart migrated into the new Stats tab for a unified view.
+
 ## [0.9.942] - 2026-04-07
 ### Added
 - Soul evolution UI: standalone soul evolution page with an interactive

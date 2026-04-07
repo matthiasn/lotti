@@ -344,7 +344,7 @@ class _MetricColumn extends StatelessWidget {
           children: [
             Text(
               value,
-              style: context.textTheme.headlineMedium?.copyWith(
+              style: context.textTheme.titleLarge?.copyWith(
                 color: valueColor,
                 fontWeight: FontWeight.w700,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -581,6 +581,17 @@ class _DayBar extends StatelessWidget {
         ? context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
         : context.colorScheme.onSurfaceVariant.withValues(alpha: 0.55);
 
+    final showByTimePortion = byTimeHeight > 0 && !day.isToday;
+    // When by-time fills the whole bar, it needs full rounding.
+    final byTimeIsFullBar =
+        showByTimePortion && (byTimeHeight >= totalHeight - 0.5);
+    final cornerRadius = Radius.circular(tokens.radii.xs);
+    final selectedBorder = isSelected
+        ? Border.all(
+            color: context.colorScheme.onSurface.withValues(alpha: 0.5),
+          )
+        : null;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -588,39 +599,26 @@ class _DayBar extends StatelessWidget {
         height: totalHeight,
         child: Column(
           children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: fullBarColor,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(tokens.radii.xs),
+            if (!byTimeIsFullBar)
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: fullBarColor,
+                    borderRadius: BorderRadius.vertical(top: cornerRadius),
+                    border: selectedBorder,
                   ),
-                  border: isSelected
-                      ? Border.all(
-                          color: context.colorScheme.onSurface.withValues(
-                            alpha: 0.5,
-                          ),
-                        )
-                      : null,
                 ),
               ),
-            ),
-            if (byTimeHeight > 0 && !day.isToday)
+            if (showByTimePortion)
               SizedBox(
-                height: byTimeHeight,
+                height: byTimeIsFullBar ? totalHeight : byTimeHeight,
                 child: Container(
                   decoration: BoxDecoration(
                     color: byTimeColor,
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(tokens.radii.xs),
-                    ),
-                    border: isSelected
-                        ? Border.all(
-                            color: context.colorScheme.onSurface.withValues(
-                              alpha: 0.5,
-                            ),
-                          )
-                        : null,
+                    borderRadius: byTimeIsFullBar
+                        ? BorderRadius.vertical(top: cornerRadius)
+                        : BorderRadius.zero,
+                    border: selectedBorder,
                   ),
                 ),
               ),

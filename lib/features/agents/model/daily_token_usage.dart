@@ -113,7 +113,8 @@ class TokenSourceBreakdown {
           percentage == other.percentage &&
           wakeCount == other.wakeCount &&
           totalDuration == other.totalDuration &&
-          isHighUsage == other.isHighUsage;
+          isHighUsage == other.isHighUsage &&
+          isTemplate == other.isTemplate;
 
   @override
   int get hashCode => Object.hash(
@@ -124,6 +125,7 @@ class TokenSourceBreakdown {
     wakeCount,
     totalDuration,
     isHighUsage,
+    isTemplate,
   );
 }
 
