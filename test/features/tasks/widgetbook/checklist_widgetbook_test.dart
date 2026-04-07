@@ -81,11 +81,21 @@ void main() {
         ),
       );
 
+      // Check an item so it becomes completed
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      // "Open" filter hides the checked item — only 1 visible
+      expect(find.text('Fix handover status update bug'), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
+
+      // Tap "All" to reveal checked item again
       await tester.tap(find.text('All'));
       await tester.pump();
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
       expect(find.text('Fix handover status update bug'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNWidgets(2));
     });
 
     testWidgets('toggling item updates progress counter', (tester) async {

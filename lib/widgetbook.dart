@@ -3,6 +3,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/daily_os/widgetbook/set_time_blocks_widgetbook.dart';
+import 'package:lotti/features/dashboards/widgetbook/insights_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
@@ -67,6 +68,7 @@ class WidgetbookApp extends StatelessWidget {
         buildProjectsWidgetbookFolder(),
         buildSettingsWidgetbookFolder(),
         buildChecklistWidgetbookFolder(),
+        buildInsightsWidgetbookFolder(),
         buildTasksWidgetbookFolder(),
         WidgetbookFolder(
           name: 'Task Widgets',
