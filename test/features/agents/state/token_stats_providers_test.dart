@@ -363,4 +363,87 @@ void main() {
       });
     });
   });
+
+  group('dailyTokenUsageByModelProvider', () {
+    test('groups records by modelId and sorts by total descending', () async {
+      final now = DateTime(2024, 3, 15, 14, 30);
+      await withClock(Clock.fixed(now), () async {
+        final records = [
+          makeTokenRecord(
+            createdAt: DateTime(2024, 3, 15, 10),
+            inputTokens: 1000,
+          ),
+          makeTokenRecord(
+            createdAt: DateTime(2024, 3, 14, 8),
+            inputTokens: 5000,
+          ),
+        ];
+
+        // Both use default modelId 'models/test-model', so one model group.
+        final container = createContainer(tokenRecords: records);
+        final result = await container.read(
+          dailyTokenUsageByModelProvider(7).future,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.keys.first, 'models/test-model');
+        expect(result.values.first, hasLength(7));
+      });
+    });
+
+    test('separates different models', () async {
+      final now = DateTime(2024, 3, 15, 14, 30);
+      await withClock(Clock.fixed(now), () async {
+        final recordA =
+            AgentDomainEntity.wakeTokenUsage(
+                  id: 'usage-a',
+                  agentId: 'agent-1',
+                  runKey: 'run-a',
+                  threadId: 'thread-1',
+                  modelId: 'models/model-a',
+                  createdAt: DateTime(2024, 3, 15, 10),
+                  vectorClock: null,
+                  inputTokens: 8000,
+                )
+                as WakeTokenUsageEntity;
+
+        final recordB =
+            AgentDomainEntity.wakeTokenUsage(
+                  id: 'usage-b',
+                  agentId: 'agent-1',
+                  runKey: 'run-b',
+                  threadId: 'thread-1',
+                  modelId: 'models/model-b',
+                  createdAt: DateTime(2024, 3, 15, 12),
+                  vectorClock: null,
+                  inputTokens: 2000,
+                )
+                as WakeTokenUsageEntity;
+
+        final container = createContainer(
+          tokenRecords: [recordA, recordB],
+        );
+        final result = await container.read(
+          dailyTokenUsageByModelProvider(7).future,
+        );
+
+        expect(result, hasLength(2));
+        // Sorted by total descending — model-a (8000) first.
+        expect(result.keys.first, 'models/model-a');
+        expect(result.keys.last, 'models/model-b');
+      });
+    });
+
+    test('returns empty map when no records', () async {
+      final now = DateTime(2024, 3, 15, 14, 30);
+      await withClock(Clock.fixed(now), () async {
+        final container = createContainer();
+        final result = await container.read(
+          dailyTokenUsageByModelProvider(7).future,
+        );
+
+        expect(result, isEmpty);
+      });
+    });
+  });
 }

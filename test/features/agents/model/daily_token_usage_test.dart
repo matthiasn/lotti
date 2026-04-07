@@ -103,10 +103,56 @@ void main() {
 
       expect(a, isNot(equals(b)));
     });
+
+    test('inequality when displayName differs', () {
+      const a = TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+      );
+      const b = TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent B',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+      );
+
+      expect(a, isNot(equals(b)));
+    });
+
+    test('inequality when wakeCount differs', () {
+      const a = TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 10,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+      );
+      const b = TokenSourceBreakdown(
+        templateId: 'tpl-1',
+        displayName: 'Agent A',
+        totalTokens: 5000,
+        percentage: 50,
+        wakeCount: 5,
+        totalDuration: Duration(hours: 1),
+        isHighUsage: true,
+      );
+
+      expect(a, isNot(equals(b)));
+    });
   });
 
   group('TokenUsageComparison', () {
-    test('isAboveAverage reflects relationship', () {
+    test('isAboveAverage derived as getter', () {
       const above = TokenUsageComparison(
         averageTokensByTimeOfDay: 1000,
         todayTokens: 2000,
@@ -124,6 +170,25 @@ void main() {
 
       expect(below.isAboveAverage, isFalse);
       expect(below.todayTokens, lessThan(below.averageTokensByTimeOfDay));
+    });
+
+    test('equality and hashCode', () {
+      const a = TokenUsageComparison(
+        averageTokensByTimeOfDay: 1000,
+        todayTokens: 2000,
+      );
+      const b = TokenUsageComparison(
+        averageTokensByTimeOfDay: 1000,
+        todayTokens: 2000,
+      );
+      const c = TokenUsageComparison(
+        averageTokensByTimeOfDay: 1000,
+        todayTokens: 3000,
+      );
+
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+      expect(a, isNot(equals(c)));
     });
   });
 }

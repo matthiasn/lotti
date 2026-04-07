@@ -17,6 +17,7 @@ Widget _buildSubject({
     todayTokens: 0,
   ),
   List<TokenSourceBreakdown> breakdown = const [],
+  Map<String, List<DailyTokenUsage>> byModel = const {},
   List<Override> extraOverrides = const [],
 }) {
   return makeTestableWidgetNoScroll(
@@ -30,7 +31,7 @@ Widget _buildSubject({
         (ref, days) async => comparison,
       ),
       dailyTokenUsageByModelProvider.overrideWith(
-        (ref, days) async => const <String, List<DailyTokenUsage>>{},
+        (ref, days) async => byModel,
       ),
       tokenSourceBreakdownProvider.overrideWith(
         (ref) async => breakdown,
