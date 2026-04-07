@@ -53,6 +53,7 @@
           <p>Pluggable soul document: soul documents can now be customized per agent template.</p>
           <p>One-on-one v2: redesigned agent one-on-one conversation experience.</p>
           <p>Manual planning flow: new "Set time blocks" step for manual daily planning.</p>
+          <p>Proposed changes card: removed inline confirm/reject buttons; users now swipe or use "Confirm all".</p>
           <p>Settings page restyled to use design system list items. Context menu aligned with Figma design.</p>
           <p>Projects tab improvements: task rows show agent one-liner summaries, follow-up tasks inherit the parent project, and scroll behaviour is smoother.</p>
           <p>Fixed agents self-notification loops and projects page flickering.</p>

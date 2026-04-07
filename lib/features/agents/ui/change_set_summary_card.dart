@@ -137,13 +137,27 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
           ),
           const SizedBox(height: 12),
 
-          // Item list
+          // Item list (only pending items)
           for (var i = 0; i < widget.changeSet.items.length; i++)
-            _ChangeItemTile(
-              changeSet: widget.changeSet,
-              itemIndex: i,
-              scope: widget.scope,
-            ),
+            if (widget.changeSet.items[i].status == ChangeItemStatus.pending)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: context.colorScheme.outlineVariant.withValues(
+                        alpha: 0.12,
+                      ),
+                    ),
+                  ),
+                  child: _ChangeItemTile(
+                    changeSet: widget.changeSet,
+                    itemIndex: i,
+                    scope: widget.scope,
+                  ),
+                ),
+              ),
 
           // Confirm All button (only if there are pending items)
           if (pendingCount > 0) ...[
@@ -248,15 +262,13 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
   int get _itemIndex => widget.itemIndex;
   ChangeItem get _item => _changeSet.items[_itemIndex];
 
+  static const _itemBorderRadius = BorderRadius.all(Radius.circular(8));
+
   @override
   Widget build(BuildContext context) {
-    final isPending = _item.status == ChangeItemStatus.pending;
-
-    if (!isPending) {
-      return _buildResolvedTile(context);
-    }
-
-    return Dismissible(
+    return ClipRRect(
+      borderRadius: _itemBorderRadius,
+      child: Dismissible(
       key: Key('${_changeSet.id}_$_itemIndex'),
       dismissThresholds: const {
         DismissDirection.endToStart: 0.25,
@@ -320,6 +332,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
         ),
       ),
       child: _buildPendingTile(context),
+      ),
     );
   }
 
@@ -330,7 +343,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
 
     return ListTile(
       dense: true,
-      contentPadding: EdgeInsets.zero,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       title: Text(
         _item.humanSummary,
         style: context.textTheme.bodyMedium,
@@ -347,27 +360,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.green.shade700,
-                  ),
-                  tooltip: context.messages.changeSetSwipeConfirm,
-                  onPressed: () => _confirm(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    color: context.colorScheme.error,
-                  ),
-                  tooltip: context.messages.changeSetSwipeReject,
-                  onPressed: () => _reject(context),
-                ),
-              ],
-            ),
+          : null,
     );
   }
 
@@ -407,7 +400,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -454,28 +447,6 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.green.shade700,
-                  ),
-                  tooltip: context.messages.changeSetSwipeConfirm,
-                  onPressed: () => _confirm(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    color: context.colorScheme.error,
-                  ),
-                  tooltip: context.messages.changeSetSwipeReject,
-                  onPressed: () => _reject(context),
-                ),
-              ],
             ),
         ],
       ),
@@ -502,38 +473,6 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildResolvedTile(BuildContext context) {
-    final isConfirmed = _item.status == ChangeItemStatus.confirmed;
-
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        _item.humanSummary,
-        style: context.textTheme.bodyMedium?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
-          decoration: TextDecoration.lineThrough,
-        ),
-      ),
-      subtitle: Text(
-        _item.toolName,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: SizedBox(
-        height: 48,
-        child: Icon(
-          isConfirmed ? Icons.check_circle : Icons.cancel,
-          size: 24,
-          color: isConfirmed
-              ? Colors.green.shade700
-              : context.colorScheme.error,
-        ),
-      ),
     );
   }
 

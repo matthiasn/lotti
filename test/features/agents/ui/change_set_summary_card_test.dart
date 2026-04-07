@@ -123,7 +123,9 @@ void main() {
       expect(find.text('2 pending'), findsOneWidget);
     });
 
-    testWidgets('confirm button calls confirmItem', (tester) async {
+    testWidgets('no inline confirm/reject buttons on pending items', (
+      tester,
+    ) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -134,54 +136,11 @@ void main() {
         ],
       );
 
-      when(
-        () => mockConfirmationService.confirmItem(any(), any()),
-      ).thenAnswer(
-        (_) async => const ToolExecutionResult(
-          success: true,
-          output: 'Done',
-        ),
-      );
-
       await pumpCard(tester, changeSets: [changeSet]);
 
-      // Tap the confirm icon button (check_circle_outline).
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await _pumpUi(tester);
-
-      verify(
-        () => mockConfirmationService.confirmItem(changeSet, 0),
-      ).called(1);
-    });
-
-    testWidgets('reject button calls rejectItem', (tester) async {
-      final changeSet = makeTestChangeSet(
-        items: const [
-          ChangeItem(
-            toolName: 'update_task_estimate',
-            args: {'minutes': 120},
-            humanSummary: 'Set estimate to 2 hours',
-          ),
-        ],
-      );
-
-      when(
-        () => mockConfirmationService.rejectItem(
-          any(),
-          any(),
-          reason: any(named: 'reason'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      await pumpCard(tester, changeSets: [changeSet]);
-
-      // Tap the reject icon button (cancel_outlined).
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
-      await _pumpUi(tester);
-
-      verify(
-        () => mockConfirmationService.rejectItem(changeSet, 0),
-      ).called(1);
+      // Inline confirm/reject buttons should not exist; users swipe instead.
+      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
     });
 
     testWidgets('Confirm All button confirms all pending items', (
@@ -221,7 +180,7 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('resolved items show status icon', (tester) async {
+    testWidgets('resolved items are hidden from the list', (tester) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -236,29 +195,28 @@ void main() {
             humanSummary: 'Rejected item',
             status: ChangeItemStatus.rejected,
           ),
+          ChangeItem(
+            toolName: 'assign_task_label',
+            args: {'label': 'urgent'},
+            humanSummary: 'Still pending',
+          ),
         ],
-        status: ChangeSetStatus.resolved,
       );
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      // Both resolved items should show, with strikethrough style.
-      expect(find.text('Confirmed item'), findsOneWidget);
-      expect(find.text('Rejected item'), findsOneWidget);
+      // Confirmed and rejected items should be hidden.
+      expect(find.text('Confirmed item'), findsNothing);
+      expect(find.text('Rejected item'), findsNothing);
 
-      // Resolved tiles show tool name as subtitle (matching pending tiles).
-      expect(find.text('update_task_estimate'), findsOneWidget);
-      expect(find.text('set_task_title'), findsOneWidget);
+      // Only the pending item is visible.
+      expect(find.text('Still pending'), findsOneWidget);
 
-      // Check icons: check_circle for confirmed, cancel for rejected.
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.cancel), findsOneWidget);
+      // Pending count badge shows 1.
+      expect(find.text('1 pending'), findsOneWidget);
 
-      // No pending count badge when all resolved (pendingCount == 0).
-      expect(find.text('0 pending'), findsNothing);
-
-      // Confirm All button should not appear (no pending items).
-      expect(find.text('Confirm all'), findsNothing);
+      // Confirm All button should appear (1 pending item).
+      expect(find.text('Confirm all'), findsOneWidget);
     });
 
     testWidgets('shows error snackbar when confirm fails', (tester) async {
@@ -278,7 +236,8 @@ void main() {
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      // Swipe right to confirm.
+      await tester.drag(find.text('Will fail'), const Offset(300, 0));
       await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
@@ -309,7 +268,11 @@ void main() {
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      // Swipe right to confirm.
+      await tester.drag(
+        find.text('Will fail silently'),
+        const Offset(300, 0),
+      );
       await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
@@ -336,7 +299,11 @@ void main() {
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      // Swipe left to reject.
+      await tester.drag(
+        find.text('Reject will fail'),
+        const Offset(-300, 0),
+      );
       await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
@@ -478,7 +445,8 @@ void main() {
 
         await pumpCard(tester, changeSets: [changeSet]);
 
-        await tester.tap(find.byIcon(Icons.check_circle_outline));
+        // Swipe right to confirm.
+        await tester.drag(find.text('Has warning'), const Offset(300, 0));
         await _pumpUi(tester);
 
         // Should show the warning message, not the generic error.
@@ -513,7 +481,11 @@ void main() {
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      // Swipe left to reject.
+      await tester.drag(
+        find.text('Reject returns false'),
+        const Offset(-300, 0),
+      );
       await _pumpUi(tester);
 
       // When applied is false, the error snackbar is shown.
@@ -607,7 +579,11 @@ void main() {
 
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      // Swipe right to confirm.
+      await tester.drag(
+        find.text('Update project status to active'),
+        const Offset(300, 0),
+      );
       await _pumpUi(tester);
 
       verify(
@@ -641,7 +617,11 @@ void main() {
 
       await pumpProjectCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      // Swipe left to reject.
+      await tester.drag(
+        find.text('Update project status to on hold'),
+        const Offset(-300, 0),
+      );
       await _pumpUi(tester);
 
       verify(
@@ -822,7 +802,7 @@ void main() {
       expect(find.text(''), findsNothing);
     });
 
-    testWidgets('confirm button works for time entry tile', (tester) async {
+    testWidgets('swipe right confirms time entry tile', (tester) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -845,7 +825,15 @@ void main() {
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      // No inline confirm/reject buttons on time entry tiles.
+      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.byIcon(Icons.cancel_outlined), findsNothing);
+
+      // Swipe right to confirm the time entry.
+      await tester.drag(
+        find.text('Morning standup [generated]'),
+        const Offset(300, 0),
+      );
       await _pumpUi(tester);
 
       verify(
