@@ -63,9 +63,9 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
       }
     }
 
-    final shouldSuppressText = openingSurfaces.isNotEmpty;
-
-    if (!shouldSuppressText && _hasNonEmptyText(openingResponse)) {
+    // Never suppress the opening text in soul sessions — the greeting and
+    // example phrasings are essential context for BinaryChoicePrompt widgets.
+    if (_hasNonEmptyText(openingResponse)) {
       messages.add(
         EvolutionChatMessage.assistant(
           text: openingResponse,
@@ -90,12 +90,16 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
     session.eventHandler?.onBinaryChoiceSubmitted = (surfaceId, value) {
       sendMessage(value, skipApprovalCheck: true);
     };
+    session.eventHandler?.onABComparisonSubmitted = (surfaceId, value) {
+      sendMessage(value, skipApprovalCheck: true);
+    };
 
     // Abandon session on dispose if still active.
     ref.onDispose(() {
       session.eventHandler?.onSoulProposalAction = null;
       session.eventHandler?.onRatingsSubmitted = null;
       session.eventHandler?.onBinaryChoiceSubmitted = null;
+      session.eventHandler?.onABComparisonSubmitted = null;
       if (workflow.getActiveSessionForSoul(soulId) != null) {
         unawaited(
           workflow.abandonSession(sessionId: session.sessionId).catchError((
@@ -194,12 +198,11 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
         }
       }
 
-      final shouldSuppressAssistantBubble =
-          hasPendingSoulProposal && surfaceMessages.isNotEmpty;
-
+      // Soul sessions always show text alongside surfaces — the text provides
+      // context for A/B choices and proposals. Only suppress when a soul
+      // proposal surface fully replaces the text.
       final responseText = response?.trim();
-      if ((responseText?.isNotEmpty ?? false) &&
-          !shouldSuppressAssistantBubble) {
+      if (responseText?.isNotEmpty ?? false) {
         updatedMessages.add(
           EvolutionChatMessage.assistant(
             text: responseText!,

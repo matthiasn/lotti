@@ -34,7 +34,7 @@ void main() {
       final catalog = buildEvolutionCatalog();
       final items = catalog.items;
 
-      expect(items, hasLength(11));
+      expect(items, hasLength(12));
       expect(
         items.map((i) => i.name),
         containsAll([
@@ -48,6 +48,7 @@ void main() {
           'SessionProgress',
           'CategoryRatings',
           'BinaryChoicePrompt',
+          'ABComparison',
           'HighPriorityFeedback',
         ]),
       );
