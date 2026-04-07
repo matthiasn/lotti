@@ -180,7 +180,7 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('resolved items show status icon', (tester) async {
+    testWidgets('resolved items are hidden from the list', (tester) async {
       final changeSet = makeTestChangeSet(
         items: const [
           ChangeItem(
@@ -195,29 +195,28 @@ void main() {
             humanSummary: 'Rejected item',
             status: ChangeItemStatus.rejected,
           ),
+          ChangeItem(
+            toolName: 'assign_task_label',
+            args: {'label': 'urgent'},
+            humanSummary: 'Still pending',
+          ),
         ],
-        status: ChangeSetStatus.resolved,
       );
 
       await pumpCard(tester, changeSets: [changeSet]);
 
-      // Both resolved items should show, with strikethrough style.
-      expect(find.text('Confirmed item'), findsOneWidget);
-      expect(find.text('Rejected item'), findsOneWidget);
+      // Confirmed and rejected items should be hidden.
+      expect(find.text('Confirmed item'), findsNothing);
+      expect(find.text('Rejected item'), findsNothing);
 
-      // Resolved tiles show tool name as subtitle (matching pending tiles).
-      expect(find.text('update_task_estimate'), findsOneWidget);
-      expect(find.text('set_task_title'), findsOneWidget);
+      // Only the pending item is visible.
+      expect(find.text('Still pending'), findsOneWidget);
 
-      // Check icons: check_circle for confirmed, cancel for rejected.
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.byIcon(Icons.cancel), findsOneWidget);
+      // Pending count badge shows 1.
+      expect(find.text('1 pending'), findsOneWidget);
 
-      // No pending count badge when all resolved (pendingCount == 0).
-      expect(find.text('0 pending'), findsNothing);
-
-      // Confirm All button should not appear (no pending items).
-      expect(find.text('Confirm all'), findsNothing);
+      // Confirm All button should appear (1 pending item).
+      expect(find.text('Confirm all'), findsOneWidget);
     });
 
     testWidgets('shows error snackbar when confirm fails', (tester) async {
