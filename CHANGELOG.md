@@ -38,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Customer care dashboard: new frontend with admin authentication.
 
 ### Changed
+- Proposed changes card: removed inline confirm/reject buttons from
+  individual change items; users now confirm or reject via swipe gestures
+  or the bulk "Confirm all" button.
 - Settings page restyled to use design system list items, matching the
   current Figma visual language.
 - Context menu component aligned with Figma design specifications.

@@ -347,27 +347,7 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.green.shade700,
-                  ),
-                  tooltip: context.messages.changeSetSwipeConfirm,
-                  onPressed: () => _confirm(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    color: context.colorScheme.error,
-                  ),
-                  tooltip: context.messages.changeSetSwipeReject,
-                  onPressed: () => _reject(context),
-                ),
-              ],
-            ),
+          : null,
     );
   }
 
@@ -454,28 +434,6 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.green.shade700,
-                  ),
-                  tooltip: context.messages.changeSetSwipeConfirm,
-                  onPressed: () => _confirm(context),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    color: context.colorScheme.error,
-                  ),
-                  tooltip: context.messages.changeSetSwipeReject,
-                  onPressed: () => _reject(context),
-                ),
-              ],
             ),
         ],
       ),
