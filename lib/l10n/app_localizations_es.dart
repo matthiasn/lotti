@@ -653,6 +653,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentSettingsTitle => 'Agentes';
 
   @override
+  String get agentSoulAntiSycophancyLabel => 'Política anti-adulación';
+
+  @override
+  String get agentSoulAssignedTemplatesTitle => 'Plantillas asignadas';
+
+  @override
+  String get agentSoulAssignmentLabel => 'Alma';
+
+  @override
+  String get agentSoulCoachingStyleLabel => 'Estilo de coaching';
+
+  @override
+  String get agentSoulCreatedSuccess => 'Alma creada';
+
+  @override
+  String get agentSoulCreateTitle => 'Crear alma';
+
+  @override
+  String get agentSoulDeleteConfirmBody =>
+      'Esto eliminará el alma y todas sus versiones.';
+
+  @override
+  String get agentSoulDeleteConfirmTitle => 'Eliminar alma';
+
+  @override
+  String get agentSoulDetailTitle => 'Detalle del alma';
+
+  @override
+  String get agentSoulDisplayNameLabel => 'Nombre';
+
+  @override
+  String get agentSoulEmptyList => 'Aún no hay documentos de alma';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-adulación';
 
   @override
@@ -665,10 +699,53 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentSoulFieldVoice => 'Voz';
 
   @override
+  String get agentSoulInfoTab => 'Info';
+
+  @override
+  String get agentSoulNoneAssigned => 'Sin alma asignada';
+
+  @override
+  String get agentSoulNotFound => 'Alma no encontrada';
+
+  @override
   String get agentSoulProposalSubtitle => 'Cambios de personalidad propuestos';
 
   @override
   String get agentSoulProposalTitle => 'Propuesta de personalidad del alma';
+
+  @override
+  String get agentSoulRollbackAction => 'Volver a esta versión';
+
+  @override
+  String agentSoulRollbackConfirm(int version) {
+    return '¿Volver a la versión $version? Todas las plantillas que usan esta alma se verán afectadas.';
+  }
+
+  @override
+  String get agentSoulSelectTitle => 'Seleccionar alma';
+
+  @override
+  String get agentSoulSettingsTab => 'Configuración';
+
+  @override
+  String get agentSoulsTitle => 'Almas';
+
+  @override
+  String get agentSoulToneBoundsLabel => 'Límites de tono';
+
+  @override
+  String get agentSoulVersionHistoryTitle => 'Historial de versiones';
+
+  @override
+  String agentSoulVersionLabel(int version) {
+    return 'Versión $version';
+  }
+
+  @override
+  String get agentSoulVersionSaved => 'Nueva versión de alma guardada';
+
+  @override
+  String get agentSoulVoiceDirectiveLabel => 'Directiva de voz';
 
   @override
   String get agentStateConsecutiveFailures => 'Fallos consecutivos';

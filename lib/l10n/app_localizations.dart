@@ -1212,6 +1212,72 @@ abstract class AppLocalizations {
   /// **'Agents'**
   String get agentSettingsTitle;
 
+  /// No description provided for @agentSoulAntiSycophancyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Anti-Sycophancy Policy'**
+  String get agentSoulAntiSycophancyLabel;
+
+  /// No description provided for @agentSoulAssignedTemplatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Templates'**
+  String get agentSoulAssignedTemplatesTitle;
+
+  /// No description provided for @agentSoulAssignmentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul'**
+  String get agentSoulAssignmentLabel;
+
+  /// No description provided for @agentSoulCoachingStyleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Coaching Style'**
+  String get agentSoulCoachingStyleLabel;
+
+  /// No description provided for @agentSoulCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul created'**
+  String get agentSoulCreatedSuccess;
+
+  /// No description provided for @agentSoulCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Soul'**
+  String get agentSoulCreateTitle;
+
+  /// No description provided for @agentSoulDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove the soul and all its versions.'**
+  String get agentSoulDeleteConfirmBody;
+
+  /// No description provided for @agentSoulDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Soul'**
+  String get agentSoulDeleteConfirmTitle;
+
+  /// No description provided for @agentSoulDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul Detail'**
+  String get agentSoulDetailTitle;
+
+  /// No description provided for @agentSoulDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get agentSoulDisplayNameLabel;
+
+  /// No description provided for @agentSoulEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'No soul documents yet'**
+  String get agentSoulEmptyList;
+
   /// No description provided for @agentSoulFieldAntiSycophancy.
   ///
   /// In en, this message translates to:
@@ -1236,6 +1302,24 @@ abstract class AppLocalizations {
   /// **'Voice'**
   String get agentSoulFieldVoice;
 
+  /// No description provided for @agentSoulInfoTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get agentSoulInfoTab;
+
+  /// No description provided for @agentSoulNoneAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No soul assigned'**
+  String get agentSoulNoneAssigned;
+
+  /// No description provided for @agentSoulNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul not found'**
+  String get agentSoulNotFound;
+
   /// No description provided for @agentSoulProposalSubtitle.
   ///
   /// In en, this message translates to:
@@ -1247,6 +1331,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Soul Personality Proposal'**
   String get agentSoulProposalTitle;
+
+  /// No description provided for @agentSoulRollbackAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll Back to This Version'**
+  String get agentSoulRollbackAction;
+
+  /// No description provided for @agentSoulRollbackConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Roll back to version {version}? All templates using this soul will pick up the change.'**
+  String agentSoulRollbackConfirm(int version);
+
+  /// No description provided for @agentSoulSelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Soul'**
+  String get agentSoulSelectTitle;
+
+  /// No description provided for @agentSoulSettingsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get agentSoulSettingsTab;
+
+  /// No description provided for @agentSoulsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Souls'**
+  String get agentSoulsTitle;
+
+  /// No description provided for @agentSoulToneBoundsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tone Bounds'**
+  String get agentSoulToneBoundsLabel;
+
+  /// No description provided for @agentSoulVersionHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version History'**
+  String get agentSoulVersionHistoryTitle;
+
+  /// No description provided for @agentSoulVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String agentSoulVersionLabel(int version);
+
+  /// No description provided for @agentSoulVersionSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'New soul version saved'**
+  String get agentSoulVersionSaved;
+
+  /// No description provided for @agentSoulVoiceDirectiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Directive'**
+  String get agentSoulVoiceDirectiveLabel;
 
   /// No description provided for @agentStateConsecutiveFailures.
   ///

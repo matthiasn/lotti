@@ -13,9 +13,11 @@ import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -1769,5 +1771,286 @@ void main() {
 
       verify(() => _mockNavService.beamBack()).called(1);
     });
+  });
+
+  group('AgentTemplateDetailPage - soul assignment', () {
+    late MockSoulDocumentService mockSoulService;
+    const templateId = 'tpl-soul-001';
+
+    final testSoul = makeTestSoulDocument(
+      id: 'soul-1',
+      displayName: 'Laura',
+    );
+    final testSoul2 = makeTestSoulDocument(
+      id: 'soul-2',
+      displayName: 'Tom',
+    );
+    final testSoulVersion = makeTestSoulDocumentVersion(
+      id: 'soul-v1',
+      agentId: 'soul-1',
+    );
+
+    setUp(() {
+      mockSoulService = MockSoulDocumentService();
+    });
+
+    /// Common soul-related provider overrides.
+    List<Override> soulOverrides({
+      List<AgentDomainEntity> souls = const [],
+      AgentDomainEntity? soulForTemplate,
+    }) => [
+      soulDocumentServiceProvider.overrideWithValue(mockSoulService),
+      allSoulDocumentsProvider.overrideWith(
+        (ref) async => souls,
+      ),
+      soulForTemplateProvider.overrideWith(
+        (ref, id) async => soulForTemplate,
+      ),
+    ];
+
+    testWidgets(
+      'create mode persists soul selection via assignSoulToTemplate',
+      (tester) async {
+        final createdTemplate = makeTestTemplate(
+          id: 'created-tpl-id',
+          agentId: 'created-tpl-id',
+        );
+
+        when(
+          () => mockTemplateService.createTemplate(
+            displayName: any(named: 'displayName'),
+            kind: any(named: 'kind'),
+            modelId: any(named: 'modelId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            profileId: any(named: 'profileId'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => createdTemplate);
+
+        when(
+          () => mockSoulService.assignSoulToTemplate(any(), any()),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildCreateSubject(
+            profiles: [_testProfile],
+            extraOverrides: soulOverrides(
+              souls: [testSoul, testSoul2],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Enter a name
+        final nameField = find.byType(TextField).first;
+        await tester.enterText(nameField, 'My Template');
+        await tester.pump();
+
+        // Select a profile via the profile picker
+        final profileDropdown = find.byIcon(Icons.arrow_drop_down);
+        await tester.tap(profileDropdown.first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Test Profile'));
+        await tester.pumpAndSettle();
+
+        // Select a soul via the SoulSelector picker
+        final soulSelector = find.byType(SoulSelector);
+        expect(soulSelector, findsOneWidget);
+        await tester.tap(soulSelector);
+        await tester.pumpAndSettle();
+        // Pick "Laura" in the modal
+        await tester.tap(find.text('Laura').last);
+        await tester.pumpAndSettle();
+
+        // Tap create button
+        final context = tester.element(find.byType(AgentTemplateDetailPage));
+        await tester.tap(find.text(context.messages.createButton));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockSoulService.assignSoulToTemplate(
+            'created-tpl-id',
+            'soul-1',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'edit mode calls assignSoulToTemplate when soul changes',
+      (tester) async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTemplateService.updateTemplate(
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            modelId: any(named: 'modelId'),
+            profileId: any(named: 'profileId'),
+            clearProfileId: any(named: 'clearProfileId'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplate(id: templateId));
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplateVersion(version: 2));
+        when(
+          () => mockSoulService.assignSoulToTemplate(any(), any()),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildEditSubject(
+            templateId: templateId,
+            template: makeTestTemplate(
+              id: templateId,
+              agentId: templateId,
+              profileId: 'profile-1',
+            ),
+            extraOverrides: soulOverrides(
+              souls: [testSoul, testSoul2],
+              // Template originally has soul-1 assigned
+              soulForTemplate: testSoulVersion,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The soul selector should show "Laura" (seeded from provider)
+        expect(find.text('Laura'), findsWidgets);
+
+        // Change soul to "Tom" by tapping the selector and picking Tom
+        final soulSelector = find.byType(SoulSelector);
+        await tester.tap(soulSelector);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tom').last);
+        await tester.pumpAndSettle();
+
+        // Form is now dirty (soul changed), save button appears
+        final context = tester.element(find.byType(AgentTemplateDetailPage));
+        await tester.tap(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockSoulService.assignSoulToTemplate(
+            templateId,
+            'soul-2',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'edit mode calls unassignSoul when soul is cleared',
+      (tester) async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTemplateService.updateTemplate(
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            modelId: any(named: 'modelId'),
+            profileId: any(named: 'profileId'),
+            clearProfileId: any(named: 'clearProfileId'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplate(id: templateId));
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenAnswer((_) async => makeTestTemplateVersion(version: 2));
+        when(
+          () => mockSoulService.unassignSoul(any()),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildEditSubject(
+            templateId: templateId,
+            template: makeTestTemplate(
+              id: templateId,
+              agentId: templateId,
+              profileId: 'profile-1',
+            ),
+            extraOverrides: soulOverrides(
+              souls: [testSoul],
+              // Template originally has soul-1 assigned
+              soulForTemplate: testSoulVersion,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify soul is seeded: "Laura" visible
+        expect(find.text('Laura'), findsWidgets);
+
+        // Clear the soul by tapping the clear icon inside the SoulSelector
+        final soulSelector = find.byType(SoulSelector);
+        final clearIcon = find.descendant(
+          of: soulSelector,
+          matching: find.byIcon(Icons.clear),
+        );
+        expect(clearIcon, findsOneWidget);
+        await tester.tap(clearIcon);
+        await tester.pumpAndSettle();
+
+        // Form is now dirty (soul cleared), save button appears
+        final context = tester.element(find.byType(AgentTemplateDetailPage));
+        await tester.tap(
+          find.text(context.messages.agentTemplateSaveNewVersion),
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockSoulService.unassignSoul(templateId),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'edit mode seeds soul selection from soulForTemplateProvider',
+      (tester) async {
+        when(
+          () => mockTemplateService.getAgentsForTemplate(any()),
+        ).thenAnswer((_) async => []);
+
+        await tester.pumpWidget(
+          buildEditSubject(
+            templateId: templateId,
+            template: makeTestTemplate(
+              id: templateId,
+              agentId: templateId,
+              profileId: 'profile-1',
+            ),
+            extraOverrides: soulOverrides(
+              souls: [testSoul, testSoul2],
+              soulForTemplate: testSoulVersion,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The SoulSelector should display "Laura" (from seeded soul-1)
+        final soulSelector = find.byType(SoulSelector);
+        expect(soulSelector, findsOneWidget);
+        expect(
+          find.descendant(of: soulSelector, matching: find.text('Laura')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

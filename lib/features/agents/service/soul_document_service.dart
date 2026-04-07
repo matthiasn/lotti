@@ -197,6 +197,127 @@ class SoulDocumentService {
     return repository.getSoulDocument(soulId);
   }
 
+  /// Update mutable fields on a soul document (currently just display name).
+  ///
+  /// Rejects blank display names and skips the write when nothing changed.
+  Future<SoulDocumentEntity> updateSoul({
+    required String soulId,
+    String? displayName,
+  }) async {
+    final trimmed = displayName?.trim();
+    if (trimmed != null && trimmed.isEmpty) {
+      throw ArgumentError('displayName must not be blank');
+    }
+
+    final now = clock.now();
+
+    return syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) {
+        throw StateError('Soul document $soulId not found');
+      }
+
+      final newName = trimmed ?? soul.displayName;
+      if (newName == soul.displayName) return soul;
+
+      final updated = soul.copyWith(
+        displayName: newName,
+        updatedAt: now,
+      );
+      await syncService.upsertEntity(updated);
+      return updated;
+    });
+  }
+
+  /// Atomically update the soul display name and create a new version.
+  ///
+  /// Both writes happen in one transaction so neither is committed alone.
+  Future<SoulDocumentVersionEntity> updateSoulAndCreateVersion({
+    required String soulId,
+    required String displayName,
+    required String voiceDirective,
+    required String authoredBy,
+    String toneBounds = '',
+    String coachingStyle = '',
+    String antiSycophancyPolicy = '',
+  }) async {
+    final trimmedName = displayName.trim();
+    if (trimmedName.isEmpty) {
+      throw ArgumentError('displayName must not be blank');
+    }
+    _requireNonBlank('voiceDirective', voiceDirective);
+    _requireNonBlank('authoredBy', authoredBy);
+
+    final now = clock.now();
+    final newVersionId = _uuid.v4();
+
+    return syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) {
+        throw StateError('Soul document $soulId not found');
+      }
+
+      // Update display name if changed.
+      if (trimmedName != soul.displayName) {
+        final updated = soul.copyWith(
+          displayName: trimmedName,
+          updatedAt: now,
+        );
+        await syncService.upsertEntity(updated);
+      }
+
+      // Archive all non-archived versions.
+      final currentHead = await repository.getSoulDocumentHead(soulId);
+      final allVersions = await getVersionHistory(soulId, limit: -1);
+      for (final version in allVersions) {
+        if (version.status != SoulDocumentVersionStatus.archived) {
+          await syncService.upsertEntity(
+            version.copyWith(status: SoulDocumentVersionStatus.archived),
+          );
+        }
+      }
+
+      final nextVersion = await repository.getNextSoulDocumentVersionNumber(
+        soulId,
+      );
+
+      final newVersion =
+          AgentDomainEntity.soulDocumentVersion(
+                id: newVersionId,
+                agentId: soulId,
+                version: nextVersion,
+                status: SoulDocumentVersionStatus.active,
+                authoredBy: authoredBy,
+                createdAt: now,
+                vectorClock: null,
+                voiceDirective: voiceDirective,
+                toneBounds: toneBounds,
+                coachingStyle: coachingStyle,
+                antiSycophancyPolicy: antiSycophancyPolicy,
+                diffFromVersionId: currentHead?.versionId,
+              )
+              as SoulDocumentVersionEntity;
+      await syncService.upsertEntity(newVersion);
+
+      final headId = currentHead?.id ?? _uuid.v4();
+      final updatedHead = AgentDomainEntity.soulDocumentHead(
+        id: headId,
+        agentId: soulId,
+        versionId: newVersionId,
+        updatedAt: now,
+        vectorClock: null,
+      );
+      await syncService.upsertEntity(updatedHead);
+
+      developer.log(
+        'Updated soul $soulId and created version $nextVersion',
+        name: _logTag,
+      );
+
+      return newVersion;
+    });
+  }
+
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() async {
     return repository.getAllSoulDocuments();
@@ -367,6 +488,46 @@ class SoulDocumentService {
       type: AgentLinkTypes.soulAssignment,
     );
     return links.map((l) => l.fromId).toList();
+  }
+
+  /// Soft-delete a soul document and all its versions, head, and links.
+  ///
+  /// Checks that no templates are currently using this soul. If any template
+  /// still has an active assignment, throws [StateError].
+  Future<void> deleteSoul(String soulId) async {
+    final templateIds = await getTemplatesUsingSoul(soulId);
+    if (templateIds.isNotEmpty) {
+      throw StateError(
+        'Cannot delete soul $soulId: '
+        '${templateIds.length} template(s) still assigned',
+      );
+    }
+
+    final now = clock.now();
+
+    final deleted = await syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) return false;
+
+      final versions = await getVersionHistory(soulId, limit: -1);
+      for (final version in versions) {
+        await syncService.upsertEntity(
+          version.copyWith(deletedAt: now),
+        );
+      }
+
+      final head = await repository.getSoulDocumentHead(soulId);
+      if (head != null) {
+        await syncService.upsertEntity(head.copyWith(deletedAt: now));
+      }
+
+      await syncService.upsertEntity(soul.copyWith(deletedAt: now));
+      return true;
+    });
+
+    if (deleted) {
+      developer.log('Deleted soul $soulId', name: _logTag);
+    }
   }
 
   // ── seeding ───────────────────────────────────────────────────────────────

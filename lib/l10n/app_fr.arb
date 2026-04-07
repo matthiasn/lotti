@@ -308,12 +308,50 @@
   "agentSessionProgressTitle": "Progression de session",
   "agentSettingsSubtitle": "Modèles, instances et surveillance",
   "agentSettingsTitle": "Agents",
+  "agentSoulAntiSycophancyLabel": "Politique anti-flagornerie",
+  "agentSoulAssignedTemplatesTitle": "Modèles assignés",
+  "agentSoulAssignmentLabel": "Âme",
+  "agentSoulCoachingStyleLabel": "Style de coaching",
+  "agentSoulCreatedSuccess": "Âme créée",
+  "agentSoulCreateTitle": "Créer une âme",
+  "agentSoulDeleteConfirmBody": "Cela supprimera l'âme et toutes ses versions.",
+  "agentSoulDeleteConfirmTitle": "Supprimer l'âme",
+  "agentSoulDetailTitle": "Détail de l'âme",
+  "agentSoulDisplayNameLabel": "Nom",
+  "agentSoulEmptyList": "Pas encore de documents d'âme",
   "agentSoulFieldAntiSycophancy": "Anti-flagornerie",
   "agentSoulFieldCoachingStyle": "Style de coaching",
   "agentSoulFieldToneBounds": "Limites de ton",
   "agentSoulFieldVoice": "Voix",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "Aucune âme assignée",
+  "agentSoulNotFound": "Âme introuvable",
   "agentSoulProposalSubtitle": "Changements de personnalité proposés",
   "agentSoulProposalTitle": "Proposition de personnalité de l'âme",
+  "agentSoulRollbackAction": "Revenir à cette version",
+  "agentSoulRollbackConfirm": "Revenir à la version {version} ? Tous les modèles utilisant cette âme seront affectés.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Sélectionner une âme",
+  "agentSoulSettingsTab": "Paramètres",
+  "agentSoulsTitle": "Âmes",
+  "agentSoulToneBoundsLabel": "Limites de ton",
+  "agentSoulVersionHistoryTitle": "Historique des versions",
+  "agentSoulVersionLabel": "Version {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "Nouvelle version d'âme enregistrée",
+  "agentSoulVoiceDirectiveLabel": "Directive vocale",
   "agentStateConsecutiveFailures": "Échecs consécutifs",
   "agentStateErrorLoading": "Échec du chargement de l'état : {error}",
   "@agentStateErrorLoading": {

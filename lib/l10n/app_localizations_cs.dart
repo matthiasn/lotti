@@ -645,6 +645,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSettingsTitle => 'Agents';
 
   @override
+  String get agentSoulAntiSycophancyLabel => 'Zásady proti pochlebování';
+
+  @override
+  String get agentSoulAssignedTemplatesTitle => 'Přiřazené šablony';
+
+  @override
+  String get agentSoulAssignmentLabel => 'Duše';
+
+  @override
+  String get agentSoulCoachingStyleLabel => 'Styl koučování';
+
+  @override
+  String get agentSoulCreatedSuccess => 'Duše vytvořena';
+
+  @override
+  String get agentSoulCreateTitle => 'Vytvořit duši';
+
+  @override
+  String get agentSoulDeleteConfirmBody =>
+      'Tím se odstraní duše a všechny její verze.';
+
+  @override
+  String get agentSoulDeleteConfirmTitle => 'Smazat duši';
+
+  @override
+  String get agentSoulDetailTitle => 'Detail duše';
+
+  @override
+  String get agentSoulDisplayNameLabel => 'Název';
+
+  @override
+  String get agentSoulEmptyList => 'Zatím žádné duše';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-Sycophancy';
 
   @override
@@ -657,10 +691,53 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulFieldVoice => 'Voice';
 
   @override
+  String get agentSoulInfoTab => 'Info';
+
+  @override
+  String get agentSoulNoneAssigned => 'Žádná duše přiřazena';
+
+  @override
+  String get agentSoulNotFound => 'Duše nenalezena';
+
+  @override
   String get agentSoulProposalSubtitle => 'Proposed personality changes';
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Proposal';
+
+  @override
+  String get agentSoulRollbackAction => 'Vrátit na tuto verzi';
+
+  @override
+  String agentSoulRollbackConfirm(int version) {
+    return 'Vrátit na verzi $version? Všechny šablony používající tuto duši budou ovlivněny.';
+  }
+
+  @override
+  String get agentSoulSelectTitle => 'Vybrat duši';
+
+  @override
+  String get agentSoulSettingsTab => 'Nastavení';
+
+  @override
+  String get agentSoulsTitle => 'Duše';
+
+  @override
+  String get agentSoulToneBoundsLabel => 'Hranice tónu';
+
+  @override
+  String get agentSoulVersionHistoryTitle => 'Historie verzí';
+
+  @override
+  String agentSoulVersionLabel(int version) {
+    return 'Verze $version';
+  }
+
+  @override
+  String get agentSoulVersionSaved => 'Nová verze duše uložena';
+
+  @override
+  String get agentSoulVoiceDirectiveLabel => 'Hlasová direktiva';
 
   @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';

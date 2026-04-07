@@ -308,12 +308,50 @@
   "agentSessionProgressTitle": "Progresul sesiunii",
   "agentSettingsSubtitle": "Șabloane, instanțe și monitorizare",
   "agentSettingsTitle": "Agenți",
+  "agentSoulAntiSycophancyLabel": "Politica anti-lingușire",
+  "agentSoulAssignedTemplatesTitle": "Șabloane atribuite",
+  "agentSoulAssignmentLabel": "Suflet",
+  "agentSoulCoachingStyleLabel": "Stil de coaching",
+  "agentSoulCreatedSuccess": "Suflet creat",
+  "agentSoulCreateTitle": "Creează un suflet",
+  "agentSoulDeleteConfirmBody": "Aceasta va elimina sufletul și toate versiunile sale.",
+  "agentSoulDeleteConfirmTitle": "Șterge sufletul",
+  "agentSoulDetailTitle": "Detalii suflet",
+  "agentSoulDisplayNameLabel": "Nume",
+  "agentSoulEmptyList": "Nu există încă suflete",
   "agentSoulFieldAntiSycophancy": "Anti-lingușire",
   "agentSoulFieldCoachingStyle": "Stil de coaching",
   "agentSoulFieldToneBounds": "Limite de ton",
   "agentSoulFieldVoice": "Voce",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "Niciun suflet atribuit",
+  "agentSoulNotFound": "Suflet negăsit",
   "agentSoulProposalSubtitle": "Modificări de personalitate propuse",
   "agentSoulProposalTitle": "Propunere de personalitate a sufletului",
+  "agentSoulRollbackAction": "Revino la această versiune",
+  "agentSoulRollbackConfirm": "Revino la versiunea {version}? Toate șabloanele care folosesc acest suflet vor prelua modificarea.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Selectează un suflet",
+  "agentSoulSettingsTab": "Setări",
+  "agentSoulsTitle": "Suflete",
+  "agentSoulToneBoundsLabel": "Limite de ton",
+  "agentSoulVersionHistoryTitle": "Istoric versiuni",
+  "agentSoulVersionLabel": "Versiunea {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "Versiune nouă de suflet salvată",
+  "agentSoulVoiceDirectiveLabel": "Directivă vocală",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
   "@agentStateErrorLoading": {

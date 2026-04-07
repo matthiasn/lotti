@@ -498,4 +498,247 @@ void main() {
       verifyNever(() => mockSync.upsertLink(any()));
     });
   });
+
+  group('updateSoul', () {
+    test('updates display name', () async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-upd',
+        displayName: 'Old Name',
+      );
+      when(
+        () => mockRepo.getSoulDocument('soul-upd'),
+      ).thenAnswer((_) async => soul);
+
+      final updated = await service.updateSoul(
+        soulId: 'soul-upd',
+        displayName: 'New Name',
+      );
+
+      expect(updated.displayName, 'New Name');
+      verify(() => mockSync.upsertEntity(any())).called(1);
+    });
+
+    test('throws when soul not found', () async {
+      when(
+        () => mockRepo.getSoulDocument('ghost'),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        () => service.updateSoul(soulId: 'ghost', displayName: 'X'),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('preserves display name when not provided', () async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-upd',
+        displayName: 'Keep This',
+      );
+      when(
+        () => mockRepo.getSoulDocument('soul-upd'),
+      ).thenAnswer((_) async => soul);
+
+      final updated = await service.updateSoul(soulId: 'soul-upd');
+
+      expect(updated.displayName, 'Keep This');
+    });
+  });
+
+  group('updateSoulAndCreateVersion', () {
+    test('updates name and creates version in one transaction', () async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-atomic',
+        displayName: 'Old Name',
+      );
+      final existingVersion = makeTestSoulDocumentVersion(
+        agentId: 'soul-atomic',
+      );
+      final existingHead = makeTestSoulDocumentHead(
+        agentId: 'soul-atomic',
+      );
+
+      when(
+        () => mockRepo.getSoulDocument('soul-atomic'),
+      ).thenAnswer((_) async => soul);
+      when(
+        () => mockRepo.getSoulDocumentHead('soul-atomic'),
+      ).thenAnswer((_) async => existingHead);
+      when(
+        () => mockRepo.getSoulDocumentVersions(
+          'soul-atomic',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [existingVersion]);
+      when(
+        () => mockRepo.getNextSoulDocumentVersionNumber('soul-atomic'),
+      ).thenAnswer((_) async => 2);
+
+      final result = await service.updateSoulAndCreateVersion(
+        soulId: 'soul-atomic',
+        displayName: 'New Name',
+        voiceDirective: 'New voice.',
+        authoredBy: 'user',
+      );
+
+      expect(result.version, 2);
+      expect(result.voiceDirective, 'New voice.');
+
+      // 4 upserts: updated soul + archived version + new version + head.
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured;
+      expect(captured, hasLength(4));
+      expect(captured[0], isA<SoulDocumentEntity>());
+      expect(
+        (captured[0] as SoulDocumentEntity).displayName,
+        'New Name',
+      );
+    });
+
+    test('skips name update when unchanged', () async {
+      final soul = makeTestSoulDocument(
+        id: 'soul-same',
+        displayName: 'Same Name',
+      );
+      final existingVersion = makeTestSoulDocumentVersion(
+        agentId: 'soul-same',
+      );
+      final existingHead = makeTestSoulDocumentHead(agentId: 'soul-same');
+
+      when(
+        () => mockRepo.getSoulDocument('soul-same'),
+      ).thenAnswer((_) async => soul);
+      when(
+        () => mockRepo.getSoulDocumentHead('soul-same'),
+      ).thenAnswer((_) async => existingHead);
+      when(
+        () => mockRepo.getSoulDocumentVersions(
+          'soul-same',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [existingVersion]);
+      when(
+        () => mockRepo.getNextSoulDocumentVersionNumber('soul-same'),
+      ).thenAnswer((_) async => 2);
+
+      await service.updateSoulAndCreateVersion(
+        soulId: 'soul-same',
+        displayName: 'Same Name',
+        voiceDirective: 'Voice.',
+        authoredBy: 'user',
+      );
+
+      // 3 upserts: archived version + new version + head (no soul update).
+      verify(() => mockSync.upsertEntity(any())).called(3);
+    });
+
+    test('rejects blank display name', () async {
+      await expectLater(
+        () => service.updateSoulAndCreateVersion(
+          soulId: 'soul-x',
+          displayName: '   ',
+          voiceDirective: 'Voice.',
+          authoredBy: 'user',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('throws when soul not found', () async {
+      when(
+        () => mockRepo.getSoulDocument('ghost'),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        () => service.updateSoulAndCreateVersion(
+          soulId: 'ghost',
+          displayName: 'Name',
+          voiceDirective: 'Voice.',
+          authoredBy: 'user',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('deleteSoul', () {
+    test('soft-deletes soul, versions, and head', () async {
+      final soul = makeTestSoulDocument(id: 'soul-del');
+      final version = makeTestSoulDocumentVersion(
+        id: 'v1',
+        agentId: 'soul-del',
+      );
+      final head = makeTestSoulDocumentHead(
+        id: 'head-1',
+        agentId: 'soul-del',
+        versionId: 'v1',
+      );
+
+      when(
+        () => mockRepo.getLinksTo('soul-del', type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getSoulDocument('soul-del'),
+      ).thenAnswer((_) async => soul);
+      when(
+        // ignore: avoid_redundant_argument_values
+        () => mockRepo.getSoulDocumentVersions('soul-del', limit: -1),
+      ).thenAnswer((_) async => [version]);
+      when(
+        () => mockRepo.getSoulDocumentHead('soul-del'),
+      ).thenAnswer((_) async => head);
+
+      await service.deleteSoul('soul-del');
+
+      // Version soft-deleted.
+      final capturedVersion = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured;
+      expect(capturedVersion, hasLength(3));
+      // Version, head, and soul — all should have deletedAt set.
+      expect(
+        (capturedVersion[0] as SoulDocumentVersionEntity).deletedAt,
+        isNotNull,
+      );
+      expect(
+        (capturedVersion[1] as SoulDocumentHeadEntity).deletedAt,
+        isNotNull,
+      );
+      expect(
+        (capturedVersion[2] as SoulDocumentEntity).deletedAt,
+        isNotNull,
+      );
+    });
+
+    test('throws when templates still assigned', () async {
+      when(
+        () => mockRepo.getLinksTo('soul-del', type: any(named: 'type')),
+      ).thenAnswer(
+        (_) async => [
+          makeTestSoulAssignmentLink(
+            fromId: 'tpl-1',
+            toId: 'soul-del',
+          ),
+        ],
+      );
+
+      expect(
+        () => service.deleteSoul('soul-del'),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('no-ops when soul does not exist', () async {
+      when(
+        () => mockRepo.getLinksTo('ghost', type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getSoulDocument('ghost'),
+      ).thenAnswer((_) async => null);
+
+      await service.deleteSoul('ghost');
+
+      verifyNever(() => mockSync.upsertEntity(any()));
+    });
+  });
 }

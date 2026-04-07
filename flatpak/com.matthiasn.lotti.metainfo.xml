@@ -31,6 +31,17 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.942" date="2026-04-07">
+      <description>
+          <p>Soul evolution UI: standalone soul evolution page with an interactive evolution catalog, soul selector, and a conversation-based refinement workflow for iteratively shaping agent soul documents from templates.</p>
+          <p>Pluggable soul document: soul documents can now be customized per agent template.</p>
+          <p>One-on-one v2: redesigned agent one-on-one conversation experience.</p>
+          <p>Manual planning flow: new "Set time blocks" step for manual daily planning.</p>
+          <p>Settings page restyled to use design system list items. Context menu aligned with Figma design.</p>
+          <p>Projects tab improvements: task rows show agent one-liner summaries, follow-up tasks inherit the parent project, and scroll behaviour is smoother.</p>
+          <p>Fixed agents self-notification loops and projects page flickering.</p>
+      </description>
+    </release>
     <release version="0.9.941" date="2026-04-02">
       <description>
           <p>Agents settings now include a Pending Wakes dashboard with a live badge count, per-wake countdown cards, and per-card deletion for deferred and scheduled wakes.</p>

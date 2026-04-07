@@ -654,6 +654,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSettingsTitle => 'Agenți';
 
   @override
+  String get agentSoulAntiSycophancyLabel => 'Politica anti-lingușire';
+
+  @override
+  String get agentSoulAssignedTemplatesTitle => 'Șabloane atribuite';
+
+  @override
+  String get agentSoulAssignmentLabel => 'Suflet';
+
+  @override
+  String get agentSoulCoachingStyleLabel => 'Stil de coaching';
+
+  @override
+  String get agentSoulCreatedSuccess => 'Suflet creat';
+
+  @override
+  String get agentSoulCreateTitle => 'Creează un suflet';
+
+  @override
+  String get agentSoulDeleteConfirmBody =>
+      'Aceasta va elimina sufletul și toate versiunile sale.';
+
+  @override
+  String get agentSoulDeleteConfirmTitle => 'Șterge sufletul';
+
+  @override
+  String get agentSoulDetailTitle => 'Detalii suflet';
+
+  @override
+  String get agentSoulDisplayNameLabel => 'Nume';
+
+  @override
+  String get agentSoulEmptyList => 'Nu există încă suflete';
+
+  @override
   String get agentSoulFieldAntiSycophancy => 'Anti-lingușire';
 
   @override
@@ -666,11 +700,54 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulFieldVoice => 'Voce';
 
   @override
+  String get agentSoulInfoTab => 'Info';
+
+  @override
+  String get agentSoulNoneAssigned => 'Niciun suflet atribuit';
+
+  @override
+  String get agentSoulNotFound => 'Suflet negăsit';
+
+  @override
   String get agentSoulProposalSubtitle => 'Modificări de personalitate propuse';
 
   @override
   String get agentSoulProposalTitle =>
       'Propunere de personalitate a sufletului';
+
+  @override
+  String get agentSoulRollbackAction => 'Revino la această versiune';
+
+  @override
+  String agentSoulRollbackConfirm(int version) {
+    return 'Revino la versiunea $version? Toate șabloanele care folosesc acest suflet vor prelua modificarea.';
+  }
+
+  @override
+  String get agentSoulSelectTitle => 'Selectează un suflet';
+
+  @override
+  String get agentSoulSettingsTab => 'Setări';
+
+  @override
+  String get agentSoulsTitle => 'Suflete';
+
+  @override
+  String get agentSoulToneBoundsLabel => 'Limite de ton';
+
+  @override
+  String get agentSoulVersionHistoryTitle => 'Istoric versiuni';
+
+  @override
+  String agentSoulVersionLabel(int version) {
+    return 'Versiunea $version';
+  }
+
+  @override
+  String get agentSoulVersionSaved => 'Versiune nouă de suflet salvată';
+
+  @override
+  String get agentSoulVoiceDirectiveLabel => 'Directivă vocală';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';

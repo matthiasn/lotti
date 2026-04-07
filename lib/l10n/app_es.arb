@@ -308,12 +308,50 @@
   "agentSessionProgressTitle": "Progreso de sesión",
   "agentSettingsSubtitle": "Plantillas, instancias y monitoreo",
   "agentSettingsTitle": "Agentes",
+  "agentSoulAntiSycophancyLabel": "Política anti-adulación",
+  "agentSoulAssignedTemplatesTitle": "Plantillas asignadas",
+  "agentSoulAssignmentLabel": "Alma",
+  "agentSoulCoachingStyleLabel": "Estilo de coaching",
+  "agentSoulCreatedSuccess": "Alma creada",
+  "agentSoulCreateTitle": "Crear alma",
+  "agentSoulDeleteConfirmBody": "Esto eliminará el alma y todas sus versiones.",
+  "agentSoulDeleteConfirmTitle": "Eliminar alma",
+  "agentSoulDetailTitle": "Detalle del alma",
+  "agentSoulDisplayNameLabel": "Nombre",
+  "agentSoulEmptyList": "Aún no hay documentos de alma",
   "agentSoulFieldAntiSycophancy": "Anti-adulación",
   "agentSoulFieldCoachingStyle": "Estilo de coaching",
   "agentSoulFieldToneBounds": "Límites de tono",
   "agentSoulFieldVoice": "Voz",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "Sin alma asignada",
+  "agentSoulNotFound": "Alma no encontrada",
   "agentSoulProposalSubtitle": "Cambios de personalidad propuestos",
   "agentSoulProposalTitle": "Propuesta de personalidad del alma",
+  "agentSoulRollbackAction": "Volver a esta versión",
+  "agentSoulRollbackConfirm": "¿Volver a la versión {version}? Todas las plantillas que usan esta alma se verán afectadas.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Seleccionar alma",
+  "agentSoulSettingsTab": "Configuración",
+  "agentSoulsTitle": "Almas",
+  "agentSoulToneBoundsLabel": "Límites de tono",
+  "agentSoulVersionHistoryTitle": "Historial de versiones",
+  "agentSoulVersionLabel": "Versión {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "Nueva versión de alma guardada",
+  "agentSoulVoiceDirectiveLabel": "Directiva de voz",
   "agentStateConsecutiveFailures": "Fallos consecutivos",
   "agentStateErrorLoading": "Error al cargar el estado: {error}",
   "@agentStateErrorLoading": {

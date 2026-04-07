@@ -308,12 +308,50 @@
   "agentSessionProgressTitle": "Sitzungsfortschritt",
   "agentSettingsSubtitle": "Vorlagen, Instanzen und Überwachung",
   "agentSettingsTitle": "Agenten",
+  "agentSoulAntiSycophancyLabel": "Anti-Speichelleckerei-Richtlinie",
+  "agentSoulAssignedTemplatesTitle": "Zugewiesene Vorlagen",
+  "agentSoulAssignmentLabel": "Seele",
+  "agentSoulCoachingStyleLabel": "Coaching-Stil",
+  "agentSoulCreatedSuccess": "Seele erstellt",
+  "agentSoulCreateTitle": "Seele erstellen",
+  "agentSoulDeleteConfirmBody": "Das entfernt die Seele und alle ihre Versionen.",
+  "agentSoulDeleteConfirmTitle": "Seele löschen",
+  "agentSoulDetailTitle": "Seelen-Details",
+  "agentSoulDisplayNameLabel": "Name",
+  "agentSoulEmptyList": "Noch keine Seelendokumente",
   "agentSoulFieldAntiSycophancy": "Anti-Schmeichelei",
   "agentSoulFieldCoachingStyle": "Coaching-Stil",
   "agentSoulFieldToneBounds": "Tonale Grenzen",
   "agentSoulFieldVoice": "Stimme",
+  "agentSoulInfoTab": "Info",
+  "agentSoulNoneAssigned": "Keine Seele zugewiesen",
+  "agentSoulNotFound": "Seele nicht gefunden",
   "agentSoulProposalSubtitle": "Vorgeschlagene Persönlichkeitsänderungen",
   "agentSoulProposalTitle": "Seelen-Persönlichkeitsvorschlag",
+  "agentSoulRollbackAction": "Auf diese Version zurücksetzen",
+  "agentSoulRollbackConfirm": "Auf Version {version} zurücksetzen? Alle Vorlagen, die diese Seele verwenden, werden die Änderung übernehmen.",
+  "@agentSoulRollbackConfirm": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulSelectTitle": "Seele auswählen",
+  "agentSoulSettingsTab": "Einstellungen",
+  "agentSoulsTitle": "Seelen",
+  "agentSoulToneBoundsLabel": "Tonfall-Grenzen",
+  "agentSoulVersionHistoryTitle": "Versionsverlauf",
+  "agentSoulVersionLabel": "Version {version}",
+  "@agentSoulVersionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSoulVersionSaved": "Neue Seelenversion gespeichert",
+  "agentSoulVoiceDirectiveLabel": "Stimm-Direktive",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",
   "@agentStateErrorLoading": {
