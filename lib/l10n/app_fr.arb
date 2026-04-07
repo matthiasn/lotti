@@ -333,6 +333,14 @@
   "agentSoulReviewHeroSubtitle": "Affine la personnalité dans tous les modèles partageant cette âme. L'agent d'évolution voit les retours de chaque modèle qui utilise cette personnalité.",
   "agentSoulReviewStartAction": "Lancer la revue de personnalité",
   "agentSoulReviewStartHint": "Lance une session axée sur la personnalité pour examiner les retours et faire évoluer la voix, le ton, le style de coaching et la franchise.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 modèle partage cette âme} other{{count} modèles partagent cette âme}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulReviewTitle": "Âme 1-on-1",
   "agentSoulRollbackAction": "Revenir à cette version",
   "agentSoulRollbackConfirm": "Revenir à la version {version} ? Tous les modèles utilisant cette âme seront affectés.",

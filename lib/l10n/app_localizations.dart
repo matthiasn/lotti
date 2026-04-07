@@ -1362,6 +1362,12 @@ abstract class AppLocalizations {
   /// **'Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.'**
   String get agentSoulReviewStartHint;
 
+  /// No description provided for @agentSoulReviewTemplateCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 template sharing this soul} other{{count} templates sharing this soul}}'**
+  String agentSoulReviewTemplateCount(int count);
+
   /// No description provided for @agentSoulReviewTitle.
   ///
   /// In en, this message translates to:

@@ -739,13 +739,31 @@ class FeedbackExtractionService {
 
     final results = await Future.wait(
       templateIds.map(
-        (id) async => MapEntry(
-          id,
-          await extract(templateId: id, since: since, until: effectiveUntil),
-        ),
+        (id) async {
+          try {
+            return MapEntry(
+              id,
+              await extract(
+                templateId: id,
+                since: since,
+                until: effectiveUntil,
+              ),
+            );
+          } catch (e, s) {
+            developer.log(
+              'Feedback extraction failed for template $id',
+              name: 'FeedbackExtractionService',
+              error: e,
+              stackTrace: s,
+            );
+            return null;
+          }
+        },
       ),
     );
 
-    return Map.fromEntries(results);
+    return Map.fromEntries(
+      results.whereType<MapEntry<String, ClassifiedFeedback>>(),
+    );
   }
 }

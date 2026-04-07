@@ -332,7 +332,16 @@ class SoulEvolutionChatState extends _$SoulEvolutionChatState {
     if (data == null || data.sessionId == null) return;
 
     final workflow = ref.read(templateEvolutionWorkflowProvider);
-    await workflow.abandonSession(sessionId: data.sessionId!);
+    try {
+      await workflow.abandonSession(sessionId: data.sessionId!);
+    } catch (e, s) {
+      developer.log(
+        'abandonSession failed',
+        name: _logTag,
+        error: e,
+        stackTrace: s,
+      );
+    }
 
     final current = state.value;
     if (current != null) {

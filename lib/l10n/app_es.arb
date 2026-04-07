@@ -333,6 +333,14 @@
   "agentSoulReviewHeroSubtitle": "Refina la personalidad en todas las plantillas que comparten esta alma. El agente de evolución ve los comentarios de cada plantilla que usa esta personalidad.",
   "agentSoulReviewStartAction": "Iniciar revisión de personalidad",
   "agentSoulReviewStartHint": "Inicia una sesión enfocada en la personalidad para revisar comentarios y evolucionar la voz, el tono, el estilo de coaching y la franqueza.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 plantilla comparte esta alma} other{{count} plantillas comparten esta alma}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulReviewTitle": "Alma 1-on-1",
   "agentSoulRollbackAction": "Volver a esta versión",
   "agentSoulRollbackConfirm": "¿Volver a la versión {version}? Todas las plantillas que usan esta alma se verán afectadas.",

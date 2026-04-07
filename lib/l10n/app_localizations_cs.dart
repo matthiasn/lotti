@@ -720,7 +720,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentSoulReviewStartHint =>
-      'Zahaj relaci zaměřenou na osobnost, kde projdeš zpětnou vazbu a rozviješ hlas, tón, styl koučování a přímost.';
+      'Zahaj relaci zaměřenou na osobnost, kde projdeš zpětnou vazbu a rozvineš hlas, tón, styl koučování a přímost.';
+
+  @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count šablon sdílejících tuto duši',
+      one: '1 šablona sdílející tuto duši',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentSoulReviewTitle => 'Duše 1-on-1';

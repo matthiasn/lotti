@@ -122,6 +122,7 @@ currently persisted fleet size without adding another query path.
 ```mermaid
 flowchart LR
   Settings["Settings > Agents"] --> Templates["Templates tab"]
+  Settings --> Souls["Souls tab"]
   Settings --> Instances["Instances tab"]
   Settings --> Pending["Pending Wakes tab"]
 

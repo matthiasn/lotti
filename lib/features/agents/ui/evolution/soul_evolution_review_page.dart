@@ -161,7 +161,7 @@ class _HeroPanel extends StatelessWidget {
                 ),
               ),
               child: Text(
-                '$templateCount template(s) sharing this soul',
+                context.messages.agentSoulReviewTemplateCount(templateCount),
                 style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),

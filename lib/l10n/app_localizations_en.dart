@@ -722,6 +722,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.';
 
   @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count templates sharing this soul',
+      one: '1 template sharing this soul',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentSoulReviewTitle => 'Soul 1-on-1';
 
   @override

@@ -254,6 +254,13 @@ void main() {
       expect(ctx.initialUserMessage, contains('Soul Version History'));
       expect(ctx.initialUserMessage, contains('v1'));
       expect(ctx.initialUserMessage, contains('evolution_agent'));
+      // Current version (v2) must NOT appear in the history section.
+      final historySection = ctx.initialUserMessage
+          .split(
+            'Soul Version History',
+          )
+          .last;
+      expect(historySection, isNot(contains('v2')));
     });
 
     test('includes past evolution notes', () {

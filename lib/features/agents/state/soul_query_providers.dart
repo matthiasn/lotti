@@ -88,7 +88,7 @@ Future<List<AgentDomainEntity>> soulEvolutionSessions(
 ) async {
   ref.watch(agentUpdateStreamProvider(soulId));
   final templateService = ref.watch(agentTemplateServiceProvider);
-  return templateService.getEvolutionSessions(soulId);
+  return templateService.getEvolutionSessions(soulId, limit: 100);
 }
 
 /// Active (pending) evolution session for a soul, or `null`.

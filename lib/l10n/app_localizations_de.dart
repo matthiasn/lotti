@@ -733,6 +733,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Starte eine persönlichkeitsfokussierte Sitzung, um Feedback durchzugehen und Stimme, Ton, Coaching-Stil und Direktheit weiterzuentwickeln.';
 
   @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Vorlagen teilen diese Seele',
+      one: '1 Vorlage teilt diese Seele',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentSoulReviewTitle => 'Seelen-1-on-1';
 
   @override

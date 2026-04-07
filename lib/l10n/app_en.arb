@@ -362,6 +362,14 @@
   "agentSoulReviewHeroSubtitle": "Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.",
   "agentSoulReviewStartAction": "Start Personality Review",
   "agentSoulReviewStartHint": "Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.",
+  "agentSoulReviewTemplateCount": "{count, plural, =1{1 template sharing this soul} other{{count} templates sharing this soul}}",
+  "@agentSoulReviewTemplateCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentSoulReviewTitle": "Soul 1-on-1",
   "agentSoulRollbackAction": "Roll Back to This Version",
   "agentSoulRollbackConfirm": "Roll back to version {version}? All templates using this soul will pick up the change.",

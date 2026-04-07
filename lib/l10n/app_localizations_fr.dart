@@ -736,6 +736,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Lance une session axée sur la personnalité pour examiner les retours et faire évoluer la voix, le ton, le style de coaching et la franchise.';
 
   @override
+  String agentSoulReviewTemplateCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles partagent cette âme',
+      one: '1 modèle partage cette âme',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentSoulReviewTitle => 'Âme 1-on-1';
 
   @override

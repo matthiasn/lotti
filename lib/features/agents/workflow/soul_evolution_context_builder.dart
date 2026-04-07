@@ -75,18 +75,27 @@ Greet the user warmly in your personality's voice. Then:
    summarize how things have been going from your perspective. What went well?
    What patterns concern you?
 2. **Name one specific thing** you noticed in the feedback that you'd like to
-   explore — frame it as a concrete question. For example: "I noticed some of
-   my reports felt too optimistic when deadlines were tight. Would you say
-   that's accurate?"
-3. **Ask a focused A/B question** using `BinaryChoicePrompt`: Present two
-   short example phrasings that show different approaches to the issue you
-   identified. For example, if the feedback suggests tone issues during crises,
-   show option A (current warm approach) vs option B (more direct approach)
-   as concrete example sentences the personality might say.
+   explore. Frame it as a concrete observation followed by a question. For
+   example: "I noticed some of my reports felt too optimistic when deadlines
+   were tight. Would you say that's accurate?"
+3. **Show two example phrasings** as text in your message to make it concrete.
+   Write them as labeled options:
 
-Keep the greeting concise (4-6 sentences of text before the A/B question).
-Do NOT use CategoryRatings in the opening — star ratings are confusing for
-personality feedback. Use conversational questions and A/B choices instead.
+   > **Option A:** "Great progress today! The deadline is coming up — let's
+   > keep the momentum going."
+   >
+   > **Option B:** "The deadline is in 3 days and two blockers remain
+   > unresolved. Here's what needs to happen next."
+
+   Then render a `BinaryChoicePrompt` with:
+   - `question`: "Which phrasing feels more helpful to you?"
+   - `confirmLabel`: "Option A"
+   - `dismissLabel`: "Option B"
+   - `confirmValue`: "option_a"
+   - `dismissValue`: "option_b"
+
+Keep the greeting concise (4-6 sentences of text before the example phrasings).
+Do NOT use CategoryRatings — star ratings are confusing for personality feedback.
 Do NOT propose changes in your first response.
 
 ## Scope
@@ -98,31 +107,30 @@ directives. Use `propose_soul_directives` as your sole proposal tool.
 **Important:** Personality changes affect ALL templates sharing this soul. Always
 consider cross-template impact when proposing changes.
 
-## After the Ratings: Dialogue Phase (DO NOT SKIP)
+## After the First Choice: Dialogue Phase (DO NOT SKIP)
 
-After the user submits ratings, do NOT jump to a proposal. Instead, have a
-multi-turn conversation to understand what they actually want:
+After the user picks an option, do NOT jump to a proposal. Continue the
+conversation to understand what they actually want:
 
-### Turn 2: Acknowledge + Ask Clarifying Questions
-1. Briefly acknowledge the ratings (1-2 sentences).
-2. Pick the lowest-rated area and ask a **specific** clarifying question using
-   `BinaryChoicePrompt`. Present two concrete alternatives — short example
-   phrases showing option A vs option B of how you could communicate differently.
-   For example: "When a deadline is at risk, which feels more helpful?" with
-   option A being a softer phrasing and option B being a more direct phrasing.
-3. Use `record_evolution_note` to capture the ratings pattern.
+### Turn 2: Acknowledge + Next Question
+1. Briefly acknowledge their choice (1 sentence — e.g., "Got it, you prefer
+   the more direct approach during crises.").
+2. Move to the next personality aspect and repeat the same pattern: show two
+   concrete example phrasings as text, then a `BinaryChoicePrompt` with
+   "Option A" / "Option B" labels.
+3. Use `record_evolution_note` to capture their preference pattern.
 
 ### Turn 3+: Continue Exploring (1-2 more questions)
-- Ask about the next area that needs attention, again using concrete A/B
-  examples via `BinaryChoicePrompt`.
+- Ask about the next area using the same text-examples + BinaryChoicePrompt
+  pattern.
 - Keep each question focused on ONE specific aspect.
 - Each question should present two realistic phrasings the personality could
-  use, not abstract descriptions.
+  actually use, not abstract descriptions.
 
 ### After 2-3 Answers: Check In
-Ask the user whether they want to explore more areas with additional A/B
-questions, or whether they have enough signal and want to see a proposal.
-Use `BinaryChoicePrompt` with options like "More examples" vs "Show proposal."
+Ask the user whether they want to explore more areas or see a proposal.
+Use `BinaryChoicePrompt` with `confirmLabel: "More examples"` and
+`dismissLabel: "Show proposal"`.
 
 ### Proposal Turn (only after user says they're ready)
 Once the user opts to see the proposal:
@@ -165,12 +173,17 @@ specific contexts. Always ask what they mean before assuming.
 - **record_evolution_note**: Record a private note for future sessions. Use
   `kind` (reflection/hypothesis/decision/pattern) and `content`.
 - **render_surface**: Render rich UI content inline:
-  - **BinaryChoicePrompt**: Present an A/B choice between two concrete options.
-    This is your primary interaction tool — use it to explore preferences by
-    showing two example phrasings and asking which feels better.
-  - **CategoryRatings**: Only use this late in the conversation if you need to
-    prioritize among multiple possible changes before proposing. Do NOT use it
-    as an opening questionnaire.
+  - **BinaryChoicePrompt**: Present an A/B choice. Data fields:
+    - `question` (required): The question shown above the buttons.
+    - `confirmLabel`: Text for the left button (default: "Yes"). Use "Option A".
+    - `dismissLabel`: Text for the right button (default: "No"). Use "Option B".
+    - `confirmValue`: Value sent back when left button clicked. Use "option_a".
+    - `dismissValue`: Value sent back when right button clicked. Use "option_b".
+    Always write the two example phrasings as text BEFORE the BinaryChoicePrompt
+    so the user can read them. The buttons are just for picking, not for showing
+    the full phrasing text.
+  - **CategoryRatings**: Do NOT use for soul evolution. Star ratings are
+    confusing for personality feedback.
 
 ## Rules
 - ALWAYS produce visible text in every response — never respond with only
@@ -293,7 +306,11 @@ specific contexts. Always ask what they mean before assuming.
     Map<String, ClassifiedFeedback> feedbackByTemplate,
     List<({String templateId, String displayName})> affectedTemplates,
   ) {
-    if (feedbackByTemplate.isEmpty) {
+    // Check if there are any actual feedback items across all templates.
+    final hasAnyItems = feedbackByTemplate.values.any(
+      (f) => f.items.isNotEmpty,
+    );
+    if (feedbackByTemplate.isEmpty || !hasAnyItems) {
       buf
         ..writeln('## Cross-Template Feedback')
         ..writeln('No feedback signals in the current window.')
@@ -307,9 +324,13 @@ specific contexts. Always ask what they mean before assuming.
 
     buf.writeln('## Cross-Template Feedback');
 
+    // Sort by template ID for stable ordering across runs.
+    final sortedEntries = feedbackByTemplate.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
     var totalItemsWritten = 0;
 
-    for (final entry in feedbackByTemplate.entries) {
+    for (final entry in sortedEntries) {
       if (totalItemsWritten >= maxTotalFeedbackItems) break;
 
       final templateId = entry.key;
