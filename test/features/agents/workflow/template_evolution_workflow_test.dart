@@ -3616,5 +3616,141 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test('handles createVersion failure gracefully', () async {
+      stubSoulContext();
+
+      when(
+        () => mockSoulService.createVersion(
+          soulId: any(named: 'soulId'),
+          voiceDirective: any(named: 'voiceDirective'),
+          authoredBy: any(named: 'authoredBy'),
+          toneBounds: any(named: 'toneBounds'),
+          coachingStyle: any(named: 'coachingStyle'),
+          antiSycophancyPolicy: any(named: 'antiSycophancyPolicy'),
+          sourceSessionId: any(named: 'sourceSessionId'),
+        ),
+      ).thenThrow(Exception('DB error'));
+
+      when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+
+      final workflow = buildSoulWorkflow();
+      await workflow.startSoulSession(soulId: kTestSoulId);
+
+      final session = workflow.activeSessions.values.first;
+      final manager = ConversationManager(
+        conversationId: 'test',
+        maxTurns: 1,
+      )..initialize();
+      await session.strategy.processToolCalls(
+        toolCalls: const [
+          ChatCompletionMessageToolCall(
+            id: 'call-1',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"Updated voice.",'
+                  ' "rationale":"Warmer tone needed."}',
+            ),
+          ),
+        ],
+        manager: manager,
+      );
+
+      final result = await workflow.completeSoulSession(
+        sessionId: session.sessionId,
+      );
+
+      expect(result, isNull);
+      // Session should still be in active map (not cleaned up on failure).
+      expect(workflow.activeSessions, hasLength(1));
+    });
+  });
+
+  group('startSoulSession — error paths', () {
+    late MockAgentTemplateService mockTemplateService;
+    late MockAgentSyncService mockSyncService;
+    late MockSoulDocumentService mockSoulService;
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockTemplateService = MockAgentTemplateService();
+      mockSyncService = MockAgentSyncService();
+      mockSoulService = MockSoulDocumentService();
+      mockRepository = MockAgentRepository();
+      when(() => mockTemplateService.repository).thenReturn(mockRepository);
+    });
+
+    test('returns null when soulDocumentService is null', () async {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+      );
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+      expect(response, isNull);
+    });
+
+    test('returns null when templateService is null', () async {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        soulDocumentService: mockSoulService,
+        syncService: mockSyncService,
+      );
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+      expect(response, isNull);
+    });
+
+    test('returns null when syncService is null', () async {
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        soulDocumentService: mockSoulService,
+      );
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+      expect(response, isNull);
+    });
+
+    test('returns null when provider resolution fails', () async {
+      // Don't stub provider resolution — it will fail.
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockSoulService.getSoul(any())).thenAnswer(
+        (_) async => makeTestSoulDocument(),
+      );
+      when(() => mockSoulService.getActiveSoulVersion(any())).thenAnswer(
+        (_) async => makeTestSoulDocumentVersion(),
+      );
+      when(() => mockSoulService.getTemplatesUsingSoul(any())).thenAnswer(
+        (_) async => [kTestTemplateId],
+      );
+      when(() => mockTemplateService.getTemplate(any())).thenAnswer(
+        (_) async => makeTestTemplate(),
+      );
+
+      final workflow = TemplateEvolutionWorkflow(
+        conversationRepository: _TestConversationRepository(),
+        aiConfigRepository: mockAiConfig,
+        cloudInferenceRepository: mockCloudInference,
+        templateService: mockTemplateService,
+        syncService: mockSyncService,
+        soulDocumentService: mockSoulService,
+      );
+
+      final response = await workflow.startSoulSession(soulId: kTestSoulId);
+      expect(response, isNull);
+    });
   });
 }

@@ -77,8 +77,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
       expect(
-        find.text('2 template(s) sharing this soul'),
+        find.text(context.messages.agentSoulReviewTemplateCount(2)),
         findsOneWidget,
       );
     });
