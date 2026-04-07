@@ -255,7 +255,11 @@ class _ComparisonSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final comparison = comparisonAsync.value;
-    if (comparison == null) return const SizedBox(height: 20);
+    if (comparison == null || !comparison.hasBaseline) {
+      return const SizedBox(height: 20);
+    }
+
+    if (comparison.isAtAverage) return const SizedBox.shrink();
 
     final timeStr = _currentTimeString();
     final message = comparison.isAboveAverage
@@ -702,27 +706,30 @@ class _SelectedDayDetail extends StatelessWidget {
           ],
           SizedBox(height: tokens.spacing.step4),
 
-          // Metrics row.
-          Row(
-            children: [
-              _MiniMetric(
-                label: context.messages.agentStatsWakesLabel,
-                value: '${day.wakeCount}',
-              ),
-              SizedBox(width: tokens.spacing.step5),
-              if (day.tokensPerWake > 0)
-                _MiniMetric(
-                  label: context.messages.agentStatsTokensPerWakeLabel,
-                  value: _formatTokenCount(day.tokensPerWake),
-                ),
-              if (day.tokensPerWake > 0) SizedBox(width: tokens.spacing.step5),
-              if (day.cacheRate > 0)
-                _MiniMetric(
-                  label: context.messages.agentStatsCacheRateLabel,
-                  value: '${(day.cacheRate * 100).round()}%',
-                ),
-            ],
-          ),
+          // Metrics row — only shown when wake data is available.
+          if (day.wakeCount > 0 || day.cacheRate > 0)
+            Row(
+              children: [
+                if (day.wakeCount > 0)
+                  _MiniMetric(
+                    label: context.messages.agentStatsWakesLabel,
+                    value: '${day.wakeCount}',
+                  ),
+                if (day.wakeCount > 0) SizedBox(width: tokens.spacing.step5),
+                if (day.tokensPerWake > 0)
+                  _MiniMetric(
+                    label: context.messages.agentStatsTokensPerWakeLabel,
+                    value: _formatTokenCount(day.tokensPerWake),
+                  ),
+                if (day.tokensPerWake > 0)
+                  SizedBox(width: tokens.spacing.step5),
+                if (day.cacheRate > 0)
+                  _MiniMetric(
+                    label: context.messages.agentStatsCacheRateLabel,
+                    value: '${(day.cacheRate * 100).round()}%',
+                  ),
+              ],
+            ),
         ],
       ),
     );
@@ -1043,8 +1050,9 @@ class _SourceListTile extends StatelessWidget {
     final warningColor = tokens.colors.alert.warning.defaultColor;
 
     return InkWell(
-      onTap: () =>
-          beamToNamed('/settings/agents/templates/${source.templateId}'),
+      onTap: () => beamToNamed(
+        '/settings/agents/${source.isTemplate ? 'templates' : 'instances'}/${source.templateId}',
+      ),
       borderRadius: BorderRadius.circular(tokens.radii.m),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -1186,15 +1194,9 @@ String _currentTimeString() {
       '${now.minute.toString().padLeft(2, '0')}';
 }
 
-String _formatTokenCount(int tokens) {
-  if (tokens >= 1000000) {
-    return '${(tokens / 1000000).toStringAsFixed(1)}M';
-  }
-  if (tokens >= 1000) {
-    return '${(tokens / 1000).toStringAsFixed(1)}K';
-  }
-  return tokens.toString();
-}
+final NumberFormat _compactFormat = NumberFormat.compact();
+
+String _formatTokenCount(int tokens) => _compactFormat.format(tokens);
 
 String _formatDuration(Duration duration) {
   final hours = duration.inHours;

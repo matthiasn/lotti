@@ -167,8 +167,7 @@ final tokenSourceBreakdownProvider = FutureProvider<List<TokenSourceBreakdown>>(
       }
     }
 
-    // Resolve template names.
-    final templateNames = await _resolveTemplateNames(repository, {
+    final sourceInfo = await _resolveSourceInfo(repository, {
       ...tokensByTemplate.keys,
       ...wakeCountByTemplate.keys,
     });
@@ -185,16 +184,18 @@ final tokenSourceBreakdownProvider = FutureProvider<List<TokenSourceBreakdown>>(
           ? (entry.value / totalTokens) * 100
           : 0.0;
       final fairShare = sourceCount > 0 ? 100.0 / sourceCount : 100.0;
+      final info = sourceInfo[entry.key];
 
       breakdowns.add(
         TokenSourceBreakdown(
           templateId: entry.key,
-          displayName: templateNames[entry.key] ?? entry.key,
+          displayName: info?.name ?? entry.key,
           totalTokens: entry.value,
           percentage: percentage,
           wakeCount: wakeCountByTemplate[entry.key] ?? 0,
           totalDuration: durationByTemplate[entry.key] ?? Duration.zero,
           isHighUsage: percentage > fairShare * _highUsageMultiplier,
+          isTemplate: info?.isTemplate ?? true,
         ),
       );
     }
@@ -204,7 +205,10 @@ final tokenSourceBreakdownProvider = FutureProvider<List<TokenSourceBreakdown>>(
   },
 );
 
-Future<Map<String, String>> _resolveTemplateNames(
+/// Resolved source info: display name and whether it's a template.
+typedef _SourceInfo = ({String name, bool isTemplate});
+
+Future<Map<String, _SourceInfo>> _resolveSourceInfo(
   AgentRepository repository,
   Set<String> ids,
 ) async {
@@ -212,12 +216,18 @@ Future<Map<String, String>> _resolveTemplateNames(
     ids.map((id) async {
       try {
         final entity = await repository.getEntity(id);
-        final name = switch (entity) {
-          AgentTemplateEntity(:final displayName) => displayName,
-          AgentIdentityEntity(:final displayName) => displayName,
+        final info = switch (entity) {
+          AgentTemplateEntity(:final displayName) => (
+            name: displayName,
+            isTemplate: true,
+          ),
+          AgentIdentityEntity(:final displayName) => (
+            name: displayName,
+            isTemplate: false,
+          ),
           _ => null,
         };
-        return name != null ? MapEntry(id, name) : null;
+        return info != null ? MapEntry(id, info) : null;
       } on Exception {
         return null;
       }

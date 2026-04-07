@@ -2825,6 +2825,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_thread',
     'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
   );
+  late final Index idxAgentEntitiesTokenUsageSince = Index(
+    'idx_agent_entities_token_usage_since',
+    'CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities (type, created_at DESC) WHERE type = \'wakeTokenUsage\' AND deleted_at IS NULL',
+  );
   late final AgentLinks agentLinks = AgentLinks(this);
   late final Index idxAgentLinksFrom = Index(
     'idx_agent_links_from',
@@ -3458,6 +3462,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
     idxAgentEntitiesThread,
+    idxAgentEntitiesTokenUsageSince,
     agentLinks,
     idxAgentLinksFrom,
     idxAgentLinksTo,

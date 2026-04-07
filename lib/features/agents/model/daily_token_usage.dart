@@ -86,6 +86,7 @@ class TokenSourceBreakdown {
     required this.wakeCount,
     required this.totalDuration,
     required this.isHighUsage,
+    this.isTemplate = true,
   });
 
   final String templateId;
@@ -98,6 +99,9 @@ class TokenSourceBreakdown {
   final int wakeCount;
   final Duration totalDuration;
   final bool isHighUsage;
+
+  /// Whether the source ID refers to a template (vs an agent instance).
+  final bool isTemplate;
 
   @override
   bool operator ==(Object other) =>
@@ -135,6 +139,8 @@ class TokenUsageComparison {
   final int todayTokens;
 
   bool get isAboveAverage => todayTokens > averageTokensByTimeOfDay;
+  bool get hasBaseline => averageTokensByTimeOfDay > 0;
+  bool get isAtAverage => todayTokens == averageTokensByTimeOfDay;
 
   @override
   bool operator ==(Object other) =>

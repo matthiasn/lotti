@@ -113,8 +113,11 @@ void main() {
         find.text(context.messages.agentStatsTabTitle),
         findsOneWidget,
       );
+      // TokenStatsTab must be on-stage (active), not just mounted offstage.
+      expect(find.byType(TokenStatsTab), findsOneWidget);
+      // The daily usage heading is unique to the Stats tab content.
       expect(
-        find.byType(TokenStatsTab, skipOffstage: false),
+        find.text(context.messages.agentStatsDailyUsageHeading),
         findsOneWidget,
       );
     });

@@ -18,6 +18,7 @@ CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
 CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
+CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
 
 CREATE TABLE agent_links (
   id TEXT NOT NULL PRIMARY KEY,

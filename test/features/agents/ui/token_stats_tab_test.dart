@@ -104,10 +104,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(TokenStatsTab));
-      // "Average" and "Today" labels should appear.
+      // Above-average summary text should appear.
       expect(
-        find.text(context.messages.agentStatsAverageLabel),
-        findsWidgets,
+        find.textContaining('more tokens today'),
+        findsOneWidget,
       );
       expect(
         find.text(context.messages.agentStatsTodayLabel),
@@ -146,6 +146,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(TokenStatsTab));
+      // Below-average summary text should appear.
+      expect(
+        find.textContaining('fewer tokens today'),
+        findsOneWidget,
+      );
       expect(
         find.text(context.messages.agentStatsTodayLabel),
         findsOneWidget,
@@ -182,10 +187,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 5000 → "5.0K", 15000 → "15.0K" (may appear in both the
-      // comparison metrics and the selected day detail panel).
-      expect(find.text('5.0K'), findsWidgets);
-      expect(find.text('15.0K'), findsWidgets);
+      // NumberFormat.compact() formats: 5000 → "5K", 15000 → "15K"
+      expect(find.text('5K'), findsWidgets);
+      expect(find.text('15K'), findsWidgets);
     });
 
     testWidgets('renders chart legend', (tester) async {
@@ -338,6 +342,146 @@ void main() {
       expect(
         find.textContaining(context.messages.agentStatsSourceWakes(7)),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('shows per-model chart cards when multiple models', (
+      tester,
+    ) async {
+      final modelADays = [
+        for (var i = 6; i >= 0; i--)
+          DailyTokenUsage(
+            date: DateTime(2024, 3, 15 - i),
+            totalTokens: i == 0 ? 8000 : 0,
+            tokensByTimeOfDay: i == 0 ? 8000 : 0,
+            isToday: i == 0,
+          ),
+      ];
+      final modelBDays = [
+        for (var i = 6; i >= 0; i--)
+          DailyTokenUsage(
+            date: DateTime(2024, 3, 15 - i),
+            totalTokens: i == 0 ? 2000 : 0,
+            tokensByTimeOfDay: i == 0 ? 2000 : 0,
+            isToday: i == 0,
+          ),
+      ];
+
+      await tester.pumpWidget(
+        _buildSubject(
+          byModel: {
+            'models/gemma4:26b': modelADays,
+            'models/gemma4:e4b': modelBDays,
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('gemma4:26b'), findsOneWidget);
+      expect(find.text('gemma4:e4b'), findsOneWidget);
+      expect(find.text('8K'), findsWidgets);
+    });
+
+    testWidgets('hides per-model section when only one model', (
+      tester,
+    ) async {
+      final singleModelDays = [
+        for (var i = 6; i >= 0; i--)
+          DailyTokenUsage(
+            date: DateTime(2024, 3, 15 - i),
+            totalTokens: 1000,
+            tokensByTimeOfDay: 1000,
+            isToday: i == 0,
+          ),
+      ];
+
+      await tester.pumpWidget(
+        _buildSubject(
+          byModel: {'models/only-one': singleModelDays},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('only-one'), findsNothing);
+    });
+
+    testWidgets('day range selector switches between 7D and 30D', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildSubject());
+      await tester.pumpAndSettle();
+
+      // 7D should be selected by default.
+      expect(find.text('7D'), findsOneWidget);
+      expect(find.text('30D'), findsOneWidget);
+
+      // Tap 30D.
+      await tester.tap(find.text('30D'));
+      await tester.pumpAndSettle();
+
+      // Both labels still visible (selector still rendered).
+      expect(find.text('7D'), findsOneWidget);
+      expect(find.text('30D'), findsOneWidget);
+    });
+
+    testWidgets('tapping a chart bar selects it and shows detail', (
+      tester,
+    ) async {
+      final days = [
+        for (var i = 6; i >= 0; i--)
+          DailyTokenUsage(
+            date: DateTime(2024, 3, 15 - i),
+            totalTokens: 10000,
+            tokensByTimeOfDay: 5000,
+            isToday: i == 0,
+            inputTokens: 7000,
+            outputTokens: 2000,
+            thoughtsTokens: 1000,
+            wakeCount: 3,
+          ),
+      ];
+
+      await tester.pumpWidget(
+        _buildSubject(
+          dailyUsage: days,
+          comparison: const TokenUsageComparison(
+            averageTokensByTimeOfDay: 5000,
+            todayTokens: 10000,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Today is pre-selected, so the detail panel should show.
+      final context = tester.element(find.byType(TokenStatsTab));
+      expect(
+        find.text(context.messages.agentStatsInputLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentStatsOutputLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentStatsThoughtsLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentStatsWakesLabel),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('source list shows no-usage message when empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_buildSubject());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TokenStatsTab));
+      expect(
+        find.text(context.messages.agentStatsNoUsage),
+        findsWidgets,
       );
     });
   });
