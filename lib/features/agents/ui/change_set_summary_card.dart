@@ -269,69 +269,69 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     return ClipRRect(
       borderRadius: _itemBorderRadius,
       child: Dismissible(
-      key: Key('${_changeSet.id}_$_itemIndex'),
-      dismissThresholds: const {
-        DismissDirection.endToStart: 0.25,
-        DismissDirection.startToEnd: 0.25,
-      },
-      confirmDismiss: (direction) async {
-        if (_busy) return false;
-        if (direction == DismissDirection.startToEnd) {
-          await _confirm(context);
-        } else {
-          await _reject(context);
-        }
-        // Don't actually dismiss — state update handles the visual change.
-        return false;
-      },
-      // Confirm background (swipe right) — green
-      background: ColoredBox(
-        color: Colors.green.shade700,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.only(left: AppTheme.cardPadding),
-            child: Row(
-              children: [
-                const Icon(Icons.check, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(
-                  context.messages.changeSetSwipeConfirm,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+        key: Key('${_changeSet.id}_$_itemIndex'),
+        dismissThresholds: const {
+          DismissDirection.endToStart: 0.25,
+          DismissDirection.startToEnd: 0.25,
+        },
+        confirmDismiss: (direction) async {
+          if (_busy) return false;
+          if (direction == DismissDirection.startToEnd) {
+            await _confirm(context);
+          } else {
+            await _reject(context);
+          }
+          // Don't actually dismiss — state update handles the visual change.
+          return false;
+        },
+        // Confirm background (swipe right) — green
+        background: ColoredBox(
+          color: Colors.green.shade700,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: AppTheme.cardPadding),
+              child: Row(
+                children: [
+                  const Icon(Icons.check, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    context.messages.changeSetSwipeConfirm,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      // Reject background (swipe left) — red
-      secondaryBackground: ColoredBox(
-        color: context.colorScheme.error,
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: AppTheme.cardPadding),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.messages.changeSetSwipeReject,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+        // Reject background (swipe left) — red
+        secondaryBackground: ColoredBox(
+          color: context.colorScheme.error,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: AppTheme.cardPadding),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context.messages.changeSetSwipeReject,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.close, color: Colors.white),
-              ],
+                  const SizedBox(width: 8),
+                  const Icon(Icons.close, color: Colors.white),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      child: _buildPendingTile(context),
+        child: _buildPendingTile(context),
       ),
     );
   }

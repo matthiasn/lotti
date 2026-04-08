@@ -59,6 +59,7 @@ class GenUiBridge {
               'VersionComparison',
               'CategoryRatings',
               'BinaryChoicePrompt',
+              'ABComparison',
               'HighPriorityFeedback',
             ],
             'description': 'Widget type to render',
@@ -96,6 +97,7 @@ class GenUiBridge {
       'SessionProgress',
       'CategoryRatings',
       'BinaryChoicePrompt',
+      'ABComparison',
       'HighPriorityFeedback',
     };
     final rootTypeValue = args['rootType'];

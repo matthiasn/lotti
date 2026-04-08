@@ -90,6 +90,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentActivityLogHeading => 'Registro de actividad';
 
   @override
+  String agentABComparisonChoose(String option) {
+    return 'Elegir $option';
+  }
+
+  @override
+  String agentABComparisonOption(String option) {
+    return 'Opción $option';
+  }
+
+  @override
+  String agentABComparisonPrefer(String option) {
+    return 'Prefiero la Opción $option';
+  }
+
+  @override
   String get agentBinaryChoiceNo => 'No';
 
   @override

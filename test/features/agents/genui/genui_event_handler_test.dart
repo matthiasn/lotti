@@ -295,4 +295,79 @@ void main() {
       expect(events, isEmpty);
     });
   });
+
+  group('AB comparison events', () {
+    test('routes ab_comparison_submitted to callback', () async {
+      final events = <(String, String)>[];
+      handler.onABComparisonSubmitted = (surfaceId, value) {
+        events.add((surfaceId, value));
+      };
+
+      dispatchAction(
+        name: 'ab_comparison_submitted',
+        surfaceId: 'ab-surface-1',
+        sourceComponentId: '{"value":"I prefer Option A — Warmer"}',
+      );
+
+      await Future<void>.value();
+
+      expect(events, hasLength(1));
+      expect(events.first.$1, 'ab-surface-1');
+      expect(events.first.$2, 'I prefer Option A — Warmer');
+    });
+
+    test('ignores malformed AB comparison JSON', () async {
+      final events = <(String, String)>[];
+      handler.onABComparisonSubmitted = (surfaceId, value) {
+        events.add((surfaceId, value));
+      };
+
+      dispatchAction(
+        name: 'ab_comparison_submitted',
+        surfaceId: 'ab-surface-2',
+        sourceComponentId: '{bad-json',
+      );
+
+      await Future<void>.value();
+
+      expect(events, isEmpty);
+    });
+
+    test('ignores empty value in AB comparison', () async {
+      final events = <(String, String)>[];
+      handler.onABComparisonSubmitted = (surfaceId, value) {
+        events.add((surfaceId, value));
+      };
+
+      dispatchAction(
+        name: 'ab_comparison_submitted',
+        surfaceId: 'ab-surface-3',
+        sourceComponentId: '{"value":"  "}',
+      );
+
+      await Future<void>.value();
+
+      expect(events, isEmpty);
+    });
+
+    test('does not fire when callback is null', () async {
+      // Register a callback, then clear it — verify no invocation after.
+      final recordedEvents = <(String, String)>[];
+      handler
+        ..onABComparisonSubmitted = (surfaceId, value) {
+          recordedEvents.add((surfaceId, value));
+        }
+        ..onABComparisonSubmitted = null;
+
+      dispatchAction(
+        name: 'ab_comparison_submitted',
+        surfaceId: 'ab-surface-4',
+        sourceComponentId: '{"value":"I prefer Option B"}',
+      );
+
+      await Future<void>.value();
+
+      expect(recordedEvents, isEmpty);
+    });
+  });
 }

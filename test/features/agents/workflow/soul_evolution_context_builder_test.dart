@@ -28,7 +28,7 @@ void main() {
       expect(ctx.systemPrompt, contains('propose_soul_directives'));
       expect(ctx.systemPrompt, contains('publish_ritual_recap'));
       expect(ctx.systemPrompt, contains('record_evolution_note'));
-      expect(ctx.systemPrompt, contains('BinaryChoicePrompt'));
+      expect(ctx.systemPrompt, contains('ABComparison'));
     });
 
     test('does not mention propose_directives as standalone tool', () {

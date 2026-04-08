@@ -31,6 +31,7 @@ Catalog buildEvolutionCatalog() => Catalog(
     sessionProgressItem,
     categoryRatingsItem,
     binaryChoicePromptItem,
+    abComparisonCardItem,
     highPriorityFeedbackItem,
   ],
   catalogId: evolutionCatalogId,
@@ -1087,6 +1088,66 @@ final binaryChoicePromptItem = CatalogItem(
       onSelect: (value) => itemContext.dispatchEvent(
         UserActionEvent(
           name: 'binary_choice_submitted',
+          sourceComponentId: jsonEncode({'value': value}),
+          surfaceId: itemContext.surfaceId,
+        ),
+      ),
+    );
+  },
+);
+
+// ── A/B comparison schema & item ──────────────────────────────────────────
+
+final _abComparisonSchema = S.object(
+  properties: {
+    'question': S.string(
+      description: 'The question shown at the top of the comparison card',
+    ),
+    'optionA': S.string(
+      description: 'Full text of option A — a concrete example phrasing',
+    ),
+    'optionB': S.string(
+      description: 'Full text of option B — a concrete example phrasing',
+    ),
+    'labelA': S.string(
+      description: 'Short label for A, e.g. "Warmer" or "Encouraging"',
+    ),
+    'labelB': S.string(
+      description: 'Short label for B, e.g. "More direct" or "Fact-first"',
+    ),
+  },
+  required: ['question', 'optionA', 'optionB'],
+);
+
+/// Self-contained A/B comparison widget showing two full option phrasings
+/// as tappable cards. Used in soul evolution sessions for personality
+/// preference exploration.
+final abComparisonCardItem = CatalogItem(
+  name: 'ABComparison',
+  dataSchema: _abComparisonSchema,
+  widgetBuilder: (itemContext) {
+    final json = itemContext.data;
+    if (json is! Map<String, Object?>) return const SizedBox.shrink();
+
+    final question = readString(json, 'question').trim();
+    if (question.isEmpty) return const SizedBox.shrink();
+
+    final optionA = readString(json, 'optionA').trim();
+    final optionB = readString(json, 'optionB').trim();
+    if (optionA.isEmpty || optionB.isEmpty) return const SizedBox.shrink();
+
+    final labelA = readStringOrNull(json, 'labelA')?.trim() ?? '';
+    final labelB = readStringOrNull(json, 'labelB')?.trim() ?? '';
+
+    return ABComparisonCard(
+      question: question,
+      optionA: optionA,
+      optionB: optionB,
+      labelA: labelA,
+      labelB: labelB,
+      onSelect: (value) => itemContext.dispatchEvent(
+        UserActionEvent(
+          name: 'ab_comparison_submitted',
           sourceComponentId: jsonEncode({'value': value}),
           surfaceId: itemContext.surfaceId,
         ),
