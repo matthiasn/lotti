@@ -76,6 +76,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -416,6 +417,8 @@ class MockAiConfigRepository extends Mock implements AiConfigRepository {}
 class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
+
+class MockChecklistController extends Mock implements ChecklistController {}
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
 

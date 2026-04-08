@@ -346,7 +346,7 @@ void main() {
       final checklistEntity = checklist! as Checklist;
       expect(
         checklistEntity.data.title,
-        'TODOs',
+        'Todos',
       ); // Default title when none provided
       expect(
         checklistEntity.data.linkedChecklistItems,

@@ -25,13 +25,31 @@
   "addToDictionarySaveFailed": "Nepodařilo se uložit slovník",
   "addToDictionarySuccess": "Výraz byl přidán do slovníku",
   "addToDictionaryTooLong": "Výraz je příliš dlouhý (max. 50 znaků)",
-  "agentActivityLogHeading": "Protokol aktivity",
   "agentABComparisonChoose": "Zvolit {option}",
-  "@agentABComparisonChoose": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonChoose": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonOption": "Možnost {option}",
-  "@agentABComparisonOption": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonOption": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonPrefer": "Dávám přednost možnosti {option}",
-  "@agentABComparisonPrefer": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonPrefer": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "agentActivityLogHeading": "Protokol aktivity",
   "agentBinaryChoiceNo": "Ne",
   "agentBinaryChoiceYes": "Ano",
   "agentCategoryRatingsScaleMax": "Opravit první",
@@ -242,6 +260,26 @@
   "agentStateRevision": "Revize",
   "agentStateSleepingUntil": "Spí do",
   "agentStateWakeCount": "Počet probuzení",
+  "agentStatsAllDayLegend": "Celý den",
+  "agentStatsAverageLabel": "Průměr",
+  "agentStatsByTimeLegend": "Denně do {time}",
+  "agentStatsCacheRateLabel": "Míra cache",
+  "agentStatsDailyUsageHeading": "Denní využití",
+  "agentStatsInputLabel": "Vstup",
+  "agentStatsNoUsage": "Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.",
+  "agentStatsOutputLabel": "Výstup",
+  "agentStatsSourceActiveFor": "Aktivní po dobu {duration}",
+  "agentStatsSourceActivityHeading": "Aktivita agentů",
+  "agentStatsSourceWakes": "{count, plural, =1{1 probuzení} few{{count} probuzení} other{{count} probuzení}}",
+  "agentStatsTabTitle": "Statistiky",
+  "agentStatsThoughtsLabel": "Myšlenky",
+  "agentStatsTodayLabel": "Dnes",
+  "agentStatsTokensPerWakeLabel": "Tokeny / probuzení",
+  "agentStatsTokensUnit": "tokeny",
+  "agentStatsUsageAboveAverage": "Dnes používáš více tokenů, než je obvyklé v {time}.",
+  "agentStatsUsageBelowAverage": "Dnes používáš méně tokenů, než je obvyklé v {time}.",
+  "agentStatsWakesLabel": "Probuzení",
+  "agentStatsWeekTotalLabel": "Celkem za 7 dní",
   "agentTabActivity": "Aktivita",
   "agentTabConversations": "Konverzace",
   "agentTabObservations": "Pozorování",
@@ -276,26 +314,6 @@
   "agentTokenUsageThoughtsTokens": "Úvahy",
   "agentTokenUsageTotalTokens": "Celkem",
   "agentTokenUsageWakeCount": "Probuzení",
-  "agentStatsTabTitle": "Statistiky",
-  "agentStatsDailyUsageHeading": "Denní využití",
-  "agentStatsUsageAboveAverage": "Dnes používáš více tokenů, než je obvyklé v {time}.",
-  "agentStatsUsageBelowAverage": "Dnes používáš méně tokenů, než je obvyklé v {time}.",
-  "agentStatsAverageLabel": "Průměr",
-  "agentStatsTodayLabel": "Dnes",
-  "agentStatsAllDayLegend": "Celý den",
-  "agentStatsByTimeLegend": "Denně do {time}",
-  "agentStatsSourceActivityHeading": "Aktivita agentů",
-  "agentStatsSourceActiveFor": "Aktivní po dobu {duration}",
-  "agentStatsSourceWakes": "{count, plural, =1{1 probuzení} few{{count} probuzení} other{{count} probuzení}}",
-  "agentStatsNoUsage": "Za posledních 7 dní nebyla zaznamenána žádná spotřeba tokenů.",
-  "agentStatsTokensUnit": "tokeny",
-  "agentStatsWeekTotalLabel": "Celkem za 7 dní",
-  "agentStatsInputLabel": "Vstup",
-  "agentStatsOutputLabel": "Výstup",
-  "agentStatsThoughtsLabel": "Myšlenky",
-  "agentStatsCacheRateLabel": "Míra cache",
-  "agentStatsTokensPerWakeLabel": "Tokeny / probuzení",
-  "agentStatsWakesLabel": "Probuzení",
   "aiAssistantActionItemSuggestions": "Návrhy akčních položek",
   "aiAssistantAnalyzeImage": "Analyzovat obrázek",
   "aiAssistantSummarizeTask": "Shrnout úkol",
@@ -666,7 +684,22 @@
   "chatInputStopRealtime": "Zastavit živý přepis",
   "chatInputStopTranscribe": "Zastavit a přepsat",
   "checklistAddItem": "Přidat novou položku",
+  "checklistAiConfidenceLabel": "Jistota: {level}",
+  "@checklistAiConfidenceLabel": {
+    "description": "Confidence level label in the AI suggestion dialog",
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "example": "high"
+      }
+    }
+  },
+  "checklistAiMarkComplete": "Označit jako dokončeno",
+  "checklistAiSuggestionBody": "Tato položka se zdá být dokončena:",
+  "checklistAiSuggestionTitle": "Návrh AI",
   "checklistAllDone": "Všechny položky splněny!",
+  "checklistToggleExpansion": "Rozbalit nebo sbalit kontrolní seznam",
+  "checklistProgressSemantics": "Průběh kontrolního seznamu",
   "checklistCompletedShort": "{completed}/{total} hotovo",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -705,6 +738,8 @@
   "checklistMarkdownCopied": "Kontrolní seznam zkopírován jako Markdown",
   "checklistNoSuggestionsTitle": "Žádné navrhované akční položky",
   "checklistNothingToExport": "Žádné položky k exportu",
+  "checklistMoreTooltip": "Více",
+  "checklistShare": "Sdílet",
   "checklistShareHint": "Dlouhé stisknutí pro sdílení",
   "checklistsReorder": "Přeuspořádat",
   "checklistsTitle": "Kontrolní seznamy",

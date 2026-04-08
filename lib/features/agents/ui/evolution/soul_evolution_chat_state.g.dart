@@ -67,7 +67,7 @@ final class SoulEvolutionChatStateProvider
 }
 
 String _$soulEvolutionChatStateHash() =>
-    r'52fe522898222f9361006eeeb7fe79d7ddc46350';
+    r'dd36355dabcd849234b5235a53a34539d98e88a2';
 
 /// Manages the lifecycle of a standalone soul evolution chat session.
 ///

@@ -249,7 +249,7 @@ Do NOT recreate the items that were already successful.''';
       final checklistIds = currentTask.data.checklistIds ?? [];
 
       if (checklistIds.isEmpty) {
-        // Create a new "TODOs" checklist with the item
+        // Create a new "Todos" checklist with the item
         final createResult = await autoChecklistService.autoCreateChecklist(
           taskId: currentTask.id,
           suggestions: [
@@ -260,7 +260,7 @@ Do NOT recreate the items that were already successful.''';
               checkedBy: ChangeSource.agent,
             ),
           ],
-          title: 'TODOs',
+          title: 'Todos',
         );
 
         if (createResult.success) {

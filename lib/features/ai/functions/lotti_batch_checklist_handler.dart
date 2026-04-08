@@ -204,7 +204,7 @@ Do NOT recreate the items that were already successful.''';
       final checklistIds = currentTask.data.checklistIds ?? [];
 
       if (checklistIds.isEmpty) {
-        // Create a new "TODOs" checklist with all items (preserve order)
+        // Create a new "Todos" checklist with all items (preserve order)
         final checklistItems = <ChecklistItemData>[
           for (final item in items)
             ChecklistItemData(
@@ -219,7 +219,7 @@ Do NOT recreate the items that were already successful.''';
           final createResult = await autoChecklistService.autoCreateChecklist(
             taskId: currentTask.id,
             suggestions: checklistItems,
-            title: 'TODOs',
+            title: 'Todos',
           );
 
           if (createResult.success && createResult.createdItems != null) {

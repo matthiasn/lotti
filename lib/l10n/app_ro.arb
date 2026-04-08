@@ -25,13 +25,31 @@
   "addToDictionarySaveFailed": "Salvarea dicționarului a eșuat",
   "addToDictionarySuccess": "Termen adăugat la dicționar",
   "addToDictionaryTooLong": "Termen prea lung (max 50 caractere)",
-  "agentActivityLogHeading": "Jurnal de activitate",
   "agentABComparisonChoose": "Alege {option}",
-  "@agentABComparisonChoose": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonChoose": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonOption": "Opțiunea {option}",
-  "@agentABComparisonOption": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonOption": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonPrefer": "Prefer Opțiunea {option}",
-  "@agentABComparisonPrefer": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonPrefer": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "agentActivityLogHeading": "Jurnal de activitate",
   "agentBinaryChoiceNo": "Nu",
   "agentBinaryChoiceYes": "Da",
   "agentCategoryRatingsScaleMax": "Corectează mai întâi",
@@ -387,6 +405,26 @@
   "agentStateRevision": "Revizie",
   "agentStateSleepingUntil": "Doarme până la",
   "agentStateWakeCount": "Număr de treziri",
+  "agentStatsAllDayLegend": "Toată ziua",
+  "agentStatsAverageLabel": "Medie",
+  "agentStatsByTimeLegend": "Zilnic până la {time}",
+  "agentStatsCacheRateLabel": "Rată cache",
+  "agentStatsDailyUsageHeading": "Utilizare zilnică",
+  "agentStatsInputLabel": "Intrare",
+  "agentStatsNoUsage": "Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.",
+  "agentStatsOutputLabel": "Ieșire",
+  "agentStatsSourceActiveFor": "Activ de {duration}",
+  "agentStatsSourceActivityHeading": "Activitatea agenților",
+  "agentStatsSourceWakes": "{count, plural, =1{1 trezire} few{{count} treziri} other{{count} de treziri}}",
+  "agentStatsTabTitle": "Statistici",
+  "agentStatsThoughtsLabel": "Gânduri",
+  "agentStatsTodayLabel": "Astăzi",
+  "agentStatsTokensPerWakeLabel": "Tokenuri / trezire",
+  "agentStatsTokensUnit": "tokenuri",
+  "agentStatsUsageAboveAverage": "Utilizați mai multe tokenuri astăzi decât de obicei la {time}.",
+  "agentStatsUsageBelowAverage": "Utilizați mai puține tokenuri astăzi decât de obicei la {time}.",
+  "agentStatsWakesLabel": "Treziri",
+  "agentStatsWeekTotalLabel": "Total 7 zile",
   "agentTabActivity": "Activitate",
   "agentTabConversations": "Conversații",
   "agentTabObservations": "Observații",
@@ -482,26 +520,6 @@
   "agentTokenUsageThoughtsTokens": "Gânduri",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Treziri",
-  "agentStatsTabTitle": "Statistici",
-  "agentStatsDailyUsageHeading": "Utilizare zilnică",
-  "agentStatsUsageAboveAverage": "Utilizați mai multe tokenuri astăzi decât de obicei la {time}.",
-  "agentStatsUsageBelowAverage": "Utilizați mai puține tokenuri astăzi decât de obicei la {time}.",
-  "agentStatsAverageLabel": "Medie",
-  "agentStatsTodayLabel": "Astăzi",
-  "agentStatsAllDayLegend": "Toată ziua",
-  "agentStatsByTimeLegend": "Zilnic până la {time}",
-  "agentStatsSourceActivityHeading": "Activitatea agenților",
-  "agentStatsSourceActiveFor": "Activ de {duration}",
-  "agentStatsSourceWakes": "{count, plural, =1{1 trezire} few{{count} treziri} other{{count} de treziri}}",
-  "agentStatsNoUsage": "Nu s-a înregistrat nicio utilizare de tokenuri în ultimele 7 zile.",
-  "agentStatsTokensUnit": "tokenuri",
-  "agentStatsWeekTotalLabel": "Total 7 zile",
-  "agentStatsInputLabel": "Intrare",
-  "agentStatsOutputLabel": "Ieșire",
-  "agentStatsThoughtsLabel": "Gânduri",
-  "agentStatsCacheRateLabel": "Rată cache",
-  "agentStatsTokensPerWakeLabel": "Tokenuri / trezire",
-  "agentStatsWakesLabel": "Treziri",
   "aiAssistantActionItemSuggestions": "Sugestii de acțiuni",
   "aiAssistantAnalyzeImage": "Analizează imaginea",
   "aiAssistantSummarizeTask": "Rezumă sarcina",
@@ -895,7 +913,22 @@
   "chatInputStopRealtime": "Oprește transcrierea în timp real",
   "chatInputStopTranscribe": "Oprește și transcrie",
   "checklistAddItem": "Adaugă un element nou",
+  "checklistAiConfidenceLabel": "Încredere: {level}",
+  "@checklistAiConfidenceLabel": {
+    "description": "Confidence level label in the AI suggestion dialog",
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "example": "high"
+      }
+    }
+  },
+  "checklistAiMarkComplete": "Marchează ca finalizat",
+  "checklistAiSuggestionBody": "Acest element pare să fie finalizat:",
+  "checklistAiSuggestionTitle": "Sugestie AI",
   "checklistAllDone": "Toate elementele sunt finalizate!",
+  "checklistToggleExpansion": "Extindere sau restrângere listă de verificare",
+  "checklistProgressSemantics": "Progresul listei de verificare",
   "checklistCompletedShort": "{completed}/{total} finalizate",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -934,6 +967,8 @@
   "checklistMarkdownCopied": "Lista de verificare copiată ca Markdown",
   "checklistNoSuggestionsTitle": "Nu există sugestii de acțiuni",
   "checklistNothingToExport": "Nu există elemente de exportat",
+  "checklistMoreTooltip": "Mai mult",
+  "checklistShare": "Partajează",
   "checklistShareHint": "Apăsare lungă pentru partajare",
   "checklistsReorder": "Reordonează",
   "checklistsTitle": "Liste de verificare",

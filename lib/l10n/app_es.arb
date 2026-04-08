@@ -25,13 +25,31 @@
   "addToDictionarySaveFailed": "Error al guardar el diccionario",
   "addToDictionarySuccess": "Término añadido al diccionario",
   "addToDictionaryTooLong": "Término demasiado largo (máx. 50 caracteres)",
-  "agentActivityLogHeading": "Registro de actividad",
   "agentABComparisonChoose": "Elegir {option}",
-  "@agentABComparisonChoose": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonChoose": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonOption": "Opción {option}",
-  "@agentABComparisonOption": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonOption": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentABComparisonPrefer": "Prefiero la Opción {option}",
-  "@agentABComparisonPrefer": { "placeholders": { "option": { "type": "String" } } },
+  "@agentABComparisonPrefer": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "agentActivityLogHeading": "Registro de actividad",
   "agentBinaryChoiceNo": "No",
   "agentBinaryChoiceYes": "Sí",
   "agentCategoryRatingsScaleMax": "Arreglar primero",
@@ -387,6 +405,26 @@
   "agentStateRevision": "Revisión",
   "agentStateSleepingUntil": "Durmiendo hasta",
   "agentStateWakeCount": "Conteo de despertares",
+  "agentStatsAllDayLegend": "Todo el día",
+  "agentStatsAverageLabel": "Promedio",
+  "agentStatsByTimeLegend": "Diario hasta las {time}",
+  "agentStatsCacheRateLabel": "Tasa de caché",
+  "agentStatsDailyUsageHeading": "Uso diario",
+  "agentStatsInputLabel": "Entrada",
+  "agentStatsNoUsage": "No se registró uso de tokens en los últimos 7 días.",
+  "agentStatsOutputLabel": "Salida",
+  "agentStatsSourceActiveFor": "Activo durante {duration}",
+  "agentStatsSourceActivityHeading": "Actividad de agentes",
+  "agentStatsSourceWakes": "{count, plural, =1{1 despertar} other{{count} despertares}}",
+  "agentStatsTabTitle": "Estadísticas",
+  "agentStatsThoughtsLabel": "Pensamientos",
+  "agentStatsTodayLabel": "Hoy",
+  "agentStatsTokensPerWakeLabel": "Tokens / despertar",
+  "agentStatsTokensUnit": "tokens",
+  "agentStatsUsageAboveAverage": "Hoy estás usando más tokens de lo habitual a las {time}.",
+  "agentStatsUsageBelowAverage": "Hoy estás usando menos tokens de lo habitual a las {time}.",
+  "agentStatsWakesLabel": "Despertares",
+  "agentStatsWeekTotalLabel": "Total 7 días",
   "agentTabActivity": "Actividad",
   "agentTabConversations": "Conversaciones",
   "agentTabObservations": "Observaciones",
@@ -482,26 +520,6 @@
   "agentTokenUsageThoughtsTokens": "Pensamientos",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Despertares",
-  "agentStatsTabTitle": "Estadísticas",
-  "agentStatsDailyUsageHeading": "Uso diario",
-  "agentStatsUsageAboveAverage": "Hoy estás usando más tokens de lo habitual a las {time}.",
-  "agentStatsUsageBelowAverage": "Hoy estás usando menos tokens de lo habitual a las {time}.",
-  "agentStatsAverageLabel": "Promedio",
-  "agentStatsTodayLabel": "Hoy",
-  "agentStatsAllDayLegend": "Todo el día",
-  "agentStatsByTimeLegend": "Diario hasta las {time}",
-  "agentStatsSourceActivityHeading": "Actividad de agentes",
-  "agentStatsSourceActiveFor": "Activo durante {duration}",
-  "agentStatsSourceWakes": "{count, plural, =1{1 despertar} other{{count} despertares}}",
-  "agentStatsNoUsage": "No se registró uso de tokens en los últimos 7 días.",
-  "agentStatsTokensUnit": "tokens",
-  "agentStatsWeekTotalLabel": "Total 7 días",
-  "agentStatsInputLabel": "Entrada",
-  "agentStatsOutputLabel": "Salida",
-  "agentStatsThoughtsLabel": "Pensamientos",
-  "agentStatsCacheRateLabel": "Tasa de caché",
-  "agentStatsTokensPerWakeLabel": "Tokens / despertar",
-  "agentStatsWakesLabel": "Despertares",
   "aiAssistantActionItemSuggestions": "Sugerencias de elementos de acción",
   "aiAssistantAnalyzeImage": "Analizar imagen",
   "aiAssistantSummarizeTask": "Resumir tarea",
@@ -895,7 +913,22 @@
   "chatInputStopRealtime": "Detener transcripción en vivo",
   "chatInputStopTranscribe": "Detener y transcribir",
   "checklistAddItem": "Agregar un nuevo elemento",
+  "checklistAiConfidenceLabel": "Confianza: {level}",
+  "@checklistAiConfidenceLabel": {
+    "description": "Confidence level label in the AI suggestion dialog",
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "example": "high"
+      }
+    }
+  },
+  "checklistAiMarkComplete": "Marcar como completado",
+  "checklistAiSuggestionBody": "Este elemento parece estar completado:",
+  "checklistAiSuggestionTitle": "Sugerencia de IA",
   "checklistAllDone": "¡Todos los elementos completados!",
+  "checklistToggleExpansion": "Expandir o contraer la lista de verificación",
+  "checklistProgressSemantics": "Progreso de la lista de verificación",
   "checklistCompletedShort": "{completed}/{total} completados",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -934,6 +967,8 @@
   "checklistMarkdownCopied": "Lista de verificación copiada como Markdown",
   "checklistNoSuggestionsTitle": "No hay elementos de acción sugeridos",
   "checklistNothingToExport": "No hay elementos para exportar",
+  "checklistMoreTooltip": "Más",
+  "checklistShare": "Compartir",
   "checklistShareHint": "Mantener pulsado para compartir",
   "checklistsReorder": "Reordenar",
   "checklistsTitle": "Listas de verificación",

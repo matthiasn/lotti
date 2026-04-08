@@ -500,8 +500,7 @@ void main() {
         level: InsightLevel.error,
       );
 
-      // Give the async write chain time to complete
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await bufferedLogging.flushAllForTest();
 
       final file = findGeneralLog();
       expect(file, isNotNull, reason: 'Log file should exist');
