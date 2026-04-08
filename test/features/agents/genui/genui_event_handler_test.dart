@@ -351,7 +351,14 @@ void main() {
     });
 
     test('does not fire when callback is null', () async {
-      // No callback registered — should not throw.
+      // Register a callback, then clear it — verify no invocation after.
+      final recordedEvents = <(String, String)>[];
+      handler
+        ..onABComparisonSubmitted = (surfaceId, value) {
+          recordedEvents.add((surfaceId, value));
+        }
+        ..onABComparisonSubmitted = null;
+
       dispatchAction(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-4',
@@ -359,7 +366,8 @@ void main() {
       );
 
       await Future<void>.value();
-      // No assertion needed — just verifying no exception.
+
+      expect(recordedEvents, isEmpty);
     });
   });
 }
