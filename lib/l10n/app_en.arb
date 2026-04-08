@@ -25,6 +25,30 @@
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
   "agentActivityLogHeading": "Activity Log",
+  "agentABComparisonChoose": "Choose {option}",
+  "@agentABComparisonChoose": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "agentABComparisonOption": "Option {option}",
+  "@agentABComparisonOption": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "agentABComparisonPrefer": "I prefer Option {option}",
+  "@agentABComparisonPrefer": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
   "agentBinaryChoiceNo": "No",
   "agentBinaryChoiceYes": "Yes",
   "agentCategoryRatingsScaleMax": "Fix first",

@@ -110,6 +110,7 @@ void main() {
       final buttons = tester
           .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
           .toList();
+      expect(buttons, hasLength(2));
       for (final button in buttons) {
         expect(button.onPressed, isNull);
       }

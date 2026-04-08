@@ -88,6 +88,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentActivityLogHeading => 'Protokol aktivity';
 
   @override
+  String agentABComparisonChoose(String option) {
+    return 'Zvolit $option';
+  }
+
+  @override
+  String agentABComparisonOption(String option) {
+    return 'Možnost $option';
+  }
+
+  @override
+  String agentABComparisonPrefer(String option) {
+    return 'Dávám přednost možnosti $option';
+  }
+
+  @override
   String get agentBinaryChoiceNo => 'Ne';
 
   @override

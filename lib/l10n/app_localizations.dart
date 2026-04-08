@@ -263,6 +263,24 @@ abstract class AppLocalizations {
   /// **'Activity Log'**
   String get agentActivityLogHeading;
 
+  /// No description provided for @agentABComparisonChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose {option}'**
+  String agentABComparisonChoose(String option);
+
+  /// No description provided for @agentABComparisonOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Option {option}'**
+  String agentABComparisonOption(String option);
+
+  /// No description provided for @agentABComparisonPrefer.
+  ///
+  /// In en, this message translates to:
+  /// **'I prefer Option {option}'**
+  String agentABComparisonPrefer(String option);
+
   /// No description provided for @agentBinaryChoiceNo.
   ///
   /// In en, this message translates to:

@@ -91,6 +91,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentActivityLogHeading => 'Journal d\'activité';
 
   @override
+  String agentABComparisonChoose(String option) {
+    return 'Choisir $option';
+  }
+
+  @override
+  String agentABComparisonOption(String option) {
+    return 'Option $option';
+  }
+
+  @override
+  String agentABComparisonPrefer(String option) {
+    return 'Je préfère l\'Option $option';
+  }
+
+  @override
   String get agentBinaryChoiceNo => 'Non';
 
   @override

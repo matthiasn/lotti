@@ -512,7 +512,9 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
     final changed =
         oldWidget.optionA != widget.optionA ||
         oldWidget.optionB != widget.optionB ||
-        oldWidget.question != widget.question;
+        oldWidget.question != widget.question ||
+        oldWidget.labelA != widget.labelA ||
+        oldWidget.labelB != widget.labelB;
     if (changed) {
       _submitted = false;
       _selectedOption = null;
@@ -590,7 +592,8 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final isSelected = _selectedOption == option;
-    final buttonLabel = option == 'a' ? 'Choose A' : 'Choose B';
+    final optionUpper = option.toUpperCase();
+    final buttonLabel = context.messages.agentABComparisonChoose(optionUpper);
 
     return Container(
       width: double.infinity,
@@ -613,7 +616,7 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
           Row(
             children: [
               Text(
-                'Option ${option.toUpperCase()}',
+                context.messages.agentABComparisonOption(optionUpper),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: isSelected
                       ? colorScheme.primary
@@ -655,10 +658,13 @@ class _ABComparisonCardState extends State<ABComparisonCard> {
             child: DesignSystemButton(
               onPressed: _submitted
                   ? null
-                  : () => _handleSelect(
-                      option,
-                      'I prefer Option ${option.toUpperCase()} — $label',
-                    ),
+                  : () {
+                      final base = context.messages.agentABComparisonPrefer(
+                        optionUpper,
+                      );
+                      final value = label.isNotEmpty ? '$base — $label' : base;
+                      _handleSelect(option, value);
+                    },
               label: isSelected
                   ? context.messages.agentBinaryChoiceYes
                   : buttonLabel,
