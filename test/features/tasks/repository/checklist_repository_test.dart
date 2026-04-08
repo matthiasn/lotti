@@ -162,7 +162,7 @@ void main() {
       expect(result.checklist, isNotNull);
       expect(result.checklist!.meta.id, equals(metadata.id));
       final checklist = result.checklist! as Checklist;
-      expect(checklist.data.title, equals('TODOs'));
+      expect(checklist.data.title, equals('Todos'));
       expect(checklist.data.linkedTasks, contains(taskId));
       expect(result.createdItems, isEmpty);
 

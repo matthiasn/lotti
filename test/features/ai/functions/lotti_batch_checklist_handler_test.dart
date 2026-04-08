@@ -335,7 +335,7 @@ void main() {
               categoryId: 'test-category',
             ),
             data: ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               linkedChecklistItems: ['id1', 'id2', 'id3'],
               linkedTasks: [testTask.meta.id],
             ),
@@ -353,7 +353,7 @@ void main() {
               categoryId: 'test-category',
             ),
             data: ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               linkedChecklistItems: ['id1', 'id2', 'id3'],
               linkedTasks: [testTask.meta.id],
             ),
@@ -363,7 +363,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -489,7 +489,7 @@ void main() {
                   () => mockAutoChecklistService.autoCreateChecklist(
                     taskId: testTask.meta.id,
                     suggestions: captureAny(named: 'suggestions'),
-                    title: 'TODOs',
+                    title: 'Todos',
                   ),
                 ).captured.single
                 as List<ChecklistItemData>;
@@ -692,7 +692,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -754,7 +754,7 @@ void main() {
                   () => mockAutoChecklistService.autoCreateChecklist(
                     taskId: testTask.meta.id,
                     suggestions: captureAny(named: 'suggestions'),
-                    title: 'TODOs',
+                    title: 'Todos',
                   ),
                 ).captured.single
                 as List<ChecklistItemData>;
@@ -791,7 +791,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -825,7 +825,7 @@ void main() {
                   () => mockAutoChecklistService.autoCreateChecklist(
                     taskId: testTask.meta.id,
                     suggestions: captureAny(named: 'suggestions'),
-                    title: 'TODOs',
+                    title: 'Todos',
                   ),
                 ).captured.single
                 as List<ChecklistItemData>;
@@ -864,7 +864,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -955,7 +955,7 @@ void main() {
               categoryId: 'test-category',
             ),
             data: ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               linkedChecklistItems: const [],
               linkedTasks: [testTask.meta.id],
             ),
@@ -969,7 +969,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -1126,7 +1126,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer((invocation) async {
           final suggestions =
@@ -1264,7 +1264,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.meta.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer(
           (_) async => (
@@ -1375,7 +1375,7 @@ void main() {
             () => mockAutoChecklistService.autoCreateChecklist(
               taskId: testTask.meta.id,
               suggestions: any(named: 'suggestions'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenAnswer(
             (_) async => (

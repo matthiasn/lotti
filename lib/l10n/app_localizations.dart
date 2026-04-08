@@ -257,12 +257,6 @@ abstract class AppLocalizations {
   /// **'Term too long (max 50 characters)'**
   String get addToDictionaryTooLong;
 
-  /// No description provided for @agentActivityLogHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Activity Log'**
-  String get agentActivityLogHeading;
-
   /// No description provided for @agentABComparisonChoose.
   ///
   /// In en, this message translates to:
@@ -280,6 +274,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I prefer Option {option}'**
   String agentABComparisonPrefer(String option);
+
+  /// No description provided for @agentActivityLogHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Log'**
+  String get agentActivityLogHeading;
 
   /// No description provided for @agentBinaryChoiceNo.
   ///
@@ -1500,6 +1500,126 @@ abstract class AppLocalizations {
   /// **'Wake count'**
   String get agentStateWakeCount;
 
+  /// No description provided for @agentStatsAllDayLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'All Day'**
+  String get agentStatsAllDayLegend;
+
+  /// No description provided for @agentStatsAverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get agentStatsAverageLabel;
+
+  /// No description provided for @agentStatsByTimeLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily by {time}'**
+  String agentStatsByTimeLegend(String time);
+
+  /// No description provided for @agentStatsCacheRateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache Rate'**
+  String get agentStatsCacheRateLabel;
+
+  /// No description provided for @agentStatsDailyUsageHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Usage'**
+  String get agentStatsDailyUsageHeading;
+
+  /// No description provided for @agentStatsInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get agentStatsInputLabel;
+
+  /// No description provided for @agentStatsNoUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'No token usage recorded in the past 7 days.'**
+  String get agentStatsNoUsage;
+
+  /// No description provided for @agentStatsOutputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Output'**
+  String get agentStatsOutputLabel;
+
+  /// No description provided for @agentStatsSourceActiveFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Active for {duration}'**
+  String agentStatsSourceActiveFor(String duration);
+
+  /// No description provided for @agentStatsSourceActivityHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Activity'**
+  String get agentStatsSourceActivityHeading;
+
+  /// No description provided for @agentStatsSourceWakes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 wake} other{{count} wakes}}'**
+  String agentStatsSourceWakes(int count);
+
+  /// No description provided for @agentStatsTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats'**
+  String get agentStatsTabTitle;
+
+  /// No description provided for @agentStatsThoughtsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thoughts'**
+  String get agentStatsThoughtsLabel;
+
+  /// No description provided for @agentStatsTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get agentStatsTodayLabel;
+
+  /// No description provided for @agentStatsTokensPerWakeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens / Wake'**
+  String get agentStatsTokensPerWakeLabel;
+
+  /// No description provided for @agentStatsTokensUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens'**
+  String get agentStatsTokensUnit;
+
+  /// No description provided for @agentStatsUsageAboveAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using more tokens today than you usually do by {time}.'**
+  String agentStatsUsageAboveAverage(String time);
+
+  /// No description provided for @agentStatsUsageBelowAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re using fewer tokens today than you usually do by {time}.'**
+  String agentStatsUsageBelowAverage(String time);
+
+  /// No description provided for @agentStatsWakesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get agentStatsWakesLabel;
+
+  /// No description provided for @agentStatsWeekTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'7-Day Total'**
+  String get agentStatsWeekTotalLabel;
+
   /// No description provided for @agentTabActivity.
   ///
   /// In en, this message translates to:
@@ -1901,126 +2021,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wakes'**
   String get agentTokenUsageWakeCount;
-
-  /// No description provided for @agentStatsTabTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stats'**
-  String get agentStatsTabTitle;
-
-  /// No description provided for @agentStatsDailyUsageHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily Usage'**
-  String get agentStatsDailyUsageHeading;
-
-  /// No description provided for @agentStatsUsageAboveAverage.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re using more tokens today than you usually do by {time}.'**
-  String agentStatsUsageAboveAverage(String time);
-
-  /// No description provided for @agentStatsUsageBelowAverage.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re using fewer tokens today than you usually do by {time}.'**
-  String agentStatsUsageBelowAverage(String time);
-
-  /// No description provided for @agentStatsAverageLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Average'**
-  String get agentStatsAverageLabel;
-
-  /// No description provided for @agentStatsTodayLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get agentStatsTodayLabel;
-
-  /// No description provided for @agentStatsAllDayLegend.
-  ///
-  /// In en, this message translates to:
-  /// **'All Day'**
-  String get agentStatsAllDayLegend;
-
-  /// No description provided for @agentStatsByTimeLegend.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily by {time}'**
-  String agentStatsByTimeLegend(String time);
-
-  /// No description provided for @agentStatsSourceActivityHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Activity'**
-  String get agentStatsSourceActivityHeading;
-
-  /// No description provided for @agentStatsSourceActiveFor.
-  ///
-  /// In en, this message translates to:
-  /// **'Active for {duration}'**
-  String agentStatsSourceActiveFor(String duration);
-
-  /// No description provided for @agentStatsSourceWakes.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 wake} other{{count} wakes}}'**
-  String agentStatsSourceWakes(int count);
-
-  /// No description provided for @agentStatsNoUsage.
-  ///
-  /// In en, this message translates to:
-  /// **'No token usage recorded in the past 7 days.'**
-  String get agentStatsNoUsage;
-
-  /// No description provided for @agentStatsTokensUnit.
-  ///
-  /// In en, this message translates to:
-  /// **'tokens'**
-  String get agentStatsTokensUnit;
-
-  /// No description provided for @agentStatsWeekTotalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'7-Day Total'**
-  String get agentStatsWeekTotalLabel;
-
-  /// No description provided for @agentStatsInputLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Input'**
-  String get agentStatsInputLabel;
-
-  /// No description provided for @agentStatsOutputLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Output'**
-  String get agentStatsOutputLabel;
-
-  /// No description provided for @agentStatsThoughtsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Thoughts'**
-  String get agentStatsThoughtsLabel;
-
-  /// No description provided for @agentStatsCacheRateLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache Rate'**
-  String get agentStatsCacheRateLabel;
-
-  /// No description provided for @agentStatsTokensPerWakeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tokens / Wake'**
-  String get agentStatsTokensPerWakeLabel;
-
-  /// No description provided for @agentStatsWakesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Wakes'**
-  String get agentStatsWakesLabel;
 
   /// No description provided for @aiAssistantActionItemSuggestions.
   ///
@@ -3564,11 +3564,41 @@ abstract class AppLocalizations {
   /// **'Add a new item'**
   String get checklistAddItem;
 
+  /// Confidence level label in the AI suggestion dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confidence: {level}'**
+  String checklistAiConfidenceLabel(String level);
+
+  /// No description provided for @checklistAiMarkComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Complete'**
+  String get checklistAiMarkComplete;
+
+  /// No description provided for @checklistAiSuggestionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This item appears to be completed:'**
+  String get checklistAiSuggestionBody;
+
+  /// No description provided for @checklistAiSuggestionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Suggestion'**
+  String get checklistAiSuggestionTitle;
+
   /// No description provided for @checklistAllDone.
   ///
   /// In en, this message translates to:
   /// **'All items completed!'**
   String get checklistAllDone;
+
+  /// No description provided for @checklistProgressSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist progress'**
+  String get checklistProgressSemantics;
 
   /// No description provided for @checklistCompletedShort.
   ///
@@ -3695,6 +3725,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No items to export'**
   String get checklistNothingToExport;
+
+  /// No description provided for @checklistMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get checklistMoreTooltip;
+
+  /// No description provided for @checklistShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get checklistShare;
 
   /// No description provided for @checklistShareHint.
   ///

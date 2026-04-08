@@ -4,7 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklists_sorting_controller.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
@@ -127,7 +127,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
 
                   // ModernBaseCard is now inside ChecklistWrapper to ensure
                   // DropRegion covers the entire visual card area
-                  return ChecklistWrapper(
+                  return ChecklistCardWrapper(
                     entryId: checklistId,
                     categoryId: item.categoryId,
                     taskId: widget.task.id,
@@ -206,6 +206,7 @@ class _ChecklistsSectionHeader extends StatelessWidget {
               ),
             ),
             child: PopupMenuButton<String>(
+              key: const Key('checklists-menu'),
               tooltip: 'More',
               icon: Icon(Icons.more_vert, color: color, size: 20),
               position: PopupMenuPosition.under,

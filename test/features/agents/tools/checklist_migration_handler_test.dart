@@ -410,7 +410,7 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
           ),
           data: const ChecklistData(
-            title: 'TODOs',
+            title: 'Todos',
             linkedChecklistItems: [],
             linkedTasks: [],
           ),

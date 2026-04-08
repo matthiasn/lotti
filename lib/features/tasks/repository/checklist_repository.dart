@@ -33,7 +33,7 @@ class ChecklistRepository {
   /// Parameters:
   /// - [taskId]: The task to attach this checklist to
   /// - [items]: Optional items to create with the checklist
-  /// - [title]: Optional title for the checklist (defaults to 'TODOs')
+  /// - [title]: Optional title for the checklist (defaults to 'Todos')
   ///
   /// Returns a record containing:
   /// - [checklist]: The created Checklist entity or null if creation failed
@@ -72,7 +72,7 @@ class ChecklistRepository {
       final newChecklist = Checklist(
         meta: meta.copyWith(categoryId: categoryId),
         data: ChecklistData(
-          title: title ?? 'TODOs',
+          title: title ?? 'Todos',
           linkedChecklistItems: [],
           linkedTasks: [task.id],
         ),

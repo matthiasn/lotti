@@ -148,7 +148,7 @@ void main() {
               flag: EntryFlag.none,
             ),
             data: const ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               linkedChecklistItems: ['item-1', 'item-2'],
               linkedTasks: [taskId],
             ),
@@ -161,7 +161,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: any(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenAnswer(
             (_) async => (
@@ -190,7 +190,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: suggestions,
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).called(1);
           verify(
@@ -267,7 +267,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: any(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenAnswer(
             (_) async => (
@@ -291,7 +291,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: suggestions,
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).called(1);
         },
@@ -321,7 +321,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: any(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenThrow(exception);
 
@@ -339,7 +339,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: suggestions,
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).called(1);
           verify(
@@ -516,7 +516,7 @@ void main() {
               flag: EntryFlag.none,
             ),
             data: const ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               linkedChecklistItems: ['item-1'],
               linkedTasks: [taskId],
             ),
@@ -526,7 +526,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: any(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenAnswer((invocation) async {
             final items = (invocation.namedArguments[#items] as List)
@@ -562,7 +562,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: suggestions,
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).called(1);
         },
@@ -657,7 +657,7 @@ void main() {
               flag: EntryFlag.none,
             ),
             data: const ChecklistData(
-              title: 'TODOs',
+              title: 'Todos',
               // Critical: These IDs must be in the exact order of creation
               linkedChecklistItems: ['item-0', 'item-1', 'item-2', 'item-3'],
               linkedTasks: [taskId],
@@ -671,7 +671,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: any(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).thenAnswer((invocation) async {
             final items = (invocation.namedArguments[#items] as List)
@@ -726,7 +726,7 @@ void main() {
             () => mockChecklistRepository.createChecklist(
               taskId: taskId,
               items: captureAny(named: 'items'),
-              title: 'TODOs',
+              title: 'Todos',
             ),
           ).captured;
 

@@ -599,7 +599,7 @@ final class SoulEvolutionSessionsProvider
 }
 
 String _$soulEvolutionSessionsHash() =>
-    r'fd6dded2f6d0b4d86e12f8841481f26b72854e4b';
+    r'16611f08fdccf48161a94b96904b0d8e2ef2c487';
 
 /// All evolution sessions for a soul (newest first).
 

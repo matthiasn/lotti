@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.946] - 2026-04-08
+### Changed
+- Checklist widget redesigned to match Widgetbook reference: progress ring now
+  always visible in the header (collapsed and expanded), filter strip (Open/All)
+  uses a highlighted background for the selected tab, and the add-item field is a
+  plain text field without suffix icons.
+- Checklist item rows no longer enter edit mode on title tap; only the pencil icon
+  opens the inline editor.
+- AI suggestion dialog strings in the checklist item row are now fully localized.
+- "Share" label in the checklist card menu is now localized.
+- Fixed `ChecklistItem` rendering in the entry details view.
+
+## [0.9.945] - 2026-04-08
 ### Added
 - Standalone soul evolution: dedicated 1-on-1 sessions focused on personality
   refinement, aggregating feedback from all templates sharing a soul. Accessible
