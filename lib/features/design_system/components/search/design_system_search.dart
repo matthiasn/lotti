@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -86,6 +88,7 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _SearchSpec.fromTokens(tokens, widget.size);
+    final textScaler = MediaQuery.textScalerOf(context);
     final hasText = _controller.text.isNotEmpty;
     final textStyle = spec.textStyle.copyWith(
       height: 1,
@@ -97,6 +100,13 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
       height: 1,
       color: tokens.colors.text.lowEmphasis,
     );
+    final scaledTextHeight = textScaler.scale(
+      (spec.textStyle.fontSize ?? 0) * ((textStyle.height ?? 1)),
+    );
+    final minHeight = math.max(
+      spec.minHeight,
+      math.max(spec.iconSize, scaledTextHeight) + (spec.verticalPadding * 2),
+    );
 
     return DecoratedBox(
       key: const Key('design-system-search-shell'),
@@ -105,8 +115,8 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
         borderRadius: BorderRadius.circular(spec.borderRadius),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: SizedBox(
-        height: spec.height,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: minHeight),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: spec.horizontalPadding,
@@ -122,35 +132,28 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
               ),
               SizedBox(width: spec.gap),
               Expanded(
-                child: SizedBox(
-                  height: spec.contentHeight,
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: widget.focusNode,
-                    enabled: widget.enabled,
-                    onChanged: widget.onChanged,
-                    onSubmitted: widget.onSubmitted,
-                    textInputAction: TextInputAction.search,
-                    strutStyle: StrutStyle.fromTextStyle(
-                      textStyle,
-                      forceStrutHeight: true,
-                    ),
-                    style: textStyle,
-                    textAlignVertical: TextAlignVertical.center,
-                    cursorHeight: spec.contentHeight,
-                    decoration: InputDecoration(
-                      hintText: widget.hintText,
-                      hintStyle: hintStyle,
-                      border: _noBorder,
-                      enabledBorder: _noBorder,
-                      disabledBorder: _noBorder,
-                      focusedBorder: _noBorder,
-                      errorBorder: _noBorder,
-                      focusedErrorBorder: _noBorder,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      isCollapsed: true,
-                    ),
+                child: TextField(
+                  controller: _controller,
+                  focusNode: widget.focusNode,
+                  enabled: widget.enabled,
+                  onChanged: widget.onChanged,
+                  onSubmitted: widget.onSubmitted,
+                  textInputAction: TextInputAction.search,
+                  strutStyle: StrutStyle.fromTextStyle(textStyle),
+                  style: textStyle,
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    hintText: widget.hintText,
+                    hintStyle: hintStyle,
+                    border: _noBorder,
+                    enabledBorder: _noBorder,
+                    disabledBorder: _noBorder,
+                    focusedBorder: _noBorder,
+                    errorBorder: _noBorder,
+                    focusedErrorBorder: _noBorder,
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
+                    isCollapsed: true,
                   ),
                 ),
               ),
@@ -291,11 +294,10 @@ class _SearchClearButton extends StatelessWidget {
 
 class _SearchSpec {
   const _SearchSpec({
-    required this.height,
+    required this.minHeight,
     required this.horizontalPadding,
     required this.verticalPadding,
     required this.gap,
-    required this.contentHeight,
     required this.borderRadius,
     required this.iconSize,
     required this.iconTapRadius,
@@ -311,11 +313,10 @@ class _SearchSpec {
   ) {
     return switch (size) {
       DesignSystemSearchSize.small => _SearchSpec(
-        height: 48,
+        minHeight: 48,
         horizontalPadding: 12,
         verticalPadding: 4,
         gap: tokens.spacing.step3,
-        contentHeight: 20,
         borderRadius: tokens.radii.m,
         iconSize: 20,
         iconTapRadius: 18,
@@ -325,11 +326,10 @@ class _SearchSpec {
         textStyle: tokens.typography.styles.body.bodySmall,
       ),
       DesignSystemSearchSize.medium => _SearchSpec(
-        height: 56,
+        minHeight: 56,
         horizontalPadding: 12,
         verticalPadding: 8,
         gap: tokens.spacing.step3,
-        contentHeight: 24,
         borderRadius: tokens.radii.m,
         iconSize: 24,
         iconTapRadius: 20,
@@ -341,11 +341,10 @@ class _SearchSpec {
     };
   }
 
-  final double height;
+  final double minHeight;
   final double horizontalPadding;
   final double verticalPadding;
   final double gap;
-  final double contentHeight;
   final double borderRadius;
   final double iconSize;
   final double iconTapRadius;

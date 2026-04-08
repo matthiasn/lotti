@@ -158,15 +158,12 @@ class _TaskMobileListScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: DesignSystemSearch(
-                          hintText: context.messages.searchTasksHint,
-                          initialText: state.searchQuery,
-                          onChanged: onSearchChanged,
-                          onClear: onSearchCleared,
-                          onSearchPressed: onSearchChanged,
-                        ),
+                      child: DesignSystemSearch(
+                        hintText: context.messages.searchTasksHint,
+                        initialText: state.searchQuery,
+                        onChanged: onSearchChanged,
+                        onClear: onSearchCleared,
+                        onSearchPressed: onSearchChanged,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -191,6 +188,9 @@ class _TaskMobileListScreen extends StatelessWidget {
                         )
                       : TaskListSectionsList(
                           sections: state.visibleSections,
+                          sortOption: taskSortOptionFromSelectedSortId(
+                            state.filterState.selectedSortId,
+                          ),
                           selectedTaskId: state.selectedTask?.task.meta.id,
                           onTaskSelected: onTaskOpened,
                           bottomPadding: 184,

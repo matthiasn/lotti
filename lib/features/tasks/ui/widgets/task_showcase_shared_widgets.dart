@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
@@ -27,33 +28,11 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final bg = colorFromCssHex(colorHex);
-    final foreground = contrastingTextColor(bg);
-    return Container(
-      height: 20,
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: foreground),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+    return CategoryTag(
+      label: label,
+      icon: icon,
+      color: bg,
     );
   }
 }
@@ -152,19 +131,17 @@ class TaskShowcasePriorityGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = priority.colorForBrightness(Theme.of(context).brightness);
     final asset = switch (priority) {
-      TaskPriority.p0Urgent ||
-      TaskPriority.p1High => 'assets/design_system/task_priority_p1.svg',
-      TaskPriority.p2Medium => 'assets/design_system/task_priority_p2.svg',
-      TaskPriority.p3Low => 'assets/design_system/task_priority_p3.svg',
+      TaskPriority.p0Urgent => 'assets/design_system/task_priority_p0.svg',
+      TaskPriority.p1High => 'assets/design_system/task_priority_high.svg',
+      TaskPriority.p2Medium => 'assets/design_system/task_priority_medium.svg',
+      TaskPriority.p3Low => 'assets/design_system/task_priority_low.svg',
     };
 
     return SvgPicture.asset(
       asset,
       width: size,
       height: size,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
 }
@@ -183,19 +160,26 @@ class TaskShowcaseStatusGlyph extends StatelessWidget {
   Widget build(BuildContext context) {
     final asset = switch (status) {
       TaskOpen() => 'assets/design_system/task_status_open.svg',
+      TaskGroomed() => 'assets/design_system/task_status_groomed.svg',
+      TaskInProgress() => 'assets/design_system/task_status_in_progress.svg',
       TaskBlocked() => 'assets/design_system/task_status_blocked.svg',
       TaskOnHold() => 'assets/design_system/task_status_on_hold.svg',
-      TaskGroomed() => 'assets/design_system/task_status_groomed.svg',
-      TaskInProgress() => 'assets/design_system/task_priority_p2.svg',
-      TaskDone() => 'assets/design_system/task_status_groomed.svg',
-      TaskRejected() => 'assets/design_system/task_status_blocked.svg',
+      TaskDone() => 'assets/design_system/task_status_done.svg',
+      TaskRejected() => 'assets/design_system/task_status_rejected.svg',
+    };
+    final color = switch (status) {
+      TaskOpen() => TaskShowcasePalette.mediumText(context),
+      TaskGroomed() || TaskInProgress() => TaskShowcasePalette.info(context),
+      TaskBlocked() || TaskRejected() => TaskShowcasePalette.error(context),
+      TaskOnHold() => TaskShowcasePalette.warning(context),
+      TaskDone() => TaskShowcasePalette.success(context),
     };
 
     return SvgPicture.asset(
       asset,
       width: size,
       height: size,
-      colorFilter: ColorFilter.mode(status.color, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
 }
@@ -214,9 +198,7 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final label = status.localizedLabel(context);
-    final textColor = expanded
-        ? TaskShowcasePalette.highText(context)
-        : TaskShowcasePalette.mediumText(context);
+    final textColor = TaskShowcasePalette.highText(context);
 
     return Container(
       height: expanded ? 28 : null,

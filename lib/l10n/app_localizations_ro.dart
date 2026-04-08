@@ -2249,6 +2249,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează funcțiile de gestionare a proiectelor pentru organizarea sarcinilor în proiecte.';
 
   @override
+  String get configFlagEnableTasksRedesign => 'Activează redesignul sarcinilor';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Comută fila de sarcini la noua pagină de listă din sistemul de design.';
+
+  @override
   String get configFlagEnableSessionRatings =>
       'Activează evaluările de sesiune';
 
@@ -2268,7 +2275,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Afișează un comutator de căutare vectorială pe pagina de sarcini. Necesită încorporări activate și Ollama în execuție.';
+      'Activează căutarea vectorială în filtrele de sarcini. Necesită embedding-uri activate și Ollama în execuție.';
 
   @override
   String get configFlagPrivate => 'Arată articolele private?';
@@ -4828,6 +4835,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vector';
+
+  @override
+  String get tasksSearchModeLabel => 'Mod de căutare';
 
   @override
   String get searchTasksHint => 'Caută sarcini...';

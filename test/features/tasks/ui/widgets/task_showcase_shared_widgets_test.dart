@@ -78,7 +78,7 @@ void main() {
               ),
             )
             .height,
-        20,
+        18,
       );
       expect(
         tester

@@ -31,9 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.945" date="2026-04-08">
+    <release version="0.9.946" date="2026-04-08">
       <description>
           <p>Standalone soul evolution: dedicated 1-on-1 sessions focused on personality refinement, aggregating feedback from all templates sharing a soul. Accessible via the soul detail page with its own review page and session history.</p>
+          <p>Tasks tab migration: added a new design-system browse page behind the <code>enable_tasks_redesign</code> runtime flag. The new route keeps the existing infinite-scroll paging, current filter modal/model, create-task flow, and task-detail navigation while rendering sort-aware grouped sections.</p>
+          <p>Tasks tab redesign: aligned grouped cards more closely with Figma by switching to the actual task-status glyphs, inset dividers, priority-section header treatment, tracked-time metadata, and a filter-modal search-mode control in place of the inline full-text/vector toggle.</p>
+          <p>Tasks tab polish: replaced the provisional priority glyphs with the actual Figma P0 to P3 icons and restored the intended breathing room below the search row.</p>
+          <p>Tasks and projects grouped cards: both tabs now share the same hover and selection row-surface behavior so active rows blend over adjacent dividers consistently, while task category chips now use the same category tag component as projects and the task rows have slightly looser spacing.</p>
       </description>
     </release>
     <release version="0.9.944" date="2026-04-08">

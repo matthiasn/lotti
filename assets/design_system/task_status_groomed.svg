@@ -1,8 +1,6 @@
 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M5.3 10.8L10.45 5.65" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-  <path d="M10.9 3.1V5.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M9.9 4.1H11.9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M4.5 9.6V11.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M3.65 10.45H5.35" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-  <circle cx="11.6" cy="11.6" r="1.15" fill="currentColor"/>
+<path d="M13.0007 5L13.6274 3.62667L15.0007 3L13.6274 2.37333L13.0007 1L12.374 2.37333L11.0007 3L12.374 3.62667L13.0007 5Z" fill="#4AB6E8"/>
+<path d="M5.33402 5L5.96069 3.62667L7.33402 3L5.96069 2.37333L5.33402 1L4.70736 2.37333L3.33402 3L4.70736 3.62667L5.33402 5Z" fill="#4AB6E8"/>
+<path d="M13.0007 8.66667L12.374 10.04L11.0007 10.6667L12.374 11.2933L13.0007 12.6667L13.6274 11.2933L15.0007 10.6667L13.6274 10.04L13.0007 8.66667Z" fill="#4AB6E8"/>
+<path d="M11.474 6.41333L9.58736 4.52667C9.45402 4.4 9.28736 4.33333 9.11402 4.33333C8.94069 4.33333 8.77402 4.4 8.64069 4.52667L1.19402 11.9733C0.934023 12.2333 0.934023 12.6533 1.19402 12.9133L3.08069 14.8C3.21402 14.9333 3.38069 15 3.55402 15C3.72736 15 3.89402 14.9333 4.02736 14.8067L11.474 7.36C11.734 7.1 11.734 6.67333 11.474 6.41333ZM9.11402 5.94667L10.054 6.88667L9.27402 7.66667L8.33402 6.72667L9.11402 5.94667ZM3.55402 13.3933L2.61402 12.4533L7.39402 7.66667L8.33402 8.60667L3.55402 13.3933Z" fill="#4AB6E8"/>
 </svg>

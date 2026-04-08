@@ -77,17 +77,14 @@ class ProjectsHeader extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: SizedBox(
-                  height: 48,
-                  child: DesignSystemSearch(
-                    hintText: context.messages.projectShowcaseSearchHint,
-                    size: DesignSystemSearchSize.small,
-                    initialText: query,
-                    enabled: searchEnabled,
-                    onChanged: onSearchChanged,
-                    onClear: onSearchCleared,
-                    onSearchPressed: onSearchPressed,
-                  ),
+                child: DesignSystemSearch(
+                  hintText: context.messages.projectShowcaseSearchHint,
+                  size: DesignSystemSearchSize.small,
+                  initialText: query,
+                  enabled: searchEnabled,
+                  onChanged: onSearchChanged,
+                  onClear: onSearchCleared,
+                  onSearchPressed: onSearchPressed,
                 ),
               ),
               if (searchTrailing != null) ...[

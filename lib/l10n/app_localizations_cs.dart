@@ -2230,6 +2230,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
 
   @override
+  String get configFlagEnableTasksRedesign => 'Povolit redesign úkolů';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Přepne kartu Úkoly na novou stránku seznamu v design systému.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
 
   @override
@@ -2248,7 +2255,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Zobrazí přepínač vektorového vyhledávání na stránce úkolů. Vyžaduje povolené vektory a běžící Ollama.';
+      'Zapne vektorové vyhledávání ve filtrech úkolů. Vyžaduje povolené embeddingy a spuštěnou Ollamu.';
 
   @override
   String get configFlagPrivate => 'Zobrazit soukromé záznamy?';
@@ -4802,6 +4809,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vektor';
+
+  @override
+  String get tasksSearchModeLabel => 'Režim hledání';
 
   @override
   String get searchTasksHint => 'Hledat úkoly...';

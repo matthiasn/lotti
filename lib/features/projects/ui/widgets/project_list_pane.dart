@@ -102,23 +102,20 @@ class _SearchHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      constraints: const BoxConstraints(minHeight: 68),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       color: ShowcasePalette.page(context),
       child: Center(
         child: Row(
           children: [
             Expanded(
-              child: SizedBox(
-                height: 48,
-                child: DesignSystemSearch(
-                  hintText: context.messages.projectShowcaseSearchHint,
-                  size: DesignSystemSearchSize.small,
-                  initialText: query,
-                  onChanged: onSearchChanged,
-                  onClear: onSearchCleared,
-                  onSearchPressed: onSearchChanged,
-                ),
+              child: DesignSystemSearch(
+                hintText: context.messages.projectShowcaseSearchHint,
+                size: DesignSystemSearchSize.small,
+                initialText: query,
+                onChanged: onSearchChanged,
+                onClear: onSearchCleared,
+                onSearchPressed: onSearchChanged,
               ),
             ),
             const SizedBox(width: 4),

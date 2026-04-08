@@ -2282,6 +2282,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar funciones de gestión de proyectos para organizar tareas en proyectos.';
 
   @override
+  String get configFlagEnableTasksRedesign => 'Activar rediseño de tareas';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Cambia la pestaña de tareas a la nueva página de lista del sistema de diseño.';
+
+  @override
   String get configFlagEnableSessionRatings =>
       'Habilitar calificaciones de sesión';
 
@@ -2302,7 +2309,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Muestra un botón de búsqueda vectorial en la página de tareas. Requiere incrustaciones activadas y Ollama en ejecución.';
+      'Activa la búsqueda vectorial en los filtros de tareas. Requiere incrustaciones activadas y Ollama en ejecución.';
 
   @override
   String get configFlagPrivate => '¿Mostrar entradas privadas?';
@@ -4893,6 +4900,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vector';
+
+  @override
+  String get tasksSearchModeLabel => 'Modo de búsqueda';
 
   @override
   String get searchTasksHint => 'Buscar tareas...';

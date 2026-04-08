@@ -2278,6 +2278,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher les fonctions de gestion de projets pour organiser les tâches en projets.';
 
   @override
+  String get configFlagEnableTasksRedesign => 'Activer la refonte des tâches';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Bascule l’onglet des tâches vers la nouvelle page de liste du design system.';
+
+  @override
   String get configFlagEnableSessionRatings =>
       'Activer les évaluations de session';
 
@@ -2297,7 +2304,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Affiche un bouton de recherche vectorielle sur la page des tâches. Nécessite les embeddings activés et Ollama en cours d\'exécution.';
+      'Active la recherche vectorielle dans les filtres des tâches. Nécessite les embeddings activés et Ollama en cours d\'exécution.';
 
   @override
   String get configFlagPrivate => 'Afficher les entrées privées ?';
@@ -4901,6 +4908,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vecteur';
+
+  @override
+  String get tasksSearchModeLabel => 'Mode de recherche';
 
   @override
   String get searchTasksHint => 'Rechercher des tâches...';

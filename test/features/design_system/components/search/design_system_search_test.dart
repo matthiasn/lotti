@@ -187,6 +187,36 @@ void main() {
       expect(editableText.controller.text, 'ab');
       expect(find.text('ab'), findsOneWidget);
     });
+
+    testWidgets('grows beyond its minimum height at very large text scales', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 244,
+            child: DesignSystemSearch(
+              hintText: 'Type user',
+              size: DesignSystemSearchSize.small,
+              initialText: 'Scaled search',
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 600),
+            textScaler: TextScaler.linear(4),
+          ),
+        ),
+      );
+
+      expect(
+        tester
+            .getSize(find.byKey(const Key('design-system-search-shell')))
+            .height,
+        greaterThan(48),
+      );
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

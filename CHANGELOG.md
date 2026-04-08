@@ -4,12 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.945] - 2026-04-08
+## [0.9.946] - 2026-04-08
 ### Added
 - Standalone soul evolution: dedicated 1-on-1 sessions focused on personality
   refinement, aggregating feedback from all templates sharing a soul. Accessible
   via "Soul 1-on-1" on the soul detail page, with its own review page and
   session history.
+
+### Changed
+- Tasks tab migration: added a new design-system tasks browse page behind the
+  `enable_tasks_redesign` runtime flag, wired through a `/tasks` root switch so
+  the legacy page stays available during rollout. The new page keeps the
+  existing infinite-scroll paging controller, current filter model and modal,
+  create-task flow, and task-detail navigation while rendering sort-aware
+  section groupings for due-date, priority, and creation-date presentations.
+- Tasks tab redesign: aligned the grouped-task card presentation more closely
+  with Figma by switching to the actual status glyphs, inset dividers, grouped
+  header treatment for priority sections, tracked-time metadata, and a filter
+  modal search-mode control instead of an inline full-text/vector toggle.
+- Tasks tab polish: replaced the provisional priority glyphs with the actual
+  Figma P0-P3 icons and restored the intended breathing room below the search
+  row.
+- Tasks and projects grouped cards: both tabs now share the same hover and
+  selection row-surface behavior so active rows blend over adjacent dividers
+  consistently, while task category chips now use the same category tag
+  component as projects and the task rows have slightly looser spacing.
 
 ## [0.9.944] - 2026-04-08
 ### Added

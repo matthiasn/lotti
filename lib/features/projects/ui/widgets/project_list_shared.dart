@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -82,27 +84,13 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
           ),
         )
         .toList(growable: false);
-    final topOverlaps = List<double>.filled(widget.group.projects.length, 0);
-    final bottomOverlaps = List<double>.filled(widget.group.projects.length, 0);
-    final visibleDividers = List<bool>.filled(
-      math.max(widget.group.projects.length - 1, 0),
-      true,
+    final interactions = buildGroupedCardRowInteractions(
+      priorities: priorities,
+      connectedBelow: List<bool>.filled(
+        math.max(widget.group.projects.length - 1, 0),
+        true,
+      ),
     );
-
-    for (var index = 0; index < widget.group.projects.length - 1; index++) {
-      final upperPriority = priorities[index];
-      final lowerPriority = priorities[index + 1];
-      if (upperPriority == 0 && lowerPriority == 0) {
-        continue;
-      }
-
-      visibleDividers[index] = false;
-      if (lowerPriority > upperPriority) {
-        topOverlaps[index + 1] = _kProjectRowOverlap;
-      } else {
-        bottomOverlaps[index] = _kProjectRowOverlap;
-      }
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,8 +125,8 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                     selected:
                         widget.group.projects[index].project.meta.id ==
                         widget.selectedProjectId,
-                    topOverlap: topOverlaps[index],
-                    bottomOverlap: bottomOverlaps[index],
+                    topOverlap: interactions[index].topOverlap,
+                    bottomOverlap: interactions[index].bottomOverlap,
                     backgroundTopInset: _kProjectGroupCardPadding,
                     backgroundBottomInset: _kProjectGroupCardPadding,
                     onHoverChanged: (hovered) {
@@ -158,7 +146,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                   ),
                   if (index < widget.group.projects.length - 1) ...[
                     const SizedBox(height: _kProjectGroupCardPadding),
-                    if (visibleDividers[index])
+                    if (interactions[index].showDividerBelow)
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: _kProjectRowHorizontalPadding,
@@ -229,147 +217,65 @@ class ProjectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ProjectRowSurface(
-      key: key ?? ValueKey('project-row-surface-${item.project.meta.id}'),
-      item: item,
-      selected: selected,
-      topOverlap: topOverlap,
-      bottomOverlap: bottomOverlap,
-      backgroundTopInset: backgroundTopInset,
-      backgroundBottomInset: backgroundBottomInset,
-      contentHorizontalPadding: contentHorizontalPadding,
-      onHoverChanged: onHoverChanged,
-      onTap: onTap,
-    );
-  }
-}
-
-class _ProjectRowSurface extends StatefulWidget {
-  const _ProjectRowSurface({
-    required this.item,
-    required this.selected,
-    required this.topOverlap,
-    required this.bottomOverlap,
-    required this.onHoverChanged,
-    required this.onTap,
-    this.backgroundTopInset = 0,
-    this.backgroundBottomInset = 0,
-    this.contentHorizontalPadding = _kProjectRowHorizontalPadding,
-    super.key,
-  });
-
-  final ProjectListItemData item;
-  final bool selected;
-  final double topOverlap;
-  final double bottomOverlap;
-  final double backgroundTopInset;
-  final double backgroundBottomInset;
-  final double contentHorizontalPadding;
-  final ValueChanged<bool> onHoverChanged;
-  final VoidCallback onTap;
-
-  @override
-  State<_ProjectRowSurface> createState() => _ProjectRowSurfaceState();
-}
-
-class _ProjectRowSurfaceState extends State<_ProjectRowSurface> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final metaStyle = tokens.typography.styles.others.caption.copyWith(
       color: ShowcasePalette.lowText(context),
     );
-    final backgroundColor = widget.selected
-        ? ShowcasePalette.selectedRow(context)
-        : (_hovered ? ShowcasePalette.hoverFill(context) : null);
 
-    return Semantics(
-      selected: widget.selected,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: ValueKey('project-overview-row-${widget.item.project.meta.id}'),
-          onTap: widget.onTap,
-          hoverColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          onHover: (value) {
-            if (_hovered != value) {
-              setState(() {
-                _hovered = value;
-              });
-              widget.onHoverChanged(value);
-            }
-          },
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              if (backgroundColor != null)
-                Positioned(
-                  top: -(widget.backgroundTopInset + widget.topOverlap),
-                  right: 0,
-                  bottom:
-                      -(widget.backgroundBottomInset + widget.bottomOverlap),
-                  left: 0,
-                  child: DecoratedBox(
-                    key: ValueKey(
-                      'project-row-background-${widget.item.project.meta.id}',
-                    ),
-                    decoration: BoxDecoration(
-                      color: backgroundColor,
+    return GroupedCardRowSurface(
+      key: key ?? ValueKey('project-row-surface-${item.project.meta.id}'),
+      rowKey: ValueKey('project-overview-row-${item.project.meta.id}'),
+      backgroundKey: ValueKey('project-row-background-${item.project.meta.id}'),
+      selected: selected,
+      hoverColor: ShowcasePalette.hoverFill(context),
+      selectedColor: ShowcasePalette.selectedRow(context),
+      topOverlap: topOverlap,
+      bottomOverlap: bottomOverlap,
+      backgroundTopInset: backgroundTopInset,
+      backgroundBottomInset: backgroundBottomInset,
+      padding: EdgeInsets.fromLTRB(
+        contentHorizontalPadding,
+        _kProjectRowVerticalPadding,
+        contentHorizontalPadding,
+        _kProjectRowVerticalPadding,
+      ),
+      onHoverChanged: onHoverChanged,
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.project.data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: ShowcasePalette.highText(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                RichText(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    style: metaStyle,
+                    children: _metaSpans(
+                      context,
+                      metaStyle,
+                      item,
                     ),
                   ),
                 ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  widget.contentHorizontalPadding,
-                  _kProjectRowVerticalPadding,
-                  widget.contentHorizontalPadding,
-                  _kProjectRowVerticalPadding,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.item.project.data.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.subtitle.subtitle2
-                                .copyWith(
-                                  color: ShowcasePalette.highText(context),
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          RichText(
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            text: TextSpan(
-                              style: metaStyle,
-                              children: _metaSpans(
-                                context,
-                                metaStyle,
-                                widget.item,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: _kProjectRowGap),
-                    ProjectStatusLabel(status: widget.item.status),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          const SizedBox(width: _kProjectRowGap),
+          ProjectStatusLabel(status: item.status),
+        ],
       ),
     );
   }
