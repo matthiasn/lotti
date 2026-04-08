@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
@@ -98,12 +99,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     super.initState();
     final listener = getIt<UserActivityService>().updateActivity;
     _scrollController.addListener(listener);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref.read(journalPageControllerProvider(true).notifier).refreshQuery();
-      }
-    });
   }
 
   @override
@@ -129,6 +124,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
         child: RefreshIndicator(
           onRefresh: controller.refreshQuery,
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             controller: _scrollController,
             cacheExtent: 1500,
             slivers: [
@@ -207,6 +203,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                       now: clock.now(),
                       hasNextPage: pagingState.hasNextPage,
                     );
+                    final entryIndexByTaskId = <String, int>{
+                      for (var i = 0; i < entries.length; i++)
+                        entries[i].task.meta.id: i,
+                    };
 
                     return PagedSliverList<int, JournalEntity>(
                       state: pagingState,
@@ -233,9 +233,14 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                           ),
                         ),
                         itemBuilder: (context, item, index) {
-                          if (item is! Task || index >= entries.length) {
+                          if (item is! Task) {
                             return const SizedBox.shrink();
                           }
+                          final entryIndex = entryIndexByTaskId[item.meta.id];
+                          if (entryIndex == null) {
+                            return const SizedBox.shrink();
+                          }
+                          final entry = entries[entryIndex];
 
                           final distance = state.showDistances
                               ? state.vectorSearchDistances[item.meta.id]
@@ -244,20 +249,20 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                           return ProjectsOverviewContentWidth(
                             child: TaskBrowseListItem(
                               key: ValueKey(item.meta.id),
-                              entry: entries[index],
+                              entry: entry,
                               sortOption: state.sortOption,
                               showCreationDate: state.showCreationDate,
                               showDueDate: state.showDueDate,
                               showCoverArt: state.showCoverArt,
                               vectorDistance: distance,
                               previousTaskIdInSection:
-                                  index > 0 && !entries[index].isFirstInSection
-                                  ? entries[index - 1].task.meta.id
+                                  entryIndex > 0 && !entry.isFirstInSection
+                                  ? entries[entryIndex - 1].task.meta.id
                                   : null,
                               nextTaskIdInSection:
-                                  !entries[index].isLastInSection &&
-                                      index < entries.length - 1
-                                  ? entries[index + 1].task.meta.id
+                                  !entry.isLastInSection &&
+                                      entryIndex < entries.length - 1
+                                  ? entries[entryIndex + 1].task.meta.id
                                   : null,
                               hoveredTaskIdNotifier: _hoveredTaskIdNotifier,
                               onTap: () => getIt<NavService>().beamToNamed(
@@ -294,9 +299,11 @@ Future<void> _defaultCreateTaskPressed(
   WidgetRef ref,
   String? categoryId,
 ) async {
+  // Capture the service before the await to avoid using ref after disposal.
+  final agentService = ref.read(taskAgentServiceProvider);
   final task = await createTask(categoryId: categoryId);
   if (task != null) {
-    unawaited(autoAssignCategoryAgent(ref, task));
+    unawaited(autoAssignCategoryAgentWith(agentService, task));
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
   }
 }

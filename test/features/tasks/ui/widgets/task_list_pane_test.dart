@@ -129,5 +129,48 @@ void main() {
         );
       },
     );
+
+    testWidgets('renders with byDueDate sort option', (tester) async {
+      final category = CategoryDefinition(
+        id: 'cat-1',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        name: 'Work',
+        vectorClock: null,
+        private: false,
+        active: true,
+        favorite: false,
+        color: '#3355FF',
+        icon: CategoryIcon.work,
+      );
+      final sections = [
+        TaskListSection(
+          title: 'Due Apr 10',
+          sectionDate: DateTime(2026, 4, 10),
+          tasks: [
+            makeTaskRecord(
+              id: 'task-due',
+              title: 'Due task',
+              category: category,
+            ),
+          ],
+        ),
+      ];
+
+      await tester.pumpWidget(
+        wrap(
+          TaskListSectionsList(
+            sections: sections,
+            sortOption: TaskSortOption.byDueDate,
+            selectedTaskId: null,
+            bottomPadding: 0,
+            onTaskSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Due task'), findsOneWidget);
+    });
   });
 }

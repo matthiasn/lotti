@@ -288,34 +288,32 @@ class _TaskListSearchHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 132,
+      constraints: const BoxConstraints(minHeight: 132),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       color: TaskShowcasePalette.page(context),
       child: Column(
         children: [
-          SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                Expanded(
-                  child: DesignSystemSearch(
-                    hintText: context.messages.searchTasksHint,
-                    initialText: query,
-                    onChanged: onSearchChanged,
-                    onClear: onSearchCleared,
-                    onSearchPressed: onSearchChanged,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: DesignSystemSearch(
+                  hintText: context.messages.searchTasksHint,
+                  initialText: query,
+                  onChanged: onSearchChanged,
+                  onClear: onSearchCleared,
+                  onSearchPressed: onSearchChanged,
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: onFilterPressed,
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    color: TaskShowcasePalette.accent(context),
-                  ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: context.messages.tasksFilterTitle,
+                onPressed: onFilterPressed,
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: TaskShowcasePalette.accent(context),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
         ],

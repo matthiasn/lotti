@@ -63,6 +63,7 @@ class JournalPageController extends _$JournalPageController {
 
   // Internal state (mutable for efficiency, exposed via immutable state)
   bool _isVisible = false;
+  bool _needsRefreshOnVisible = false;
   Set<String> _lastIds = {};
   Set<String> _selectedEntryTypes = entryTypes.toSet();
   Set<DisplayFilter> _filters = {};
@@ -359,6 +360,8 @@ class JournalPageController extends _$JournalPageController {
                 await refreshQuery();
               }
             }
+          } else {
+            _needsRefreshOnVisible = true;
           }
         });
   }
@@ -847,7 +850,8 @@ class JournalPageController extends _$JournalPageController {
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
     final isVisible = visibilityInfo.visibleBounds.size.width > 0;
-    if (!_isVisible && isVisible) {
+    if (!_isVisible && isVisible && _needsRefreshOnVisible) {
+      _needsRefreshOnVisible = false;
       refreshQuery();
     }
     _isVisible = isVisible;

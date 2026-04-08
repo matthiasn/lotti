@@ -146,5 +146,60 @@ void main() {
       expect(entries[2].sectionKey.date, DateTime(2026, 4, 7));
       expect(entries[2].showSectionHeader, isTrue);
     });
+
+    test('groups noDueDate when task has no due date', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = <JournalEntity>[
+        TestTaskFactory.create(
+          id: 'no-due',
+          title: 'No Due Date',
+          dateFrom: DateTime(2026, 4, 8, 9),
+        ).copyWith(
+          data: TestTaskDataFactory.create(
+            title: 'No Due Date',
+            dateFrom: DateTime(2026, 4, 8, 9),
+            dateTo: DateTime(2026, 4, 8, 10),
+          ),
+        ),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byDueDate,
+        now: now,
+        hasNextPage: false,
+      );
+
+      expect(entries, hasLength(1));
+      expect(entries[0].sectionKey.kind, TaskBrowseSectionKind.noDueDate);
+    });
+
+    test('groups dueYesterday when task is due yesterday', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final yesterday = DateTime(2026, 4, 7, 18);
+      final items = <JournalEntity>[
+        TestTaskFactory.create(
+          id: 'yesterday-1',
+          title: 'Yesterday 1',
+          dateFrom: DateTime(2026, 4, 7, 9),
+        ).copyWith(
+          data: TestTaskDataFactory.create(
+            title: 'Yesterday 1',
+            dateFrom: DateTime(2026, 4, 7, 9),
+            dateTo: DateTime(2026, 4, 7, 10),
+          ).copyWith(due: yesterday),
+        ),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byDueDate,
+        now: now,
+        hasNextPage: false,
+      );
+
+      expect(entries, hasLength(1));
+      expect(entries[0].sectionKey.kind, TaskBrowseSectionKind.dueYesterday);
+    });
   });
 }

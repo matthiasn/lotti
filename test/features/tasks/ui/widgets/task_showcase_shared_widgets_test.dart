@@ -122,5 +122,73 @@ void main() {
         28,
       );
     });
+
+    testWidgets('renders TaskShowcaseStatusGlyph for all status types', (
+      tester,
+    ) async {
+      final statuses = [
+        TaskStatus.open(id: 's1', createdAt: DateTime(2024), utcOffset: 0),
+        TaskStatus.groomed(id: 's2', createdAt: DateTime(2024), utcOffset: 0),
+        TaskStatus.inProgress(
+          id: 's3',
+          createdAt: DateTime(2024),
+          utcOffset: 0,
+        ),
+        TaskStatus.blocked(
+          id: 's4',
+          createdAt: DateTime(2024),
+          utcOffset: 0,
+          reason: 'blocked',
+        ),
+        TaskStatus.onHold(
+          id: 's5',
+          createdAt: DateTime(2024),
+          utcOffset: 0,
+          reason: 'on hold',
+        ),
+        TaskStatus.done(id: 's6', createdAt: DateTime(2024), utcOffset: 0),
+        TaskStatus.rejected(id: 's7', createdAt: DateTime(2024), utcOffset: 0),
+      ];
+
+      await tester.pumpWidget(
+        wrap(
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final status in statuses)
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: TaskShowcaseStatusGlyph(status: status),
+                ),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        find.byType(TaskShowcaseStatusGlyph),
+        findsNWidgets(statuses.length),
+      );
+    });
+
+    testWidgets('renders TaskShowcasePriorityGlyph for all priority levels', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TaskShowcasePriorityGlyph(priority: TaskPriority.p0Urgent),
+              TaskShowcasePriorityGlyph(priority: TaskPriority.p1High),
+              TaskShowcasePriorityGlyph(priority: TaskPriority.p2Medium),
+              TaskShowcasePriorityGlyph(priority: TaskPriority.p3Low),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byType(TaskShowcasePriorityGlyph), findsNWidgets(4));
+    });
   });
 }

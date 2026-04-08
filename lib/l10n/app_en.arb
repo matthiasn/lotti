@@ -1207,7 +1207,7 @@
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
   "configFlagEnableVectorSearch": "Vector Search",
-  "configFlagEnableVectorSearchDescription": "Enable vector search in the tasks filters. Requires embeddings to be enabled and Ollama running.",
+  "configFlagEnableVectorSearchDescription": "Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.",
   "configFlagPrivate": "Show private entries?",
   "configFlagPrivateDescription": "Enable this to make your entries private by default. Private entries are only visible to you.",
   "configFlagRecordLocation": "Record location",

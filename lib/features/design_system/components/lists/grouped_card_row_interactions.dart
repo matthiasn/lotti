@@ -15,14 +15,14 @@ List<GroupedCardRowInteraction> buildGroupedCardRowInteractions({
   required List<bool> connectedBelow,
   double overlap = 1,
 }) {
+  if (priorities.isEmpty) {
+    return const <GroupedCardRowInteraction>[];
+  }
+
   assert(
     connectedBelow.length == priorities.length - 1,
     'connectedBelow must describe every edge between adjacent rows.',
   );
-
-  if (priorities.isEmpty) {
-    return const <GroupedCardRowInteraction>[];
-  }
 
   final topOverlaps = List<double>.filled(priorities.length, 0);
   final bottomOverlaps = List<double>.filled(priorities.length, 0);

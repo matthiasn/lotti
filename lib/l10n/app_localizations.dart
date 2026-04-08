@@ -3999,7 +3999,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableVectorSearchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Enable vector search in the tasks filters. Requires embeddings to be enabled and Ollama running.'**
+  /// **'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.'**
   String get configFlagEnableVectorSearchDescription;
 
   /// No description provided for @configFlagPrivate.

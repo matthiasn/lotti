@@ -162,7 +162,13 @@ TaskBrowseSectionKey _dueSectionKeyForTask(
 
   final today = now.dayAtMidnight;
   final normalizedDueDate = dueDate.dayAtMidnight;
-  final dayOffset = normalizedDueDate.difference(today).inDays;
+  // Use UTC to avoid DST boundary issues where local midnight differences
+  // can be 23 or 25 hours instead of 24.
+  final dayOffset = DateTime.utc(
+    normalizedDueDate.year,
+    normalizedDueDate.month,
+    normalizedDueDate.day,
+  ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
 
   return switch (dayOffset) {
     0 => const TaskBrowseSectionKey.dueToday(),

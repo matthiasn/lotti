@@ -2236,7 +2236,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Enable vector search in the tasks filters. Requires embeddings to be enabled and Ollama running.';
+      'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.';
 
   @override
   String get configFlagPrivate => 'Show private entries?';
