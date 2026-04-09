@@ -70,6 +70,38 @@ flowchart LR
 
 The important boundary here is that the tasks feature owns task behavior and task presentation, but it intentionally reuses the shared journal controllers and persistence paths where possible.
 
+## Tasks Tab Browse Page
+
+The redesigned tasks tab is an in-place browse-page migration, not a new query stack.
+
+`TasksTabPage` still reads from `JournalPageController(showTasks: true)` and still uses the journal feature's existing infinite paging path. The redesign only swaps the browse presentation layer on top of that controller.
+
+At runtime the browse page does three specific things:
+
+1. it converts paged `JournalEntity` results into `TaskBrowseEntry` rows via `buildTaskBrowseEntries`
+2. it derives section headers from the active sort mode
+3. it reuses the same grouped-card interaction model as the projects tab so hover and selection backgrounds can suppress adjacent dividers cleanly
+
+```mermaid
+flowchart TD
+  Page["TasksTabPage"] --> PageCtl["JournalPageController(showTasks=true)"]
+  PageCtl --> Paging["PagingController / infinite_scroll_pagination"]
+  Paging --> Entries["buildTaskBrowseEntries(items, sortOption, now)"]
+  Entries --> Rows["TaskBrowseListItem rows"]
+  Rows --> Surface["GroupedCardRowSurface"]
+  Rows --> RowInteractions["buildTaskBrowseRowInteractions(...)"]
+  RowInteractions --> SharedInteractions["buildGroupedCardRowInteractions(...)"]
+  SharedInteractions --> Projects["Projects grouped rows use the same adjacency logic"]
+```
+
+The section semantics are intentionally sort-dependent:
+
+- due-date sort groups into `Today`, `Tomorrow`, `Yesterday`, exact due dates, or `No due date`
+- created-date sort groups by the task creation day
+- priority sort groups by priority buckets
+
+That is why the browse model carries section metadata separately from the row widget. The card does not guess how to group tasks; it receives that decision from the browse-entry model.
+
 ## Core Data Model
 
 Tasks are represented by the `Task` journal entity variant with `TaskData`.
@@ -259,7 +291,36 @@ flowchart TD
 
 ## Filter and List Model
 
-The task list route itself is still the shared `InfiniteJournalPage(showTasks: true)`, backed by `JournalPageController(showTasks: true)`. The tasks feature contributes task-specific filter content, task presentation controls, and task detail surfaces on top of that shared list machinery.
+The task browse route is now a temporary two-branch migration surface:
+
+- `/tasks` resolves through `TasksRootPage`
+- `enable_tasks_redesign = false` keeps the legacy `InfiniteJournalPage(showTasks: true)`
+- `enable_tasks_redesign = true` renders the new `TasksTabPage`
+
+Both branches are still backed by the exact same `JournalPageController(showTasks: true)` state and `PagingController`. That matters because the tasks tab must continue to handle thousands of rows without replacing the existing infinite-scroll mechanics.
+
+```mermaid
+flowchart TD
+  Route["/tasks"] --> Root["TasksRootPage"]
+  Root -->|flag off| Legacy["InfiniteJournalPage(showTasks: true)"]
+  Root -->|flag on| Redesign["TasksTabPage"]
+
+  Legacy --> PageCtl["JournalPageController(showTasks: true)"]
+  Redesign --> PageCtl
+  PageCtl --> Paging["PagingController + PagedSliverList"]
+  PageCtl --> Filters["Existing task filter model + persistence"]
+  PageCtl --> Search["Search / sort / vector mode / quick labels"]
+```
+
+`TasksTabPage` intentionally does not own pagination, query execution, or filter semantics. It reads the already-loaded task slice from the shared paging state and only transforms that visible slice into section presentation metadata.
+
+Current Phase 1 grouping behavior is sort-dependent:
+
+- due-date sort: `Due Today`, `Due Tomorrow`, `Due Yesterday`, dated due buckets, and `No due date`
+- priority sort: priority buckets (`P0` .. `P3`)
+- creation-date sort: creation-day buckets
+
+The filter button on the redesigned page still opens the legacy task filter modal. Filter semantics, persistence keys, and controller methods are unchanged until the later filter-migration phase.
 
 Task-specific persisted filter concerns include:
 
@@ -281,6 +342,15 @@ Persistence uses:
 - `TASKS_CATEGORY_FILTERS` for the tasks tab
 
 which keeps tasks-tab filter state separate from the journal tab. One subtle boundary here: project filtering is persisted in the same controller state, but the visible project filter controls are rendered by shared/project widgets rather than `lib/features/tasks/ui/filtering/`.
+
+The redesigned browse page also preserves the existing non-filter runtime behavior:
+
+- pull-to-refresh
+- full-text vs vector search toggle
+- quick-label strip
+- optional project health header
+- create-task FAB and auto-assign flow
+- `/tasks/:taskId` navigation on row selection
 
 ## Header Controls and Metadata
 

@@ -2211,6 +2211,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show project management features for organizing tasks into projects.';
 
   @override
+  String get configFlagEnableTasksRedesign => 'Enable Tasks redesign';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Switch the Tasks tab to the new design-system list page.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Enable Session Ratings';
 
   @override
@@ -2229,7 +2236,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.';
+      'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.';
 
   @override
   String get configFlagPrivate => 'Show private entries?';
@@ -4742,6 +4749,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vector';
+
+  @override
+  String get tasksSearchModeLabel => 'Search mode';
 
   @override
   String get searchTasksHint => 'Search tasks...';

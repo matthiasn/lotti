@@ -3954,6 +3954,18 @@ abstract class AppLocalizations {
   /// **'Show project management features for organizing tasks into projects.'**
   String get configFlagEnableProjectsDescription;
 
+  /// No description provided for @configFlagEnableTasksRedesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Tasks redesign'**
+  String get configFlagEnableTasksRedesign;
+
+  /// No description provided for @configFlagEnableTasksRedesignDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the Tasks tab to the new design-system list page.'**
+  String get configFlagEnableTasksRedesignDescription;
+
   /// No description provided for @configFlagEnableSessionRatings.
   ///
   /// In en, this message translates to:
@@ -3987,7 +3999,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableVectorSearchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show a vector search toggle on the tasks page. Requires embeddings to be enabled and Ollama running.'**
+  /// **'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.'**
   String get configFlagEnableVectorSearchDescription;
 
   /// No description provided for @configFlagPrivate.
@@ -8469,6 +8481,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vector'**
   String get searchModeVector;
+
+  /// No description provided for @tasksSearchModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search mode'**
+  String get tasksSearchModeLabel;
 
   /// No description provided for @searchTasksHint.
   ///

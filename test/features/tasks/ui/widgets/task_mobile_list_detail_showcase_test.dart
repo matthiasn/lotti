@@ -71,12 +71,12 @@ void main() {
         tester.widget<Text>(find.text('AI Task Summary')).style?.fontWeight,
         FontWeight.w600,
       );
-      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 12);
+      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 14);
       expect(
         tester.widget<Text>(find.text('Today')).style?.fontWeight,
         FontWeight.w400,
       );
-      expect(tester.widget<Text>(find.text('3 tasks')).style?.fontSize, 12);
+      expect(tester.widget<Text>(find.text('3 tasks')).style?.fontSize, 14);
       expect(
         tester.widget<Text>(find.text('3 tasks')).style?.fontWeight,
         FontWeight.w400,

@@ -2,8 +2,8 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
-import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,7 +24,7 @@ void main() {
       expect(location.pathPatterns, ['/tasks', '/tasks/:taskId']);
     });
 
-    test('buildPages builds InfiniteJournalPage', () {
+    test('buildPages builds TasksRootPage', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/tasks'));
       final location = TasksLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
@@ -34,9 +34,7 @@ void main() {
       );
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<InfiniteJournalPage>());
-      final journalPage = pages[0].child as InfiniteJournalPage;
-      expect(journalPage.showTasks, isTrue);
+      expect(pages[0].child, isA<TasksRootPage>());
     });
 
     test('buildPages builds TaskDetailsPage', () {
@@ -61,7 +59,7 @@ void main() {
       );
       expect(pages.length, 2);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<InfiniteJournalPage>());
+      expect(pages[0].child, isA<TasksRootPage>());
       expect(pages[1].key, isA<ValueKey<String>>());
       expect(pages[1].child, isA<TaskDetailsPage>());
       final taskDetailsPage = pages[1].child as TaskDetailsPage;

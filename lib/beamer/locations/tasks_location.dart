@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class TasksLocation extends BeamLocation<BeamState> {
@@ -21,7 +21,7 @@ class TasksLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('tasks'),
         title: 'Tasks',
-        child: InfiniteJournalPage(showTasks: true),
+        child: TasksRootPage(),
       ),
       if (isUuid(taskId))
         BeamPage(

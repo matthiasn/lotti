@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/ui/filtering/task_due_date_display_toggle.d
 import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_projects_header_display_toggle.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_search_mode_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
@@ -29,6 +30,8 @@ class TaskFilterContent extends StatelessWidget {
             SizedBox(width: 10),
           ],
         ),
+        SizedBox(height: 10),
+        TaskSearchModeFilter(),
         SizedBox(height: 10),
         TaskSortFilter(),
         SizedBox(height: 10),

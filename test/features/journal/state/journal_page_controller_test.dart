@@ -1719,7 +1719,73 @@ void main() {
     });
 
     group('Visibility Updates', () {
-      test('updateVisibility refreshes when becoming visible', () {
+      test(
+        'updateVisibility refreshes when becoming visible after missed update',
+        () {
+          fakeAsync((async) {
+            var queryCallCount = 0;
+            when(
+              () => mockJournalDb.getJournalEntities(
+                types: any(named: 'types'),
+                starredStatuses: any(named: 'starredStatuses'),
+                privateStatuses: any(named: 'privateStatuses'),
+                flaggedStatuses: any(named: 'flaggedStatuses'),
+                ids: any(named: 'ids'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                categoryIds: any(named: 'categoryIds'),
+              ),
+            ).thenAnswer((_) async {
+              queryCallCount++;
+              return [];
+            });
+
+            final controller = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            final initialCount = queryCallCount;
+
+            // First, simulate being invisible
+            controller.updateVisibility(
+              const MockVisibilityInfo(visibleBounds: Rect.zero),
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Count should remain unchanged (no refresh when becoming invisible)
+            expect(queryCallCount, equals(initialCount));
+
+            // Fire an update while invisible — this sets the dirty flag
+            updateStreamController.add({'some-missed-id'});
+            async.elapse(const Duration(milliseconds: 600));
+            async.flushMicrotasks();
+
+            // Still no refresh while invisible
+            expect(queryCallCount, equals(initialCount));
+
+            // Now simulate becoming visible - should trigger refresh
+            // because updates were missed
+            controller.updateVisibility(
+              const MockVisibilityInfo(
+                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+              ),
+            );
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            // Should have increased due to missed update
+            expect(queryCallCount, greaterThan(initialCount));
+          });
+        },
+      );
+
+      test('updateVisibility does not refresh when no updates were missed', () {
         fakeAsync((async) {
           var queryCallCount = 0;
           when(
@@ -1747,7 +1813,7 @@ void main() {
 
           final initialCount = queryCallCount;
 
-          // First, simulate being invisible
+          // Go invisible
           controller.updateVisibility(
             const MockVisibilityInfo(visibleBounds: Rect.zero),
           );
@@ -1755,10 +1821,7 @@ void main() {
           async.elapse(const Duration(milliseconds: 50));
           async.flushMicrotasks();
 
-          // Count should remain unchanged (no refresh when becoming invisible)
-          expect(queryCallCount, equals(initialCount));
-
-          // Now simulate becoming visible - this should trigger refresh
+          // Come back visible without any missed updates
           controller.updateVisibility(
             const MockVisibilityInfo(
               visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
@@ -1768,8 +1831,8 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Should have increased due to visibility change
-          expect(queryCallCount, greaterThan(initialCount));
+          // Should NOT have refreshed — no updates were missed
+          expect(queryCallCount, equals(initialCount));
         });
       });
 

@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -43,6 +46,9 @@ class DesignSystemSearch extends StatefulWidget {
 
 class _DesignSystemSearchState extends State<DesignSystemSearch> {
   static const InputBorder _noBorder = InputBorder.none;
+  static const TextHeightBehavior _textHeightBehavior = TextHeightBehavior(
+    leadingDistribution: ui.TextLeadingDistribution.even,
+  );
 
   TextEditingController? _internalController;
   TextEditingController get _controller =>
@@ -86,18 +92,33 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _SearchSpec.fromTokens(tokens, widget.size);
+    final textScaler = MediaQuery.textScalerOf(context);
     final hasText = _controller.text.isNotEmpty;
+    final baseFontSize = spec.resolvedFontSize;
     final textStyle = spec.textStyle.copyWith(
-      height: 1,
       color: widget.enabled
           ? tokens.colors.text.highEmphasis
           : tokens.colors.text.lowEmphasis,
+      leadingDistribution: ui.TextLeadingDistribution.even,
+      textBaseline: TextBaseline.alphabetic,
     );
     final hintStyle = spec.textStyle.copyWith(
-      height: 1,
       color: tokens.colors.text.lowEmphasis,
+      leadingDistribution: ui.TextLeadingDistribution.even,
+      textBaseline: TextBaseline.alphabetic,
     );
-
+    final baseTextHeight = spec.resolvedLineHeight;
+    final lineHeightMultiplier = baseFontSize == 0
+        ? 1.0
+        : baseTextHeight / baseFontSize;
+    final scaledFontSize = textScaler.scale(baseFontSize);
+    final scaledTextHeight = scaledFontSize * lineHeightMultiplier;
+    final preservedVerticalSpace =
+        spec.minHeight - math.max(spec.iconSize, baseTextHeight);
+    final minHeight = math.max(
+      spec.minHeight,
+      math.max(spec.iconSize, scaledTextHeight) + preservedVerticalSpace,
+    );
     return DecoratedBox(
       key: const Key('design-system-search-shell'),
       decoration: BoxDecoration(
@@ -105,8 +126,8 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
         borderRadius: BorderRadius.circular(spec.borderRadius),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: SizedBox(
-        height: spec.height,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: minHeight),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: spec.horizontalPadding,
@@ -122,36 +143,53 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
               ),
               SizedBox(width: spec.gap),
               Expanded(
-                child: SizedBox(
-                  height: spec.contentHeight,
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: widget.focusNode,
-                    enabled: widget.enabled,
-                    onChanged: widget.onChanged,
-                    onSubmitted: widget.onSubmitted,
-                    textInputAction: TextInputAction.search,
-                    strutStyle: StrutStyle.fromTextStyle(
-                      textStyle,
-                      forceStrutHeight: true,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    if (!hasText)
+                      IgnorePointer(
+                        child: ExcludeSemantics(
+                          child: Text(
+                            widget.hintText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: hintStyle,
+                            textHeightBehavior: _textHeightBehavior,
+                          ),
+                        ),
+                      ),
+                    TextField(
+                      controller: _controller,
+                      focusNode: widget.focusNode,
+                      enabled: widget.enabled,
+                      onChanged: widget.onChanged,
+                      onSubmitted: widget.onSubmitted,
+                      textInputAction: TextInputAction.search,
+                      cursorHeight: scaledTextHeight,
+                      selectionHeightStyle: ui.BoxHeightStyle.tight,
+                      strutStyle: StrutStyle.fromTextStyle(
+                        textStyle,
+                        forceStrutHeight: true,
+                      ),
+                      style: textStyle,
+                      textAlignVertical: const TextAlignVertical(y: -0.3),
+                      decoration: InputDecoration(
+                        hintText: widget.hintText,
+                        hintStyle: hintStyle.copyWith(
+                          color: Colors.transparent,
+                        ),
+                        border: _noBorder,
+                        enabledBorder: _noBorder,
+                        disabledBorder: _noBorder,
+                        focusedBorder: _noBorder,
+                        errorBorder: _noBorder,
+                        focusedErrorBorder: _noBorder,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                        isCollapsed: true,
+                      ),
                     ),
-                    style: textStyle,
-                    textAlignVertical: TextAlignVertical.center,
-                    cursorHeight: spec.contentHeight,
-                    decoration: InputDecoration(
-                      hintText: widget.hintText,
-                      hintStyle: hintStyle,
-                      border: _noBorder,
-                      enabledBorder: _noBorder,
-                      disabledBorder: _noBorder,
-                      focusedBorder: _noBorder,
-                      errorBorder: _noBorder,
-                      focusedErrorBorder: _noBorder,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      isCollapsed: true,
-                    ),
-                  ),
+                  ],
                 ),
               ),
               if (hasText) ...[
@@ -229,15 +267,16 @@ class _SearchActionButton extends StatelessWidget {
         child: InkResponse(
           onTap: onPressed,
           radius: size.iconTapRadius,
-          child: SizedBox(
-            width: size.iconSize,
-            height: size.iconSize,
-            child: Icon(
-              Icons.search_rounded,
-              size: size.iconSize,
-              color: enabled
-                  ? tokens.colors.text.mediumEmphasis
-                  : tokens.colors.text.lowEmphasis,
+          child: SizedBox.square(
+            dimension: size.iconSize,
+            child: Center(
+              child: Icon(
+                Icons.search_rounded,
+                size: size.iconSize,
+                color: enabled
+                    ? tokens.colors.text.mediumEmphasis
+                    : tokens.colors.text.lowEmphasis,
+              ),
             ),
           ),
         ),
@@ -291,11 +330,10 @@ class _SearchClearButton extends StatelessWidget {
 
 class _SearchSpec {
   const _SearchSpec({
-    required this.height,
+    required this.minHeight,
     required this.horizontalPadding,
     required this.verticalPadding,
     required this.gap,
-    required this.contentHeight,
     required this.borderRadius,
     required this.iconSize,
     required this.iconTapRadius,
@@ -311,11 +349,10 @@ class _SearchSpec {
   ) {
     return switch (size) {
       DesignSystemSearchSize.small => _SearchSpec(
-        height: 48,
+        minHeight: 48,
         horizontalPadding: 12,
         verticalPadding: 4,
         gap: tokens.spacing.step3,
-        contentHeight: 20,
         borderRadius: tokens.radii.m,
         iconSize: 20,
         iconTapRadius: 18,
@@ -325,11 +362,10 @@ class _SearchSpec {
         textStyle: tokens.typography.styles.body.bodySmall,
       ),
       DesignSystemSearchSize.medium => _SearchSpec(
-        height: 56,
+        minHeight: 56,
         horizontalPadding: 12,
         verticalPadding: 8,
         gap: tokens.spacing.step3,
-        contentHeight: 24,
         borderRadius: tokens.radii.m,
         iconSize: 24,
         iconTapRadius: 20,
@@ -341,11 +377,10 @@ class _SearchSpec {
     };
   }
 
-  final double height;
+  final double minHeight;
   final double horizontalPadding;
   final double verticalPadding;
   final double gap;
-  final double contentHeight;
   final double borderRadius;
   final double iconSize;
   final double iconTapRadius;
@@ -353,4 +388,8 @@ class _SearchSpec {
   final double clearButtonHeight;
   final double clearIconSize;
   final TextStyle textStyle;
+
+  double get resolvedFontSize => textStyle.fontSize ?? 0;
+  double get resolvedLineHeight =>
+      (textStyle.fontSize ?? 0) * (textStyle.height ?? 1);
 }

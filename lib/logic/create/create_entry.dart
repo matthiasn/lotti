@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -132,11 +131,11 @@ Future<void> _inheritProjectFromLinkedTask(
 Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) =>
     autoAssignCategoryAgentWith(ref.read(taskAgentServiceProvider), task);
 
-/// Testable core of [autoAssignCategoryAgent].
+/// Core of [autoAssignCategoryAgent].
 ///
-/// Accepts a [TaskAgentService] directly so tests can call it without
-/// needing a [WidgetRef].
-@visibleForTesting
+/// Accepts a [TaskAgentService] directly so callers can capture the service
+/// before an async gap (avoiding post-await [WidgetRef] usage) and tests
+/// can call it without needing a [WidgetRef].
 Future<void> autoAssignCategoryAgentWith(
   TaskAgentService service,
   Task task,

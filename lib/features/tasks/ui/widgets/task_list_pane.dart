@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 
 class TaskListPane extends StatelessWidget {
   const TaskListPane({
@@ -58,6 +57,9 @@ class TaskListPane extends StatelessWidget {
                     )
                   : TaskListSectionsList(
                       sections: state.visibleSections,
+                      sortOption: taskSortOptionFromSelectedSortId(
+                        state.filterState.selectedSortId,
+                      ),
                       selectedTaskId: state.selectedTask?.task.meta.id,
                       onTaskSelected: onTaskSelected,
                     ),
@@ -69,9 +71,10 @@ class TaskListPane extends StatelessWidget {
   }
 }
 
-class TaskListSectionsList extends StatelessWidget {
+class TaskListSectionsList extends StatefulWidget {
   const TaskListSectionsList({
     required this.sections,
+    required this.sortOption,
     required this.selectedTaskId,
     required this.onTaskSelected,
     this.bottomPadding = 120,
@@ -79,27 +82,133 @@ class TaskListSectionsList extends StatelessWidget {
   });
 
   final List<TaskListSection> sections;
+  final TaskSortOption sortOption;
   final String? selectedTaskId;
   final ValueChanged<String> onTaskSelected;
   final double bottomPadding;
 
   @override
+  State<TaskListSectionsList> createState() => _TaskListSectionsListState();
+}
+
+class _TaskListSectionsListState extends State<TaskListSectionsList> {
+  final ValueNotifier<String?> _hoveredTaskIdNotifier = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _hoveredTaskIdNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final items = _buildShowcaseItems(
+      sections: widget.sections,
+      sortOption: widget.sortOption,
+    );
+
     return DesignSystemScrollbar(
-      child: ListView.separated(
-        padding: EdgeInsets.only(bottom: bottomPadding),
-        itemCount: sections.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 20),
+      child: ListView.builder(
+        padding: EdgeInsets.only(bottom: widget.bottomPadding),
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          return _TaskSectionCard(
-            section: sections[index],
-            selectedTaskId: selectedTaskId,
-            onTaskSelected: onTaskSelected,
+          final item = items[index];
+          return TaskBrowseListItem(
+            key: ValueKey(item.record.task.meta.id),
+            entry: item.entry,
+            sortOption: widget.sortOption,
+            showCreationDate: false,
+            showDueDate: true,
+            showCoverArt: false,
+            categoryNameOverride: item.record.category.name,
+            categoryIconOverride: item.record.category.icon?.iconData,
+            categoryColorHexOverride: item.record.category.color,
+            trackedDurationLabelOverride: item.record.trackedDurationLabel,
+            sectionHeaderTitleOverride: item.sectionTitle,
+            previousTaskIdInSection: index > 0 && !item.entry.isFirstInSection
+                ? items[index - 1].record.task.meta.id
+                : null,
+            nextTaskIdInSection:
+                !item.entry.isLastInSection && index < items.length - 1
+                ? items[index + 1].record.task.meta.id
+                : null,
+            selectedTaskId: widget.selectedTaskId,
+            hoveredTaskIdNotifier: _hoveredTaskIdNotifier,
+            onTap: () => widget.onTaskSelected(item.record.task.meta.id),
           );
         },
       ),
     );
   }
+}
+
+TaskSortOption taskSortOptionFromSelectedSortId(String selectedSortId) {
+  return switch (selectedSortId) {
+    TaskSortIds.createdDateSort => TaskSortOption.byDate,
+    TaskSortIds.prioritySort => TaskSortOption.byPriority,
+    _ => TaskSortOption.byDueDate,
+  };
+}
+
+List<_TaskShowcaseBrowseItem> _buildShowcaseItems({
+  required List<TaskListSection> sections,
+  required TaskSortOption sortOption,
+}) {
+  final items = <_TaskShowcaseBrowseItem>[];
+
+  for (final section in sections) {
+    final sectionKey = _sectionKeyForSection(section, sortOption: sortOption);
+    for (var index = 0; index < section.tasks.length; index++) {
+      final record = section.tasks[index];
+      items.add(
+        _TaskShowcaseBrowseItem(
+          record: record,
+          sectionTitle: section.title,
+          entry: TaskBrowseEntry(
+            task: record.task,
+            sectionKey: sectionKey,
+            showSectionHeader: index == 0,
+            isFirstInSection: index == 0,
+            isLastInSection: index == section.tasks.length - 1,
+            sectionCount: index == 0 ? section.tasks.length : null,
+          ),
+        ),
+      );
+    }
+  }
+
+  return items;
+}
+
+TaskBrowseSectionKey _sectionKeyForSection(
+  TaskListSection section, {
+  required TaskSortOption sortOption,
+}) {
+  final firstTask = section.tasks.first.task;
+  return switch (sortOption) {
+    TaskSortOption.byPriority => TaskBrowseSectionKey.priority(
+      firstTask.data.priority,
+    ),
+    TaskSortOption.byDate => TaskBrowseSectionKey.createdDate(
+      firstTask.meta.dateFrom,
+    ),
+    TaskSortOption.byDueDate =>
+      firstTask.data.due != null
+          ? TaskBrowseSectionKey.dueDate(firstTask.data.due!)
+          : const TaskBrowseSectionKey.noDueDate(),
+  };
+}
+
+class _TaskShowcaseBrowseItem {
+  const _TaskShowcaseBrowseItem({
+    required this.record,
+    required this.sectionTitle,
+    required this.entry,
+  });
+
+  final TaskRecord record;
+  final String sectionTitle;
+  final TaskBrowseEntry entry;
 }
 
 class TaskListActiveFilters extends StatelessWidget {
@@ -179,183 +288,36 @@ class _TaskListSearchHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 120,
+      constraints: const BoxConstraints(minHeight: 132),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       color: TaskShowcasePalette.page(context),
       child: Column(
         children: [
-          SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                Expanded(
-                  child: DesignSystemSearch(
-                    hintText: context.messages.searchTasksHint,
-                    initialText: query,
-                    onChanged: onSearchChanged,
-                    onClear: onSearchCleared,
-                    onSearchPressed: onSearchChanged,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: onFilterPressed,
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    color: TaskShowcasePalette.accent(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TaskSectionCard extends StatelessWidget {
-  const _TaskSectionCard({
-    required this.section,
-    required this.selectedTaskId,
-    required this.onTaskSelected,
-  });
-
-  final TaskListSection section;
-  final String? selectedTaskId;
-  final ValueChanged<String> onTaskSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
+          Row(
             children: [
-              Text(
-                section.title,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: TaskShowcasePalette.highText(context),
+              Expanded(
+                child: DesignSystemSearch(
+                  hintText: context.messages.searchTasksHint,
+                  initialText: query,
+                  onChanged: onSearchChanged,
+                  onClear: onSearchCleared,
+                  onSearchPressed: onSearchChanged,
                 ),
               ),
-              const Spacer(),
-              Text(
-                context.messages.taskShowcaseTaskCount(section.tasks.length),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: TaskShowcasePalette.mediumText(context),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: context.messages.tasksFilterTitle,
+                onPressed: onFilterPressed,
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: TaskShowcasePalette.accent(context),
                 ),
               ),
             ],
           ),
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(tokens.radii.l),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: TaskShowcasePalette.surface(context),
-              borderRadius: BorderRadius.circular(tokens.radii.l),
-              border: Border.all(color: TaskShowcasePalette.border(context)),
-            ),
-            child: Column(
-              children: [
-                for (var index = 0; index < section.tasks.length; index++)
-                  _TaskListRow(
-                    record: section.tasks[index],
-                    selected:
-                        section.tasks[index].task.meta.id == selectedTaskId,
-                    onTap: () =>
-                        onTaskSelected(section.tasks[index].task.meta.id),
-                    showDivider: index < section.tasks.length - 1,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TaskListRow extends StatelessWidget {
-  const _TaskListRow({
-    required this.record,
-    required this.selected,
-    required this.onTap,
-    required this.showDivider,
-  });
-
-  final TaskRecord record;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool showDivider;
-
-  @override
-  Widget build(BuildContext context) {
-    final category = record.category;
-    final categoryColor = category.color ?? defaultCategoryColorHex;
-
-    return DesignSystemListItem(
-      titleContent: Text(
-        record.task.data.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: context.designTokens.typography.styles.subtitle.subtitle2
-            .copyWith(
-              color: TaskShowcasePalette.highText(context),
-              fontWeight: FontWeight.w600,
-            ),
+          const SizedBox(height: 12),
+        ],
       ),
-      subtitleSpans: [
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: TaskShowcaseCategoryChip(
-            label: category.name,
-            colorHex: categoryColor,
-            icon: category.icon?.iconData ?? Icons.label_outline,
-          ),
-        ),
-        const WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: SizedBox(width: 8),
-        ),
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: TaskShowcasePriorityGlyph(priority: record.task.data.priority),
-        ),
-        const WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: SizedBox(width: 6),
-        ),
-        TextSpan(text: record.task.data.priority.short),
-        const WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: SizedBox(width: 12),
-        ),
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Icon(
-            Icons.watch_later_outlined,
-            size: 16,
-            color: TaskShowcasePalette.mediumText(context),
-          ),
-        ),
-        const WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: SizedBox(width: 6),
-        ),
-        TextSpan(text: record.timeRange),
-      ],
-      trailing: TaskShowcaseStatusLabel(status: record.task.data.status),
-      activated: selected,
-      selected: selected,
-      activatedBackgroundColor: TaskShowcasePalette.selectedRow(context),
-      hoverBackgroundColor: TaskShowcasePalette.hoverFill(context),
-      pressedBackgroundColor: TaskShowcasePalette.selectedRow(context),
-      showDivider: showDivider,
-      onTap: onTap,
     );
   }
 }

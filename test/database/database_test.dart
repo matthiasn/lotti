@@ -132,6 +132,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableTasksRedesignFlag,
+    description: 'Enable Tasks redesign?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: logAgentRuntimeFlag,
     description: 'Log agent runtime (wake orchestrator)',
     status: true,

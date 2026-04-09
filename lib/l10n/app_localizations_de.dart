@@ -2247,6 +2247,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.';
 
   @override
+  String get configFlagEnableTasksRedesign =>
+      'Neues Aufgaben-Design aktivieren';
+
+  @override
+  String get configFlagEnableTasksRedesignDescription =>
+      'Schaltet den Aufgaben-Tab auf die neue Listenansicht im Design-System um.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Sitzungsbewertungen aktivieren';
 
   @override
@@ -2265,7 +2273,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Zeigt einen Vektorsuche-Umschalter auf der Aufgabenseite. Erfordert aktivierte Einbettungen und laufendes Ollama.';
+      'Aktiviert Vektorsuche in den Aufgabenfiltern. Erfordert aktivierte Embeddings und ein laufendes Ollama.';
 
   @override
   String get configFlagPrivate => 'Private Einträge anzeigen?';
@@ -4807,6 +4815,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchModeVector => 'Vektor';
+
+  @override
+  String get tasksSearchModeLabel => 'Suchmodus';
 
   @override
   String get searchTasksHint => 'Aufgaben suchen...';

@@ -63,6 +63,7 @@ class JournalPageController extends _$JournalPageController {
 
   // Internal state (mutable for efficiency, exposed via immutable state)
   bool _isVisible = false;
+  bool _needsRefreshOnVisible = false;
   Set<String> _lastIds = {};
   Set<String> _selectedEntryTypes = entryTypes.toSet();
   Set<DisplayFilter> _filters = {};
@@ -72,6 +73,7 @@ class JournalPageController extends _$JournalPageController {
   bool _enableVectorSearch = false;
   bool _enableProjects = false;
   SearchMode _searchMode = SearchMode.fullText;
+  bool _hasExplicitSearchModeSelection = false;
   String _query = '';
   bool _showPrivateEntries = false;
   late bool _showTasks;
@@ -270,7 +272,15 @@ class JournalPageController extends _$JournalPageController {
               _enableVectorSearch = flags.vectorSearch;
               _enableProjects = flags.projects;
               var shouldRefreshAfterModeFallback = false;
-              if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
+              if (_showTasks &&
+                  isDesktop &&
+                  _enableVectorSearch &&
+                  !_hasExplicitSearchModeSelection &&
+                  _searchMode != SearchMode.vector) {
+                _searchMode = SearchMode.vector;
+                shouldRefreshAfterModeFallback = true;
+              } else if (!_enableVectorSearch &&
+                  _searchMode == SearchMode.vector) {
                 _searchMode = SearchMode.fullText;
                 shouldRefreshAfterModeFallback = true;
               }
@@ -350,6 +360,8 @@ class JournalPageController extends _$JournalPageController {
                 await refreshQuery();
               }
             }
+          } else {
+            _needsRefreshOnVisible = true;
           }
         });
   }
@@ -557,6 +569,7 @@ class JournalPageController extends _$JournalPageController {
 
   /// Switches between full-text and vector search modes.
   void setSearchMode(SearchMode mode) {
+    _hasExplicitSearchModeSelection = true;
     _searchMode = _enableVectorSearch ? mode : SearchMode.fullText;
     refreshQuery();
   }
@@ -837,7 +850,8 @@ class JournalPageController extends _$JournalPageController {
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
     final isVisible = visibilityInfo.visibleBounds.size.width > 0;
-    if (!_isVisible && isVisible) {
+    if (!_isVisible && isVisible && _needsRefreshOnVisible) {
+      _needsRefreshOnVisible = false;
       refreshQuery();
     }
     _isVisible = isVisible;
