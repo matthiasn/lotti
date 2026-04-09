@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -51,5 +52,6 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TasksTabPage), findsOneWidget);
+    expect(find.byType(InfiniteJournalPage), findsNothing);
   });
 }
