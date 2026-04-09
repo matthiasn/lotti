@@ -38,11 +38,11 @@ PODS:
   - mobile_scanner (7.0.0):
     - Flutter
     - FlutterMacOS
-  - ObjectBox (5.3.0-beta.3)
+  - ObjectBox (5.3.0-beta.4)
   - objectbox_flutter_libs (0.0.1):
     - FlutterMacOS
-    - ObjectBox (= 5.3.0-beta.3)
-  - OpenSSL-Universal (3.3.3001)
+    - ObjectBox (= 5.3.0-beta.4)
+  - OpenSSL-Universal (3.6.0000)
   - package_info_plus (0.0.1):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
@@ -227,9 +227,9 @@ SPEC CHECKSUMS:
   location: c002b64375c0739e7afa30cbd0b675554830d208
   media_kit_libs_macos_audio: 06f3cf88d6d89c7c3c87eae57689d1c6adb335b2
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
-  ObjectBox: bbea5b1f0bed1cb77e59f2b59fb58f27d1bd67b4
-  objectbox_flutter_libs: e7ddfea1680fc6c144b95b06fa90a2cb3b6a4c20
-  OpenSSL-Universal: 6082b0bf950e5636fe0d78def171184e2b3899c2
+  ObjectBox: eccb95ea2054c39d81dfa2d4ccc5f1e31187228a
+  objectbox_flutter_libs: 3adf97321750a5e89c199bda09d3c0ce659022d8
+  OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   photo_manager: 25fd77df14f4f0ba5ef99e2c61814dde77e2bceb
@@ -246,6 +246,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: e3e31d41fb00eff73142a032d14908804ea30782
+PODFILE CHECKSUM: 72b600811d8b8d6b6836b5456bbcb087822b58c1
 
 COCOAPODS: 1.16.2

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.947" date="2026-04-09">
+      <description>
+          <p>Bottom navigation rollout polish: the redesigned Tasks and Projects tabs now share the same design-system floating action button, keep the floating bottom-navigation pill centered, and reserve the correct safe-area and overlay spacing so the create button and recording indicators sit clear of the new navigation chrome.</p>
+      </description>
+    </release>
     <release version="0.9.946" date="2026-04-08">
       <description>
           <p>Checklist widget redesigned: progress ring always visible in the header, filter tabs with highlighted selection, plain add-item field, pencil-only edit trigger for items, and fully localized AI suggestion and Share labels.</p>

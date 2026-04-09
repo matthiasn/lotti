@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.947] - 2026-04-09
+### Changed
+- Bottom navigation rollout polish: the redesigned Tasks and Projects tabs now
+  share the same design-system floating action button, keep the floating
+  bottom-navigation pill centered, and reserve the correct safe-area and
+  overlay spacing so the create button and recording indicators sit clear of
+  the new navigation chrome.
+
 ## [0.9.946] - 2026-04-08
 ### Changed
 - Checklist widget redesigned to match Widgetbook reference: progress ring now
