@@ -252,9 +252,9 @@ void main() {
       // Should render a modern status chip without the Status: label.
       expect(find.byType(ModernStatusChip), findsOneWidget);
 
-      // Icon should match in-progress mapping.
+      // Icon should match in-progress mapping (play arrow).
       expect(
-        find.byIcon(Icons.play_circle_outline_rounded),
+        find.byIcon(Icons.play_arrow_rounded),
         findsOneWidget,
       );
     });
@@ -296,27 +296,27 @@ void main() {
       );
       await expectIcon(
         statusType: 'groomed',
-        expectedIcon: Icons.done_outline_rounded,
+        expectedIcon: Icons.edit_outlined,
       );
       await expectIcon(
         statusType: 'inProgress',
-        expectedIcon: Icons.play_circle_outline_rounded,
+        expectedIcon: Icons.play_arrow_rounded,
       );
       await expectIcon(
         statusType: 'blocked',
-        expectedIcon: Icons.block_rounded,
+        expectedIcon: Icons.warning_sharp,
       );
       await expectIcon(
         statusType: 'onHold',
-        expectedIcon: Icons.pause_circle_outline_rounded,
+        expectedIcon: Icons.pause,
       );
       await expectIcon(
         statusType: 'done',
-        expectedIcon: Icons.check_circle_rounded,
+        expectedIcon: Icons.check_circle_outline,
       );
       await expectIcon(
         statusType: 'rejected',
-        expectedIcon: Icons.cancel_rounded,
+        expectedIcon: Icons.close_rounded,
       );
     });
   });
