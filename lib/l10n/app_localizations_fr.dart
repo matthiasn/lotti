@@ -2075,10 +2075,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistAllDone => 'Tous les éléments sont terminés !';
 
   @override
-  String get checklistProgressSemantics =>
-      'Progression de la liste de contrôle';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total terminés';
   }
@@ -2144,13 +2140,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistMarkdownCopied => 'Liste de contrôle copiée en Markdown';
 
   @override
+  String get checklistMoreTooltip => 'Plus';
+
+  @override
   String get checklistNoSuggestionsTitle => 'Aucune suggestion d\'action';
 
   @override
   String get checklistNothingToExport => 'Aucun élément à exporter';
 
   @override
-  String get checklistMoreTooltip => 'Plus';
+  String get checklistProgressSemantics =>
+      'Progression de la liste de contrôle';
 
   @override
   String get checklistShare => 'Partager';
@@ -2300,13 +2300,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Afficher les fonctions de gestion de projets pour organiser les tâches en projets.';
-
-  @override
-  String get configFlagEnableTasksRedesign => 'Activer la refonte des tâches';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Bascule l’onglet des tâches vers la nouvelle page de liste du design system.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -4934,9 +4927,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchModeVector => 'Vecteur';
 
   @override
-  String get tasksSearchModeLabel => 'Mode de recherche';
-
-  @override
   String get searchTasksHint => 'Rechercher des tâches...';
 
   @override
@@ -6268,6 +6258,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Non attribué';
+
+  @override
+  String get tasksSearchModeLabel => 'Mode de recherche';
 
   @override
   String get tasksShowCoverArt => 'Afficher la couverture sur les cartes';

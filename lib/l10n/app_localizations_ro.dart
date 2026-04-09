@@ -2047,9 +2047,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistAllDone => 'Toate elementele sunt finalizate!';
 
   @override
-  String get checklistProgressSemantics => 'Progresul listei de verificare';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total finalizate';
   }
@@ -2114,13 +2111,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Lista de verificare copiată ca Markdown';
 
   @override
+  String get checklistMoreTooltip => 'Mai mult';
+
+  @override
   String get checklistNoSuggestionsTitle => 'Nu există sugestii de acțiuni';
 
   @override
   String get checklistNothingToExport => 'Nu există elemente de exportat';
 
   @override
-  String get checklistMoreTooltip => 'Mai mult';
+  String get checklistProgressSemantics => 'Progresul listei de verificare';
 
   @override
   String get checklistShare => 'Partajează';
@@ -2271,13 +2271,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Afișează funcțiile de gestionare a proiectelor pentru organizarea sarcinilor în proiecte.';
-
-  @override
-  String get configFlagEnableTasksRedesign => 'Activează redesignul sarcinilor';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Comută fila de sarcini la noua pagină de listă din sistemul de design.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -4861,9 +4854,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get tasksSearchModeLabel => 'Mod de căutare';
-
-  @override
   String get searchTasksHint => 'Caută sarcini...';
 
   @override
@@ -6182,6 +6172,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Neatribuit';
+
+  @override
+  String get tasksSearchModeLabel => 'Mod de căutare';
 
   @override
   String get tasksShowCoverArt => 'Afișează coperta pe carduri';
