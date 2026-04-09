@@ -231,8 +231,8 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: SizedBox(
-                height: 44,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
                 child: Row(
                   children: [
                     // Drag handle — ReorderableDragStartListener for within-list

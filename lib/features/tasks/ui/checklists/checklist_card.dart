@@ -359,13 +359,17 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Menu
-                  _HeaderMenu(
-                    onDelete: onDelete,
-                    onExportMarkdown: onExportMarkdown,
-                    onShareMarkdown: onShareMarkdown,
-                  ),
+                  // Menu — only shown when at least one action is available.
+                  if (onDelete != null ||
+                      onExportMarkdown != null ||
+                      onShareMarkdown != null) ...[
+                    const SizedBox(width: 8),
+                    _HeaderMenu(
+                      onDelete: onDelete,
+                      onExportMarkdown: onExportMarkdown,
+                      onShareMarkdown: onShareMarkdown,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -474,6 +478,7 @@ class _ProgressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (totalCount == 0) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -482,7 +487,7 @@ class _ProgressRow extends StatelessWidget {
           lowEmphasisColor: tokens.colors.text.lowEmphasis,
           semanticsLabel: context.messages.checklistProgressSemantics,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         Text(
           context.messages.checklistCompletedShort(completedCount, totalCount),
           style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -898,12 +903,12 @@ class _AddItemFieldState extends State<_AddItemField> {
     return Padding(
       padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
       child: Container(
-        height: 36,
+        constraints: const BoxConstraints(minHeight: 36),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: TextField(
           controller: _controller,
           focusNode: widget.focusNode,
@@ -917,7 +922,7 @@ class _AddItemFieldState extends State<_AddItemField> {
             ),
             border: InputBorder.none,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            contentPadding: EdgeInsets.zero,
           ),
           onSubmitted: _submit,
           textInputAction: TextInputAction.done,

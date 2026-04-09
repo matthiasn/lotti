@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI suggestion dialog strings in the checklist item row are now fully localized.
 - "Share" label in the checklist card menu is now localized.
 - Fixed `ChecklistItem` rendering in the entry details view.
+- Progress ring and completion fraction are now hidden when a checklist has no
+  items, and the three-dot menu is hidden when no actions are available.
+- Checklist item row now uses a minimum height instead of a fixed height so the
+  inline editor can expand for multi-line text and content is no longer clipped
+  when the system text scale is increased.
+- Add-item field uses a minimum height constraint instead of a fixed height.
+- Increased spacing between the progress ring and the completion fraction text.
 
 ## [0.9.945] - 2026-04-08
 ### Added
