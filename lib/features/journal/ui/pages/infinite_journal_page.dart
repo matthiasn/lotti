@@ -1,37 +1,22 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
-import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
-import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class InfiniteJournalPage extends ConsumerWidget {
-  const InfiniteJournalPage({
-    required this.showTasks,
-    super.key,
-  });
-
-  final bool showTasks;
+  const InfiniteJournalPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(journalPageControllerProvider(showTasks));
+    final state = ref.watch(journalPageControllerProvider(false));
     final selectedCategoryIds = state.selectedCategoryIds;
     final categoryId = selectedCategoryIds.length == 1
         ? selectedCategoryIds.first
@@ -39,42 +24,26 @@ class InfiniteJournalPage extends ConsumerWidget {
 
     return ProviderScope(
       overrides: [
-        journalPageScopeProvider.overrideWithValue(showTasks),
+        journalPageScopeProvider.overrideWithValue(false),
       ],
       child: Scaffold(
-        floatingActionButton: showTasks
-            ? FloatingAddIcon(
-                createFn: () async {
-                  final task = await createTask(categoryId: categoryId);
-                  if (task != null) {
-                    unawaited(autoAssignCategoryAgent(ref, task));
-                    getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
-                  }
-                },
-                semanticLabel: context.messages.addActionAddTask,
-              )
-            : FloatingAddActionButton(categoryId: categoryId),
-        body: InfiniteJournalPageBody(showTasks: showTasks),
+        floatingActionButton: FloatingAddActionButton(categoryId: categoryId),
+        body: const _InfiniteJournalPageBody(),
       ),
     );
   }
 }
 
-class InfiniteJournalPageBody extends ConsumerStatefulWidget {
-  const InfiniteJournalPageBody({
-    required this.showTasks,
-    super.key,
-  });
-
-  final bool showTasks;
+class _InfiniteJournalPageBody extends ConsumerStatefulWidget {
+  const _InfiniteJournalPageBody();
 
   @override
-  ConsumerState<InfiniteJournalPageBody> createState() =>
+  ConsumerState<_InfiniteJournalPageBody> createState() =>
       _InfiniteJournalPageBodyState();
 }
 
 class _InfiniteJournalPageBodyState
-    extends ConsumerState<InfiniteJournalPageBody> {
+    extends ConsumerState<_InfiniteJournalPageBody> {
   final _scrollController = ScrollController();
 
   @override
@@ -86,24 +55,20 @@ class _InfiniteJournalPageBodyState
     // Trigger initial fetch when widget is initialized
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref
-            .read(journalPageControllerProvider(widget.showTasks).notifier)
-            .refreshQuery();
+        ref.read(journalPageControllerProvider(false).notifier).refreshQuery();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(journalPageControllerProvider(widget.showTasks));
+    final state = ref.watch(journalPageControllerProvider(false));
     final controller = ref.read(
-      journalPageControllerProvider(widget.showTasks).notifier,
+      journalPageControllerProvider(false).notifier,
     );
-    final enableProjects =
-        ref.watch(configFlagProvider(enableProjectsFlag)).value ?? false;
 
     return VisibilityDetector(
-      key: Key(widget.showTasks ? 'tasks_page' : 'journal_page'),
+      key: const Key('journal_page'),
       onVisibilityChanged: controller.updateVisibility,
       child: RefreshIndicator(
         onRefresh: controller.refreshQuery,
@@ -112,45 +77,6 @@ class _InfiniteJournalPageBodyState
           cacheExtent: 1500,
           slivers: <Widget>[
             const JournalSliverAppBar(),
-            // Quick filter section below the header with content-aligned padding
-            if (state.showTasks && state.selectedLabelIds.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(40, 8, 40, 8),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeInOut,
-                    alignment: Alignment.topCenter,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      child: const TaskLabelQuickFilter(),
-                    ),
-                  ),
-                ),
-              ),
-            // Project health header: shown when projects are enabled,
-            // the header toggle is on, and exactly one category is selected.
-            if (enableProjects &&
-                state.showTasks &&
-                state.showProjectsHeader &&
-                state.selectedCategoryIds.length == 1)
-              SliverToBoxAdapter(
-                child: ProjectHealthHeader(
-                  categoryId: state.selectedCategoryIds.first,
-                  selectedProjectIds: state.selectedProjectIds,
-                  onToggleProject: controller.toggleProjectFilter,
-                  onClearStale: controller.removeStaleProjectFilters,
-                ),
-              ),
             if (state.pagingController != null)
               PagingListener<int, JournalEntity>(
                 controller: state.pagingController!,

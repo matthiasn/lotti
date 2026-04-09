@@ -34,7 +34,6 @@ part 'journal_page_controller.g.dart';
 @Riverpod(keepAlive: true)
 class JournalPageController extends _$JournalPageController {
   // Storage keys
-  static const taskFiltersKey = 'TASK_FILTERS'; // Legacy key for migration
   static const tasksCategoryFiltersKey = 'TASKS_CATEGORY_FILTERS';
   static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
@@ -97,10 +96,8 @@ class JournalPageController extends _$JournalPageController {
   /// duplicate or missed rows.
   int? _postFilterNextRawOffset;
   String? _persistedPerTabTasksFilterValue;
-  String? _persistedLegacyTaskFilterValue;
   String? _persistedEntryTypesValue;
   bool _hasLoadedPerTabTasksFilterValue = false;
-  bool _hasLoadedLegacyTaskFilterValue = false;
   bool _hasLoadedEntryTypesValue = false;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
@@ -611,29 +608,19 @@ class JournalPageController extends _$JournalPageController {
 
   // Persistence methods
 
-  /// Loads persisted filters with migration from legacy key
+  /// Loads persisted filters from per-tab key
   Future<void> _loadPersistedFilters() async {
     final perTabKey = _getCategoryFiltersKey();
     final perTabValue = await _settingsDb.itemByKey(perTabKey);
     _persistedPerTabTasksFilterValue = _normalizeTasksFilterValue(perTabValue);
     _hasLoadedPerTabTasksFilterValue = true;
 
-    final legacyValue = _showTasks
-        ? await _settingsDb.itemByKey(taskFiltersKey)
-        : null;
-    if (_showTasks) {
-      _persistedLegacyTaskFilterValue = _normalizeTasksFilterValue(legacyValue);
-      _hasLoadedLegacyTaskFilterValue = true;
-    }
-
-    final value = perTabValue ?? legacyValue;
-
-    if (value == null) {
+    if (perTabValue == null) {
       return;
     }
 
     try {
-      final json = jsonDecode(value) as Map<String, dynamic>;
+      final json = jsonDecode(perTabValue) as Map<String, dynamic>;
       final tasksFilter = TasksFilter.fromJson(json);
 
       // Only load task-related filters if we're in the tasks tab
@@ -720,25 +707,6 @@ class JournalPageController extends _$JournalPageController {
         encodedFilter,
       );
       _persistedPerTabTasksFilterValue = encodedFilter;
-    }
-
-    // Mirror writes to the legacy key while the migration is in place.
-    // Only do this on the tasks tab so journal actions never clobber task filters.
-    if (_showTasks) {
-      if (!_hasLoadedLegacyTaskFilterValue) {
-        _persistedLegacyTaskFilterValue = _normalizeTasksFilterValue(
-          await _settingsDb.itemByKey(taskFiltersKey),
-        );
-        _hasLoadedLegacyTaskFilterValue = true;
-      }
-
-      if (_persistedLegacyTaskFilterValue != encodedFilter) {
-        await _settingsDb.saveSettingsItem(
-          taskFiltersKey,
-          encodedFilter,
-        );
-        _persistedLegacyTaskFilterValue = encodedFilter;
-      }
     }
   }
 

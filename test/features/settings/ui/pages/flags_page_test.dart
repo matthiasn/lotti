@@ -81,11 +81,6 @@ void main() {
             description: 'Enable Vector Search?',
             status: false,
           ),
-          const ConfigFlag(
-            name: enableTasksRedesignFlag,
-            description: 'Enable Tasks redesign?',
-            status: false,
-          ),
         },
       ]),
     );

@@ -231,7 +231,7 @@ The controller persists more than a plain search string. It stores:
 - visual toggles such as creation date, due date, cover art, projects header, and vector distances
 - agent-assignment filter
 
-Tasks filter persistence is tab-aware. The controller writes to per-tab settings keys and still mirrors the tasks tab state to the legacy `TASK_FILTERS` key while that migration remains in place.
+Tasks filter persistence is tab-aware. The controller writes to per-tab settings keys (`TASKS_CATEGORY_FILTERS` for the tasks tab, `JOURNAL_CATEGORY_FILTERS` for the journal tab).
 
 ### Search Modes
 

@@ -2030,9 +2030,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistAllDone => 'Všechny položky splněny!';
 
   @override
-  String get checklistProgressSemantics => 'Průběh kontrolního seznamu';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total hotovo';
   }
@@ -2096,13 +2093,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Kontrolní seznam zkopírován jako Markdown';
 
   @override
+  String get checklistMoreTooltip => 'Více';
+
+  @override
   String get checklistNoSuggestionsTitle => 'Žádné navrhované akční položky';
 
   @override
   String get checklistNothingToExport => 'Žádné položky k exportu';
 
   @override
-  String get checklistMoreTooltip => 'Více';
+  String get checklistProgressSemantics => 'Průběh kontrolního seznamu';
 
   @override
   String get checklistShare => 'Sdílet';
@@ -2251,13 +2251,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
-
-  @override
-  String get configFlagEnableTasksRedesign => 'Povolit redesign úkolů';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Přepne kartu Úkoly na novou stránku seznamu v design systému.';
 
   @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
@@ -4834,9 +4827,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get tasksSearchModeLabel => 'Režim hledání';
-
-  @override
   String get searchTasksHint => 'Hledat úkoly...';
 
   @override
@@ -6144,6 +6134,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Nepřiřazeno';
+
+  @override
+  String get tasksSearchModeLabel => 'Režim hledání';
 
   @override
   String get tasksShowCoverArt => 'Zobrazit obal na kartách';

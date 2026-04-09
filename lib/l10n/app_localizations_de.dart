@@ -2048,9 +2048,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistAllDone => 'Alle Punkte erledigt!';
 
   @override
-  String get checklistProgressSemantics => 'Checklisten-Fortschritt';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total erledigt';
   }
@@ -2113,6 +2110,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistMarkdownCopied => 'Checkliste als Markdown kopiert';
 
   @override
+  String get checklistMoreTooltip => 'Mehr';
+
+  @override
   String get checklistNoSuggestionsTitle =>
       'Keine vorgeschlagenen Aktionspunkte';
 
@@ -2120,7 +2120,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistNothingToExport => 'Keine Einträge zum Exportieren';
 
   @override
-  String get checklistMoreTooltip => 'Mehr';
+  String get checklistProgressSemantics => 'Checklisten-Fortschritt';
 
   @override
   String get checklistShare => 'Teilen';
@@ -2269,14 +2269,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.';
-
-  @override
-  String get configFlagEnableTasksRedesign =>
-      'Neues Aufgaben-Design aktivieren';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Schaltet den Aufgaben-Tab auf die neue Listenansicht im Design-System um.';
 
   @override
   String get configFlagEnableSessionRatings => 'Sitzungsbewertungen aktivieren';
@@ -4841,9 +4833,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchModeVector => 'Vektor';
 
   @override
-  String get tasksSearchModeLabel => 'Suchmodus';
-
-  @override
   String get searchTasksHint => 'Aufgaben suchen...';
 
   @override
@@ -6157,6 +6146,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Nicht zugewiesen';
+
+  @override
+  String get tasksSearchModeLabel => 'Suchmodus';
 
   @override
   String get tasksShowCoverArt => 'Titelbild auf Karten anzeigen';

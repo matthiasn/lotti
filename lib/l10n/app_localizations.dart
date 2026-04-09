@@ -3594,12 +3594,6 @@ abstract class AppLocalizations {
   /// **'All items completed!'**
   String get checklistAllDone;
 
-  /// No description provided for @checklistProgressSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklist progress'**
-  String get checklistProgressSemantics;
-
   /// No description provided for @checklistCompletedShort.
   ///
   /// In en, this message translates to:
@@ -3714,6 +3708,12 @@ abstract class AppLocalizations {
   /// **'Checklist copied as Markdown'**
   String get checklistMarkdownCopied;
 
+  /// No description provided for @checklistMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get checklistMoreTooltip;
+
   /// No description provided for @checklistNoSuggestionsTitle.
   ///
   /// In en, this message translates to:
@@ -3726,11 +3726,11 @@ abstract class AppLocalizations {
   /// **'No items to export'**
   String get checklistNothingToExport;
 
-  /// No description provided for @checklistMoreTooltip.
+  /// No description provided for @checklistProgressSemantics.
   ///
   /// In en, this message translates to:
-  /// **'More'**
-  String get checklistMoreTooltip;
+  /// **'Checklist progress'**
+  String get checklistProgressSemantics;
 
   /// No description provided for @checklistShare.
   ///
@@ -3995,18 +3995,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show project management features for organizing tasks into projects.'**
   String get configFlagEnableProjectsDescription;
-
-  /// No description provided for @configFlagEnableTasksRedesign.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Tasks redesign'**
-  String get configFlagEnableTasksRedesign;
-
-  /// No description provided for @configFlagEnableTasksRedesignDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch the Tasks tab to the new design-system list page.'**
-  String get configFlagEnableTasksRedesignDescription;
 
   /// No description provided for @configFlagEnableSessionRatings.
   ///
@@ -8524,12 +8512,6 @@ abstract class AppLocalizations {
   /// **'Vector'**
   String get searchModeVector;
 
-  /// No description provided for @tasksSearchModeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Search mode'**
-  String get tasksSearchModeLabel;
-
   /// No description provided for @searchTasksHint.
   ///
   /// In en, this message translates to:
@@ -10848,6 +10830,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unassigned'**
   String get tasksQuickFilterUnassignedLabel;
+
+  /// No description provided for @tasksSearchModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search mode'**
+  String get tasksSearchModeLabel;
 
   /// No description provided for @tasksShowCoverArt.
   ///

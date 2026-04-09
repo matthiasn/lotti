@@ -2013,9 +2013,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistAllDone => 'All items completed!';
 
   @override
-  String get checklistProgressSemantics => 'Checklist progress';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total done';
   }
@@ -2077,13 +2074,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistMarkdownCopied => 'Checklist copied as Markdown';
 
   @override
+  String get checklistMoreTooltip => 'More';
+
+  @override
   String get checklistNoSuggestionsTitle => 'No suggested Action Items';
 
   @override
   String get checklistNothingToExport => 'No items to export';
 
   @override
-  String get checklistMoreTooltip => 'More';
+  String get checklistProgressSemantics => 'Checklist progress';
 
   @override
   String get checklistShare => 'Share';
@@ -2232,13 +2232,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Show project management features for organizing tasks into projects.';
-
-  @override
-  String get configFlagEnableTasksRedesign => 'Enable Tasks redesign';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Switch the Tasks tab to the new design-system list page.';
 
   @override
   String get configFlagEnableSessionRatings => 'Enable Session Ratings';
@@ -4774,9 +4767,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get tasksSearchModeLabel => 'Search mode';
-
-  @override
   String get searchTasksHint => 'Search tasks...';
 
   @override
@@ -6069,6 +6059,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Unassigned';
+
+  @override
+  String get tasksSearchModeLabel => 'Search mode';
 
   @override
   String get tasksShowCoverArt => 'Show cover art on cards';

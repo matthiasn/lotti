@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -188,7 +187,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -234,42 +233,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
-        ),
-      );
-
-      await pumpWithDelay(tester);
-
-      // test task title is displayed
-      expect(
-        find.text(testTask.data.title),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('tasks page is rendered with task entry', (tester) async {
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenAnswer((_) => []);
-
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: [true, false],
-          categoryIds: [''], // When no categories exist, default to unassigned
-          labelIds: const <String>[],
-          priorities: const <String>[],
-          limit: 50,
-          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        ),
-      ).thenAnswer((_) async => [testTask]);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: true),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -309,7 +273,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -382,7 +346,7 @@ void main() {
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
-            const InfiniteJournalPage(showTasks: false),
+            const InfiniteJournalPage(),
           ),
         );
 
@@ -445,7 +409,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -488,7 +452,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -516,7 +480,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -566,7 +530,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 
@@ -574,108 +538,6 @@ void main() {
 
       // Verify all entries are displayed
       expect(find.byType(CardWrapperWidget), findsNWidgets(3));
-    });
-
-    testWidgets('floating action button creates task with selected category', (
-      tester,
-    ) async {
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenAnswer(
-        (_) => [
-          CategoryDefinition(
-            id: 'cat1',
-            name: 'Work',
-            color: '#FF0000',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            active: true,
-            private: false,
-            vectorClock: null,
-          ),
-        ],
-      );
-
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: [true, false],
-          categoryIds: ['cat1'],
-          labelIds: const <String>[],
-          priorities: const <String>[],
-          limit: 50,
-          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        ),
-      ).thenAnswer((_) async => []);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: true),
-        ),
-      );
-
-      await pumpWithDelay(tester);
-
-      // Find and tap the FAB
-      final fab = find.byType(FloatingActionButton);
-      expect(fab, findsOneWidget);
-    });
-
-    testWidgets('tasks page with categories shows correct entries', (
-      tester,
-    ) async {
-      final testDate = DateTime(2024, 3, 15);
-      final testCategories = [
-        CategoryDefinition(
-          id: 'cat1',
-          name: 'Work',
-          color: '#FF0000',
-          createdAt: testDate,
-          updatedAt: testDate,
-          active: true,
-          private: false,
-          vectorClock: null,
-        ),
-        CategoryDefinition(
-          id: 'cat2',
-          name: 'Personal',
-          color: '#00FF00',
-          createdAt: testDate,
-          updatedAt: testDate,
-          active: true,
-          private: false,
-          vectorClock: null,
-        ),
-      ];
-
-      when(
-        () => mockEntitiesCacheService.sortedCategories,
-      ).thenAnswer((_) => testCategories);
-
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: [true, false],
-          categoryIds: testCategories.map((c) => c.id).toList(),
-          labelIds: const <String>[],
-          priorities: const <String>[],
-          limit: 50,
-          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        ),
-      ).thenAnswer((_) async => [testTask]);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: true),
-        ),
-      );
-
-      await pumpWithDelay(tester);
-
-      // Verify task is displayed
-      expect(find.text(testTask.data.title), findsOneWidget);
     });
 
     testWidgets('private entry shows security icon', (tester) async {
@@ -700,7 +562,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
+          const InfiniteJournalPage(),
         ),
       );
 

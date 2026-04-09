@@ -2080,10 +2080,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistAllDone => '¡Todos los elementos completados!';
 
   @override
-  String get checklistProgressSemantics =>
-      'Progreso de la lista de verificación';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total completados';
   }
@@ -2149,6 +2145,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Lista de verificación copiada como Markdown';
 
   @override
+  String get checklistMoreTooltip => 'Más';
+
+  @override
   String get checklistNoSuggestionsTitle =>
       'No hay elementos de acción sugeridos';
 
@@ -2156,7 +2155,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistNothingToExport => 'No hay elementos para exportar';
 
   @override
-  String get checklistMoreTooltip => 'Más';
+  String get checklistProgressSemantics =>
+      'Progreso de la lista de verificación';
 
   @override
   String get checklistShare => 'Compartir';
@@ -2305,13 +2305,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Mostrar funciones de gestión de proyectos para organizar tareas en proyectos.';
-
-  @override
-  String get configFlagEnableTasksRedesign => 'Activar rediseño de tareas';
-
-  @override
-  String get configFlagEnableTasksRedesignDescription =>
-      'Cambia la pestaña de tareas a la nueva página de lista del sistema de diseño.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -4927,9 +4920,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchModeVector => 'Vector';
 
   @override
-  String get tasksSearchModeLabel => 'Modo de búsqueda';
-
-  @override
   String get searchTasksHint => 'Buscar tareas...';
 
   @override
@@ -6255,6 +6245,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksQuickFilterUnassignedLabel => 'Sin asignar';
+
+  @override
+  String get tasksSearchModeLabel => 'Modo de búsqueda';
 
   @override
   String get tasksShowCoverArt => 'Mostrar imagen de portada en tarjetas';

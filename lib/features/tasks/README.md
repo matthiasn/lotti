@@ -291,36 +291,30 @@ flowchart TD
 
 ## Filter and List Model
 
-The task browse route is now a temporary two-branch migration surface:
+The `/tasks` route resolves through `TasksRootPage`, which renders `TasksTabPage`.
 
-- `/tasks` resolves through `TasksRootPage`
-- `enable_tasks_redesign = false` keeps the legacy `InfiniteJournalPage(showTasks: true)`
-- `enable_tasks_redesign = true` renders the new `TasksTabPage`
-
-Both branches are still backed by the exact same `JournalPageController(showTasks: true)` state and `PagingController`. That matters because the tasks tab must continue to handle thousands of rows without replacing the existing infinite-scroll mechanics.
+`TasksTabPage` is backed by `JournalPageController(showTasks: true)` and its `PagingController`. The tasks tab must continue to handle thousands of rows without replacing the existing infinite-scroll mechanics.
 
 ```mermaid
 flowchart TD
   Route["/tasks"] --> Root["TasksRootPage"]
-  Root -->|flag off| Legacy["InfiniteJournalPage(showTasks: true)"]
-  Root -->|flag on| Redesign["TasksTabPage"]
+  Root --> Redesign["TasksTabPage"]
 
-  Legacy --> PageCtl["JournalPageController(showTasks: true)"]
-  Redesign --> PageCtl
+  Redesign --> PageCtl["JournalPageController(showTasks: true)"]
   PageCtl --> Paging["PagingController + PagedSliverList"]
-  PageCtl --> Filters["Existing task filter model + persistence"]
+  PageCtl --> Filters["Task filter model + persistence"]
   PageCtl --> Search["Search / sort / vector mode / quick labels"]
 ```
 
 `TasksTabPage` intentionally does not own pagination, query execution, or filter semantics. It reads the already-loaded task slice from the shared paging state and only transforms that visible slice into section presentation metadata.
 
-Current Phase 1 grouping behavior is sort-dependent:
+Current grouping behavior is sort-dependent:
 
 - due-date sort: `Due Today`, `Due Tomorrow`, `Due Yesterday`, dated due buckets, and `No due date`
 - priority sort: priority buckets (`P0` .. `P3`)
 - creation-date sort: creation-day buckets
 
-The filter button on the redesigned page still opens the legacy task filter modal. Filter semantics, persistence keys, and controller methods are unchanged until the later filter-migration phase.
+The filter button opens the task filter modal. Filter semantics, persistence keys, and controller methods are shared with the journal tab via `JournalPageController`.
 
 Task-specific persisted filter concerns include:
 

@@ -22,7 +22,7 @@ class JournalLocation extends BeamLocation<BeamState> {
       const BeamPage(
         key: ValueKey('journal'),
         title: 'Journal',
-        child: InfiniteJournalPage(showTasks: false),
+        child: InfiniteJournalPage(),
       ),
       if (isUuid(entryId))
         BeamPage(

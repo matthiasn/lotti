@@ -1338,40 +1338,6 @@ void main() {
         });
       });
 
-      test('falls back to legacy key when per-tab key not found', () {
-        fakeAsync((async) {
-          final persistedFilter = jsonEncode({
-            'selectedCategoryIds': ['legacy-cat'],
-            'selectedTaskStatuses': ['OPEN'],
-            'selectedLabelIds': <String>[],
-            'selectedPriorities': <String>[],
-            'sortOption': 'byPriority',
-            'showCreationDate': false,
-          });
-
-          // Per-tab key returns null
-          when(
-            () => mockSettingsDb.itemByKey(
-              JournalPageController.tasksCategoryFiltersKey,
-            ),
-          ).thenAnswer((_) async => null);
-
-          // Legacy key returns data
-          when(
-            () =>
-                mockSettingsDb.itemByKey(JournalPageController.taskFiltersKey),
-          ).thenAnswer((_) async => persistedFilter);
-
-          container.read(journalPageControllerProvider(true));
-
-          async.elapse(const Duration(milliseconds: 200));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedCategoryIds, contains('legacy-cat'));
-        });
-      });
-
       test('loads persisted entry types', () {
         fakeAsync((async) {
           final persistedTypes = jsonEncode(['Task', 'JournalEntry']);
@@ -1420,31 +1386,8 @@ void main() {
         });
       });
 
-      test('persistTasksFilter saves to legacy key for tasks tab', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller.toggleSelectedTaskStatus('DONE');
-
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
-
-          verify(
-            () => mockSettingsDb.saveSettingsItem(
-              JournalPageController.taskFiltersKey,
-              any(),
-            ),
-          ).called(greaterThan(0));
-        });
-      });
-
       test(
-        'persistTasksFilter saves to per-tab key only for journal tab (no legacy)',
+        'persistTasksFilter saves to per-tab key for journal tab',
         () {
           fakeAsync((async) {
             final controller = container.read(
@@ -1465,14 +1408,6 @@ void main() {
                 any(),
               ),
             ).called(greaterThan(0));
-
-            // Legacy key should NOT be written for journal tab
-            verifyNever(
-              () => mockSettingsDb.saveSettingsItem(
-                JournalPageController.taskFiltersKey,
-                any(),
-              ),
-            );
           });
         },
       );
@@ -1520,10 +1455,6 @@ void main() {
               JournalPageController.tasksCategoryFiltersKey,
             ),
           ).thenAnswer((_) async => persistedFilter);
-          when(
-            () =>
-                mockSettingsDb.itemByKey(JournalPageController.taskFiltersKey),
-          ).thenAnswer((_) async => persistedFilter);
 
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
@@ -1540,12 +1471,6 @@ void main() {
           verifyNever(
             () => mockSettingsDb.saveSettingsItem(
               JournalPageController.tasksCategoryFiltersKey,
-              any(),
-            ),
-          );
-          verifyNever(
-            () => mockSettingsDb.saveSettingsItem(
-              JournalPageController.taskFiltersKey,
               any(),
             ),
           );
@@ -2145,11 +2070,6 @@ void main() {
               JournalPageController.tasksCategoryFiltersKey,
             ),
           ).thenAnswer((_) async => 'not valid json {{{');
-
-          when(
-            () =>
-                mockSettingsDb.itemByKey(JournalPageController.taskFiltersKey),
-          ).thenAnswer((_) async => null);
 
           // Controller should initialize without throwing
           final controller = container.read(

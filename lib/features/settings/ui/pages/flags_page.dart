@@ -32,7 +32,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     enableSessionRatingsFlag,
     enableAgentsFlag,
     enableProjectsFlag,
-    enableTasksRedesignFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
   ];
@@ -70,8 +69,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return Icons.smart_toy_outlined;
       case enableProjectsFlag:
         return Icons.folder_outlined;
-      case enableTasksRedesignFlag:
-        return Icons.task_alt_rounded;
       case enableEmbeddingsFlag:
         return Icons.hub_outlined;
       case enableVectorSearchFlag:
@@ -114,8 +111,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableAgentsDescription;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjectsDescription;
-      case enableTasksRedesignFlag:
-        return context.messages.configFlagEnableTasksRedesignDescription;
       case enableEmbeddingsFlag:
         return context.messages.configFlagAttemptEmbeddingDescription;
       case enableVectorSearchFlag:
@@ -158,8 +153,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagEnableAgents;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjects;
-      case enableTasksRedesignFlag:
-        return context.messages.configFlagEnableTasksRedesign;
       case enableEmbeddingsFlag:
         return context.messages.configFlagEnableEmbeddings;
       case enableVectorSearchFlag:
