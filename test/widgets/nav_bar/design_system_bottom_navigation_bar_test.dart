@@ -44,6 +44,44 @@ void main() {
       expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
     });
 
+    testWidgets('includes the bottom safe-area inset in occupied height', (
+      tester,
+    ) async {
+      const withInset = MediaQueryData(
+        size: Size(390, 844),
+        padding: EdgeInsets.only(bottom: 34),
+      );
+      const withoutInset = MediaQueryData(
+        size: Size(390, 844),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox.shrink(),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: withInset,
+        ),
+      );
+
+      final withInsetHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byType(Scaffold)),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox.shrink(),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: withoutInset,
+        ),
+      );
+
+      final withoutInsetHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byType(Scaffold)),
+      );
+
+      expect(withInsetHeight - withoutInsetHeight, withInset.padding.bottom);
+    });
+
     testWidgets(
       'provides enough bottom padding to lift the FAB above the bar',
       (
@@ -74,7 +112,6 @@ void main() {
             bottom: DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
         );
-        expect(DesignSystemBottomNavigationBar.occupiedHeight(context), 82);
       },
     );
   });

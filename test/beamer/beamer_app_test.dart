@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.d
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:matrix/encryption.dart';
@@ -418,6 +420,53 @@ void main() {
 
       expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
       expect(find.byType(SpotifyStyleBottomNavigationBar), findsNothing);
+    });
+
+    testWidgets('lifts recording indicators above the design-system nav', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
+      ).thenAnswer((_) => Stream.value(false));
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(1),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        journalDb: mockJournalDb,
+      );
+
+      final context = tester.element(find.byType(AppScreen));
+      final expectedBottom =
+          AppScreenConstants.navigationTimeIndicatorBottom +
+          DesignSystemBottomNavigationBar.occupiedHeight(context);
+      final timeIndicatorPositioned = tester.widget<Positioned>(
+        find.ancestor(
+          of: find.byType(TimeRecordingIndicator),
+          matching: find.byType(Positioned),
+        ),
+      );
+      final audioIndicatorPositioned = tester.widget<Positioned>(
+        find.ancestor(
+          of: find.byType(AudioRecordingIndicator),
+          matching: find.byType(Positioned),
+        ),
+      );
+
+      expect(timeIndicatorPositioned.bottom, expectedBottom);
+      expect(audioIndicatorPositioned.bottom, expectedBottom);
     });
 
     testWidgets('keeps legacy nav on non-migrated tabs', (tester) async {

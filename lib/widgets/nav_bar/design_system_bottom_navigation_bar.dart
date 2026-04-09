@@ -24,6 +24,7 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   static double occupiedHeight(BuildContext context) {
     final tokens = context.designTokens;
+    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
     final itemHeight = math.max(
       DesignSystemNavigationTabBar.defaultItemMinHeight,
       tokens.spacing.step3 * 2 +
@@ -32,7 +33,10 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
           tokens.typography.lineHeight.caption,
     );
 
-    return padding(context).vertical + tokens.spacing.step2 * 2 + itemHeight;
+    return bottomSafeInset +
+        padding(context).vertical +
+        tokens.spacing.step2 * 2 +
+        itemHeight;
   }
 
   @override
@@ -42,10 +46,8 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
       child: Padding(
         padding: padding(context),
         child: Align(
-          alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
             child: DesignSystemNavigationTabBar(items: items),
           ),
         ),

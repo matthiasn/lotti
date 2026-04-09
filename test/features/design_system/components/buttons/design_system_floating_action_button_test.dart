@@ -5,17 +5,25 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 
 import '../../../../widget_test_utils.dart';
 
+Future<void> pumpFab(
+  WidgetTester tester, {
+  VoidCallback? onPressed,
+}) {
+  return tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      DesignSystemFloatingActionButton(
+        semanticLabel: 'Create',
+        onPressed: onPressed,
+      ),
+      theme: DesignSystemTheme.light(),
+    ),
+  );
+}
+
 void main() {
   group('DesignSystemFloatingActionButton', () {
     testWidgets('renders the primary jumbo icon-only button', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const DesignSystemFloatingActionButton(
-            semanticLabel: 'Create',
-          ),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpFab(tester);
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(find.bySemanticsLabel('Create'), findsOneWidget);
@@ -30,15 +38,7 @@ void main() {
     testWidgets('invokes onPressed when tapped', (tester) async {
       var tapped = false;
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DesignSystemFloatingActionButton(
-            semanticLabel: 'Create',
-            onPressed: () => tapped = true,
-          ),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpFab(tester, onPressed: () => tapped = true);
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -49,14 +49,7 @@ void main() {
     testWidgets('centers the icon horizontally inside the button', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const DesignSystemFloatingActionButton(
-            semanticLabel: 'Create',
-          ),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpFab(tester);
 
       final buttonCenter = tester.getCenter(
         find.byType(DesignSystemFloatingActionButton),

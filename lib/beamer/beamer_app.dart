@@ -267,11 +267,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             ? 0
             : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
         final selectedDestination = destinations[index];
-        final useDesignSystemBottomNav =
-            selectedDestination.kind ==
-                _AppNavigationDestinationKind.projects ||
-            (selectedDestination.kind == _AppNavigationDestinationKind.tasks &&
-                isTasksRedesignEnabled);
+        final useDesignSystemBottomNav = switch (selectedDestination.kind) {
+          _AppNavigationDestinationKind.projects => true,
+          _AppNavigationDestinationKind.tasks => isTasksRedesignEnabled,
+          _ => false,
+        };
         final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
           items: [
             for (var i = 0; i < destinations.length; i++)
@@ -309,6 +309,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                     .toList(growable: false),
                 onTap: navService.tapIndex,
               );
+        final overlayBottomInset = useDesignSystemBottomNav
+            ? DesignSystemBottomNavigationBar.occupiedHeight(context)
+            : 0.0;
 
         // No eager toast from build(); event-driven toast handled via ref.listen
 
@@ -340,18 +343,22 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   bottom: 0,
                   child: designSystemBottomNavigationBar,
                 ),
-              const Positioned(
+              Positioned(
                 left: AppScreenConstants.navigationPadding,
-                bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                child: TimeRecordingIndicator(),
+                bottom:
+                    AppScreenConstants.navigationTimeIndicatorBottom +
+                    overlayBottomInset,
+                child: const TimeRecordingIndicator(),
               ),
               // Only show AudioRecordingIndicator when not running in Flatpak
               // Flatpak builds have MediaKit compatibility issues
               if (!_isRunningInFlatpak())
-                const Positioned(
+                Positioned(
                   right: AppScreenConstants.navigationAudioIndicatorRight,
-                  bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                  child: AudioRecordingIndicator(),
+                  bottom:
+                      AppScreenConstants.navigationTimeIndicatorBottom +
+                      overlayBottomInset,
+                  child: const AudioRecordingIndicator(),
                 ),
             ],
           ),
