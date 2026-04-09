@@ -78,7 +78,10 @@ class TaskStatusChip extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final backgroundColor = taskColorFromStatusString(status);
+    final backgroundColor = taskColorFromStatusString(
+      status,
+      brightness: Theme.of(context).brightness,
+    );
 
     return FilterChoiceChip(
       label: taskLabelFromStatusString(status, context),

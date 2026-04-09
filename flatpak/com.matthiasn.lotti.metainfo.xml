@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.947" date="2026-04-09">
+      <description>
+          <p>Task status selection redesigned: a vertical list of rows with icon, label, and a trailing checkmark on the active status replaces the old chip grid. Icons and colours now match the design reference exactly.</p>
+      </description>
+    </release>
     <release version="0.9.946" date="2026-04-08">
       <description>
           <p>Checklist widget redesigned: progress ring always visible in the header, filter tabs with highlighted selection, plain add-item field, pencil-only edit trigger for items, and fully localized AI suggestion and Share labels.</p>

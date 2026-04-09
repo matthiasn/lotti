@@ -18,6 +18,20 @@ final Color habitSkipColor = successColor.lighten().desaturate().mix(
 
 const starredGold = Color.fromRGBO(255, 215, 0, 1);
 
+// Task status icon colors — dark mode (muted shades)
+const Color taskIconColorGrey = Color(0xFF9E9E9E); // Open
+const Color taskIconColorBlue = Color(0xFF64B5F6); // Groomed, In Progress
+const Color taskIconColorRed = Color(0xFFE57373); // Blocked, Rejected
+const Color taskIconColorOrange = Color(0xFFFFA726); // On Hold
+const Color taskIconColorGreen = Color(0xFF66BB6A); // Done
+
+// Task status icon colors — light mode (higher contrast)
+const Color taskIconColorDarkGrey = Color(0xFF616161);
+const Color taskIconColorDarkBlue = Color(0xFF1565C0);
+const Color taskIconColorDarkRed = Color(0xFFC62828);
+const Color taskIconColorDarkOrange = Color(0xFFE65100);
+const Color taskIconColorDarkGreen = Color(0xFF2E7D32);
+
 // Task status colors - light mode
 const taskStatusDarkRed = Color(0xFFC62828);
 const taskStatusDarkGreen = Color(0xFF2E7D32);
