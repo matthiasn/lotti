@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class DesignSystemBottomNavigationBar extends StatelessWidget {
@@ -23,6 +24,10 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
   }
 
   static double occupiedHeight(BuildContext context) {
+    // In desktop layout the bottom navigation bar is not shown;
+    // the sidebar replaces it, so no bottom inset is needed.
+    if (isDesktopLayout(context)) return 0;
+
     final tokens = context.designTokens;
     final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
     final itemHeight = math.max(

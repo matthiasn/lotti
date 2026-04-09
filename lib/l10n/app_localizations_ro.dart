@@ -2816,6 +2816,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Șterge dispozitivul';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Selectați un panou de control pentru a vedea detaliile';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Selectați un proiect pentru a vedea detaliile';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Selectați o sarcină pentru a vedea detaliile';
+
+  @override
   String get designSystemActivatedLabel => 'Activ';
 
   @override

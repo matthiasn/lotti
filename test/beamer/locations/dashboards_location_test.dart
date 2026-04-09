@@ -4,8 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../mocks/mocks.dart';
 
 class MockBuildContext extends Mock implements BuildContext {}
 
@@ -15,6 +19,17 @@ void main() {
 
     setUp(() {
       mockBuildContext = MockBuildContext();
+      final mockNavService = MockNavService();
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+      if (!getIt.isRegistered<NavService>()) {
+        getIt.registerSingleton<NavService>(mockNavService);
+      }
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
     });
 
     test('pathPatterns are correct', () {

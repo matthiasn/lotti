@@ -22,26 +22,35 @@ class TaskExpandableAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 16:9 aspect ratio to match generated cover art
-    final expandedHeight = MediaQuery.of(context).size.width * 9 / 16;
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        // Use the actual available width (not MediaQuery) so that in
+        // desktop split-pane mode the image stays at 16:9 relative to
+        // the detail pane, not the full window.
+        final availableWidth = constraints.crossAxisExtent > 0
+            ? constraints.crossAxisExtent
+            : MediaQuery.of(context).size.width;
+        final expandedHeight = availableWidth * 9 / 16;
 
-    return SliverAppBar(
-      expandedHeight: expandedHeight,
-      leadingWidth: 48,
-      titleSpacing: 0,
-      toolbarHeight: 40,
-      scrolledUnderElevation: 0,
-      elevation: 10,
-      leading: const Padding(
-        padding: EdgeInsets.only(left: 8),
-        child: GlassBackButton(),
-      ),
-      actions: _buildGlassActions(context),
-      pinned: true,
-      automaticallyImplyLeading: false,
-      flexibleSpace: FlexibleSpaceBar(
-        background: CoverArtBackground(imageId: coverArtId),
-      ),
+        return SliverAppBar(
+          expandedHeight: expandedHeight,
+          leadingWidth: 48,
+          titleSpacing: 0,
+          toolbarHeight: 40,
+          scrolledUnderElevation: 0,
+          elevation: 10,
+          leading: const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: GlassBackButton(),
+          ),
+          actions: _buildGlassActions(context),
+          pinned: true,
+          automaticallyImplyLeading: false,
+          flexibleSpace: FlexibleSpaceBar(
+            background: CoverArtBackground(imageId: coverArtId),
+          ),
+        );
+      },
     );
   }
 

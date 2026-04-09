@@ -2,6 +2,8 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/uuid.dart';
 
 class TasksLocation extends BeamLocation<BeamState> {
@@ -16,6 +18,12 @@ class TasksLocation extends BeamLocation<BeamState> {
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     final taskId = state.pathParameters['taskId'];
+    final navService = getIt<NavService>();
+    final isDesktop = navService.isDesktopMode;
+
+    if (isDesktop) {
+      navService.desktopSelectedTaskId.value = isUuid(taskId) ? taskId : null;
+    }
 
     return [
       const BeamPage(
@@ -23,7 +31,7 @@ class TasksLocation extends BeamLocation<BeamState> {
         title: 'Tasks',
         child: TasksRootPage(),
       ),
-      if (isUuid(taskId))
+      if (!isDesktop && isUuid(taskId))
         BeamPage(
           key: ValueKey('tasks-$taskId'),
           child: TaskDetailsPage(taskId: taskId!),

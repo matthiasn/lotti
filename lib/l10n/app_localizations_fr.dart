@@ -2850,6 +2850,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteDeviceLabel => 'Supprimer l\'appareil';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Sélectionne un tableau de bord pour voir les détails';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Sélectionne un projet pour voir les détails';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Sélectionne une tâche pour voir les détails';
+
+  @override
   String get designSystemActivatedLabel => 'Actif';
 
   @override

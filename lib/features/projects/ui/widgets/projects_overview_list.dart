@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 
 const _desktopContentMaxWidth = 760.0;
-const _desktopBreakpoint = 960.0;
 const _horizontalContentPadding = 16.0;
 
 class ProjectsOverviewSliverList extends StatelessWidget {
@@ -56,7 +56,7 @@ class ProjectsOverviewContentWidth extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final maxWidth = screenWidth >= _desktopBreakpoint
+    final maxWidth = screenWidth >= kDesktopBreakpoint
         ? _desktopContentMaxWidth
         : double.infinity;
 

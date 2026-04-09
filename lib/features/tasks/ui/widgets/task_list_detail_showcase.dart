@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_pane.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_filter_modal.dart';
@@ -18,6 +20,7 @@ class TaskListDetailShowcase extends ConsumerWidget {
       taskListDetailShowcaseControllerProvider.notifier,
     );
     final selected = state.selectedTask;
+    final navDestinations = widgetbookNavigationDestinations(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -28,7 +31,17 @@ class TaskListDetailShowcase extends ConsumerWidget {
         height: 900,
         child: Row(
           children: [
-            const TaskShowcaseDesktopSidebar(),
+            DesktopNavigationSidebar(
+              destinations: [
+                for (final dest in navDestinations)
+                  DesktopSidebarDestination(
+                    label: dest.label,
+                    iconBuilder: ({required active}) => Icon(dest.icon),
+                  ),
+              ],
+              activeIndex: 1, // Tasks
+              onDestinationSelected: (_) {},
+            ),
             Expanded(
               child: Column(
                 children: [

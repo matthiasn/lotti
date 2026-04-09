@@ -207,28 +207,15 @@ void main() {
       expect(appBar.automaticallyImplyLeading, isFalse);
     });
 
-    testWidgets('has expandedHeight based on screen width', (tester) async {
+    testWidgets('has expandedHeight based on available width', (tester) async {
       final task = buildTask();
 
-      // Use MediaQuery override to set a specific screen size
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MediaQuery(
-            data: const MediaQueryData(size: Size(400, 800)),
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: CustomScrollView(
-                  slivers: [
-                    TaskExpandableAppBar(task: task, coverArtId: 'image-1'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      // Set a specific surface size so the SliverLayoutBuilder's
+      // crossAxisExtent is deterministic.
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));

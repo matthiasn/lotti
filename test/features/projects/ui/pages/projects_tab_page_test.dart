@@ -134,6 +134,12 @@ void main() {
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<UserActivityService>(mockUserActivityService);
+        final mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenReturn(false);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(ValueNotifier<String?>(null));
+        getIt.registerSingleton<NavService>(mockNavService);
       },
     );
   });
