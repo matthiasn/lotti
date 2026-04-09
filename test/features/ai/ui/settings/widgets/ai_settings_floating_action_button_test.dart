@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('AiSettingsFloatingActionButton', () {
@@ -17,6 +20,7 @@ void main() {
       required AiSettingsTab activeTab,
     }) {
       return MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -45,6 +49,10 @@ void main() {
       await tester.pumpAndSettle(); // Wait for localization
 
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
+      );
       // Check that FAB contains text (localized)
       expect(
         find.descendant(

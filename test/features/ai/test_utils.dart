@@ -11,6 +11,8 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../widget_test_utils.dart' show resolveTestTheme;
+
 export 'package:flutter_localizations/flutter_localizations.dart';
 // Re-export commonly used imports for convenience
 export 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
@@ -213,6 +215,7 @@ class AiTestSetup {
       child: ProviderScope(
         overrides: providerOverrides,
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

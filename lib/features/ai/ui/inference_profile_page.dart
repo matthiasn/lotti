@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Management page listing all inference profiles with create/edit/delete.
 class InferenceProfilePage extends ConsumerWidget {
@@ -84,10 +85,12 @@ class InferenceProfilePage extends ConsumerWidget {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: context.messages.inferenceProfileCreateTitle,
-        onPressed: () => _openProfileForm(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: DesignSystemBottomNavigationFabPadding(
+        child: FloatingActionButton(
+          tooltip: context.messages.inferenceProfileCreateTitle,
+          onPressed: () => _openProfileForm(context),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

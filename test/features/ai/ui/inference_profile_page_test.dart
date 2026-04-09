@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
@@ -139,6 +140,10 @@ void main() {
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows loading state while profiles are loading', (

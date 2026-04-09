@@ -133,6 +133,10 @@ flowchart LR
   Schedule --> ClearScheduled["AgentService.clearScheduledWake()"]
 ```
 
+Templates and Souls are the only tabs that currently expose create FABs. Those
+buttons are now wrapped with the shared bottom-navigation clearance so they do
+not sink behind the floating app-shell nav on narrow layouts.
+
 ## Persistence Model
 
 Agent persistence lives in `agent.sqlite` via Drift

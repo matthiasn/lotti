@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// A context-aware floating action button for the AI Settings page
 ///
@@ -24,17 +25,19 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, label) = _getIconAndLabel(context);
 
-    return Container(
-      margin: const EdgeInsets.only(right: 20, bottom: 20),
-      child: FloatingActionButton.extended(
-        onPressed: onPressed,
-        icon: _buildIconContainer(context, icon),
-        label: _buildLabel(context, label),
-        backgroundColor: context.colorScheme.primaryContainer,
-        foregroundColor: context.colorScheme.onPrimaryContainer,
-        elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+    return DesignSystemBottomNavigationFabPadding(
+      child: Container(
+        margin: const EdgeInsets.only(right: 20, bottom: 20),
+        child: FloatingActionButton.extended(
+          onPressed: onPressed,
+          icon: _buildIconContainer(context, icon),
+          label: _buildLabel(context, label),
+          backgroundColor: context.colorScheme.primaryContainer,
+          foregroundColor: context.colorScheme.onPrimaryContainer,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
       ),
     );

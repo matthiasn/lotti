@@ -99,7 +99,8 @@ It composes:
 - [`LinkedEntriesWithTimer`](ui/widgets/linked_entries_with_timer.dart) for outgoing linked entries
 - [`LinkedFromEntriesWidget`](ui/widgets/entry_detail_linked_from.dart) for reverse links
 - checklist-specific linked-from widgets when the current item is a checklist or checklist item
-- a floating add action button scoped to the current entry and category
+- a floating add action button scoped to the current entry and category and
+  lifted above the shared bottom-navigation shell
 - a drag-and-drop target for media import
 - an AI-running overlay card at the bottom of the page
 

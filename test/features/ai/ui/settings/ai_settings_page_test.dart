@@ -12,6 +12,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart' show resolveTestTheme;
 import '../../../agents/test_utils.dart';
 
 void main() {
@@ -96,6 +97,7 @@ void main() {
           padding: EdgeInsets.only(top: 47),
         ),
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -346,7 +348,7 @@ void main() {
           padding: EdgeInsets.only(top: 47),
         ),
         child: MaterialApp(
-          theme: ThemeData.light(),
+          theme: resolveTestTheme(ThemeData.light()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -379,7 +381,7 @@ void main() {
           padding: EdgeInsets.only(top: 47),
         ),
         child: MaterialApp(
-          theme: ThemeData.dark(),
+          theme: resolveTestTheme(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   narrow screens so they render above the floating bottom navigation and block
   tab switching while a modal is active.
 - Tasks and Projects now share the same design-system floating action button,
-  and the shared bottom-navigation spacing keeps create buttons and recording
-  indicators clear of the navigation chrome.
+  and the shared bottom-navigation spacing now lifts floating action buttons
+  and recording indicators clear of the navigation chrome across list, detail,
+  and settings surfaces.
 
 ## [0.9.946] - 2026-04-08
 ### Changed
