@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the shared bottom-navigation spacing now lifts floating action buttons
   and recording indicators clear of the navigation chrome across list, detail,
   and settings surfaces.
+- Task status selection modal redesigned: replaced wrap-of-chips with a
+  vertical list of tappable rows — each showing the status icon, label,
+  and a trailing checkmark on the currently-selected status.
+- Status icons updated to match design reference: Groomed uses a pencil
+  icon, In Progress a play arrow, Blocked a warning triangle, On Hold
+  pause bars.
+- Status icon colors are now brightness-aware: lighter muted shades on
+  dark backgrounds, higher-contrast shades on light backgrounds.
+- Icon mapping centralised in `taskIconFromStatusString` so the status
+  chip and the selection modal always stay in sync.
+- Status rows wrapped with `Semantics` for screen-reader accessibility.
 
 ## [0.9.946] - 2026-04-08
 ### Changed

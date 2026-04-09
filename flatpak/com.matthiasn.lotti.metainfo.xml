@@ -36,6 +36,7 @@
           <p>Bottom navigation rollout: every main app tab now uses the Widgetbook design-system bottom navigation shell instead of the legacy Spotify-style bar, with the floating pill centered consistently across the app.</p>
           <p>Mobile bottom sheets and Wolt modals now open on the root navigator on narrow screens so they render above the floating bottom navigation and block tab switching while a modal is active.</p>
           <p>Tasks and Projects now share the same design-system floating action button, and the shared bottom-navigation spacing now lifts floating action buttons and recording indicators clear of the navigation chrome across list, detail, and settings surfaces.</p>
+          <p>Task status selection redesigned: a vertical list of rows with icon, label, and a trailing checkmark on the active status replaces the old chip grid. Icons and colours now match the design reference exactly.</p>
       </description>
     </release>
     <release version="0.9.946" date="2026-04-08">
