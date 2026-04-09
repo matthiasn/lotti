@@ -362,9 +362,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ? () => navService.tapIndex(settingsIndex)
                 : null,
             isSettingsActive: isSettingsActive,
-            onNewPressed: () async {
-              await createTextEntry();
-            },
+            onNewPressed: createTextEntry,
           ),
           Expanded(
             child: Stack(

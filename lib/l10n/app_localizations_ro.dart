@@ -2817,7 +2817,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get desktopEmptyStateSelectDashboard =>
-      'Selectați un panou de control pentru a vedea detaliile';
+      'Selectați un tablou de bord pentru a vedea detaliile';
 
   @override
   String get desktopEmptyStateSelectProject =>

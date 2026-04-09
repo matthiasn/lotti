@@ -126,17 +126,24 @@ class DesktopNavigationSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Navigation destinations
-          for (var i = 0; i < destinations.length; i++) ...[
-            _DesktopSidebarNavItem(
-              destination: destinations[i],
-              active: i == activeIndex && !isSettingsActive,
-              onTap: () => onDestinationSelected(i),
+          // Navigation destinations (scrollable for short windows)
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < destinations.length; i++) ...[
+                    _DesktopSidebarNavItem(
+                      destination: destinations[i],
+                      active: i == activeIndex && !isSettingsActive,
+                      onTap: () => onDestinationSelected(i),
+                    ),
+                    if (i < destinations.length - 1) const SizedBox(height: 4),
+                  ],
+                ],
+              ),
             ),
-            if (i < destinations.length - 1) const SizedBox(height: 4),
-          ],
-
-          const Spacer(),
+          ),
 
           // Settings at the bottom
           if (settingsDestination != null)

@@ -17,19 +17,21 @@ void main() {
   group('TasksLocation', () {
     late MockBuildContext mockBuildContext;
 
+    late MockNavService mockNavService;
+
     setUp(() {
       mockBuildContext = MockBuildContext();
-      if (!getIt.isRegistered<NavService>()) {
-        final mockNavService = MockNavService();
-        when(() => mockNavService.isDesktopMode).thenReturn(false);
-        getIt.registerSingleton<NavService>(mockNavService);
-      }
+      mockNavService = MockNavService();
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+      getIt.allowReassignment = true;
+      getIt.registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
+      getIt.allowReassignment = false;
     });
 
     test('pathPatterns are correct', () {

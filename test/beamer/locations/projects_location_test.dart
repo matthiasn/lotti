@@ -16,19 +16,21 @@ void main() {
   group('ProjectsLocation', () {
     late _MockBuildContext mockBuildContext;
 
+    late MockNavService mockNavService;
+
     setUp(() {
       mockBuildContext = _MockBuildContext();
-      final mockNavService = MockNavService();
+      mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      if (!getIt.isRegistered<NavService>()) {
-        getIt.registerSingleton<NavService>(mockNavService);
-      }
+      getIt.allowReassignment = true;
+      getIt.registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
+      getIt.allowReassignment = false;
     });
 
     test('pathPatterns are correct', () {

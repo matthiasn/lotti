@@ -49,12 +49,12 @@ API:
 
 Inside the existing `StreamBuilder<int>` builder, after computing `index` and `destinations`:
 
-```
+```dart
 final isWide = MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
 ```
 
 **Wide layout (>= 960px):**
-```
+```dart
 Scaffold(
   body: Row(
     children: [
@@ -179,7 +179,7 @@ Widget build(BuildContext context, WidgetRef ref) {
 **New file:** `lib/features/tasks/ui/pages/tasks_desktop_split_page.dart`
 
 Layout:
-```
+```dart
 Row(
   children: [
     SizedBox(width: 402, child: TasksTabPage(onTaskSelected: _handleSelect)),

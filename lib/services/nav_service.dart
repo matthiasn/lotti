@@ -272,6 +272,9 @@ class NavService {
   }
 
   Future<void> dispose() async {
+    desktopSelectedTaskId.dispose();
+    desktopSelectedProjectId.dispose();
+    desktopSelectedDashboardId.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();
   }
