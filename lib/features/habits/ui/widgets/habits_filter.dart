@@ -5,6 +5,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -54,7 +55,7 @@ class HabitsFilter extends ConsumerWidget {
               ),
             ),
       onPressed: () {
-        showModalBottomSheet<void>(
+        ModalUtils.showBottomSheet<void>(
           context: context,
           builder: (BuildContext modalContext) {
             return Consumer(

@@ -4,6 +4,10 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class ModalUtils {
+  static bool shouldUseRootNavigatorForBottomSheet(BuildContext context) {
+    return MediaQuery.of(context).size.width < WoltModalConfig.pageBreakpoint;
+  }
+
   static WoltModalType modalTypeBuilder(
     BuildContext context,
   ) {
@@ -117,6 +121,37 @@ class ModalUtils {
     );
   }
 
+  static Future<T?> showBottomSheet<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool isScrollControlled = false,
+    bool useRootNavigator = false,
+    bool isDismissible = true,
+    bool enableDrag = true,
+    bool useSafeArea = false,
+    Color? backgroundColor,
+    Color? barrierColor,
+    Clip? clipBehavior,
+    BoxConstraints? constraints,
+    ShapeBorder? shape,
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      builder: builder,
+      isScrollControlled: isScrollControlled,
+      useRootNavigator:
+          useRootNavigator || shouldUseRootNavigatorForBottomSheet(context),
+      isDismissible: isDismissible,
+      enableDrag: enableDrag,
+      useSafeArea: useSafeArea,
+      backgroundColor: backgroundColor,
+      barrierColor: barrierColor,
+      clipBehavior: clipBehavior,
+      constraints: constraints,
+      shape: shape,
+    );
+  }
+
   /// Creates an enhanced single page modal with modern styling
   static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
@@ -135,6 +170,7 @@ class ModalUtils {
 
     return WoltModalSheet.show<T>(
       context: context,
+      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
@@ -170,6 +206,7 @@ class ModalUtils {
 
     return WoltModalSheet.show<T>(
       context: context,
+      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
       modalDecorator: modalDecorator,
       pageListBuilder: pageListBuilder,
       modalTypeBuilder: modalTypeBuilder,
@@ -275,6 +312,7 @@ class ModalUtils {
 
     return WoltModalSheet.show<T>(
       context: context,
+      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
       modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: modalTypeBuilder,

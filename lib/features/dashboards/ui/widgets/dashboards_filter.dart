@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:pie_chart/pie_chart.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
@@ -54,7 +55,7 @@ class DashboardsFilter extends ConsumerWidget {
               ),
             ),
       onPressed: () {
-        showModalBottomSheet<void>(
+        ModalUtils.showBottomSheet<void>(
           context: context,
           builder: (BuildContext context) {
             return _DashboardsFilterModal(categories: categories);

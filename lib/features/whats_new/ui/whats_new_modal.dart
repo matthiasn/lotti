@@ -139,6 +139,9 @@ class WhatsNewModal {
 
     await WoltModalSheet.show<void>(
       context: context,
+      useRootNavigator: ModalUtils.shouldUseRootNavigatorForBottomSheet(
+        context,
+      ),
       pageIndexNotifier: pageNotifier,
       pageListBuilder: (modalContext) {
         final screenWidth = MediaQuery.of(modalContext).size.width;

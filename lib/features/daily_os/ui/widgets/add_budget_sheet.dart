@@ -19,7 +19,7 @@ class AddBlockSheet extends ConsumerStatefulWidget {
   final DateTime date;
 
   static Future<void> show(BuildContext context, DateTime date) {
-    return showModalBottomSheet<void>(
+    return ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => AddBlockSheet(date: date),

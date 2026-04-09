@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.947] - 2026-04-09
 ### Changed
-- Bottom navigation rollout polish: the redesigned Tasks and Projects tabs now
-  share the same design-system floating action button, keep the floating
-  bottom-navigation pill centered, and reserve the correct safe-area and
-  overlay spacing so the create button and recording indicators sit clear of
-  the new navigation chrome.
+- Bottom navigation rollout: every main app tab now uses the Widgetbook
+  design-system bottom navigation shell instead of the legacy Spotify-style
+  bar, with the floating pill centered consistently across the app.
+- Mobile bottom sheets and Wolt modals now open on the root navigator on
+  narrow screens so they render above the floating bottom navigation and block
+  tab switching while a modal is active.
+- Tasks and Projects now share the same design-system floating action button,
+  and the shared bottom-navigation spacing keeps create buttons and recording
+  indicators clear of the navigation chrome.
 
 ## [0.9.946] - 2026-04-08
 ### Changed

@@ -10,6 +10,7 @@ import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Modal bottom sheet for rating any entity using a catalog-driven
 /// question set.
@@ -35,7 +36,7 @@ class RatingModal extends ConsumerStatefulWidget {
     VoidCallback? onDismissed,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    return showModalBottomSheet<void>(
+    return ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       barrierColor: Colors.black54,

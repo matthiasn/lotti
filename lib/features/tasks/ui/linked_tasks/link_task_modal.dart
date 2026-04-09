@@ -10,6 +10,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 /// Modal for searching and selecting a task to link to the current task.
@@ -36,7 +37,7 @@ class LinkTaskModal extends ConsumerStatefulWidget {
     required String currentTaskId,
     required Set<String> existingLinkedIds,
   }) async {
-    return showModalBottomSheet<Task>(
+    return ModalUtils.showBottomSheet<Task>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

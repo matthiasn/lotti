@@ -5,6 +5,16 @@ import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+class _TestNavigatorObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushedRoutes = <Route<dynamic>>[];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedRoutes.add(route);
+    super.didPush(route, previousRoute);
+  }
+}
+
 void main() {
   group('ModalUtils', () {
     group('modalTypeBuilder', () {
@@ -58,6 +68,48 @@ void main() {
                   final modalType = ModalUtils.modalTypeBuilder(context);
                   expect(modalType, isA<WoltModalType>());
                   // WoltModalType doesn't expose its type directly, so we just verify it's created
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+      });
+    });
+
+    group('shouldUseRootNavigatorForBottomSheet', () {
+      testWidgets('returns true for narrow screens', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(300, 600)),
+              child: Builder(
+                builder: (context) {
+                  expect(
+                    ModalUtils.shouldUseRootNavigatorForBottomSheet(context),
+                    isTrue,
+                  );
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+      });
+
+      testWidgets('returns false for wide screens', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(WoltModalConfig.pageBreakpoint + 100, 800),
+              ),
+              child: Builder(
+                builder: (context) {
+                  expect(
+                    ModalUtils.shouldUseRootNavigatorForBottomSheet(context),
+                    isFalse,
+                  );
                   return const SizedBox();
                 },
               ),
@@ -422,6 +474,107 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Modal Content'), findsNothing);
+      });
+    });
+
+    group('showBottomSheet', () {
+      testWidgets(
+        'pushes bottom sheets to the root navigator on narrow screens',
+        (
+          tester,
+        ) async {
+          final rootObserver = _TestNavigatorObserver();
+          final nestedObserver = _TestNavigatorObserver();
+
+          await tester.pumpWidget(
+            MaterialApp(
+              navigatorObservers: [rootObserver],
+              home: MediaQuery(
+                data: const MediaQueryData(size: Size(300, 600)),
+                child: Navigator(
+                  observers: [nestedObserver],
+                  onGenerateRoute: (_) => MaterialPageRoute<void>(
+                    builder: (context) => Scaffold(
+                      body: Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            ModalUtils.showBottomSheet<void>(
+                              context: context,
+                              builder: (_) => const Text('Bottom Sheet'),
+                            );
+                          },
+                          child: const Text('Show Modal'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Show Modal'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Bottom Sheet'), findsOneWidget);
+          expect(
+            rootObserver.pushedRoutes.whereType<PopupRoute<dynamic>>(),
+            hasLength(1),
+          );
+          expect(
+            nestedObserver.pushedRoutes.whereType<PopupRoute<dynamic>>(),
+            isEmpty,
+          );
+        },
+      );
+
+      testWidgets('keeps wide-screen bottom sheets on the local navigator', (
+        tester,
+      ) async {
+        final rootObserver = _TestNavigatorObserver();
+        final nestedObserver = _TestNavigatorObserver();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorObservers: [rootObserver],
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(WoltModalConfig.pageBreakpoint + 100, 800),
+              ),
+              child: Navigator(
+                observers: [nestedObserver],
+                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                  builder: (context) => Scaffold(
+                    body: Center(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          ModalUtils.showBottomSheet<void>(
+                            context: context,
+                            builder: (_) => const Text('Bottom Sheet'),
+                          );
+                        },
+                        child: const Text('Show Modal'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Bottom Sheet'), findsOneWidget);
+        expect(
+          rootObserver.pushedRoutes.whereType<PopupRoute<dynamic>>(),
+          isEmpty,
+        );
+        expect(
+          nestedObserver.pushedRoutes.whereType<PopupRoute<dynamic>>(),
+          hasLength(1),
+        );
       });
     });
 

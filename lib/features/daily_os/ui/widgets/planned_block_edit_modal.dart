@@ -7,6 +7,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Modal for editing a planned time block.
@@ -25,7 +26,7 @@ class PlannedBlockEditModal extends ConsumerStatefulWidget {
     PlannedBlock block,
     DateTime date,
   ) {
-    return showModalBottomSheet<void>(
+    return ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => PlannedBlockEditModal(block: block, date: date),

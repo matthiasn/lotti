@@ -9,6 +9,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {
@@ -102,7 +103,7 @@ class MeasurableItemCard extends StatelessWidget {
               leadingIcon: Icons.insights,
               title: title,
               onTap: () {
-                showModalBottomSheet<void>(
+                ModalUtils.showBottomSheet<void>(
                   context: context,
                   clipBehavior: Clip.antiAliasWithSaveLayer,
                   builder: (BuildContext context) {

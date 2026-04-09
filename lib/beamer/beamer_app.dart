@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
@@ -31,23 +30,16 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:lotti/widgets/nav_bar/nav_bar.dart';
-import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class AppScreenConstants {
   const AppScreenConstants._();
 
-  static const double navigationElevation = 8;
-  static const double navigationIconSize = 30;
-  static const double navigationTextHeight = 2;
   static const double navigationPadding = 10;
   static const double navigationTimeIndicatorBottom = 0;
   static const double navigationAudioIndicatorRight = 100;
@@ -81,15 +73,6 @@ class _AppNavigationDestination {
   final String label;
   final Widget Function({required bool active}) iconBuilder;
 
-  BottomNavigationBarItem toLegacyItem() {
-    return createNavBarItem(
-      semanticLabel: label,
-      icon: iconBuilder(active: false),
-      activeIcon: iconBuilder(active: true),
-      label: label,
-    );
-  }
-
   DesignSystemNavigationTabBarItem toDesignSystemItem({
     required bool active,
     required VoidCallback onTap,
@@ -108,11 +91,9 @@ class AppScreen extends ConsumerStatefulWidget {
   const AppScreen({
     super.key,
     this.journalDb,
-    this.enableBottomNavSelectionAnimation = true,
   });
 
   final JournalDb? journalDb;
-  final bool enableBottomNavSelectionAnimation;
 
   @override
   ConsumerState<AppScreen> createState() => _AppScreenState();
@@ -157,9 +138,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isTasksRedesignEnabled =
-        ref.watch(configFlagProvider(enableTasksRedesignFlag)).value ?? false;
-
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
       ..listen(loginStateStreamProvider, (prev, next) {
@@ -266,12 +244,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final index = rawIndex < 0
             ? 0
             : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
-        final selectedDestination = destinations[index];
-        final useDesignSystemBottomNav = switch (selectedDestination.kind) {
-          _AppNavigationDestinationKind.projects => true,
-          _AppNavigationDestinationKind.tasks => isTasksRedesignEnabled,
-          _ => false,
-        };
         final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
           items: [
             for (var i = 0; i < destinations.length; i++)
@@ -281,42 +253,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               ),
           ],
         );
-        final bottomNavigationBar = useDesignSystemBottomNav
-            ? null
-            : SpotifyStyleBottomNavigationBar(
-                selectedItemColor: context.colorScheme.primary,
-                unselectedItemColor: context.colorScheme.primary.withAlpha(127),
-                enableFeedback: true,
-                backgroundColor: context.colorScheme.surface,
-                elevation: AppScreenConstants.navigationElevation,
-                iconSize: AppScreenConstants.navigationIconSize,
-                selectedLabelStyle: const TextStyle(
-                  height: AppScreenConstants.navigationTextHeight,
-                  fontWeight: FontWeight.normal,
-                  fontSize: fontSizeSmall,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  height: AppScreenConstants.navigationTextHeight,
-                  fontWeight: FontWeight.w300,
-                  fontSize: fontSizeSmall,
-                ),
-                type: SpotifyStyleBottomNavigationBarType.fixed,
-                currentIndex: index,
-                enableSelectionAnimation:
-                    widget.enableBottomNavSelectionAnimation,
-                items: destinations
-                    .map((destination) => destination.toLegacyItem())
-                    .toList(growable: false),
-                onTap: navService.tapIndex,
-              );
-        final overlayBottomInset = useDesignSystemBottomNav
-            ? DesignSystemBottomNavigationBar.occupiedHeight(context)
-            : 0.0;
+        final overlayBottomInset =
+            DesignSystemBottomNavigationBar.occupiedHeight(context);
 
         // No eager toast from build(); event-driven toast handled via ref.listen
 
         return Scaffold(
-          extendBody: useDesignSystemBottomNav,
+          extendBody: true,
           body: Stack(
             children: [
               const IncomingVerificationWrapper(),
@@ -336,13 +279,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
-              if (useDesignSystemBottomNav)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: designSystemBottomNavigationBar,
-                ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: designSystemBottomNavigationBar,
+              ),
               Positioned(
                 left: AppScreenConstants.navigationPadding,
                 bottom:
@@ -362,7 +304,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ),
             ],
           ),
-          bottomNavigationBar: bottomNavigationBar,
         );
       },
     );

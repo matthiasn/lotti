@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class AiChatIcon extends ConsumerWidget {
   const AiChatIcon({super.key});
@@ -16,7 +17,7 @@ class AiChatIcon extends ConsumerWidget {
       padding: const EdgeInsets.only(right: 5),
       child: IconButton(
         onPressed: () {
-          showModalBottomSheet<void>(
+          ModalUtils.showBottomSheet<void>(
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,

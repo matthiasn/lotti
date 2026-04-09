@@ -21,10 +21,8 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -92,7 +90,7 @@ class _AppScreenLocation extends BeamLocation<BeamState> {
     return const [
       BeamPage(
         key: ValueKey('app-screen'),
-        child: AppScreen(enableBottomNavSelectionAnimation: false),
+        child: AppScreen(),
       ),
     ];
   }
@@ -363,73 +361,43 @@ void main() {
   });
 
   group('AppScreen bottom navigation style', () {
-    testWidgets('uses design-system nav on redesigned tasks tab', (
-      tester,
-    ) async {
-      final mockNavService = MockNavService();
-      final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
-      ).thenAnswer((_) => Stream.value(true));
+    for (final (index, name) in <(int, String)>[
+      (0, 'tasks'),
+      (1, 'projects'),
+      (2, 'dailyOS'),
+      (3, 'habits'),
+      (4, 'dashboards'),
+      (5, 'journal'),
+      (6, 'settings'),
+    ]) {
+      testWidgets('uses design-system nav on the $name tab', (tester) async {
+        final mockNavService = MockNavService();
 
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(0),
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(index),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(
-        tester,
-        navService: mockNavService,
-        journalDb: mockJournalDb,
-      );
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+        );
 
-      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
-      expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
-      expect(find.byType(SpotifyStyleBottomNavigationBar), findsNothing);
-    });
-
-    testWidgets('uses design-system nav on projects tab', (tester) async {
-      final mockNavService = MockNavService();
-      final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
-      ).thenAnswer((_) => Stream.value(false));
-
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(1),
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
-
-      await _pumpAppScreen(
-        tester,
-        navService: mockNavService,
-        journalDb: mockJournalDb,
-      );
-
-      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
-      expect(find.byType(SpotifyStyleBottomNavigationBar), findsNothing);
-    });
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
+      });
+    }
 
     testWidgets('lifts recording indicators above the design-system nav', (
       tester,
     ) async {
       final mockNavService = MockNavService();
-      final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
-      ).thenAnswer((_) => Stream.value(false));
 
       await _stubNavService(
         mockNavService,
@@ -445,7 +413,6 @@ void main() {
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
-        journalDb: mockJournalDb,
       );
 
       final context = tester.element(find.byType(AppScreen));
@@ -467,34 +434,6 @@ void main() {
 
       expect(timeIndicatorPositioned.bottom, expectedBottom);
       expect(audioIndicatorPositioned.bottom, expectedBottom);
-    });
-
-    testWidgets('keeps legacy nav on non-migrated tabs', (tester) async {
-      final mockNavService = MockNavService();
-      final mockJournalDb = MockJournalDb();
-      when(
-        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
-      ).thenAnswer((_) => Stream.value(true));
-
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(5),
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
-
-      await _pumpAppScreen(
-        tester,
-        navService: mockNavService,
-        journalDb: mockJournalDb,
-      );
-
-      expect(find.byType(SpotifyStyleBottomNavigationBar), findsOneWidget);
-      expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
     });
   });
 }

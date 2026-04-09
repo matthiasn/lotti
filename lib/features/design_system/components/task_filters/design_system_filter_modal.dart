@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 enum DesignSystemFilterPresentation {
   desktop,
@@ -74,7 +75,7 @@ Future<void> showDesignSystemFilterModal({
         );
       },
     ),
-    DesignSystemFilterPresentation.mobile => showModalBottomSheet<void>(
+    DesignSystemFilterPresentation.mobile => ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

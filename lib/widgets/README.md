@@ -226,15 +226,13 @@ Prompt item for modals with modern design aesthetics.
 
 Located in `/lib/widgets/nav_bar/`
 
-### SpotifyStyleBottomNavigationBar
-Bottom navigation bar with Spotify-inspired design and animations.
+### DesignSystemBottomNavigationBar
+Floating bottom-navigation shell that hosts the design-system tab bar and
+reserves the correct safe-area spacing for the main app scaffold.
 
-**Internal Components:**
-- **_Bar**: Internal bar component
-- **_BottomNavigationTile**: Navigation tile component
-- **_Label**: Label component for navigation items
-- **_Tile**: Base tile component
-- **_TileIcon**: Icon component for tiles
+### DesignSystemBottomNavigationFabPadding
+Padding helper that lifts floating action buttons clear of the shared bottom
+navigation shell.
 
 ## Search Widgets
 
