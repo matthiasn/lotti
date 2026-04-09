@@ -322,7 +322,7 @@ void main() {
     final staleChecklist = JournalEntity.checklist(
       meta: staleMeta,
       data: const ChecklistData(
-        title: 'TODOs',
+        title: 'Todos',
         linkedChecklistItems: <String>[],
         linkedTasks: <String>['task-1'],
       ),

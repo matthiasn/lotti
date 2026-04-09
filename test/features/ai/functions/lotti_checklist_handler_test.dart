@@ -207,7 +207,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer(
           (_) async => (
@@ -234,7 +234,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).called(1);
       });
@@ -312,7 +312,7 @@ void main() {
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: testTask.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer(
           (_) async => (

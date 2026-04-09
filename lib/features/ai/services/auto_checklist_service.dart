@@ -89,7 +89,7 @@ class AutoChecklistService {
       final result = await _checklistRepository.createChecklist(
         taskId: taskId,
         items: suggestions,
-        title: title ?? 'TODOs',
+        title: title ?? 'Todos',
       );
 
       if (result.checklist == null) {

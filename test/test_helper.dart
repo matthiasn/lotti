@@ -29,7 +29,7 @@ class WidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: theme,
+          theme: resolveTestTheme(theme),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

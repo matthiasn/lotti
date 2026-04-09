@@ -33,6 +33,11 @@
   <releases>
     <release version="0.9.946" date="2026-04-08">
       <description>
+          <p>Checklist widget redesigned: progress ring always visible in the header, filter tabs with highlighted selection, plain add-item field, pencil-only edit trigger for items, and fully localized AI suggestion and Share labels.</p>
+      </description>
+    </release>
+    <release version="0.9.945" date="2026-04-08">
+      <description>
           <p>Standalone soul evolution: dedicated 1-on-1 sessions focused on personality refinement, aggregating feedback from all templates sharing a soul. Accessible via the soul detail page with its own review page and session history.</p>
           <p>Tasks tab migration: added a new design-system browse page behind the <code>enable_tasks_redesign</code> runtime flag. The new route keeps the existing infinite-scroll paging, current filter modal/model, create-task flow, and task-detail navigation while rendering sort-aware grouped sections.</p>
           <p>Tasks tab redesign: aligned grouped cards more closely with Figma by switching to the actual task-status glyphs, inset dividers, priority-section header treatment, tracked-time metadata, and a filter-modal search-mode control in place of the inline full-text/vector toggle.</p>

@@ -41,7 +41,7 @@ final class ZoomControllerProvider
   }
 }
 
-String _$zoomControllerHash() => r'fe8488724ae6b1ae8ea365a32989e25c9347cb8f';
+String _$zoomControllerHash() => r'8b52f573b8a10aed0a1c6e31b1f0b45c0103ab17';
 
 abstract class _$ZoomController extends $Notifier<double> {
   double build();

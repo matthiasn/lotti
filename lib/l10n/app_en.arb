@@ -24,7 +24,6 @@
   "addToDictionarySaveFailed": "Failed to save dictionary",
   "addToDictionarySuccess": "Term added to dictionary",
   "addToDictionaryTooLong": "Term too long (max 50 characters)",
-  "agentActivityLogHeading": "Activity Log",
   "agentABComparisonChoose": "Choose {option}",
   "@agentABComparisonChoose": {
     "placeholders": {
@@ -49,6 +48,7 @@
       }
     }
   },
+  "agentActivityLogHeading": "Activity Log",
   "agentBinaryChoiceNo": "No",
   "agentBinaryChoiceYes": "Yes",
   "agentCategoryRatingsScaleMax": "Fix first",
@@ -434,6 +434,61 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
+  "agentStatsAllDayLegend": "All Day",
+  "agentStatsAverageLabel": "Average",
+  "agentStatsByTimeLegend": "Daily by {time}",
+  "@agentStatsByTimeLegend": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsCacheRateLabel": "Cache Rate",
+  "agentStatsDailyUsageHeading": "Daily Usage",
+  "agentStatsInputLabel": "Input",
+  "agentStatsNoUsage": "No token usage recorded in the past 7 days.",
+  "agentStatsOutputLabel": "Output",
+  "agentStatsSourceActiveFor": "Active for {duration}",
+  "@agentStatsSourceActiveFor": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsSourceActivityHeading": "Agent Activity",
+  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
+  "@agentStatsSourceWakes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentStatsTabTitle": "Stats",
+  "agentStatsThoughtsLabel": "Thoughts",
+  "agentStatsTodayLabel": "Today",
+  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
+  "agentStatsTokensUnit": "tokens",
+  "agentStatsUsageAboveAverage": "You're using more tokens today than you usually do by {time}.",
+  "@agentStatsUsageAboveAverage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsUsageBelowAverage": "You're using fewer tokens today than you usually do by {time}.",
+  "@agentStatsUsageBelowAverage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentStatsWakesLabel": "Wakes",
+  "agentStatsWeekTotalLabel": "7-Day Total",
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",
@@ -670,61 +725,6 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
-  "agentStatsTabTitle": "Stats",
-  "agentStatsDailyUsageHeading": "Daily Usage",
-  "agentStatsUsageAboveAverage": "You're using more tokens today than you usually do by {time}.",
-  "@agentStatsUsageAboveAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsUsageBelowAverage": "You're using fewer tokens today than you usually do by {time}.",
-  "@agentStatsUsageBelowAverage": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsAverageLabel": "Average",
-  "agentStatsTodayLabel": "Today",
-  "agentStatsAllDayLegend": "All Day",
-  "agentStatsByTimeLegend": "Daily by {time}",
-  "@agentStatsByTimeLegend": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceActivityHeading": "Agent Activity",
-  "agentStatsSourceActiveFor": "Active for {duration}",
-  "@agentStatsSourceActiveFor": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "agentStatsSourceWakes": "{count, plural, =1{1 wake} other{{count} wakes}}",
-  "@agentStatsSourceWakes": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "agentStatsNoUsage": "No token usage recorded in the past 7 days.",
-  "agentStatsTokensUnit": "tokens",
-  "agentStatsWeekTotalLabel": "7-Day Total",
-  "agentStatsInputLabel": "Input",
-  "agentStatsOutputLabel": "Output",
-  "agentStatsThoughtsLabel": "Thoughts",
-  "agentStatsCacheRateLabel": "Cache Rate",
-  "agentStatsTokensPerWakeLabel": "Tokens / Wake",
-  "agentStatsWakesLabel": "Wakes",
   "aiAssistantActionItemSuggestions": "Action Item Suggestions",
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",
@@ -1118,7 +1118,21 @@
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
   "checklistAddItem": "Add a new item",
+  "checklistAiConfidenceLabel": "Confidence: {level}",
+  "@checklistAiConfidenceLabel": {
+    "description": "Confidence level label in the AI suggestion dialog",
+    "placeholders": {
+      "level": {
+        "type": "String",
+        "example": "high"
+      }
+    }
+  },
+  "checklistAiMarkComplete": "Mark Complete",
+  "checklistAiSuggestionBody": "This item appears to be completed:",
+  "checklistAiSuggestionTitle": "AI Suggestion",
   "checklistAllDone": "All items completed!",
+  "checklistProgressSemantics": "Checklist progress",
   "checklistCompletedShort": "{completed}/{total} done",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -1157,6 +1171,8 @@
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistNoSuggestionsTitle": "No suggested Action Items",
   "checklistNothingToExport": "No items to export",
+  "checklistMoreTooltip": "More",
+  "checklistShare": "Share",
   "checklistShareHint": "Long press to share",
   "checklistsReorder": "Reorder",
   "checklistsTitle": "Checklists",

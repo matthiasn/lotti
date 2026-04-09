@@ -4740,7 +4740,7 @@ Take into account the following task context:
         () => mockAutoChecklistService.autoCreateChecklist(
           taskId: taskEntity.id,
           suggestions: captureAny(named: 'suggestions'),
-          title: 'TODOs',
+          title: 'Todos',
         ),
       ).captured;
 
@@ -4859,7 +4859,7 @@ Take into account the following task context:
         () => mockAutoChecklistService.autoCreateChecklist(
           taskId: taskEntity.id,
           suggestions: any(named: 'suggestions'),
-          title: 'TODOs',
+          title: 'Todos',
         ),
       ).called(1);
     });
@@ -5049,7 +5049,7 @@ Take into account the following task context:
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: taskEntity.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).thenAnswer(
           (_) async => (
@@ -5146,7 +5146,7 @@ Take into account the following task context:
           () => mockAutoChecklistService.autoCreateChecklist(
             taskId: taskEntity.id,
             suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
+            title: 'Todos',
           ),
         ).called(1);
 

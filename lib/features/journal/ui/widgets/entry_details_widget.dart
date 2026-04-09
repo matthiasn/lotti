@@ -23,8 +23,8 @@ import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dar
 import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_item_wrapper.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -436,14 +436,20 @@ class EntryDetailsContent extends ConsumerWidget {
         linkedFromId: linkedFrom?.id,
         fadeOut: true,
       ),
-      Checklist() => ChecklistWrapper(
+      Checklist() => ChecklistCardWrapper(
         entryId: item.meta.id,
         taskId: item.data.linkedTasks.first,
       ),
-      ChecklistItem() => ChecklistItemWrapper(
-        item.id,
-        checklistId: '',
-        taskId: '',
+      // Standalone rendering — no parent task/checklist context available.
+      // Standalone rendering — use the parent task id when available so
+      // row actions/providers get proper task-scoped context.
+      ChecklistItem() => ChecklistItemRow(
+        itemId: item.id,
+        checklistId: item.data.linkedChecklists.isEmpty
+            ? ''
+            : item.data.linkedChecklists.first,
+        taskId: linkedFrom is Task ? linkedFrom!.id : '',
+        index: 0,
       ),
       RatingEntry() => RatingSummary(item),
       _ => null,

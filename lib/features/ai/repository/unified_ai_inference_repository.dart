@@ -1007,7 +1007,7 @@ class UnifiedAiInferenceRepository {
                     checkedBy: ChangeSource.agent,
                   ),
                 ],
-                title: 'TODOs',
+                title: 'Todos',
               );
 
               if (result.success) {

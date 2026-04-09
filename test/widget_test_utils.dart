@@ -133,7 +133,7 @@ const phoneMediaQueryData = MediaQueryData(
   padding: EdgeInsets.only(top: 47, bottom: 34),
 );
 
-ThemeData _resolveTestTheme([ThemeData? theme]) {
+ThemeData resolveTestTheme([ThemeData? theme]) {
   final baseTheme = theme ?? ThemeData(useMaterial3: true);
   if (baseTheme.extension<DsTokens>() != null) {
     return baseTheme;
@@ -160,7 +160,7 @@ Widget makeTestableWidget(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _resolveTestTheme(),
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -184,7 +184,7 @@ Widget makeTestableWidget2(
   return MediaQuery(
     data: mq,
     child: MaterialApp(
-      theme: _resolveTestTheme(),
+      theme: resolveTestTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         FormBuilderLocalizations.delegate,
@@ -211,7 +211,7 @@ Widget makeTestableWidgetWithScaffold(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _resolveTestTheme(theme),
+        theme: resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
@@ -249,7 +249,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
-        theme: _resolveTestTheme(theme),
+        theme: resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,

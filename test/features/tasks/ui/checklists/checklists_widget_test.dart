@@ -14,7 +14,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_wrapper.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -242,36 +242,35 @@ void main() {
       // Debug: Print widget tree
       await tester.pump();
 
-      // Two checklists -> two ModernBaseCard checklist cards
+      // Two checklists -> two ModernBaseCard checklist cards, one per checklist
       expect(find.byType(ModernBaseCard), findsNWidgets(2));
+      expect(find.byType(ChecklistCardWrapper), findsNWidgets(2));
+      expect(find.text('Checklist 1'), findsOneWidget);
+      expect(find.text('Checklist 2'), findsOneWidget);
       expect(find.text('Checklists'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      // Menu button is shown when there are multiple checklists
-      expect(find.byIcon(Icons.more_vert), findsOneWidget);
-      // ChecklistWrapper requires checklist providers to render
-      // expect(find.byType(ChecklistWrapper), findsNWidgets(2));
-      // ChecklistSuggestionsWidget requires AI providers to be mocked
-      // expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
+      // Checklists-level sort menu is shown when there are multiple checklists
+      expect(find.byKey(const Key('checklists-menu')), findsOneWidget);
     });
 
     testWidgets('hides menu button when only one checklist', (tester) async {
       await tester.pumpWidget(createTestWidget(checklistIds: ['checklist1']));
       await tester.pumpAndSettle();
 
-      // Menu button is hidden when there's only one checklist
-      expect(find.byIcon(Icons.more_vert), findsNothing);
-      // ChecklistWrapper requires checklist providers to render
-      // expect(find.byType(ChecklistWrapper), findsOneWidget);
+      // Checklists-level sort menu is hidden when there's only one checklist
+      expect(find.byKey(const Key('checklists-menu')), findsNothing);
+      expect(find.byType(ChecklistCardWrapper), findsOneWidget);
+      expect(find.text('Checklist 1'), findsOneWidget);
     });
 
     testWidgets('shows empty state with no checklists', (tester) async {
       await tester.pumpWidget(createTestWidget(checklistIds: []));
       await tester.pumpAndSettle();
 
-      // With empty checklists, no ChecklistWrapper widgets are rendered
-      expect(find.byType(ChecklistWrapper), findsNothing);
-      // Menu button is hidden when there are no checklists
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      // With empty checklists, no ChecklistCardWrapper widgets are rendered
+      expect(find.byType(ChecklistCardWrapper), findsNothing);
+      // Checklists-level sort menu is hidden when there are no checklists
+      expect(find.byKey(const Key('checklists-menu')), findsNothing);
       // Add button should still be visible but requires full widget tree
       // expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
@@ -350,7 +349,7 @@ void main() {
           private: false,
         ),
         data: const ChecklistData(
-          title: 'TODOs',
+          title: 'Todos',
           linkedChecklistItems: [],
           linkedTasks: ['task1'],
         ),
@@ -404,18 +403,15 @@ void main() {
       // Multiple instances may exist in the widget tree
       expect(find.byType(ReorderableListView), findsWidgets);
 
-      // More detailed reordering tests require ChecklistWrapper widgets to render
+      // More detailed reordering tests require ChecklistCardWrapper widgets to render
     });
 
-    testWidgets('maintains correct keys for ChecklistWrapper widgets', (
+    testWidgets('renders ChecklistsWidget with checklist data', (
       tester,
     ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Test that ChecklistsWidget renders
       expect(find.byType(ChecklistsWidget), findsOneWidget);
-
-      // Detailed key testing requires ChecklistWrapper widgets to render
     });
 
     testWidgets('handles null checklistIds correctly', (tester) async {
@@ -425,10 +421,10 @@ void main() {
 
       await tester.pumpWidget(createTestWidget(task: taskWithNullIds));
 
-      // With empty checklists, no ChecklistWrapper widgets are rendered
-      expect(find.byType(ChecklistWrapper), findsNothing);
-      // Menu button is hidden when there are no checklists
-      expect(find.byIcon(Icons.more_vert), findsNothing);
+      // With empty checklists, no ChecklistCardWrapper widgets are rendered
+      expect(find.byType(ChecklistCardWrapper), findsNothing);
+      // Checklists-level sort menu is hidden when there are no checklists
+      expect(find.byKey(const Key('checklists-menu')), findsNothing);
       // ChecklistSuggestionsWidget requires AI providers to be mocked
       // expect(find.byType(ChecklistSuggestionsWidget), findsOneWidget);
     });
@@ -437,8 +433,8 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Open the menu
-      await tester.tap(find.byIcon(Icons.more_vert));
+      // Open the checklists-level sort menu
+      await tester.tap(find.byKey(const Key('checklists-menu')));
       await tester.pumpAndSettle();
 
       // Test that the menu contains the sort option
@@ -452,7 +448,7 @@ void main() {
       // Multiple ReorderableListView widgets may exist in the tree
       expect(find.byType(ReorderableListView), findsWidgets);
 
-      // Detailed order preservation testing requires ChecklistWrapper widgets to render
+      // Detailed order preservation testing requires ChecklistCardWrapper widgets to render
     });
   });
 }

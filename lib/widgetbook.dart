@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/daily_os/widgetbook/set_time_blocks_widgetbook.dart';
 import 'package:lotti/features/dashboards/widgetbook/insights_widgetbook.dart';
@@ -8,16 +7,12 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
 import 'package:lotti/features/settings/widgetbook/settings_widgetbook.dart';
-import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
-import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/features/tasks/widgetbook/checklist_widgetbook.dart';
 import 'package:lotti/features/tasks/widgetbook/task_widgetbook.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/widgetbook/mock_data.dart';
 import 'package:lotti/widgetbook/zoom_pan_wrapper.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -74,49 +69,14 @@ class WidgetbookApp extends StatelessWidget {
           name: 'Task Widgets',
           children: [
             WidgetbookComponent(
-              name: 'Checkbox widget',
+              name: 'TitleTextField',
               useCases: [
-                WidgetbookUseCase(
-                  name: 'CheckboxItemWidget',
-                  builder: (context) => ChecklistItemWidget(
-                    title: 'Create PR',
-                    isChecked: true,
-                    onChanged: (checked) {},
-                  ),
-                ),
                 WidgetbookUseCase(
                   name: 'TitleTextField',
                   builder: (context) => TitleTextField(
                     onSave: (title) {
                       debugPrint('Saved: $title');
                     },
-                  ),
-                ),
-                WidgetbookUseCase(
-                  name: 'CheckboxItemsList',
-                  builder: (context) => ProviderScope(
-                    overrides: [
-                      checklistItemControllerProvider.overrideWithBuild(
-                        (ref, params) async => checklistItem1,
-                      ),
-                    ],
-                    child: ChecklistWidget(
-                      id: '1',
-                      title: 'Checklist',
-                      taskId: '12',
-                      itemIds: [
-                        checklistItem1.meta.id,
-                        checklistItem2.meta.id,
-                        checklistItem3.meta.id,
-                        checklistItem4.meta.id,
-                      ],
-                      completionRate: 0.5,
-                      onCreateChecklistItem: (title) async {
-                        return null;
-                      },
-                      onTitleSave: (title) {},
-                      updateItemOrder: (items) async {},
-                    ),
                   ),
                 ),
               ],

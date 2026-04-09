@@ -87,9 +87,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addToDictionaryTooLong => 'Begriff zu lang (max. 50 Zeichen)';
 
   @override
-  String get agentActivityLogHeading => 'Aktivitätsprotokoll';
-
-  @override
   String agentABComparisonChoose(String option) {
     return 'Wähle $option';
   }
@@ -103,6 +100,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String agentABComparisonPrefer(String option) {
     return 'Ich bevorzuge Option $option';
   }
+
+  @override
+  String get agentActivityLogHeading => 'Aktivitätsprotokoll';
 
   @override
   String get agentBinaryChoiceNo => 'Nein';
@@ -822,6 +822,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentStateWakeCount => 'Aufwachzähler';
 
   @override
+  String get agentStatsAllDayLegend => 'Ganzer Tag';
+
+  @override
+  String get agentStatsAverageLabel => 'Durchschnitt';
+
+  @override
+  String agentStatsByTimeLegend(String time) {
+    return 'Täglich bis $time';
+  }
+
+  @override
+  String get agentStatsCacheRateLabel => 'Cache-Rate';
+
+  @override
+  String get agentStatsDailyUsageHeading => 'Tägliche Nutzung';
+
+  @override
+  String get agentStatsInputLabel => 'Eingabe';
+
+  @override
+  String get agentStatsNoUsage =>
+      'Keine Token-Nutzung in den letzten 7 Tagen erfasst.';
+
+  @override
+  String get agentStatsOutputLabel => 'Ausgabe';
+
+  @override
+  String agentStatsSourceActiveFor(String duration) {
+    return 'Aktiv seit $duration';
+  }
+
+  @override
+  String get agentStatsSourceActivityHeading => 'Agentenaktivität';
+
+  @override
+  String agentStatsSourceWakes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufwachvorgänge',
+      one: '1 Aufwachvorgang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentStatsTabTitle => 'Statistiken';
+
+  @override
+  String get agentStatsThoughtsLabel => 'Gedanken';
+
+  @override
+  String get agentStatsTodayLabel => 'Heute';
+
+  @override
+  String get agentStatsTokensPerWakeLabel => 'Tokens / Aufwachen';
+
+  @override
+  String get agentStatsTokensUnit => 'Tokens';
+
+  @override
+  String agentStatsUsageAboveAverage(String time) {
+    return 'Du verwendest heute mehr Tokens als gewöhnlich um $time.';
+  }
+
+  @override
+  String agentStatsUsageBelowAverage(String time) {
+    return 'Du verwendest heute weniger Tokens als gewöhnlich um $time.';
+  }
+
+  @override
+  String get agentStatsWakesLabel => 'Aufwachvorgänge';
+
+  @override
+  String get agentStatsWeekTotalLabel => '7-Tage-Gesamt';
+
+  @override
   String get agentTabActivity => 'Aktivität';
 
   @override
@@ -1049,83 +1126,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Aufwachvorgänge';
-
-  @override
-  String get agentStatsTabTitle => 'Statistiken';
-
-  @override
-  String get agentStatsDailyUsageHeading => 'Tägliche Nutzung';
-
-  @override
-  String agentStatsUsageAboveAverage(String time) {
-    return 'Du verwendest heute mehr Tokens als gewöhnlich um $time.';
-  }
-
-  @override
-  String agentStatsUsageBelowAverage(String time) {
-    return 'Du verwendest heute weniger Tokens als gewöhnlich um $time.';
-  }
-
-  @override
-  String get agentStatsAverageLabel => 'Durchschnitt';
-
-  @override
-  String get agentStatsTodayLabel => 'Heute';
-
-  @override
-  String get agentStatsAllDayLegend => 'Ganzer Tag';
-
-  @override
-  String agentStatsByTimeLegend(String time) {
-    return 'Täglich bis $time';
-  }
-
-  @override
-  String get agentStatsSourceActivityHeading => 'Agentenaktivität';
-
-  @override
-  String agentStatsSourceActiveFor(String duration) {
-    return 'Aktiv seit $duration';
-  }
-
-  @override
-  String agentStatsSourceWakes(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Aufwachvorgänge',
-      one: '1 Aufwachvorgang',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get agentStatsNoUsage =>
-      'Keine Token-Nutzung in den letzten 7 Tagen erfasst.';
-
-  @override
-  String get agentStatsTokensUnit => 'Tokens';
-
-  @override
-  String get agentStatsWeekTotalLabel => '7-Tage-Gesamt';
-
-  @override
-  String get agentStatsInputLabel => 'Eingabe';
-
-  @override
-  String get agentStatsOutputLabel => 'Ausgabe';
-
-  @override
-  String get agentStatsThoughtsLabel => 'Gedanken';
-
-  @override
-  String get agentStatsCacheRateLabel => 'Cache-Rate';
-
-  @override
-  String get agentStatsTokensPerWakeLabel => 'Tokens / Aufwachen';
-
-  @override
-  String get agentStatsWakesLabel => 'Aufwachvorgänge';
 
   @override
   String get aiAssistantActionItemSuggestions => 'Vorschläge für Aktionspunkte';
@@ -2030,7 +2030,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistAddItem => 'Neues Element hinzufügen';
 
   @override
+  String checklistAiConfidenceLabel(String level) {
+    return 'Konfidenz: $level';
+  }
+
+  @override
+  String get checklistAiMarkComplete => 'Als erledigt markieren';
+
+  @override
+  String get checklistAiSuggestionBody =>
+      'Diese Aufgabe scheint erledigt zu sein:';
+
+  @override
+  String get checklistAiSuggestionTitle => 'KI-Vorschlag';
+
+  @override
   String get checklistAllDone => 'Alle Punkte erledigt!';
+
+  @override
+  String get checklistProgressSemantics => 'Checklisten-Fortschritt';
 
   @override
   String checklistCompletedShort(int completed, int total) {
@@ -2100,6 +2118,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistNothingToExport => 'Keine Einträge zum Exportieren';
+
+  @override
+  String get checklistMoreTooltip => 'Mehr';
+
+  @override
+  String get checklistShare => 'Teilen';
 
   @override
   String get checklistShareHint => 'Lange drücken zum Teilen';

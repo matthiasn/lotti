@@ -49,7 +49,7 @@ class ChecklistCompletionFunctions {
         function: FunctionObject(
           name: addMultipleChecklistItems,
           description:
-              'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "TODOs" checklist first.',
+              'Add one or more checklist items to the task in a single call. Always pass a JSON array of objects. If no checklist exists, create a "Todos" checklist first.',
           parameters: {
             'type': 'object',
             'properties': {
