@@ -176,7 +176,8 @@ Representative composite or feature-shaped components:
 
 - task filters
 - task list items
-- navigation tab bar and showcase mobile chrome
+- navigation tab bar, floating bottom-navigation shell, and shell-aware FAB
+  clearance wrapper
 - reusable mobile detail back control and header chrome
 - calendar and time pickers
 - file upload surface
@@ -213,6 +214,21 @@ A few implementation patterns repeat across the DS and are worth treating as con
 ### Token-First Sizing and Styling
 
 Representative components such as `DesignSystemButton`, `DesignSystemCheckbox`, and `DesignSystemSplitButton` derive padding, radii, icon size, and text style from `context.designTokens`, not local magic numbers.
+
+### Shell-Aware Overlay Spacing
+
+The floating bottom navigation shell is an app-level overlay, not a normal
+`Scaffold.bottomNavigationBar`. That means any screen-level floating action
+button or status overlay that hugs the bottom edge needs explicit clearance.
+
+The current contract is:
+
+- `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
+  vertical space the shell consumes, including safe-area inset
+- `DesignSystemBottomNavigationFabPadding` is the default wrapper for
+  screen-level FABs that need to stay visually above that shell
+- feature pages should use that wrapper rather than inventing local bottom
+  offsets
 
 ### Explicit Accessibility Hooks
 

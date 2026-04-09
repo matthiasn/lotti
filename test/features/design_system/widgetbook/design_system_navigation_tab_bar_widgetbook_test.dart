@@ -22,11 +22,17 @@ void main() {
       );
 
       expect(find.text('Tab Bar Variants'), findsOneWidget);
-      expect(find.text('Sub-components'), findsOneWidget);
+      expect(find.text('Bottom navigation shell'), findsOneWidget);
       expect(find.text('My Daily'), findsAtLeastNWidgets(3));
       expect(find.text('Tasks'), findsAtLeastNWidgets(1));
       expect(find.text('Projects'), findsAtLeastNWidgets(1));
       expect(find.text('Insights'), findsAtLeastNWidgets(1));
+      await tester.scrollUntilVisible(
+        find.text('Sub-components'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Sub-components'), findsOneWidget);
       expect(find.text('Placeholder'), findsOneWidget);
     });
   });

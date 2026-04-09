@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class ProjectsTabPage extends ConsumerStatefulWidget {
   const ProjectsTabPage({super.key});
@@ -50,17 +51,22 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
       data: (overview) => _filterCategoriesFromOverview(overview.groups),
       orElse: () => const <CategoryDefinition>[],
     );
+    final floatingActionButton = visibleGroupsAsync.maybeWhen(
+      data: (_) => DesignSystemFloatingActionButton(
+        semanticLabel: context.messages.projectCreateButton,
+        onPressed: () => beamToNamed('/settings/projects/create'),
+      ),
+      orElse: () => null,
+    );
 
     return Scaffold(
       backgroundColor: ShowcasePalette.page(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: visibleGroupsAsync.maybeWhen(
-        data: (_) => ProjectCreateFab(
-          semanticLabel: context.messages.projectCreateButton,
-          onPressed: () => beamToNamed('/settings/projects/create'),
-        ),
-        orElse: () => null,
-      ),
+      floatingActionButton: floatingActionButton == null
+          ? null
+          : DesignSystemBottomNavigationFabPadding(
+              child: floatingActionButton,
+            ),
       body: SafeArea(
         bottom: false,
         child: visibleGroupsAsync.when(

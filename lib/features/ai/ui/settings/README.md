@@ -164,11 +164,12 @@ A context-aware FAB that changes based on the active tab.
 - Dynamic icon and label per tab
 - Gradient icon container
 - Consistent styling
+- Wrapped in shared bottom-navigation clearance so it stays above the floating shell
 
 **Tab Configurations:**
 - Providers: "Add Provider" with link icon
 - Models: "Add Model" with auto-awesome icon
-- Prompts: "Add Prompt" with edit-note icon
+- Profiles: "Add Profile" with tune icon
 
 ### State Management
 

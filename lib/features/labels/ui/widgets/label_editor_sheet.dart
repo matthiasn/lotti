@@ -10,6 +10,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class LabelEditorSheet extends ConsumerStatefulWidget {
   const LabelEditorSheet({
@@ -243,7 +244,7 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                       label: Text(context.messages.settingsLabelsCategoriesAdd),
                       onPressed: () async {
                         final result =
-                            await showModalBottomSheet<
+                            await ModalUtils.showBottomSheet<
                               List<CategoryDefinition>
                             >(
                               context: context,

@@ -8,8 +8,10 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -18,6 +20,9 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -85,7 +90,7 @@ class _AppScreenLocation extends BeamLocation<BeamState> {
     return const [
       BeamPage(
         key: ValueKey('app-screen'),
-        child: AppScreen(enableBottomNavSelectionAnimation: false),
+        child: AppScreen(),
       ),
     ];
   }
@@ -148,7 +153,9 @@ Future<void> _stubNavService(
 Future<void> _pumpAppScreen(
   WidgetTester tester, {
   required MockNavService navService,
+  MockJournalDb? journalDb,
 }) async {
+  final effectiveJournalDb = journalDb ?? MockJournalDb();
   final mockMatrix = MockMatrixService();
   when(
     mockMatrix.getIncomingKeyVerificationStream,
@@ -183,6 +190,7 @@ Future<void> _pumpAppScreen(
         aiSetupPromptServiceProvider.overrideWith(
           _MockAiSetupPromptService.new,
         ),
+        journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
           () => _TestAudioRecorderController(
             AudioRecorderState(
@@ -198,6 +206,7 @@ Future<void> _pumpAppScreen(
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
       ],
       child: MaterialApp.router(
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         routerDelegate: routerDelegate,
@@ -348,6 +357,83 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
+    });
+  });
+
+  group('AppScreen bottom navigation style', () {
+    for (final (index, name) in <(int, String)>[
+      (0, 'tasks'),
+      (1, 'projects'),
+      (2, 'dailyOS'),
+      (3, 'habits'),
+      (4, 'dashboards'),
+      (5, 'journal'),
+      (6, 'settings'),
+    ]) {
+      testWidgets('uses design-system nav on the $name tab', (tester) async {
+        final mockNavService = MockNavService();
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(index),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+        );
+
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
+      });
+    }
+
+    testWidgets('lifts recording indicators above the design-system nav', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(1),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
+
+      final context = tester.element(find.byType(AppScreen));
+      final expectedBottom =
+          AppScreenConstants.navigationTimeIndicatorBottom +
+          DesignSystemBottomNavigationBar.occupiedHeight(context);
+      final timeIndicatorPositioned = tester.widget<Positioned>(
+        find.ancestor(
+          of: find.byType(TimeRecordingIndicator),
+          matching: find.byType(Positioned),
+        ),
+      );
+      final audioIndicatorPositioned = tester.widget<Positioned>(
+        find.ancestor(
+          of: find.byType(AudioRecordingIndicator),
+          matching: find.byType(Positioned),
+        ),
+      );
+
+      expect(timeIndicatorPositioned.bottom, expectedBottom);
+      expect(audioIndicatorPositioned.bottom, expectedBottom);
     });
   });
 }

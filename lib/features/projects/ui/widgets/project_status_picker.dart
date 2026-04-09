@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// A tappable widget that shows the current project status and opens a
 /// bottom sheet to choose from all five status variants.
@@ -62,7 +63,7 @@ class ProjectStatusPicker extends StatelessWidget {
   void _showStatusSheet(BuildContext context) {
     final messages = context.messages;
 
-    showModalBottomSheet<void>(
+    ModalUtils.showBottomSheet<void>(
       context: context,
       builder: (sheetContext) {
         return SafeArea(

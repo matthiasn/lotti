@@ -114,6 +114,7 @@ class RiverpodWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -157,7 +158,7 @@ class DarkRiverpodWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: ThemeData.dark(),
+          theme: resolveTestTheme(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

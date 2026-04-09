@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.947] - 2026-04-09
+### Changed
+- Bottom navigation rollout: every main app tab now uses the Widgetbook
+  design-system bottom navigation shell instead of the legacy Spotify-style
+  bar, with the floating pill centered consistently across the app.
+- Mobile bottom sheets and Wolt modals now open on the root navigator on
+  narrow screens so they render above the floating bottom navigation and block
+  tab switching while a modal is active.
+- Tasks and Projects now share the same design-system floating action button,
+  and the shared bottom-navigation spacing now lifts floating action buttons
+  and recording indicators clear of the navigation chrome across list, detail,
+  and settings surfaces.
+
 ## [0.9.946] - 2026-04-08
 ### Changed
 - Checklist widget redesigned to match Widgetbook reference: progress ring now
@@ -41,6 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selection row-surface behavior so active rows blend over adjacent dividers
   consistently, while task category chips now use the same category tag
   component as projects and the task rows have slightly looser spacing.
+- Bottom navigation migration: the redesigned Tasks tab and the Projects tab
+  now render the Widgetbook design-system bottom navigation bar, while the
+  remaining tabs keep the legacy Spotify-style navigation during the rollout.
 
 ## [0.9.944] - 2026-04-08
 ### Added

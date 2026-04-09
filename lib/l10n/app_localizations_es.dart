@@ -2080,7 +2080,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistAllDone => '¡Todos los elementos completados!';
 
   @override
-  String get checklistProgressSemantics => 'Progreso de la checklist';
+  String get checklistProgressSemantics =>
+      'Progreso de la lista de verificación';
 
   @override
   String checklistCompletedShort(int completed, int total) {

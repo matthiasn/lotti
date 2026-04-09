@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -386,5 +388,19 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ProjectHealthHeader), findsOneWidget);
+  });
+
+  testWidgets('uses the design-system FAB with bottom-nav padding', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
 }

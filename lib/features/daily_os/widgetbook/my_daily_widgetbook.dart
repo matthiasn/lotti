@@ -2045,7 +2045,7 @@ class _MyDailyBottomNavigation extends StatelessWidget {
         .map(
           (destination) => DesignSystemNavigationTabBarItem(
             label: destination.label,
-            icon: destination.icon,
+            icon: Icon(destination.icon),
             active: destination.active,
             onTap: widgetbookNoop,
           ),
@@ -2170,7 +2170,13 @@ class _MyDailyBottomNavigationItem extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(item.icon, size: 20, color: iconColor),
+                IconTheme.merge(
+                  data: IconThemeData(
+                    size: 20,
+                    color: iconColor,
+                  ),
+                  child: item.icon,
+                ),
                 SizedBox(height: tokens.spacing.step1),
                 Text(
                   item.label,

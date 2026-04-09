@@ -228,6 +228,7 @@ The list page is the label-management surface in Settings. It provides:
 - usage counts
 - route-based creation when a search query has no exact match
 - navigation into per-label details
+- a create FAB that is lifted above the shared bottom-navigation shell
 
 Rows show more than the chip itself:
 

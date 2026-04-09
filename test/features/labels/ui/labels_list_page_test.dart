@@ -9,6 +9,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -181,6 +182,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
     final fab = find.byType(FloatingActionButton);
     await tester.ensureVisible(fab);
     await tester.tap(fab, warnIfMissed: false);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 Future<T?> showModalActionSheet<T>({
   required BuildContext context,
@@ -12,7 +13,7 @@ Future<T?> showModalActionSheet<T>({
   bool isDismissible = true,
   bool useRootNavigator = true,
 }) {
-  return showModalBottomSheet(
+  return ModalUtils.showBottomSheet(
     context: context,
     isDismissible: isDismissible,
     useRootNavigator: useRootNavigator,

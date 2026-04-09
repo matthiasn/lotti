@@ -9,6 +9,7 @@ import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Modern sliver-based label selection content for use within the
 /// shared Wolt sliver modal. Uses SliverList.builder for efficient
@@ -186,7 +187,7 @@ class _LabelSelectionSliverContentState
   Future<void> _openLabelCreator({String? defaultName}) async {
     final trimmed = defaultName?.trim();
     final initialName = (trimmed?.isEmpty ?? true) ? null : trimmed;
-    final result = await showModalBottomSheet<LabelDefinition>(
+    final result = await ModalUtils.showBottomSheet<LabelDefinition>(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
@@ -462,7 +463,7 @@ class _LabelSelectionModalContentState
   Future<void> _openLabelCreator({String? defaultName}) async {
     final trimmed = defaultName?.trim();
     final initialName = (trimmed?.isEmpty ?? true) ? null : trimmed;
-    final result = await showModalBottomSheet<LabelDefinition>(
+    final result = await ModalUtils.showBottomSheet<LabelDefinition>(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,

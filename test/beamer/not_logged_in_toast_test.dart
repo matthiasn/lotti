@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -26,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
+import '../widget_test_utils.dart';
 
 class _MockUserActivityService extends Mock implements UserActivityService {}
 
@@ -71,6 +73,25 @@ class _EmptyLocation extends BeamLocation<BeamState> {
 
   @override
   List<Pattern> get pathPatterns => ['*'];
+}
+
+Widget _buildTestRouterApp({
+  required BeamerDelegate routerDelegate,
+  required List<Override> overrides,
+}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp.router(
+      theme: resolveTestTheme(ThemeData.dark(useMaterial3: true)),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      routerDelegate: routerDelegate,
+      routeInformationParser: BeamerParser(),
+      backButtonDispatcher: BeamerBackButtonDispatcher(
+        delegate: routerDelegate,
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -227,7 +248,8 @@ void main() {
     ).thenAnswer((_) => controller.stream);
 
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -243,15 +265,6 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate,
-          ),
-        ),
       ),
     );
 
@@ -283,7 +296,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate2,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -297,15 +311,6 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate2,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate2,
-          ),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -360,7 +365,8 @@ void main() {
     await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
 
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -374,15 +380,6 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate,
-          ),
-        ),
       ),
     );
 
@@ -448,7 +445,8 @@ void main() {
 
     // First build: logged out
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -462,15 +460,6 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate,
-          ),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -482,7 +471,8 @@ void main() {
 
     // Second build: simulate login (resets guard)
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -496,22 +486,14 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate,
-          ),
-        ),
       ),
     );
     await tester.pumpAndSettle();
 
     // Third build: back to logged out, a new event should show toast again
     await tester.pumpWidget(
-      ProviderScope(
+      _buildTestRouterApp(
+        routerDelegate: routerDelegate,
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrix),
           loginStateStreamProvider.overrideWith(
@@ -525,15 +507,6 @@ void main() {
             (ref) async => false,
           ),
         ],
-        child: MaterialApp.router(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          routerDelegate: routerDelegate,
-          routeInformationParser: BeamerParser(),
-          backButtonDispatcher: BeamerBackButtonDispatcher(
-            delegate: routerDelegate,
-          ),
-        ),
       ),
     );
     await tester.pumpAndSettle();

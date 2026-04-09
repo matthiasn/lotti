@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemNavigationTabBarWidgetbookComponent() {
@@ -29,6 +31,11 @@ class _NavigationTabBarOverviewPage extends StatelessWidget {
           WidgetbookSection(
             title: context.messages.designSystemNavigationTabBarSectionTitle,
             child: const _TabBarShowcase(),
+          ),
+          const SizedBox(height: 32),
+          const WidgetbookSection(
+            title: 'Bottom navigation shell',
+            child: _BottomNavigationShellShowcase(),
           ),
           const SizedBox(height: 32),
           WidgetbookSection(
@@ -67,6 +74,87 @@ class _TabBarShowcase extends StatelessWidget {
   }
 }
 
+class _BottomNavigationShellShowcase extends StatelessWidget {
+  const _BottomNavigationShellShowcase();
+
+  @override
+  Widget build(BuildContext context) {
+    return _PreviewSurface(
+      child: WidgetbookViewport(
+        width: 390,
+        child: ColoredBox(
+          color: context.designTokens.colors.background.level01,
+          child: SizedBox(
+            height: 220,
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: DesignSystemBottomNavigationBar(
+                    items: _shellItems(context),
+                  ),
+                ),
+                const Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: DesignSystemBottomNavigationFabPadding(
+                      child: DesignSystemFloatingActionButton(
+                        semanticLabel: 'Create',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<DesignSystemNavigationTabBarItem> _shellItems(BuildContext context) {
+    return [
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleTasks,
+        icon: const Icon(Icons.check_circle_outline_rounded),
+        activeIcon: const Icon(Icons.check_circle_rounded),
+        active: true,
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleProjects,
+        icon: const Icon(Icons.folder_outlined),
+        activeIcon: const Icon(Icons.folder_rounded),
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleCalendar,
+        icon: const Icon(Icons.calendar_today_outlined),
+        activeIcon: const Icon(Icons.calendar_today_rounded),
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleHabits,
+        icon: const Icon(Icons.checklist_rtl_outlined),
+        activeIcon: const Icon(Icons.checklist_rtl_rounded),
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleInsights,
+        icon: const Icon(Icons.bar_chart_outlined),
+        activeIcon: const Icon(Icons.bar_chart_rounded),
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleJournal,
+        icon: const Icon(Icons.book_outlined),
+        activeIcon: const Icon(Icons.book_rounded),
+      ),
+      DesignSystemNavigationTabBarItem(
+        label: context.messages.navTabTitleSettings,
+        icon: const Icon(Icons.settings_outlined),
+        activeIcon: const Icon(Icons.settings_rounded),
+      ),
+    ];
+  }
+}
+
 class _NavigationTabBar extends StatelessWidget {
   const _NavigationTabBar({
     required this.items,
@@ -87,7 +175,7 @@ class _NavigationTabBar extends StatelessWidget {
               .map(
                 (item) => DesignSystemNavigationTabBarItem(
                   label: item.label,
-                  icon: item.icon,
+                  icon: Icon(item.icon),
                   active: item.active,
                 ),
               )

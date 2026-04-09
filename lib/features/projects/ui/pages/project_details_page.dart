@@ -15,6 +15,7 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/index.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
 class ProjectDetailsPage extends ConsumerWidget {
@@ -156,7 +157,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     WidgetRef ref,
     ProjectEntry project,
   ) async {
-    final selected = await showModalBottomSheet<ProjectStatus>(
+    final selected = await ModalUtils.showBottomSheet<ProjectStatus>(
       context: context,
       builder: (sheetContext) {
         return SafeArea(

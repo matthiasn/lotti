@@ -476,8 +476,8 @@ class _LoadingThemingController extends ThemingController {
 class _ReadyThemingController extends ThemingController {
   @override
   ThemingState build() => ThemingState(
-    darkTheme: ThemeData.dark(),
-    lightTheme: ThemeData.light(),
+    darkTheme: resolveTestTheme(ThemeData.dark()),
+    lightTheme: resolveTestTheme(ThemeData.light()),
   );
 }
 

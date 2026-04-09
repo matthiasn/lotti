@@ -20,6 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/gamey/colors.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -613,6 +614,10 @@ void main() {
 
       expect(
         find.byTooltip(context.messages.agentSoulCreateTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,
       );
     });

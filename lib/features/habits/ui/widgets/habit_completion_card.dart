@@ -15,6 +15,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
@@ -47,7 +48,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
       return;
     }
 
-    showModalBottomSheet<void>(
+    ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       constraints: BoxConstraints(maxHeight: maxHeight),

@@ -195,6 +195,11 @@ Dashboards, habits, and measurables all reuse the same broad pattern:
 4. Tapping an item opens a detail editor page.
 5. Saving or deleting goes through shared persistence or a feature-specific controller.
 
+The shared create affordance for those list pages is `FloatingAddIcon`, which
+now includes the bottom-navigation clearance wrapper. Dashboards, habits, and
+measurables therefore stay above the floating app-shell nav without each page
+inventing its own bottom offset.
+
 ### List pages
 
 - [`ui/pages/dashboards/dashboards_page.dart`](ui/pages/dashboards/dashboards_page.dart)

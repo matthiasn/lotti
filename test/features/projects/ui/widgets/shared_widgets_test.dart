@@ -1070,45 +1070,6 @@ Detailed analysis section.
     });
   });
 
-  group('ProjectCreateFab', () {
-    testWidgets('renders with semantic label and + icon', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          ProjectCreateFab(
-            semanticLabel: 'Create project',
-            onPressed: () {},
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Create project'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('invokes onPressed when tapped', (tester) async {
-      var pressed = false;
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectCreateFab(
-            semanticLabel: 'Create project',
-            onPressed: () => pressed = true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.byIcon(Icons.add_rounded));
-      await tester.pump();
-
-      expect(pressed, isTrue);
-    });
-  });
-
   group('ProjectStatusPill - all status variants', () {
     testWidgets('renders correctly for completed status', (tester) async {
       await tester.pumpWidget(

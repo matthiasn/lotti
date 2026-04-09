@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 typedef DesignSystemFilterOptionAppearanceResolver =
     DesignSystemFilterSelectionOptionAppearance? Function(String optionId);
@@ -119,25 +120,26 @@ Future<Set<String>?> showDesignSystemFilterSelectionModal({
         );
       },
     ),
-    DesignSystemFilterPresentation.mobile => showModalBottomSheet<Set<String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        final selectedIds = {...initialSelectedIds};
-        return StatefulBuilder(
-          builder: (sheetContext, setState) => SafeArea(
-            top: false,
-            child: sheetBuilder(
-              sheetContext,
-              setState,
-              selectedIds,
-              showDragHandle: true,
+    DesignSystemFilterPresentation.mobile =>
+      ModalUtils.showBottomSheet<Set<String>>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) {
+          final selectedIds = {...initialSelectedIds};
+          return StatefulBuilder(
+            builder: (sheetContext, setState) => SafeArea(
+              top: false,
+              child: sheetBuilder(
+                sheetContext,
+                setState,
+                selectedIds,
+                showDragHandle: true,
+              ),
             ),
-          ),
-        );
-      },
-    ),
+          );
+        },
+      ),
   };
 }
 

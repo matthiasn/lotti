@@ -10,6 +10,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/gamey/gamey_card.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ThemingPage extends ConsumerWidget {
   const ThemingPage({super.key});
@@ -149,7 +150,7 @@ class SelectTheme extends ConsumerWidget {
     final themeData = Theme.of(context);
 
     void onTap() {
-      showModalBottomSheet<void>(
+      ModalUtils.showBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         builder: (BuildContext _) {

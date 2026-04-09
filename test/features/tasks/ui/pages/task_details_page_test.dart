@@ -18,6 +18,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -157,6 +158,10 @@ void main() {
 
       // test task title is displayed
       expect(find.text(testTask.data.title), findsNWidgets(2));
+      expect(
+        find.byType(DesignSystemBottomNavigationFabPadding),
+        findsOneWidget,
+      );
     });
   });
 

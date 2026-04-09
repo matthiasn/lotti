@@ -16,6 +16,7 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 class LabelDetailsPage extends ConsumerStatefulWidget {
@@ -407,16 +408,17 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
           icon: const Icon(Icons.add),
           label: Text(context.messages.settingsLabelsCategoriesAdd),
           onPressed: () async {
-            final result = await showModalBottomSheet<List<CategoryDefinition>>(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              builder: (context) => CategorySelectionModalContent(
-                onCategorySelected: (_) {},
-                multiSelect: true,
-                initiallySelectedCategoryIds: state.selectedCategoryIds,
-              ),
-            );
+            final result =
+                await ModalUtils.showBottomSheet<List<CategoryDefinition>>(
+                  context: context,
+                  isScrollControlled: true,
+                  useRootNavigator: true,
+                  builder: (context) => CategorySelectionModalContent(
+                    onCategorySelected: (_) {},
+                    multiSelect: true,
+                    initiallySelectedCategoryIds: state.selectedCategoryIds,
+                  ),
+                );
             if (result != null && result.isNotEmpty) {
               for (final cat in result) {
                 controller.addCategoryId(cat.id);

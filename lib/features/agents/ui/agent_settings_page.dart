@@ -18,6 +18,7 @@ import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/gamey/gamey_fab.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Landing page for Settings > Agents.
 ///
@@ -50,6 +51,19 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
     final pendingWakeCount = ref.watch(
       pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
     );
+    final floatingActionButton = switch (_selectedTab) {
+      _AgentSettingsTab.templates => GameyFab(
+        onPressed: () => beamToNamed('/settings/agents/templates/create'),
+        semanticLabel: context.messages.agentTemplateCreateTitle,
+        child: const Icon(Icons.add),
+      ),
+      _AgentSettingsTab.souls => GameyFab(
+        onPressed: () => beamToNamed('/settings/agents/souls/create'),
+        semanticLabel: context.messages.agentSoulCreateTitle,
+        child: const Icon(Icons.add),
+      ),
+      _ => null,
+    };
 
     return Scaffold(
       appBar: AppBar(
@@ -84,19 +98,11 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
           ),
         ],
       ),
-      floatingActionButton: switch (_selectedTab) {
-        _AgentSettingsTab.templates => GameyFab(
-          onPressed: () => beamToNamed('/settings/agents/templates/create'),
-          semanticLabel: context.messages.agentTemplateCreateTitle,
-          child: const Icon(Icons.add),
-        ),
-        _AgentSettingsTab.souls => GameyFab(
-          onPressed: () => beamToNamed('/settings/agents/souls/create'),
-          semanticLabel: context.messages.agentSoulCreateTitle,
-          child: const Icon(Icons.add),
-        ),
-        _ => null,
-      },
+      floatingActionButton: floatingActionButton == null
+          ? null
+          : DesignSystemBottomNavigationFabPadding(
+              child: floatingActionButton,
+            ),
     );
   }
 }
