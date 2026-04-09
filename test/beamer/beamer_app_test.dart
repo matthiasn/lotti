@@ -8,6 +8,7 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -18,6 +19,10 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -148,7 +153,9 @@ Future<void> _stubNavService(
 Future<void> _pumpAppScreen(
   WidgetTester tester, {
   required MockNavService navService,
+  MockJournalDb? journalDb,
 }) async {
+  final effectiveJournalDb = journalDb ?? MockJournalDb();
   final mockMatrix = MockMatrixService();
   when(
     mockMatrix.getIncomingKeyVerificationStream,
@@ -183,6 +190,7 @@ Future<void> _pumpAppScreen(
         aiSetupPromptServiceProvider.overrideWith(
           _MockAiSetupPromptService.new,
         ),
+        journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
           () => _TestAudioRecorderController(
             AudioRecorderState(
@@ -198,6 +206,7 @@ Future<void> _pumpAppScreen(
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
       ],
       child: MaterialApp.router(
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         routerDelegate: routerDelegate,
@@ -348,6 +357,95 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
+    });
+  });
+
+  group('AppScreen bottom navigation style', () {
+    testWidgets('uses design-system nav on redesigned tasks tab', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
+      ).thenAnswer((_) => Stream.value(true));
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        journalDb: mockJournalDb,
+      );
+
+      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+      expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
+      expect(find.byType(SpotifyStyleBottomNavigationBar), findsNothing);
+    });
+
+    testWidgets('uses design-system nav on projects tab', (tester) async {
+      final mockNavService = MockNavService();
+      final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
+      ).thenAnswer((_) => Stream.value(false));
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(1),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        journalDb: mockJournalDb,
+      );
+
+      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+      expect(find.byType(SpotifyStyleBottomNavigationBar), findsNothing);
+    });
+
+    testWidgets('keeps legacy nav on non-migrated tabs', (tester) async {
+      final mockNavService = MockNavService();
+      final mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.watchConfigFlag(enableTasksRedesignFlag),
+      ).thenAnswer((_) => Stream.value(true));
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(5),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        journalDb: mockJournalDb,
+      );
+
+      expect(find.byType(SpotifyStyleBottomNavigationBar), findsOneWidget);
+      expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
     });
   });
 }

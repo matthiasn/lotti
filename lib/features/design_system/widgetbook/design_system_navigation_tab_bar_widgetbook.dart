@@ -87,7 +87,7 @@ class _NavigationTabBar extends StatelessWidget {
               .map(
                 (item) => DesignSystemNavigationTabBarItem(
                   label: item.label,
-                  icon: item.icon,
+                  icon: Icon(item.icon),
                   active: item.active,
                 ),
               )

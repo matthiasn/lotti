@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selection row-surface behavior so active rows blend over adjacent dividers
   consistently, while task category chips now use the same category tag
   component as projects and the task rows have slightly looser spacing.
+- Bottom navigation migration: the redesigned Tasks tab and the Projects tab
+  now render the Widgetbook design-system bottom navigation bar, while the
+  remaining tabs keep the legacy Spotify-style navigation during the rollout.
 
 ## [0.9.944] - 2026-04-08
 ### Added

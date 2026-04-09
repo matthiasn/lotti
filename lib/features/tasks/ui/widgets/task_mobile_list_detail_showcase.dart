@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
@@ -202,32 +203,9 @@ class _TaskMobileListScreen extends StatelessWidget {
           Positioned(
             right: 16,
             bottom: 140,
-            child: Semantics(
-              button: true,
-              label: context.messages.designSystemNavigationNewLabel,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: TaskShowcasePalette.accent(context),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const SizedBox.square(
-                  dimension: 56,
-                  child: Center(
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: 24,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
+            child: DesignSystemFloatingActionButton(
+              semanticLabel: context.messages.designSystemNavigationNewLabel,
+              onPressed: () {},
             ),
           ),
           const Positioned(
@@ -310,24 +288,26 @@ class _TaskMobileBottomNavigation extends StatelessWidget {
                           label: context
                               .messages
                               .designSystemNavigationMyDailyLabel,
-                          icon: Icons.calendar_today_outlined,
+                          icon: const Icon(Icons.calendar_today_outlined),
                         ),
                         DesignSystemNavigationTabBarItem(
                           label: context.messages.navTabTitleTasks,
-                          icon: Icons.format_list_bulleted_rounded,
+                          icon: const Icon(
+                            Icons.format_list_bulleted_rounded,
+                          ),
                           active: true,
                         ),
                         DesignSystemNavigationTabBarItem(
                           label: context
                               .messages
                               .designSystemBreadcrumbProjectsLabel,
-                          icon: Icons.folder_rounded,
+                          icon: const Icon(Icons.folder_rounded),
                         ),
                         DesignSystemNavigationTabBarItem(
                           label: context
                               .messages
                               .designSystemNavigationInsightsLabel,
-                          icon: Icons.bar_chart_rounded,
+                          icon: const Icon(Icons.bar_chart_rounded),
                         ),
                       ],
                     ),

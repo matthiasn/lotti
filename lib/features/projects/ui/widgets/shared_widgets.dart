@@ -482,60 +482,6 @@ class CountDotBadge extends StatelessWidget {
   }
 }
 
-/// A floating add-project action matching the Widgetbook mobile reference.
-class ProjectCreateFab extends StatelessWidget {
-  const ProjectCreateFab({
-    required this.semanticLabel,
-    this.onPressed,
-    super.key,
-  });
-
-  final String semanticLabel;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(24);
-
-    return Semantics(
-      button: true,
-      enabled: onPressed != null,
-      label: semanticLabel,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: borderRadius,
-        child: Ink(
-          decoration: BoxDecoration(
-            color: ShowcasePalette.teal(context),
-            borderRadius: borderRadius,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.22),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: InkWell(
-            borderRadius: borderRadius,
-            onTap: onPressed,
-            child: const SizedBox.square(
-              dimension: 56,
-              child: Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 24,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// A bordered panel with a header row, divider, and a list of children
 /// separated by dividers.
 class ShowcasePanel extends StatelessWidget {

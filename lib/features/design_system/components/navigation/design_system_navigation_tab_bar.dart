@@ -7,12 +7,14 @@ class DesignSystemNavigationTabBarItem {
   const DesignSystemNavigationTabBarItem({
     required this.label,
     required this.icon,
+    this.activeIcon,
     this.active = false,
     this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final Widget icon;
+  final Widget? activeIcon;
   final bool active;
   final VoidCallback? onTap;
 }
@@ -23,6 +25,9 @@ class DesignSystemNavigationTabBar extends StatelessWidget {
     this.minimized = false,
     super.key,
   });
+
+  static const double defaultItemMinHeight = 52;
+  static const double defaultIconSize = 20;
 
   final List<DesignSystemNavigationTabBarItem> items;
   final bool minimized;
@@ -121,6 +126,7 @@ class _DesignSystemNavigationTabBarItem extends StatelessWidget {
     final labelColor = item.active
         ? tokens.colors.interactive.enabled
         : tokens.colors.text.highEmphasis;
+    final icon = item.active ? item.activeIcon ?? item.icon : item.icon;
 
     return Semantics(
       button: true,
@@ -153,7 +159,13 @@ class _DesignSystemNavigationTabBarItem extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(item.icon, size: 20, color: iconColor),
+                IconTheme.merge(
+                  data: IconThemeData(
+                    size: DesignSystemNavigationTabBar.defaultIconSize,
+                    color: iconColor,
+                  ),
+                  child: icon,
+                ),
                 if (!symbol) ...[
                   SizedBox(height: tokens.spacing.step1),
                   Text(

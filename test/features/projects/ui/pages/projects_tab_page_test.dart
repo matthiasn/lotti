@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_finders.dart';
@@ -159,6 +161,8 @@ void main() {
     expect(findRichTextContaining('5 tasks'), findsOneWidget);
     expect(findRichTextContaining('Due Mar 27'), findsOneWidget);
     expect(find.bySemanticsLabel('New Project'), findsOneWidget);
+    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isTrue);

@@ -15,12 +15,12 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icons.check_circle_outline,
+                icon: Icon(Icons.check_circle_outline),
                 active: true,
               ),
               DesignSystemNavigationTabBarItem(
                 label: 'Projects',
-                icon: Icons.folder_outlined,
+                icon: Icon(Icons.folder_outlined),
               ),
             ],
           ),
@@ -51,7 +51,7 @@ void main() {
             items: [
               DesignSystemNavigationTabBarItem(
                 label: 'Tasks',
-                icon: Icons.check_circle_outline,
+                icon: Icon(Icons.check_circle_outline),
                 active: true,
               ),
             ],

@@ -43,6 +43,7 @@
           <p>Tasks tab redesign: aligned grouped cards more closely with Figma by switching to the actual task-status glyphs, inset dividers, priority-section header treatment, tracked-time metadata, and a filter-modal search-mode control in place of the inline full-text/vector toggle.</p>
           <p>Tasks tab polish: replaced the provisional priority glyphs with the actual Figma P0 to P3 icons and restored the intended breathing room below the search row.</p>
           <p>Tasks and projects grouped cards: both tabs now share the same hover and selection row-surface behavior so active rows blend over adjacent dividers consistently, while task category chips now use the same category tag component as projects and the task rows have slightly looser spacing.</p>
+          <p>Bottom navigation migration: the redesigned Tasks tab and the Projects tab now render the Widgetbook design-system bottom navigation bar, while the remaining tabs keep the legacy Spotify-style navigation during the rollout.</p>
       </description>
     </release>
     <release version="0.9.944" date="2026-04-08">

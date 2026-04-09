@@ -8,10 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -30,9 +32,11 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar.dart';
 import 'package:lotti/widgets/nav_bar/nav_bar_item.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -54,6 +58,50 @@ bool _isRunningInFlatpak() {
   return Platform.isLinux &&
       (Platform.environment['FLATPAK_ID'] != null &&
           Platform.environment['FLATPAK_ID']!.isNotEmpty);
+}
+
+enum _AppNavigationDestinationKind {
+  tasks,
+  projects,
+  dailyOs,
+  habits,
+  dashboards,
+  journal,
+  settings,
+}
+
+class _AppNavigationDestination {
+  const _AppNavigationDestination({
+    required this.kind,
+    required this.label,
+    required this.iconBuilder,
+  });
+
+  final _AppNavigationDestinationKind kind;
+  final String label;
+  final Widget Function({required bool active}) iconBuilder;
+
+  BottomNavigationBarItem toLegacyItem() {
+    return createNavBarItem(
+      semanticLabel: label,
+      icon: iconBuilder(active: false),
+      activeIcon: iconBuilder(active: true),
+      label: label,
+    );
+  }
+
+  DesignSystemNavigationTabBarItem toDesignSystemItem({
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return DesignSystemNavigationTabBarItem(
+      label: label,
+      icon: iconBuilder(active: false),
+      activeIcon: iconBuilder(active: true),
+      active: active,
+      onTap: onTap,
+    );
+  }
 }
 
 class AppScreen extends ConsumerStatefulWidget {
@@ -109,6 +157,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTasksRedesignEnabled =
+        ref.watch(configFlagProvider(enableTasksRedesignFlag)).value ?? false;
+
     // Reset toast guard on login, and listen for login-gate events from outbox.
     ref
       ..listen(loginStateStreamProvider, (prev, next) {
@@ -201,26 +252,68 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final isHabitsPageEnabled = navService.isHabitsPageEnabled;
         final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
 
-        final navItems = [
-          true, // Tasks
-          isProjectsPageEnabled, // Projects
-          isDailyOsPageEnabled, // DailyOS
-          isHabitsPageEnabled, // Habits
-          isDashboardsPageEnabled, // Dashboards
-          true, // Journal
-          true, // Settings
-        ];
-        final itemCount = navItems.where((isEnabled) => isEnabled).length;
+        final destinations = _buildNavigationDestinations(
+          context: context,
+          isProjectsPageEnabled: isProjectsPageEnabled,
+          isDailyOsPageEnabled: isDailyOsPageEnabled,
+          isHabitsPageEnabled: isHabitsPageEnabled,
+          isDashboardsPageEnabled: isDashboardsPageEnabled,
+        );
+        final itemCount = destinations.length;
 
         // Clamp index to valid range to prevent out of bounds errors
         // when flags are toggled and items list shrinks
         final index = rawIndex < 0
             ? 0
             : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
+        final selectedDestination = destinations[index];
+        final useDesignSystemBottomNav =
+            selectedDestination.kind ==
+                _AppNavigationDestinationKind.projects ||
+            (selectedDestination.kind == _AppNavigationDestinationKind.tasks &&
+                isTasksRedesignEnabled);
+        final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
+          items: [
+            for (var i = 0; i < destinations.length; i++)
+              destinations[i].toDesignSystemItem(
+                active: i == index,
+                onTap: () => navService.tapIndex(i),
+              ),
+          ],
+        );
+        final bottomNavigationBar = useDesignSystemBottomNav
+            ? null
+            : SpotifyStyleBottomNavigationBar(
+                selectedItemColor: context.colorScheme.primary,
+                unselectedItemColor: context.colorScheme.primary.withAlpha(127),
+                enableFeedback: true,
+                backgroundColor: context.colorScheme.surface,
+                elevation: AppScreenConstants.navigationElevation,
+                iconSize: AppScreenConstants.navigationIconSize,
+                selectedLabelStyle: const TextStyle(
+                  height: AppScreenConstants.navigationTextHeight,
+                  fontWeight: FontWeight.normal,
+                  fontSize: fontSizeSmall,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  height: AppScreenConstants.navigationTextHeight,
+                  fontWeight: FontWeight.w300,
+                  fontSize: fontSizeSmall,
+                ),
+                type: SpotifyStyleBottomNavigationBarType.fixed,
+                currentIndex: index,
+                enableSelectionAnimation:
+                    widget.enableBottomNavSelectionAnimation,
+                items: destinations
+                    .map((destination) => destination.toLegacyItem())
+                    .toList(growable: false),
+                onTap: navService.tapIndex,
+              );
 
         // No eager toast from build(); event-driven toast handled via ref.listen
 
         return Scaffold(
+          extendBody: useDesignSystemBottomNav,
           body: Stack(
             children: [
               const IncomingVerificationWrapper(),
@@ -240,6 +333,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   Beamer(routerDelegate: navService.settingsDelegate),
                 ],
               ),
+              if (useDesignSystemBottomNav)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: designSystemBottomNavigationBar,
+                ),
               const Positioned(
                 left: AppScreenConstants.navigationPadding,
                 bottom: AppScreenConstants.navigationTimeIndicatorBottom,
@@ -255,87 +355,90 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ),
             ],
           ),
-          bottomNavigationBar: SpotifyStyleBottomNavigationBar(
-            selectedItemColor: context.colorScheme.primary,
-            unselectedItemColor: context.colorScheme.primary.withAlpha(127),
-            enableFeedback: true,
-            backgroundColor: context.colorScheme.surface,
-            elevation: AppScreenConstants.navigationElevation,
-            iconSize: AppScreenConstants.navigationIconSize,
-            selectedLabelStyle: const TextStyle(
-              height: AppScreenConstants.navigationTextHeight,
-              fontWeight: FontWeight.normal,
-              fontSize: fontSizeSmall,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              height: AppScreenConstants.navigationTextHeight,
-              fontWeight: FontWeight.w300,
-              fontSize: fontSizeSmall,
-            ),
-            type: SpotifyStyleBottomNavigationBarType.fixed,
-            currentIndex: index,
-            enableSelectionAnimation: widget.enableBottomNavSelectionAnimation,
-            items: [
-              createNavBarItem(
-                semanticLabel: context.messages.navTabTitleTasks,
-                icon: TasksBadge(
-                  child: Icon(MdiIcons.checkboxMarkedCircleOutline),
-                ),
-                activeIcon: TasksBadge(
-                  child: Icon(MdiIcons.checkboxMarkedCircle),
-                ),
-                label: context.messages.navTabTitleTasks,
-              ),
-              if (isProjectsPageEnabled)
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleProjects,
-                  icon: const Icon(Ionicons.folder_outline),
-                  activeIcon: const Icon(Ionicons.folder),
-                  label: context.messages.navTabTitleProjects,
-                ),
-              if (isDailyOsPageEnabled)
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleCalendar,
-                  icon: const Icon(Ionicons.calendar_outline),
-                  activeIcon: const Icon(Ionicons.calendar),
-                  label: context.messages.navTabTitleCalendar,
-                ),
-              if (isHabitsPageEnabled)
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleHabits,
-                  icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                  activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                  label: context.messages.navTabTitleHabits,
-                ),
-              if (isDashboardsPageEnabled)
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleInsights,
-                  icon: const Icon(Ionicons.bar_chart_outline),
-                  activeIcon: const Icon(Ionicons.bar_chart),
-                  label: context.messages.navTabTitleInsights,
-                ),
-              createNavBarItem(
-                semanticLabel: context.messages.navTabTitleJournal,
-                icon: const Icon(Ionicons.book_outline),
-                activeIcon: const Icon(Ionicons.book),
-                label: context.messages.navTabTitleJournal,
-              ),
-              createNavBarItem(
-                semanticLabel: context.messages.navTabTitleSettings,
-                icon: const OutboxBadgeIcon(
-                  icon: Icon(Ionicons.settings_outline),
-                ),
-                activeIcon: const OutboxBadgeIcon(
-                  icon: Icon(Ionicons.settings),
-                ),
-                label: context.messages.navTabTitleSettings,
-              ),
-            ],
-            onTap: navService.tapIndex,
-          ),
+          bottomNavigationBar: bottomNavigationBar,
         );
       },
     );
+  }
+
+  List<_AppNavigationDestination> _buildNavigationDestinations({
+    required BuildContext context,
+    required bool isProjectsPageEnabled,
+    required bool isDailyOsPageEnabled,
+    required bool isHabitsPageEnabled,
+    required bool isDashboardsPageEnabled,
+  }) {
+    final allDestinations = <_AppNavigationDestination>[
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.tasks,
+        label: context.messages.navTabTitleTasks,
+        iconBuilder: ({required active}) => TasksBadge(
+          child: Icon(
+            active
+                ? MdiIcons.checkboxMarkedCircle
+                : MdiIcons.checkboxMarkedCircleOutline,
+          ),
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.projects,
+        label: context.messages.navTabTitleProjects,
+        iconBuilder: ({required active}) => Icon(
+          active ? Ionicons.folder : Ionicons.folder_outline,
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.dailyOs,
+        label: context.messages.navTabTitleCalendar,
+        iconBuilder: ({required active}) => Icon(
+          active ? Ionicons.calendar : Ionicons.calendar_outline,
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.habits,
+        label: context.messages.navTabTitleHabits,
+        iconBuilder: ({required active}) => Icon(
+          active
+              ? MdiIcons.checkboxMultipleMarked
+              : MdiIcons.checkboxMultipleMarkedOutline,
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.dashboards,
+        label: context.messages.navTabTitleInsights,
+        iconBuilder: ({required active}) => Icon(
+          active ? Ionicons.bar_chart : Ionicons.bar_chart_outline,
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.journal,
+        label: context.messages.navTabTitleJournal,
+        iconBuilder: ({required active}) => Icon(
+          active ? Ionicons.book : Ionicons.book_outline,
+        ),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.settings,
+        label: context.messages.navTabTitleSettings,
+        iconBuilder: ({required active}) => OutboxBadgeIcon(
+          icon: Icon(active ? Ionicons.settings : Ionicons.settings_outline),
+        ),
+      ),
+    ];
+
+    return allDestinations
+        .where((destination) {
+          return switch (destination.kind) {
+            _AppNavigationDestinationKind.tasks => true,
+            _AppNavigationDestinationKind.projects => isProjectsPageEnabled,
+            _AppNavigationDestinationKind.dailyOs => isDailyOsPageEnabled,
+            _AppNavigationDestinationKind.habits => isHabitsPageEnabled,
+            _AppNavigationDestinationKind.dashboards => isDashboardsPageEnabled,
+            _AppNavigationDestinationKind.journal => true,
+            _AppNavigationDestinationKind.settings => true,
+          };
+        })
+        .toList(growable: false);
   }
 }
 

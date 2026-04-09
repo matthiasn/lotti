@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -22,6 +22,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 typedef TasksTabCreateTaskCallback =
@@ -52,6 +53,17 @@ class TasksTabPage extends ConsumerWidget {
     final categoryId = selectedCategoryIds.length == 1
         ? selectedCategoryIds.first
         : null;
+    final floatingActionButton = DesignSystemFloatingActionButton(
+      semanticLabel: context.messages.addActionAddTask,
+      onPressed: () {
+        unawaited(
+          (onCreateTaskPressed ?? _defaultCreateTaskPressed)(
+            ref,
+            categoryId,
+          ),
+        );
+      },
+    );
 
     return ProviderScope(
       overrides: [
@@ -60,16 +72,8 @@ class TasksTabPage extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: TaskShowcasePalette.page(context),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: FloatingAddIcon(
-          createFn: () {
-            unawaited(
-              (onCreateTaskPressed ?? _defaultCreateTaskPressed)(
-                ref,
-                categoryId,
-              ),
-            );
-          },
-          semanticLabel: context.messages.addActionAddTask,
+        floatingActionButton: DesignSystemBottomNavigationFabPadding(
+          child: floatingActionButton,
         ),
         body: _TasksTabPageBody(
           projectHeaderBuilder: projectHeaderBuilder,
