@@ -40,7 +40,8 @@
     </release>
     <release version="0.9.946" date="2026-04-08">
       <description>
-          <p>Checklist widget redesigned: progress ring always visible in the header, filter tabs with highlighted selection, plain add-item field, pencil-only edit trigger for items, and fully localized AI suggestion and Share labels.</p>
+          <p>Checklist widget redesigned: progress ring shown in the header when checklist items exist, filter tabs with highlighted selection, plain add-item field, pencil-only edit trigger for items, and fully localized AI suggestion and Share labels.</p>
+          <p>Progress ring and three-dot menu are hidden when there are no checklist items. Checklist item rows now expand to accommodate multi-line editing and larger system text scales.</p>
       </description>
     </release>
     <release version="0.9.945" date="2026-04-08">

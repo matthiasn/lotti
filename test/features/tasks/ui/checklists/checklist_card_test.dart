@@ -213,6 +213,23 @@ void main() {
       expect(find.text('All').hitTestable(), findsNothing);
     });
 
+    testWidgets('progress ring hidden when totalCount is zero', (tester) async {
+      await _pump(
+        tester,
+        initiallyExpanded: true,
+        completedCount: 0,
+        totalCount: 0,
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('menu icon hidden when no actions provided', (tester) async {
+      await _pump(tester, initiallyExpanded: true);
+      // No onDelete / onExportMarkdown / onShareMarkdown → no more_vert button.
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+    });
+
     testWidgets('selected filter tab renders with bold text', (tester) async {
       await _pump(
         tester,

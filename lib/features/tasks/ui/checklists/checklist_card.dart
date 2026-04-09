@@ -310,14 +310,14 @@ class _Header extends StatelessWidget {
           onTap: isExpanded ? null : onToggleExpand,
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 8,
-              top: 8,
-              bottom: 8,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.step5,
+              right: tokens.spacing.step3,
+              top: tokens.spacing.step3,
+              bottom: tokens.spacing.step3,
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 40),
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
               child: Row(
                 children: [
                   Expanded(
@@ -345,7 +345,7 @@ class _Header extends StatelessWidget {
                     completionRate: completionRate,
                     tokens: tokens,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spacing.step3),
                   // Chevron
                   AnimatedRotation(
                     turns: isExpanded ? 0.0 : -0.25,
@@ -359,13 +359,17 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Menu
-                  _HeaderMenu(
-                    onDelete: onDelete,
-                    onExportMarkdown: onExportMarkdown,
-                    onShareMarkdown: onShareMarkdown,
-                  ),
+                  // Menu — only shown when at least one action is available.
+                  if (onDelete != null ||
+                      onExportMarkdown != null ||
+                      onShareMarkdown != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    _HeaderMenu(
+                      onDelete: onDelete,
+                      onExportMarkdown: onExportMarkdown,
+                      onShareMarkdown: onShareMarkdown,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -416,7 +420,7 @@ class _SortingHeader extends StatelessWidget {
     final tokens = context.designTokens;
 
     final handle = Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: tokens.spacing.step3),
       child: Icon(
         Icons.drag_indicator,
         size: 28,
@@ -425,7 +429,10 @@ class _SortingHeader extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        vertical: tokens.spacing.step3,
+        horizontal: tokens.spacing.step5,
+      ),
       child: Row(
         children: [
           if (reorderIndex != null)
@@ -474,6 +481,7 @@ class _ProgressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (totalCount == 0) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -482,7 +490,7 @@ class _ProgressRow extends StatelessWidget {
           lowEmphasisColor: tokens.colors.text.lowEmphasis,
           semanticsLabel: context.messages.checklistProgressSemantics,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: tokens.spacing.step3),
         Text(
           context.messages.checklistCompletedShort(completedCount, totalCount),
           style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -651,6 +659,7 @@ class _HeaderMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
@@ -707,7 +716,7 @@ class _HeaderMenu extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(MdiIcons.exportVariant, size: 18),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
                       context.messages.checklistExportAsMarkdown,
@@ -724,7 +733,7 @@ class _HeaderMenu extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(Icons.ios_share, size: 18),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
                       context.messages.checklistShare,
@@ -741,7 +750,7 @@ class _HeaderMenu extends StatelessWidget {
               child: Row(
                 children: [
                   const Icon(Icons.delete_outline, size: 18),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(
                       context.messages.checklistDelete,
@@ -844,7 +853,7 @@ class _Body extends StatelessWidget {
           thickness: 1,
           color: tokens.colors.decorative.level01,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step3),
 
         // Add item field — clean pill input matching the Widgetbook design.
         _AddItemField(
@@ -896,14 +905,21 @@ class _AddItemFieldState extends State<_AddItemField> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step3,
+        right: tokens.spacing.step3,
+        bottom: tokens.spacing.step4,
+      ),
       child: Container(
-        height: 36,
+        constraints: const BoxConstraints(minHeight: 36),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step3,
+        ),
         child: TextField(
           controller: _controller,
           focusNode: widget.focusNode,
@@ -917,7 +933,7 @@ class _AddItemFieldState extends State<_AddItemField> {
             ),
             border: InputBorder.none,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            contentPadding: EdgeInsets.zero,
           ),
           onSubmitted: _submit,
           textInputAction: TextInputAction.done,

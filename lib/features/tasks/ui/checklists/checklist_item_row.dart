@@ -230,9 +230,12 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: SizedBox(
-                height: 44,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step2,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
                 child: Row(
                   children: [
                     // Drag handle — ReorderableDragStartListener for within-list
@@ -247,7 +250,7 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: tokens.spacing.step3),
                     // Checkbox
                     SizedBox(
                       width: 20,
@@ -281,7 +284,7 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: tokens.spacing.step3),
                     // Title — editable or display
                     Expanded(
                       child: _isEditing
@@ -343,8 +346,8 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               rowContent,
               Positioned(
                 left: 0,
-                top: 8,
-                bottom: 8,
+                top: tokens.spacing.step3,
+                bottom: tokens.spacing.step3,
                 child: AnimatedBuilder(
                   animation: _suggestionPulse,
                   builder: (context, child) => Transform.scale(
@@ -427,7 +430,7 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Padding(
-                padding: const EdgeInsets.only(left: 16),
+                padding: EdgeInsets.only(left: tokens.spacing.step5),
                 child: Icon(
                   item.data.isArchived ? Icons.unarchive : Icons.archive,
                   color: Colors.white,
@@ -435,13 +438,13 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               ),
             ),
           ),
-          secondaryBackground: const ColoredBox(
+          secondaryBackground: ColoredBox(
             color: Colors.red,
             child: Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: Icon(Icons.delete, color: Colors.white),
+                padding: EdgeInsets.only(right: tokens.spacing.step5),
+                child: const Icon(Icons.delete, color: Colors.white),
               ),
             ),
           ),
@@ -519,9 +522,9 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spacing.step3),
             Text(suggestion.reason),
-            const SizedBox(height: 16),
+            SizedBox(height: tokens.spacing.step5),
             Row(
               children: [
                 Icon(
@@ -529,7 +532,7 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   size: 16,
                   color: _getSuggestionColor(suggestion.confidence),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: tokens.spacing.step2),
                 Text(
                   context.messages.checklistAiConfidenceLabel(
                     suggestion.confidence.name,

@@ -291,6 +291,38 @@ void main() {
       expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
     });
 
+    testWidgets(
+      'row expands beyond minimum height for multi-line text',
+      (tester) async {
+        final longTitle = List.generate(5, (i) => 'Line $i').join('\n');
+        await _pump(tester, item: _makeItem(title: longTitle));
+
+        // The row should grow taller than the 44px minimum to fit
+        // multi-line content without clipping.
+        final rowBox = tester.renderObject<RenderBox>(
+          find.byType(ChecklistItemRow),
+        );
+        expect(rowBox.size.height, greaterThan(44));
+      },
+    );
+
+    testWidgets(
+      'inline editor expands beyond minimum height for multi-line text',
+      (tester) async {
+        final longTitle = List.generate(5, (i) => 'Line $i').join('\n');
+        await _pump(tester, item: _makeItem(title: longTitle));
+
+        // Enter edit mode.
+        await tester.tap(find.byIcon(Icons.mode_edit_outlined));
+        await tester.pump();
+
+        final rowBox = tester.renderObject<RenderBox>(
+          find.byType(ChecklistItemRow),
+        );
+        expect(rowBox.size.height, greaterThan(44));
+      },
+    );
+
     testWidgets('edit icon is present', (tester) async {
       await _pump(tester);
       expect(find.byIcon(Icons.mode_edit_outlined), findsOneWidget);
