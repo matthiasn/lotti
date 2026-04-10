@@ -92,6 +92,29 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('page shows title from localization', (tester) async {
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 1000,
+              maxWidth: 1000,
+            ),
+            child: const DashboardsListPage(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // The page should show the Dashboards title in the header
+      expect(find.textContaining('Dashboards'), findsAtLeast(1));
+    });
+
     testWidgets('dashboards are sorted alphabetically by name', (tester) async {
       final dashboardZ = testDashboardConfig.copyWith(
         id: 'dashboard-z',
