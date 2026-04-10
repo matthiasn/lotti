@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'pane_width_controller.g.dart';
@@ -17,6 +20,10 @@ const maxSidebarWidth = 500.0;
 const defaultListPaneWidth = 540.0;
 const minListPaneWidth = 300.0;
 const maxListPaneWidth = 800.0;
+
+/// How long to wait after the last drag update before persisting to disk.
+@visibleForTesting
+const persistDebounce = Duration(milliseconds: 300);
 
 /// State holding the current widths for the sidebar and list pane.
 @immutable
@@ -54,39 +61,54 @@ class PaneWidths {
 @Riverpod(keepAlive: true)
 class PaneWidthController extends _$PaneWidthController {
   bool _userAdjusted = false;
+  Timer? _sidebarDebounce;
+  Timer? _listPaneDebounce;
 
   @override
   PaneWidths build() {
-    _loadPersistedWidths();
+    ref.onDispose(() {
+      _sidebarDebounce?.cancel();
+      _listPaneDebounce?.cancel();
+    });
+    unawaited(_loadPersistedWidths());
     return const PaneWidths();
   }
 
   Future<void> _loadPersistedWidths() async {
-    final settingsDb = getIt<SettingsDb>();
-    final values = await settingsDb.itemsByKeys({
-      sidebarWidthKey,
-      listPaneWidthKey,
-    });
+    try {
+      final settingsDb = getIt<SettingsDb>();
+      final values = await settingsDb.itemsByKeys({
+        sidebarWidthKey,
+        listPaneWidthKey,
+      });
 
-    if (_userAdjusted) return;
+      if (_userAdjusted) return;
 
-    final sidebarWidth = _parseWidth(
-      values[sidebarWidthKey],
-      defaultSidebarWidth,
-      minSidebarWidth,
-      maxSidebarWidth,
-    );
-    final listPaneWidth = _parseWidth(
-      values[listPaneWidthKey],
-      defaultListPaneWidth,
-      minListPaneWidth,
-      maxListPaneWidth,
-    );
+      final sidebarWidth = _parseWidth(
+        values[sidebarWidthKey],
+        defaultSidebarWidth,
+        minSidebarWidth,
+        maxSidebarWidth,
+      );
+      final listPaneWidth = _parseWidth(
+        values[listPaneWidthKey],
+        defaultListPaneWidth,
+        minListPaneWidth,
+        maxListPaneWidth,
+      );
 
-    state = PaneWidths(
-      sidebarWidth: sidebarWidth,
-      listPaneWidth: listPaneWidth,
-    );
+      state = PaneWidths(
+        sidebarWidth: sidebarWidth,
+        listPaneWidth: listPaneWidth,
+      );
+    } catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'PANE_WIDTH',
+        subDomain: 'loadPersistedWidths',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   double _parseWidth(
@@ -97,7 +119,7 @@ class PaneWidthController extends _$PaneWidthController {
   ) {
     if (stored == null) return defaultValue;
     final parsed = double.tryParse(stored);
-    if (parsed == null) return defaultValue;
+    if (parsed == null || !parsed.isFinite) return defaultValue;
     return parsed.clamp(minValue, maxValue);
   }
 
@@ -108,7 +130,7 @@ class PaneWidthController extends _$PaneWidthController {
       maxSidebarWidth,
     );
     state = state.copyWith(sidebarWidth: newWidth);
-    _persistSidebarWidth();
+    _debounceSidebarPersist();
   }
 
   void updateListPaneWidth(double delta) {
@@ -118,25 +140,47 @@ class PaneWidthController extends _$PaneWidthController {
       maxListPaneWidth,
     );
     state = state.copyWith(listPaneWidth: newWidth);
-    _persistListPaneWidth();
+    _debounceListPanePersist();
+  }
+
+  void _debounceSidebarPersist() {
+    _sidebarDebounce?.cancel();
+    _sidebarDebounce = Timer(persistDebounce, _persistSidebarWidth);
+  }
+
+  void _debounceListPanePersist() {
+    _listPaneDebounce?.cancel();
+    _listPaneDebounce = Timer(persistDebounce, _persistListPaneWidth);
   }
 
   void _persistSidebarWidth() {
-    getIt<SettingsDb>().saveSettingsItem(
-      sidebarWidthKey,
-      state.sidebarWidth.toStringAsFixed(1),
-    );
+    unawaited(_persistWidth(sidebarWidthKey, state.sidebarWidth));
   }
 
   void _persistListPaneWidth() {
-    getIt<SettingsDb>().saveSettingsItem(
-      listPaneWidthKey,
-      state.listPaneWidth.toStringAsFixed(1),
-    );
+    unawaited(_persistWidth(listPaneWidthKey, state.listPaneWidth));
+  }
+
+  Future<void> _persistWidth(String key, double width) async {
+    try {
+      await getIt<SettingsDb>().saveSettingsItem(
+        key,
+        width.toStringAsFixed(1),
+      );
+    } catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'PANE_WIDTH',
+        subDomain: 'persistWidth:$key',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   void resetToDefaults() {
     _userAdjusted = true;
+    _sidebarDebounce?.cancel();
+    _listPaneDebounce?.cancel();
     state = const PaneWidths();
     _persistSidebarWidth();
     _persistListPaneWidth();

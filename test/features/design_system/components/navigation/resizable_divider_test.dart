@@ -162,7 +162,8 @@ void main() {
         ),
       );
       // Default state: not hovering, not dragging → width should be 1
-      expect(animatedContainer.constraints?.maxWidth ?? 1, 1);
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 1);
     });
 
     testWidgets('line thickens during drag', (tester) async {
@@ -183,10 +184,36 @@ void main() {
         ),
       );
       // During drag: width should be 3
-      expect(animatedContainer.constraints?.maxWidth ?? 3, 3);
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 3);
 
       await gesture.up();
       await tester.pump();
+    });
+
+    testWidgets('line returns to thin after drag ends', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(onDrag: (_) {}),
+      );
+
+      final center = tester.getCenter(find.byType(ResizableDivider));
+      final gesture = await tester.startGesture(center);
+      await gesture.moveBy(const Offset(10, 0));
+      await tester.pump();
+
+      // End drag
+      await gesture.up();
+      await tester.pump();
+
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      // After drag ends: width should be back to 1
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 1);
     });
   });
 }

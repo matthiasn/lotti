@@ -1,5 +1,4 @@
-import 'dart:async';
-
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -28,25 +27,15 @@ Future<ProviderContainer> _createContainerWithPersistedWidths({
   return ProviderContainer();
 }
 
-/// Waits for the async hydration in [PaneWidthController] to settle.
-Future<PaneWidths> _awaitHydration(
-  ProviderContainer container, {
-  Duration timeout = const Duration(milliseconds: 50),
-}) async {
-  final completer = Completer<PaneWidths>();
-  container.listen(paneWidthControllerProvider, (prev, next) {
-    if (!completer.isCompleted && next != const PaneWidths()) {
-      completer.complete(next);
-    }
-  });
-  // ignore: cascade_invocations
+/// Triggers provider read and flushes microtasks so the async
+/// `_loadPersistedWidths` (which calls the mocked `itemsByKeys`)
+/// completes deterministically.
+Future<PaneWidths> _awaitHydration(ProviderContainer container) async {
+  // Force provider build, which fires _loadPersistedWidths.
   container.read(paneWidthControllerProvider);
-
-  final result = await Future.any([
-    completer.future,
-    Future<PaneWidths>.delayed(timeout, PaneWidths.new),
-  ]);
-  return result;
+  // The mock resolves synchronously as a microtask — flush it.
+  await Future<void>.value();
+  return container.read(paneWidthControllerProvider);
 }
 
 void main() {
@@ -238,16 +227,50 @@ void main() {
       );
     });
 
-    test('persists to SettingsDb', () {
-      container
-          .read(paneWidthControllerProvider.notifier)
-          .updateSidebarWidth(30);
-      verify(
-        () => getIt<SettingsDb>().saveSettingsItem(
-          sidebarWidthKey,
-          '350.0',
-        ),
-      ).called(1);
+    test('persists to SettingsDb after debounce', () {
+      fakeAsync((async) {
+        container
+            .read(paneWidthControllerProvider.notifier)
+            .updateSidebarWidth(30);
+        async.flushMicrotasks();
+
+        // Not yet persisted before debounce fires
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '350.0',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('debounce coalesces rapid updates into one write', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(10)
+          ..updateSidebarWidth(20)
+          ..updateSidebarWidth(30);
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // Only the final accumulated value is persisted
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '380.0',
+          ),
+        ).called(1);
+      });
     });
   });
 
@@ -302,16 +325,29 @@ void main() {
       );
     });
 
-    test('persists to SettingsDb', () {
-      container
-          .read(paneWidthControllerProvider.notifier)
-          .updateListPaneWidth(60);
-      verify(
-        () => getIt<SettingsDb>().saveSettingsItem(
-          listPaneWidthKey,
-          '600.0',
-        ),
-      ).called(1);
+    test('persists to SettingsDb after debounce', () {
+      fakeAsync((async) {
+        container
+            .read(paneWidthControllerProvider.notifier)
+            .updateListPaneWidth(60);
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            '600.0',
+          ),
+        ).called(1);
+      });
     });
   });
 
@@ -326,7 +362,7 @@ void main() {
       expect(state.listPaneWidth, defaultListPaneWidth);
     });
 
-    test('persists both widths to SettingsDb', () {
+    test('persists immediately without debounce', () {
       container.read(paneWidthControllerProvider.notifier).resetToDefaults();
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
@@ -340,6 +376,33 @@ void main() {
           '540.0',
         ),
       ).called(1);
+    });
+
+    test('cancels pending debounced writes', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(50)
+          ..updateListPaneWidth(100)
+          ..resetToDefaults();
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // The debounced writes from updateSidebarWidth/updateListPaneWidth
+        // should be cancelled; only resetToDefaults writes should fire.
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '320.0',
+          ),
+        ).called(1);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            '540.0',
+          ),
+        ).called(1);
+      });
     });
   });
 
@@ -373,6 +436,79 @@ void main() {
       final state = container.read(paneWidthControllerProvider);
       expect(state.sidebarWidth, defaultSidebarWidth + 50);
       expect(state.listPaneWidth, defaultListPaneWidth - 100);
+    });
+  });
+
+  group('PaneWidthController non-finite values', () {
+    test('rejects NaN persisted sidebar width', () async {
+      container.dispose();
+      container = await _createContainerWithPersistedWidths(
+        sidebarWidth: 'NaN',
+        listPaneWidth: '450.0',
+      );
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarWidth, defaultSidebarWidth);
+      expect(result.listPaneWidth, 450.0);
+    });
+
+    test('rejects Infinity persisted list pane width', () async {
+      container.dispose();
+      container = await _createContainerWithPersistedWidths(
+        sidebarWidth: '280.0',
+        listPaneWidth: 'Infinity',
+      );
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarWidth, 280.0);
+      expect(result.listPaneWidth, defaultListPaneWidth);
+    });
+
+    test('rejects -Infinity persisted width', () async {
+      container.dispose();
+      container = await _createContainerWithPersistedWidths(
+        sidebarWidth: '-Infinity',
+      );
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarWidth, defaultSidebarWidth);
+    });
+  });
+
+  group('PaneWidthController error handling', () {
+    test('keeps defaults when loadPersistedWidths throws', () async {
+      container.dispose();
+      await tearDownTestGetIt();
+      final mocks = await setUpTestGetIt();
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenThrow(Exception('database error'));
+      container = ProviderContainer();
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarWidth, defaultSidebarWidth);
+      expect(result.listPaneWidth, defaultListPaneWidth);
+    });
+
+    test('logs error when persist write fails', () {
+      fakeAsync((async) {
+        when(
+          () => getIt<SettingsDb>().saveSettingsItem(any(), any()),
+        ).thenThrow(Exception('write error'));
+
+        container
+            .read(paneWidthControllerProvider.notifier)
+            .updateSidebarWidth(30);
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // State should still have updated despite persist failure
+        expect(
+          container.read(paneWidthControllerProvider).sidebarWidth,
+          defaultSidebarWidth + 30,
+        );
+      });
     });
   });
 }
