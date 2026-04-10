@@ -33,6 +33,7 @@
   <releases>
     <release version="0.9.949" date="2026-04-10">
       <description>
+          <p>Dashboard list page redesigned: the old SliverAppBar top bar has been removed and list items now use rounded grouped cards with design system tokens for a modern, consistent look.</p>
           <p>Task list improvements: AI one-liner subtitle shown below each task title for at-a-glance progress, red recording indicator on actively-tracked tasks, and live in-place data updates when editing in the detail pane.</p>
           <p>Removed animated page transitions to eliminate visual flicker during list loads and refreshes.</p>
       </description>

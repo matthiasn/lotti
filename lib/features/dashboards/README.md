@@ -57,7 +57,7 @@ lib/features/dashboards/
 │   ├── pages/                   # List page and single dashboard page
 │   └── widgets/
 │       ├── charts/              # Chart shells and chart-specific widgets
-│       └── ...                  # App bar, filter, list, card widgets
+│       └── ...                  # Filter, list, card widgets
 └── README.md
 ```
 
@@ -68,13 +68,12 @@ widgets stay fairly thin on purpose.
 
 ```mermaid
 flowchart LR
-  ListPage["DashboardsListPage"] --> AppBar["DashboardsSliverAppBar"]
-  AppBar --> Filter["DashboardsFilter"]
-  Filter --> CategoryState["selectedCategoryIdsProvider"]
+  ListPage["DashboardsListPage"] --> Header["Title + DashboardsFilter"]
+  Header --> CategoryState["selectedCategoryIdsProvider"]
   ListPage --> Dashboards["dashboardsProvider"]
   Dashboards --> Filtered["filteredSortedDashboardsProvider"]
   CategoryState --> Filtered
-  Filtered --> Cards["DashboardCard list"]
+  Filtered --> Cards["DashboardCard list\n(DesignSystemListItem)"]
 
   Cards --> Page["DashboardPage"]
   Page --> Cache["EntitiesCacheService.getDashboardById()"]
@@ -102,8 +101,10 @@ The feature splits cleanly into two halves:
 
 ## Dashboard List Flow
 
-The list page is a `CustomScrollView` with a pinned sliver app bar, a category
-filter button, and a flat list of `DashboardCard`s.
+The list page is a `CustomScrollView` with a title row containing the category
+filter button, followed by a grouped rounded-card container of
+`DesignSystemListItem`-based `DashboardCard`s. The old `SliverAppBar` has been
+removed in favour of a lightweight inline header.
 
 ```mermaid
 flowchart TD

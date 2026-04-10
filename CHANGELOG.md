@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.949] - 2026-04-10
+### Changed
+- Redesigned dashboard list page: removed the old SliverAppBar top bar,
+  replaced flat list items with rounded grouped cards using
+  DesignSystemListItem, and applied design system tokens for spacing,
+  colors, and typography.
+
 ### Added
 - AI one-liner subtitle in task list: each task row now displays the
   agent-generated summary below the title (max 2 lines), giving users
