@@ -19,7 +19,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+        run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -54,7 +54,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+        run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -86,7 +86,7 @@ jobs:
       - name: Update apt-get
         run: sudo apt-get update
       - name: Install libraries
-        run: sudo apt-get install libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev
+        run: sudo apt-get install -y --no-install-recommends libgtk-3-dev cmake libolm3 cmake-doc ninja-build libsecret-1-dev libjsoncpp-dev libsecret-1-0 sqlite3 libsqlite3-dev keybinder-3.0 network-manager mpv libmpv-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

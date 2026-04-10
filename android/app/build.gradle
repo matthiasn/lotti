@@ -19,6 +19,14 @@ if (flutterRoot == null) {
     throw new RuntimeException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withReader('UTF-8') { reader ->
+        keystoreProperties.load(reader)
+    }
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -56,11 +64,43 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                def requiredKeys = ['storeFile', 'keyAlias', 'keyPassword', 'storePassword']
+                def missing = requiredKeys.findAll { !keystoreProperties[it] }
+                if (missing) {
+                    throw new GradleException(
+                        "keystoreProperties is missing required entries: ${missing}. " +
+                        "Check ${keystorePropertiesFile.absolutePath}."
+                    )
+                }
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+// Fail fast for release builds when keystorePropertiesFile is missing,
+// but only at execution time so debug builds are not affected.
+afterEvaluate {
+    if (!keystorePropertiesFile.exists()) {
+        tasks.matching { it.name =~ /bundle.*Release|assemble.*Release/ }.configureEach {
+            doFirst {
+                throw new GradleException(
+                    "Release signing requires ${keystorePropertiesFile.absolutePath}. " +
+                    "See .github/workflows/flutter-android-release.yml for CI setup."
+                )
+            }
         }
     }
 }
