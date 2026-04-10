@@ -22,15 +22,15 @@ void main() {
       mockBuildContext = _MockBuildContext();
       mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<NavService>(mockNavService);
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
-      getIt.allowReassignment = false;
     });
 
     test('pathPatterns are correct', () {
@@ -70,5 +70,55 @@ void main() {
       final detailPage = pages.last.child as ProjectDetailsPage;
       expect(detailPage.projectId, 'project-123');
     });
+
+    test(
+      'in desktop mode, buildPages returns only root page '
+      'and does not push detail page',
+      () {
+        final desktopSelectedProjectId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(desktopSelectedProjectId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/projects/project-123'),
+        );
+        final location = ProjectsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'project-123'});
+
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages, hasLength(1));
+        expect(pages.first.child, isA<ProjectsTabPage>());
+      },
+    );
+
+    test(
+      'in desktop mode, buildPages updates desktopSelectedProjectId',
+      () {
+        final desktopSelectedProjectId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(desktopSelectedProjectId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/projects/project-123'),
+        );
+        final location = ProjectsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'project-123'});
+
+        location.buildPages(mockBuildContext, beamState);
+
+        expect(desktopSelectedProjectId.value, 'project-123');
+      },
+    );
   });
 }

@@ -23,15 +23,15 @@ void main() {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<NavService>(mockNavService);
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
-      getIt.allowReassignment = false;
     });
 
     test('pathPatterns are correct', () {
@@ -82,5 +82,65 @@ void main() {
       final taskDetailsPage = pages[1].child as TaskDetailsPage;
       expect(taskDetailsPage.taskId, taskId);
     });
+
+    test(
+      'in desktop mode, buildPages returns only root page '
+      'and does not push detail page',
+      () {
+        final taskId = const Uuid().v4();
+        final desktopSelectedTaskId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(desktopSelectedTaskId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/tasks/$taskId'),
+        );
+        final location = TasksLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'taskId': taskId,
+          },
+        );
+
+        final pages = location.buildPages(mockBuildContext, newBeamState);
+
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<TasksRootPage>());
+      },
+    );
+
+    test(
+      'in desktop mode, buildPages updates desktopSelectedTaskId',
+      () {
+        final taskId = const Uuid().v4();
+        final desktopSelectedTaskId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(desktopSelectedTaskId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/tasks/$taskId'),
+        );
+        final location = TasksLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'taskId': taskId,
+          },
+        );
+
+        location.buildPages(mockBuildContext, newBeamState);
+
+        expect(desktopSelectedTaskId.value, taskId);
+      },
+    );
   });
 }

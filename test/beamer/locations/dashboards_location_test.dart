@@ -23,15 +23,15 @@ void main() {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      getIt.allowReassignment = true;
-      getIt.registerSingleton<NavService>(mockNavService);
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
       if (getIt.isRegistered<NavService>()) {
         getIt.unregister<NavService>();
       }
-      getIt.allowReassignment = false;
     });
 
     test('pathPatterns are correct', () {
@@ -85,5 +85,65 @@ void main() {
       final dashboardPage = pages[1].child as DashboardPage;
       expect(dashboardPage.dashboardId, dashboardId);
     });
+
+    test(
+      'in desktop mode, buildPages returns only root page '
+      'and does not push detail page',
+      () {
+        final dashboardId = const Uuid().v4();
+        final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedDashboardId,
+        ).thenReturn(desktopSelectedDashboardId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/dashboards/$dashboardId'),
+        );
+        final location = DashboardsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'dashboardId': dashboardId,
+          },
+        );
+
+        final pages = location.buildPages(mockBuildContext, newBeamState);
+
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<DashboardsListPage>());
+      },
+    );
+
+    test(
+      'in desktop mode, buildPages updates desktopSelectedDashboardId',
+      () {
+        final dashboardId = const Uuid().v4();
+        final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedDashboardId,
+        ).thenReturn(desktopSelectedDashboardId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/dashboards/$dashboardId'),
+        );
+        final location = DashboardsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'dashboardId': dashboardId,
+          },
+        );
+
+        location.buildPages(mockBuildContext, newBeamState);
+
+        expect(desktopSelectedDashboardId.value, dashboardId);
+      },
+    );
   });
 }

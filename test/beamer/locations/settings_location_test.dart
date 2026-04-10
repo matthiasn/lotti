@@ -51,15 +51,17 @@ void main() {
   group('SettingsLocation', () {
     late MockBuildContext mockBuildContext;
 
-    setUpAll(() {
-      // Register mock services with GetIt for tests that need them
-      getIt.registerSingleton<JournalDb>(MockJournalDb());
-    });
-
-    tearDownAll(getIt.reset);
-
     setUp(() {
       mockBuildContext = MockBuildContext();
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<JournalDb>(MockJournalDb());
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<JournalDb>()) {
+        getIt.unregister<JournalDb>();
+      }
     });
 
     test('pathPatterns are correct', () {

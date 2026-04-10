@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -292,6 +293,13 @@ void main() {
     );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
+    expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is SizedBox && widget.width == 540,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows no-results message when groups are empty', (
