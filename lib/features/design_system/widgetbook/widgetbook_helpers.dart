@@ -46,7 +46,6 @@ List<WidgetbookNavigationDestination> widgetbookNavigationDestinations(
     WidgetbookNavigationDestination(
       label: context.messages.designSystemNavigationMyDailyLabel,
       icon: Icons.calendar_today_outlined,
-      active: true,
     ),
     WidgetbookNavigationDestination(
       label: context.messages.navTabTitleTasks,
@@ -57,8 +56,16 @@ List<WidgetbookNavigationDestination> widgetbookNavigationDestinations(
       icon: Icons.folder_rounded,
     ),
     WidgetbookNavigationDestination(
+      label: context.messages.navTabTitleHabits,
+      icon: Icons.checklist_rounded,
+    ),
+    WidgetbookNavigationDestination(
       label: context.messages.designSystemNavigationInsightsLabel,
       icon: Icons.bar_chart_rounded,
+    ),
+    WidgetbookNavigationDestination(
+      label: context.messages.navTabTitleJournal,
+      icon: Icons.book_outlined,
     ),
   ];
 }

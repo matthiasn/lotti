@@ -13,6 +13,11 @@ void main() {
     testWidgets('builds the navigation sidebar overview use case', (
       tester,
     ) async {
+      tester.view
+        ..physicalSize = const Size(1200, 1000)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final component = buildDesignSystemNavigationSidebarWidgetbookComponent();
       final useCase = component.useCases.single;
 

@@ -167,19 +167,24 @@ class _NavigationTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        DesignSystemNavigationTabBar(
-          minimized: minimized,
-          items: items
-              .map(
-                (item) => DesignSystemNavigationTabBarItem(
-                  label: item.label,
-                  icon: Icon(item.icon),
-                  active: item.active,
-                ),
-              )
-              .toList(),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: DesignSystemNavigationTabBar(
+              minimized: minimized,
+              items: items
+                  .map(
+                    (item) => DesignSystemNavigationTabBarItem(
+                      label: item.label,
+                      icon: Icon(item.icon),
+                      active: item.active,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
         ),
         const SizedBox(width: 16),
         const _AccessoryCircleButton(),
