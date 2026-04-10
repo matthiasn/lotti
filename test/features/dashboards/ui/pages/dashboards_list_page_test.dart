@@ -379,22 +379,16 @@ void main() {
       expect(find.byType(ResizableDivider), findsOneWidget);
 
       final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
-      await tester.timedDragFrom(
-        dividerCenter,
-        const Offset(50, 0),
-        const Duration(milliseconds: 200),
-      );
+      await tester.dragFrom(dividerCenter, const Offset(50, 0));
       await tester.pump();
 
       final sizedBox = tester.widget<SizedBox>(
         find.byWidgetPredicate(
           (widget) =>
-              widget is SizedBox &&
-              widget.width != null &&
-              widget.width! > defaultListPaneWidth,
+              widget is SizedBox && widget.width == defaultListPaneWidth + 50,
         ),
       );
-      expect(sizedBox.width, greaterThan(defaultListPaneWidth));
+      expect(sizedBox.width, defaultListPaneWidth + 50);
     });
   });
 }

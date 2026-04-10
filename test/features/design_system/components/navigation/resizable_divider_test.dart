@@ -165,8 +165,9 @@ void main() {
       final gesture = await tester.createGesture(
         kind: PointerDeviceKind.mouse,
       );
-      await gesture.addPointer(location: center);
+      await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
+      await gesture.moveTo(center);
       await tester.pump();
 
       var animatedContainer = tester.widget<AnimatedContainer>(
