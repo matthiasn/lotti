@@ -42,6 +42,7 @@ class _ResizableDividerState extends State<ResizableDivider> {
         behavior: HitTestBehavior.opaque,
         onHorizontalDragStart: (_) => setState(() => _isDragging = true),
         onHorizontalDragUpdate: (details) => widget.onDrag(details.delta.dx),
+        onHorizontalDragCancel: () => setState(() => _isDragging = false),
         onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
         child: SizedBox(
           width: widget.hitTargetWidth,

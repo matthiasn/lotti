@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -238,16 +239,50 @@ void main() {
       );
     });
 
-    test('persists to SettingsDb', () {
-      container
-          .read(paneWidthControllerProvider.notifier)
-          .updateSidebarWidth(30);
-      verify(
-        () => getIt<SettingsDb>().saveSettingsItem(
-          sidebarWidthKey,
-          '350.0',
-        ),
-      ).called(1);
+    test('persists to SettingsDb after debounce', () {
+      fakeAsync((async) {
+        container
+            .read(paneWidthControllerProvider.notifier)
+            .updateSidebarWidth(30);
+        async.flushMicrotasks();
+
+        // Not yet persisted before debounce fires
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '350.0',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('debounce coalesces rapid updates into one write', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(10)
+          ..updateSidebarWidth(20)
+          ..updateSidebarWidth(30);
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // Only the final accumulated value is persisted
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '380.0',
+          ),
+        ).called(1);
+      });
     });
   });
 
@@ -302,16 +337,29 @@ void main() {
       );
     });
 
-    test('persists to SettingsDb', () {
-      container
-          .read(paneWidthControllerProvider.notifier)
-          .updateListPaneWidth(60);
-      verify(
-        () => getIt<SettingsDb>().saveSettingsItem(
-          listPaneWidthKey,
-          '600.0',
-        ),
-      ).called(1);
+    test('persists to SettingsDb after debounce', () {
+      fakeAsync((async) {
+        container
+            .read(paneWidthControllerProvider.notifier)
+            .updateListPaneWidth(60);
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            any(),
+          ),
+        );
+
+        async.elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            '600.0',
+          ),
+        ).called(1);
+      });
     });
   });
 
@@ -326,7 +374,7 @@ void main() {
       expect(state.listPaneWidth, defaultListPaneWidth);
     });
 
-    test('persists both widths to SettingsDb', () {
+    test('persists immediately without debounce', () {
       container.read(paneWidthControllerProvider.notifier).resetToDefaults();
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
@@ -340,6 +388,33 @@ void main() {
           '540.0',
         ),
       ).called(1);
+    });
+
+    test('cancels pending debounced writes', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(50)
+          ..updateListPaneWidth(100)
+          ..resetToDefaults();
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // The debounced writes from updateSidebarWidth/updateListPaneWidth
+        // should be cancelled; only resetToDefaults writes should fire.
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '320.0',
+          ),
+        ).called(1);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            '540.0',
+          ),
+        ).called(1);
+      });
     });
   });
 

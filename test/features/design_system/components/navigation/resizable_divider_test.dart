@@ -162,7 +162,8 @@ void main() {
         ),
       );
       // Default state: not hovering, not dragging → width should be 1
-      expect(animatedContainer.constraints?.maxWidth ?? 1, 1);
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 1);
     });
 
     testWidgets('line thickens during drag', (tester) async {
@@ -183,7 +184,8 @@ void main() {
         ),
       );
       // During drag: width should be 3
-      expect(animatedContainer.constraints?.maxWidth ?? 3, 3);
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 3);
 
       await gesture.up();
       await tester.pump();
