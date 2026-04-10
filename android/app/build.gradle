@@ -67,9 +67,17 @@ android {
     signingConfigs {
         release {
             if (keystorePropertiesFile.exists()) {
+                def requiredKeys = ['storeFile', 'keyAlias', 'keyPassword', 'storePassword']
+                def missing = requiredKeys.findAll { !keystoreProperties[it] }
+                if (missing) {
+                    throw new GradleException(
+                        "keystoreProperties is missing required entries: ${missing}. " +
+                        "Check ${keystorePropertiesFile.absolutePath}."
+                    )
+                }
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
+                storeFile rootProject.file(keystoreProperties['storeFile'])
                 storePassword keystoreProperties['storePassword']
             }
         }
@@ -77,9 +85,22 @@ android {
 
     buildTypes {
         release {
-            signingConfig keystorePropertiesFile.exists()
-                ? signingConfigs.release
-                : signingConfigs.debug
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+// Fail fast for release builds when keystorePropertiesFile is missing,
+// but only at execution time so debug builds are not affected.
+afterEvaluate {
+    if (!keystorePropertiesFile.exists()) {
+        tasks.matching { it.name =~ /bundle.*Release|assemble.*Release/ }.configureEach {
+            doFirst {
+                throw new GradleException(
+                    "Release signing requires ${keystorePropertiesFile.absolutePath}. " +
+                    "See .github/workflows/flutter-android-release.yml for CI setup."
+                )
+            }
         }
     }
 }
