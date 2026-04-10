@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -146,6 +148,75 @@ void main() {
       // Vertical drags produce zero horizontal deltas
       final totalDelta = deltas.fold<double>(0, (sum, d) => sum + d);
       expect(totalDelta, 0);
+    });
+  });
+
+  group('ResizableDivider hover interaction', () {
+    testWidgets('activates on mouse enter and deactivates on exit', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(onDrag: (_) {}),
+      );
+
+      final center = tester.getCenter(find.byType(ResizableDivider));
+
+      // Simulate mouse hover enter
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(center);
+      await tester.pump();
+
+      var animatedContainer = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 3);
+
+      // Simulate mouse hover exit
+      await gesture.moveTo(Offset.zero);
+      await tester.pump();
+
+      animatedContainer = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 1);
+    });
+  });
+
+  group('ResizableDivider drag cancel', () {
+    testWidgets('resets active state when drag is cancelled', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(onDrag: (_) {}),
+      );
+
+      final center = tester.getCenter(find.byType(ResizableDivider));
+      final gesture = await tester.startGesture(center);
+      await gesture.moveBy(const Offset(10, 0));
+      await tester.pump();
+
+      // Cancel the drag
+      await gesture.cancel();
+      await tester.pump();
+
+      final animatedContainer = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      expect(animatedContainer.constraints, isNotNull);
+      expect(animatedContainer.constraints!.maxWidth, 1);
     });
   });
 

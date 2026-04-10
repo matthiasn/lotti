@@ -5,7 +5,9 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -447,4 +449,28 @@ void main() {
       expect(find.text('Apply filter'), findsNothing);
     },
   );
+
+  testWidgets('dragging divider updates list pane width in desktop layout', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup()],
+      mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+    );
+
+    expect(find.byType(ResizableDivider), findsOneWidget);
+
+    final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
+    await tester.dragFrom(dividerCenter, const Offset(50, 0));
+    await tester.pump();
+
+    final sizedBox = tester.widget<SizedBox>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox && widget.width == defaultListPaneWidth + 50,
+      ),
+    );
+    expect(sizedBox.width, defaultListPaneWidth + 50);
+  });
 }

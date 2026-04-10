@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -129,5 +131,37 @@ void main() {
     // flutter_animate inside the detail page.
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('dragging divider updates list pane width', (tester) async {
+    fakeController = FakeJournalPageController(state());
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const TasksRootPage(),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(ResizableDivider), findsOneWidget);
+
+    final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
+    await tester.dragFrom(dividerCenter, const Offset(50, 0));
+    await tester.pump();
+
+    final sizedBox = tester.widget<SizedBox>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox && widget.width == defaultListPaneWidth + 50,
+      ),
+    );
+    expect(sizedBox.width, defaultListPaneWidth + 50);
   });
 }
