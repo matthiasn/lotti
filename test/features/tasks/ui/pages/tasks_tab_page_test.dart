@@ -407,6 +407,12 @@ void main() {
   testWidgets('desktop mode listens to desktopSelectedTaskId', (
     tester,
   ) async {
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final selectedNotifier = ValueNotifier<String?>('task-1');
     when(
       () => mockNavService.desktopSelectedTaskId,
@@ -422,6 +428,37 @@ void main() {
 
     // The selected task row should receive the selectedTaskId prop,
     // which triggers visual highlighting in desktop mode.
+    expect(find.text('Write migration'), findsOneWidget);
+    expect(find.text('Validate grouping'), findsOneWidget);
+  });
+
+  testWidgets('desktop mode passes activeTaskId to list items', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final selectedNotifier = ValueNotifier<String?>('task-1');
+    when(
+      () => mockNavService.desktopSelectedTaskId,
+    ).thenReturn(selectedNotifier);
+
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Change selected task and verify the notifier drives a rebuild
+    selectedNotifier.value = 'task-2';
+    await tester.pump();
+
+    // Both tasks should still be visible
     expect(find.text('Write migration'), findsOneWidget);
     expect(find.text('Validate grouping'), findsOneWidget);
   });

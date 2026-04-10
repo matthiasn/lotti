@@ -287,6 +287,13 @@ void main() {
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
 
+    // Set view size so isDesktopLayout actually returns true
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await pumpPage(
       tester,
       groups: groups,
