@@ -49,7 +49,7 @@ class ActiveEvolutionSession {
   final String modelId;
 
   /// GenUI message processor for rendering dynamic surfaces.
-  final A2uiMessageProcessor? processor;
+  final SurfaceController? processor;
 
   /// Bridge between OpenAI tool calls and GenUI surface creation.
   final GenUiBridge? genUiBridge;
@@ -306,7 +306,7 @@ class TemplateEvolutionWorkflow {
 
       // Set up GenUI infrastructure.
       final catalog = buildEvolutionCatalog();
-      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final processor = SurfaceController(catalogs: [catalog]);
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 
@@ -911,7 +911,7 @@ class TemplateEvolutionWorkflow {
 
       // Set up GenUI infrastructure.
       final catalog = buildEvolutionCatalog();
-      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final processor = SurfaceController(catalogs: [catalog]);
       final bridge = GenUiBridge(processor: processor);
       final eventHandler = GenUiEventHandler(processor: processor)..listen();
 

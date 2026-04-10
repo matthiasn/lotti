@@ -108,7 +108,7 @@ class _MessageList extends StatefulWidget {
 
   final List<EvolutionChatMessage> messages;
   final bool isWaiting;
-  final A2uiMessageProcessor? processor;
+  final SurfaceController? processor;
 
   @override
   State<_MessageList> createState() => _MessageListState();
@@ -184,9 +184,8 @@ class _MessageListState extends State<_MessageList> {
       ),
       EvolutionSurfaceMessage(:final surfaceId) =>
         widget.processor != null
-            ? GenUiSurface(
-                host: widget.processor!,
-                surfaceId: surfaceId,
+            ? Surface(
+                surfaceContext: widget.processor!.contextFor(surfaceId),
               )
             : const SizedBox.shrink(),
     };

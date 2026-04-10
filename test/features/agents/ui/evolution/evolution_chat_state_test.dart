@@ -218,7 +218,7 @@ void main() {
       test(
         'suppresses opening assistant bubble when a proposal surface is rendered',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor)
@@ -351,7 +351,7 @@ void main() {
       test(
         'suppresses assistant response when the same turn renders a proposal surface',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -756,7 +756,7 @@ void main() {
 
     group('GenUI surface drain', () {
       test('drains surface IDs from opening turn into messages', () async {
-        final processor = A2uiMessageProcessor(
+        final processor = SurfaceController(
           catalogs: [buildEvolutionCatalog()],
         );
         final bridge = GenUiBridge(processor: processor)
@@ -813,7 +813,7 @@ void main() {
       });
 
       test('drains surface IDs after sendMessage', () async {
-        final processor = A2uiMessageProcessor(
+        final processor = SurfaceController(
           catalogs: [buildEvolutionCatalog()],
         );
         final bridge = GenUiBridge(processor: processor);
@@ -893,7 +893,7 @@ void main() {
       test(
         'proposal_rejected callback routes through rejectProposal',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -961,7 +961,7 @@ void main() {
       test(
         'proposal_approved callback routes through approveProposal',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1050,7 +1050,7 @@ void main() {
       test(
         'ratings_submitted callback formats ratings and sends message',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1115,7 +1115,7 @@ void main() {
       test(
         'binary choice callback forwards semantic value as user message',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);
@@ -1386,7 +1386,7 @@ void main() {
       test(
         'rebuilds the proposal surface when a proposal exists but no surface was drained',
         () async {
-          final processor = A2uiMessageProcessor(
+          final processor = SurfaceController(
             catalogs: [buildEvolutionCatalog()],
           );
           final bridge = GenUiBridge(processor: processor);

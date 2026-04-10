@@ -5,12 +5,12 @@ import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
-  late A2uiMessageProcessor processor;
+  late SurfaceController processor;
   late GenUiBridge bridge;
 
   setUp(() {
     final catalog = buildEvolutionCatalog();
-    processor = A2uiMessageProcessor(catalogs: [catalog]);
+    processor = SurfaceController(catalogs: [catalog]);
     bridge = GenUiBridge(processor: processor);
   });
 

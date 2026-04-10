@@ -5,13 +5,13 @@ import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
 
 void main() {
-  late A2uiMessageProcessor processor;
+  late SurfaceController processor;
   late GenUiBridge bridge;
   late GenUiEventHandler handler;
 
   setUp(() {
     final catalog = buildEvolutionCatalog();
-    processor = A2uiMessageProcessor(catalogs: [catalog]);
+    processor = SurfaceController(catalogs: [catalog]);
     bridge = GenUiBridge(processor: processor);
     handler = GenUiEventHandler(processor: processor)..listen();
   });
@@ -21,7 +21,7 @@ void main() {
   });
 
   /// Helper to dispatch a UserActionEvent through the processor's handleUiEvent,
-  /// which converts it to a JSON-encoded UserUiInteractionMessage on the
+  /// which converts it to a ChatMessage with UiInteractionPart on the
   /// onSubmit stream.
   void dispatchAction({
     required String name,
@@ -44,23 +44,13 @@ void main() {
         events.add((surfaceId, action));
       };
 
-      // Create a surface so the processor knows about it.
-      bridge.handleToolCall({
-        'surfaceId': 'proposal-surface',
-        'rootType': 'EvolutionProposal',
-        'data': {
-          'directives': 'Be concise.',
-          'rationale': 'Users prefer brevity.',
-        },
-      });
-
       dispatchAction(
         name: 'proposal_approved',
         surfaceId: 'proposal-surface',
       );
 
-      // Allow the stream to deliver the event.
-      await Future<void>.value();
+      // Allow the async broadcast stream to deliver the event.
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'proposal-surface');
@@ -73,21 +63,12 @@ void main() {
         events.add((surfaceId, action));
       };
 
-      bridge.handleToolCall({
-        'surfaceId': 'proposal-surface-2',
-        'rootType': 'EvolutionProposal',
-        'data': {
-          'directives': 'Be verbose.',
-          'rationale': 'More detail is better.',
-        },
-      });
-
       dispatchAction(
         name: 'proposal_rejected',
         surfaceId: 'proposal-surface-2',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'proposal_rejected');
@@ -104,7 +85,7 @@ void main() {
         surfaceId: 'any-surface',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -125,7 +106,7 @@ void main() {
         surfaceId: 'proposal-surface-3',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
       // No exception = pass.
     });
 
@@ -142,7 +123,7 @@ void main() {
         surfaceId: 'some-surface',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -159,7 +140,7 @@ void main() {
         sourceComponentId: '{"accuracy":5,"tooling":"bad","timeliness":2.2}',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ratings-surface');
@@ -182,7 +163,7 @@ void main() {
         sourceComponentId: '{invalid-json',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -199,7 +180,7 @@ void main() {
         sourceComponentId: '{"value":"Yes, show the rating form."}',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'binary-choice-surface');
@@ -218,7 +199,7 @@ void main() {
         sourceComponentId: '{bad-json',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -242,7 +223,7 @@ void main() {
         surfaceId: 'soul-surface-1',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'soul-surface-1');
@@ -266,7 +247,7 @@ void main() {
         surfaceId: 'soul-surface-2',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'soul_proposal_rejected');
@@ -291,7 +272,7 @@ void main() {
         surfaceId: 'soul-surface-3',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
       expect(events, isEmpty);
     });
   });
@@ -309,7 +290,7 @@ void main() {
         sourceComponentId: '{"value":"I prefer Option A — Warmer"}',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ab-surface-1');
@@ -328,7 +309,7 @@ void main() {
         sourceComponentId: '{bad-json',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -345,7 +326,7 @@ void main() {
         sourceComponentId: '{"value":"  "}',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
     });
@@ -365,7 +346,7 @@ void main() {
         sourceComponentId: '{"value":"I prefer Option B"}',
       );
 
-      await Future<void>.value();
+      await Future<void>.delayed(Duration.zero);
 
       expect(recordedEvents, isEmpty);
     });

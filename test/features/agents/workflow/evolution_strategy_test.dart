@@ -375,7 +375,7 @@ void main() {
 
     setUp(() {
       final catalog = buildEvolutionCatalog();
-      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final processor = SurfaceController(catalogs: [catalog]);
       bridge = GenUiBridge(processor: processor);
       strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
       bridgeManager = ConversationManager(conversationId: 'test-auto')
@@ -435,7 +435,7 @@ void main() {
 
     setUp(() {
       final catalog = buildEvolutionCatalog();
-      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final processor = SurfaceController(catalogs: [catalog]);
       bridge = GenUiBridge(processor: processor);
       strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
       bridgeManager = ConversationManager(conversationId: 'test-bridge')
@@ -805,7 +805,7 @@ void main() {
 
     setUp(() {
       final catalog = buildEvolutionCatalog();
-      final processor = A2uiMessageProcessor(catalogs: [catalog]);
+      final processor = SurfaceController(catalogs: [catalog]);
       bridge = GenUiBridge(processor: processor);
       strategyWithBridge = EvolutionStrategy(
         genUiBridge: bridge,
@@ -876,7 +876,7 @@ void main() {
     test('bridge exception does not prevent proposal recording', () async {
       // Create a strategy with a bridge that has no catalog items,
       // causing handleToolCall to fail on unknown rootType processing.
-      final emptyProcessor = A2uiMessageProcessor(catalogs: []);
+      final emptyProcessor = SurfaceController(catalogs: []);
       final brokenBridge = GenUiBridge(processor: emptyProcessor);
       final strat = EvolutionStrategy(genUiBridge: brokenBridge);
       final mgr = ConversationManager(conversationId: 'test-broken')

@@ -6,12 +6,12 @@ import 'package:genui/genui.dart';
 
 /// Routes GenUI surface events to the evolution chat logic.
 ///
-/// Listens on [A2uiMessageProcessor.onSubmit] for [UserUiInteractionMessage]s
-/// and dispatches them to registered callbacks.
+/// Listens on [SurfaceController.onSubmit] for [ChatMessage]s containing
+/// [UiInteractionPart]s and dispatches them to registered callbacks.
 class GenUiEventHandler {
   GenUiEventHandler({required this.processor});
 
-  final A2uiMessageProcessor processor;
+  final SurfaceController processor;
 
   /// Called when the user taps approve or reject on a skill proposal surface.
   ///
@@ -34,7 +34,7 @@ class GenUiEventHandler {
   /// Called when the user picks an option in an A/B comparison surface.
   void Function(String surfaceId, String value)? onABComparisonSubmitted;
 
-  StreamSubscription<UserUiInteractionMessage>? _subscription;
+  StreamSubscription<ChatMessage>? _subscription;
 
   /// Start listening for surface events. Idempotent: cancels any existing
   /// subscription before creating a new one.
@@ -43,15 +43,29 @@ class GenUiEventHandler {
     _subscription = processor.onSubmit.listen(_handleEvent);
   }
 
-  void _handleEvent(UserUiInteractionMessage message) {
+  void _handleEvent(ChatMessage message) {
     try {
-      final decoded = jsonDecode(message.text);
-      if (decoded is! Map<String, dynamic>) return;
-      final userActionRaw = decoded['userAction'];
-      if (userActionRaw is! Map<String, dynamic>) return;
-      if (userActionRaw['isAction'] != true) return;
+      for (final interactionPart in message.parts.uiInteractionParts) {
+        _processInteraction(interactionPart.interaction);
+      }
+    } catch (e, s) {
+      developer.log(
+        'Failed to handle GenUI event',
+        name: 'GenUiEventHandler',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
 
-      final action = UserActionEvent.fromMap(userActionRaw);
+  void _processInteraction(String interaction) {
+    try {
+      final decoded = jsonDecode(interaction);
+      if (decoded is! Map<String, dynamic>) return;
+      final actionRaw = decoded['action'];
+      if (actionRaw is! Map<String, dynamic>) return;
+
+      final action = UserActionEvent.fromMap(actionRaw);
       final name = action.name;
       if (name == 'proposal_approved' || name == 'proposal_rejected') {
         onProposalAction?.call(action.surfaceId, name);
@@ -115,7 +129,7 @@ class GenUiEventHandler {
       }
     } catch (e, s) {
       developer.log(
-        'Failed to handle GenUI event',
+        'Failed to process GenUI interaction',
         name: 'GenUiEventHandler',
         error: e,
         stackTrace: s,
