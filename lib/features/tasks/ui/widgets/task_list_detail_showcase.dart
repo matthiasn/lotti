@@ -39,8 +39,13 @@ class TaskListDetailShowcase extends ConsumerWidget {
                     iconBuilder: ({required active}) => Icon(dest.icon),
                   ),
               ],
-              activeIndex: 1, // Tasks
+              activeIndex: 1, // Tasks (after My Daily)
               onDestinationSelected: (_) {},
+              settingsDestination: DesktopSidebarDestination(
+                label: context.messages.navTabTitleSettings,
+                iconBuilder: ({required active}) =>
+                    const Icon(Icons.settings_outlined),
+              ),
             ),
             Expanded(
               child: Column(
@@ -53,7 +58,7 @@ class TaskListDetailShowcase extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         SizedBox(
-                          width: 402,
+                          width: 540,
                           child: TaskListPane(
                             state: state,
                             onTaskSelected: controller.selectTask,

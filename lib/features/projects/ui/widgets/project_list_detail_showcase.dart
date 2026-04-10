@@ -42,8 +42,13 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                     iconBuilder: ({required active}) => Icon(dest.icon),
                   ),
               ],
-              activeIndex: 2, // Projects
+              activeIndex: 2, // Projects (after My Daily, Tasks)
               onDestinationSelected: (_) {},
+              settingsDestination: DesktopSidebarDestination(
+                label: context.messages.navTabTitleSettings,
+                iconBuilder: ({required active}) =>
+                    const Icon(Icons.settings_outlined),
+              ),
             ),
             Expanded(
               child: Column(
@@ -56,7 +61,7 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         SizedBox(
-                          width: 402,
+                          width: 540,
                           child: ProjectListPane(
                             state: state,
                             onProjectSelected: controller.selectProject,

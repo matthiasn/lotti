@@ -8,6 +8,11 @@ import '../../../widget_test_utils.dart';
 void main() {
   group('buildDesignSystemNavigationTabBarWidgetbookComponent', () {
     testWidgets('builds the tab bar overview use case', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1400, 1000)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final component = buildDesignSystemNavigationTabBarWidgetbookComponent();
       final useCase = component.useCases.single;
 
