@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.949" date="2026-04-10">
+      <description>
+          <p>Task list improvements: AI one-liner subtitle shown below each task title for at-a-glance progress, red recording indicator on actively-tracked tasks, and live in-place data updates when editing in the detail pane.</p>
+          <p>Removed animated page transitions to eliminate visual flicker during list loads and refreshes.</p>
+      </description>
+    </release>
     <release version="0.9.948" date="2026-04-10">
       <description>
           <p>Desktop mode: responsive layout switches from mobile bottom navigation to a persistent left sidebar when the window is wider than 960px, with all navigation destinations and Settings pinned at the bottom.</p>
