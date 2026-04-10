@@ -5,6 +5,8 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -360,5 +362,39 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+
+    testWidgets('dragging divider updates list pane width', (tester) async {
+      when(mockJournalDb.getAllDashboards).thenAnswer(
+        (_) async => [testDashboardConfig],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const DashboardsListPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ResizableDivider), findsOneWidget);
+
+      final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
+      await tester.timedDragFrom(
+        dividerCenter,
+        const Offset(50, 0),
+        const Duration(milliseconds: 200),
+      );
+      await tester.pump();
+
+      final sizedBox = tester.widget<SizedBox>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SizedBox &&
+              widget.width != null &&
+              widget.width! > defaultListPaneWidth,
+        ),
+      );
+      expect(sizedBox.width, greaterThan(defaultListPaneWidth));
+    });
   });
 }
