@@ -2080,6 +2080,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistAllDone => '¡Todos los elementos completados!';
 
   @override
+  String get checklistNoneDone => 'Aún no hay elementos completados.';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total completados';
   }

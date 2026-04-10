@@ -698,6 +698,7 @@
   "checklistAiSuggestionBody": "Tato položka se zdá být dokončena:",
   "checklistAiSuggestionTitle": "Návrh AI",
   "checklistAllDone": "Všechny položky splněny!",
+  "checklistNoneDone": "Zatím žádné dokončené položky.",
   "checklistCompletedShort": "{completed}/{total} hotovo",
   "@checklistCompletedShort": {
     "placeholders": {

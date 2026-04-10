@@ -927,6 +927,7 @@
   "checklistAiSuggestionBody": "Cet élément semble être terminé :",
   "checklistAiSuggestionTitle": "Suggestion IA",
   "checklistAllDone": "Tous les éléments sont terminés !",
+  "checklistNoneDone": "Aucun élément terminé pour le moment.",
   "checklistCompletedShort": "{completed}/{total} terminés",
   "@checklistCompletedShort": {
     "placeholders": {

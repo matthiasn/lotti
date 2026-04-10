@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.948] - 2026-04-10
 ### Added
+- Checklist filter tabs: added a "Done" tab alongside "Open" and "All" to
+  filter checklist items by completion state. Tab order is Open, Done, All.
 - Desktop mode: responsive layout switches from mobile bottom navigation to a
   persistent left sidebar when the window is wider than 960px. The sidebar
   includes all navigation destinations with Settings pinned at the bottom,
@@ -19,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   marked in the list pane when a detail view is open.
 - Localized empty-state placeholders for the detail pane in all seven
   languages.
+### Fixed
+- Checklist cards no longer play a visible collapse/expand animation on first
+  render. Items snap into their initial state immediately, preventing jank
+  when multiple checklists load at once on slower devices.
 
 ## [0.9.947] - 2026-04-09
 ### Changed

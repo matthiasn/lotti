@@ -42,6 +42,7 @@ class ChecklistItemRow extends ConsumerStatefulWidget {
     required this.taskId,
     required this.index,
     this.hideIfChecked = false,
+    this.hideIfUnchecked = false,
     this.showDivider = false,
     super.key,
   });
@@ -53,6 +54,9 @@ class ChecklistItemRow extends ConsumerStatefulWidget {
 
   /// When true, completed/archived items animate out after a short hold.
   final bool hideIfChecked;
+
+  /// When true, uncompleted items are hidden (for the "Done" filter tab).
+  final bool hideIfUnchecked;
 
   /// Whether to show a divider below this row.
   final bool showDivider;
@@ -71,7 +75,6 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   late AnimationController _suggestionController;
   late Animation<double> _suggestionPulse;
 
-  bool _lastHideIfChecked = false;
   bool _lastIsChecked = false;
   bool _lastIsArchived = false;
   bool _receivedInitialData = false;
@@ -79,7 +82,6 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   @override
   void initState() {
     super.initState();
-    _lastHideIfChecked = widget.hideIfChecked;
     _suggestionController = AnimationController(
       duration: const Duration(seconds: 1),
       vsync: this,
@@ -92,10 +94,10 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   @override
   void didUpdateWidget(ChecklistItemRow old) {
     super.didUpdateWidget(old);
-    // React to parent-driven filter changes (hideIfChecked prop).
-    if (old.hideIfChecked != widget.hideIfChecked) {
+    // React to parent-driven filter changes — no animation for tab switches.
+    if (old.hideIfChecked != widget.hideIfChecked ||
+        old.hideIfUnchecked != widget.hideIfUnchecked) {
       _handleHideStateChange(
-        newHideIfChecked: widget.hideIfChecked,
         newIsChecked: _lastIsChecked,
         newIsArchived: _lastIsArchived,
       );
@@ -110,8 +112,13 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     super.dispose();
   }
 
-  bool get _shouldHide =>
-      widget.hideIfChecked && (_lastIsChecked || _lastIsArchived);
+  bool get _shouldHide {
+    // Archived items count as "done" for filtering purposes.
+    final isCompleted = _lastIsChecked || _lastIsArchived;
+    if (widget.hideIfChecked && isCompleted) return true;
+    if (widget.hideIfUnchecked && !isCompleted) return true;
+    return false;
+  }
 
   void _cancelTimers() {
     _holdTimer?.cancel();
@@ -127,47 +134,34 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   }
 
   void _handleHideStateChange({
-    required bool newHideIfChecked,
     required bool newIsChecked,
     required bool newIsArchived,
+    bool animate = false,
   }) {
-    final wasHideChecked = _lastHideIfChecked;
     final wasChecked = _lastIsChecked;
     final wasArchived = _lastIsArchived;
 
-    _lastHideIfChecked = newHideIfChecked;
     _lastIsChecked = newIsChecked;
     _lastIsArchived = newIsArchived;
 
-    // Item just got completed/archived while filter hides them — fade then hide.
-    if ((!wasChecked && newIsChecked && newHideIfChecked) ||
-        (!wasArchived && newIsArchived && newHideIfChecked)) {
+    final isCompleted = newIsChecked || newIsArchived;
+
+    // If the user just interactively checked an item while the Open filter
+    // is active, use the delayed hide animation so they see the checkmark
+    // feedback before the row disappears.
+    if (animate &&
+        widget.hideIfChecked &&
+        isCompleted &&
+        (!wasChecked && newIsChecked || !wasArchived && newIsArchived)) {
       _cancelTimers();
       _startHideSequence();
       return;
     }
 
-    // Filter toggled to hide completed items for an already completed item.
-    if (!wasHideChecked &&
-        newHideIfChecked &&
-        (newIsChecked || newIsArchived)) {
-      _cancelTimers();
-      setState(() => _showRow = false);
-      return;
-    }
-
-    // Filter toggled back to show all.
-    if (wasHideChecked && !newHideIfChecked) {
-      _cancelTimers();
-      setState(() => _showRow = true);
-      return;
-    }
-
-    // Item unchecked or unarchived.
-    if ((wasChecked && !newIsChecked) || (wasArchived && !newIsArchived)) {
-      _cancelTimers();
-      setState(() => _showRow = true);
-    }
+    // For everything else, compute the desired visibility directly from
+    // the current filter flags and item state.
+    _cancelTimers();
+    setState(() => _showRow = !_shouldHide);
   }
 
   @override
@@ -183,24 +177,25 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       final item = next.whenOrNull(data: (item) => item);
       if (item == null) return;
 
-      // On the first data load, immediately hide pre-checked items
-      // instead of using the animation delay (which is only for items
-      // the user just checked off interactively).
+      // On the first data load, immediately hide items that don't match
+      // the active filter instead of using the animation delay (which is
+      // only for items the user just checked off interactively).
       if (!_receivedInitialData) {
         _receivedInitialData = true;
         _lastIsChecked = item.data.isChecked;
         _lastIsArchived = item.data.isArchived;
-        if (widget.hideIfChecked &&
-            (item.data.isChecked || item.data.isArchived)) {
+        final isCompleted = item.data.isChecked || item.data.isArchived;
+        if ((widget.hideIfChecked && isCompleted) ||
+            (widget.hideIfUnchecked && !isCompleted)) {
           setState(() => _showRow = false);
         }
         return;
       }
 
       _handleHideStateChange(
-        newHideIfChecked: widget.hideIfChecked,
         newIsChecked: item.data.isChecked,
         newIsArchived: item.data.isArchived,
+        animate: true,
       );
     });
 
@@ -215,16 +210,17 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
         // Synchronous first-frame fix: if the provider already has data
         // on the first build, ref.listen may not have fired yet.
+        // Set _showRow immediately so the row never renders its content
+        // before being hidden — avoids a single visible frame of
+        // strikethrough items in the Open tab.
         if (!_receivedInitialData) {
           _receivedInitialData = true;
           _lastIsChecked = item.data.isChecked;
           _lastIsArchived = item.data.isArchived;
-          if (widget.hideIfChecked &&
-              (item.data.isChecked || item.data.isArchived) &&
-              _showRow) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) setState(() => _showRow = false);
-            });
+          final isCompleted = item.data.isChecked || item.data.isArchived;
+          if ((widget.hideIfChecked && isCompleted) ||
+              (widget.hideIfUnchecked && !isCompleted)) {
+            _showRow = false;
           }
         }
 
@@ -504,8 +500,8 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           ),
         );
 
-        // Animated hide/show for open-only filter mode.
-        if (widget.hideIfChecked) {
+        // Animated hide/show for filtered modes (open-only or done-only).
+        if (widget.hideIfChecked || widget.hideIfUnchecked) {
           child = AnimatedCrossFade(
             duration: checklistCompletionFadeDuration,
             sizeCurve: Curves.easeInOut,

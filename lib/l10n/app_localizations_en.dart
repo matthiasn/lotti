@@ -2013,6 +2013,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistAllDone => 'All items completed!';
 
   @override
+  String get checklistNoneDone => 'No completed items yet.';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total done';
   }

@@ -927,6 +927,7 @@
   "checklistAiSuggestionBody": "Diese Aufgabe scheint erledigt zu sein:",
   "checklistAiSuggestionTitle": "KI-Vorschlag",
   "checklistAllDone": "Alle Punkte erledigt!",
+  "checklistNoneDone": "Noch keine erledigten Punkte.",
   "checklistCompletedShort": "{completed}/{total} erledigt",
   "@checklistCompletedShort": {
     "placeholders": {

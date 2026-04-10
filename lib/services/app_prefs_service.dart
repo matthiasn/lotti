@@ -3,11 +3,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Abstraction over simple key/value app preferences to enable mocking in tests.
 class AppPrefs {
-  const AppPrefs({required this.getBool, required this.setBool});
+  const AppPrefs({
+    required this.getBool,
+    required this.setBool,
+    required this.getString,
+    required this.setString,
+  });
 
   final Future<bool?> Function(String key) getBool;
   final Future<bool> Function({required String key, required bool value})
   setBool;
+  final Future<String?> Function(String key) getString;
+  final Future<bool> Function({required String key, required String value})
+  setString;
 }
 
 AppPrefs makeSharedPrefsService() => AppPrefs(
@@ -20,6 +28,18 @@ AppPrefs makeSharedPrefsService() => AppPrefs(
     if (isTestEnv) return true;
     final prefs = await SharedPreferences.getInstance();
     return prefs.setBool(key, value);
+  },
+  // Note: getString returns null in test env (unlike getBool which returns
+  // true), so callers fall through to their default/legacy paths in tests.
+  getString: (String key) async {
+    if (isTestEnv) return null;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  },
+  setString: ({required String key, required String value}) async {
+    if (isTestEnv) return true;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setString(key, value);
   },
 );
 
