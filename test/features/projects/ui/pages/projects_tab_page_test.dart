@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -134,6 +136,12 @@ void main() {
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<UserActivityService>(mockUserActivityService);
+        final mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenReturn(false);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(ValueNotifier<String?>(null));
+        getIt.registerSingleton<NavService>(mockNavService);
       },
     );
   });
@@ -279,6 +287,13 @@ void main() {
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
 
+    // Set view size so isDesktopLayout actually returns true
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await pumpPage(
       tester,
       groups: groups,
@@ -286,7 +301,43 @@ void main() {
     );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('React Course'), findsOneWidget);
+    expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is SizedBox && widget.width == 540,
+      ),
+      findsOneWidget,
+    );
   });
+
+  testWidgets(
+    'desktop layout shows detail page when project is selected',
+    (tester) async {
+      final navService = getIt<NavService>() as MockNavService;
+      final selectedNotifier = ValueNotifier<String?>('project-1');
+      when(
+        () => navService.desktopSelectedProjectId,
+      ).thenReturn(selectedNotifier);
+
+      // Suppress errors from the detail page — we only need the
+      // branching code in ProjectsTabPage to be exercised.
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {};
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+      );
+
+      expect(find.byType(DesktopDetailEmptyState), findsNothing);
+      expect(find.byType(ProjectDetailsPage), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('shows no-results message when groups are empty', (
     tester,

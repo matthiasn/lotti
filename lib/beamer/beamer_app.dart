@@ -13,6 +13,8 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dar
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -83,6 +86,13 @@ class _AppNavigationDestination {
       activeIcon: iconBuilder(active: true),
       active: active,
       onTap: onTap,
+    );
+  }
+
+  DesktopSidebarDestination toDesktopSidebarDestination() {
+    return DesktopSidebarDestination(
+      label: label,
+      iconBuilder: iconBuilder,
     );
   }
 }
@@ -244,68 +254,196 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final index = rawIndex < 0
             ? 0
             : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
-        final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
-          items: [
-            for (var i = 0; i < destinations.length; i++)
-              destinations[i].toDesignSystemItem(
-                active: i == index,
-                onTap: () => navService.tapIndex(i),
-              ),
-          ],
-        );
-        final overlayBottomInset =
-            DesignSystemBottomNavigationBar.occupiedHeight(context);
 
-        // No eager toast from build(); event-driven toast handled via ref.listen
+        final isWide = isDesktopLayout(context);
+        navService.isDesktopMode = isWide;
 
-        return Scaffold(
-          extendBody: true,
-          body: Stack(
-            children: [
-              const IncomingVerificationWrapper(),
-              IndexedStack(
-                index: index,
-                children: [
-                  Beamer(routerDelegate: navService.tasksDelegate),
-                  if (isProjectsPageEnabled)
-                    Beamer(routerDelegate: navService.projectsDelegate),
-                  if (isDailyOsPageEnabled)
-                    Beamer(routerDelegate: navService.calendarDelegate),
-                  if (isHabitsPageEnabled)
-                    Beamer(routerDelegate: navService.habitsDelegate),
-                  if (isDashboardsPageEnabled)
-                    Beamer(routerDelegate: navService.dashboardsDelegate),
-                  Beamer(routerDelegate: navService.journalDelegate),
-                  Beamer(routerDelegate: navService.settingsDelegate),
-                ],
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: designSystemBottomNavigationBar,
-              ),
-              Positioned(
-                left: AppScreenConstants.navigationPadding,
-                bottom:
-                    AppScreenConstants.navigationTimeIndicatorBottom +
-                    overlayBottomInset,
-                child: const TimeRecordingIndicator(),
-              ),
-              // Only show AudioRecordingIndicator when not running in Flatpak
-              // Flatpak builds have MediaKit compatibility issues
-              if (!_isRunningInFlatpak())
-                Positioned(
-                  right: AppScreenConstants.navigationAudioIndicatorRight,
-                  bottom:
-                      AppScreenConstants.navigationTimeIndicatorBottom +
-                      overlayBottomInset,
-                  child: const AudioRecordingIndicator(),
-                ),
-            ],
-          ),
+        final beamerChildren = [
+          Beamer(routerDelegate: navService.tasksDelegate),
+          if (isProjectsPageEnabled)
+            Beamer(routerDelegate: navService.projectsDelegate),
+          if (isDailyOsPageEnabled)
+            Beamer(routerDelegate: navService.calendarDelegate),
+          if (isHabitsPageEnabled)
+            Beamer(routerDelegate: navService.habitsDelegate),
+          if (isDashboardsPageEnabled)
+            Beamer(routerDelegate: navService.dashboardsDelegate),
+          Beamer(routerDelegate: navService.journalDelegate),
+          Beamer(routerDelegate: navService.settingsDelegate),
+        ];
+
+        if (isWide) {
+          return _buildDesktopLayout(
+            context: context,
+            index: index,
+            destinations: destinations,
+            beamerChildren: beamerChildren,
+          );
+        }
+
+        return _buildMobileLayout(
+          context: context,
+          index: index,
+          destinations: destinations,
+          beamerChildren: beamerChildren,
         );
       },
+    );
+  }
+
+  Widget _buildDesktopLayout({
+    required BuildContext context,
+    required int index,
+    required List<_AppNavigationDestination> destinations,
+    required List<Widget> beamerChildren,
+  }) {
+    // Separate Settings from other destinations
+    final mainDestinations = <_AppNavigationDestination>[];
+    _AppNavigationDestination? settingsDestination;
+    var settingsIndex = -1;
+
+    for (var i = 0; i < destinations.length; i++) {
+      if (destinations[i].kind == _AppNavigationDestinationKind.settings) {
+        settingsDestination = destinations[i];
+        settingsIndex = i;
+      } else {
+        mainDestinations.add(destinations[i]);
+      }
+    }
+
+    // Compute the active index for the main destinations list
+    // (which excludes Settings)
+    final isSettingsActive = index == settingsIndex;
+    var mainActiveIndex = 0;
+    if (!isSettingsActive) {
+      // Find which main destination corresponds to the full index
+      var mainIdx = 0;
+      for (var i = 0; i < destinations.length; i++) {
+        if (destinations[i].kind == _AppNavigationDestinationKind.settings) {
+          continue;
+        }
+        if (i == index) {
+          mainActiveIndex = mainIdx;
+          break;
+        }
+        mainIdx++;
+      }
+    }
+
+    return Scaffold(
+      body: Row(
+        children: [
+          DesktopNavigationSidebar(
+            destinations: [
+              for (final dest in mainDestinations)
+                dest.toDesktopSidebarDestination(),
+            ],
+            activeIndex: mainActiveIndex,
+            onDestinationSelected: (mainIdx) {
+              // Map main destination index back to the full index
+              var fullIdx = 0;
+              var count = 0;
+              for (var i = 0; i < destinations.length; i++) {
+                if (destinations[i].kind ==
+                    _AppNavigationDestinationKind.settings) {
+                  continue;
+                }
+                if (count == mainIdx) {
+                  fullIdx = i;
+                  break;
+                }
+                count++;
+              }
+              navService.tapIndex(fullIdx);
+            },
+            settingsDestination: settingsDestination
+                ?.toDesktopSidebarDestination(),
+            onSettingsSelected: settingsIndex >= 0
+                ? () => navService.tapIndex(settingsIndex)
+                : null,
+            isSettingsActive: isSettingsActive,
+            onNewPressed: createTextEntry,
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                const IncomingVerificationWrapper(),
+                IndexedStack(
+                  index: index,
+                  children: beamerChildren,
+                ),
+                const Positioned(
+                  left: AppScreenConstants.navigationPadding,
+                  bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                  child: TimeRecordingIndicator(),
+                ),
+                if (!_isRunningInFlatpak())
+                  const Positioned(
+                    right: AppScreenConstants.navigationAudioIndicatorRight,
+                    bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                    child: AudioRecordingIndicator(),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout({
+    required BuildContext context,
+    required int index,
+    required List<_AppNavigationDestination> destinations,
+    required List<Widget> beamerChildren,
+  }) {
+    final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
+      items: [
+        for (var i = 0; i < destinations.length; i++)
+          destinations[i].toDesignSystemItem(
+            active: i == index,
+            onTap: () => navService.tapIndex(i),
+          ),
+      ],
+    );
+    final overlayBottomInset = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
+
+    return Scaffold(
+      extendBody: true,
+      body: Stack(
+        children: [
+          const IncomingVerificationWrapper(),
+          IndexedStack(
+            index: index,
+            children: beamerChildren,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: designSystemBottomNavigationBar,
+          ),
+          Positioned(
+            left: AppScreenConstants.navigationPadding,
+            bottom:
+                AppScreenConstants.navigationTimeIndicatorBottom +
+                overlayBottomInset,
+            child: const TimeRecordingIndicator(),
+          ),
+          // Only show AudioRecordingIndicator when not running in Flatpak
+          // Flatpak builds have MediaKit compatibility issues
+          if (!_isRunningInFlatpak())
+            Positioned(
+              right: AppScreenConstants.navigationAudioIndicatorRight,
+              bottom:
+                  AppScreenConstants.navigationTimeIndicatorBottom +
+                  overlayBottomInset,
+              child: const AudioRecordingIndicator(),
+            ),
+        ],
+      ),
     );
   }
 

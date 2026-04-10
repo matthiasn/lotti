@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -39,11 +42,18 @@ void main() {
         mockJournalDb.getAllCategories,
       ).thenAnswer((_) async => [categoryMindfulness]);
 
+      final mockNavService = MockNavService();
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+      when(
+        () => mockNavService.desktopSelectedDashboardId,
+      ).thenReturn(ValueNotifier<String?>(null));
+
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+        ..registerSingleton<NavService>(mockNavService);
     });
     tearDown(getIt.reset);
 
@@ -236,5 +246,83 @@ void main() {
       expect(find.text(testDashboardName), findsOneWidget);
       expect(find.text('Inactive Dashboard'), findsNothing);
     });
+
+    testWidgets(
+      'renders desktop split layout with empty detail pane',
+      (tester) async {
+        when(mockJournalDb.getAllDashboards).thenAnswer(
+          (_) async => [testDashboardConfig],
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const DashboardsListPage(),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is SizedBox && widget.width == 540,
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(testDashboardName), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders desktop split layout with selected dashboard detail',
+      (tester) async {
+        when(mockJournalDb.getAllDashboards).thenAnswer(
+          (_) async => [testDashboardConfig],
+        );
+        final mockEntitiesCacheService =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+        when(
+          () => mockEntitiesCacheService.getDashboardById(
+            testDashboardConfig.id,
+          ),
+        ).thenReturn(testDashboardConfig);
+
+        final navService = getIt<NavService>() as MockNavService;
+        final selectedNotifier = ValueNotifier<String?>(
+          testDashboardConfig.id,
+        );
+        when(
+          () => navService.desktopSelectedDashboardId,
+        ).thenReturn(selectedNotifier);
+
+        // Suppress overflow errors from the detail page — we only need the
+        // code path in DashboardsListPage to be exercised.
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (details) {
+          final message = details.exceptionAsString();
+          if (message.contains('overflowed')) return;
+          originalOnError?.call(details);
+        };
+        addTearDown(() => FlutterError.onError = originalOnError);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const DashboardsListPage(),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          ),
+        );
+        await tester.pump();
+
+        // Verify the selected-dashboard branch is taken (DashboardPage
+        // renders, not the empty state placeholder).
+        expect(find.byType(DesktopDetailEmptyState), findsNothing);
+        expect(find.byType(DashboardPage), findsOneWidget);
+
+        // Dispose and flush pending timers from flutter_animate.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.948] - 2026-04-10
+### Added
+- Desktop mode: responsive layout switches from mobile bottom navigation to a
+  persistent left sidebar when the window is wider than 960px. The sidebar
+  includes all navigation destinations with Settings pinned at the bottom,
+  plus the "New" and AI assistant action buttons.
+- Desktop split-pane view for Tasks, Projects, and Dashboards: the list and
+  detail views are shown side by side. Selecting an item in the list
+  reactively opens its detail in the right pane without losing list scroll
+  position. Full-width sections (Habits, My Daily, Journal, Settings)
+  continue to use the entire content area.
+- Active item highlighting: the selected task or project card is visually
+  marked in the list pane when a detail view is open.
+- Localized empty-state placeholders for the detail pane in all seven
+  languages.
+
 ## [0.9.947] - 2026-04-09
 ### Changed
 - Bottom navigation rollout: every main app tab now uses the Widgetbook

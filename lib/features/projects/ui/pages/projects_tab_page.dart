@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -42,6 +45,58 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = isDesktopLayout(context);
+
+    if (isDesktop) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: ShowcasePalette.page(context),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 540,
+              child: _ProjectsListScaffold(
+                scrollController: _scrollController,
+              ),
+            ),
+            Expanded(
+              child: ValueListenableBuilder<String?>(
+                valueListenable: getIt<NavService>().desktopSelectedProjectId,
+                builder: (context, selectedProjectId, _) {
+                  if (selectedProjectId != null) {
+                    return ProjectDetailsPage(
+                      projectId: selectedProjectId,
+                    );
+                  }
+                  return DesktopDetailEmptyState(
+                    message: context.messages.desktopEmptyStateSelectProject,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _ProjectsListScaffold(
+      scrollController: _scrollController,
+    );
+  }
+}
+
+final _noProjectSelectionNotifier = ValueNotifier<String?>(null);
+
+class _ProjectsListScaffold extends ConsumerWidget {
+  const _ProjectsListScaffold({
+    required this.scrollController,
+  });
+
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(projectsOverviewProvider);
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
@@ -70,56 +125,62 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
       body: SafeArea(
         bottom: false,
         child: visibleGroupsAsync.when(
-          data: (groups) => ProjectsOverviewContent(
-            title: context.messages.navTabTitleProjects,
-            groups: groups,
-            query: filter.textQuery,
-            scrollController: _scrollController,
-            headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
-            listBottomPadding: 112,
-            onSearchChanged: (value) {
-              ref
-                  .read(projectsFilterControllerProvider.notifier)
-                  .setTextQuery(value);
-            },
-            onSearchCleared: () {
-              ref
-                  .read(projectsFilterControllerProvider.notifier)
-                  .setTextQuery(
-                    '',
-                  );
-            },
-            onSearchPressed: (value) {
-              ref
-                  .read(projectsFilterControllerProvider.notifier)
-                  .setTextQuery(value);
-            },
-            onProjectTap: (project) {
-              beamToNamed('/projects/${project.project.meta.id}');
-            },
-            titleTrailing: Icon(
-              Icons.notifications_none_rounded,
-              size: 34,
-              color: ShowcasePalette.highText(context),
-            ),
-            searchTrailing: IconButton(
-              tooltip: context.messages.projectsFilterTooltip,
-              onPressed: () => showProjectsFilterModal(
-                context: context,
-                initialFilter: filter,
-                categories: categories,
-                onApplied: (nextFilter) {
-                  ref.read(projectsFilterControllerProvider.notifier).filter =
-                      nextFilter;
-                },
-                presentation: isCompact
-                    ? DesignSystemFilterPresentation.mobile
-                    : DesignSystemFilterPresentation.desktop,
+          data: (groups) => ValueListenableBuilder<String?>(
+            valueListenable: isDesktopLayout(context)
+                ? getIt<NavService>().desktopSelectedProjectId
+                : _noProjectSelectionNotifier,
+            builder: (context, activeProjectId, _) => ProjectsOverviewContent(
+              title: context.messages.navTabTitleProjects,
+              groups: groups,
+              query: filter.textQuery,
+              selectedProjectId: activeProjectId,
+              scrollController: scrollController,
+              headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
+              listBottomPadding: 112,
+              onSearchChanged: (value) {
+                ref
+                    .read(projectsFilterControllerProvider.notifier)
+                    .setTextQuery(value);
+              },
+              onSearchCleared: () {
+                ref
+                    .read(projectsFilterControllerProvider.notifier)
+                    .setTextQuery(
+                      '',
+                    );
+              },
+              onSearchPressed: (value) {
+                ref
+                    .read(projectsFilterControllerProvider.notifier)
+                    .setTextQuery(value);
+              },
+              onProjectTap: (project) {
+                beamToNamed('/projects/${project.project.meta.id}');
+              },
+              titleTrailing: Icon(
+                Icons.notifications_none_rounded,
+                size: 34,
+                color: ShowcasePalette.highText(context),
               ),
-              icon: Icon(
-                Icons.tune_rounded,
-                size: 24,
-                color: ShowcasePalette.teal(context),
+              searchTrailing: IconButton(
+                tooltip: context.messages.projectsFilterTooltip,
+                onPressed: () => showProjectsFilterModal(
+                  context: context,
+                  initialFilter: filter,
+                  categories: categories,
+                  onApplied: (nextFilter) {
+                    ref.read(projectsFilterControllerProvider.notifier).filter =
+                        nextFilter;
+                  },
+                  presentation: isCompact
+                      ? DesignSystemFilterPresentation.mobile
+                      : DesignSystemFilterPresentation.desktop,
+                ),
+                icon: Icon(
+                  Icons.tune_rounded,
+                  size: 24,
+                  color: ShowcasePalette.teal(context),
+                ),
               ),
             ),
           ),

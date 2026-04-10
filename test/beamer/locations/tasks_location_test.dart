@@ -4,8 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../mocks/mocks.dart';
 
 class MockBuildContext extends Mock implements BuildContext {}
 
@@ -13,8 +17,21 @@ void main() {
   group('TasksLocation', () {
     late MockBuildContext mockBuildContext;
 
+    late MockNavService mockNavService;
+
     setUp(() {
       mockBuildContext = MockBuildContext();
+      mockNavService = MockNavService();
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
     });
 
     test('pathPatterns are correct', () {
@@ -65,5 +82,65 @@ void main() {
       final taskDetailsPage = pages[1].child as TaskDetailsPage;
       expect(taskDetailsPage.taskId, taskId);
     });
+
+    test(
+      'in desktop mode, buildPages returns only root page '
+      'and does not push detail page',
+      () {
+        final taskId = const Uuid().v4();
+        final desktopSelectedTaskId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(desktopSelectedTaskId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/tasks/$taskId'),
+        );
+        final location = TasksLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'taskId': taskId,
+          },
+        );
+
+        final pages = location.buildPages(mockBuildContext, newBeamState);
+
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<TasksRootPage>());
+      },
+    );
+
+    test(
+      'in desktop mode, buildPages updates desktopSelectedTaskId',
+      () {
+        final taskId = const Uuid().v4();
+        final desktopSelectedTaskId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedTaskId,
+        ).thenReturn(desktopSelectedTaskId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/tasks/$taskId'),
+        );
+        final location = TasksLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {
+            ...beamState.pathParameters,
+            'taskId': taskId,
+          },
+        );
+
+        location.buildPages(mockBuildContext, newBeamState);
+
+        expect(desktopSelectedTaskId.value, taskId);
+      },
+    );
   });
 }

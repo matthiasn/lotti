@@ -2769,6 +2769,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Delete device';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Select a dashboard to view details';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Select a project to view details';
+
+  @override
+  String get desktopEmptyStateSelectTask => 'Select a task to view details';
+
+  @override
   String get designSystemActivatedLabel => 'Activated';
 
   @override

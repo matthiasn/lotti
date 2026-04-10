@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -50,6 +51,21 @@ class NavService {
     ({bool habits, bool dashboards, bool dailyOs, bool projects})
   >
   _navigationFlagsSub;
+
+  /// Whether the app is currently in desktop layout mode (sidebar visible).
+  /// Set by `AppScreen` based on the current window width.
+  bool isDesktopMode = false;
+
+  /// Selected item IDs for desktop split-pane views.
+  /// Updated by Beamer locations when the route contains an item ID.
+  /// Root pages listen to these to show the detail pane reactively.
+  final ValueNotifier<String?> desktopSelectedTaskId = ValueNotifier<String?>(
+    null,
+  );
+  final ValueNotifier<String?> desktopSelectedProjectId =
+      ValueNotifier<String?>(null);
+  final ValueNotifier<String?> desktopSelectedDashboardId =
+      ValueNotifier<String?>(null);
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
@@ -256,6 +272,9 @@ class NavService {
   }
 
   Future<void> dispose() async {
+    desktopSelectedTaskId.dispose();
+    desktopSelectedProjectId.dispose();
+    desktopSelectedDashboardId.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();
   }

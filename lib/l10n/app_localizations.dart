@@ -4950,6 +4950,24 @@ abstract class AppLocalizations {
   /// **'Delete device'**
   String get deleteDeviceLabel;
 
+  /// No description provided for @desktopEmptyStateSelectDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a dashboard to view details'**
+  String get desktopEmptyStateSelectDashboard;
+
+  /// No description provided for @desktopEmptyStateSelectProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a project to view details'**
+  String get desktopEmptyStateSelectProject;
+
+  /// No description provided for @desktopEmptyStateSelectTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task to view details'**
+  String get desktopEmptyStateSelectTask;
+
   /// No description provided for @designSystemActivatedLabel.
   ///
   /// In en, this message translates to:

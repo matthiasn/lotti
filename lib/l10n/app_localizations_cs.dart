@@ -2787,6 +2787,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odstranit zařízení';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Vyber nástěnku pro zobrazení podrobností';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Vyber projekt pro zobrazení podrobností';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Vyber úkol pro zobrazení podrobností';
+
+  @override
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override

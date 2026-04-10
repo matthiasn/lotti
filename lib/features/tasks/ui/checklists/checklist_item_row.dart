@@ -74,6 +74,7 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   bool _lastHideIfChecked = false;
   bool _lastIsChecked = false;
   bool _lastIsArchived = false;
+  bool _receivedInitialData = false;
 
   @override
   void initState() {
@@ -181,6 +182,21 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       if (!mounted) return;
       final item = next.whenOrNull(data: (item) => item);
       if (item == null) return;
+
+      // On the first data load, immediately hide pre-checked items
+      // instead of using the animation delay (which is only for items
+      // the user just checked off interactively).
+      if (!_receivedInitialData) {
+        _receivedInitialData = true;
+        _lastIsChecked = item.data.isChecked;
+        _lastIsArchived = item.data.isArchived;
+        if (widget.hideIfChecked &&
+            (item.data.isChecked || item.data.isArchived)) {
+          setState(() => _showRow = false);
+        }
+        return;
+      }
+
       _handleHideStateChange(
         newHideIfChecked: widget.hideIfChecked,
         newIsChecked: item.data.isChecked,
@@ -195,6 +211,21 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         final item = data.value;
         if (item == null || item.isDeleted) {
           return const SizedBox.shrink();
+        }
+
+        // Synchronous first-frame fix: if the provider already has data
+        // on the first build, ref.listen may not have fired yet.
+        if (!_receivedInitialData) {
+          _receivedInitialData = true;
+          _lastIsChecked = item.data.isChecked;
+          _lastIsArchived = item.data.isArchived;
+          if (widget.hideIfChecked &&
+              (item.data.isChecked || item.data.isArchived) &&
+              _showRow) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _showRow = false);
+            });
+          }
         }
 
         final itemNotifier = ref.read(provider.notifier);

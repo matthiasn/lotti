@@ -4,7 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../mocks/mocks.dart';
 
 class _MockBuildContext extends Mock implements BuildContext {}
 
@@ -12,8 +16,21 @@ void main() {
   group('ProjectsLocation', () {
     late _MockBuildContext mockBuildContext;
 
+    late MockNavService mockNavService;
+
     setUp(() {
       mockBuildContext = _MockBuildContext();
+      mockNavService = MockNavService();
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
     });
 
     test('pathPatterns are correct', () {
@@ -53,5 +70,55 @@ void main() {
       final detailPage = pages.last.child as ProjectDetailsPage;
       expect(detailPage.projectId, 'project-123');
     });
+
+    test(
+      'in desktop mode, buildPages returns only root page '
+      'and does not push detail page',
+      () {
+        final desktopSelectedProjectId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(desktopSelectedProjectId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/projects/project-123'),
+        );
+        final location = ProjectsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'project-123'});
+
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages, hasLength(1));
+        expect(pages.first.child, isA<ProjectsTabPage>());
+      },
+    );
+
+    test(
+      'in desktop mode, buildPages updates desktopSelectedProjectId',
+      () {
+        final desktopSelectedProjectId = ValueNotifier<String?>(null);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(desktopSelectedProjectId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/projects/project-123'),
+        );
+        final location = ProjectsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'project-123'});
+
+        location.buildPages(mockBuildContext, beamState);
+
+        expect(desktopSelectedProjectId.value, 'project-123');
+      },
+    );
   });
 }

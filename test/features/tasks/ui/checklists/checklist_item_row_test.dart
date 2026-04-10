@@ -694,6 +694,69 @@ void main() {
           expect(crossFadeVisible.crossFadeState, CrossFadeState.showFirst);
         },
       );
+
+      testWidgets(
+        'synchronous first-frame hides pre-checked item via post-frame callback',
+        (tester) async {
+          // Exercises the synchronous first-frame fix (lines 218-229):
+          // when the provider already has data before the first build,
+          // ref.listen hasn't fired yet, so the build method checks
+          // _receivedInitialData and schedules a post-frame callback.
+          final itemCtrl = FakeChecklistItemController(
+            _makeItem(isChecked: true),
+          );
+
+          // Pre-resolve the provider so it has data before the widget
+          // mounts. A ProviderContainer reads the provider eagerly.
+          final container = ProviderContainer(
+            overrides: [
+              checklistItemControllerProvider((
+                id: 'item-1',
+                taskId: 'task-1',
+              )).overrideWith(() => itemCtrl),
+              checklistControllerProvider.overrideWith(
+                FakeChecklistController.new,
+              ),
+              checklistCompletionServiceProvider.overrideWith(
+                FakeChecklistCompletionService.new,
+              ),
+            ],
+          );
+          // Force the provider to resolve before the widget tree mounts.
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidgetWithScaffold(
+                const ChecklistItemRow(
+                  itemId: 'item-1',
+                  checklistId: 'checklist-1',
+                  taskId: 'task-1',
+                  index: 0,
+                  hideIfChecked: true,
+                ),
+              ),
+            ),
+          );
+          // First build — the post-frame callback is scheduled.
+          await tester.pump();
+          // Second pump — the callback fires and sets _showRow = false.
+          await tester.pump();
+
+          final crossFade = tester.widget<AnimatedCrossFade>(
+            find.byType(AnimatedCrossFade),
+          );
+          expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+
+          container.dispose();
+        },
+      );
     });
 
     // ── AnimatedCrossFade wrapping ──────────────────────────────────────

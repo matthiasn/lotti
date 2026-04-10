@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.948" date="2026-04-10">
+      <description>
+          <p>Desktop mode: responsive layout switches from mobile bottom navigation to a persistent left sidebar when the window is wider than 960px, with all navigation destinations and Settings pinned at the bottom.</p>
+          <p>Desktop split-pane view for Tasks, Projects, and Dashboards: list and detail views shown side by side with reactive selection and active item highlighting in the list pane.</p>
+      </description>
+    </release>
     <release version="0.9.947" date="2026-04-09">
       <description>
           <p>Bottom navigation rollout: every main app tab now uses the Widgetbook design-system bottom navigation shell instead of the legacy Spotify-style bar, with the floating pill centered consistently across the app.</p>
