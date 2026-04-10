@@ -50,17 +50,30 @@ jobs:
       - name: Decode Android Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
 
+      - name: Verify keystore checksum
+        run: |
+          echo "Expected: ce8f41947485700526c951c002358975693f66f421a391c5b10bf76d76ad4856"
+          echo "Actual:   $(sha256sum android/app/upload-keystore.jks | cut -d' ' -f1)"
+
       - name: Verify keystore
-        run: keytool -list -keystore android/app/upload-keystore.jks -storepass "${{ secrets.ANDROID_STORE_PASSWORD }}" -alias "${{ secrets.ANDROID_KEY_ALIAS }}"
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: keytool -list -keystore android/app/upload-keystore.jks -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS"
 
       - name: Create key.properties
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          STORE_FILE: ${{ github.workspace }}/android/app/upload-keystore.jks
         run: |
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=%s\n' \
-            "${{ secrets.ANDROID_STORE_PASSWORD }}" \
-            "${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            "${{ github.workspace }}/android/app/upload-keystore.jks" \
-            > android/key.properties
+          {
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storeFile=$STORE_FILE"
+          } > android/key.properties
 
       - name: Build App Bundle
         run: flutter build appbundle --release
