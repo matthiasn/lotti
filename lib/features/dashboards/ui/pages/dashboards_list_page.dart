@@ -4,6 +4,8 @@ import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_filter.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_list.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -88,11 +90,18 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
       return listScaffold;
     }
 
+    final paneWidths = ref.watch(paneWidthControllerProvider);
+
     return Row(
       children: [
         SizedBox(
-          width: 540,
+          width: paneWidths.listPaneWidth,
           child: listScaffold,
+        ),
+        ResizableDivider(
+          onDrag: (delta) => ref
+              .read(paneWidthControllerProvider.notifier)
+              .updateListPaneWidth(delta),
         ),
         Expanded(
           child: ValueListenableBuilder<String?>(
