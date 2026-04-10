@@ -5,12 +5,12 @@ import 'package:openai_dart/openai_dart.dart';
 /// Bridges Lotti's OpenAI tool-calling layer to GenUI's A2UI message protocol.
 ///
 /// When the LLM calls the `render_surface` tool, this bridge constructs the
-/// necessary [Component], [SurfaceUpdate], and [BeginRendering] messages and
-/// feeds them to the [A2uiMessageProcessor].
+/// necessary [Component], [UpdateComponents], and [CreateSurface] messages and
+/// feeds them to the [SurfaceController].
 class GenUiBridge {
   GenUiBridge({required this.processor});
 
-  final A2uiMessageProcessor processor;
+  final SurfaceController processor;
 
   /// Tool name constant.
   static const toolName = 'render_surface';
@@ -78,8 +78,8 @@ class GenUiBridge {
 
   /// Process a `render_surface` tool call.
   ///
-  /// Constructs the genui [Component], sends [SurfaceUpdate] and
-  /// [BeginRendering] to the processor, and returns the surface ID.
+  /// Constructs the genui [Component], sends [UpdateComponents] and
+  /// [CreateSurface] to the processor, and returns the surface ID.
   String handleToolCall(Map<String, dynamic> args) {
     final surfaceIdValue = args['surfaceId'];
     final surfaceId = surfaceIdValue is String && surfaceIdValue.isNotEmpty
@@ -114,23 +114,21 @@ class GenUiBridge {
 
     final component = Component(
       id: rootId,
-      componentProperties: {
-        rootType: data,
-      },
+      type: rootType,
+      properties: data,
     );
 
     processor
       ..handleMessage(
-        SurfaceUpdate(
+        CreateSurface(
           surfaceId: surfaceId,
-          components: [component],
+          catalogId: evolutionCatalogId,
         ),
       )
       ..handleMessage(
-        BeginRendering(
+        UpdateComponents(
           surfaceId: surfaceId,
-          root: rootId,
-          catalogId: evolutionCatalogId,
+          components: [component],
         ),
       );
 

@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.949+3910
+version: 0.9.949+3911
 
 msix_config:
   display_name: LottiApp
@@ -66,7 +66,7 @@ dependencies:
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
-  genui: ^0.7.0
+  genui: ^0.8.0
   geoclue: ^0.1.0
   get_it: ^8.0.2
   glass_kit: ^4.0.1

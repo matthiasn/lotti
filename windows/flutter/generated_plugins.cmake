@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  audioplayers_windows
   connectivity_plus
   desktop_drop
   file_selector_windows
@@ -18,6 +19,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   sqlite3_flutter_libs
   super_native_extensions
   url_launcher_windows
+  video_player_win
   window_manager
 )
 

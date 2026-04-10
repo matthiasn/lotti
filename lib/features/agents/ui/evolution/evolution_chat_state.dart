@@ -31,8 +31,8 @@ class EvolutionChatData {
   final String? currentDirectives;
 
   /// The GenUI message processor, available after session start.
-  /// Used by [GenUiSurface] widgets to render dynamic content.
-  final A2uiMessageProcessor? processor;
+  /// Used by [Surface] widgets to render dynamic content.
+  final SurfaceController? processor;
   final Map<String, int> categoryRatings;
   final String? lastSurfacedProposalKey;
 
@@ -41,7 +41,7 @@ class EvolutionChatData {
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
     String? Function()? currentDirectives,
-    A2uiMessageProcessor? Function()? processor,
+    SurfaceController? Function()? processor,
     Map<String, int>? categoryRatings,
     String? Function()? lastSurfacedProposalKey,
   }) {
