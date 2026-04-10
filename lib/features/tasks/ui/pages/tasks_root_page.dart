@@ -4,8 +4,8 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
-import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/widgets/desktop_task_detail_view.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -42,10 +42,7 @@ class TasksRootPage extends ConsumerWidget {
               valueListenable: getIt<NavService>().desktopSelectedTaskId,
               builder: (context, selectedTaskId, _) {
                 if (selectedTaskId != null) {
-                  return TaskDetailsPage(
-                    key: ValueKey(selectedTaskId),
-                    taskId: selectedTaskId,
-                  );
+                  return DesktopTaskDetailView(taskId: selectedTaskId);
                 }
                 return DesktopDetailEmptyState(
                   message: context.messages.desktopEmptyStateSelectTask,

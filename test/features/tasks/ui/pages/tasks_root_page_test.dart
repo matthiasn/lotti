@@ -7,9 +7,9 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/widgets/desktop_task_detail_view.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -125,11 +125,7 @@ void main() {
 
     expect(find.byType(TasksTabPage), findsOneWidget);
     expect(find.byType(DesktopDetailEmptyState), findsNothing);
-    expect(find.byType(TaskDetailsPage), findsOneWidget);
-    expect(
-      tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
-      const ValueKey('task-42'),
-    );
+    expect(find.byType(DesktopTaskDetailView), findsOneWidget);
 
     // Dispose the widget tree and flush pending timers from
     // flutter_animate inside the detail page.
