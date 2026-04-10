@@ -223,10 +223,12 @@ void main() {
       // The sidebar renders a Container with the configured width.
       // Find the Container that is a direct child of DesktopNavigationSidebar.
       final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(DesktopNavigationSidebar),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(DesktopNavigationSidebar),
+              matching: find.byType(Container),
+            )
+            .first,
       );
 
       expect(

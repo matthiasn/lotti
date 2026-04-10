@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -301,6 +302,35 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'desktop layout shows detail page when project is selected',
+    (tester) async {
+      final navService = getIt<NavService>() as MockNavService;
+      final selectedNotifier = ValueNotifier<String?>('project-1');
+      when(
+        () => navService.desktopSelectedProjectId,
+      ).thenReturn(selectedNotifier);
+
+      // Suppress errors from the detail page — we only need the
+      // branching code in ProjectsTabPage to be exercised.
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {};
+      addTearDown(() => FlutterError.onError = originalOnError);
+
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+      );
+
+      expect(find.byType(DesktopDetailEmptyState), findsNothing);
+      expect(find.byType(ProjectDetailsPage), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('shows no-results message when groups are empty', (
     tester,

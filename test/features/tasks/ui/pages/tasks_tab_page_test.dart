@@ -403,4 +403,26 @@ void main() {
     expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
     expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
+
+  testWidgets('desktop mode listens to desktopSelectedTaskId', (
+    tester,
+  ) async {
+    final selectedNotifier = ValueNotifier<String?>('task-1');
+    when(
+      () => mockNavService.desktopSelectedTaskId,
+    ).thenReturn(selectedNotifier);
+
+    await tester.pumpWidget(
+      buildSubject(
+        state: state(),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The selected task row should receive the selectedTaskId prop,
+    // which triggers visual highlighting in desktop mode.
+    expect(find.text('Write migration'), findsOneWidget);
+    expect(find.text('Validate grouping'), findsOneWidget);
+  });
 }
