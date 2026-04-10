@@ -6209,7 +6209,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksLabelFilterAll => 'Toutes';
 
   @override
-  String get tasksLabelFilterTitle => 'Étiquettes';
+  String get tasksLabelFilterTitle => 'Étiquette';
 
   @override
   String get tasksLabelFilterUnlabeled => 'Sans étiquette';

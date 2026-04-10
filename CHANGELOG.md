@@ -70,6 +70,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   data.
 
 ## [0.9.948] - 2026-04-10
+### Changed
+- Task filter modal: replaced the old custom filter modal with the design
+  system version from Widgetbook. The new modal uses the same visual language
+  as the projects filter and includes sort, status, priority, category, label,
+  project, and agent assignment filters with display toggles.
+- Project filtering now lives inside the task filter modal with a grouped
+  selection view (projects grouped by category). Removed the separate
+  ProjectHealthHeader from the task list.
+- Search mode (full text vs. vector) is now only shown on desktop when vector
+  search is enabled. On mobile, full-text search is always used.
+- Cover art thumbnails are now always shown on task cards.
+
+### Removed
+- "Show projects header" display toggle (superseded by in-modal project filter).
+- "Show distance on cards" display toggle (was a debugging tool only).
+- "Show cover art" display toggle (cover art is now always shown).
+
 ### Added
 - Checklist filter tabs: added a "Done" tab alongside "Open" and "All" to
   filter checklist items by completion state. Tab order is Open, Done, All.

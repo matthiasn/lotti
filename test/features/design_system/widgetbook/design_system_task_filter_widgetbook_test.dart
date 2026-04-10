@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_task_filter_widgetbook.dart';
@@ -38,7 +37,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Mobile Preview'), findsOneWidget);
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Apply'), findsOneWidget);
       expect(find.text('AI Coding'), findsOneWidget);
       expect(find.text('Agents'), findsOneWidget);
       expect(_serializedState(tester), contains('"selectedPriorityId": "p2"'));
@@ -123,22 +122,26 @@ void main() {
           find.byType(DesignSystemTaskFilterSheet),
         );
         filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
         expect(find.byType(DesignSystemCheckbox), findsNWidgets(3));
         expect(find.byType(CheckboxListTile), findsNothing);
 
-        final selectionSheet = tester.widget<DesignSystemFilterSelectionSheet>(
-          find.byType(DesignSystemFilterSelectionSheet),
+        // Toggle 'blocked' option
+        final blockedOption = find.byKey(
+          const ValueKey('design-system-filter-selection-option-blocked'),
         );
-        selectionSheet.onOptionToggled('blocked');
+        await tester.ensureVisible(blockedOption);
+        await tester.tap(blockedOption);
         await tester.pump();
 
-        selectionSheet.onApplyPressed();
-        await tester.pump(const Duration(milliseconds: 500));
-
-        expect(find.byType(DesignSystemFilterSelectionSheet), findsNothing);
+        // Apply selection
+        final applyButton = find.byKey(
+          const ValueKey('design-system-filter-selection-apply'),
+        );
+        await tester.ensureVisible(applyButton);
+        await tester.tap(applyButton);
+        await tester.pumpAndSettle();
         expect(_serializedState(tester), contains('"blocked"'));
       },
     );

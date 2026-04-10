@@ -331,6 +331,78 @@ class JournalPageController extends _$JournalPageController {
     refreshQuery();
   }
 
+  /// Replaces all selected task statuses at once.
+  Future<void> setSelectedTaskStatuses(Set<String> statuses) async {
+    _selectedTaskStatuses = {...statuses};
+    await persistTasksFilter();
+  }
+
+  /// Replaces all selected category IDs at once.
+  Future<void> setSelectedCategoryIds(Set<String> categoryIds) async {
+    _selectedCategoryIds = {...categoryIds};
+    // Project filters are category-scoped — clear when categories change
+    // to avoid invisible stale filters for a previous category.
+    _selectedProjectIds = {};
+    await persistTasksFilter();
+  }
+
+  /// Replaces all selected label IDs at once.
+  Future<void> setSelectedLabelIds(Set<String> labelIds) async {
+    _selectedLabelIds = {...labelIds};
+    await persistTasksFilter();
+  }
+
+  /// Replaces all selected project IDs at once.
+  Future<void> setSelectedProjectIds(Set<String> projectIds) async {
+    _selectedProjectIds = {...projectIds};
+    await persistTasksFilter();
+  }
+
+  /// Replaces all selected priorities at once.
+  Future<void> setSelectedPriorities(Set<String> priorities) async {
+    _selectedPriorities = {...priorities};
+    await persistTasksFilter();
+  }
+
+  /// Applies all filter changes at once with a single persist/refresh cycle.
+  ///
+  /// Use this when multiple filter fields change simultaneously (e.g. from
+  /// the filter sheet "Apply" button) to avoid intermediate query refreshes.
+  ///
+  /// Unlike [setSelectedCategoryIds], this does NOT automatically clear
+  /// projects when categories change — the caller (filter modal) manages
+  /// the project/category relationship and always provides both fields.
+  Future<void> applyBatchFilterUpdate({
+    Set<String>? statuses,
+    Set<String>? categoryIds,
+    Set<String>? labelIds,
+    Set<String>? projectIds,
+    Set<String>? priorities,
+    TaskSortOption? sortOption,
+    AgentAssignmentFilter? agentAssignmentFilter,
+    SearchMode? searchMode,
+    bool? showCreationDate,
+    bool? showDueDate,
+  }) async {
+    if (statuses != null) _selectedTaskStatuses = {...statuses};
+    if (categoryIds != null) _selectedCategoryIds = {...categoryIds};
+    if (labelIds != null) _selectedLabelIds = {...labelIds};
+    if (projectIds != null) _selectedProjectIds = {...projectIds};
+    if (priorities != null) _selectedPriorities = {...priorities};
+    if (sortOption != null) _sortOption = sortOption;
+    if (agentAssignmentFilter != null) {
+      _agentAssignmentFilter = agentAssignmentFilter;
+    }
+    if (searchMode != null && _enableVectorSearch) {
+      _hasExplicitSearchModeSelection = true;
+      _searchMode = searchMode;
+    }
+    if (showCreationDate != null) _showCreationDate = showCreationDate;
+    if (showDueDate != null) _showDueDate = showDueDate;
+
+    await persistTasksFilter();
+  }
+
   Future<void> toggleSelectedTaskStatus(String status) async {
     if (_selectedTaskStatuses.contains(status)) {
       _selectedTaskStatuses = _selectedTaskStatuses.difference({status});
@@ -474,24 +546,6 @@ class JournalPageController extends _$JournalPageController {
 
   Future<void> setShowDueDate({required bool show}) async {
     _showDueDate = show;
-    _emitState();
-    await _persistTasksFilterWithoutRefresh();
-  }
-
-  Future<void> setShowCoverArt({required bool show}) async {
-    _showCoverArt = show;
-    _emitState();
-    await _persistTasksFilterWithoutRefresh();
-  }
-
-  Future<void> setShowProjectsHeader({required bool show}) async {
-    _showProjectsHeader = show;
-    _emitState();
-    await _persistTasksFilterWithoutRefresh();
-  }
-
-  Future<void> setShowDistances({required bool show}) async {
-    _showDistances = show;
     _emitState();
     await _persistTasksFilterWithoutRefresh();
   }

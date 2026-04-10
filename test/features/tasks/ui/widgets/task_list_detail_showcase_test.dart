@@ -135,10 +135,9 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.tune_rounded).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('design-system-task-filter-priority-p1')),
@@ -147,8 +146,7 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey('design-system-task-filter-apply')),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       expect(find.text('User Testing'), findsNothing);
       expect(find.text('Payment confirmation'), findsAtLeastNWidgets(2));

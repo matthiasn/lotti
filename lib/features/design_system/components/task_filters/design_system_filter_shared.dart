@@ -61,10 +61,10 @@ class DesignSystemFilterPalette {
         accent: const Color(0xFF5AD5BE),
         accentText: const Color(0xFF0F2620),
         applyBadgeFill: const Color(0xFF8BE2D1),
-        priorityP0: const Color(0xFFE2655D),
-        priorityP1: const Color(0xFFF6A53B),
-        priorityP2: const Color(0xFF5DB8FF),
-        priorityP3: const Color(0xFF7AAE80),
+        priorityP0: const Color(0xFFD65E5C),
+        priorityP1: const Color(0xFFFBA337),
+        priorityP2: const Color(0xFF4AB6E8),
+        priorityP3: const Color(0xFF7AB889),
       );
     }
 

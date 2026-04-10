@@ -6125,7 +6125,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksLabelFilterAll => 'Toate';
 
   @override
-  String get tasksLabelFilterTitle => 'Etichete';
+  String get tasksLabelFilterTitle => 'Etichetă';
 
   @override
   String get tasksLabelFilterUnlabeled => 'Fără etichetă';

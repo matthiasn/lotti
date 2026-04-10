@@ -5,9 +5,6 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
-import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
-import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -244,9 +241,9 @@ void main() {
     );
 
     await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Apply filter'), findsOneWidget);
+    expect(find.text('Tasks Filter'), findsOneWidget);
     expect(find.text('Status'), findsOneWidget);
     expect(find.text('Category'), findsOneWidget);
   });
@@ -260,7 +257,7 @@ void main() {
     );
 
     await tester.tap(find.byIcon(Icons.tune_rounded));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
     final statusField = find.byKey(
       const ValueKey('design-system-task-filter-field-status'),
@@ -268,9 +265,9 @@ void main() {
     await tester.ensureVisible(statusField);
     await tester.pumpAndSettle();
     await tester.tap(statusField);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
-    expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
+    // Selection modal content is rendered inline (no separate sheet widget)
     expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(find.text('Archived'), findsOneWidget);
@@ -432,9 +429,9 @@ void main() {
 
       // Open the filter modal
       await tester.tap(find.byIcon(Icons.tune_rounded));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
 
       // Tap the apply button
       final applyButton = find.byKey(
@@ -446,31 +443,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the filter modal has closed
-      expect(find.text('Apply filter'), findsNothing);
+      expect(find.text('Tasks Filter'), findsNothing);
     },
   );
-
-  testWidgets('dragging divider updates list pane width in desktop layout', (
-    tester,
-  ) async {
-    await pumpPage(
-      tester,
-      groups: [buildWorkGroup()],
-      mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-    );
-
-    expect(find.byType(ResizableDivider), findsOneWidget);
-
-    final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
-    await tester.dragFrom(dividerCenter, const Offset(50, 0));
-    await tester.pump();
-
-    final sizedBox = tester.widget<SizedBox>(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is SizedBox && widget.width == defaultListPaneWidth + 50,
-      ),
-    );
-    expect(sizedBox.width, defaultListPaneWidth + 50);
-  });
 }

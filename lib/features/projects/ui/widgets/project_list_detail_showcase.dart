@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
@@ -73,8 +72,6 @@ class ProjectListDetailShowcase extends ConsumerWidget {
                               initialFilter: state.filter,
                               categories: state.data.categories,
                               onApplied: controller.updateFilter,
-                              presentation:
-                                  DesignSystemFilterPresentation.desktop,
                             ),
                           ),
                         ),

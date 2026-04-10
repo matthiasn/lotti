@@ -12,7 +12,6 @@ Future<void> showProjectsFilterModal({
   required ProjectsFilter initialFilter,
   required List<CategoryDefinition> categories,
   required ValueChanged<ProjectsFilter> onApplied,
-  required DesignSystemFilterPresentation presentation,
 }) {
   return showDesignSystemFilterModal(
     context: context,
@@ -20,7 +19,6 @@ Future<void> showProjectsFilterModal({
       context,
       filter: initialFilter,
       categories: categories,
-      showDragHandle: presentation == DesignSystemFilterPresentation.mobile,
     ),
     onApplied: (sheetState) {
       onApplied(
@@ -30,7 +28,6 @@ Future<void> showProjectsFilterModal({
         ),
       );
     },
-    presentation: presentation,
     onFieldPressed: (sheetContext, draftState, section) async {
       switch (section) {
         case DesignSystemTaskFilterSection.status:
@@ -38,7 +35,6 @@ Future<void> showProjectsFilterModal({
             context: sheetContext,
             draftState: draftState,
             section: section,
-            presentation: presentation,
             appearanceResolver: (optionId) {
               final kind = projectStatusKindFromFilterId(optionId);
               final status = buildProjectStatus(kind, DateTime(2000));
@@ -57,9 +53,9 @@ Future<void> showProjectsFilterModal({
             context: sheetContext,
             draftState: draftState,
             section: section,
-            presentation: presentation,
           );
         case DesignSystemTaskFilterSection.label:
+        case DesignSystemTaskFilterSection.project:
           return null;
       }
     },

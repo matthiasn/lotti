@@ -69,8 +69,6 @@ class TaskListDetailShowcase extends ConsumerWidget {
                               context: context,
                               initialState: state.filterState,
                               onApplied: controller.updateFilterState,
-                              presentation:
-                                  TaskShowcaseFilterPresentation.desktop,
                             ),
                           ),
                         ),

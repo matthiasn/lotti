@@ -10,7 +10,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_fl
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
-import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
@@ -29,23 +28,13 @@ import 'package:visibility_detector/visibility_detector.dart';
 typedef TasksTabCreateTaskCallback =
     Future<void> Function(WidgetRef ref, String? categoryId);
 
-typedef TasksTabProjectHeaderBuilder =
-    Widget Function({
-      required String categoryId,
-      required Set<String> selectedProjectIds,
-      required void Function(String projectId) onToggleProject,
-      required void Function(Set<String> staleIds) onClearStale,
-    });
-
 class TasksTabPage extends ConsumerWidget {
   const TasksTabPage({
     super.key,
     this.onCreateTaskPressed,
-    this.projectHeaderBuilder,
   });
 
   final TasksTabCreateTaskCallback? onCreateTaskPressed;
-  final TasksTabProjectHeaderBuilder? projectHeaderBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,20 +65,14 @@ class TasksTabPage extends ConsumerWidget {
         floatingActionButton: DesignSystemBottomNavigationFabPadding(
           child: floatingActionButton,
         ),
-        body: _TasksTabPageBody(
-          projectHeaderBuilder: projectHeaderBuilder,
-        ),
+        body: const _TasksTabPageBody(),
       ),
     );
   }
 }
 
 class _TasksTabPageBody extends ConsumerStatefulWidget {
-  const _TasksTabPageBody({
-    this.projectHeaderBuilder,
-  });
-
-  final TasksTabProjectHeaderBuilder? projectHeaderBuilder;
+  const _TasksTabPageBody();
 
   @override
   ConsumerState<_TasksTabPageBody> createState() => _TasksTabPageBodyState();
@@ -180,34 +163,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                       ),
                     ),
                   ),
-                if (state.enableProjects &&
-                    state.showProjectsHeader &&
-                    state.selectedCategoryIds.length == 1)
-                  SliverToBoxAdapter(
-                    child: ProjectsOverviewContentWidth(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child:
-                            (widget.projectHeaderBuilder ??
-                            _defaultProjectHeaderBuilder)(
-                              categoryId: state.selectedCategoryIds.first,
-                              selectedProjectIds: state.selectedProjectIds,
-                              onToggleProject: (projectId) {
-                                unawaited(
-                                  controller.toggleProjectFilter(projectId),
-                                );
-                              },
-                              onClearStale: (staleIds) {
-                                unawaited(
-                                  controller.removeStaleProjectFilters(
-                                    staleIds,
-                                  ),
-                                );
-                              },
-                            ),
-                      ),
-                    ),
-                  ),
                 if (state.pagingController case final pagingController?)
                   PagingListener<int, JournalEntity>(
                     controller: pagingController,
@@ -275,7 +230,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                     sortOption: state.sortOption,
                                     showCreationDate: state.showCreationDate,
                                     showDueDate: state.showDueDate,
-                                    showCoverArt: state.showCoverArt,
+                                    showCoverArt: true,
                                     vectorDistance: distance,
                                     previousTaskIdInSection:
                                         entryIndex > 0 &&
@@ -333,18 +288,4 @@ Future<void> _defaultCreateTaskPressed(
     unawaited(autoAssignCategoryAgentWith(agentService, task));
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
   }
-}
-
-Widget _defaultProjectHeaderBuilder({
-  required String categoryId,
-  required Set<String> selectedProjectIds,
-  required void Function(String projectId) onToggleProject,
-  required void Function(Set<String> staleIds) onClearStale,
-}) {
-  return ProjectHealthHeader(
-    categoryId: categoryId,
-    selectedProjectIds: selectedProjectIds,
-    onToggleProject: onToggleProject,
-    onClearStale: onClearStale,
-  );
 }

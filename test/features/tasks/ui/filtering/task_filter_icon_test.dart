@@ -5,18 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -29,8 +26,8 @@ void main() {
   late JournalPageState mockState;
   late MockPagingController mockPagingController;
   late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockJournalDb mockJournalDb;
 
-  // Mock categories
   final mockCategories = [
     CategoryDefinition(
       id: 'cat1',
@@ -43,28 +40,6 @@ void main() {
       favorite: true,
       color: '#FF0000',
     ),
-    CategoryDefinition(
-      id: 'cat2',
-      createdAt: DateTime(2023),
-      updatedAt: DateTime(2023),
-      name: 'Personal',
-      vectorClock: null,
-      private: false,
-      active: true,
-      favorite: false,
-      color: '#00FF00',
-    ),
-    CategoryDefinition(
-      id: 'cat3',
-      createdAt: DateTime(2023),
-      updatedAt: DateTime(2023),
-      name: 'Health',
-      vectorClock: null,
-      private: false,
-      active: true,
-      favorite: true,
-      color: '#0000FF',
-    ),
   ];
   final mockLabels = [
     LabelDefinition(
@@ -76,21 +51,11 @@ void main() {
       vectorClock: null,
       private: false,
     ),
-    LabelDefinition(
-      id: 'label2',
-      name: 'Nice to have',
-      color: '#00FF00',
-      createdAt: DateTime(2023),
-      updatedAt: DateTime(2023),
-      vectorClock: null,
-      private: false,
-    ),
   ];
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (
           MethodCall methodCall,
@@ -100,6 +65,7 @@ void main() {
 
     mockPagingController = MockPagingController();
     mockEntitiesCacheService = MockEntitiesCacheService();
+    mockJournalDb = MockJournalDb();
 
     mockState = JournalPageState(
       match: '',
@@ -115,15 +81,18 @@ void main() {
       selectedLabelIds: const {},
     );
 
-    // Set up EntitiesCacheService mock
     when(
       () => mockEntitiesCacheService.sortedCategories,
     ).thenReturn(mockCategories);
     when(() => mockEntitiesCacheService.sortedLabels).thenReturn(mockLabels);
+    when(
+      () => mockJournalDb.getProjectsForCategory(any()),
+    ).thenAnswer((_) async => <ProjectEntry>[]);
 
-    // Register the mocks with GetIt
     getIt.allowReassignment = true;
-    getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+    getIt
+      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+      ..registerSingleton<JournalDb>(mockJournalDb);
   });
 
   tearDown(getIt.reset);
@@ -151,59 +120,51 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Verify the icon is rendered
       expect(find.byType(TaskFilterIcon), findsOneWidget);
       expect(find.byIcon(MdiIcons.filterVariant), findsOneWidget);
     });
 
-    testWidgets('opens modal when tapped', (tester) async {
+    testWidgets('opens design system filter modal when tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Tap on the filter icon
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
 
-      // Verify the modal is shown
-      expect(find.byType(IconButton), findsWidgets);
+      // The new design system filter sheet is shown
+      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Sort by'), findsOneWidget);
     });
 
-    testWidgets('modal contains expected components', (tester) async {
+    testWidgets('modal contains design system filter sheet', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Tap on the filter icon
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
 
-      // Verify the modal contains the expected components
-      expect(find.byType(JournalFilter), findsOneWidget);
-      expect(find.byType(TaskSortFilter), findsOneWidget);
-      expect(find.byType(TaskDateDisplayToggle), findsOneWidget);
-      expect(find.byType(TaskStatusFilter), findsOneWidget);
-      expect(find.byType(TaskCategoryFilter), findsOneWidget);
-      expect(find.byType(TaskPriorityFilter), findsOneWidget);
+      expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
+      expect(find.text('Clear all'), findsOneWidget);
+      expect(find.text('Apply'), findsOneWidget);
     });
 
-    testWidgets('modal can be closed by tapping outside', (tester) async {
+    testWidgets('modal can be dismissed', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Tap on the filter icon
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
 
-      // Verify the modal is shown
-      expect(find.byType(TaskStatusFilter), findsOneWidget);
-      expect(find.byType(TaskCategoryFilter), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
 
-      // Tap outside the modal (barrier)
+      // Tap barrier to dismiss
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
-      // Verify components are no longer visible
-      expect(find.byType(TaskStatusFilter), findsNothing);
-      expect(find.byType(TaskCategoryFilter), findsNothing);
+      expect(find.text('Tasks Filter'), findsNothing);
     });
   });
 }

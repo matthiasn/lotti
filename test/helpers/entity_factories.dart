@@ -1,6 +1,7 @@
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 
 /// Default fixed date for test entities. Never use DateTime.now() in tests.
@@ -119,6 +120,43 @@ class TestTaskFactory {
         languageCode: languageCode,
       ),
       entryText: EntryText(plainText: plainText),
+    );
+  }
+}
+
+/// Factory for creating [ProjectEntry] instances in tests.
+///
+/// ```dart
+/// final project = TestProjectFactory.create(id: 'proj-1', title: 'Alpha');
+/// ```
+class TestProjectFactory {
+  static ProjectEntry create({
+    String id = 'test-project-1',
+    String title = 'Test Project',
+    String? categoryId,
+    DateTime? createdAt,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) {
+    final date = createdAt ?? testFixedDate;
+    return ProjectEntry(
+      meta: TestMetadataFactory.create(
+        id: id,
+        createdAt: date,
+        dateFrom: dateFrom ?? date,
+        dateTo: dateTo ?? date,
+        categoryId: categoryId,
+      ),
+      data: ProjectData(
+        title: title,
+        status: ProjectStatus.active(
+          id: 'status-1',
+          createdAt: date,
+          utcOffset: 0,
+        ),
+        dateFrom: dateFrom ?? date,
+        dateTo: dateTo ?? date,
+      ),
     );
   }
 }

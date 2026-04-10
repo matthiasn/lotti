@@ -57,6 +57,7 @@
           <p>Desktop mode: responsive layout switches from mobile bottom navigation to a persistent left sidebar when the window is wider than 960px, with all navigation destinations and Settings pinned at the bottom.</p>
           <p>Desktop split-pane view for Tasks, Projects, and Dashboards: list and detail views shown side by side with reactive selection and active item highlighting in the list pane.</p>
           <p>Checklist filter tabs now include Open, Done, and All. Initial collapse animation on checklists is disabled to prevent jank on slower devices.</p>
+          <p>Task filter modal: replaced with the design system version, now includes project filter (grouped by category), agent assignment filter, and search mode toggle (desktop only). Cover art is now always shown on task cards.</p>
       </description>
     </release>
     <release version="0.9.947" date="2026-04-09">

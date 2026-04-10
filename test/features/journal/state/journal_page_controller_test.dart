@@ -5,7 +5,13 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -17,6 +23,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import 'helpers/journal_controller_test_setup.dart';
+
+final _testDate = DateTime(2024);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -926,6 +934,1061 @@ void main() {
           ).thenAnswer((_) async => persistedJson);
 
           container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedCategoryIds, equals({'cat-1'}));
+          expect(
+            state.selectedTaskStatuses,
+            equals({'OPEN', 'DONE'}),
+          );
+          expect(state.selectedLabelIds, equals({'label-1'}));
+          expect(state.selectedPriorities, equals({'P0'}));
+          expect(state.sortOption, equals(TaskSortOption.byDate));
+          expect(
+            state.agentAssignmentFilter,
+            equals(AgentAssignmentFilter.all),
+          );
+        });
+      });
+    });
+
+    group('Agent Assignment Filter Query', () {
+      late AgentDatabase agentDb;
+      late AgentRepository agentRepo;
+
+      final taskWithAgent = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status_1',
+            createdAt: DateTime(2024),
+            utcOffset: 0,
+          ),
+          title: 'Task with agent',
+          statusHistory: const [],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+        ),
+        meta: Metadata(
+          id: 'task-with-agent',
+          createdAt: DateTime(2024),
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024),
+          updatedAt: DateTime(2024),
+        ),
+      );
+
+      final taskWithoutAgent = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status_2',
+            createdAt: DateTime(2024, 1, 2),
+            utcOffset: 0,
+          ),
+          title: 'Task without agent',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 1, 2),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+        meta: Metadata(
+          id: 'task-without-agent',
+          createdAt: DateTime(2024, 1, 2),
+          dateFrom: DateTime(2024, 1, 2),
+          dateTo: DateTime(2024, 1, 2),
+          updatedAt: DateTime(2024, 1, 2),
+        ),
+      );
+
+      setUp(() async {
+        agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
+        agentRepo = AgentRepository(agentDb);
+        getIt.registerSingleton<AgentDatabase>(agentDb);
+
+        // Insert an agent_task link for 'task-with-agent'
+        await agentRepo.upsertLink(
+          AgentTaskLink(
+            id: 'link-1',
+            fromId: 'agent-001',
+            toId: 'task-with-agent',
+            createdAt: _testDate,
+            updatedAt: _testDate,
+            vectorClock: null,
+          ),
+        );
+
+        // Return both tasks from the journal DB
+        when(
+          () => mockJournalDb.getTasks(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => [taskWithAgent, taskWithoutAgent]);
+      });
+
+      tearDown(() async {
+        await agentDb.close();
+        getIt.unregister<AgentDatabase>();
+      });
+
+      test('hasAgent filter returns only tasks with agent links', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-with-agent'));
+        });
+      });
+
+      test('noAgent filter returns only tasks without agent links', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-without-agent'));
+        });
+      });
+
+      test('all filter returns all tasks without agent DB access', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is 'all' — should return both tasks
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.all);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(2));
+        });
+      });
+
+      test(
+        'hasAgent with byDueDate sort applies both filter and sort',
+        () async {
+          final taskWithAgentAndDue = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_3',
+                createdAt: DateTime(2024, 1, 3),
+                utcOffset: 0,
+              ),
+              title: 'Agent task with due',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 3),
+              dateTo: DateTime(2024, 1, 3),
+              due: DateTime(2024, 6, 15),
+            ),
+            meta: Metadata(
+              id: 'task-with-agent',
+              createdAt: DateTime(2024, 1, 3),
+              dateFrom: DateTime(2024, 1, 3),
+              dateTo: DateTime(2024, 1, 3),
+              updatedAt: DateTime(2024, 1, 3),
+            ),
+          );
+
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [taskWithAgentAndDue, taskWithoutAgent],
+          );
+
+          when(
+            () => mockJournalDb.getTasksSortedByDueDate(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [taskWithAgentAndDue, taskWithoutAgent],
+          );
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          await controller.setAgentAssignmentFilter(
+            AgentAssignmentFilter.hasAgent,
+          );
+          await controller.setSortOption(TaskSortOption.byDueDate);
+
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-with-agent'));
+        },
+      );
+
+      test('fetches in normal-sized chunks when agent filter is active', () {
+        fakeAsync((async) {
+          int? capturedLimit;
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((invocation) async {
+            capturedLimit = invocation.namedArguments[#limit] as int?;
+            return <JournalEntity>[];
+          });
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Post-filters use normal chunk size; loop handles exhaustion
+          expect(capturedLimit, equals(50));
+        });
+      });
+    });
+
+    group('Filter Management - Project', () {
+      test('toggleProjectFilter adds project when not present', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-1'}));
+        });
+      });
+
+      test('toggleProjectFilter removes project when present', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('clearProjectFilter removes all project selections', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-2');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.clearProjectFilter();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('removeStaleProjectFilters removes only stale IDs', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-2')
+            ..toggleProjectFilter('proj-3');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-2'}));
+        });
+      });
+
+      test('removeStaleProjectFilters is no-op when staleIds is empty', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.removeStaleProjectFilters(<String>{});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-1'}));
+        });
+      });
+
+      test('toggleSelectedCategoryIds clears project filter', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Set a project filter first
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          var state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isNotEmpty);
+
+          // Changing category should clear project filters
+          controller.toggleSelectedCategoryIds('cat-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('selectedAllCategories clears project filter', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.selectedAllCategories();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('project filter post-filters tasks from _runQuery', () {
+        fakeAsync((async) {
+          final taskInProject = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_p1',
+                createdAt: DateTime(2024),
+                utcOffset: 0,
+              ),
+              title: 'Task in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+            meta: Metadata(
+              id: 'task-in-project',
+              createdAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              updatedAt: DateTime(2024),
+            ),
+          );
+
+          final taskNotInProject = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_p2',
+                createdAt: DateTime(2024, 1, 2),
+                utcOffset: 0,
+              ),
+              title: 'Task not in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+            ),
+            meta: Metadata(
+              id: 'task-not-in-project',
+              createdAt: DateTime(2024, 1, 2),
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+              updatedAt: DateTime(2024, 1, 2),
+            ),
+          );
+
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [taskInProject, taskNotInProject],
+          );
+
+          // getTaskIdsForProjects returns only the task that's in the project
+          when(
+            () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+          ).thenAnswer((_) async => {'task-in-project'});
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-in-project'));
+        });
+      });
+
+      test(
+        'project filter with byDueDate sort applies both filter and sort',
+        () async {
+          final taskWithDue = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_pd1',
+                createdAt: DateTime(2024),
+                utcOffset: 0,
+              ),
+              title: 'Task with due in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              due: DateTime(2024, 6, 15),
+            ),
+            meta: Metadata(
+              id: 'task-proj-due',
+              createdAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              updatedAt: DateTime(2024),
+            ),
+          );
+
+          final taskNoDue = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_pd2',
+                createdAt: DateTime(2024, 1, 2),
+                utcOffset: 0,
+              ),
+              title: 'Task no due in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+            ),
+            meta: Metadata(
+              id: 'task-proj-nodue',
+              createdAt: DateTime(2024, 1, 2),
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+              updatedAt: DateTime(2024, 1, 2),
+            ),
+          );
+
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => [taskNoDue, taskWithDue]);
+
+          when(
+            () => mockJournalDb.getTasksSortedByDueDate(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => [taskWithDue, taskNoDue]);
+
+          when(
+            () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+          ).thenAnswer(
+            (_) async => {'task-proj-due', 'task-proj-nodue'},
+          );
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          await controller.toggleProjectFilter('proj-1');
+          await controller.setSortOption(TaskSortOption.byDueDate);
+
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(2));
+          // Task with due date should come first
+          expect(items.first.meta.id, equals('task-proj-due'));
+        },
+      );
+    });
+
+    group('Batch Setters', () {
+      late AgentDatabase agentDbForBatch;
+
+      setUp(() {
+        agentDbForBatch = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        getIt.registerSingleton<AgentDatabase>(agentDbForBatch);
+      });
+
+      tearDown(() async {
+        await agentDbForBatch.close();
+        getIt.unregister<AgentDatabase>();
+      });
+
+      test('setSelectedTaskStatuses replaces all statuses', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSelectedTaskStatuses({'DONE', 'BLOCKED'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedTaskStatuses, {'DONE', 'BLOCKED'});
+        });
+      });
+
+      test(
+        'setSelectedCategoryIds replaces categories and clears projects',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // First set some projects
+            controller.setSelectedProjectIds({'proj-1'});
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Now set categories — projects should be cleared
+            controller.setSelectedCategoryIds({'cat-1', 'cat-2'});
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(journalPageControllerProvider(true));
+            expect(state.selectedCategoryIds, {'cat-1', 'cat-2'});
+            expect(state.selectedProjectIds, isEmpty);
+          });
+        },
+      );
+
+      test('setSelectedLabelIds replaces all labels', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSelectedLabelIds({'label-1', 'label-2'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedLabelIds, {'label-1', 'label-2'});
+        });
+      });
+
+      test('setSelectedProjectIds replaces all projects', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSelectedProjectIds({'proj-a', 'proj-b'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, {'proj-a', 'proj-b'});
+        });
+      });
+
+      test('setSelectedPriorities replaces all priorities', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSelectedPriorities({'HIGH', 'CRITICAL'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedPriorities, {'HIGH', 'CRITICAL'});
+        });
+      });
+
+      test('batch setters defensively copy input sets', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final mutableSet = {'DONE'};
+          controller.setSelectedTaskStatuses(mutableSet);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Mutate original set — should not affect controller
+          mutableSet.add('BLOCKED');
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedTaskStatuses, {'DONE'});
+        });
+      });
+    });
+
+    group('Batch Filter Update', () {
+      late AgentDatabase agentDbForBatchUpdate;
+
+      setUp(() {
+        agentDbForBatchUpdate = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        getIt.registerSingleton<AgentDatabase>(agentDbForBatchUpdate);
+      });
+
+      tearDown(() async {
+        await agentDbForBatchUpdate.close();
+        getIt.unregister<AgentDatabase>();
+      });
+
+      test('applyBatchFilterUpdate sets all fields at once', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.applyBatchFilterUpdate(
+            statuses: {'DONE'},
+            categoryIds: {'cat-1'},
+            labelIds: {'label-1'},
+            projectIds: {'proj-1'},
+            priorities: {'HIGH'},
+            sortOption: TaskSortOption.byDate,
+            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+            showCreationDate: false,
+            showDueDate: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedTaskStatuses, {'DONE'});
+          expect(state.selectedCategoryIds, {'cat-1'});
+          expect(state.selectedLabelIds, {'label-1'});
+          expect(state.selectedProjectIds, {'proj-1'});
+          expect(state.selectedPriorities, {'HIGH'});
+          expect(state.sortOption, TaskSortOption.byDate);
+          expect(
+            state.agentAssignmentFilter,
+            AgentAssignmentFilter.hasAgent,
+          );
+          expect(state.showCreationDate, isFalse);
+          expect(state.showDueDate, isTrue);
+        });
+      });
+
+      test('applyBatchFilterUpdate skips null fields', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final stateBefore = container.read(
+            journalPageControllerProvider(true),
+          );
+
+          // Only update statuses, leave everything else
+          controller.applyBatchFilterUpdate(statuses: {'BLOCKED'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedTaskStatuses, {'BLOCKED'});
+          // Other fields unchanged
+          expect(state.sortOption, stateBefore.sortOption);
+          expect(state.showCreationDate, stateBefore.showCreationDate);
+        });
+      });
+
+      test(
+        'applyBatchFilterUpdate ignores searchMode when vector disabled',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            controller.applyBatchFilterUpdate(
+              searchMode: SearchMode.vector,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(journalPageControllerProvider(true));
+            // Vector search not enabled, so mode should stay fullText
+            expect(state.searchMode, SearchMode.fullText);
+          });
+        },
+      );
+    });
+
+    group('Vector Search', () {
+      late MockVectorSearchRepository mockVectorSearchRepo;
+
+      setUp(() {
+        mockVectorSearchRepo = MockVectorSearchRepository();
+      });
+
+      /// Enables the vector search feature flag by emitting it via the
+      /// config flags stream, then waits for the controller to process it.
+      void emitVectorSearchFlag(FakeAsync async) {
+        configFlagsController.add({enableVectorSearchFlag});
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+      }
+
+      test(
+        'setSearchMode guards against vector mode when flag is disabled',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Flag is disabled by default
+            controller.setSearchMode(SearchMode.vector);
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(journalPageControllerProvider(true));
+            expect(state.searchMode, equals(SearchMode.fullText));
+          });
+        },
+      );
+
+      test('setSearchMode allows vector mode when flag is enabled', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.vector));
+          expect(state.enableVectorSearch, isTrue);
+        });
+      });
+
+      test('vector search returns results and updates telemetry state', () {
+        fakeAsync((async) {
+          // Persist filter state so the controller loads it on init
+          const persistedJson =
+              '{"selectedCategoryIds":["cat-1"],'
+              '"selectedTaskStatuses":["OPEN","DONE"],'
+              '"selectedProjectIds":[],'
+              '"selectedLabelIds":["label-1"],'
+              '"selectedPriorities":["P0"],'
+              '"sortOption":"byDate",'
+              '"showCreationDate":true,'
+              '"showDueDate":false,'
+              '"showCoverArt":false,'
+              '"showProjectsHeader":false,'
+              '"showDistances":true,'
+              '"agentAssignmentFilter":"all"}';
+
+          when(
+            () => mockSettingsDb.itemByKey(
+              JournalPageController.tasksCategoryFiltersKey,
+            ),
+          ).thenAnswer((_) async => persistedJson);
+
+          // Register the VectorSearchRepository mock in getIt
+          getIt.registerSingleton<VectorSearchRepository>(
+            mockVectorSearchRepo,
+          );
+
+          final testTask = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'vs-status-1',
+                createdAt: DateTime(2024, 3),
+                utcOffset: 0,
+              ),
+              title: 'Vector search result task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3),
+              dateTo: DateTime(2024, 3),
+            ),
+            meta: Metadata(
+              id: 'vector-task-1',
+              createdAt: DateTime(2024, 3),
+              dateFrom: DateTime(2024, 3),
+              dateTo: DateTime(2024, 3),
+              updatedAt: DateTime(2024, 3),
+            ),
+          );
+
+          when(
+            () => mockVectorSearchRepo.searchRelatedTasks(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              entities: [testTask],
+              elapsed: const Duration(milliseconds: 42),
+              distances: const {'vector-task-1': 0.35},
+            ),
+          );
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          emitVectorSearchFlag(async);
+
+          controller
+            ..setSearchMode(SearchMode.vector)
+            ..setSearchString('semantic query');
 
           async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();

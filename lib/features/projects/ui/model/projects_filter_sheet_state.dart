@@ -9,7 +9,6 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
   BuildContext context, {
   required ProjectsFilter filter,
   required Iterable<CategoryDefinition> categories,
-  bool showDragHandle = true,
 }) {
   final statusOptions = [
     DesignSystemTaskFilterOption(
@@ -58,7 +57,6 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
       options: categoryOptions,
       selectedIds: filter.selectedCategoryIds.intersection(categoryOptionIds),
     ),
-    showDragHandle: showDragHandle,
   );
 }
 

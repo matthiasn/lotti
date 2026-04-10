@@ -11,7 +11,6 @@ import 'package:lotti/features/design_system/components/buttons/design_system_fl
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -105,6 +104,9 @@ void main() {
       },
     );
     when(
+      () => getItMocks.journalDb.getProjectsForCategory(any()),
+    ).thenAnswer((_) async => <ProjectEntry>[]);
+    when(
       () => getItMocks.journalDb.getTaskEstimatesByIds(any()),
     ).thenAnswer((invocation) async {
       final ids = invocation.positionalArguments.first as Set<String>;
@@ -174,7 +176,6 @@ void main() {
   Widget buildSubject({
     required JournalPageState state,
     TasksTabCreateTaskCallback? onCreateTaskPressed,
-    TasksTabProjectHeaderBuilder? projectHeaderBuilder,
     MediaQueryData? mediaQueryData,
   }) {
     fakeController = FakeJournalPageController(state);
@@ -182,7 +183,6 @@ void main() {
     return makeTestableWidgetNoScroll(
       TasksTabPage(
         onCreateTaskPressed: onCreateTaskPressed,
-        projectHeaderBuilder: projectHeaderBuilder,
       ),
       mediaQueryData: mediaQueryData,
       overrides: [
@@ -258,10 +258,8 @@ void main() {
   );
 
   testWidgets(
-    'shows quick labels, vector mode in filters, project header, and FAB hook',
-    (
-      tester,
-    ) async {
+    'shows quick labels and FAB hook with custom create callback',
+    (tester) async {
       String? createdCategoryId;
 
       await tester.pumpWidget(
@@ -274,35 +272,12 @@ void main() {
           onCreateTaskPressed: (ref, categoryId) async {
             createdCategoryId = categoryId;
           },
-          projectHeaderBuilder:
-              ({
-                required categoryId,
-                required selectedProjectIds,
-                required onToggleProject,
-                required onClearStale,
-              }) {
-                return Text('project-header:$categoryId');
-              },
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Active label filters'), findsOneWidget);
       expect(find.text('Focus'), findsOneWidget);
-      expect(find.text('project-header:cat-1'), findsOneWidget);
-
-      expect(find.text('Vector'), findsNothing);
-
-      await tester.tap(find.byIcon(Icons.tune_rounded));
-      await tester.pumpAndSettle();
-      expect(find.text('Search mode'), findsOneWidget);
-
-      await tester.tap(find.text('Vector'));
-      await tester.pumpAndSettle();
-      expect(fakeController.searchModeCalls, contains(SearchMode.vector));
-
-      Navigator.of(tester.element(find.text('Search mode'))).pop();
-      await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -374,20 +349,6 @@ void main() {
     verify(
       () => mockNavService.beamToNamed('/tasks/new-task', data: null),
     ).called(1);
-  });
-
-  testWidgets('default project header renders ProjectHealthHeader', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      buildSubject(
-        state: state(enableProjects: true),
-        // Do NOT provide projectHeaderBuilder — exercises default path
-      ),
-    );
-    await tester.pump();
-
-    expect(find.byType(ProjectHealthHeader), findsOneWidget);
   });
 
   testWidgets('uses the design-system FAB with bottom-nav padding', (

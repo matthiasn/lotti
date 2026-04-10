@@ -2571,7 +2571,7 @@
   "taskShowcaseTodo": "Pendiente",
   "taskShowcaseTodos": "Pendientes",
   "tasksLabelFilterAll": "Todas",
-  "tasksLabelFilterTitle": "Etiquetas",
+  "tasksLabelFilterTitle": "Etiqueta",
   "tasksLabelFilterUnlabeled": "Sin etiqueta",
   "tasksLabelsDialogClose": "Cerrar",
   "tasksLabelsHeaderEditTooltip": "Editar etiquetas",

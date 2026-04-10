@@ -73,13 +73,8 @@ void main() {
       final state = _buildState();
 
       final roundTrip = DesignSystemTaskFilterState.fromJson(state.toJson());
-      final defaultHandleState = DesignSystemTaskFilterState.fromJson({
-        ...state.toJson(),
-        'showDragHandle': null,
-      });
       final copied = state.copyWith(
         title: 'Updated title',
-        showDragHandle: false,
       );
       final sorted = state.selectSort('priority');
       final prioritized = state.selectPriority(
@@ -109,11 +104,9 @@ void main() {
         state.categoryField!.selectedIds,
       );
       expect(roundTrip.labelField!.selectedIds, state.labelField!.selectedIds);
-      expect(defaultHandleState.showDragHandle, isTrue);
       expect(state.selectSort('due-date'), same(state));
       expect(state.selectPriority('p2'), same(state));
       expect(copied.title, 'Updated title');
-      expect(copied.showDragHandle, isFalse);
       expect(sorted.selectedSortId, 'priority');
       expect(
         prioritized.selectedPriorityId,
@@ -196,8 +189,8 @@ void main() {
           onApplyPressed: (nextState) => appliedState = nextState,
         );
 
-        expect(find.text('Apply filter'), findsOneWidget);
-        expect(find.byIcon(Icons.priority_high_rounded), findsOneWidget);
+        expect(find.text('Apply'), findsOneWidget);
+        expect(find.byIcon(Icons.new_releases), findsOneWidget);
         expect(find.text('7'), findsOneWidget);
 
         await tester.tap(
@@ -220,14 +213,17 @@ void main() {
         );
 
         await tester.ensureVisible(statusField);
+        await tester.pumpAndSettle();
         await tester.tap(
           statusField,
         );
         await tester.ensureVisible(categoryField);
+        await tester.pumpAndSettle();
         await tester.tap(
           categoryField,
         );
         await tester.ensureVisible(labelField);
+        await tester.pumpAndSettle();
         await tester.tap(
           labelField,
         );
@@ -285,7 +281,6 @@ void main() {
         final state = await _pumpTaskFilterSheet(
           tester,
           initialState: _buildState(
-            showDragHandle: false,
             selectedPriorityId: DesignSystemTaskFilterState.allPriorityId,
             statusSelectedIds: const <String>{},
             categorySelectedIds: const <String>{},
@@ -302,7 +297,7 @@ void main() {
           ),
           findsNothing,
         );
-        expect(find.byIcon(Icons.priority_high_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.new_releases), findsOneWidget);
 
         await tester.tap(
           find.byKey(
@@ -374,6 +369,152 @@ void main() {
       expect(find.text('2'), findsOneWidget);
     });
   });
+
+  group('DesignSystemTaskFilterSheet toggle rows', () {
+    testWidgets('renders toggle rows with correct state', (tester) async {
+      DesignSystemTaskFilterState? lastChanged;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: DesignSystemTaskFilterSheet(
+              state: DesignSystemTaskFilterState(
+                title: 'Filters',
+                clearAllLabel: 'Clear',
+                applyLabel: 'Apply',
+                toggles: const [
+                  DesignSystemTaskFilterToggle(
+                    id: 'showDate',
+                    label: 'Show date',
+                    value: false,
+                  ),
+                  DesignSystemTaskFilterToggle(
+                    id: 'showDue',
+                    label: 'Show due date',
+                    value: true,
+                  ),
+                ],
+              ),
+              onChanged: (s) => lastChanged = s,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Show date'), findsOneWidget);
+      expect(find.text('Show due date'), findsOneWidget);
+
+      await tester.tap(find.text('Show date'));
+      await tester.pump();
+
+      expect(lastChanged, isNotNull);
+      expect(lastChanged!.toggles[0].value, isTrue);
+      expect(lastChanged!.toggles[1].value, isTrue);
+    });
+
+    testWidgets('renders agent filter pills', (tester) async {
+      DesignSystemTaskFilterState? lastChanged;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: DesignSystemTaskFilterSheet(
+              state: DesignSystemTaskFilterState(
+                title: 'Filters',
+                clearAllLabel: 'Clear',
+                applyLabel: 'Apply',
+                agentFilterLabel: 'Agent',
+                agentFilterOptions: const [
+                  DesignSystemTaskFilterOption(id: 'all', label: 'All'),
+                  DesignSystemTaskFilterOption(
+                    id: 'hasAgent',
+                    label: 'Has agent',
+                  ),
+                ],
+                selectedAgentFilterId: 'all',
+              ),
+              onChanged: (s) => lastChanged = s,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Agent'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Has agent'), findsOneWidget);
+
+      await tester.tap(find.text('Has agent'));
+      await tester.pump();
+
+      expect(lastChanged!.selectedAgentFilterId, 'hasAgent');
+    });
+
+    testWidgets('renders search mode pills', (tester) async {
+      DesignSystemTaskFilterState? lastChanged;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: DesignSystemTaskFilterSheet(
+              state: DesignSystemTaskFilterState(
+                title: 'Filters',
+                clearAllLabel: 'Clear',
+                applyLabel: 'Apply',
+                searchModeLabel: 'Search mode',
+                searchModeOptions: const [
+                  DesignSystemTaskFilterOption(
+                    id: 'fullText',
+                    label: 'Full text',
+                  ),
+                  DesignSystemTaskFilterOption(
+                    id: 'vector',
+                    label: 'Vector',
+                  ),
+                ],
+                selectedSearchModeId: 'fullText',
+              ),
+              onChanged: (s) => lastChanged = s,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Search mode'), findsOneWidget);
+
+      await tester.tap(find.text('Vector'));
+      await tester.pump();
+
+      expect(lastChanged!.selectedSearchModeId, 'vector');
+    });
+
+    testWidgets('renders project field section', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: DesignSystemTaskFilterSheet(
+              state: DesignSystemTaskFilterState(
+                title: 'Filters',
+                clearAllLabel: 'Clear',
+                applyLabel: 'Apply',
+                projectField: const DesignSystemTaskFilterFieldState(
+                  label: 'Project',
+                  options: [
+                    DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
+                    DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
+                  ],
+                  selectedIds: {'p1'},
+                ),
+              ),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Project'), findsOneWidget);
+      expect(find.text('Alpha'), findsOneWidget);
+    });
+  });
 }
 
 Future<ValueNotifier<DesignSystemTaskFilterState>> _pumpTaskFilterSheet(
@@ -400,15 +541,28 @@ Future<ValueNotifier<DesignSystemTaskFilterState>> _pumpTaskFilterSheet(
                 child: SizedBox(
                   width: 430,
                   height: 760,
-                  child: DesignSystemTaskFilterSheet(
-                    state: state.value,
-                    onChanged: (nextState) {
-                      state.value = nextState;
-                      setState(() {});
-                    },
-                    onFieldPressed: onFieldPressed,
-                    onApplyPressed: onApplyPressed,
-                    onClearAllPressed: onClearAllPressed,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        DesignSystemTaskFilterSheet(
+                          state: state.value,
+                          onChanged: (nextState) {
+                            state.value = nextState;
+                            setState(() {});
+                          },
+                          onFieldPressed: onFieldPressed,
+                        ),
+                        DesignSystemTaskFilterActionBar(
+                          state: state.value,
+                          onChanged: (nextState) {
+                            state.value = nextState;
+                            setState(() {});
+                          },
+                          onApplyPressed: onApplyPressed,
+                          onClearAllPressed: onClearAllPressed,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -425,7 +579,6 @@ Future<ValueNotifier<DesignSystemTaskFilterState>> _pumpTaskFilterSheet(
 }
 
 DesignSystemTaskFilterState _buildState({
-  bool showDragHandle = true,
   String selectedSortId = 'due-date',
   String selectedPriorityId = 'p2',
   Set<String> statusSelectedIds = const {'open', 'in-progress'},
@@ -498,7 +651,6 @@ DesignSystemTaskFilterState _buildState({
       ],
       selectedIds: labelSelectedIds,
     ),
-    showDragHandle: showDragHandle,
   );
 }
 

@@ -208,10 +208,9 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.tune_rounded).first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
     });
   });
 }

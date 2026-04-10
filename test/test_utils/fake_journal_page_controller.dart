@@ -28,9 +28,6 @@ class FakeJournalPageController extends JournalPageController {
   final List<TaskSortOption> sortOptionCalls = [];
   final List<bool> showCreationDateCalls = [];
   final List<bool> showDueDateCalls = [];
-  final List<bool> showCoverArtCalls = [];
-  final List<bool> showDistancesCalls = [];
-  final List<bool> showProjectsHeaderCalls = [];
   final List<Set<DisplayFilter>> filtersCalls = [];
   final List<String> searchStringCalls = [];
   final List<SearchMode> searchModeCalls = [];
@@ -58,7 +55,68 @@ class FakeJournalPageController extends JournalPageController {
   // ignore: use_setters_to_change_properties
   void updateState(JournalPageState newState) => state = newState;
 
+  // Batch setter tracking
+  final List<Set<String>> setSelectedTaskStatusesCalls = [];
+  final List<Set<String>> setSelectedCategoryIdsCalls = [];
+  final List<Set<String>> setSelectedLabelIdsCalls = [];
+  final List<Set<String>> setSelectedProjectIdsCalls = [];
+  final List<Set<String>> setSelectedPrioritiesCalls = [];
+  int applyBatchFilterUpdateCalled = 0;
+
   // Category methods
+  @override
+  Future<void> setSelectedTaskStatuses(Set<String> statuses) async {
+    setSelectedTaskStatusesCalls.add(statuses);
+  }
+
+  @override
+  Future<void> setSelectedCategoryIds(Set<String> categoryIds) async {
+    setSelectedCategoryIdsCalls.add(categoryIds);
+  }
+
+  @override
+  Future<void> setSelectedLabelIds(Set<String> labelIds) async {
+    setSelectedLabelIdsCalls.add(labelIds);
+  }
+
+  @override
+  Future<void> setSelectedProjectIds(Set<String> projectIds) async {
+    setSelectedProjectIdsCalls.add(projectIds);
+  }
+
+  @override
+  Future<void> setSelectedPriorities(Set<String> priorities) async {
+    setSelectedPrioritiesCalls.add(priorities);
+  }
+
+  @override
+  Future<void> applyBatchFilterUpdate({
+    Set<String>? statuses,
+    Set<String>? categoryIds,
+    Set<String>? labelIds,
+    Set<String>? projectIds,
+    Set<String>? priorities,
+    TaskSortOption? sortOption,
+    AgentAssignmentFilter? agentAssignmentFilter,
+    SearchMode? searchMode,
+    bool? showCreationDate,
+    bool? showDueDate,
+  }) async {
+    applyBatchFilterUpdateCalled++;
+    if (statuses != null) setSelectedTaskStatusesCalls.add(statuses);
+    if (categoryIds != null) setSelectedCategoryIdsCalls.add(categoryIds);
+    if (labelIds != null) setSelectedLabelIdsCalls.add(labelIds);
+    if (projectIds != null) setSelectedProjectIdsCalls.add(projectIds);
+    if (priorities != null) setSelectedPrioritiesCalls.add(priorities);
+    if (sortOption != null) sortOptionCalls.add(sortOption);
+    if (agentAssignmentFilter != null) {
+      agentAssignmentFilterCalls.add(agentAssignmentFilter);
+    }
+    if (searchMode != null) searchModeCalls.add(searchMode);
+    if (showCreationDate != null) showCreationDateCalls.add(showCreationDate);
+    if (showDueDate != null) showDueDateCalls.add(showDueDate);
+  }
+
   @override
   Future<void> toggleSelectedCategoryIds(String categoryId) async {
     toggledCategoryIds.add(categoryId);
@@ -128,21 +186,6 @@ class FakeJournalPageController extends JournalPageController {
     showDueDateCalls.add(show);
   }
 
-  @override
-  Future<void> setShowCoverArt({required bool show}) async {
-    showCoverArtCalls.add(show);
-  }
-
-  @override
-  Future<void> setShowDistances({required bool show}) async {
-    showDistancesCalls.add(show);
-  }
-
-  @override
-  Future<void> setShowProjectsHeader({required bool show}) async {
-    showProjectsHeaderCalls.add(show);
-  }
-
   // Agent assignment filter
   @override
   Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) async {
@@ -206,6 +249,11 @@ class FakeJournalPageController extends JournalPageController {
 
   /// Resets all tracking counters and lists for fresh test assertions
   void resetTracking() {
+    setSelectedTaskStatusesCalls.clear();
+    setSelectedCategoryIdsCalls.clear();
+    setSelectedLabelIdsCalls.clear();
+    setSelectedProjectIdsCalls.clear();
+    setSelectedPrioritiesCalls.clear();
     toggledCategoryIds.clear();
     toggledLabelIds.clear();
     toggledTaskStatuses.clear();
@@ -216,9 +264,6 @@ class FakeJournalPageController extends JournalPageController {
     sortOptionCalls.clear();
     showCreationDateCalls.clear();
     showDueDateCalls.clear();
-    showCoverArtCalls.clear();
-    showDistancesCalls.clear();
-    showProjectsHeaderCalls.clear();
     filtersCalls.clear();
     searchStringCalls.clear();
     searchModeCalls.clear();
@@ -234,5 +279,6 @@ class FakeJournalPageController extends JournalPageController {
     clearSelectedEntryTypesCalled = 0;
     clearProjectFilterCalled = 0;
     refreshQueryCalled = 0;
+    applyBatchFilterUpdateCalled = 0;
   }
 }

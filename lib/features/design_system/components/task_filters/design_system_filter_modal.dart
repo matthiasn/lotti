@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-
-enum DesignSystemFilterPresentation {
-  desktop,
-  mobile,
-}
 
 typedef DesignSystemFilterFieldHandler =
     Future<DesignSystemTaskFilterState?> Function(
@@ -14,84 +11,78 @@ typedef DesignSystemFilterFieldHandler =
       DesignSystemTaskFilterSection section,
     );
 
+/// Shows the design system task filter modal using Wolt modal sheet.
+///
+/// On mobile the modal appears as a bottom sheet; on desktop as a centered
+/// dialog — determined automatically by [ModalUtils.modalTypeBuilder].
+///
+/// The action bar (Clear All + Apply) is rendered as a sticky action bar that
+/// remains visible while the filter sections scroll. State is shared between
+/// the scrollable content and the sticky action bar via a [ValueNotifier].
 Future<void> showDesignSystemFilterModal({
   required BuildContext context,
   required DesignSystemTaskFilterState initialState,
   required ValueChanged<DesignSystemTaskFilterState> onApplied,
-  required DesignSystemFilterPresentation presentation,
   DesignSystemFilterFieldHandler? onFieldPressed,
-}) {
-  final showDragHandle = presentation == DesignSystemFilterPresentation.mobile;
+  Widget Function(Widget)? modalDecorator,
+}) async {
+  final stateNotifier = ValueNotifier(initialState);
 
-  Widget buildSheet(
-    BuildContext sheetContext,
-    DesignSystemTaskFilterState draftState,
-    void Function(DesignSystemTaskFilterState) updateDraft,
-  ) {
-    return DesignSystemTaskFilterSheet(
-      state: draftState,
-      onChanged: (nextState) {
-        updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
+  try {
+    await ModalUtils.showSinglePageModal<void>(
+      context: context,
+      title: context.messages.tasksFilterTitle,
+      useRootNavigator: true,
+      modalDecorator: modalDecorator,
+      padding: const EdgeInsets.only(left: 20, top: 8, right: 20, bottom: 20),
+      stickyActionBarBuilder: (modalContext) {
+        return ValueListenableBuilder<DesignSystemTaskFilterState>(
+          valueListenable: stateNotifier,
+          builder: (ctx, state, _) {
+            return DesignSystemTaskFilterActionBar(
+              state: state,
+              onChanged: (next) => stateNotifier.value = next,
+              onApplyPressed: (next) {
+                onApplied(next);
+                Navigator.of(ctx).pop();
+              },
+              onClearAllPressed: (next) => stateNotifier.value = next,
+            );
+          },
+        );
       },
-      onApplyPressed: (nextState) {
-        onApplied(nextState.copyWith(showDragHandle: showDragHandle));
-        Navigator.of(sheetContext).pop();
+      builder: (modalContext) {
+        return ValueListenableBuilder<DesignSystemTaskFilterState>(
+          valueListenable: stateNotifier,
+          builder: (ctx, draftState, _) {
+            final spacing = ctx.designTokens.spacing;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DesignSystemTaskFilterSheet(
+                  state: draftState,
+                  onChanged: (next) => stateNotifier.value = next,
+                  onFieldPressed: onFieldPressed == null
+                      ? null
+                      : (section) async {
+                          final nextState = await onFieldPressed(
+                            ctx,
+                            stateNotifier.value,
+                            section,
+                          );
+                          if (!ctx.mounted || nextState == null) return;
+                          stateNotifier.value = nextState;
+                        },
+                ),
+                SizedBox(height: spacing.step10),
+              ],
+            );
+          },
+        );
       },
-      onClearAllPressed: (nextState) {
-        updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
-      },
-      onFieldPressed: onFieldPressed == null
-          ? null
-          : (section) async {
-              final nextState = await onFieldPressed(
-                sheetContext,
-                draftState,
-                section,
-              );
-              if (!sheetContext.mounted || nextState == null) {
-                return;
-              }
-
-              updateDraft(nextState.copyWith(showDragHandle: showDragHandle));
-            },
     );
+  } finally {
+    stateNotifier.dispose();
   }
-
-  return switch (presentation) {
-    DesignSystemFilterPresentation.desktop => showDialog<void>(
-      context: context,
-      builder: (_) {
-        var draftState = initialState.copyWith(showDragHandle: false);
-        return StatefulBuilder(
-          builder: (dialogContext, setState) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(24),
-            child: buildSheet(
-              dialogContext,
-              draftState,
-              (next) => setState(() => draftState = next),
-            ),
-          ),
-        );
-      },
-    ),
-    DesignSystemFilterPresentation.mobile => ModalUtils.showBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        var draftState = initialState.copyWith(showDragHandle: true);
-        return StatefulBuilder(
-          builder: (sheetContext, setState) => SafeArea(
-            top: false,
-            child: buildSheet(
-              sheetContext,
-              draftState,
-              (next) => setState(() => draftState = next),
-            ),
-          ),
-        );
-      },
-    ),
-  };
 }

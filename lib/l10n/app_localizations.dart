@@ -10720,7 +10720,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksLabelFilterTitle.
   ///
   /// In en, this message translates to:
-  /// **'Labels'**
+  /// **'Label'**
   String get tasksLabelFilterTitle;
 
   /// No description provided for @tasksLabelFilterUnlabeled.
