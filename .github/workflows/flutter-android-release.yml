@@ -60,6 +60,9 @@ jobs:
       #     storeFile=upload-keystore.jks
       #     EOF
 
+      - name: Create Android debug keystore directory
+        run: mkdir -p /home/runner/.config/.android
+
       - name: Build App Bundle
         run: flutter build appbundle --release
 
