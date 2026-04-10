@@ -149,6 +149,7 @@ Future<void> _pump(
   WidgetTester tester, {
   ChecklistItem? item,
   bool hideIfChecked = false,
+  bool hideIfUnchecked = false,
   bool showDivider = false,
   List<ChecklistCompletionSuggestion> suggestions = const [],
 }) async {
@@ -176,6 +177,7 @@ Future<void> _pump(
           taskId: 'task-1',
           index: 0,
           hideIfChecked: hideIfChecked,
+          hideIfUnchecked: hideIfUnchecked,
           showDivider: showDivider,
         ),
       ),
@@ -196,6 +198,7 @@ _pumpWithControllers(
   WidgetTester tester, {
   ChecklistItem? item,
   bool hideIfChecked = false,
+  bool hideIfUnchecked = false,
   List<ChecklistCompletionSuggestion> suggestions = const [],
 }) async {
   final testItem = item ?? _makeItem();
@@ -224,6 +227,7 @@ _pumpWithControllers(
           taskId: 'task-1',
           index: 0,
           hideIfChecked: hideIfChecked,
+          hideIfUnchecked: hideIfUnchecked,
         ),
       ),
     ),
@@ -759,6 +763,58 @@ void main() {
       );
     });
 
+    // ── Done-only filter (hideIfUnchecked) ──────────────────────────────
+
+    group('done-only filter (hideIfUnchecked)', () {
+      testWidgets(
+        'unchecked item is hidden immediately when hideIfUnchecked=true',
+        (tester) async {
+          // Unchecked item with done-only filter → should be hidden.
+          await _pump(tester, hideIfUnchecked: true);
+          await tester.pump();
+
+          final crossFade = tester.widget<AnimatedCrossFade>(
+            find.byType(AnimatedCrossFade),
+          );
+          expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+        },
+      );
+
+      testWidgets(
+        'checked item remains visible when hideIfUnchecked=true',
+        (tester) async {
+          await _pump(
+            tester,
+            item: _makeItem(isChecked: true),
+            hideIfUnchecked: true,
+          );
+          await tester.pump();
+
+          final crossFade = tester.widget<AnimatedCrossFade>(
+            find.byType(AnimatedCrossFade),
+          );
+          expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+        },
+      );
+
+      testWidgets(
+        'archived item remains visible when hideIfUnchecked=true',
+        (tester) async {
+          await _pump(
+            tester,
+            item: _makeItem(isArchived: true),
+            hideIfUnchecked: true,
+          );
+          await tester.pump();
+
+          final crossFade = tester.widget<AnimatedCrossFade>(
+            find.byType(AnimatedCrossFade),
+          );
+          expect(crossFade.crossFadeState, CrossFadeState.showFirst);
+        },
+      );
+    });
+
     // ── AnimatedCrossFade wrapping ──────────────────────────────────────
 
     group('AnimatedCrossFade wrapping', () {
@@ -766,6 +822,14 @@ void main() {
         'hideIfChecked=true wraps in AnimatedCrossFade',
         (tester) async {
           await _pump(tester, hideIfChecked: true);
+          expect(find.byType(AnimatedCrossFade), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hideIfUnchecked=true wraps in AnimatedCrossFade',
+        (tester) async {
+          await _pump(tester, hideIfUnchecked: true);
           expect(find.byType(AnimatedCrossFade), findsOneWidget);
         },
       );

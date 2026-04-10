@@ -2075,6 +2075,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistAllDone => 'Tous les éléments sont terminés !';
 
   @override
+  String get checklistNoneDone => 'Aucun élément terminé pour le moment.';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total terminés';
   }

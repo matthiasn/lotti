@@ -12,6 +12,9 @@ enum ChecklistFilter {
   /// Show only unchecked items.
   openOnly,
 
+  /// Show only checked/completed items.
+  doneOnly,
+
   /// Show all items (checked and unchecked).
   all,
 }

@@ -1132,6 +1132,7 @@
   "checklistAiSuggestionBody": "This item appears to be completed:",
   "checklistAiSuggestionTitle": "AI Suggestion",
   "checklistAllDone": "All items completed!",
+  "checklistNoneDone": "No completed items yet.",
   "checklistCompletedShort": "{completed}/{total} done",
   "@checklistCompletedShort": {
     "placeholders": {

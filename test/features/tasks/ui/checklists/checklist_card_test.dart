@@ -616,5 +616,90 @@ void main() {
 
       expect(states, [true, false]);
     });
+
+    // ── Done filter tab ────────────────────────────────────────────────────
+
+    testWidgets('filter strip shows Open, Done, and All tabs', (tester) async {
+      await _pump(
+        tester,
+        initiallyExpanded: true,
+        itemIds: const ['x'],
+        completionRate: 0.5,
+        completedCount: 1,
+        totalCount: 2,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows noneDone message when doneOnly filter and no items done',
+      (tester) async {
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          itemIds: const ['x'],
+          completedCount: 0,
+          totalCount: 1,
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Tap the Done tab
+        await tester.tap(find.text('Done'));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('No completed items yet.'), findsOneWidget);
+      },
+    );
+
+    // ── Initial animation skip ─────────────────────────────────────────────
+
+    testWidgets('body appears instantly on first render without animation', (
+      tester,
+    ) async {
+      await _pump(tester, initiallyExpanded: true);
+
+      // On the very first frame the add-field should already be visible
+      // (no animation needed) because _hasRendered is false → Duration.zero.
+      expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets(
+      'collapsed card shows no body on first render without animation',
+      (tester) async {
+        await _pump(tester, initiallyExpanded: false);
+
+        // Collapsed immediately, no animation.
+        expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
+      },
+    );
+
+    testWidgets('subsequent toggle uses real animation duration', (
+      tester,
+    ) async {
+      await _pump(tester, initiallyExpanded: true);
+
+      // First frame — body is already visible.
+      expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
+
+      // Post-frame callback fires, _hasRendered = true.
+      await tester.pump();
+
+      // Now collapse — should use real animation duration (250ms).
+      await tester.tap(find.byIcon(Icons.expand_less));
+
+      // After only 50ms, the cross-fade should still be in progress.
+      await tester.pump(const Duration(milliseconds: 50));
+      // The AnimatedCrossFade is mid-transition — the add field is still
+      // in the tree (even if fading) because the animation hasn't completed.
+      expect(find.byKey(_addFieldKey), findsOneWidget);
+
+      // After 400ms total, animation should be complete.
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
+    });
   });
 }

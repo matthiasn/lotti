@@ -927,6 +927,7 @@
   "checklistAiSuggestionBody": "Acest element pare să fie finalizat:",
   "checklistAiSuggestionTitle": "Sugestie AI",
   "checklistAllDone": "Toate elementele sunt finalizate!",
+  "checklistNoneDone": "Niciun element finalizat încă.",
   "checklistCompletedShort": "{completed}/{total} finalizate",
   "@checklistCompletedShort": {
     "placeholders": {

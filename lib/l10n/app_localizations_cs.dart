@@ -2030,6 +2030,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistAllDone => 'Všechny položky splněny!';
 
   @override
+  String get checklistNoneDone => 'Zatím žádné dokončené položky.';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total hotovo';
   }

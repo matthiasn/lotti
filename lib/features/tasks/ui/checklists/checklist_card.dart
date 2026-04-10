@@ -94,6 +94,11 @@ class _ChecklistCardState extends State<ChecklistCard> {
   bool _isCreatingItem = false;
   final FocusNode _addFocusNode = FocusNode();
 
+  /// Whether the widget has completed its first frame. Animations use
+  /// [Duration.zero] until this is `true` so the initial layout snaps
+  /// into place without a visible collapse/expand transition.
+  bool _hasRendered = false;
+
   @override
   void initState() {
     super.initState();
@@ -103,7 +108,10 @@ class _ChecklistCardState extends State<ChecklistCard> {
         (widget.completionRate < 1 || widget.itemIds.isEmpty);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onExpansionChanged?.call(_isExpanded);
+      if (mounted) {
+        widget.onExpansionChanged?.call(_isExpanded);
+        setState(() => _hasRendered = true);
+      }
     });
 
     _loadFilterPreference();
@@ -131,17 +139,34 @@ class _ChecklistCardState extends State<ChecklistCard> {
 
   Future<void> _loadFilterPreference() async {
     final key = 'checklist_filter_mode_${widget.id}';
-    final value = await makeSharedPrefsService().getBool(key);
-    if (!mounted || value == null) return;
-    setState(() {
-      _filter = value ? ChecklistFilter.openOnly : ChecklistFilter.all;
-    });
+    final prefs = makeSharedPrefsService();
+
+    // Try new string-based key first, fall back to legacy bool key.
+    final stringValue = await prefs.getString(key);
+    if (!mounted) return;
+
+    if (stringValue != null) {
+      final parsed = ChecklistFilter.values.where((v) => v.name == stringValue);
+      if (parsed.isNotEmpty) {
+        setState(() => _filter = parsed.first);
+        return;
+      }
+    }
+
+    // Legacy bool migration: true → openOnly, false → all.
+    final boolValue = await prefs.getBool(key);
+    if (!mounted || boolValue == null) return;
+    final migrated = boolValue ? ChecklistFilter.openOnly : ChecklistFilter.all;
+    setState(() => _filter = migrated);
+    // Persist as the new string format so future reads use the string path.
+    // TODO(cleanup): remove legacy bool migration after a few releases.
+    await prefs.setString(key: key, value: migrated.name);
   }
 
   Future<void> _saveFilterPreference(ChecklistFilter filter) {
-    return makeSharedPrefsService().setBool(
+    return makeSharedPrefsService().setString(
       key: 'checklist_filter_mode_${widget.id}',
-      value: filter == ChecklistFilter.openOnly,
+      value: filter.name,
     );
   }
 
@@ -164,6 +189,12 @@ class _ChecklistCardState extends State<ChecklistCard> {
         (total == 0 ? 0 : (widget.completionRate * total).round());
 
     final showBody = _isExpanded && !widget.isSortingMode;
+    final animationDuration = _hasRendered
+        ? checklistCardCollapseAnimationDuration
+        : Duration.zero;
+    final chevronDuration = _hasRendered
+        ? checklistChevronRotationDuration
+        : Duration.zero;
 
     return Material(
       color: Colors.transparent,
@@ -189,6 +220,8 @@ class _ChecklistCardState extends State<ChecklistCard> {
               totalCount: total,
               completionRate: widget.completionRate,
               filter: _filter,
+              chevronDuration: chevronDuration,
+              filterStripDuration: animationDuration,
               onToggleExpand: () => _setExpanded(!_isExpanded),
               onTitleTap: () => setState(() => _isEditingTitle = true),
               onTitleSave: (t) {
@@ -204,7 +237,7 @@ class _ChecklistCardState extends State<ChecklistCard> {
 
           // ── Body (animated) ───────────────────────────────────────────────
           AnimatedCrossFade(
-            duration: checklistCardCollapseAnimationDuration,
+            duration: animationDuration,
             sizeCurve: Curves.easeInOut,
             crossFadeState: showBody
                 ? CrossFadeState.showFirst
@@ -215,6 +248,7 @@ class _ChecklistCardState extends State<ChecklistCard> {
               taskId: widget.taskId,
               filter: _filter,
               completionRate: widget.completionRate,
+              activeTotalCount: total,
               focusNode: _addFocusNode,
               onCreateItem: (title) async {
                 if (_isCreatingItem) return;
@@ -271,6 +305,8 @@ class _Header extends StatelessWidget {
     required this.totalCount,
     required this.completionRate,
     required this.filter,
+    required this.chevronDuration,
+    required this.filterStripDuration,
     required this.onToggleExpand,
     required this.onTitleTap,
     required this.onTitleSave,
@@ -288,6 +324,8 @@ class _Header extends StatelessWidget {
   final int totalCount;
   final double completionRate;
   final ChecklistFilter filter;
+  final Duration chevronDuration;
+  final Duration filterStripDuration;
   final VoidCallback onToggleExpand;
   final VoidCallback onTitleTap;
   final StringCallback onTitleSave;
@@ -349,7 +387,7 @@ class _Header extends StatelessWidget {
                   // Chevron
                   AnimatedRotation(
                     turns: isExpanded ? 0.0 : -0.25,
-                    duration: checklistChevronRotationDuration,
+                    duration: chevronDuration,
                     child: GestureDetector(
                       onTap: onToggleExpand,
                       child: Icon(
@@ -379,7 +417,7 @@ class _Header extends StatelessWidget {
         // Filter strip — full-width grey background, only when expanded and
         // has items.
         AnimatedCrossFade(
-          duration: const Duration(milliseconds: 200),
+          duration: filterStripDuration,
           sizeCurve: Curves.easeInOut,
           crossFadeState: isExpanded && totalCount > 0
               ? CrossFadeState.showFirst
@@ -535,6 +573,12 @@ class _FilterStrip extends StatelessWidget {
                 isSelected: filter == ChecklistFilter.openOnly,
                 tokens: tokens,
                 onTap: () => onFilterChanged(ChecklistFilter.openOnly),
+              ),
+              _FilterTab(
+                label: context.messages.taskStatusDone,
+                isSelected: filter == ChecklistFilter.doneOnly,
+                tokens: tokens,
+                onTap: () => onFilterChanged(ChecklistFilter.doneOnly),
               ),
               _FilterTab(
                 label: context.messages.taskStatusAll,
@@ -778,6 +822,7 @@ class _Body extends StatelessWidget {
     required this.taskId,
     required this.filter,
     required this.completionRate,
+    required this.activeTotalCount,
     required this.focusNode,
     required this.onCreateItem,
     required this.onReorder,
@@ -788,6 +833,11 @@ class _Body extends StatelessWidget {
   final String taskId;
   final ChecklistFilter filter;
   final double completionRate;
+
+  /// Number of active (non-archived) items. Used to avoid showing the "none
+  /// done" empty state when all items are archived — archived items count as
+  /// done at the row level.
+  final int activeTotalCount;
   final FocusNode focusNode;
   final Future<void> Function(String?) onCreateItem;
   final void Function(int oldIndex, int newIndex) onReorder;
@@ -796,13 +846,22 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hideChecked = filter == ChecklistFilter.openOnly;
+    final hideUnchecked = filter == ChecklistFilter.doneOnly;
     final allDone = hideChecked && completionRate == 1.0 && itemIds.isNotEmpty;
+    // Only show "none done" when there are active (non-archived) items that
+    // are all unchecked. When activeTotalCount is 0 all items are archived,
+    // and archived items are shown as "done" by the row filter.
+    final noneDone =
+        hideUnchecked &&
+        activeTotalCount > 0 &&
+        completionRate == 0 &&
+        itemIds.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (allDone)
+        if (allDone || noneDone)
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: tokens.spacing.step4,
@@ -810,7 +869,9 @@ class _Body extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                context.messages.checklistAllDone,
+                allDone
+                    ? context.messages.checklistAllDone
+                    : context.messages.checklistNoneDone,
                 style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),
@@ -843,6 +904,7 @@ class _Body extends StatelessWidget {
                 taskId: taskId,
                 index: index,
                 hideIfChecked: hideChecked,
+                hideIfUnchecked: hideUnchecked,
                 showDivider: index < itemIds.length - 1,
               );
             },

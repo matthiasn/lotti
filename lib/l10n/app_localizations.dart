@@ -3594,6 +3594,12 @@ abstract class AppLocalizations {
   /// **'All items completed!'**
   String get checklistAllDone;
 
+  /// No description provided for @checklistNoneDone.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed items yet.'**
+  String get checklistNoneDone;
+
   /// No description provided for @checklistCompletedShort.
   ///
   /// In en, this message translates to:
