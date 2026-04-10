@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/task_detail_record_provider.dart';
@@ -28,7 +30,15 @@ class DesktopTaskDetailView extends ConsumerWidget {
           color: TaskShowcasePalette.accent(context),
         ),
       ),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (error, stackTrace) {
+        log(
+          'Failed to load task detail',
+          name: 'DesktopTaskDetailView',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return const SizedBox.shrink();
+      },
       data: (record) {
         if (record == null) {
           return const SizedBox.shrink();

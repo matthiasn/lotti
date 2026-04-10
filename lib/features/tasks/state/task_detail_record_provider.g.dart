@@ -77,7 +77,7 @@ final class TaskDetailRecordProvider
   }
 }
 
-String _$taskDetailRecordHash() => r'60b1f59af21391c4bbca9f994c5dfc41bf644650';
+String _$taskDetailRecordHash() => r'e13289989d9eddd0405c1ccdcd85383e826058f5';
 
 /// Builds a [TaskRecord] from real data for display in the desktop detail view.
 ///

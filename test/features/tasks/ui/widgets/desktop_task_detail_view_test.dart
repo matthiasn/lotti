@@ -27,6 +27,10 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  Future<void> setDesktopSize(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 900));
+  }
+
   Widget buildSubject({
     required String taskId,
     required TaskRecord? record,
@@ -77,11 +81,35 @@ void main() {
       expect(find.byType(TaskDetailPane), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
+
+    testWidgets('renders SizedBox.shrink on provider error', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DesktopTaskDetailView(taskId: 'error-task'),
+          overrides: [
+            taskDetailRecordProvider('error-task').overrideWith(
+              (ref) async {
+                throw StateError('test error');
+              },
+            ),
+          ],
+        ),
+      );
+      // Pump multiple times to let the async error propagate through Riverpod
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+
+      expect(find.byType(TaskDetailPane), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
   });
 
   group('header rendering', () {
-    testWidgets('displays task title from record', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
+    testWidgets('displays title, priority, project, category, and labels', (
+      tester,
+    ) async {
+      await setDesktopSize(tester);
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -90,57 +118,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Payment confirmation'), findsOneWidget);
-    });
-
-    testWidgets('displays priority label from record', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
-      // Priority short label (e.g. P1)
-      expect(
-        find.text(paymentTask.task.data.priority.short),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('displays project title from record', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
+      expect(find.text(paymentTask.task.data.priority.short), findsOneWidget);
       expect(find.text(paymentTask.projectTitle), findsOneWidget);
-    });
-
-    testWidgets('displays category chip from record', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
       expect(find.text(paymentTask.category.name), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('displays label chips from record', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
       for (final label in paymentTask.labels) {
         expect(find.text(label.label), findsOneWidget);
       }
@@ -148,8 +128,10 @@ void main() {
   });
 
   group('detail card sections', () {
-    testWidgets('renders AI Task Summary section', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
+    testWidgets('renders all detail sections with correct content', (
+      tester,
+    ) async {
+      await setDesktopSize(tester);
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -157,68 +139,30 @@ void main() {
       );
       await tester.pump();
 
+      // AI Summary
       expect(find.text('AI Task Summary'), findsOneWidget);
-      // Verify the actual AI summary text is rendered
       expect(find.text(paymentTask.aiSummary), findsOneWidget);
-    });
 
-    testWidgets('renders Time Tracker section with duration', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
+      // Time Tracker
       expect(find.text('Time Tracker'), findsOneWidget);
-      expect(
-        find.text(paymentTask.trackedDurationLabel),
-        findsOneWidget,
-      );
-    });
+      expect(find.text(paymentTask.trackedDurationLabel), findsOneWidget);
 
-    testWidgets('renders Todos section with completion count', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
+      // Todos
       expect(find.text('Todos'), findsOneWidget);
-      // Verify checklist item titles are displayed
       for (final item in paymentTask.checklistItems) {
         expect(find.text(item.title), findsOneWidget);
       }
-    });
 
-    testWidgets('renders Audio Recordings section with entries', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildSubject(taskId: 'pay', record: paymentTask),
-      );
-      await tester.pump();
-
+      // Audio
       expect(find.text('Audio Recordings'), findsOneWidget);
-      // Verify audio entry titles are displayed
       for (final entry in paymentTask.audioEntries) {
         expect(find.text(entry.title), findsOneWidget);
       }
     });
   });
 
-  group('section navigation pills', () {
-    testWidgets('renders jump-to-section pills on wide layout', (
+  group('section navigation', () {
+    testWidgets('renders jump-to-section sidebar on wide layout', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(900, 900));
@@ -233,7 +177,6 @@ void main() {
       );
       await tester.pump();
 
-      // The "Jump to section" label appears on desktop (>=720px)
       expect(find.text('Jump to section'), findsOneWidget);
     });
   });
@@ -247,15 +190,6 @@ void main() {
 
       final pane = tester.widget<TaskDetailPane>(find.byType(TaskDetailPane));
       expect(pane.key, const ValueKey<String>('task-42'));
-    });
-
-    testWidgets('renders TaskDetailPane as child', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(taskId: 'task-x', record: mockData.tasks.first),
-      );
-      await tester.pump();
-
-      expect(find.byType(TaskDetailPane), findsOneWidget);
     });
   });
 }
