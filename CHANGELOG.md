@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.949] - 2026-04-10
+### Added
+- AI one-liner subtitle in task list: each task row now displays the
+  agent-generated summary below the title (max 2 lines), giving users
+  at-a-glance progress visibility without opening the detail view.
+- Time recording indicator in task list: a red dot appears on any task
+  row that is actively recording time, positioned as a trailing element
+  in the row layout.
+- Live task data in list rows: editing a task's title, status, or other
+  data in the detail pane now updates the corresponding list row
+  in-place via a lightweight `taskLiveDataProvider`, without requiring
+  a full list refresh.
+### Fixed
+- Removed animated transitions (`animateTransitions`) from the paged
+  task list to eliminate visual flicker when loading pages or refreshing
+  data.
+
 ## [0.9.948] - 2026-04-10
 ### Added
 - Checklist filter tabs: added a "Done" tab alongside "Open" and "All" to

@@ -6,11 +6,14 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_row_interactions.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
@@ -268,7 +271,7 @@ class _TaskBrowseRowShell extends StatelessWidget {
   }
 }
 
-class _TaskRowContent extends StatelessWidget {
+class _TaskRowContent extends ConsumerWidget {
   const _TaskRowContent({
     required this.task,
     required this.sortOption,
@@ -294,13 +297,32 @@ class _TaskRowContent extends StatelessWidget {
   final String? trackedDurationLabelOverride;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+
+    // Watch for live updates. When a task's title or other data changes in
+    // the detail pane, this rebuilds the row in-place without needing a full
+    // list refresh. Uses taskLiveDataProvider which is lightweight (just a DB
+    // fetch + UpdateNotifications listener) unlike EntryController which
+    // initialises focus nodes, hotkeys, editor state, etc.
+    // Use .value to preserve stale data during loading states (e.g. when
+    // invalidateSelf() triggers a re-fetch), avoiding a brief revert to the
+    // paging-controller snapshot.
+    final liveTask =
+        ref.watch(taskLiveDataProvider(task.meta.id)).value ?? task;
+
+    // Fetch AI-generated one-liner subtitle from the agent report.
+    // Use .value to preserve stale data during loading/error states,
+    // avoiding a brief disappearance and row reflow on invalidation.
+    final oneLiner = ref.watch(taskOneLinerProvider(liveTask.meta.id)).value;
+
     final category =
         categoryNameOverride == null ||
             categoryIconOverride == null ||
             categoryColorHexOverride == null
-        ? getIt<EntitiesCacheService>().getCategoryById(task.meta.categoryId)
+        ? getIt<EntitiesCacheService>().getCategoryById(
+            liveTask.meta.categoryId,
+          )
         : null;
     final categoryName =
         categoryNameOverride ??
@@ -310,12 +332,12 @@ class _TaskRowContent extends StatelessWidget {
         categoryIconOverride ??
         category?.icon?.iconData ??
         Icons.label_outline_rounded;
-    final coverArtId = showCoverArt ? task.data.coverArtId : null;
+    final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
     final metadata = <Widget>[
       if (sortOption != TaskSortOption.byPriority)
-        _PriorityMeta(priority: task.data.priority),
+        _PriorityMeta(priority: liveTask.data.priority),
       _TrackedDurationMeta(
-        taskId: task.meta.id,
+        taskId: liveTask.meta.id,
         labelOverride: trackedDurationLabelOverride,
       ),
       TaskShowcaseCategoryChip(
@@ -339,7 +361,7 @@ class _TaskRowContent extends StatelessWidget {
               child: CoverArtThumbnail(
                 imageId: coverArtId,
                 size: 72,
-                cropX: task.data.coverArtCropX,
+                cropX: liveTask.data.coverArtCropX,
               ),
             ),
           ),
@@ -349,7 +371,7 @@ class _TaskRowContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                task.data.title,
+                liveTask.data.title,
                 maxLines: coverArtId == null ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -357,6 +379,17 @@ class _TaskRowContent extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (oneLiner != null && oneLiner.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  oneLiner,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: TaskShowcasePalette.lowText(context),
+                  ),
+                ),
+              ],
               SizedBox(height: tokens.spacing.step3),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,25 +403,26 @@ class _TaskRowContent extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step4),
-                  TaskShowcaseStatusLabel(status: task.data.status),
+                  TaskShowcaseStatusLabel(status: liveTask.data.status),
                 ],
               ),
-              if (_footerChildren(context).isNotEmpty) ...[
+              if (_footerChildren(context, liveTask).isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.step3),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _footerChildren(context),
+                  children: _footerChildren(context, liveTask),
                 ),
               ],
             ],
           ),
         ),
+        TimeRecordingIcon(taskId: liveTask.meta.id),
       ],
     );
   }
 
-  List<Widget> _footerChildren(BuildContext context) {
+  List<Widget> _footerChildren(BuildContext context, Task liveTask) {
     final localizations = MaterialLocalizations.of(context);
     final widgets = <Widget>[];
 
@@ -396,7 +430,7 @@ class _TaskRowContent extends StatelessWidget {
       widgets.add(
         TaskShowcaseMetaChip(
           icon: Icons.calendar_today_outlined,
-          label: localizations.formatMediumDate(task.meta.dateFrom),
+          label: localizations.formatMediumDate(liveTask.meta.dateFrom),
         ),
       );
     }
@@ -404,11 +438,11 @@ class _TaskRowContent extends StatelessWidget {
     final showDueFooter =
         showDueDate &&
         sortOption != TaskSortOption.byDueDate &&
-        task.data.due != null &&
-        task.data.status is! TaskDone &&
-        task.data.status is! TaskRejected;
+        liveTask.data.due != null &&
+        liveTask.data.status is! TaskDone &&
+        liveTask.data.status is! TaskRejected;
     if (showDueFooter) {
-      widgets.add(DueDateText(dueDate: task.data.due!));
+      widgets.add(DueDateText(dueDate: liveTask.data.due!));
     }
 
     if (vectorDistance case final distance?) {

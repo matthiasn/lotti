@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_detail_showcase.dart';
 import 'package:lotti/features/tasks/widgetbook/task_list_detail_mock_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -33,12 +40,37 @@ void main() {
   group('TaskListDetailShowcase', () {
     late ProviderContainer container;
 
-    setUp(() {
-      container = ProviderContainer();
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          final mockTimeService = MockTimeService();
+          when(mockTimeService.getStream).thenAnswer(
+            (_) => const Stream.empty(),
+          );
+          when(() => mockTimeService.linkedFrom).thenReturn(null);
+          getIt.registerSingleton<TimeService>(mockTimeService);
+        },
+      );
+      container = ProviderContainer(
+        overrides: [
+          taskLiveDataProvider.overrideWith(
+            // ignore: avoid_redundant_argument_values
+            (ref, taskId) => Future.value(null),
+          ),
+          taskOneLinerProvider.overrideWith(
+            // ignore: avoid_redundant_argument_values
+            (ref, taskId) => Future.value(null),
+          ),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream<Set<String>>.empty(),
+          ),
+        ],
+      );
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
+      await tearDownTestGetIt();
     });
 
     testWidgets('renders desktop list and detail panes', (tester) async {

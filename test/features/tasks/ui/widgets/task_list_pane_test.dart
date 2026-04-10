@@ -1,26 +1,64 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        final mockTimeService = MockTimeService();
+        when(mockTimeService.getStream).thenAnswer(
+          (_) => const Stream.empty(),
+        );
+        when(() => mockTimeService.linkedFrom).thenReturn(null);
+        getIt.registerSingleton<TimeService>(mockTimeService);
+      },
+    );
+  });
+
+  tearDown(tearDownTestGetIt);
+
   Widget wrap(Widget child) {
-    return makeTestableWidget2(
-      Theme(
-        data: DesignSystemTheme.dark(),
-        child: Scaffold(
-          body: SizedBox(width: 402, height: 900, child: child),
+    return ProviderScope(
+      overrides: [
+        taskLiveDataProvider.overrideWith(
+          // ignore: avoid_redundant_argument_values
+          (ref, taskId) => Future.value(null),
         ),
+        taskOneLinerProvider.overrideWith(
+          // ignore: avoid_redundant_argument_values
+          (ref, taskId) => Future.value(null),
+        ),
+        agentUpdateStreamProvider.overrideWith(
+          (ref, agentId) => const Stream<Set<String>>.empty(),
+        ),
+      ],
+      child: makeTestableWidget2(
+        Theme(
+          data: DesignSystemTheme.dark(),
+          child: Scaffold(
+            body: SizedBox(width: 402, height: 900, child: child),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
       ),
-      mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
     );
   }
 

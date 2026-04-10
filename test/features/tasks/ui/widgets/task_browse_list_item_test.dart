@@ -5,11 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
@@ -864,6 +868,186 @@ void main() {
 
       // null state → Duration.zero → "0h 0m"
       expect(find.text('0h 0m'), findsOneWidget);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Live task data
+  // -------------------------------------------------------------------------
+
+  group('Live task data', () {
+    testWidgets('renders updated title from taskLiveDataProvider', (
+      tester,
+    ) async {
+      const taskId = 'task-live';
+      final originalTask = TestTaskFactory.create(
+        id: taskId,
+        title: 'Original Title',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+      final updatedTask = TestTaskFactory.create(
+        id: taskId,
+        title: 'Updated Title',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _makeWidget(originalTask),
+          overrides: [
+            taskLiveDataProvider.overrideWith(
+              (ref, id) => Future.value(updatedTask),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // The live provider returned an updated task, so the title should reflect
+      // the live data, not the snapshot.
+      expect(find.text('Updated Title'), findsOneWidget);
+      expect(find.text('Original Title'), findsNothing);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // One-liner subtitle
+  // -------------------------------------------------------------------------
+
+  group('One-liner subtitle', () {
+    testWidgets('renders one-liner text from taskOneLinerProvider', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-oneliner',
+        title: 'Task With Summary',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _makeWidget(task),
+          overrides: [
+            taskOneLinerProvider.overrideWith(
+              (ref, id) => Future.value('Implementing OAuth2 flow'),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Task With Summary'), findsOneWidget);
+      expect(find.text('Implementing OAuth2 flow'), findsOneWidget);
+    });
+
+    testWidgets('does not render one-liner when provider returns null', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-no-oneliner',
+        title: 'Task Without Summary',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _makeWidget(task),
+          overrides: [
+            taskOneLinerProvider.overrideWith(
+              (ref, id) => Future.value(null),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Task Without Summary'), findsOneWidget);
+      // Only the title Text widget should exist for the task content text;
+      // no additional caption-styled Text for a one-liner.
+      final textWidgets = tester.widgetList<Text>(
+        find.descendant(
+          of: find.byType(TaskBrowseListItem),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(
+        textWidgets.where((t) => t.data == 'Implementing OAuth2 flow'),
+        isEmpty,
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Time recording indicator
+  // -------------------------------------------------------------------------
+
+  group('Time recording indicator', () {
+    testWidgets('shows recording dot when task is actively recording', (
+      tester,
+    ) async {
+      const taskId = 'task-recording';
+      final task = TestTaskFactory.create(
+        id: taskId,
+        title: 'Recording Task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      // Override the TimeService mock to simulate active recording for this task.
+      final mockTimeService = getIt<TimeService>() as MockTimeService;
+      final recordingEntry = TestTaskFactory.create(
+        id: taskId,
+        title: 'Recording Task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+      when(() => mockTimeService.linkedFrom).thenReturn(recordingEntry);
+      when(mockTimeService.getStream).thenAnswer(
+        (_) => Stream.value(recordingEntry),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(_makeWidget(task)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TimeRecordingIcon), findsOneWidget);
+      // The ColorIcon (red dot) should be visible when recording.
+      expect(
+        find.descendant(
+          of: find.byType(TimeRecordingIcon),
+          matching: find.byType(ColorIcon),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides recording dot when task is not recording', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-not-recording',
+        title: 'Not Recording Task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(_makeWidget(task)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TimeRecordingIcon), findsOneWidget);
+      // The ColorIcon should NOT be rendered (SizedBox.shrink instead).
+      expect(
+        find.descendant(
+          of: find.byType(TimeRecordingIcon),
+          matching: find.byType(ColorIcon),
+        ),
+        findsNothing,
+      );
     });
   });
 }

@@ -228,7 +228,6 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                         fetchNextPage: fetchNextPage,
                         builderDelegate:
                             PagedChildBuilderDelegate<JournalEntity>(
-                              animateTransitions: true,
                               invisibleItemsThreshold: 10,
                               firstPageProgressIndicatorBuilder: (_) =>
                                   const Padding(
