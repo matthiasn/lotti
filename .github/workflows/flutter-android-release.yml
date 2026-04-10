@@ -47,21 +47,17 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      # Uncomment and configure secrets for release signing:
-      # - name: Decode Android Keystore
-      #   run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
-      #
-      # - name: Create key.properties
-      #   run: |
-      #     cat > android/key.properties << EOF
-      #     storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
-      #     keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-      #     keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-      #     storeFile=upload-keystore.jks
-      #     EOF
+      - name: Decode Android Keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
 
-      - name: Create Android debug keystore directory
-        run: mkdir -p /home/runner/.config/.android
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=${{ github.workspace }}/android/app/upload-keystore.jks
+          EOF
 
       - name: Build App Bundle
         run: flutter build appbundle --release
