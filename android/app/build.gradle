@@ -32,7 +32,7 @@ if (flutterVersionName == null) {
 android {
     namespace "com.matthiasn.lotti"
     compileSdkVersion rootProject.ext.compileSdkVersion
-    ndkVersion "27.0.12077973"
+    ndkVersion "28.2.13676358"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
