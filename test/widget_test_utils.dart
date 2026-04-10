@@ -69,6 +69,9 @@ Future<TestGetItMocks> setUpTestGetIt({
   ).thenAnswer((_) async => null);
   when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
   when(
+    () => mockSettingsDb.itemsByKeys(any()),
+  ).thenAnswer((_) async => <String, String?>{});
+  when(
     () => mockSettingsDb.saveSettingsItem(any(), any()),
   ).thenAnswer((_) async => 1);
   final mockEmbeddingStore = MockEmbeddingStore();

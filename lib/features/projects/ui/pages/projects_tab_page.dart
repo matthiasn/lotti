@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -48,6 +50,8 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     final isDesktop = isDesktopLayout(context);
 
     if (isDesktop) {
+      final paneWidths = ref.watch(paneWidthControllerProvider);
+
       return DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
@@ -55,10 +59,15 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         child: Row(
           children: [
             SizedBox(
-              width: 540,
+              width: paneWidths.listPaneWidth,
               child: _ProjectsListScaffold(
                 scrollController: _scrollController,
               ),
+            ),
+            ResizableDivider(
+              onDrag: (delta) => ref
+                  .read(paneWidthControllerProvider.notifier)
+                  .updateListPaneWidth(delta),
             ),
             Expanded(
               child: ValueListenableBuilder<String?>(

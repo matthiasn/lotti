@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.d
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -330,6 +332,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       }
     }
 
+    final paneWidths = ref.watch(paneWidthControllerProvider);
+
     return Scaffold(
       body: Row(
         children: [
@@ -363,6 +367,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 : null,
             isSettingsActive: isSettingsActive,
             onNewPressed: createTextEntry,
+            width: paneWidths.sidebarWidth,
+          ),
+          ResizableDivider(
+            onDrag: (delta) => ref
+                .read(paneWidthControllerProvider.notifier)
+                .updateSidebarWidth(delta),
           ),
           Expanded(
             child: Stack(

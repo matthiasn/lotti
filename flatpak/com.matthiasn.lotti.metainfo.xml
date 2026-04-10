@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.950" date="2026-04-10">
+      <description>
+          <p>Resizable panes in desktop layout: drag dividers between the navigation sidebar and content area, and between the list and detail panes, to adjust widths. Pane sizes persist across sessions.</p>
+      </description>
+    </release>
     <release version="0.9.949" date="2026-04-10">
       <description>
           <p>Dashboard list page redesigned: the old SliverAppBar top bar has been removed and list items now use rounded grouped cards with design system tokens for a modern, consistent look.</p>
