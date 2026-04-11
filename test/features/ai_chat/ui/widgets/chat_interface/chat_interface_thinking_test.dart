@@ -15,6 +15,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 /// Creates a test [ChatSession] with sensible defaults for thinking tests.
 ChatSession _createSession({
@@ -62,6 +63,7 @@ Future<void> _pumpChatInterface(
         chatRepositoryProvider.overrideWithValue(repository),
       ],
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

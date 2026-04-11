@@ -3,14 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/gamey_theme.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
-import 'package:lotti/widgets/gamey/gamey_card.dart';
 import 'package:lotti/widgets/misc/tasks_counts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -49,22 +46,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
     const halfVerticalSpacer = SpacingConstants.verticalModalSpacerHeight / 2;
     const halfSmallSpacer = SpacingConstants.inputSpacerSmallHeight / 2;
 
-    final themingState = ref.watch(themingControllerProvider);
-    final brightness = Theme.of(context).brightness;
-    final useGamey = themingState.isGameyThemeForBrightness(brightness);
-
     Widget buildCard({required Widget child}) {
-      if (useGamey) {
-        return GameySubtleCard(
-          accentColor: GameyColors.gameyAccent,
-          margin: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingLarge,
-            vertical: AppTheme.cardSpacing / 2,
-          ),
-          padding: const EdgeInsets.all(SpacingConstants.inputSpacerHeight),
-          child: child,
-        );
-      }
       return ModernBaseCard(child: child);
     }
 

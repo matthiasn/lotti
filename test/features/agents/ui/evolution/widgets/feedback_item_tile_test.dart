@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
@@ -288,8 +288,7 @@ void main() {
             .firstWhere(
               (c) =>
                   c.decoration is BoxDecoration &&
-                  (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryRed,
+                  (c.decoration! as BoxDecoration).color == AgentPalette.red,
               orElse: () => throw TestFailure(
                 'No Container with primaryRed color found',
               ),
@@ -312,8 +311,7 @@ void main() {
             .firstWhere(
               (c) =>
                   c.decoration is BoxDecoration &&
-                  (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryGreen,
+                  (c.decoration! as BoxDecoration).color == AgentPalette.green,
               orElse: () => throw TestFailure(
                 'No Container with primaryGreen color found',
               ),
@@ -340,8 +338,7 @@ void main() {
             .firstWhere(
               (c) =>
                   c.decoration is BoxDecoration &&
-                  (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryOrange,
+                  (c.decoration! as BoxDecoration).color == AgentPalette.orange,
               orElse: () => throw TestFailure(
                 'No Container with primaryOrange color found',
               ),

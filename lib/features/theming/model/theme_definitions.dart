@@ -13,18 +13,7 @@ class LightModeSurfaces {
   static const Color surfaceContainerHighest = Color(0xFFE8E8E8);
 }
 
-/// Special theme name for the gamey/fun theme transformation.
-/// This applies vibrant gradients, glowing shadows, and playful styling.
-const String gameyThemeName = '🎮 Gamey';
-
-/// Set of special theme names that require custom handling.
-/// These themes are not direct FlexScheme mappings.
-const Set<String> specialThemes = {gameyThemeName};
-
-/// Base FlexScheme to use for special themes (gamey uses blueWhale as base).
-const FlexScheme gameyBaseScheme = FlexScheme.blueWhale;
-
-/// Standard FlexScheme themes available for selection.
+/// Available FlexScheme themes for selection.
 final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
@@ -49,16 +38,12 @@ final Map<String, FlexScheme> themes = {
   'Money': FlexScheme.money,
 };
 
-/// All available theme names (special + standard).
-List<String> get allThemeNames => [...specialThemes, ...themes.keys];
+/// All available theme names.
+List<String> get allThemeNames => themes.keys.toList();
 
-/// Check if a theme name is valid (either special or standard).
+/// Check if a theme name is valid.
 bool isValidThemeName(String? themeName) =>
-    themeName != null &&
-    (specialThemes.contains(themeName) || themes.containsKey(themeName));
+    themeName != null && themes.containsKey(themeName);
 
 /// Default theme name used when no theme is configured.
 const String defaultThemeName = 'Grey Law';
-
-/// Check if a theme name is the gamey theme
-bool isGameyTheme(String? themeName) => themeName == gameyThemeName;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/themes/gamey/glows.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Modal dialog for selecting category icons from the available set.
@@ -99,10 +98,15 @@ class CategoryIconPicker extends StatelessWidget {
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: isSelected
-                            ? GameyGlows.iconGlow(
-                                context.colorScheme.primary,
-                                isActive: true,
-                              )
+                            ? [
+                                BoxShadow(
+                                  color: context.colorScheme.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
                             : [
                                 BoxShadow(
                                   color: context.colorScheme.shadow.withValues(

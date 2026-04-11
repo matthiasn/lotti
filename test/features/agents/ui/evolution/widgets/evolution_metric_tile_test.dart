@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_metric_tile.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -13,7 +13,7 @@ void main() {
     String label = 'Success Rate',
     String value = '80%',
     IconData icon = Icons.check_circle_outline_rounded,
-    Color accentColor = GameyColors.primaryGreen,
+    Color accentColor = AgentPalette.cyan,
     double? progress,
   }) {
     return makeTestableWidgetWithScaffold(
@@ -45,7 +45,7 @@ void main() {
       final icon = tester.widget<Icon>(
         find.byIcon(Icons.check_circle_outline_rounded),
       );
-      expect(icon.color, GameyColors.primaryGreen);
+      expect(icon.color, AgentPalette.cyan);
     });
 
     testWidgets('shows circular progress indicator when progress is set', (

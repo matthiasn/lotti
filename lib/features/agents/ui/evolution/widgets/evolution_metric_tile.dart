@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/gamey/colors.dart';
-import 'package:lotti/themes/gamey/gradients.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// A single metric card in the evolution dashboard header.
@@ -13,7 +12,7 @@ class EvolutionMetricTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.accentColor = GameyColors.aiCyan,
+    this.accentColor = AgentPalette.cyan,
     this.progress,
     super.key,
   });
@@ -29,7 +28,7 @@ class EvolutionMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ModernBaseCard(
-      gradient: GameyGradients.cardDark(accentColor),
+      gradient: agentCardDarkGradient(accentColor),
       customShadows: [
         BoxShadow(
           color: accentColor.withValues(alpha: 0.1),

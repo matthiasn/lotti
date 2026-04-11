@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Returns the localized label for a [FeedbackCategory].
 String feedbackCategoryLabel(BuildContext context, FeedbackCategory category) {
@@ -21,12 +21,12 @@ String feedbackCategoryLabel(BuildContext context, FeedbackCategory category) {
 /// Returns the color associated with a [FeedbackCategory].
 Color feedbackCategoryColor(FeedbackCategory category) {
   return switch (category) {
-    FeedbackCategory.accuracy => GameyColors.primaryBlue,
-    FeedbackCategory.communication => GameyColors.aiCyan,
-    FeedbackCategory.prioritization => GameyColors.primaryPurple,
-    FeedbackCategory.tooling => GameyColors.primaryOrange,
-    FeedbackCategory.timeliness => GameyColors.taskYellow,
-    FeedbackCategory.general => GameyColors.silverReward,
+    FeedbackCategory.accuracy => AgentPalette.blue,
+    FeedbackCategory.communication => AgentPalette.cyan,
+    FeedbackCategory.prioritization => AgentPalette.purple,
+    FeedbackCategory.tooling => AgentPalette.orange,
+    FeedbackCategory.timeliness => AgentPalette.yellow,
+    FeedbackCategory.general => AgentPalette.silver,
   };
 }
 
@@ -45,8 +45,8 @@ IconData feedbackCategoryIcon(FeedbackCategory category) {
 /// Returns the color associated with a [FeedbackSentiment].
 Color feedbackSentimentColor(FeedbackSentiment sentiment) {
   return switch (sentiment) {
-    FeedbackSentiment.negative => GameyColors.primaryRed,
-    FeedbackSentiment.positive => GameyColors.primaryGreen,
-    FeedbackSentiment.neutral => GameyColors.primaryOrange,
+    FeedbackSentiment.negative => AgentPalette.red,
+    FeedbackSentiment.positive => AgentPalette.green,
+    FeedbackSentiment.neutral => AgentPalette.orange,
   };
 }

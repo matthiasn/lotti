@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 class ThinkingDisclosure extends StatefulWidget {
   const ThinkingDisclosure({
@@ -85,7 +85,8 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: GameyColors.aiCyan.withValues(alpha: 0.15),
+                    color: context.designTokens.colors.interactive.enabled
+                        .withValues(alpha: 0.15),
                   ),
                 ),
                 child: SelectionArea(

@@ -10,7 +10,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/search/index.dart';
 
@@ -59,9 +58,9 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         ],
       ),
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: GameyFab(
+        child: FloatingActionButton(
           onPressed: () => beamToNamed('/settings/labels/create'),
-          semanticLabel: context.messages.settingsLabelsCreateTitle,
+          tooltip: context.messages.settingsLabelsCreateTitle,
           child: const Icon(Icons.add),
         ),
       ),

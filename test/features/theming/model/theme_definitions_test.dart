@@ -4,69 +4,7 @@ import 'package:lotti/features/theming/model/theme_definitions.dart';
 
 void main() {
   group('Theme Definitions', () {
-    group('gameyThemeName constant', () {
-      test('has expected value', () {
-        expect(gameyThemeName, equals('🎮 Gamey'));
-      });
-
-      test('is in specialThemes set', () {
-        expect(specialThemes.contains(gameyThemeName), isTrue);
-      });
-
-      test('is a valid theme name', () {
-        expect(isValidThemeName(gameyThemeName), isTrue);
-      });
-    });
-
-    group('specialThemes set', () {
-      test('contains gamey theme', () {
-        expect(specialThemes, contains(gameyThemeName));
-      });
-
-      test('has expected size', () {
-        expect(specialThemes.length, equals(1));
-      });
-    });
-
-    group('gameyBaseScheme constant', () {
-      test('is blueWhale', () {
-        expect(gameyBaseScheme, equals(FlexScheme.blueWhale));
-      });
-    });
-
-    group('isGameyTheme function', () {
-      test('returns true for gamey theme name', () {
-        expect(isGameyTheme(gameyThemeName), isTrue);
-        expect(isGameyTheme('🎮 Gamey'), isTrue);
-      });
-
-      test('returns false for standard theme names', () {
-        expect(isGameyTheme('Grey Law'), isFalse);
-        expect(isGameyTheme('Material'), isFalse);
-        expect(isGameyTheme('Deep Blue'), isFalse);
-        expect(isGameyTheme('Indigo'), isFalse);
-      });
-
-      test('returns false for null', () {
-        expect(isGameyTheme(null), isFalse);
-      });
-
-      test('returns false for empty string', () {
-        expect(isGameyTheme(''), isFalse);
-      });
-
-      test('returns false for non-existent theme names', () {
-        expect(isGameyTheme('NonExistent'), isFalse);
-        expect(isGameyTheme('Gamey'), isFalse); // Missing emoji
-        expect(isGameyTheme('gamey'), isFalse); // Case sensitive
-      });
-    });
-
     group('isValidThemeName function', () {
-      test('returns true for special themes', () {
-        expect(isValidThemeName(gameyThemeName), isTrue);
-      });
-
       test('returns true for standard themes', () {
         expect(isValidThemeName('Grey Law'), isTrue);
         expect(isValidThemeName('Material'), isTrue);
@@ -84,10 +22,6 @@ void main() {
     });
 
     group('allThemeNames getter', () {
-      test('includes special themes first', () {
-        expect(allThemeNames.first, equals(gameyThemeName));
-      });
-
       test('includes all standard themes', () {
         for (final themeName in themes.keys) {
           expect(allThemeNames, contains(themeName));
@@ -95,10 +29,7 @@ void main() {
       });
 
       test('has correct total count', () {
-        expect(
-          allThemeNames.length,
-          equals(specialThemes.length + themes.length),
-        );
+        expect(allThemeNames.length, equals(themes.length));
       });
     });
 
@@ -131,9 +62,13 @@ void main() {
         }
       });
 
-      test('does not contain special themes', () {
-        for (final specialTheme in specialThemes) {
-          expect(themes.containsKey(specialTheme), isFalse);
+      test('all themes are valid FlexScheme values', () {
+        for (final entry in themes.entries) {
+          expect(
+            entry.value,
+            isA<FlexScheme>(),
+            reason: '${entry.key} should be a FlexScheme',
+          );
         }
       });
     });
