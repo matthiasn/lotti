@@ -193,7 +193,8 @@ The controller owns:
 - feature-flag gating for entry types and vector search
 - private-entry visibility
 - persisted filter state in `SettingsDb`
-- update-driven refresh behavior
+- update-driven refresh behavior, including retained first-page refreshes that
+  keep visible rows mounted until replacement data resolves
 - vector-search timing and distance metadata for the UI
 
 ### Browse and Search Flow
@@ -216,6 +217,11 @@ flowchart TD
   Updates["Throttled UpdateNotifications"] --> Refresh["Refresh if page is visible\nand affected IDs matter"]
   Refresh --> Paging
 ```
+
+When a visible browse page already has rows on screen, the controller now
+replaces the first page only after the new first-page query resolves. That
+avoids the `PagingController.reset()` path that would otherwise clear the list
+immediately and produce a visible desktop flicker during saves or live updates.
 
 ### What The Page Controller Persists
 

@@ -126,6 +126,10 @@ void main() {
     expect(find.byType(TasksTabPage), findsOneWidget);
     expect(find.byType(DesktopDetailEmptyState), findsNothing);
     expect(find.byType(TaskDetailsPage), findsOneWidget);
+    expect(
+      tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
+      const ValueKey('task-42'),
+    );
 
     // Dispose the widget tree and flush pending timers from
     // flutter_animate inside the detail page.

@@ -76,6 +76,11 @@ The redesigned tasks tab is an in-place browse-page migration, not a new query s
 
 `TasksTabPage` still reads from `JournalPageController(showTasks: true)` and still uses the journal feature's existing infinite paging path. The redesign only swaps the browse presentation layer on top of that controller.
 
+In desktop split-pane mode, `TasksRootPage` keeps the list pane mounted while
+the detail pane is keyed by the selected task ID. That gives each task detail
+surface its own state lifetime instead of reusing the previous task's
+stateful page internals across selection changes.
+
 At runtime the browse page does three specific things:
 
 1. it converts paged `JournalEntity` results into `TaskBrowseEntry` rows via `buildTaskBrowseEntries`

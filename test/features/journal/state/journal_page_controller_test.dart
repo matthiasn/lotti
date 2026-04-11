@@ -2100,6 +2100,412 @@ void main() {
       });
     });
 
+    group('Refresh Behavior', () {
+      test(
+        'refreshQuery keeps visible first-page items until replacement data arrives',
+        () {
+          fakeAsync((async) {
+            final initialTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Initial task',
+                status: TaskStatus.open(
+                  id: 'status-initial',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshedTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate.add(const Duration(minutes: 1)),
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Refreshed task',
+                status: TaskStatus.open(
+                  id: 'status-refreshed',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshCompleter = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              if (getTasksCallCount == 2) {
+                return refreshCompleter.future;
+              }
+              return Future.value([refreshedTask]);
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isTrue);
+
+            refreshCompleter.complete([refreshedTask]);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([refreshedTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+
+      test(
+        'refreshQuery without preserveVisibleItems does full refresh — '
+        'items are transiently cleared',
+        () {
+          fakeAsync((async) {
+            final initialTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Initial task',
+                status: TaskStatus.open(
+                  id: 'status-initial',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshedTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-2',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Refreshed task',
+                status: TaskStatus.open(
+                  id: 'status-refreshed',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshCompleter = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              return refreshCompleter.future;
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            // Default refreshQuery (preserveVisibleItems: false) triggers
+            // a full refresh — items are transiently cleared.
+            unawaited(controller.refreshQuery());
+            async.flushMicrotasks();
+
+            // Items are cleared during full refresh (unlike retained refresh)
+            expect(state.pagingController?.value.items, isNull);
+
+            // Complete the refresh query
+            refreshCompleter.complete([refreshedTask]);
+            async.flushMicrotasks();
+
+            // Items are now repopulated with the new data
+            expect(
+              state.pagingController?.value.items,
+              equals([refreshedTask]),
+            );
+          });
+        },
+      );
+
+      test(
+        'refreshQuery with preserveVisibleItems handles query error '
+        'by restoring offset and setting error state',
+        () {
+          fakeAsync((async) {
+            final initialTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Initial task',
+                status: TaskStatus.open(
+                  id: 'status-initial',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              // Second call (the retained refresh) throws
+              return Future<List<JournalEntity>>.error(
+                Exception('DB error'),
+              );
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            // Trigger retained refresh that will fail
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // After error, old items remain visible
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+            // Error is set on the paging state
+            expect(state.pagingController?.value.error, isA<Exception>());
+            // Loading is finished
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+
+      test(
+        'finishRetainedRefreshWithError is no-op when refresh token '
+        'does not match',
+        () {
+          fakeAsync((async) {
+            final initialTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Initial task',
+                status: TaskStatus.open(
+                  id: 'status-initial',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final firstRefreshCompleter = Completer<List<JournalEntity>>();
+            final secondRefreshCompleter = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              if (getTasksCallCount == 2) {
+                return firstRefreshCompleter.future;
+              }
+              return secondRefreshCompleter.future;
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            // Start first retained refresh
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // Start second retained refresh — supersedes first
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // First refresh completes with error — should be ignored
+            // because its token no longer matches
+            firstRefreshCompleter.completeError(Exception('stale'));
+            async.flushMicrotasks();
+
+            // Items still visible, no error set (stale error was ignored)
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isTrue);
+
+            // Second refresh succeeds
+            final updatedTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-2',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Updated task',
+                status: TaskStatus.open(
+                  id: 'status-updated',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            secondRefreshCompleter.complete([updatedTask]);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([updatedTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+            expect(state.pagingController?.value.error, isNull);
+          });
+        },
+      );
+    });
+
     group('Visibility Edge Cases', () {
       test('does not refresh when transitioning from visible to invisible', () {
         fakeAsync((async) {

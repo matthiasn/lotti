@@ -176,7 +176,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   PagingController<int, JournalEntity> _createPagingController() {
-    return PagingController<int, JournalEntity>(
+    return _JournalPagingController(
       getNextPageKey: (PagingState<int, JournalEntity> pagingState) {
         final currentKeys = pagingState.keys;
         if (currentKeys == null || currentKeys.isEmpty) {
@@ -215,6 +215,47 @@ class JournalPageController extends _$JournalPageController {
       },
       fetchPage: _fetchPage,
     );
+  }
+
+  Future<void> _refreshFirstPagePreservingVisibleItems(
+    _JournalPagingController pagingController,
+  ) async {
+    final refreshToken = Object();
+    final previousPostFilterNextRawOffset = _postFilterNextRawOffset;
+    pagingController.startRetainedRefresh(refreshToken);
+    _postFilterNextRawOffset = null;
+
+    try {
+      final items = await _runQuery(0);
+      // _runQuery mutates _postFilterNextRawOffset as a side effect.
+      // Capture locally and restore; only publish if this refresh is
+      // still current, so a slower stale query cannot overwrite a
+      // newer offset.
+      final localNextRawOffset = _postFilterNextRawOffset;
+      _postFilterNextRawOffset = previousPostFilterNextRawOffset;
+
+      if (!ref.mounted || !pagingController.isRetainedRefresh(refreshToken)) {
+        return;
+      }
+
+      pagingController.replaceFirstPage(items, pageSize: pageSize);
+      _postFilterNextRawOffset = localNextRawOffset;
+    } catch (error, stackTrace) {
+      DevLogger.warning(
+        name: 'JournalPageController',
+        message: 'Error in retained first-page refresh: $error\n$stackTrace',
+      );
+      if (!ref.mounted) {
+        return;
+      }
+      pagingController.finishRetainedRefreshWithError(
+        error,
+        refreshToken: refreshToken,
+      );
+      if (error is! Exception) {
+        rethrow;
+      }
+    }
   }
 
   void _setupSubscriptions(bool showTasks) {
@@ -316,7 +357,9 @@ class JournalPageController extends _$JournalPageController {
               _emitState();
 
               if (shouldRefreshAfterModeFallback) {
-                unawaited(refreshQuery());
+                unawaited(
+                  refreshQuery(preserveVisibleItems: true),
+                );
               }
 
               // Only persist if selection actually changed
@@ -348,13 +391,13 @@ class JournalPageController extends _$JournalPageController {
               _postFilterNextRawOffset = savedOffset;
               if (!setEquals(_lastIds, newIds)) {
                 _lastIds = newIds;
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               }
             } else {
               if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               }
             }
           } else {
@@ -371,7 +414,7 @@ class JournalPageController extends _$JournalPageController {
           modifiers: [HotKeyModifier.meta],
           scope: HotKeyScope.inapp,
         ),
-        keyDownHandler: (hotKey) => refreshQuery(),
+        keyDownHandler: (hotKey) => refreshQuery(preserveVisibleItems: true),
       );
     }
   }
@@ -799,12 +842,13 @@ class JournalPageController extends _$JournalPageController {
     await refreshQuery();
   }
 
-  Future<void> refreshQuery() async {
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
     _cachedAgentLinkedIds = null;
 
     _emitState();
 
-    if (state.pagingController == null) {
+    final pagingController = state.pagingController;
+    if (pagingController == null) {
       DevLogger.warning(
         name: 'JournalPageController',
         message: 'refreshQuery called but pagingController is null',
@@ -812,15 +856,23 @@ class JournalPageController extends _$JournalPageController {
       return;
     }
 
-    state.pagingController!.refresh();
-    state.pagingController!.fetchNextPage();
+    if (preserveVisibleItems &&
+        pagingController is _JournalPagingController &&
+        pagingController.hasVisibleItems) {
+      await _refreshFirstPagePreservingVisibleItems(pagingController);
+      return;
+    }
+
+    pagingController
+      ..refresh()
+      ..fetchNextPage();
   }
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
     final isVisible = visibilityInfo.visibleBounds.size.width > 0;
     if (!_isVisible && isVisible && _needsRefreshOnVisible) {
       _needsRefreshOnVisible = false;
-      refreshQuery();
+      refreshQuery(preserveVisibleItems: true);
     }
     _isVisible = isVisible;
   }
@@ -1113,4 +1165,48 @@ class JournalPageController extends _$JournalPageController {
   bool get enableDashboards => _enableDashboards;
   bool get enableVectorSearchInternal => _enableVectorSearch;
   SearchMode get searchModeInternal => _searchMode;
+}
+
+class _JournalPagingController extends PagingController<int, JournalEntity> {
+  _JournalPagingController({
+    required super.getNextPageKey,
+    required super.fetchPage,
+  });
+
+  bool get hasVisibleItems =>
+      value.pages?.any((page) => page.isNotEmpty) ?? false;
+
+  void startRetainedRefresh(Object refreshToken) {
+    operation = refreshToken;
+    value = value.copyWith(
+      error: null,
+      isLoading: true,
+    );
+  }
+
+  bool isRetainedRefresh(Object refreshToken) => operation == refreshToken;
+
+  void replaceFirstPage(List<JournalEntity> items, {required int pageSize}) {
+    value = PagingState<int, JournalEntity>(
+      pages: [items],
+      keys: const [0],
+      hasNextPage: items.length == pageSize,
+    );
+    operation = null;
+  }
+
+  void finishRetainedRefreshWithError(
+    Object error, {
+    required Object refreshToken,
+  }) {
+    if (operation != refreshToken) {
+      return;
+    }
+
+    value = value.copyWith(
+      error: error,
+      isLoading: false,
+    );
+    operation = null;
+  }
 }

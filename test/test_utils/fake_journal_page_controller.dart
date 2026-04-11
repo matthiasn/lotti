@@ -200,7 +200,7 @@ class FakeJournalPageController extends JournalPageController {
   }
 
   @override
-  Future<void> refreshQuery() async {
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
     refreshQueryCalled++;
   }
 

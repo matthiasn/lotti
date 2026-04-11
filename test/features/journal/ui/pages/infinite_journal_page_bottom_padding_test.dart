@@ -26,7 +26,7 @@ class _FakeJournalPageController extends JournalPageController {
   JournalPageState get state => _testState;
 
   @override
-  Future<void> refreshQuery() async {}
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {}
 
   @override
   void updateVisibility(VisibilityInfo info) {}
