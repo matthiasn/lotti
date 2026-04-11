@@ -176,7 +176,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   PagingController<int, JournalEntity> _createPagingController() {
-    return PagingController<int, JournalEntity>(
+    return _JournalPagingController(
       getNextPageKey: (PagingState<int, JournalEntity> pagingState) {
         final currentKeys = pagingState.keys;
         if (currentKeys == null || currentKeys.isEmpty) {
@@ -215,6 +215,37 @@ class JournalPageController extends _$JournalPageController {
       },
       fetchPage: _fetchPage,
     );
+  }
+
+  Future<void> _refreshFirstPagePreservingVisibleItems(
+    _JournalPagingController pagingController,
+  ) async {
+    final refreshToken = Object();
+    pagingController.startRetainedRefresh(refreshToken);
+    _postFilterNextRawOffset = null;
+
+    try {
+      final items = await _runQuery(0);
+      if (!ref.mounted || !pagingController.isRetainedRefresh(refreshToken)) {
+        return;
+      }
+
+      pagingController.replaceFirstPage(items, pageSize: pageSize);
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        print('Error in retained first-page refresh: $error\n$stackTrace');
+      }
+      if (!ref.mounted) {
+        return;
+      }
+      pagingController.finishRetainedRefreshWithError(
+        error,
+        refreshToken: refreshToken,
+      );
+      if (error is! Exception) {
+        rethrow;
+      }
+    }
   }
 
   void _setupSubscriptions(bool showTasks) {
@@ -804,7 +835,8 @@ class JournalPageController extends _$JournalPageController {
 
     _emitState();
 
-    if (state.pagingController == null) {
+    final pagingController = state.pagingController;
+    if (pagingController == null) {
       DevLogger.warning(
         name: 'JournalPageController',
         message: 'refreshQuery called but pagingController is null',
@@ -812,8 +844,15 @@ class JournalPageController extends _$JournalPageController {
       return;
     }
 
-    state.pagingController!.refresh();
-    state.pagingController!.fetchNextPage();
+    if (pagingController is _JournalPagingController &&
+        pagingController.hasVisibleItems) {
+      await _refreshFirstPagePreservingVisibleItems(pagingController);
+      return;
+    }
+
+    pagingController
+      ..refresh()
+      ..fetchNextPage();
   }
 
   void updateVisibility(VisibilityInfo visibilityInfo) {
@@ -1113,4 +1152,48 @@ class JournalPageController extends _$JournalPageController {
   bool get enableDashboards => _enableDashboards;
   bool get enableVectorSearchInternal => _enableVectorSearch;
   SearchMode get searchModeInternal => _searchMode;
+}
+
+class _JournalPagingController extends PagingController<int, JournalEntity> {
+  _JournalPagingController({
+    required super.getNextPageKey,
+    required super.fetchPage,
+  });
+
+  bool get hasVisibleItems =>
+      value.pages?.any((page) => page.isNotEmpty) ?? false;
+
+  void startRetainedRefresh(Object refreshToken) {
+    operation = refreshToken;
+    value = value.copyWith(
+      error: null,
+      isLoading: true,
+    );
+  }
+
+  bool isRetainedRefresh(Object refreshToken) => operation == refreshToken;
+
+  void replaceFirstPage(List<JournalEntity> items, {required int pageSize}) {
+    value = PagingState<int, JournalEntity>(
+      pages: [items],
+      keys: const [0],
+      hasNextPage: items.length == pageSize,
+    );
+    operation = null;
+  }
+
+  void finishRetainedRefreshWithError(
+    Object error, {
+    required Object refreshToken,
+  }) {
+    if (operation != refreshToken) {
+      return;
+    }
+
+    value = value.copyWith(
+      error: error,
+      isLoading: false,
+    );
+    operation = null;
+  }
 }

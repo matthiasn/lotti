@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   navigation sidebar and content area, and between the list and detail panes,
   to adjust widths. Pane sizes persist across sessions via SettingsDb.
 
+### Fixed
+- Tasks desktop split view now keeps the current list rows mounted until the
+  refreshed first page resolves, which reduces visible flicker during task
+  saves and other live updates.
+
 ## [0.9.949] - 2026-04-10
 ### Changed
 - Redesigned dashboard list page: removed the old SliverAppBar top bar,

@@ -42,7 +42,10 @@ class TasksRootPage extends ConsumerWidget {
               valueListenable: getIt<NavService>().desktopSelectedTaskId,
               builder: (context, selectedTaskId, _) {
                 if (selectedTaskId != null) {
-                  return TaskDetailsPage(taskId: selectedTaskId);
+                  return TaskDetailsPage(
+                    key: ValueKey(selectedTaskId),
+                    taskId: selectedTaskId,
+                  );
                 }
                 return DesktopDetailEmptyState(
                   message: context.messages.desktopEmptyStateSelectTask,

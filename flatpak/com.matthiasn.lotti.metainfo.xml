@@ -35,6 +35,7 @@
       <description>
           <p>Removed the gamey theme and all gamey-styled widgets. Standard Flutter widgets and existing modern cards are used instead.</p>
           <p>Resizable panes in desktop layout: drag dividers between the navigation sidebar and content area, and between the list and detail panes, to adjust widths. Pane sizes persist across sessions.</p>
+          <p>Tasks desktop split view now keeps the current list rows mounted until the refreshed first page resolves, which reduces visible flicker during task saves and other live updates.</p>
       </description>
     </release>
     <release version="0.9.949" date="2026-04-10">

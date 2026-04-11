@@ -2100,6 +2100,111 @@ void main() {
       });
     });
 
+    group('Refresh Behavior', () {
+      test(
+        'refreshQuery keeps visible first-page items until replacement data arrives',
+        () {
+          fakeAsync((async) {
+            final initialTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Initial task',
+                status: TaskStatus.open(
+                  id: 'status-initial',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshedTask = JournalEntity.task(
+              meta: Metadata(
+                id: 'task-1',
+                createdAt: _testDate,
+                updatedAt: _testDate.add(const Duration(minutes: 1)),
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              data: TaskData(
+                dateFrom: _testDate,
+                dateTo: _testDate,
+                statusHistory: const [],
+                title: 'Refreshed task',
+                status: TaskStatus.open(
+                  id: 'status-refreshed',
+                  createdAt: _testDate,
+                  utcOffset: 0,
+                ),
+              ),
+            );
+            final refreshCompleter = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              if (getTasksCallCount == 2) {
+                return refreshCompleter.future;
+              }
+              return Future.value([refreshedTask]);
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            unawaited(controller.refreshQuery());
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isTrue);
+
+            refreshCompleter.complete([refreshedTask]);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([refreshedTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+    });
+
     group('Visibility Edge Cases', () {
       test('does not refresh when transitioning from visible to invisible', () {
         fakeAsync((async) {
