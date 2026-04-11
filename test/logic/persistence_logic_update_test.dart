@@ -33,6 +33,7 @@ class TestPersistenceLogic extends PersistenceLogic {
     String? linkedId,
     bool enqueueSync,
     bool overrideComparison,
+    Future<void> Function()? beforeNotify,
   })?
   updateDbEntityHandler;
   int updateMetadataCalls = 0;
@@ -68,6 +69,7 @@ class TestPersistenceLogic extends PersistenceLogic {
     String? linkedId,
     bool enqueueSync = true,
     bool overrideComparison = false,
+    Future<void> Function()? beforeNotify,
   }) async {
     lastUpdateDbEntity = journalEntity;
     if (updateDbEntityHandler != null) {
@@ -76,6 +78,7 @@ class TestPersistenceLogic extends PersistenceLogic {
         linkedId: linkedId,
         enqueueSync: enqueueSync,
         overrideComparison: overrideComparison,
+        beforeNotify: beforeNotify,
       );
     }
     return super.updateDbEntity(
@@ -83,6 +86,7 @@ class TestPersistenceLogic extends PersistenceLogic {
       linkedId: linkedId,
       enqueueSync: enqueueSync,
       overrideComparison: overrideComparison,
+      beforeNotify: beforeNotify,
     );
   }
 }
@@ -174,6 +178,13 @@ void main() {
     when(
       () => journalDb.parentLinkedEntityIds(any<String>()),
     ).thenReturn(MockSelectable<String>([]));
+    when(
+      () => journalDb.updateTaskPriorityColumn(
+        id: any(named: 'id'),
+        priority: any(named: 'priority'),
+        rank: any(named: 'rank'),
+      ),
+    ).thenAnswer((_) async {});
 
     getIt
       ..registerSingleton<JournalDb>(journalDb)
@@ -203,6 +214,37 @@ void main() {
     verify(() => outboxService.enqueueMessage(any<SyncMessage>())).called(1);
     verify(() => updateNotifications.notify(any<Set<String>>())).called(1);
   });
+
+  test(
+    'updateDbEntity logs beforeNotify failures and still propagates changes',
+    () async {
+      stubUpdateResult(JournalUpdateResult.applied());
+
+      final result = await logic.updateDbEntity(
+        buildEntry(),
+        beforeNotify: () async => throw Exception('beforeNotify failed'),
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'persistence_logic',
+          subDomain: 'updateDbEntity.beforeNotify',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      verify(() => updateNotifications.notify(any<Set<String>>())).called(1);
+      verify(() => outboxService.enqueueMessage(any<SyncMessage>())).called(1);
+      verify(
+        () => fts5Db.insertText(
+          any<JournalEntity>(),
+          removePrevious: true,
+        ),
+      ).called(1);
+      verify(notificationService.updateBadge).called(1);
+    },
+  );
 
   test('updateDbEntity returns false when update skipped', () async {
     stubUpdateResult(
@@ -286,6 +328,7 @@ void main() {
                 linkedId,
                 enqueueSync = true,
                 overrideComparison = false,
+                beforeNotify,
               }) async => true,
         );
 
@@ -314,6 +357,7 @@ void main() {
                 linkedId,
                 enqueueSync = true,
                 overrideComparison = false,
+                beforeNotify,
               }) async => false,
         );
 
@@ -324,6 +368,117 @@ void main() {
 
         expect(skipped, isFalse);
         verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
+      },
+    );
+
+    test(
+      'updates task priority columns before notifying listeners for task updates',
+      () async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final callOrder = <String>[];
+        Set<String>? notifiedIds;
+        final task = Task(
+          meta: Metadata(
+            id: 'task-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: testDate,
+              utcOffset: 60,
+            ),
+            title: 'task',
+            statusHistory: const [],
+            dateTo: testDate,
+            dateFrom: testDate,
+            priority: TaskPriority.p0Urgent,
+          ),
+        );
+
+        when(() => journalDb.journalEntityById('task-id')).thenAnswer(
+          (_) async => task,
+        );
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.updateTaskPriorityColumn(
+            id: 'task-id',
+            priority: 'P1',
+            rank: 1,
+          ),
+        ).thenAnswer((_) async {
+          callOrder.add('priority-column');
+        });
+        when(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        ).thenAnswer((invocation) {
+          callOrder.add('notify');
+          notifiedIds = invocation.positionalArguments.first as Set<String>;
+        });
+
+        final updatedTask = task.copyWith(
+          data: task.data.copyWith(priority: TaskPriority.p1High),
+        );
+        final result = await logic.updateJournalEntity(
+          updatedTask,
+          updatedTask.meta,
+        );
+
+        expect(result, isTrue);
+        expect(callOrder, equals(['priority-column', 'notify']));
+        expect(notifiedIds, contains('task-id'));
+      },
+    );
+
+    test(
+      'skips task priority column updates when updateJournalEntity keeps priority unchanged',
+      () async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final task = Task(
+          meta: Metadata(
+            id: 'task-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: testDate,
+              utcOffset: 60,
+            ),
+            title: 'task',
+            statusHistory: const [],
+            dateTo: testDate,
+            dateFrom: testDate,
+            priority: TaskPriority.p1High,
+          ),
+        );
+
+        when(
+          () => journalDb.journalEntityById('task-id'),
+        ).thenAnswer((_) async => task);
+        stubUpdateResult(JournalUpdateResult.applied());
+
+        final result = await logic.updateJournalEntity(task, task.meta);
+
+        expect(result, isTrue);
+        verifyNever(
+          () => journalDb.updateTaskPriorityColumn(
+            id: any(named: 'id'),
+            priority: any(named: 'priority'),
+            rank: any(named: 'rank'),
+          ),
+        );
       },
     );
   });
@@ -396,6 +551,7 @@ void main() {
               linkedId,
               enqueueSync = true,
               overrideComparison = false,
+              beforeNotify,
             }) async => true,
       );
 
@@ -445,6 +601,7 @@ void main() {
               linkedId,
               enqueueSync = true,
               overrideComparison = false,
+              beforeNotify,
             }) async => true,
       );
 
@@ -509,6 +666,74 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('updateTask', () {
+    test(
+      'updates priority columns before notifying listeners for priority changes',
+      () async {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        final callOrder = <String>[];
+        Set<String>? notifiedIds;
+        final task = Task(
+          meta: Metadata(
+            id: 'task-id',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            vectorClock: const VectorClock({'host': 1}),
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: testDate,
+              utcOffset: 60,
+            ),
+            title: 'task',
+            statusHistory: const [],
+            dateTo: testDate,
+            dateFrom: testDate,
+            priority: TaskPriority.p1High,
+          ),
+        );
+
+        when(
+          () => journalDb.journalEntityById('task-id'),
+        ).thenAnswer((_) async => task);
+        stubUpdateResult(JournalUpdateResult.applied());
+        when(
+          () => journalDb.updateTaskPriorityColumn(
+            id: 'task-id',
+            priority: 'P0',
+            rank: 0,
+          ),
+        ).thenAnswer((_) async {
+          callOrder.add('priority-column');
+        });
+        when(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        ).thenAnswer((invocation) {
+          callOrder.add('notify');
+          notifiedIds = invocation.positionalArguments.first as Set<String>;
+        });
+
+        final updatedTaskData = task.data.copyWith(
+          priority: TaskPriority.p0Urgent,
+        );
+
+        await logic.updateTask(
+          journalEntityId: 'task-id',
+          taskData: updatedTaskData,
+        );
+
+        expect(callOrder, equals(['priority-column', 'notify']));
+        expect(notifiedIds, contains('task-id'));
+      },
+    );
   });
 
   group('updateEvent - orElse path', () {

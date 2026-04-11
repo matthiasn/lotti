@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to adjust widths. Pane sizes persist across sessions via SettingsDb.
 
 ### Fixed
-- Tasks desktop split view now keeps the current list rows mounted until the
-  refreshed first page resolves, which reduces visible flicker during task
-  saves and other live updates.
+- Tasks desktop split view now keeps the current loaded list window mounted
+  until refreshed pages resolve, which reduces visible flicker during task
+  saves and other live updates while preserving regrouping after sort changes.
 
 ## [0.9.949] - 2026-04-10
 ### Changed

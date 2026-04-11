@@ -38,7 +38,6 @@ class JournalPageController extends _$JournalPageController {
   static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
   static const pageSize = 50;
-
   // Services (via GetIt)
   late final JournalDb _db;
   late final SettingsDb _settingsDb;
@@ -177,75 +176,147 @@ class JournalPageController extends _$JournalPageController {
 
   PagingController<int, JournalEntity> _createPagingController() {
     return _JournalPagingController(
-      getNextPageKey: (PagingState<int, JournalEntity> pagingState) {
-        final currentKeys = pagingState.keys;
-        if (currentKeys == null || currentKeys.isEmpty) {
-          return 0; // First page key (offset)
-        }
-        if (!pagingState.hasNextPage) {
-          return null; // No next page if controller says so
-        }
-        final currentPages = pagingState.pages;
-        // If last page had fewer items than pageSize, it's the last page
-        if (currentPages != null &&
-            currentPages.isNotEmpty &&
-            currentPages.last.length < pageSize) {
-          return null; // No more pages
-        }
-        // When post-filters consumed more raw rows than returned filtered
-        // results, use the tracked raw offset so we don't re-read rows.
-        if (_postFilterNextRawOffset != null) {
-          final offset = _postFilterNextRawOffset!;
-          _postFilterNextRawOffset = null;
-          return offset;
-        }
-        if (currentPages != null &&
-            currentPages.isNotEmpty &&
-            currentKeys.length == currentPages.length) {
-          final lastFetchedItemsCount = currentPages.last.length;
-          return currentKeys.last + lastFetchedItemsCount;
-        }
-        // Fallback: if keys exist but pages inconsistent or last page empty.
-        return currentKeys.last +
-            ((currentPages != null &&
-                    currentPages.isNotEmpty &&
-                    currentKeys.length == currentPages.length)
-                ? currentPages.last.length
-                : 0);
-      },
+      getNextPageKey: _getNextPageKey,
       fetchPage: _fetchPage,
     );
   }
 
-  Future<void> _refreshFirstPagePreservingVisibleItems(
+  int? _getNextPageKey(
+    PagingState<int, JournalEntity> pagingState, {
+    bool consumePostFilterOffset = true,
+  }) {
+    final currentKeys = pagingState.keys;
+    if (currentKeys == null || currentKeys.isEmpty) {
+      return 0; // First page key (offset)
+    }
+    if (!pagingState.hasNextPage) {
+      return null; // No next page if controller says so
+    }
+    final currentPages = pagingState.pages;
+    // If last page had fewer items than pageSize, it's the last page
+    if (currentPages != null &&
+        currentPages.isNotEmpty &&
+        currentPages.last.length < pageSize) {
+      return null; // No more pages
+    }
+    // When post-filters consumed more raw rows than returned filtered
+    // results, use the tracked raw offset so we don't re-read rows.
+    if (_postFilterNextRawOffset != null) {
+      final offset = _postFilterNextRawOffset!;
+      if (consumePostFilterOffset) {
+        _postFilterNextRawOffset = null;
+      }
+      return offset;
+    }
+    if (currentPages != null &&
+        currentPages.isNotEmpty &&
+        currentKeys.length == currentPages.length) {
+      final lastFetchedItemsCount = currentPages.last.length;
+      return currentKeys.last + lastFetchedItemsCount;
+    }
+    // Fallback: if keys exist but pages inconsistent or last page empty.
+    return currentKeys.last +
+        ((currentPages != null &&
+                currentPages.isNotEmpty &&
+                currentKeys.length == currentPages.length)
+            ? currentPages.last.length
+            : 0);
+  }
+
+  Future<void> _refreshLoadedPagesPreservingVisibleItems(
     _JournalPagingController pagingController,
   ) async {
+    final loadedPageKeys = _loadedVisiblePageKeys(pagingController);
+    final loadedPageCount = loadedPageKeys.length;
+    if (loadedPageCount == 0) {
+      pagingController
+        ..refresh()
+        ..fetchNextPage();
+      return;
+    }
+
     final refreshToken = Object();
-    final previousPostFilterNextRawOffset = _postFilterNextRawOffset;
     pagingController.startRetainedRefresh(refreshToken);
-    _postFilterNextRawOffset = null;
 
     try {
-      final items = await _runQuery(0);
-      // _runQuery mutates _postFilterNextRawOffset as a side effect.
-      // Capture locally and restore; only publish if this refresh is
-      // still current, so a slower stale query cannot overwrite a
-      // newer offset.
-      final localNextRawOffset = _postFilterNextRawOffset;
-      _postFilterNextRawOffset = previousPostFilterNextRawOffset;
+      late final List<List<JournalEntity>> refreshedPages;
+      late final List<int> refreshedKeys;
+      int? retainedNextRawOffset;
+      if (_requiresSequentialRetainedRefresh) {
+        refreshedPages = <List<JournalEntity>>[];
+        refreshedKeys = <int>[];
+        int? nextPageKey = 0;
 
-      if (!ref.mounted || !pagingController.isRetainedRefresh(refreshToken)) {
-        return;
+        for (
+          var pageIndex = 0;
+          pageIndex < loadedPageCount && nextPageKey != null;
+          pageIndex++
+        ) {
+          final pageKey = nextPageKey;
+          refreshedKeys.add(pageKey);
+
+          final items = await _runQuery(
+            pageKey,
+            setPostFilterNextRawOffset: (value) {
+              retainedNextRawOffset = value;
+            },
+          );
+          if (!ref.mounted) {
+            return;
+          }
+          if (!pagingController.isRetainedRefresh(refreshToken)) {
+            return;
+          }
+
+          refreshedPages.add(items);
+
+          if (pageIndex < loadedPageCount - 1) {
+            nextPageKey = items.length < pageSize
+                ? null
+                : retainedNextRawOffset ?? pageKey + items.length;
+          }
+        }
+      } else {
+        refreshedKeys = loadedPageKeys;
+        refreshedPages = await Future.wait(
+          refreshedKeys.map(_runQuery),
+        );
+        if (!ref.mounted) {
+          return;
+        }
+        if (!pagingController.isRetainedRefresh(refreshToken)) {
+          return;
+        }
       }
 
-      pagingController.replaceFirstPage(items, pageSize: pageSize);
-      _postFilterNextRawOffset = localNextRawOffset;
+      final hasNextPage =
+          refreshedPages.length == loadedPageCount &&
+          refreshedPages.isNotEmpty &&
+          refreshedPages.last.length == pageSize;
+
+      _postFilterNextRawOffset =
+          _requiresSequentialRetainedRefresh && hasNextPage
+          ? retainedNextRawOffset
+          : null;
+
+      if (refreshedPages.isNotEmpty) {
+        _rememberLeadingTaskIds(refreshedPages.first);
+      }
+
+      pagingController.replacePages(
+        refreshedPages,
+        keys: refreshedKeys,
+        hasNextPage: hasNextPage,
+      );
     } catch (error, stackTrace) {
       DevLogger.warning(
         name: 'JournalPageController',
-        message: 'Error in retained first-page refresh: $error\n$stackTrace',
+        message: 'Error in retained visible-page refresh: $error\n$stackTrace',
       );
       if (!ref.mounted) {
+        return;
+      }
+      if (!pagingController.isRetainedRefresh(refreshToken)) {
         return;
       }
       pagingController.finishRetainedRefreshWithError(
@@ -368,42 +439,42 @@ class JournalPageController extends _$JournalPageController {
               }
             });
 
-    // Setup update notifications with throttling
+    // Setup update notifications
     String idMapper(JournalEntity entity) => entity.meta.id;
 
-    _updatesSub = _updateNotifications.updateStream
-        .throttleTime(
-          const Duration(milliseconds: 500),
-          leading: false,
-          trailing: true,
-        )
-        .listen((affectedIds) async {
-          if (_isVisible) {
-            final displayedIds =
-                state.pagingController?.value.items?.map(idMapper).toSet() ??
-                <String>{};
+    _updatesSub = _updateNotifications.updateStream.listen((affectedIds) async {
+      if (_isVisible) {
+        final displayedIds =
+            state.pagingController?.value.items?.map(idMapper).toSet() ??
+            <String>{};
+        final affectsDisplayedItems = displayedIds
+            .intersection(affectedIds)
+            .isNotEmpty;
 
-            if (showTasks) {
-              // Probe call: save/restore offset so the probe doesn't
-              // mutate pagination state consumed by the real fetch.
-              final savedOffset = _postFilterNextRawOffset;
-              final newIds = (await _runQuery(0)).map(idMapper).toSet();
-              _postFilterNextRawOffset = savedOffset;
-              if (!setEquals(_lastIds, newIds)) {
-                _lastIds = newIds;
-                await refreshQuery(preserveVisibleItems: true);
-              } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery(preserveVisibleItems: true);
-              }
-            } else {
-              if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery(preserveVisibleItems: true);
-              }
-            }
-          } else {
-            _needsRefreshOnVisible = true;
+        if (showTasks) {
+          if (affectsDisplayedItems) {
+            await refreshQuery(preserveVisibleItems: true);
+            return;
           }
-        });
+
+          // Probe call: save/restore offset so the probe doesn't
+          // mutate pagination state consumed by the real fetch.
+          final savedOffset = _postFilterNextRawOffset;
+          final newIds = (await _runQuery(0)).map(idMapper).toSet();
+          _postFilterNextRawOffset = savedOffset;
+          if (!setEquals(_lastIds, newIds)) {
+            _lastIds = newIds;
+            await refreshQuery(preserveVisibleItems: true);
+          }
+        } else {
+          if (affectsDisplayedItems) {
+            await refreshQuery(preserveVisibleItems: true);
+          }
+        }
+      } else {
+        _needsRefreshOnVisible = true;
+      }
+    });
   }
 
   void _registerHotkeys() {
@@ -859,7 +930,7 @@ class JournalPageController extends _$JournalPageController {
     if (preserveVisibleItems &&
         pagingController is _JournalPagingController &&
         pagingController.hasVisibleItems) {
-      await _refreshFirstPagePreservingVisibleItems(pagingController);
+      await _refreshLoadedPagesPreservingVisibleItems(pagingController);
       return;
     }
 
@@ -879,7 +950,11 @@ class JournalPageController extends _$JournalPageController {
 
   Future<List<JournalEntity>> _fetchPage(int pageKey) async {
     try {
-      return _runQuery(pageKey);
+      final items = await _runQuery(pageKey);
+      if (pageKey == 0) {
+        _rememberLeadingTaskIds(items);
+      }
+      return items;
     } catch (error, stackTrace) {
       if (kDebugMode) {
         print('Error in _fetchPage: $error\n$stackTrace');
@@ -888,7 +963,14 @@ class JournalPageController extends _$JournalPageController {
     }
   }
 
-  Future<List<JournalEntity>> _runQuery(int pageKey) async {
+  Future<List<JournalEntity>> _runQuery(
+    int pageKey, {
+    void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
+  }) async {
+    final applyPostFilterNextRawOffset =
+        setPostFilterNextRawOffset ??
+        (int? value) => _postFilterNextRawOffset = value;
+
     // Vector search: bypass FTS5 and DB pagination entirely.
     if (_enableVectorSearch &&
         _searchMode == SearchMode.vector &&
@@ -949,7 +1031,7 @@ class JournalPageController extends _$JournalPageController {
       final needsPostFilter = agentFilterActive || projectFilterActive;
 
       if (!needsPostFilter) {
-        _postFilterNextRawOffset = null;
+        applyPostFilterNextRawOffset(null);
         final res = await _db.getTasks(
           ids: ids,
           starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -1027,7 +1109,7 @@ class JournalPageController extends _$JournalPageController {
       }
 
       // Record the raw offset so getNextPageKey resumes correctly.
-      _postFilterNextRawOffset = currentOffset;
+      applyPostFilterNextRawOffset(currentOffset);
 
       // Sort before truncating so the page contains the correct items.
       if (_sortOption == TaskSortOption.byDueDate) {
@@ -1128,6 +1210,38 @@ class JournalPageController extends _$JournalPageController {
     return ids;
   }
 
+  bool get _requiresSequentialRetainedRefresh =>
+      _showTasks &&
+      (_agentAssignmentFilter != AgentAssignmentFilter.all ||
+          _selectedProjectIds.isNotEmpty);
+
+  List<int> _loadedVisiblePageKeys(_JournalPagingController pagingController) {
+    final pages = pagingController.value.pages;
+    final keys = pagingController.value.keys;
+    if (pages == null || keys == null) {
+      return const [];
+    }
+
+    final sharedLength = pages.length < keys.length
+        ? pages.length
+        : keys.length;
+    final loadedPageKeys = <int>[];
+    for (var index = 0; index < sharedLength; index++) {
+      if (pages[index].isNotEmpty) {
+        loadedPageKeys.add(keys[index]);
+      }
+    }
+    return loadedPageKeys;
+  }
+
+  void _rememberLeadingTaskIds(Iterable<JournalEntity> items) {
+    if (!_showTasks) {
+      return;
+    }
+
+    _lastIds = items.map((entity) => entity.meta.id).toSet();
+  }
+
   /// Sorts tasks by due date (soonest first, tasks without due dates at end).
   /// Preserves creation date order for tasks with the same due date or no due date.
   ///
@@ -1186,11 +1300,15 @@ class _JournalPagingController extends PagingController<int, JournalEntity> {
 
   bool isRetainedRefresh(Object refreshToken) => operation == refreshToken;
 
-  void replaceFirstPage(List<JournalEntity> items, {required int pageSize}) {
+  void replacePages(
+    List<List<JournalEntity>> pages, {
+    required List<int> keys,
+    required bool hasNextPage,
+  }) {
     value = PagingState<int, JournalEntity>(
-      pages: [items],
-      keys: const [0],
-      hasNextPage: items.length == pageSize,
+      pages: pages,
+      keys: keys,
+      hasNextPage: hasNextPage,
     );
     operation = null;
   }

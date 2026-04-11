@@ -556,24 +556,21 @@ class PersistenceLogic {
 
       await journalEntity.maybeMap(
         task: (Task task) async {
+          final priorityChanged = task.data.priority != taskData.priority;
           await updateDbEntity(
             task.copyWith(
               meta: await updateMetadata(journalEntity.meta),
               entryText: entryText ?? task.entryText,
               data: taskData,
             ),
+            beforeNotify: priorityChanged
+                ? () => _journalDb.updateTaskPriorityColumn(
+                    id: journalEntityId,
+                    priority: taskData.priority.short,
+                    rank: taskData.priority.rank,
+                  )
+                : null,
           );
-
-          // Ensure denormalized priority columns are updated for reliable UI reads
-          try {
-            await _journalDb.updateTaskPriorityColumn(
-              id: journalEntityId,
-              priority: taskData.priority.short,
-              rank: taskData.priority.rank,
-            );
-          } catch (_) {
-            // ignore best-effort denormalized update errors
-          }
         },
         orElse: () async {
           _loggingService.captureException(
@@ -668,7 +665,25 @@ class PersistenceLogic {
       final entityWithUpdatedMeta = journalEntity.copyWith(
         meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
       );
-      final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
+      Future<void> Function()? beforeNotify;
+      if (entityWithUpdatedMeta is Task) {
+        final task = entityWithUpdatedMeta;
+        final priorityChanged =
+            current is! Task || current.data.priority != task.data.priority;
+        if (priorityChanged) {
+          beforeNotify = () => _journalDb.updateTaskPriorityColumn(
+            id: task.id,
+            priority: task.data.priority.short,
+            rank: task.data.priority.rank,
+          );
+        }
+      }
+      final applied =
+          (await updateDbEntity(
+            entityWithUpdatedMeta,
+            beforeNotify: beforeNotify,
+          )) ??
+          false;
       if (applied) {
         await _journalDb.addLabeled(entityWithUpdatedMeta);
       }
@@ -689,6 +704,7 @@ class PersistenceLogic {
     String? linkedId,
     bool enqueueSync = true,
     bool overrideComparison = false,
+    Future<void> Function()? beforeNotify,
   }) async {
     try {
       final updateResult = await _journalDb.updateJournalEntity(
@@ -696,6 +712,19 @@ class PersistenceLogic {
         overrideComparison: overrideComparison,
       );
       final applied = updateResult.applied;
+
+      if (applied && beforeNotify != null) {
+        try {
+          await beforeNotify();
+        } catch (exception, stackTrace) {
+          _loggingService.captureException(
+            exception,
+            domain: 'persistence_logic',
+            subDomain: 'updateDbEntity.beforeNotify',
+            stackTrace: stackTrace,
+          );
+        }
+      }
 
       // Include parent linked entry IDs so that agents subscribed to a
       // parent (e.g. a task) are notified when a child entry is edited.
