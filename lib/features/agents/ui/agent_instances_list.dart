@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Kind filter for the instances list.
 enum _InstanceKind { all, taskAgent, evolution }
@@ -208,7 +211,12 @@ class _AgentInstancesListState extends ConsumerState<AgentInstancesList> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        math.max(16, DesignSystemBottomNavigationBar.occupiedHeight(context)),
+      ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];

@@ -13,6 +13,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 class MockUserActivityService extends Mock implements UserActivityService {}
 
@@ -81,8 +82,8 @@ void main() {
   Widget createTestWidget({Locale? locale}) {
     return ProviderScope(
       child: MaterialApp(
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
+        theme: resolveTestTheme(ThemeData.light()),
+        darkTheme: resolveTestTheme(ThemeData.dark()),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,

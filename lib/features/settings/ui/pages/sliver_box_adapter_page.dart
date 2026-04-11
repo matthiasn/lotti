@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class SliverBoxAdapterPage extends StatefulWidget {
   const SliverBoxAdapterPage({
@@ -54,6 +55,11 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
               child: widget.child.animate().fadeIn(
                 duration: const Duration(milliseconds: 500),
               ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: DesignSystemBottomNavigationBar.occupiedHeight(context),
             ),
           ),
         ],

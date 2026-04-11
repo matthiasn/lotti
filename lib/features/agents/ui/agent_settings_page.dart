@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -299,7 +301,12 @@ class _TemplatesTab extends ConsumerWidget {
       );
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        math.max(16, DesignSystemBottomNavigationBar.occupiedHeight(context)),
+      ),
       itemCount: sorted.length,
       itemBuilder: (context, index) {
         final template = sorted[index];
@@ -450,7 +457,12 @@ class _SoulsTab extends ConsumerWidget {
       );
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        math.max(16, DesignSystemBottomNavigationBar.occupiedHeight(context)),
+      ),
       itemCount: sorted.length,
       itemBuilder: (context, index) {
         final soul = sorted[index];
