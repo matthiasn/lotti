@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class AgentPendingWakesList extends ConsumerWidget {
   const AgentPendingWakesList({super.key});
@@ -101,7 +103,10 @@ class AgentPendingWakesList extends ConsumerWidget {
               tokens.spacing.step4,
               0,
               tokens.spacing.step4,
-              tokens.spacing.step6,
+              math.max(
+                tokens.spacing.step6,
+                DesignSystemBottomNavigationBar.occupiedHeight(context),
+              ),
             ),
             itemCount: records.length,
             itemBuilder: (context, index) {

@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Stats tab showing token usage in an iOS battery-usage-inspired layout.
 ///
@@ -39,7 +40,12 @@ class _TokenStatsTabState extends ConsumerState<TokenStatsTab> {
     final tokens = context.designTokens;
 
     return ListView(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step10),
+      padding: EdgeInsets.only(
+        bottom: math.max(
+          tokens.spacing.step10,
+          DesignSystemBottomNavigationBar.occupiedHeight(context),
+        ),
+      ),
       children: [
         const WakeActivityChart(),
         SizedBox(height: tokens.spacing.step4),
