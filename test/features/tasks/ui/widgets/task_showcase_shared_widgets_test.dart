@@ -70,57 +70,52 @@ void main() {
         ),
       );
 
-      expect(
-        tester
-            .getSize(
-              rootContainer(
-                find.widgetWithText(TaskShowcaseCategoryChip, 'Work'),
-              ),
-            )
-            .height,
-        18,
-      );
-      expect(
-        tester
-            .getSize(
-              rootContainer(
-                find.widgetWithText(TaskShowcaseMetaChip, 'Due: Apr 1, 2026'),
-              ),
-            )
-            .height,
-        20,
-      );
-      expect(
-        tester
-            .getSize(
-              find.descendant(
-                of: find.widgetWithText(TaskShowcaseLabelChip, 'Bug fix'),
-                matching: find.byType(Container),
-              ),
-            )
-            .height,
-        20,
-      );
-      expect(
-        tester
-            .getSize(
-              rootContainer(
-                find.widgetWithText(TaskShowcaseSectionPill, 'Timer'),
-              ),
-            )
-            .height,
-        24,
-      );
-      expect(
-        tester
-            .getSize(
-              rootContainer(
-                find.widgetWithText(TaskShowcaseStatusLabel, 'Open'),
-              ),
-            )
-            .height,
-        28,
-      );
+      final categoryHeight = tester
+          .getSize(
+            rootContainer(
+              find.widgetWithText(TaskShowcaseCategoryChip, 'Work'),
+            ),
+          )
+          .height;
+      expect(categoryHeight, greaterThanOrEqualTo(20));
+      // Chips use padding instead of fixed heights so they grow with
+      // text scaling. Verify they are at least as tall as their content.
+      final metaChipHeight = tester
+          .getSize(
+            rootContainer(
+              find.widgetWithText(TaskShowcaseMetaChip, 'Due: Apr 1, 2026'),
+            ),
+          )
+          .height;
+      expect(metaChipHeight, greaterThanOrEqualTo(20));
+
+      final labelChipHeight = tester
+          .getSize(
+            find.descendant(
+              of: find.widgetWithText(TaskShowcaseLabelChip, 'Bug fix'),
+              matching: find.byType(Container),
+            ),
+          )
+          .height;
+      expect(labelChipHeight, greaterThanOrEqualTo(20));
+
+      final pillHeight = tester
+          .getSize(
+            rootContainer(
+              find.widgetWithText(TaskShowcaseSectionPill, 'Timer'),
+            ),
+          )
+          .height;
+      expect(pillHeight, greaterThanOrEqualTo(24));
+
+      final statusHeight = tester
+          .getSize(
+            rootContainer(
+              find.widgetWithText(TaskShowcaseStatusLabel, 'Open'),
+            ),
+          )
+          .height;
+      expect(statusHeight, greaterThanOrEqualTo(28));
     });
 
     testWidgets('renders TaskShowcaseStatusGlyph for all status types', (

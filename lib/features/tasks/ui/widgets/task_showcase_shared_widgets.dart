@@ -6,7 +6,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
@@ -25,11 +24,37 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final bg = colorFromCssHex(colorHex);
-    return CategoryTag(
-      label: label,
-      icon: icon,
-      color: bg,
+    final fg = tokens.colors.text.onInteractiveAlert;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          SizedBox(width: tokens.spacing.step1),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: fg,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -50,7 +75,6 @@ class TaskShowcaseLabelChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Container(
-      height: 20,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step1,
@@ -85,7 +109,6 @@ class TaskShowcaseMetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Container(
-      height: 20,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step1,
@@ -198,7 +221,6 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
     final textColor = TaskShowcasePalette.highText(context);
 
     return Container(
-      height: expanded ? 28 : null,
       padding: EdgeInsets.symmetric(
         horizontal: expanded ? tokens.spacing.step3 : 0,
         vertical: expanded ? tokens.spacing.step2 : 0,
@@ -206,7 +228,7 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
       decoration: expanded
           ? BoxDecoration(
               color: TaskShowcasePalette.subtleFill(context),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
             )
           : null,
       child: Row(
@@ -302,47 +324,54 @@ class TaskShowcaseSectionPill extends StatelessWidget {
     required this.icon,
     required this.label,
     this.active = false,
+    this.onTap,
     super.key,
   });
 
   final IconData icon;
   final String label;
   final bool active;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final foreground = active
-        ? Colors.black
+        ? TaskShowcasePalette.accent(context)
         : TaskShowcasePalette.mediumText(context);
     final background = active
-        ? TaskShowcasePalette.accent(context)
+        ? TaskShowcasePalette.accent(context).withValues(alpha: 0.24)
         : TaskShowcasePalette.subtleFill(context);
 
-    return Container(
-      height: 24,
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: foreground),
-          SizedBox(width: tokens.spacing.step2),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: foreground,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step3,
+          vertical: tokens.spacing.step2,
+        ),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: foreground),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: foreground,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
