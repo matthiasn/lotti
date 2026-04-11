@@ -221,20 +221,30 @@ class JournalPageController extends _$JournalPageController {
     _JournalPagingController pagingController,
   ) async {
     final refreshToken = Object();
+    final previousPostFilterNextRawOffset = _postFilterNextRawOffset;
     pagingController.startRetainedRefresh(refreshToken);
     _postFilterNextRawOffset = null;
 
     try {
       final items = await _runQuery(0);
+      // _runQuery mutates _postFilterNextRawOffset as a side effect.
+      // Capture locally and restore; only publish if this refresh is
+      // still current, so a slower stale query cannot overwrite a
+      // newer offset.
+      final localNextRawOffset = _postFilterNextRawOffset;
+      _postFilterNextRawOffset = previousPostFilterNextRawOffset;
+
       if (!ref.mounted || !pagingController.isRetainedRefresh(refreshToken)) {
         return;
       }
 
       pagingController.replaceFirstPage(items, pageSize: pageSize);
+      _postFilterNextRawOffset = localNextRawOffset;
     } catch (error, stackTrace) {
-      if (kDebugMode) {
-        print('Error in retained first-page refresh: $error\n$stackTrace');
-      }
+      DevLogger.warning(
+        name: 'JournalPageController',
+        message: 'Error in retained first-page refresh: $error\n$stackTrace',
+      );
       if (!ref.mounted) {
         return;
       }
@@ -347,7 +357,9 @@ class JournalPageController extends _$JournalPageController {
               _emitState();
 
               if (shouldRefreshAfterModeFallback) {
-                unawaited(refreshQuery());
+                unawaited(
+                  refreshQuery(preserveVisibleItems: true),
+                );
               }
 
               // Only persist if selection actually changed
@@ -379,13 +391,13 @@ class JournalPageController extends _$JournalPageController {
               _postFilterNextRawOffset = savedOffset;
               if (!setEquals(_lastIds, newIds)) {
                 _lastIds = newIds;
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               }
             } else {
               if (displayedIds.intersection(affectedIds).isNotEmpty) {
-                await refreshQuery();
+                await refreshQuery(preserveVisibleItems: true);
               }
             }
           } else {
@@ -402,7 +414,7 @@ class JournalPageController extends _$JournalPageController {
           modifiers: [HotKeyModifier.meta],
           scope: HotKeyScope.inapp,
         ),
-        keyDownHandler: (hotKey) => refreshQuery(),
+        keyDownHandler: (hotKey) => refreshQuery(preserveVisibleItems: true),
       );
     }
   }
@@ -830,7 +842,7 @@ class JournalPageController extends _$JournalPageController {
     await refreshQuery();
   }
 
-  Future<void> refreshQuery() async {
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
     _cachedAgentLinkedIds = null;
 
     _emitState();
@@ -844,7 +856,8 @@ class JournalPageController extends _$JournalPageController {
       return;
     }
 
-    if (pagingController is _JournalPagingController &&
+    if (preserveVisibleItems &&
+        pagingController is _JournalPagingController &&
         pagingController.hasVisibleItems) {
       await _refreshFirstPagePreservingVisibleItems(pagingController);
       return;
@@ -859,7 +872,7 @@ class JournalPageController extends _$JournalPageController {
     final isVisible = visibilityInfo.visibleBounds.size.width > 0;
     if (!_isVisible && isVisible && _needsRefreshOnVisible) {
       _needsRefreshOnVisible = false;
-      refreshQuery();
+      refreshQuery(preserveVisibleItems: true);
     }
     _isVisible = isVisible;
   }
