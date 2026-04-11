@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_helpers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 
@@ -76,7 +77,7 @@ class _CategoryGroupState extends State<_CategoryGroup> {
                 Icon(
                   feedbackCategoryIcon(widget.category),
                   size: 18,
-                  color: const Color(0xFF00BCD4),
+                  color: AgentPalette.cyan,
                 ),
                 const SizedBox(width: 8),
                 Text(

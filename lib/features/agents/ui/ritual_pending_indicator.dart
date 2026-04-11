@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 
 /// A pulsing dot indicator that shows when there are pending ritual reviews.
 ///
@@ -73,12 +74,12 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
           height: 10,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFF6B4CE5).withAlpha(
+            color: AgentPalette.purple.withAlpha(
               (animation.value * 255).toInt(),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6B4CE5).withAlpha(
+                color: AgentPalette.purple.withAlpha(
                   (animation.value * 128).toInt(),
                 ),
                 blurRadius: 6,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// A single metric card in the evolution dashboard header.
@@ -11,7 +12,7 @@ class EvolutionMetricTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.accentColor = const Color(0xFF00BCD4),
+    this.accentColor = AgentPalette.cyan,
     this.progress,
     super.key,
   });
@@ -24,22 +25,10 @@ class EvolutionMetricTile extends StatelessWidget {
   /// If non-null, shows a circular progress indicator (0.0–1.0).
   final double? progress;
 
-  static LinearGradient _cardDarkGradient(Color color) {
-    const baseSurface = Color(0xFF2A2A3C);
-    return LinearGradient(
-      colors: [
-        baseSurface,
-        Color.lerp(baseSurface, color, 0.08) ?? baseSurface,
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ModernBaseCard(
-      gradient: _cardDarkGradient(accentColor),
+      gradient: agentCardDarkGradient(accentColor),
       customShadows: [
         BoxShadow(
           color: accentColor.withValues(alpha: 0.1),

@@ -6,23 +6,12 @@ import 'package:genui/genui.dart';
 import 'package:json_schema_builder/json_schema_builder.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_interactive_widgets.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
-
-LinearGradient _cardDarkGradient(Color accentColor) {
-  const baseSurface = Color(0xFF2A2A3C);
-  return LinearGradient(
-    colors: [
-      baseSurface,
-      Color.lerp(baseSurface, accentColor, 0.08) ?? baseSurface,
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
 
 /// Catalog ID for the evolution agent's custom widgets.
 const evolutionCatalogId = 'com.lotti.evolution_catalog';
@@ -691,7 +680,7 @@ final metricsSummaryItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(const Color(0xFF2A2A3C)),
+        gradient: agentCardDarkGradient(AgentPalette.surfaceDarkElevated),
         padding: const EdgeInsets.all(12),
         child: Wrap(
           spacing: 16,
@@ -740,7 +729,7 @@ final versionComparisonItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(const Color(0xFF2A2A3C)),
+        gradient: agentCardDarkGradient(AgentPalette.surfaceDarkElevated),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -750,7 +739,7 @@ final versionComparisonItem = CatalogItem(
                 const Icon(
                   Icons.compare_arrows,
                   size: 20,
-                  color: Color(0xFF00BCD4),
+                  color: AgentPalette.cyan,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -820,7 +809,7 @@ final feedbackClassificationItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(const Color(0xFF2A2A3C)),
+        gradient: agentCardDarkGradient(AgentPalette.surfaceDarkElevated),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,7 +819,7 @@ final feedbackClassificationItem = CatalogItem(
                 const Icon(
                   Icons.analytics_outlined,
                   size: 18,
-                  color: Color(0xFF00BCD4),
+                  color: AgentPalette.cyan,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -852,19 +841,19 @@ final feedbackClassificationItem = CatalogItem(
                   _sentimentChip(
                     context.messages.agentRitualReviewNegativeSignals,
                     negativeCount,
-                    const Color(0xFFFF4B4B),
+                    AgentPalette.red,
                   ),
                 if (positiveCount > 0)
                   _sentimentChip(
                     context.messages.agentRitualReviewPositiveSignals,
                     positiveCount,
-                    const Color(0xFF58CC02),
+                    AgentPalette.green,
                   ),
                 if (neutralCount > 0)
                   _sentimentChip(
                     context.messages.agentRitualReviewNeutralSignals,
                     neutralCount,
-                    const Color(0xFFFF9600),
+                    AgentPalette.orange,
                   ),
               ],
             ),
@@ -916,7 +905,7 @@ final feedbackCategoryBreakdownItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(const Color(0xFF2A2A3C)),
+        gradient: agentCardDarkGradient(AgentPalette.surfaceDarkElevated),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -926,7 +915,7 @@ final feedbackCategoryBreakdownItem = CatalogItem(
                 const Icon(
                   Icons.category_outlined,
                   size: 18,
-                  color: Color(0xFF00BCD4),
+                  color: AgentPalette.cyan,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -972,15 +961,15 @@ final sessionProgressItem = CatalogItem(
     final context = itemContext.buildContext;
 
     final statusColor = switch (status) {
-      'completed' => const Color(0xFF58CC02),
-      'abandoned' => const Color(0xFFFF4B4B),
-      _ => const Color(0xFF1CB0F6),
+      'completed' => AgentPalette.green,
+      'abandoned' => AgentPalette.red,
+      _ => AgentPalette.blue,
     };
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(statusColor),
+        gradient: agentCardDarkGradient(statusColor),
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
@@ -1191,7 +1180,7 @@ final highPriorityFeedbackItem = CatalogItem(
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ModernBaseCard(
-        gradient: _cardDarkGradient(const Color(0xFFFF4B4B)),
+        gradient: agentCardDarkGradient(AgentPalette.red),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1201,7 +1190,7 @@ final highPriorityFeedbackItem = CatalogItem(
                 const Icon(
                   Icons.priority_high,
                   size: 18,
-                  color: Color(0xFFFF4B4B),
+                  color: AgentPalette.red,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1219,14 +1208,14 @@ final highPriorityFeedbackItem = CatalogItem(
               _highPrioritySectionHeader(
                 messages.agentFeedbackGrievancesTitle,
                 grievances.length,
-                const Color(0xFFFF4B4B),
+                AgentPalette.red,
               ),
               const SizedBox(height: 4),
               ...grievances.map(
                 (item) => _highPriorityItemTile(
                   agentId: readString(item, 'agentId'),
                   detail: readString(item, 'detail'),
-                  accentColor: const Color(0xFFFF4B4B),
+                  accentColor: AgentPalette.red,
                 ),
               ),
             ],
@@ -1235,14 +1224,14 @@ final highPriorityFeedbackItem = CatalogItem(
               _highPrioritySectionHeader(
                 messages.agentFeedbackExcellenceTitle,
                 excellenceNotes.length,
-                const Color(0xFF58CC02),
+                AgentPalette.green,
               ),
               const SizedBox(height: 4),
               ...excellenceNotes.map(
                 (item) => _highPriorityItemTile(
                   agentId: readString(item, 'agentId'),
                   detail: readString(item, 'detail'),
-                  accentColor: const Color(0xFF58CC02),
+                  accentColor: AgentPalette.green,
                 ),
               ),
             ],
@@ -1272,9 +1261,9 @@ Widget _sentimentChip(String label, int count, Color color) {
 
 Widget _feedbackLine({required String detail, required String sentiment}) {
   final color = switch (sentiment) {
-    'negative' => const Color(0xFFFF4B4B),
-    'positive' => const Color(0xFF58CC02),
-    _ => const Color(0xFFFF9600),
+    'negative' => AgentPalette.red,
+    'positive' => AgentPalette.green,
+    _ => AgentPalette.orange,
   };
 
   return Padding(
@@ -1430,17 +1419,17 @@ Widget _categoryBar({
                   if (negativeCount > 0)
                     Expanded(
                       flex: negativeCount,
-                      child: Container(color: const Color(0xFFFF4B4B)),
+                      child: Container(color: AgentPalette.red),
                     ),
                   if (positiveCount > 0)
                     Expanded(
                       flex: positiveCount,
-                      child: Container(color: const Color(0xFF58CC02)),
+                      child: Container(color: AgentPalette.green),
                     ),
                   if (neutralCount > 0)
                     Expanded(
                       flex: neutralCount,
-                      child: Container(color: const Color(0xFFFF9600)),
+                      child: Container(color: AgentPalette.orange),
                     ),
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -82,24 +83,24 @@ class _SentimentTabViewState extends State<_SentimentTabView>
       children: [
         TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF6B4CE5),
+          indicatorColor: AgentPalette.purple,
           dividerColor: Colors.white.withValues(alpha: 0.1),
           labelPadding: EdgeInsets.zero,
           tabs: [
             _SentimentTab(
               label: messages.agentRitualReviewNegativeSignals,
               count: negative.length,
-              color: const Color(0xFFFF4B4B),
+              color: AgentPalette.red,
             ),
             _SentimentTab(
               label: messages.agentRitualReviewPositiveSignals,
               count: positive.length,
-              color: const Color(0xFF58CC02),
+              color: AgentPalette.green,
             ),
             _SentimentTab(
               label: messages.agentRitualReviewNeutralSignals,
               count: neutral.length,
-              color: const Color(0xFFFF9600),
+              color: AgentPalette.orange,
             ),
           ],
         ),

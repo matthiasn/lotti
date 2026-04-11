@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
@@ -356,7 +357,7 @@ class _TemplateListTile extends ConsumerWidget {
                   width: 10,
                   height: 10,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF6B4CE5),
+                    color: AgentPalette.purple,
                     shape: BoxShape.circle,
                   ),
                 ),

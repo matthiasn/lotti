@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 
 /// Mini stacked bar chart showing daily success/failure counts.
 ///
@@ -52,12 +53,12 @@ class EvolutionWakeBarChart extends StatelessWidget {
                     BarChartRodStackItem(
                       0,
                       bucket.successCount.toDouble(),
-                      const Color(0xFF58CC02).withValues(alpha: 0.8),
+                      AgentPalette.green.withValues(alpha: 0.8),
                     ),
                     BarChartRodStackItem(
                       bucket.successCount.toDouble(),
                       (bucket.successCount + bucket.failureCount).toDouble(),
-                      const Color(0xFFFF4B4B).withValues(alpha: 0.8),
+                      AgentPalette.red.withValues(alpha: 0.8),
                     ),
                   ],
                   color: Colors.transparent,

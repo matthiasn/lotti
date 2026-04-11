@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.950] - 2026-04-10
+## [0.9.950] - 2026-04-11
+### Removed
+- Removed the gamey theme and all gamey-styled widgets (GameyFab, GameyCard,
+  GameySettingsCard, GameyJournalCard, GameyTaskCard, shimmer/celebration
+  overlays). Standard Flutter widgets and existing modern cards are used instead.
+
 ### Added
 - Resizable panes in desktop layout: users can drag dividers between the
   navigation sidebar and content area, and between the list and detail panes,

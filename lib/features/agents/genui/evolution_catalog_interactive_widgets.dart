@@ -1,21 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
-
-LinearGradient _cardDarkGradient(Color accentColor) {
-  const baseSurface = Color(0xFF2A2A3C);
-  return LinearGradient(
-    colors: [
-      baseSurface,
-      Color.lerp(baseSurface, accentColor, 0.08) ?? baseSurface,
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-}
 
 /// Expandable card showing a recorded evolution note.
 ///
@@ -46,7 +35,7 @@ class _EvolutionNoteConfirmationCardState
       child: GestureDetector(
         onTap: () => setState(() => _expanded = !_expanded),
         child: ModernBaseCard(
-          gradient: _cardDarkGradient(const Color(0xFF00BCD4)),
+          gradient: agentCardDarkGradient(AgentPalette.cyan),
           padding: const EdgeInsets.all(12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +43,7 @@ class _EvolutionNoteConfirmationCardState
               Icon(
                 _noteKindIcon(widget.kind),
                 size: 18,
-                color: const Color(0xFF00BCD4),
+                color: AgentPalette.cyan,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -67,7 +56,7 @@ class _EvolutionNoteConfirmationCardState
                           child: Text(
                             context.messages.agentEvolutionNoteRecorded,
                             style: const TextStyle(
-                              color: Color(0xFF00BCD4),
+                              color: AgentPalette.cyan,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),

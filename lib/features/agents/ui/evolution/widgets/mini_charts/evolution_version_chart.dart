@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 
 /// Mini line chart showing per-version success rate with dot markers.
 ///
@@ -14,7 +15,7 @@ class EvolutionVersionChart extends StatelessWidget {
   final List<VersionPerformanceBucket> buckets;
 
   static const _chartHeight = 60.0;
-  static const Color _color = Color(0xFF1CB0F6);
+  static const Color _color = AgentPalette.blue;
 
   @override
   Widget build(BuildContext context) {

@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
@@ -522,7 +523,7 @@ void main() {
             final decoration = widget.decoration;
             if (decoration is BoxDecoration) {
               return decoration.shape == BoxShape.circle &&
-                  decoration.color == const Color(0xFF6B4CE5);
+                  decoration.color == AgentPalette.purple;
             }
           }
           return false;
