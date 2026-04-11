@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/gamey/gamey_settings_card.dart';
 
 /// Settings page for controlling per-domain logging flags.
 ///
@@ -33,7 +33,7 @@ class LoggingSettingsPage extends ConsumerWidget {
       showBackButton: true,
       child: Column(
         children: [
-          AdaptiveSettingsCard(
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLoggingGlobalToggle,
             subtitle: context.messages.settingsLoggingGlobalToggleSubtitle,
             icon: Icons.article_rounded,
@@ -45,7 +45,7 @@ class LoggingSettingsPage extends ConsumerWidget {
             ),
           ),
           const Divider(height: 1),
-          AdaptiveSettingsCard(
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLoggingAgentRuntime,
             subtitle: context.messages.settingsLoggingAgentRuntimeSubtitle,
             icon: Icons.memory_rounded,
@@ -58,7 +58,7 @@ class LoggingSettingsPage extends ConsumerWidget {
                   : null,
             ),
           ),
-          AdaptiveSettingsCard(
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLoggingAgentWorkflow,
             subtitle: context.messages.settingsLoggingAgentWorkflowSubtitle,
             icon: Icons.play_circle_outline_rounded,
@@ -72,7 +72,7 @@ class LoggingSettingsPage extends ConsumerWidget {
                   : null,
             ),
           ),
-          AdaptiveSettingsCard(
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLoggingSync,
             subtitle: context.messages.settingsLoggingSyncSubtitle,
             icon: Icons.sync_rounded,
@@ -84,7 +84,7 @@ class LoggingSettingsPage extends ConsumerWidget {
                   : null,
             ),
           ),
-          AdaptiveSettingsCard(
+          AnimatedModernSettingsCardWithIcon(
             title: context.messages.settingsLoggingSlowQueries,
             subtitle: context.messages.settingsLoggingSlowQueriesSubtitle,
             icon: Icons.speed_rounded,

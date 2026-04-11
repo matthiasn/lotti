@@ -55,16 +55,12 @@ The feature is conceptually simple, but the runtime path matters because theme c
 - the selected dark theme name
 - the selected `ThemeMode`
 
-Theme definitions come from:
-
-- standard `FlexScheme` mappings
-- special themes such as the `Gamey` theme
+Theme definitions come from standard `FlexScheme` mappings.
 
 The build path also applies:
 
 - shared overrides
 - Linux emoji font fallback
-- gamey-theme postprocessing when selected
 
 ## Theming State Machine
 
@@ -103,12 +99,9 @@ sequenceDiagram
 `theme_definitions.dart` provides:
 
 - the map of standard theme names to `FlexScheme`
-- special theme names such as `gameyThemeName`
 - validation helpers
 - the default theme name
 - light-mode surface constants
-
-The "Gamey" theme is worth calling out because it is not just another scheme name. It is a special case that uses a base scheme plus additional gamey styling transforms.
 
 ## Sync Semantics
 

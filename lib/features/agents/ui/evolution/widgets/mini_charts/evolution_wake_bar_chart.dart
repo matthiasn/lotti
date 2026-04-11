@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Mini stacked bar chart showing daily success/failure counts.
 ///
@@ -53,12 +52,12 @@ class EvolutionWakeBarChart extends StatelessWidget {
                     BarChartRodStackItem(
                       0,
                       bucket.successCount.toDouble(),
-                      GameyColors.primaryGreen.withValues(alpha: 0.8),
+                      const Color(0xFF58CC02).withValues(alpha: 0.8),
                     ),
                     BarChartRodStackItem(
                       bucket.successCount.toDouble(),
                       (bucket.successCount + bucket.failureCount).toDouble(),
-                      GameyColors.primaryRed.withValues(alpha: 0.8),
+                      const Color(0xFFFF4B4B).withValues(alpha: 0.8),
                     ),
                   ],
                   color: Colors.transparent,

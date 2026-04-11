@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 import '../../../../../widget_test_utils.dart';
 import '../../../test_utils.dart';
@@ -289,7 +288,7 @@ void main() {
               (c) =>
                   c.decoration is BoxDecoration &&
                   (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryRed,
+                      const Color(0xFFFF4B4B),
               orElse: () => throw TestFailure(
                 'No Container with primaryRed color found',
               ),
@@ -313,7 +312,7 @@ void main() {
               (c) =>
                   c.decoration is BoxDecoration &&
                   (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryGreen,
+                      const Color(0xFF58CC02),
               orElse: () => throw TestFailure(
                 'No Container with primaryGreen color found',
               ),
@@ -341,7 +340,7 @@ void main() {
               (c) =>
                   c.decoration is BoxDecoration &&
                   (c.decoration! as BoxDecoration).color ==
-                      GameyColors.primaryOrange,
+                      const Color(0xFFFF9600),
               orElse: () => throw TestFailure(
                 'No Container with primaryOrange color found',
               ),

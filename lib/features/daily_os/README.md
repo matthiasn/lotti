@@ -112,7 +112,7 @@ flowchart TD
   Body --> Timeline["DailyTimeline"]
   Body --> Budgets["TimeBudgetList"]
   Body --> Summary["DaySummary"]
-  Open --> FAB["DesignSystemBottomNavigationFabPadding + GameyFab -> AddBlockSheet"]
+  Open --> FAB["DesignSystemBottomNavigationFabPadding + FloatingActionButton -> AddBlockSheet"]
 ```
 
 The page is intentionally stacked in that order:

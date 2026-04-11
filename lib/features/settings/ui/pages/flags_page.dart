@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/gamey/gamey_settings_card.dart';
 
 class FlagsPage extends ConsumerStatefulWidget {
   const FlagsPage({super.key});
@@ -187,7 +187,7 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
               child: Column(
                 children: [
                   ...orderedFlags.map(
-                    (flag) => AdaptiveSettingsCard(
+                    (flag) => AnimatedModernSettingsCardWithIcon(
                       title: _titleForFlag(context, flag),
                       subtitle: _subtitleForFlag(context, flag),
                       icon: _iconForFlag(flag.name),

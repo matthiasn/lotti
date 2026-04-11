@@ -8,7 +8,6 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/animations.dart';
 
 /// Bottom-anchored text input bar for the evolution chat.
 ///
@@ -47,16 +46,16 @@ class _EvolutionMessageInputState extends ConsumerState<EvolutionMessageInput>
     _controller.addListener(_onTextChanged);
     _pulseController = AnimationController(
       vsync: this,
-      duration: GameyAnimations.pulse,
+      duration: const Duration(milliseconds: 1500),
     );
     _pulseAnimation =
         Tween<double>(
-          begin: GameyAnimations.pulseScaleMin,
-          end: GameyAnimations.pulseScaleMax,
+          begin: 0.98,
+          end: 1.08,
         ).animate(
           CurvedAnimation(
             parent: _pulseController,
-            curve: GameyAnimations.symmetrical,
+            curve: Curves.easeInOut,
           ),
         );
     if (widget.isWaiting) {

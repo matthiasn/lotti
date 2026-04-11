@@ -5,11 +5,9 @@ import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/gamey_theme.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/gamey/gamey_card.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ThemingPage extends ConsumerWidget {
@@ -44,9 +42,6 @@ class ThemingPage extends ConsumerWidget {
     if (themingState.darkTheme == null) {
       return const SizedBox.shrink();
     }
-
-    final brightness = Theme.of(context).brightness;
-    final useGamey = themingState.isGameyThemeForBrightness(brightness);
 
     // Build the content that goes inside the card
     Widget buildCardContent() {
@@ -106,21 +101,10 @@ class ThemingPage extends ConsumerWidget {
       child: Column(
         children: [
           // Theme Mode and Color Selection
-          if (useGamey)
-            GameySubtleCard(
-              accentColor: GameyColors.gameyAccent,
-              margin: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingLarge,
-                vertical: AppTheme.cardSpacing / 2,
-              ),
-              padding: EdgeInsets.zero,
-              child: buildCardContent(),
-            )
-          else
-            ModernBaseCard(
-              margin: const EdgeInsets.all(10),
-              child: buildCardContent(),
-            ),
+          ModernBaseCard(
+            margin: const EdgeInsets.all(10),
+            child: buildCardContent(),
+          ),
         ],
       ),
     );
@@ -145,8 +129,6 @@ class SelectTheme extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themingState = ref.watch(themingControllerProvider);
     final selectedThemeName = getSelected(themingState);
-    final isGamey = isGameyTheme(selectedThemeName);
-    final colorScheme = Theme.of(context).colorScheme;
     final themeData = Theme.of(context);
 
     void onTap() {
@@ -173,13 +155,6 @@ class SelectTheme extends ConsumerWidget {
                         Navigator.pop(context);
                       },
                       title: key,
-                      trailing: isGameyTheme(key)
-                          ? Icon(
-                              Icons.auto_awesome,
-                              color: colorScheme.primary,
-                              size: 20,
-                            )
-                          : null,
                     ),
                   ),
                 ],
@@ -193,20 +168,11 @@ class SelectTheme extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: InputDecorator(
-        decoration:
-            inputDecoration(
-              labelText: labelText,
-              semanticsLabel: semanticsLabel,
-              themeData: themeData,
-            ).copyWith(
-              border: InputBorder.none,
-              suffixIcon: isGamey
-                  ? Icon(
-                      Icons.auto_awesome,
-                      color: colorScheme.primary,
-                    )
-                  : null,
-            ),
+        decoration: inputDecoration(
+          labelText: labelText,
+          semanticsLabel: semanticsLabel,
+          themeData: themeData,
+        ).copyWith(border: InputBorder.none),
         child: Text(
           selectedThemeName,
           style: themeData.textTheme.titleMedium,

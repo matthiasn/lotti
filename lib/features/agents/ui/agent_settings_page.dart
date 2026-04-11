@@ -16,10 +16,8 @@ import 'package:lotti/features/design_system/components/tabs/design_system_tab.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/gamey/gamey_fab.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Landing page for Settings > Agents.
@@ -54,14 +52,14 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
     );
     final floatingActionButton = switch (_selectedTab) {
-      _AgentSettingsTab.templates => GameyFab(
+      _AgentSettingsTab.templates => FloatingActionButton(
         onPressed: () => beamToNamed('/settings/agents/templates/create'),
-        semanticLabel: context.messages.agentTemplateCreateTitle,
+        tooltip: context.messages.agentTemplateCreateTitle,
         child: const Icon(Icons.add),
       ),
-      _AgentSettingsTab.souls => GameyFab(
+      _AgentSettingsTab.souls => FloatingActionButton(
         onPressed: () => beamToNamed('/settings/agents/souls/create'),
-        semanticLabel: context.messages.agentSoulCreateTitle,
+        tooltip: context.messages.agentSoulCreateTitle,
         child: const Icon(Icons.add),
       ),
       _ => null,
@@ -358,7 +356,7 @@ class _TemplateListTile extends ConsumerWidget {
                   width: 10,
                   height: 10,
                   decoration: const BoxDecoration(
-                    color: GameyColors.primaryPurple,
+                    color: Color(0xFF6B4CE5),
                     shape: BoxShape.circle,
                   ),
                 ),

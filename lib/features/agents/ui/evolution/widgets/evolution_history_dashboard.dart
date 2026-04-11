@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_charts_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_timeline.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Composite dashboard widget combining summary stats, charts, and the
 /// session timeline for a template's evolution history.
@@ -78,8 +77,8 @@ class _StatsRow extends StatelessWidget {
           label: messages.agentEvolutionApprovalRate,
           value: '${(stats.approvalRate * 100).toStringAsFixed(0)}%',
           color: stats.approvalRate >= 0.5
-              ? GameyColors.primaryGreen
-              : GameyColors.primaryOrange,
+              ? const Color(0xFF58CC02)
+              : const Color(0xFFFF9600),
         ),
       ],
     );

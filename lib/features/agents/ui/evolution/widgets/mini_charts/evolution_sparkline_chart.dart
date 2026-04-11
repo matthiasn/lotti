@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Mini sparkline chart showing daily success rate over time.
 ///
@@ -16,7 +15,7 @@ class EvolutionSparklineChart extends StatelessWidget {
   final List<DailyWakeBucket> buckets;
 
   static const _chartHeight = 60.0;
-  static const Color _color = GameyColors.primaryGreen;
+  static const Color _color = Color(0xFF58CC02);
 
   @override
   Widget build(BuildContext context) {

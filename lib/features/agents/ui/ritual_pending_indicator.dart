@@ -6,11 +6,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// A pulsing dot indicator that shows when there are pending ritual reviews.
 ///
-/// Uses [GameyColors.primaryPurple] to distinguish from the What's New
+/// Uses a purple color to distinguish from the What's New
 /// indicator which uses `colorScheme.primary`.
 class RitualPendingIndicator extends ConsumerStatefulWidget {
   const RitualPendingIndicator({super.key});
@@ -74,12 +73,12 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
           height: 10,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: GameyColors.primaryPurple.withAlpha(
+            color: const Color(0xFF6B4CE5).withAlpha(
               (animation.value * 255).toInt(),
             ),
             boxShadow: [
               BoxShadow(
-                color: GameyColors.primaryPurple.withAlpha(
+                color: const Color(0xFF6B4CE5).withAlpha(
                   (animation.value * 128).toInt(),
                 ),
                 blurRadius: 6,

@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Mini line chart showing daily average task resolution time (MTTR) trend.
 ///
@@ -20,7 +19,7 @@ class EvolutionMttrChart extends StatelessWidget {
   final List<DailyResolutionBucket> buckets;
 
   static const _chartHeight = 60.0;
-  static const Color _color = GameyColors.primaryPurple;
+  static const Color _color = Color(0xFF6B4CE5);
 
   @override
   Widget build(BuildContext context) {

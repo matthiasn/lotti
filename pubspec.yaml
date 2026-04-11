@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.950+3916
+version: 0.9.950+3917
 
 msix_config:
   display_name: LottiApp
@@ -223,7 +223,6 @@ flutter:
     # from https://www.iconfinder.com/recepkutuk
     - assets/images/map/728975_location_map_marker_pin_place_icon.png
     - assets/images/tutorial/
-    - assets/images/gamey/
 
 flutter_native_splash:
   color: "#333333"

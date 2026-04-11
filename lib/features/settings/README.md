@@ -157,7 +157,6 @@ One slightly awkward but code-accurate detail: the Sync landing page links to co
 
 - `configFlagProvider(...)` gates Habits, Dashboards, Agents, and What's New
 - `JournalDb.watchConfigFlag(enableMatrixFlag)` decides whether Sync is shown
-- `themingControllerProvider` switches between the modern card look and the gamey card look
 - the Agents tile overlays a pending ritual indicator
 - the What's New feature appears both as an app-bar action and as a settings card when enabled
 
@@ -268,7 +267,6 @@ The tests enforce that sync-specific items no longer live here as cards, even if
 - app version and build number from `PackageInfo`
 - journal entry count from `JournalDb`
 - flagged and task counts from shared widgets
-- current theme family to decide between modern and gamey presentation
 
 ## Sync Surfaces From Settings
 

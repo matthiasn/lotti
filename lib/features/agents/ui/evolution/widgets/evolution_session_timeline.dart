@@ -5,7 +5,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Vertical timeline of [EvolutionSessionEntity] records.
 ///
@@ -157,7 +156,7 @@ class _TimelineNode extends StatelessWidget {
                     Text(
                       context.messages.agentEvolutionVersionProposed,
                       style: TextStyle(
-                        color: GameyColors.primaryGreen.withValues(alpha: 0.7),
+                        color: const Color(0xFF58CC02).withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -188,9 +187,9 @@ class _TimelineNode extends StatelessWidget {
 
 Color _statusColor(EvolutionSessionStatus status) {
   return switch (status) {
-    EvolutionSessionStatus.completed => GameyColors.primaryGreen,
-    EvolutionSessionStatus.abandoned => GameyColors.primaryRed,
-    EvolutionSessionStatus.active => GameyColors.primaryBlue,
+    EvolutionSessionStatus.completed => const Color(0xFF58CC02),
+    EvolutionSessionStatus.abandoned => const Color(0xFFFF4B4B),
+    EvolutionSessionStatus.active => const Color(0xFF1CB0F6),
   };
 }
 

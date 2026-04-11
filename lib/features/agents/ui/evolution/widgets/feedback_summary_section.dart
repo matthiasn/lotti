@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/feedback_item_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/gamey/colors.dart';
 
 /// Renders [ClassifiedFeedback] grouped by sentiment using tabs (negative,
 /// positive, neutral) with count badges.
@@ -83,24 +82,24 @@ class _SentimentTabViewState extends State<_SentimentTabView>
       children: [
         TabBar(
           controller: _tabController,
-          indicatorColor: GameyColors.primaryPurple,
+          indicatorColor: const Color(0xFF6B4CE5),
           dividerColor: Colors.white.withValues(alpha: 0.1),
           labelPadding: EdgeInsets.zero,
           tabs: [
             _SentimentTab(
               label: messages.agentRitualReviewNegativeSignals,
               count: negative.length,
-              color: GameyColors.primaryRed,
+              color: const Color(0xFFFF4B4B),
             ),
             _SentimentTab(
               label: messages.agentRitualReviewPositiveSignals,
               count: positive.length,
-              color: GameyColors.primaryGreen,
+              color: const Color(0xFF58CC02),
             ),
             _SentimentTab(
               label: messages.agentRitualReviewNeutralSignals,
               count: neutral.length,
-              color: GameyColors.primaryOrange,
+              color: const Color(0xFFFF9600),
             ),
           ],
         ),
