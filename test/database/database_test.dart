@@ -762,6 +762,240 @@ void main() {
         expect(results.map((e) => e.meta.id), ['task-starred']);
       });
 
+      test('getTasksSortedByDueDate filters by FTS ids', () async {
+        final base = DateTime(2024, 7, 13, 8);
+        final taskA = buildTaskEntry(
+          id: 'task-fts-a',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-fts-a',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-fts',
+          due: DateTime(2024, 8, 1),
+        );
+        final taskB = buildTaskEntry(
+          id: 'task-fts-b',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'status-fts-b',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-fts',
+          due: DateTime(2024, 7, 1),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(taskA));
+        await db!.upsertJournalDbEntity(toDbEntity(taskB));
+
+        final results = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-fts'],
+          ids: const ['task-fts-b'],
+        );
+
+        expect(results.map((e) => e.meta.id), ['task-fts-b']);
+      });
+
+      test('getTasksSortedByDueDate filters by priority', () async {
+        final base = DateTime(2024, 7, 14, 8);
+        final taskP0 = buildTaskEntry(
+          id: 'task-p0',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-p0',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-prio',
+          due: DateTime(2024, 9, 1),
+        );
+        final taskP2 = buildTaskEntry(
+          id: 'task-p2',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'status-p2',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-prio',
+          due: DateTime(2024, 8, 1),
+        );
+
+        // Set priorities via raw update (buildTaskEntry doesn't set
+        // task_priority column directly — the column is set by
+        // upsertJournalDbEntity from the serialized data, but the priority
+        // field maps to task_priority_rank not task_priority. Use customUpdate
+        // to set the column for this test.)
+        await db!.upsertJournalDbEntity(toDbEntity(taskP0));
+        await db!.upsertJournalDbEntity(toDbEntity(taskP2));
+        await db!.customUpdate(
+          "UPDATE journal SET task_priority = 'P0' WHERE id = 'task-p0'",
+          updates: {db!.journal},
+        );
+        await db!.customUpdate(
+          "UPDATE journal SET task_priority = 'P2' WHERE id = 'task-p2'",
+          updates: {db!.journal},
+        );
+
+        final results = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-prio'],
+          priorities: const ['P0'],
+        );
+
+        expect(results.map((e) => e.meta.id), ['task-p0']);
+      });
+
+      test('getTasksSortedByDueDate filters by labels', () async {
+        final base = DateTime(2024, 7, 15, 8);
+        final labeledTask = buildTaskEntry(
+          id: 'task-labeled',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-labeled',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-label',
+          due: DateTime(2024, 10, 1),
+        );
+        final unlabeledTask = buildTaskEntry(
+          id: 'task-unlabeled',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'status-unlabeled',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-label',
+          due: DateTime(2024, 9, 1),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(labeledTask));
+        await db!.upsertJournalDbEntity(toDbEntity(unlabeledTask));
+
+        // Temporarily disable FK checks so we can insert into labeled
+        await db!.customStatement('PRAGMA foreign_keys = OFF');
+        await db!.customStatement(
+          'INSERT INTO labeled (id, journal_id, label_id) '
+          "VALUES ('lbl-1', 'task-labeled', 'label-A')",
+        );
+        await db!.customStatement('PRAGMA foreign_keys = ON');
+
+        // Filter by specific label
+        final labelResults = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-label'],
+          labelIds: const ['label-A'],
+        );
+        expect(labelResults.map((e) => e.meta.id), ['task-labeled']);
+
+        // Filter by unlabeled (empty string sentinel)
+        final unlabeledResults = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-label'],
+          labelIds: const [''],
+        );
+        expect(unlabeledResults.map((e) => e.meta.id), ['task-unlabeled']);
+      });
+
+      test(
+        'getTasksSortedByDueDate excludes private when restricted',
+        () async {
+          final base = DateTime(2024, 7, 16, 8);
+          final privateTask = buildTaskEntry(
+            id: 'task-priv-due',
+            timestamp: base,
+            privateFlag: true,
+            status: TaskStatus.open(
+              id: 'status-priv-due',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-priv-due',
+            due: DateTime(2024, 7, 1),
+          );
+          final publicTask = buildTaskEntry(
+            id: 'task-pub-due',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'status-pub-due',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-priv-due',
+            due: DateTime(2024, 8, 1),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(privateTask));
+          await db!.upsertJournalDbEntity(toDbEntity(publicTask));
+
+          // Ensure private flag is off (only public tasks visible).
+          // getConfigFlag returns false by default when the flag doesn't exist,
+          // so _visiblePrivateStatuses returns [false].
+          // However initConfigFlags may set 'private' to true by default.
+          // Toggle explicitly to guarantee [false].
+          final showPrivate = await db!.getConfigFlag('private');
+          if (showPrivate) {
+            await db!.toggleConfigFlag('private');
+          }
+
+          final results = await db!.getTasksSortedByDueDate(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['cat-priv-due'],
+          );
+
+          // Only the public task should be returned
+          expect(results.map((e) => e.meta.id), ['task-pub-due']);
+        },
+      );
+
+      test('getTasksSortedByDueDate paginates correctly', () async {
+        final base = DateTime(2024, 7, 15, 8);
+        // Create 3 tasks with different due dates
+        for (var i = 0; i < 3; i++) {
+          final task = buildTaskEntry(
+            id: 'task-page-$i',
+            timestamp: base.add(Duration(minutes: i)),
+            status: TaskStatus.open(
+              id: 'status-page-$i',
+              createdAt: base.add(Duration(minutes: i)),
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            categoryId: 'cat-page',
+            due: DateTime(2024, 6 + i, 1),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(task));
+        }
+
+        // Fetch first page (limit 2)
+        final page1 = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-page'],
+          limit: 2,
+        );
+        expect(page1.map((e) => e.meta.id), ['task-page-0', 'task-page-1']);
+
+        // Fetch second page
+        final page2 = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-page'],
+          limit: 2,
+          offset: 2,
+        );
+        expect(page2.map((e) => e.meta.id), ['task-page-2']);
+      });
+
       test('getWipCount counts tasks with IN PROGRESS status', () async {
         final base = DateTime(2024, 7, 3, 10);
         final inProgressA = buildTaskEntry(
