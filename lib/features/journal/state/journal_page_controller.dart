@@ -10,18 +10,16 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
-import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 part 'journal_page_controller.g.dart';
@@ -40,25 +38,7 @@ class JournalPageController extends _$JournalPageController {
   // Delegates
   late final JournalFilterPersistence _persistence;
   late final JournalQueryRunner _queryRunner;
-
-  // Services (via GetIt)
-  late final JournalDb _db;
-  late final UpdateNotifications _updateNotifications;
-  late final EntitiesCacheService _entitiesCacheService;
-
-  // Stream subscriptions
-  StreamSubscription<
-    ({
-      bool events,
-      bool habits,
-      bool dashboards,
-      bool vectorSearch,
-      bool projects,
-    })
-  >?
-  _configFlagsSub;
-  StreamSubscription<bool>? _privateFlagSub;
-  StreamSubscription<Set<String>>? _updatesSub;
+  late final JournalPageSubscriptions _subscriptions;
 
   // Internal state (mutable for efficiency, exposed via immutable state)
   bool _isVisible = false;
@@ -88,55 +68,56 @@ class JournalPageController extends _$JournalPageController {
   bool _showProjectsHeader = true;
   bool _showDistances = false;
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
-
-  /// When post-filters (project/agent) are active, `_runQuery` may consume
-  /// more raw DB rows than it returns filtered results. This field tracks
-  /// the actual raw offset to resume from on the next page, avoiding
-  /// duplicate or missed rows.
   int? _postFilterNextRawOffset;
-
-  // Same default for both tabs
-  Set<String> _selectedTaskStatuses = {
-    'OPEN',
-    'GROOMED',
-    'IN PROGRESS',
-  };
+  Set<String> _selectedTaskStatuses = {'OPEN', 'GROOMED', 'IN PROGRESS'};
 
   @override
   JournalPageState build(bool showTasks) {
     _showTasks = showTasks;
 
     // Initialize services
-    _db = getIt<JournalDb>();
+    final db = getIt<JournalDb>();
     final settingsDb = getIt<SettingsDb>();
     final fts5Db = getIt<Fts5Db>();
-    _updateNotifications = getIt<UpdateNotifications>();
-    _entitiesCacheService = getIt<EntitiesCacheService>();
+    final updateNotifications = getIt<UpdateNotifications>();
+    final entitiesCacheService = getIt<EntitiesCacheService>();
 
     // Initialize delegates
     _persistence = JournalFilterPersistence(settingsDb);
     _queryRunner = JournalQueryRunner(
-      db: _db,
+      db: db,
       fts5Db: fts5Db,
-      entitiesCacheService: _entitiesCacheService,
+      entitiesCacheService: entitiesCacheService,
+    );
+    _subscriptions = JournalPageSubscriptions(
+      db: db,
+      updateNotifications: updateNotifications,
     );
 
     // Initialize category selection for tasks tab
     if (showTasks) {
-      final allCategoryIds = _entitiesCacheService.sortedCategories
+      final allCategoryIds = entitiesCacheService.sortedCategories
           .map((e) => e.id)
           .toSet();
-
       if (allCategoryIds.isEmpty) {
         _selectedCategoryIds = {''};
       }
     }
 
-    // Create pagination controller with custom key logic
+    // Create pagination controller
     final controller = _createPagingController()..fetchNextPage();
 
     // Set up subscriptions
-    _setupSubscriptions(showTasks);
+    _subscriptions.setup(
+      showTasks: showTasks,
+      onPrivateFlagChanged: (showPrivate) {
+        _showPrivateEntries = showPrivate;
+        _emitState();
+      },
+      onJournalConfigFlagsChanged: _onJournalConfigFlagsChanged,
+      onUpdateNotification: (affectedIds) =>
+          _onUpdateNotification(affectedIds, showTasks: showTasks),
+    );
 
     // Load persisted filters
     _loadPersistedFilters();
@@ -146,7 +127,10 @@ class JournalPageController extends _$JournalPageController {
     _registerHotkeys();
 
     // Clean up on dispose
-    ref.onDispose(() => _dispose(controller));
+    ref.onDispose(() {
+      _subscriptions.dispose();
+      controller.dispose();
+    });
 
     return JournalPageState(
       showTasks: showTasks,
@@ -191,12 +175,8 @@ class JournalPageController extends _$JournalPageController {
     bool consumePostFilterOffset = true,
   }) {
     final currentKeys = pagingState.keys;
-    if (currentKeys == null || currentKeys.isEmpty) {
-      return 0;
-    }
-    if (!pagingState.hasNextPage) {
-      return null;
-    }
+    if (currentKeys == null || currentKeys.isEmpty) return 0;
+    if (!pagingState.hasNextPage) return null;
     final currentPages = pagingState.pages;
     if (currentPages != null &&
         currentPages.isNotEmpty &&
@@ -205,16 +185,13 @@ class JournalPageController extends _$JournalPageController {
     }
     if (_postFilterNextRawOffset != null) {
       final offset = _postFilterNextRawOffset!;
-      if (consumePostFilterOffset) {
-        _postFilterNextRawOffset = null;
-      }
+      if (consumePostFilterOffset) _postFilterNextRawOffset = null;
       return offset;
     }
     if (currentPages != null &&
         currentPages.isNotEmpty &&
         currentKeys.length == currentPages.length) {
-      final lastFetchedItemsCount = currentPages.last.length;
-      return currentKeys.last + lastFetchedItemsCount;
+      return currentKeys.last + currentPages.last.length;
     }
     return currentKeys.last +
         ((currentPages != null &&
@@ -225,239 +202,76 @@ class JournalPageController extends _$JournalPageController {
   }
 
   // ---------------------------------------------------------------
-  // Retained refresh
+  // Subscription callbacks
   // ---------------------------------------------------------------
 
-  Future<void> _refreshLoadedPagesPreservingVisibleItems(
-    JournalPagingController pagingController,
-  ) async {
-    final loadedPageKeys = _loadedVisiblePageKeys(pagingController);
-    final loadedPageCount = loadedPageKeys.length;
-    if (loadedPageCount == 0) {
-      pagingController
-        ..refresh()
-        ..fetchNextPage();
-      return;
-    }
-
-    final refreshToken = Object();
-    pagingController.startRetainedRefresh(refreshToken);
-
-    try {
-      late final List<List<JournalEntity>> refreshedPages;
-      late final List<int> refreshedKeys;
-      int? retainedNextRawOffset;
-      if (_requiresSequentialRetainedRefresh) {
-        refreshedPages = <List<JournalEntity>>[];
-        refreshedKeys = <int>[];
-        int? nextPageKey = 0;
-
-        for (
-          var pageIndex = 0;
-          pageIndex < loadedPageCount && nextPageKey != null;
-          pageIndex++
-        ) {
-          final pageKey = nextPageKey;
-          refreshedKeys.add(pageKey);
-
-          final items = await _runQuery(
-            pageKey,
-            setPostFilterNextRawOffset: (value) {
-              retainedNextRawOffset = value;
-            },
-          );
-          if (!ref.mounted) return;
-          if (!pagingController.isRetainedRefresh(refreshToken)) return;
-
-          refreshedPages.add(items);
-
-          if (pageIndex < loadedPageCount - 1) {
-            nextPageKey = items.length < pageSize
-                ? null
-                : retainedNextRawOffset ?? pageKey + items.length;
-          }
-        }
-      } else {
-        refreshedKeys = loadedPageKeys;
-        refreshedPages = await Future.wait(
-          refreshedKeys.map(_runQuery),
-        );
-        if (!ref.mounted) return;
-        if (!pagingController.isRetainedRefresh(refreshToken)) return;
-      }
-
-      final hasNextPage =
-          refreshedPages.length == loadedPageCount &&
-          refreshedPages.isNotEmpty &&
-          refreshedPages.last.length == pageSize;
-
-      _postFilterNextRawOffset =
-          _requiresSequentialRetainedRefresh && hasNextPage
-          ? retainedNextRawOffset
-          : null;
-
-      if (refreshedPages.isNotEmpty) {
-        _rememberLeadingTaskIds(refreshedPages.first);
-      }
-
-      pagingController.replacePages(
-        refreshedPages,
-        keys: refreshedKeys,
-        hasNextPage: hasNextPage,
-      );
-    } catch (error, stackTrace) {
-      DevLogger.warning(
-        name: 'JournalPageController',
-        message: 'Error in retained visible-page refresh: $error\n$stackTrace',
-      );
-      if (!ref.mounted) return;
-      if (!pagingController.isRetainedRefresh(refreshToken)) return;
-      pagingController.finishRetainedRefreshWithError(
-        error,
-        refreshToken: refreshToken,
-      );
-      if (error is! Exception) rethrow;
-    }
-  }
-
-  // ---------------------------------------------------------------
-  // Subscriptions
-  // ---------------------------------------------------------------
-
-  void _setupSubscriptions(bool showTasks) {
-    _privateFlagSub = _db.watchConfigFlag('private').listen((showPrivate) {
-      _showPrivateEntries = showPrivate;
-      _emitState();
-    });
-
-    _configFlagsSub =
-        Rx.combineLatest5<
-              bool,
-              bool,
-              bool,
-              bool,
-              bool,
-              ({
-                bool events,
-                bool habits,
-                bool dashboards,
-                bool vectorSearch,
-                bool projects,
-              })
-            >(
-              _db.watchConfigFlag(enableEventsFlag),
-              _db.watchConfigFlag(enableHabitsPageFlag),
-              _db.watchConfigFlag(enableDashboardsPageFlag),
-              _db.watchConfigFlag(enableVectorSearchFlag),
-              _db.watchConfigFlag(enableProjectsFlag),
-              (events, habits, dashboards, vectorSearch, projects) => (
-                events: events,
-                habits: habits,
-                dashboards: dashboards,
-                vectorSearch: vectorSearch,
-                projects: projects,
-              ),
-            )
-            .listen(_onConfigFlagsChanged);
-
-    String idMapper(JournalEntity entity) => entity.meta.id;
-
-    _updatesSub = _updateNotifications.updateStream.listen((affectedIds) async {
-      if (_isVisible) {
-        final displayedIds =
-            state.pagingController?.value.items?.map(idMapper).toSet() ??
-            <String>{};
-        final affectsDisplayedItems = displayedIds
-            .intersection(affectedIds)
-            .isNotEmpty;
-
-        if (showTasks) {
-          if (affectsDisplayedItems) {
-            await refreshQuery(preserveVisibleItems: true);
-            return;
-          }
-
-          final savedOffset = _postFilterNextRawOffset;
-          final newIds = (await _runQuery(0)).map(idMapper).toSet();
-          _postFilterNextRawOffset = savedOffset;
-          if (!setEquals(_lastIds, newIds)) {
-            _lastIds = newIds;
-            await refreshQuery(preserveVisibleItems: true);
-          }
-        } else {
-          if (affectsDisplayedItems) {
-            await refreshQuery(preserveVisibleItems: true);
-          }
-        }
-      } else {
-        _needsRefreshOnVisible = true;
-      }
-    });
-  }
-
-  void _onConfigFlagsChanged(
-    ({
-      bool events,
-      bool habits,
-      bool dashboards,
-      bool vectorSearch,
-      bool projects,
-    })
-    flags,
-  ) {
-    final oldAllowed = computeAllowedEntryTypes(
-      events: _enableEvents,
-      habits: _enableHabits,
-      dashboards: _enableDashboards,
-    ).toSet();
-
-    _enableEvents = flags.events;
-    _enableHabits = flags.habits;
-    _enableDashboards = flags.dashboards;
-    _enableVectorSearch = flags.vectorSearch;
-    _enableProjects = flags.projects;
-    var shouldRefreshAfterModeFallback = false;
-    if (_showTasks &&
-        isDesktop &&
-        _enableVectorSearch &&
-        !_hasExplicitSearchModeSelection &&
-        _searchMode != SearchMode.vector) {
-      _searchMode = SearchMode.vector;
-      shouldRefreshAfterModeFallback = true;
-    } else if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
-      _searchMode = SearchMode.fullText;
-      shouldRefreshAfterModeFallback = true;
-    }
-    if (!_enableProjects && _selectedProjectIds.isNotEmpty) {
-      _selectedProjectIds = {};
-      shouldRefreshAfterModeFallback = true;
-    }
-
-    final newAllowed = computeAllowedEntryTypes(
-      events: _enableEvents,
-      habits: _enableHabits,
-      dashboards: _enableDashboards,
-    ).toSet();
-
-    final hadAllPreviouslySelected =
-        oldAllowed.isNotEmpty && setEquals(_selectedEntryTypes, oldAllowed);
+  void _onJournalConfigFlagsChanged(JournalConfigFlags flags) {
+    final result = JournalPageSubscriptions.applyJournalConfigFlags(
+      flags: flags,
+      showTasks: _showTasks,
+      enableEvents: _enableEvents,
+      enableHabits: _enableHabits,
+      enableDashboards: _enableDashboards,
+      enableVectorSearch: _enableVectorSearch,
+      enableProjects: _enableProjects,
+      searchMode: _searchMode,
+      hasExplicitSearchModeSelection: _hasExplicitSearchModeSelection,
+      selectedEntryTypes: _selectedEntryTypes,
+      selectedProjectIds: _selectedProjectIds,
+    );
 
     final prevSelection = _selectedEntryTypes;
-
-    if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
-      _selectedEntryTypes = newAllowed;
-    } else {
-      _selectedEntryTypes = _selectedEntryTypes.intersection(newAllowed);
-    }
+    _enableEvents = result.enableEvents;
+    _enableHabits = result.enableHabits;
+    _enableDashboards = result.enableDashboards;
+    _enableVectorSearch = result.enableVectorSearch;
+    _enableProjects = result.enableProjects;
+    _searchMode = result.searchMode;
+    _selectedEntryTypes = result.selectedEntryTypes;
+    _selectedProjectIds = result.selectedProjectIds;
 
     _emitState();
 
-    if (shouldRefreshAfterModeFallback) {
+    if (result.shouldRefresh) {
       unawaited(refreshQuery(preserveVisibleItems: true));
     }
-
     if (!setEquals(prevSelection, _selectedEntryTypes)) {
       persistEntryTypes();
+    }
+  }
+
+  Future<void> _onUpdateNotification(
+    Set<String> affectedIds, {
+    required bool showTasks,
+  }) async {
+    if (_isVisible) {
+      String idMapper(JournalEntity entity) => entity.meta.id;
+      final displayedIds =
+          state.pagingController?.value.items?.map(idMapper).toSet() ??
+          <String>{};
+      final affectsDisplayedItems = displayedIds
+          .intersection(affectedIds)
+          .isNotEmpty;
+
+      if (showTasks) {
+        if (affectsDisplayedItems) {
+          await refreshQuery(preserveVisibleItems: true);
+          return;
+        }
+        final savedOffset = _postFilterNextRawOffset;
+        final newIds = (await _runQuery(0)).map(idMapper).toSet();
+        _postFilterNextRawOffset = savedOffset;
+        if (!setEquals(_lastIds, newIds)) {
+          _lastIds = newIds;
+          await refreshQuery(preserveVisibleItems: true);
+        }
+      } else {
+        if (affectsDisplayedItems) {
+          await refreshQuery(preserveVisibleItems: true);
+        }
+      }
+    } else {
+      _needsRefreshOnVisible = true;
     }
   }
 
@@ -472,13 +286,6 @@ class JournalPageController extends _$JournalPageController {
         keyDownHandler: (hotKey) => refreshQuery(preserveVisibleItems: true),
       );
     }
-  }
-
-  void _dispose(PagingController<int, JournalEntity> controller) {
-    _configFlagsSub?.cancel();
-    _privateFlagSub?.cancel();
-    _updatesSub?.cancel();
-    controller.dispose();
   }
 
   // ---------------------------------------------------------------
@@ -783,7 +590,14 @@ class JournalPageController extends _$JournalPageController {
     if (preserveVisibleItems &&
         pagingController is JournalPagingController &&
         pagingController.hasVisibleItems) {
-      await _refreshLoadedPagesPreservingVisibleItems(pagingController);
+      await pagingController.refreshLoadedPages(
+        runQuery: _runQuery,
+        requiresSequential: _requiresSequentialRetainedRefresh,
+        pageSize: pageSize,
+        isMounted: () => ref.mounted,
+        onPostFilterOffset: (offset) => _postFilterNextRawOffset = offset,
+        onLeadingItems: _rememberLeadingTaskIds,
+      );
       return;
     }
 
@@ -804,14 +618,10 @@ class JournalPageController extends _$JournalPageController {
   Future<List<JournalEntity>> _fetchPage(int pageKey) async {
     try {
       final items = await _runQuery(pageKey);
-      if (pageKey == 0) {
-        _rememberLeadingTaskIds(items);
-      }
+      if (pageKey == 0) _rememberLeadingTaskIds(items);
       return items;
     } catch (error, stackTrace) {
-      if (kDebugMode) {
-        print('Error in _fetchPage: $error\n$stackTrace');
-      }
+      if (kDebugMode) print('Error in _fetchPage: $error\n$stackTrace');
       rethrow;
     }
   }
@@ -826,7 +636,6 @@ class JournalPageController extends _$JournalPageController {
 
     final params = _buildQueryParams();
 
-    // Vector search: bypass FTS5, update telemetry on state directly.
     if (params.enableVectorSearch &&
         params.searchMode == SearchMode.vector &&
         params.query.isNotEmpty &&
@@ -835,7 +644,6 @@ class JournalPageController extends _$JournalPageController {
     }
 
     _fullTextMatches = await _queryRunner.fts5Search(params.query);
-
     return _queryRunner.runQuery(
       params,
       pageKey,
@@ -853,16 +661,13 @@ class JournalPageController extends _$JournalPageController {
       vectorSearchResultCount: 0,
       vectorSearchDistances: const {},
     );
-
     final result = await _queryRunner.runVectorSearch(params);
-
     state = state.copyWith(
       vectorSearchInFlight: false,
       vectorSearchElapsed: result.elapsed,
       vectorSearchResultCount: result.entities.length,
       vectorSearchDistances: result.distances,
     );
-
     return result.entities;
   }
 
@@ -887,31 +692,10 @@ class JournalPageController extends _$JournalPageController {
     );
   }
 
-  // ---------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------
-
   bool get _requiresSequentialRetainedRefresh =>
       _showTasks &&
       (_agentAssignmentFilter != AgentAssignmentFilter.all ||
           _selectedProjectIds.isNotEmpty);
-
-  List<int> _loadedVisiblePageKeys(JournalPagingController pagingController) {
-    final pages = pagingController.value.pages;
-    final keys = pagingController.value.keys;
-    if (pages == null || keys == null) return const [];
-
-    final sharedLength = pages.length < keys.length
-        ? pages.length
-        : keys.length;
-    final loadedPageKeys = <int>[];
-    for (var index = 0; index < sharedLength; index++) {
-      if (pages[index].isNotEmpty) {
-        loadedPageKeys.add(keys[index]);
-      }
-    }
-    return loadedPageKeys;
-  }
 
   void _rememberLeadingTaskIds(Iterable<JournalEntity> items) {
     if (!_showTasks) return;
