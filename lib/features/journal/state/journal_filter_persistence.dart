@@ -17,10 +17,10 @@ class JournalFilterPersistence {
   /// Key used for entry-type persistence.
   static const selectedEntryTypesKey = 'SELECTED_ENTRY_TYPES';
 
-  // Dedup state — avoids redundant DB writes.
-  String? _persistedPerTabTasksFilterValue;
+  // Dedup state — avoids redundant DB writes, keyed per persistence key.
+  final Map<String, String?> _persistedFiltersByKey = {};
+  final Set<String> _loadedFilterKeys = {};
   String? _persistedEntryTypesValue;
-  bool _hasLoadedPerTabTasksFilterValue = false;
   bool _hasLoadedEntryTypesValue = false;
 
   // ---------------------------------------------------------------
@@ -31,15 +31,21 @@ class JournalFilterPersistence {
   /// Returns `null` when nothing was stored.
   Future<TasksFilter?> loadFilters(String key) async {
     final raw = await _settingsDb.itemByKey(key);
-    _persistedPerTabTasksFilterValue = _normalizeTasksFilterValue(raw);
-    _hasLoadedPerTabTasksFilterValue = true;
-
-    if (raw == null) return null;
+    if (raw == null) {
+      _persistedFiltersByKey[key] = null;
+      _loadedFilterKeys.add(key);
+      return null;
+    }
 
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      return TasksFilter.fromJson(json);
+      final filter = TasksFilter.fromJson(json);
+      _persistedFiltersByKey[key] = _encodeTasksFilter(filter);
+      _loadedFilterKeys.add(key);
+      return filter;
     } catch (e) {
+      _persistedFiltersByKey[key] = raw;
+      _loadedFilterKeys.add(key);
       DevLogger.warning(
         name: 'JournalFilterPersistence',
         message: 'Error loading persisted filters: $e',
@@ -52,13 +58,27 @@ class JournalFilterPersistence {
   /// Returns `null` when nothing was stored.
   Future<Set<String>?> loadEntryTypes() async {
     final raw = await _settingsDb.itemByKey(selectedEntryTypesKey);
-    _persistedEntryTypesValue = _normalizeEntryTypesValue(raw);
-    _hasLoadedEntryTypesValue = true;
+    if (raw == null) {
+      _persistedEntryTypesValue = null;
+      _hasLoadedEntryTypesValue = true;
+      return null;
+    }
 
-    if (raw == null) return null;
-
-    final json = jsonDecode(raw) as List<dynamic>;
-    return List<String>.from(json).toSet();
+    try {
+      final json = jsonDecode(raw) as List<dynamic>;
+      final types = List<String>.from(json).toSet();
+      _persistedEntryTypesValue = _encodeEntryTypes(types);
+      _hasLoadedEntryTypesValue = true;
+      return types;
+    } catch (e) {
+      _persistedEntryTypesValue = raw;
+      _hasLoadedEntryTypesValue = true;
+      DevLogger.warning(
+        name: 'JournalFilterPersistence',
+        message: 'Error loading persisted entry types: $e',
+      );
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------
@@ -69,16 +89,16 @@ class JournalFilterPersistence {
   Future<void> saveFilters(TasksFilter filter, String key) async {
     final encoded = _encodeTasksFilter(filter);
 
-    if (!_hasLoadedPerTabTasksFilterValue) {
-      _persistedPerTabTasksFilterValue = _normalizeTasksFilterValue(
+    if (!_loadedFilterKeys.contains(key)) {
+      _persistedFiltersByKey[key] = _normalizeTasksFilterValue(
         await _settingsDb.itemByKey(key),
       );
-      _hasLoadedPerTabTasksFilterValue = true;
+      _loadedFilterKeys.add(key);
     }
 
-    if (_persistedPerTabTasksFilterValue != encoded) {
+    if (_persistedFiltersByKey[key] != encoded) {
       await _settingsDb.saveSettingsItem(key, encoded);
-      _persistedPerTabTasksFilterValue = encoded;
+      _persistedFiltersByKey[key] = encoded;
     }
   }
 

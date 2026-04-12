@@ -244,7 +244,7 @@ class JournalQueryRunner {
 
     final filtered = <JournalEntity>[];
     var currentOffset = pageKey;
-    const fetchChunk = 50;
+    const fetchChunk = pageSize;
 
     var pageFilled = false;
     while (!pageFilled && filtered.length < pageSize) {

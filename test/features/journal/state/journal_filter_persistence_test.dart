@@ -284,6 +284,40 @@ void main() {
         ).called(1);
       });
     });
+    test(
+      'saves two different keys independently without cross-key leakage',
+      () {
+        fakeAsync((async) {
+          const keyA = 'TASKS_FILTERS';
+          const keyB = 'JOURNAL_FILTERS';
+
+          const filterA = TasksFilter(
+            selectedCategoryIds: {'cat-a'},
+            selectedTaskStatuses: {'OPEN'},
+          );
+          const filterB = TasksFilter(
+            selectedCategoryIds: {'cat-b'},
+            selectedTaskStatuses: {'DONE'},
+          );
+
+          // Save filter A under keyA.
+          sut.saveFilters(filterA, keyA);
+          async.flushMicrotasks();
+
+          // Save filter B under keyB — should NOT reuse keyA's cached snapshot.
+          sut.saveFilters(filterB, keyB);
+          async.flushMicrotasks();
+
+          // Both keys should have been written.
+          verify(
+            () => mockSettingsDb.saveSettingsItem(keyA, any()),
+          ).called(1);
+          verify(
+            () => mockSettingsDb.saveSettingsItem(keyB, any()),
+          ).called(1);
+        });
+      },
+    );
   });
 
   group('saveEntryTypes', () {
