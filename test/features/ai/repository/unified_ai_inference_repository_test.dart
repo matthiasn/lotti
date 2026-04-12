@@ -5506,6 +5506,7 @@ void _stubGenerate(
       baseUrl: any(named: 'baseUrl'),
       apiKey: any(named: 'apiKey'),
       systemMessage: any(named: 'systemMessage'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
       provider: any(named: 'provider'),
       tools: any(named: 'tools'),
     ),
@@ -5526,8 +5527,7 @@ void _stubGenerateWithImages(
       images: any(named: 'images'),
       baseUrl: any(named: 'baseUrl'),
       apiKey: any(named: 'apiKey'),
-      tools: any(named: 'tools'),
-      systemMessage: any(named: 'systemMessage'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
     ),
   ).thenAnswer((_) => stream);
 }
@@ -5545,9 +5545,9 @@ void _stubGenerateWithAudio(
       audioBase64: any(named: 'audioBase64'),
       baseUrl: any(named: 'baseUrl'),
       apiKey: any(named: 'apiKey'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
       stream: any(named: 'stream'),
       audioFormat: any(named: 'audioFormat'),
-      tools: any(named: 'tools'),
     ),
   ).thenAnswer((_) => stream);
 }

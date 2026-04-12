@@ -316,6 +316,8 @@ void stubLoggingService(MockLoggingService mock) {
       any<Object>(),
       domain: any<String>(named: 'domain'),
       subDomain: any<String>(named: 'subDomain'),
+      level: any(named: 'level'),
+      type: any(named: 'type'),
     ),
   ).thenAnswer((_) {});
   when(
@@ -324,8 +326,10 @@ void stubLoggingService(MockLoggingService mock) {
       domain: any<String>(named: 'domain'),
       subDomain: any<String>(named: 'subDomain'),
       stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      level: any(named: 'level'),
+      type: any(named: 'type'),
     ),
-  ).thenAnswer((_) async {});
+  ).thenAnswer((_) {});
 }
 
 class MockDomainLogger extends Mock implements DomainLogger {}

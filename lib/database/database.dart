@@ -853,10 +853,10 @@ class JournalDb extends _$JournalDb {
 
   Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
     Iterable<String> ids,
-  ) async {
+  ) {
     final idList = ids.toSet().toList(growable: false);
     if (idList.isEmpty) {
-      return const <String>[];
+      return Future.value(const <String>[]);
     }
     return _queryWithPrivateFilter(
       allPrivate: () => journalEntityIdsByDateFromDescAllPrivate(idList).get(),
@@ -1357,7 +1357,7 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Future<List<JournalDbEntity>> getLinkedToEntities(String linkedTo) async {
+  Future<List<JournalDbEntity>> getLinkedToEntities(String linkedTo) {
     return _queryWithPrivateFilter(
       allPrivate: () => linkedToJournalEntities(linkedTo).get(),
       filtered: (s) =>
