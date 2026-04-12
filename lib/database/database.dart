@@ -1144,7 +1144,9 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
-    if (taskStatuses.isEmpty || categoryIds.isEmpty) {
+    if (taskStatuses.isEmpty ||
+        categoryIds.isEmpty ||
+        (ids != null && ids.isEmpty)) {
       return Future.value([]);
     }
 
@@ -1154,7 +1156,7 @@ class JournalDb extends _$JournalDb {
         'SELECT * FROM journal '
         'INDEXED BY idx_journal_tasks_due_active ',
       )
-      ..write("WHERE type = 'Task' AND deleted = 0 ")
+      ..write("WHERE type = 'Task' AND task = 1 AND deleted = 0 ")
       // Task statuses
       ..write('AND task_status IN (');
     for (var i = 0; i < taskStatuses.length; i++) {
@@ -1211,7 +1213,7 @@ class JournalDb extends _$JournalDb {
       buf.write(') ');
     }
 
-    // Labels
+    // Labels (via the labeled join table, matching _selectTasks semantics)
     final selectedLabelIds = labelIds ?? <String>[];
     final includeUnlabeled = selectedLabelIds.contains('');
     final filteredLabelIds = selectedLabelIds
@@ -1221,7 +1223,8 @@ class JournalDb extends _$JournalDb {
       final conditions = <String>[];
       if (includeUnlabeled) {
         conditions.add(
-          r"json_extract(serialized, '$.data.categoryId') = ''",
+          'NOT EXISTS (SELECT 1 FROM labeled '
+          'WHERE journal_id = journal.id)',
         );
       }
       if (filteredLabelIds.isNotEmpty) {
@@ -1231,8 +1234,9 @@ class JournalDb extends _$JournalDb {
           placeholders.add('?${variables.length}');
         }
         conditions.add(
-          r"json_extract(serialized, '$.data.categoryId') "
-          'IN (${placeholders.join(", ")})',
+          'EXISTS (SELECT 1 FROM labeled '
+          'WHERE journal_id = journal.id '
+          'AND label_id IN (${placeholders.join(", ")}))',
         );
       }
       buf.write('AND (${conditions.join(" OR ")}) ');
@@ -1265,7 +1269,7 @@ class JournalDb extends _$JournalDb {
     return customSelect(
       buf.toString(),
       variables: variables,
-      readsFrom: {journal},
+      readsFrom: {journal, labeled},
     ).asyncMap(journal.mapFromRow).get();
   }
 
