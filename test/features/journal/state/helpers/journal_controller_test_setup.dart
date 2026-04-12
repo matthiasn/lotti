@@ -81,6 +81,19 @@ class JournalControllerTestSetup {
     ).thenAnswer((_) async => <JournalEntity>[]);
 
     when(
+      () => mockJournalDb.getTasksSortedByDueDate(
+        ids: any(named: 'ids'),
+        starredStatuses: any(named: 'starredStatuses'),
+        taskStatuses: any(named: 'taskStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        labelIds: any(named: 'labelIds'),
+        priorities: any(named: 'priorities'),
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+      ),
+    ).thenAnswer((_) async => <JournalEntity>[]);
+
+    when(
       () => mockJournalDb.getJournalEntities(
         types: any(named: 'types'),
         starredStatuses: any(named: 'starredStatuses'),

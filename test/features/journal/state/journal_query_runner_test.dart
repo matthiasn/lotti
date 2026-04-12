@@ -141,6 +141,19 @@ void main() {
     ).thenAnswer((_) async => <JournalEntity>[]);
 
     when(
+      () => mockJournalDb.getTasksSortedByDueDate(
+        ids: any(named: 'ids'),
+        starredStatuses: any(named: 'starredStatuses'),
+        taskStatuses: any(named: 'taskStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        labelIds: any(named: 'labelIds'),
+        priorities: any(named: 'priorities'),
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+      ),
+    ).thenAnswer((_) async => <JournalEntity>[]);
+
+    when(
       () => mockJournalDb.getTaskIdsForProjects(any()),
     ).thenAnswer((_) async => <String>{});
 
@@ -448,31 +461,31 @@ void main() {
       });
     });
 
-    test('applies sortByDueDate when sortOption is byDueDate', () {
+    test('uses getTasksSortedByDueDate when sortOption is byDueDate', () {
       fakeAsync((async) {
-        final taskNoDue = _makeTask(
-          id: 'no-due',
-          createdAt: DateTime(2024, 1, 1),
-        );
         final taskWithDue = _makeTask(
           id: 'with-due',
           createdAt: DateTime(2024, 1, 2),
           due: DateTime(2024, 6, 1),
         );
+        final taskNoDue = _makeTask(
+          id: 'no-due',
+          createdAt: DateTime(2024, 1, 1),
+        );
 
+        // DB returns already-sorted results
         when(
-          () => mockJournalDb.getTasks(
+          () => mockJournalDb.getTasksSortedByDueDate(
             ids: any(named: 'ids'),
             starredStatuses: any(named: 'starredStatuses'),
             taskStatuses: any(named: 'taskStatuses'),
             categoryIds: any(named: 'categoryIds'),
             labelIds: any(named: 'labelIds'),
             priorities: any(named: 'priorities'),
-            sortByDate: any(named: 'sortByDate'),
             limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           ),
-        ).thenAnswer((_) async => [taskNoDue, taskWithDue]);
+        ).thenAnswer((_) async => [taskWithDue, taskNoDue]);
 
         final params = _defaultParams(
           showTasks: true,
@@ -483,9 +496,21 @@ void main() {
         runner.runQuery(params, 0, fullTextMatches: {}).then((r) => result = r);
         async.flushMicrotasks();
 
-        // with-due should come before no-due after sort
         expect(result.first.meta.id, equals('with-due'));
         expect(result.last.meta.id, equals('no-due'));
+
+        verify(
+          () => mockJournalDb.getTasksSortedByDueDate(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).called(1);
       });
     });
   });

@@ -1103,6 +1103,176 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  /// Like [getTasks] but orders by due date (soonest first, nulls last)
+  /// using the expression index on `json_extract(serialized, '$.data.due')`.
+  ///
+  /// Uses raw SQL because Drift doesn't support `INDEXED BY` or
+  /// `json_extract` ORDER BY in generated queries.
+  Future<List<JournalEntity>> getTasksSortedByDueDate({
+    required List<bool> starredStatuses,
+    required List<String> taskStatuses,
+    required List<String> categoryIds,
+    List<String>? labelIds,
+    List<String>? priorities,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    final res = await _buildTasksByDueDateQuery(
+      starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
+      taskStatuses: taskStatuses,
+      categoryIds: categoryIds,
+      labelIds: labelIds,
+      priorities: priorities,
+      ids: ids,
+      limit: limit,
+      offset: offset,
+    );
+    return res.map(fromDbEntity).toList();
+  }
+
+  Future<List<JournalDbEntity>> _buildTasksByDueDateQuery({
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<String> taskStatuses,
+    required List<String> categoryIds,
+    List<String>? labelIds,
+    List<String>? priorities,
+    List<String>? ids,
+    int limit = 500,
+    int offset = 0,
+  }) {
+    if (taskStatuses.isEmpty ||
+        categoryIds.isEmpty ||
+        (ids != null && ids.isEmpty)) {
+      return Future.value([]);
+    }
+
+    final variables = <Variable<Object>>[];
+    final buf = StringBuffer()
+      ..write(
+        'SELECT * FROM journal '
+        'INDEXED BY idx_journal_tasks_due_active ',
+      )
+      ..write("WHERE type = 'Task' AND task = 1 AND deleted = 0 ")
+      // Task statuses
+      ..write('AND task_status IN (');
+    for (var i = 0; i < taskStatuses.length; i++) {
+      if (i > 0) buf.write(', ');
+      variables.add(Variable<String>(taskStatuses[i]));
+      buf.write('?${variables.length}');
+    }
+    buf
+      ..write(') ')
+      // Categories
+      ..write('AND category IN (');
+    for (var i = 0; i < categoryIds.length; i++) {
+      if (i > 0) buf.write(', ');
+      variables.add(Variable<String>(categoryIds[i]));
+      buf.write('?${variables.length}');
+    }
+    buf.write(') ');
+
+    // Starred
+    final matchesAllStarred =
+        starredStatuses.length == 2 &&
+        starredStatuses.contains(true) &&
+        starredStatuses.contains(false);
+    if (!matchesAllStarred) {
+      buf.write('AND starred IN (');
+      for (var i = 0; i < starredStatuses.length; i++) {
+        if (i > 0) buf.write(', ');
+        variables.add(Variable<bool>(starredStatuses[i]));
+        buf.write('?${variables.length}');
+      }
+      buf.write(') ');
+    }
+
+    // Private
+    final matchesAllPrivate = _matchesAllPrivateStates(privateStatuses);
+    if (!matchesAllPrivate) {
+      buf.write('AND private IN (');
+      for (var i = 0; i < privateStatuses.length; i++) {
+        if (i > 0) buf.write(', ');
+        variables.add(Variable<bool>(privateStatuses[i]));
+        buf.write('?${variables.length}');
+      }
+      buf.write(') ');
+    }
+
+    // FTS ids filter
+    if (ids != null && ids.isNotEmpty) {
+      buf.write('AND id IN (');
+      for (var i = 0; i < ids.length; i++) {
+        if (i > 0) buf.write(', ');
+        variables.add(Variable<String>(ids[i]));
+        buf.write('?${variables.length}');
+      }
+      buf.write(') ');
+    }
+
+    // Labels (via the labeled join table, matching _selectTasks semantics)
+    final selectedLabelIds = labelIds ?? <String>[];
+    final includeUnlabeled = selectedLabelIds.contains('');
+    final filteredLabelIds = selectedLabelIds
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (includeUnlabeled || filteredLabelIds.isNotEmpty) {
+      final conditions = <String>[];
+      if (includeUnlabeled) {
+        conditions.add(
+          'NOT EXISTS (SELECT 1 FROM labeled '
+          'WHERE journal_id = journal.id)',
+        );
+      }
+      if (filteredLabelIds.isNotEmpty) {
+        final placeholders = <String>[];
+        for (final id in filteredLabelIds) {
+          variables.add(Variable<String>(id));
+          placeholders.add('?${variables.length}');
+        }
+        conditions.add(
+          'EXISTS (SELECT 1 FROM labeled '
+          'WHERE journal_id = journal.id '
+          'AND label_id IN (${placeholders.join(", ")}))',
+        );
+      }
+      buf.write('AND (${conditions.join(" OR ")}) ');
+    }
+
+    // Priorities
+    if (priorities != null && priorities.isNotEmpty) {
+      buf.write('AND task_priority IN (');
+      for (var i = 0; i < priorities.length; i++) {
+        if (i > 0) buf.write(', ');
+        variables.add(Variable<String>(priorities[i]));
+        buf.write('?${variables.length}');
+      }
+      buf.write(') ');
+    }
+
+    // Order: due date ASC (nulls last), then date_from DESC as tiebreaker
+    buf
+      ..write(
+        r"ORDER BY CASE WHEN json_extract(serialized, '$.data.due') "
+        'IS NULL THEN 1 ELSE 0 END, '
+        r"json_extract(serialized, '$.data.due') ASC, "
+        'date_from DESC ',
+      )
+      ..write('LIMIT ')
+      ..write(limit)
+      ..write(' OFFSET ')
+      ..write(offset);
+
+    return customSelect(
+      buf.toString(),
+      variables: variables,
+      readsFrom: {journal, labeled},
+    ).asyncMap(journal.mapFromRow).get();
+  }
+
   Selectable<JournalDbEntity> _selectTasks({
     required List<bool> starredStatuses,
     required List<bool> privateStatuses,
