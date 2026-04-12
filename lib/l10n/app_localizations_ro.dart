@@ -3155,9 +3155,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemMyDailyTapToExpandLabel => 'Apasă pentru extindere';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'Asistent AI';
-
-  @override
   String get designSystemNavigationCollapsedLabel => 'Restrâns';
 
   @override

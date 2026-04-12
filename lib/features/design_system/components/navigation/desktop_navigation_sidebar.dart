@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -22,8 +21,8 @@ class DesktopSidebarDestination {
 /// Persistent left-hand navigation sidebar for the desktop layout.
 ///
 /// Replaces the mobile bottom navigation bar when the window is wide enough.
-/// Contains the brand logo, a "New" action button, AI assistant button,
-/// navigation items, and a Settings entry pinned to the bottom.
+/// Contains the brand logo, a "New" action button, navigation items,
+/// and a Settings entry pinned to the bottom.
 class DesktopNavigationSidebar extends StatelessWidget {
   const DesktopNavigationSidebar({
     required this.destinations,
@@ -33,7 +32,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.onSettingsSelected,
     this.isSettingsActive = false,
     this.onNewPressed,
-    this.onAiAssistantPressed,
     this.width = 320,
     super.key,
   });
@@ -58,9 +56,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
   /// Called when the "New" button is pressed.
   final VoidCallback? onNewPressed;
-
-  /// Called when the AI assistant button is pressed.
-  final VoidCallback? onAiAssistantPressed;
 
   /// Width of the sidebar. Defaults to 320.
   final double width;
@@ -103,26 +98,13 @@ class DesktopNavigationSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Action row: New button + AI assistant
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DesignSystemButton(
-                label: context.messages.designSystemNavigationNewLabel,
-                size: DesignSystemButtonSize.medium,
-                leadingIcon: Icons.add_rounded,
-                trailingIcon: Icons.keyboard_arrow_down_rounded,
-                onPressed: onNewPressed,
-              ),
-              const Spacer(),
-              DesignSystemAiAssistantButton(
-                assetName: 'assets/design_system/ai_assistant_variant_1.png',
-                semanticLabel: context
-                    .messages
-                    .designSystemNavigationAiAssistantSectionTitle,
-                onPressed: onAiAssistantPressed,
-              ),
-            ],
+          // Action row: New button
+          DesignSystemButton(
+            label: context.messages.designSystemNavigationNewLabel,
+            size: DesignSystemButtonSize.medium,
+            leadingIcon: Icons.add_rounded,
+            trailingIcon: Icons.keyboard_arrow_down_rounded,
+            onPressed: onNewPressed,
           ),
           const SizedBox(height: 24),
 

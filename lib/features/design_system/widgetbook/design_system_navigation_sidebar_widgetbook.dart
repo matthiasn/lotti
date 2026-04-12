@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -41,13 +40,6 @@ class _NavigationSidebarOverviewPage extends StatelessWidget {
                   .messages
                   .designSystemNavigationDailyFilterSectionTitle,
               child: const _DailyFilterShowcase(),
-            ),
-            const SizedBox(height: 32),
-            WidgetbookSection(
-              title: context
-                  .messages
-                  .designSystemNavigationAiAssistantSectionTitle,
-              child: const _AiAssistantShowcase(),
             ),
           ],
         ),
@@ -140,33 +132,13 @@ class _ExpandedSidebarContent extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         SizedBox(
-          width: 288,
-          height: 56,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SizedBox(
-                height: _topActionButtonHeight,
-                child: DesignSystemButton(
-                  label: context.messages.designSystemNavigationNewLabel,
-                  size: DesignSystemButtonSize.medium,
-                  leadingIcon: Icons.add_rounded,
-                  trailingIcon: Icons.keyboard_arrow_down_rounded,
-                  onPressed: widgetbookNoop,
-                ),
-              ),
-              Positioned(
-                top: 0,
-                right: 0,
-                child: DesignSystemAiAssistantButton(
-                  assetName: 'assets/design_system/ai_assistant_variant_1.png',
-                  semanticLabel: context
-                      .messages
-                      .designSystemNavigationAiAssistantSectionTitle,
-                  onPressed: widgetbookNoop,
-                ),
-              ),
-            ],
+          height: _topActionButtonHeight,
+          child: DesignSystemButton(
+            label: context.messages.designSystemNavigationNewLabel,
+            size: DesignSystemButtonSize.medium,
+            leadingIcon: Icons.add_rounded,
+            trailingIcon: Icons.keyboard_arrow_down_rounded,
+            onPressed: widgetbookNoop,
           ),
         ),
         const SizedBox(height: 24),
@@ -204,30 +176,8 @@ class _CollapsedSidebarContent extends StatelessWidget {
           key: const Key('collapsed-sidebar-action-slot'),
           width: 44,
           height: 44,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SizedBox(
-                key: const Key('collapsed-sidebar-new-button'),
-                width: 44,
-                height: 44,
-                child: _CollapsedSidebarNewButton(
-                  semanticsLabel:
-                      context.messages.designSystemNavigationNewLabel,
-                ),
-              ),
-              Positioned(
-                top: 0,
-                left: 54,
-                child: DesignSystemAiAssistantButton(
-                  assetName: 'assets/design_system/ai_assistant_variant_1.png',
-                  semanticLabel: context
-                      .messages
-                      .designSystemNavigationAiAssistantSectionTitle,
-                  onPressed: widgetbookNoop,
-                ),
-              ),
-            ],
+          child: _CollapsedSidebarNewButton(
+            semanticsLabel: context.messages.designSystemNavigationNewLabel,
           ),
         ),
       ],
@@ -541,41 +491,6 @@ class _DailyFilterChip extends StatelessWidget {
           fontSize: 12,
           color: tokens.colors.text.highEmphasis,
         ),
-      ),
-    );
-  }
-}
-
-class _AiAssistantShowcase extends StatelessWidget {
-  const _AiAssistantShowcase();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(tokens.spacing.step6),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DesignSystemAiAssistantButton(
-            assetName: 'assets/design_system/ai_assistant_variant_1.png',
-            semanticLabel:
-                context.messages.designSystemNavigationAiAssistantSectionTitle,
-            onPressed: widgetbookNoop,
-          ),
-          const SizedBox(width: 24),
-          DesignSystemAiAssistantButton(
-            assetName: 'assets/design_system/ai_assistant_variant_2.png',
-            semanticLabel:
-                context.messages.designSystemNavigationAiAssistantSectionTitle,
-            onPressed: widgetbookNoop,
-          ),
-        ],
       ),
     );
   }

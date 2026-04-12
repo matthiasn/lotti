@@ -33,7 +33,6 @@ void main() {
 
       expect(find.text('Sidebar Variants'), findsOneWidget);
       expect(find.text('Daily Filter'), findsOneWidget);
-      expect(find.text('AI Assistant'), findsOneWidget);
       expect(find.text('Expanded'), findsAtLeastNWidgets(2));
       expect(find.text('Collapsed'), findsAtLeastNWidgets(2));
       expect(find.text('Light Theme Expanded'), findsNothing);
@@ -70,24 +69,19 @@ void main() {
       expect(find.text('2025'), findsOneWidget);
       expect(tester.takeException(), isNull);
       expect(find.byType(DesignSystemButton), findsOneWidget);
-      final actionSlotSize = tester.getSize(
-        find.byKey(const Key('collapsed-sidebar-action-slot')),
+      final actionSlot = find.byKey(
+        const Key('collapsed-sidebar-action-slot'),
       );
-      final actionButtonSize = tester.getSize(
-        find.byKey(const Key('collapsed-sidebar-new-button')),
-      );
-      final collapsedButton = find.byKey(
-        const Key('collapsed-sidebar-new-button'),
-      );
+      final actionSlotSize = tester.getSize(actionSlot);
       final collapsedPlusIcon = find.descendant(
-        of: collapsedButton,
+        of: actionSlot,
         matching: find.byIcon(Icons.add_rounded),
       );
-      final buttonCenter = tester.getCenter(collapsedButton);
+      final buttonCenter = tester.getCenter(actionSlot);
       final iconCenter = tester.getCenter(collapsedPlusIcon);
 
-      expect(actionSlotSize.height, 44);
-      expect(actionSlotSize, actionButtonSize);
+      expect(actionSlotSize.height, moreOrLessEquals(44, epsilon: 2));
+      expect(actionSlotSize.width, moreOrLessEquals(44, epsilon: 2));
       expect(iconCenter.dx, moreOrLessEquals(buttonCenter.dx, epsilon: 0.01));
       expect(iconCenter.dy, moreOrLessEquals(buttonCenter.dy, epsilon: 0.01));
     });

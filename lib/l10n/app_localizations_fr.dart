@@ -3191,9 +3191,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemMyDailyTapToExpandLabel => 'Appuie pour développer';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'Assistant IA';
-
-  @override
   String get designSystemNavigationCollapsedLabel => 'Replié';
 
   @override
