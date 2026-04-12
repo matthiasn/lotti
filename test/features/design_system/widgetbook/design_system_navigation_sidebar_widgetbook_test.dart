@@ -80,8 +80,9 @@ void main() {
       final buttonCenter = tester.getCenter(actionSlot);
       final iconCenter = tester.getCenter(collapsedPlusIcon);
 
-      expect(actionSlotSize.height, moreOrLessEquals(44, epsilon: 2));
-      expect(actionSlotSize.width, moreOrLessEquals(44, epsilon: 2));
+      // Width is constrained to 42 by the collapsed sidebar container
+      // (76px - 2px border - 32px padding = 42px); height is unconstrained.
+      expect(actionSlotSize, const Size(42, 44));
       expect(iconCenter.dx, moreOrLessEquals(buttonCenter.dx, epsilon: 0.01));
       expect(iconCenter.dy, moreOrLessEquals(buttonCenter.dy, epsilon: 0.01));
     });

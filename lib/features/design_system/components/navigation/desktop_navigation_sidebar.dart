@@ -98,7 +98,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Action row: New button
+          // Action: New button
           DesignSystemButton(
             label: context.messages.designSystemNavigationNewLabel,
             size: DesignSystemButtonSize.medium,

@@ -132,6 +132,7 @@ class _ExpandedSidebarContent extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         SizedBox(
+          width: 288,
           height: _topActionButtonHeight,
           child: DesignSystemButton(
             label: context.messages.designSystemNavigationNewLabel,
