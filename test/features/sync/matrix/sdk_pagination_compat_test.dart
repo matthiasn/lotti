@@ -18,23 +18,7 @@ void main() {
       return e;
     }
 
-    void stubLogging(MockLoggingService logging) {
-      when(
-        () => logging.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
-        () => logging.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) {});
-    }
+    void stubLogging(MockLoggingService logging) => stubLoggingService(logging);
 
     test(
       'returns false when both marker and timestamp anchors are absent',

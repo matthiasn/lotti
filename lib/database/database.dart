@@ -822,15 +822,13 @@ class JournalDb extends _$JournalDb {
     if (ids.isEmpty) {
       return const <JournalEntity>[];
     }
-    final privateStatuses = await _visiblePrivateStatuses();
     final idList = ids.toList(growable: false);
     final dbEntities =
-        _matchesAllPrivateStates(privateStatuses)
-              ? await journalEntitiesByIdsUnorderedAllPrivate(idList).get()
-              : await journalEntitiesByIdsUnordered(
-                  idList,
-                  privateStatuses,
-                ).get()
+        await _queryWithPrivateFilter(
+            allPrivate: () =>
+                journalEntitiesByIdsUnorderedAllPrivate(idList).get(),
+            filtered: (s) => journalEntitiesByIdsUnordered(idList, s).get(),
+          )
           ..sort((a, b) {
             final dateCompare = b.dateFrom.compareTo(a.dateFrom);
             if (dateCompare != 0) return dateCompare;
@@ -845,11 +843,11 @@ class JournalDb extends _$JournalDb {
     if (ids.isEmpty) {
       return const <JournalEntity>[];
     }
-    final privateStatuses = await _visiblePrivateStatuses();
     final idList = ids.toList(growable: false);
-    final dbEntities = _matchesAllPrivateStates(privateStatuses)
-        ? await journalEntitiesByIdsUnorderedAllPrivate(idList).get()
-        : await journalEntitiesByIdsUnordered(idList, privateStatuses).get();
+    final dbEntities = await _queryWithPrivateFilter(
+      allPrivate: () => journalEntitiesByIdsUnorderedAllPrivate(idList).get(),
+      filtered: (s) => journalEntitiesByIdsUnordered(idList, s).get(),
+    );
     return dbEntities.map(fromDbEntity).toList();
   }
 
@@ -860,10 +858,10 @@ class JournalDb extends _$JournalDb {
     if (idList.isEmpty) {
       return const <String>[];
     }
-    final privateStatuses = await _visiblePrivateStatuses();
-    return _matchesAllPrivateStates(privateStatuses)
-        ? journalEntityIdsByDateFromDescAllPrivate(idList).get()
-        : journalEntityIdsByDateFromDesc(idList, privateStatuses).get();
+    return _queryWithPrivateFilter(
+      allPrivate: () => journalEntityIdsByDateFromDescAllPrivate(idList).get(),
+      filtered: (s) => journalEntityIdsByDateFromDesc(idList, s).get(),
+    );
   }
 
   Future<Map<String, Duration?>> getTaskEstimatesByIds(Set<String> ids) async {
@@ -1352,29 +1350,19 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-
-    final dbEntities = matchesAllPrivateStates
-        ? await linkedJournalEntitiesAllPrivate(linkedFrom).get()
-        : await linkedJournalEntities(
-            linkedFrom,
-            privateStatuses,
-          ).get();
+    final dbEntities = await _queryWithPrivateFilter(
+      allPrivate: () => linkedJournalEntitiesAllPrivate(linkedFrom).get(),
+      filtered: (s) => linkedJournalEntities(linkedFrom, s).get(),
+    );
     return dbEntities.map(fromDbEntity).toList();
   }
 
   Future<List<JournalDbEntity>> getLinkedToEntities(String linkedTo) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-
-    final dbEntities = matchesAllPrivateStates
-        ? await linkedToJournalEntities(linkedTo).get()
-        : await linkedToJournalEntitiesByPrivateStatuses(
-            linkedTo,
-            privateStatuses,
-          ).get();
-    return dbEntities;
+    return _queryWithPrivateFilter(
+      allPrivate: () => linkedToJournalEntities(linkedTo).get(),
+      filtered: (s) =>
+          linkedToJournalEntitiesByPrivateStatuses(linkedTo, s).get(),
+    );
   }
 
   /// Get linked entities for multiple parent IDs in bulk to avoid N+1 queries
@@ -1727,6 +1715,19 @@ class JournalDb extends _$JournalDb {
       privateStatuses.contains(true) &&
       privateStatuses.contains(false);
 
+  /// Resolves private-visibility config and dispatches to either the
+  /// [allPrivate] query (when all private states are visible) or the
+  /// [filtered] query (passing the allowed statuses).
+  Future<T> _queryWithPrivateFilter<T>({
+    required Future<T> Function() allPrivate,
+    required Future<T> Function(List<bool> statuses) filtered,
+  }) async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    return _matchesAllPrivateStates(privateStatuses)
+        ? allPrivate()
+        : filtered(privateStatuses);
+  }
+
   Future<void> _ensureConfigFlagsLoaded() {
     final existingBootstrap = _configFlagsBootstrap;
     if (existingBootstrap != null) {
@@ -1854,11 +1855,10 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<DayPlanEntry?> getDayPlanById(String id) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final res = matchesAllPrivateStates
-        ? await dayPlanById(id).get()
-        : await dayPlanByIdByPrivateStatuses(id, privateStatuses).get();
+    final res = await _queryWithPrivateFilter(
+      allPrivate: () => dayPlanById(id).get(),
+      filtered: (s) => dayPlanByIdByPrivateStatuses(id, s).get(),
+    );
     if (res.isEmpty) return null;
     return fromDbEntity(res.first) as DayPlanEntry;
   }
@@ -1867,15 +1867,11 @@ class JournalDb extends _$JournalDb {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final res = matchesAllPrivateStates
-        ? await dayPlansInRange(rangeStart, rangeEnd).get()
-        : await dayPlansInRangeByPrivateStatuses(
-            rangeStart,
-            rangeEnd,
-            privateStatuses,
-          ).get();
+    final res = await _queryWithPrivateFilter(
+      allPrivate: () => dayPlansInRange(rangeStart, rangeEnd).get(),
+      filtered: (s) =>
+          dayPlansInRangeByPrivateStatuses(rangeStart, rangeEnd, s).get(),
+    );
     return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
   }
 
@@ -1885,27 +1881,20 @@ class JournalDb extends _$JournalDb {
   Future<List<ProjectEntry>> getProjectsForCategory(
     String categoryId,
   ) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final res = matchesAllPrivateStates
-        ? await projectsForCategory(categoryId).get()
-        : await projectsForCategoryByPrivateStatuses(
-            categoryId,
-            privateStatuses,
-          ).get();
+    final res = await _queryWithPrivateFilter(
+      allPrivate: () => projectsForCategory(categoryId).get(),
+      filtered: (s) =>
+          projectsForCategoryByPrivateStatuses(categoryId, s).get(),
+    );
     return res.map(fromDbEntity).whereType<ProjectEntry>().toList();
   }
 
   /// Returns all non-deleted tasks linked to a project via ProjectLink.
   Future<List<Task>> getTasksForProject(String projectId) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final res = matchesAllPrivateStates
-        ? await tasksForProject(projectId).get()
-        : await tasksForProjectByPrivateStatuses(
-            projectId,
-            privateStatuses,
-          ).get();
+    final res = await _queryWithPrivateFilter(
+      allPrivate: () => tasksForProject(projectId).get(),
+      filtered: (s) => tasksForProjectByPrivateStatuses(projectId, s).get(),
+    );
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
@@ -2123,20 +2112,18 @@ class JournalDb extends _$JournalDb {
       getLabelUsageCounts();
 
   Future<List<LabelDefinition>> getAllLabelDefinitions() async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final labels = matchesAllPrivateStates
-        ? await allLabelDefinitions().get()
-        : await allLabelDefinitionsByPrivateStatuses(privateStatuses).get();
+    final labels = await _queryWithPrivateFilter(
+      allPrivate: () => allLabelDefinitions().get(),
+      filtered: (s) => allLabelDefinitionsByPrivateStatuses(s).get(),
+    );
     return labelDefinitionsStreamMapper(labels);
   }
 
   Future<LabelDefinition?> getLabelDefinitionById(String id) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
-    final result = matchesAllPrivateStates
-        ? await labelDefinitionById(id).get()
-        : await labelDefinitionByIdByPrivateStatuses(id, privateStatuses).get();
+    final result = await _queryWithPrivateFilter(
+      allPrivate: () => labelDefinitionById(id).get(),
+      filtered: (s) => labelDefinitionByIdByPrivateStatuses(id, s).get(),
+    );
     return labelDefinitionsStreamMapper(result).firstOrNull;
   }
 

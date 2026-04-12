@@ -307,6 +307,27 @@ class MockLoggingService extends Mock implements LoggingService {
   }
 }
 
+/// Stubs `LoggingService.captureEvent` and `captureException` on a
+/// [MockLoggingService] so that tests don't crash on logging calls.
+/// Import and call once in `setUp` or at the top of a `group`.
+void stubLoggingService(MockLoggingService mock) {
+  when(
+    () => mock.captureEvent(
+      any<Object>(),
+      domain: any<String>(named: 'domain'),
+      subDomain: any<String>(named: 'subDomain'),
+    ),
+  ).thenAnswer((_) {});
+  when(
+    () => mock.captureException(
+      any<Object>(),
+      domain: any<String>(named: 'domain'),
+      subDomain: any<String>(named: 'subDomain'),
+      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+    ),
+  ).thenAnswer((_) async {});
+}
+
 class MockDomainLogger extends Mock implements DomainLogger {}
 
 class MockEditorDb extends Mock implements EditorDb {}
