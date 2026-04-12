@@ -133,6 +133,7 @@ class JournalFilterPersistence {
       'showCreationDate': filter.showCreationDate,
       'showDueDate': filter.showDueDate,
       'showCoverArt': filter.showCoverArt,
+      'showProjectsHeader': filter.showProjectsHeader,
       'showDistances': filter.showDistances,
       'agentAssignmentFilter': filter.agentAssignmentFilter.name,
     });

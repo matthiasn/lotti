@@ -177,7 +177,7 @@ class JournalQueryRunner {
 
     Set<String> categoryIds;
     if (params.selectedCategoryIds.isEmpty) {
-      categoryIds = allCategoryIds.isEmpty ? {''} : allCategoryIds;
+      categoryIds = {...allCategoryIds, ''};
     } else {
       categoryIds = params.selectedCategoryIds;
     }
