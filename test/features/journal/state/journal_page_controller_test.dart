@@ -7,7 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:infinite_scroll_pagination/src/core/extensions.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -1996,6 +1996,344 @@ void main() {
           });
         },
       );
+
+      test(
+        'visible tasks refresh affected displayed items without an extra probe',
+        () {
+          fakeAsync((async) {
+            final initialTask = _buildTestTask(
+              id: 'task-1',
+              title: 'Initial task',
+              createdAt: _testDate,
+              priority: TaskPriority.p1High,
+            );
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async {
+              getTasksCallCount++;
+              return [initialTask];
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            controller.updateVisibility(
+              const MockVisibilityInfo(
+                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+              ),
+            );
+
+            clearInteractions(mockJournalDb);
+            getTasksCallCount = 0;
+
+            updateStreamController.add({'task-1'});
+
+            async.elapse(const Duration(milliseconds: 200));
+            async.flushMicrotasks();
+
+            expect(state.pagingController?.value.items, equals([initialTask]));
+            expect(getTasksCallCount, 1);
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 0,
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'visible tasks still probe first page when only off-screen ids change',
+        () {
+          fakeAsync((async) {
+            final initialTask = _buildTestTask(
+              id: 'task-1',
+              title: 'Initial task',
+              createdAt: _testDate,
+              priority: TaskPriority.p1High,
+            );
+            final refreshedLeadingTask = _buildTestTask(
+              id: 'task-2',
+              title: 'Refreshed leading task',
+              createdAt: _testDate.add(const Duration(minutes: 1)),
+              priority: TaskPriority.p0Urgent,
+            );
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async {
+              getTasksCallCount++;
+              return getTasksCallCount == 1
+                  ? [initialTask]
+                  : [refreshedLeadingTask];
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            controller.updateVisibility(
+              const MockVisibilityInfo(
+                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+              ),
+            );
+
+            clearInteractions(mockJournalDb);
+            getTasksCallCount = 1;
+
+            updateStreamController.add({'off-screen-task'});
+
+            async.elapse(const Duration(milliseconds: 200));
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([refreshedLeadingTask]),
+            );
+            expect(getTasksCallCount, 3);
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 0,
+              ),
+            ).called(2);
+          });
+        },
+      );
+
+      test(
+        'visible tasks preserve the post-filter next-page offset when a probe finds unchanged ids',
+        () {
+          fakeAsync((async) {
+            List<JournalEntity> buildRawChunk(String prefix) =>
+                List<JournalEntity>.generate(
+                  JournalPageController.pageSize,
+                  (index) => _buildTestTask(
+                    id: '$prefix-$index',
+                    title: '$prefix task $index',
+                    createdAt: _testDate.add(Duration(minutes: index)),
+                    priority: TaskPriority.p1High,
+                  ),
+                  growable: false,
+                );
+
+            final rawChunk0 = buildRawChunk('chunk-a');
+            final rawChunk50 = buildRawChunk('chunk-b');
+            final projectTaskIds = {
+              ...rawChunk0.take(25).map((entity) => entity.meta.id),
+              ...rawChunk50.take(25).map((entity) => entity.meta.id),
+            };
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+            ).thenAnswer((_) async => projectTaskIds);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((invocation) async {
+              final offset = invocation.namedArguments[#offset] as int;
+              if (offset == 0) {
+                return rawChunk0;
+              }
+              if (offset == JournalPageController.pageSize) {
+                return rawChunk50;
+              }
+              return <JournalEntity>[];
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            unawaited(controller.toggleProjectFilter('proj-1'));
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            controller.updateVisibility(
+              const MockVisibilityInfo(
+                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+              ),
+            );
+
+            clearInteractions(mockJournalDb);
+
+            updateStreamController.add({'off-screen-task'});
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 0,
+              ),
+            ).called(1);
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: JournalPageController.pageSize,
+              ),
+            ).called(1);
+
+            state.pagingController!.fetchNextPage();
+            async.flushMicrotasks();
+
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 75,
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'visible journal entries refresh when an affected displayed item changes',
+        () {
+          fakeAsync((async) {
+            final entry = JournalEntity.journalEntry(
+              meta: Metadata(
+                id: 'entry-1',
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                dateFrom: _testDate,
+                dateTo: _testDate,
+              ),
+              entryText: const EntryText(plainText: 'Entry'),
+            );
+            var queryCallCount = 0;
+
+            when(
+              () => mockJournalDb.getJournalEntities(
+                types: any(named: 'types'),
+                starredStatuses: any(named: 'starredStatuses'),
+                privateStatuses: any(named: 'privateStatuses'),
+                flaggedStatuses: any(named: 'flaggedStatuses'),
+                ids: any(named: 'ids'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                categoryIds: any(named: 'categoryIds'),
+              ),
+            ).thenAnswer((_) async {
+              queryCallCount++;
+              return [entry];
+            });
+
+            final controller = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            controller.updateVisibility(
+              const MockVisibilityInfo(
+                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
+              ),
+            );
+
+            clearInteractions(mockJournalDb);
+            queryCallCount = 0;
+
+            updateStreamController.add({'entry-1'});
+
+            async.elapse(const Duration(milliseconds: 200));
+            async.flushMicrotasks();
+
+            expect(queryCallCount, 1);
+            verify(
+              () => mockJournalDb.getJournalEntities(
+                types: any(named: 'types'),
+                starredStatuses: any(named: 'starredStatuses'),
+                privateStatuses: any(named: 'privateStatuses'),
+                flaggedStatuses: any(named: 'flaggedStatuses'),
+                ids: any(named: 'ids'),
+                limit: any(named: 'limit'),
+                offset: 0,
+                categoryIds: any(named: 'categoryIds'),
+              ),
+            ).called(1);
+          });
+        },
+      );
     });
 
     group('Controller Disposal', () {
@@ -2351,10 +2689,7 @@ void main() {
               if (getTasksCallCount == 1) {
                 return Future.value([initialTask]);
               }
-              // Second call (the retained refresh) throws
-              return Future<List<JournalEntity>>.error(
-                Exception('DB error'),
-              );
+              return Future<List<JournalEntity>>.error(Exception('DB error'));
             });
 
             final state = container.read(journalPageControllerProvider(true));
@@ -2369,20 +2704,16 @@ void main() {
               equals([initialTask]),
             );
 
-            // Trigger retained refresh that will fail
             unawaited(
               controller.refreshQuery(preserveVisibleItems: true),
             );
             async.flushMicrotasks();
 
-            // After error, old items remain visible
             expect(
               state.pagingController?.value.items,
               equals([initialTask]),
             );
-            // Error is set on the paging state
             expect(state.pagingController?.value.error, isA<Exception>());
-            // Loading is finished
             expect(state.pagingController?.value.isLoading, isFalse);
           });
         },
@@ -2447,31 +2778,25 @@ void main() {
 
             async.flushMicrotasks();
 
-            // Start first retained refresh
             unawaited(
               controller.refreshQuery(preserveVisibleItems: true),
             );
             async.flushMicrotasks();
 
-            // Start second retained refresh — supersedes first
             unawaited(
               controller.refreshQuery(preserveVisibleItems: true),
             );
             async.flushMicrotasks();
 
-            // First refresh completes with error — should be ignored
-            // because its token no longer matches
             firstRefreshCompleter.completeError(Exception('stale'));
             async.flushMicrotasks();
 
-            // Items still visible, no error set (stale error was ignored)
             expect(
               state.pagingController?.value.items,
               equals([initialTask]),
             );
             expect(state.pagingController?.value.isLoading, isTrue);
 
-            // Second refresh succeeds
             final updatedTask = JournalEntity.task(
               meta: Metadata(
                 id: 'task-2',
@@ -2501,6 +2826,710 @@ void main() {
             );
             expect(state.pagingController?.value.isLoading, isFalse);
             expect(state.pagingController?.value.error, isNull);
+          });
+        },
+      );
+
+      test(
+        'refreshQuery replaces all loaded pages so later-page tasks can regroup',
+        () {
+          fakeAsync((async) {
+            final initialFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'task-$index',
+                title: 'Initial task $index',
+                createdAt: _testDate.add(Duration(minutes: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final initialSecondPageTask = _buildTestTask(
+              id: 'task-late',
+              title: 'Initial late task',
+              createdAt: _testDate.add(const Duration(hours: 3)),
+              priority: TaskPriority.p2Medium,
+            );
+            final regroupedTask = _buildTestTask(
+              id: 'task-late',
+              title: 'Regrouped late task',
+              createdAt: _testDate.add(const Duration(hours: 3)),
+              updatedAt: _testDate.add(const Duration(days: 1)),
+              priority: TaskPriority.p0Urgent,
+            );
+            final refreshedFirstPage = <JournalEntity>[
+              regroupedTask,
+              ...initialFirstPage.take(JournalPageController.pageSize - 1),
+            ];
+            final refreshedSecondPageTask = _buildTestTask(
+              id: 'task-tail',
+              title: 'Refreshed tail task',
+              createdAt: _testDate.add(const Duration(hours: 4)),
+              priority: TaskPriority.p2Medium,
+            );
+            final firstPageCompleter = Completer<List<JournalEntity>>();
+            final secondPageCompleter = Completer<List<JournalEntity>>();
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: [
+                initialFirstPage,
+                [initialSecondPageTask],
+              ],
+              keys: const [0, JournalPageController.pageSize],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((invocation) {
+              final offset = invocation.namedArguments[#offset] as int;
+              if (offset == 0) {
+                return firstPageCompleter.future;
+              }
+              if (offset == JournalPageController.pageSize) {
+                return secondPageCompleter.future;
+              }
+              return Future.value(<JournalEntity>[]);
+            });
+
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([
+                ...initialFirstPage,
+                initialSecondPageTask,
+              ]),
+            );
+            expect(state.pagingController?.value.isLoading, isTrue);
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 0,
+              ),
+            ).called(1);
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: JournalPageController.pageSize,
+              ),
+            ).called(1);
+
+            firstPageCompleter.complete(refreshedFirstPage);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([
+                ...initialFirstPage,
+                initialSecondPageTask,
+              ]),
+            );
+            expect(state.pagingController?.value.isLoading, isTrue);
+
+            secondPageCompleter.complete([refreshedSecondPageTask]);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([
+                ...refreshedFirstPage,
+                refreshedSecondPageTask,
+              ]),
+            );
+            expect(
+              state.pagingController?.value.items,
+              isNot(contains(initialSecondPageTask)),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+
+      test(
+        'refreshQuery keeps sequential retained refresh when project filters are active',
+        () {
+          fakeAsync((async) {
+            final initialFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'task-$index',
+                title: 'Initial task $index',
+                createdAt: _testDate.add(Duration(minutes: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final initialSecondPageTask = _buildTestTask(
+              id: 'task-late',
+              title: 'Initial late task',
+              createdAt: _testDate.add(const Duration(hours: 3)),
+              priority: TaskPriority.p2Medium,
+            );
+            final refreshedFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'refreshed-$index',
+                title: 'Refreshed task $index',
+                createdAt: _testDate.add(Duration(hours: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final refreshedSecondPageTask = _buildTestTask(
+              id: 'refreshed-tail',
+              title: 'Refreshed tail task',
+              createdAt: _testDate.add(const Duration(hours: 5)),
+              priority: TaskPriority.p2Medium,
+            );
+            final firstPageCompleter = Completer<List<JournalEntity>>();
+            final secondPageCompleter = Completer<List<JournalEntity>>();
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects(any()),
+            ).thenAnswer(
+              (_) async => {
+                ...initialFirstPage.map((entity) => entity.meta.id),
+                initialSecondPageTask.meta.id,
+                ...refreshedFirstPage.map((entity) => entity.meta.id),
+                refreshedSecondPageTask.meta.id,
+              },
+            );
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            unawaited(controller.toggleProjectFilter('proj-1'));
+            async.flushMicrotasks();
+
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: [
+                initialFirstPage,
+                [initialSecondPageTask],
+              ],
+              keys: const [0, JournalPageController.pageSize],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((invocation) {
+              final offset = invocation.namedArguments[#offset] as int;
+              if (offset == 0) {
+                return firstPageCompleter.future;
+              }
+              if (offset == JournalPageController.pageSize) {
+                return secondPageCompleter.future;
+              }
+              return Future.value(<JournalEntity>[]);
+            });
+
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 0,
+              ),
+            ).called(1);
+            verifyNever(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: JournalPageController.pageSize,
+              ),
+            );
+
+            firstPageCompleter.complete(refreshedFirstPage);
+            async.flushMicrotasks();
+
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: JournalPageController.pageSize,
+              ),
+            ).called(1);
+
+            secondPageCompleter.complete([refreshedSecondPageTask]);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([
+                ...refreshedFirstPage,
+                refreshedSecondPageTask,
+              ]),
+            );
+          });
+        },
+      );
+
+      test(
+        'stale project-filter refresh does not overwrite the winning next-page offset',
+        () {
+          fakeAsync((async) {
+            List<JournalEntity> buildRawChunk(String prefix) =>
+                List<JournalEntity>.generate(
+                  JournalPageController.pageSize,
+                  (index) => _buildTestTask(
+                    id: '$prefix-$index',
+                    title: '$prefix task $index',
+                    createdAt: _testDate.add(Duration(minutes: index)),
+                    priority: TaskPriority.p1High,
+                  ),
+                  growable: false,
+                );
+
+            final initialFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'initial-$index',
+                title: 'Initial task $index',
+                createdAt: _testDate.add(Duration(minutes: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final firstRefreshChunk0 = buildRawChunk('first-a');
+            final firstRefreshChunk50 = buildRawChunk('first-b');
+            final secondRefreshChunk0 = buildRawChunk('second-a');
+            final secondRefreshChunk50 = buildRawChunk('second-b');
+            final firstRefreshProjectIds = {
+              ...firstRefreshChunk0.take(25).map((entity) => entity.meta.id),
+              ...firstRefreshChunk50.take(25).map((entity) => entity.meta.id),
+            };
+            final secondRefreshProjectIds = {
+              ...secondRefreshChunk0.take(10).map((entity) => entity.meta.id),
+              ...secondRefreshChunk50.take(40).map((entity) => entity.meta.id),
+            };
+            final firstRefreshSecondChunkCompleter =
+                Completer<List<JournalEntity>>();
+            final nextPageCompleter = Completer<List<JournalEntity>>();
+            var projectIdsCallCount = 0;
+            var offset0CallCount = 0;
+            var offset50CallCount = 0;
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects(any()),
+            ).thenAnswer((_) async {
+              projectIdsCallCount++;
+              if (projectIdsCallCount == 1) {
+                return firstRefreshProjectIds;
+              }
+              return secondRefreshProjectIds;
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            unawaited(controller.toggleProjectFilter('proj-1'));
+            async.flushMicrotasks();
+
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: [initialFirstPage],
+              keys: const [0],
+              hasNextPage: true,
+            );
+
+            clearInteractions(mockJournalDb);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((invocation) {
+              final offset = invocation.namedArguments[#offset] as int;
+              if (offset == 0) {
+                offset0CallCount++;
+                return Future.value(
+                  offset0CallCount == 1
+                      ? firstRefreshChunk0
+                      : secondRefreshChunk0,
+                );
+              }
+              if (offset == JournalPageController.pageSize) {
+                offset50CallCount++;
+                return offset50CallCount == 1
+                    ? firstRefreshSecondChunkCompleter.future
+                    : Future.value(secondRefreshChunk50);
+              }
+              if (offset == 90) {
+                return nextPageCompleter.future;
+              }
+              return Future.value(<JournalEntity>[]);
+            });
+
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            firstRefreshSecondChunkCompleter.complete(firstRefreshChunk50);
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([
+                ...secondRefreshChunk0.take(10),
+                ...secondRefreshChunk50.take(40),
+              ]),
+            );
+            expect(state.pagingController?.value.hasNextPage, isTrue);
+
+            state.pagingController!.fetchNextPage();
+            async.flushMicrotasks();
+
+            verify(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: 90,
+              ),
+            ).called(1);
+
+            nextPageCompleter.complete(<JournalEntity>[]);
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'sequential retained refresh aborts loop iteration when a second '
+        'refresh supersedes the first',
+        () {
+          fakeAsync((async) {
+            final initialFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'task-$index',
+                title: 'Initial task $index',
+                createdAt: _testDate.add(Duration(minutes: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final initialSecondPageTask = _buildTestTask(
+              id: 'task-late',
+              title: 'Initial late task',
+              createdAt: _testDate.add(const Duration(hours: 3)),
+              priority: TaskPriority.p2Medium,
+            );
+            final winnerTask = _buildTestTask(
+              id: 'winner-task',
+              title: 'Winner task',
+              createdAt: _testDate.add(const Duration(hours: 10)),
+              priority: TaskPriority.p0Urgent,
+            );
+            final allProjectIds = {
+              ...initialFirstPage.map((e) => e.meta.id),
+              initialSecondPageTask.meta.id,
+              winnerTask.meta.id,
+            };
+            final firstRefreshPage0Completer = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects(any()),
+            ).thenAnswer((_) async => allProjectIds);
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            unawaited(controller.toggleProjectFilter('proj-1'));
+            async.flushMicrotasks();
+
+            // Set up two pages so sequential loop iterates twice.
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: [
+                initialFirstPage,
+                [initialSecondPageTask],
+              ],
+              keys: const [0, JournalPageController.pageSize],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              // First call (first refresh, page 0): slow — use completer.
+              if (getTasksCallCount == 1) {
+                return firstRefreshPage0Completer.future;
+              }
+              // All subsequent calls (second refresh): resolve instantly.
+              return Future.value([winnerTask]);
+            });
+
+            // Start first sequential retained refresh (page 0 will block).
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // First refresh is now awaiting page 0. Start second refresh
+            // which supersedes the first's refresh token.
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // Complete the first refresh's page 0 — the loop should detect
+            // the stale token and abort before fetching page 1.
+            firstRefreshPage0Completer.complete(initialFirstPage);
+            async.flushMicrotasks();
+
+            // The winning (second) refresh should have replaced the pages.
+            expect(
+              state.pagingController?.value.items,
+              equals([winnerTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+
+      test(
+        'refreshQuery with preserveVisibleItems rethrows non-Exception errors',
+        () {
+          fakeAsync((async) {
+            final initialTask = _buildTestTask(
+              id: 'task-1',
+              title: 'Initial task',
+              createdAt: _testDate,
+              priority: TaskPriority.p1High,
+            );
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              // Throw a non-Exception (Error) to trigger the rethrow path.
+              return Future<List<JournalEntity>>.error(
+                StateError('fatal error'),
+              );
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            container.read(journalPageControllerProvider(true).notifier);
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            // The Error should propagate as an uncaught error in the zone.
+            Object? caughtError;
+            runZonedGuarded(
+              () {
+                fakeAsync((innerAsync) {
+                  // Re-read because we're in a new fakeAsync zone — but we
+                  // only need to trigger refreshQuery on the existing
+                  // controller.  Directly call the paging controller's
+                  // retained-refresh path by calling refreshQuery.
+                  final ctrl = container.read(
+                    journalPageControllerProvider(true).notifier,
+                  );
+                  unawaited(
+                    ctrl.refreshQuery(preserveVisibleItems: true),
+                  );
+                  innerAsync.flushMicrotasks();
+                });
+              },
+              (error, stack) {
+                caughtError = error;
+              },
+            );
+
+            async.flushMicrotasks();
+
+            // StateError is not an Exception, so it should be rethrown.
+            expect(caughtError, isA<StateError>());
+          });
+        },
+      );
+
+      test(
+        'refreshQuery with preserveVisibleItems falls back to full refresh '
+        'when no visible page keys exist',
+        () {
+          fakeAsync((async) {
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async {
+              getTasksCallCount++;
+              return <JournalEntity>[];
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            // Manually set paging state with an empty page so that
+            // hasVisibleItems is false — refreshQuery should fall through
+            // to the full refresh path.
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: const [[]],
+              keys: const [0],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+            getTasksCallCount = 0;
+
+            // preserveVisibleItems=true but no visible items →
+            // hasVisibleItems is false, so it should do a full refresh.
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // A full refresh re-fetches page 0
+            expect(getTasksCallCount, greaterThan(0));
           });
         },
       );
@@ -4439,4 +5468,34 @@ class MockVisibilityInfo extends VisibilityInfo {
         key: const Key('test'),
         size: const Size(100, 100),
       );
+}
+
+Task _buildTestTask({
+  required String id,
+  required String title,
+  required DateTime createdAt,
+  DateTime? updatedAt,
+  TaskPriority priority = TaskPriority.p2Medium,
+}) {
+  return Task(
+    data: TaskData(
+      status: TaskStatus.open(
+        id: 'status-$id',
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      dateFrom: createdAt,
+      dateTo: createdAt,
+      statusHistory: const [],
+      title: title,
+      priority: priority,
+    ),
+    meta: Metadata(
+      id: id,
+      createdAt: createdAt,
+      dateFrom: createdAt,
+      dateTo: createdAt,
+      updatedAt: updatedAt ?? createdAt,
+    ),
+  );
 }

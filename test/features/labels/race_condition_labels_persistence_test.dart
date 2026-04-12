@@ -149,8 +149,10 @@ class _TestPersistenceLogic extends PersistenceLogic {
     String? linkedId,
     bool enqueueSync = true,
     bool overrideComparison = false,
+    Future<void> Function()? beforeNotify,
   }) async {
     _lastSaved = journalEntity;
+    await beforeNotify?.call();
     // Simulate applied
     return true;
   }

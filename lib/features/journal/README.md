@@ -193,7 +193,7 @@ The controller owns:
 - feature-flag gating for entry types and vector search
 - private-entry visibility
 - persisted filter state in `SettingsDb`
-- update-driven refresh behavior, including retained first-page refreshes that
+- update-driven refresh behavior, including retained loaded-page refreshes that
   keep visible rows mounted until replacement data resolves
 - vector-search timing and distance metadata for the UI
 
@@ -219,9 +219,15 @@ flowchart TD
 ```
 
 When a visible browse page already has rows on screen, the controller now
-replaces the first page only after the new first-page query resolves. That
-avoids the `PagingController.reset()` path that would otherwise clear the list
-immediately and produce a visible desktop flicker during saves or live updates.
+replaces the currently loaded page window only after the refreshed pages
+resolve. That avoids the `PagingController.reset()` path that would otherwise
+clear the list immediately and produce a visible desktop flicker during saves
+or live updates, while still allowing regrouping when task ordering changes.
+For the normal offset-based path, those already-loaded pages are refreshed in
+parallel; the slower sequential reload is kept only for post-filtered task
+queries where project or agent filters consume raw rows before returning a
+page. Visible task-row updates also bypass the extra leading-page probe and
+refresh the retained page window directly.
 
 ### What The Page Controller Persists
 
