@@ -1253,19 +1253,19 @@ void main() {
               ),
             );
 
+            // byDueDate sort uses getTasksSortedByDueDate (DB-level sorting)
             when(
-              () => mockJournalDb.getTasks(
+              () => mockJournalDb.getTasksSortedByDueDate(
                 ids: any(named: 'ids'),
                 starredStatuses: any(named: 'starredStatuses'),
                 taskStatuses: any(named: 'taskStatuses'),
                 categoryIds: any(named: 'categoryIds'),
                 labelIds: any(named: 'labelIds'),
                 priorities: any(named: 'priorities'),
-                sortByDate: any(named: 'sortByDate'),
                 limit: any(named: 'limit'),
                 offset: any(named: 'offset'),
               ),
-            ).thenAnswer((_) async => [taskNoDue, taskWithDue]);
+            ).thenAnswer((_) async => [taskWithDue, taskNoDue]);
 
             when(
               () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),

@@ -182,9 +182,9 @@ class JournalQueryRunner {
       categoryIds = params.selectedCategoryIds;
     }
 
+    final sortByDueDate = params.sortOption == TaskSortOption.byDueDate;
     final sortByDateInDb =
-        params.sortOption == TaskSortOption.byDate ||
-        params.sortOption == TaskSortOption.byDueDate;
+        params.sortOption == TaskSortOption.byDate || sortByDueDate;
 
     final agentFilterActive =
         params.agentAssignmentFilter != AgentAssignmentFilter.all;
@@ -193,7 +193,23 @@ class JournalQueryRunner {
 
     if (!needsPostFilter) {
       setPostFilterNextRawOffset?.call(null);
-      final res = await _db.getTasks(
+
+      // Due-date sorting uses a dedicated raw SQL query with the expression
+      // index so results are globally ordered across pages.
+      if (sortByDueDate) {
+        return _db.getTasksSortedByDueDate(
+          ids: ids,
+          starredStatuses: starredEntriesOnly ? [true] : [true, false],
+          taskStatuses: params.selectedTaskStatuses.toList(),
+          categoryIds: categoryIds.toList(),
+          labelIds: params.selectedLabelIds.toList(),
+          priorities: params.selectedPriorities.toList(),
+          limit: pageSize,
+          offset: pageKey,
+        );
+      }
+
+      return _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         taskStatuses: params.selectedTaskStatuses.toList(),
@@ -204,10 +220,6 @@ class JournalQueryRunner {
         limit: pageSize,
         offset: pageKey,
       );
-      if (params.sortOption == TaskSortOption.byDueDate) {
-        return sortByDueDate(res);
-      }
-      return res;
     }
 
     return _runPostFilteredTaskQuery(
@@ -234,6 +246,8 @@ class JournalQueryRunner {
     required bool projectFilterActive,
     void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
   }) async {
+    final useDueDateSort = params.sortOption == TaskSortOption.byDueDate;
+
     // Pre-fetch filter sets so the loop doesn't re-query each iteration.
     final projectTaskIds = projectFilterActive
         ? await _db.getTaskIdsForProjects(params.selectedProjectIds)
@@ -248,17 +262,28 @@ class JournalQueryRunner {
 
     var pageFilled = false;
     while (!pageFilled && filtered.length < pageSize) {
-      final raw = await _db.getTasks(
-        ids: ids,
-        starredStatuses: starredEntriesOnly ? [true] : [true, false],
-        taskStatuses: params.selectedTaskStatuses.toList(),
-        categoryIds: categoryIds.toList(),
-        labelIds: params.selectedLabelIds.toList(),
-        priorities: params.selectedPriorities.toList(),
-        sortByDate: sortByDateInDb,
-        limit: fetchChunk,
-        offset: currentOffset,
-      );
+      final raw = useDueDateSort
+          ? await _db.getTasksSortedByDueDate(
+              ids: ids,
+              starredStatuses: starredEntriesOnly ? [true] : [true, false],
+              taskStatuses: params.selectedTaskStatuses.toList(),
+              categoryIds: categoryIds.toList(),
+              labelIds: params.selectedLabelIds.toList(),
+              priorities: params.selectedPriorities.toList(),
+              limit: fetchChunk,
+              offset: currentOffset,
+            )
+          : await _db.getTasks(
+              ids: ids,
+              starredStatuses: starredEntriesOnly ? [true] : [true, false],
+              taskStatuses: params.selectedTaskStatuses.toList(),
+              categoryIds: categoryIds.toList(),
+              labelIds: params.selectedLabelIds.toList(),
+              priorities: params.selectedPriorities.toList(),
+              sortByDate: sortByDateInDb,
+              limit: fetchChunk,
+              offset: currentOffset,
+            );
 
       var consumedInChunk = 0;
       for (final entity in raw) {
@@ -289,10 +314,6 @@ class JournalQueryRunner {
     }
 
     setPostFilterNextRawOffset?.call(currentOffset);
-
-    if (params.sortOption == TaskSortOption.byDueDate) {
-      return sortByDueDate(filtered).take(pageSize).toList();
-    }
     return filtered.take(pageSize).toList();
   }
 
