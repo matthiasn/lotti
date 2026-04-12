@@ -1,8 +1,11 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -11,17 +14,26 @@ import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
-  Widget wrap(Widget child) {
-    return makeTestableWidget2(
-      Theme(
-        data: DesignSystemTheme.dark(),
-        child: Scaffold(
-          body: SizedBox(width: 402, height: 900, child: child),
+  Widget wrap(Widget child, {List<Override> overrides = const []}) {
+    return ProviderScope(
+      overrides: overrides,
+      child: makeTestableWidget2(
+        Theme(
+          data: DesignSystemTheme.dark(),
+          child: Scaffold(
+            body: SizedBox(width: 402, height: 900, child: child),
+          ),
         ),
+        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
       ),
-      mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
     );
   }
+
+  /// Override to return null for all project one-liners matching the given IDs.
+  List<Override> noOneLinerOverrides(List<String> projectIds) => [
+    for (final id in projectIds)
+      projectOneLinerProvider(id).overrideWith((ref) async => null),
+  ];
 
   ProjectCategoryGroup makeGroupedProjectsSection() {
     final workCategory = makeTestProjectListData().categories.first;
@@ -90,6 +102,7 @@ void main() {
             selectedProjectId: 'p1',
             onProjectSelected: (_) {},
           ),
+          overrides: noOneLinerOverrides(['p1']),
         ),
       );
       await tester.pump();
@@ -113,6 +126,7 @@ void main() {
             selectedProjectId: null,
             onProjectSelected: (_) {},
           ),
+          overrides: noOneLinerOverrides(['p1', 'p2']),
         ),
       );
       await tester.pump();
@@ -144,6 +158,7 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
+            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -174,6 +189,7 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
+            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -234,6 +250,7 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
+            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -282,6 +299,7 @@ void main() {
               selectedProjectId: 'p1',
               onProjectSelected: (_) {},
             ),
+            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -299,6 +317,12 @@ void main() {
   });
 
   group('ProjectRow', () {
+    List<Override> noOneLinerOverride(String projectId) => [
+      projectOneLinerProvider(projectId).overrideWith(
+        (ref) async => null,
+      ),
+    ];
+
     testWidgets('renders title, task progress, and status tag', (tester) async {
       final item = makeTestProjectListItemData();
 
@@ -312,6 +336,7 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
+          overrides: noOneLinerOverride(item.project.meta.id),
         ),
       );
       await tester.pump();
@@ -324,6 +349,60 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.format_list_bulleted_rounded), findsOneWidget);
+    });
+
+    testWidgets('displays one-liner when available', (tester) async {
+      final item = makeTestProjectListItemData();
+      const oneLiner = 'Steady progress; next milestone is API v2.';
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectRow(
+            item: item,
+            selected: false,
+            topOverlap: 0,
+            bottomOverlap: 0,
+            onHoverChanged: (_) {},
+            onTap: () {},
+          ),
+          overrides: [
+            projectOneLinerProvider(
+              item.project.meta.id,
+            ).overrideWith((ref) async => oneLiner),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(oneLiner), findsOneWidget);
+      expect(find.text('Test Project'), findsOneWidget);
+    });
+
+    testWidgets('hides one-liner when null', (tester) async {
+      final item = makeTestProjectListItemData();
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectRow(
+            item: item,
+            selected: false,
+            topOverlap: 0,
+            bottomOverlap: 0,
+            onHoverChanged: (_) {},
+            onTap: () {},
+          ),
+          overrides: noOneLinerOverride(item.project.meta.id),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Test Project'), findsOneWidget);
+      // Only title and metadata row — no extra Text widget for one-liner.
+      final textWidgets = tester.widgetList<Text>(find.byType(Text)).toList();
+      final oneLinerTexts = textWidgets.where(
+        (t) => t.maxLines == 3 && t.overflow == TextOverflow.ellipsis,
+      );
+      expect(oneLinerTexts, isEmpty);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {
@@ -340,6 +419,7 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () => tapped = true,
           ),
+          overrides: noOneLinerOverride(item.project.meta.id),
         ),
       );
       await tester.pump();

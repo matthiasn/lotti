@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -11,8 +14,14 @@ import '../../../../helpers/test_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
+/// Override to return null for all project one-liners matching the given IDs.
+List<Override> _noOneLinerOverrides(List<String> projectIds) => [
+  for (final id in projectIds)
+    projectOneLinerProvider(id).overrideWith((ref) async => null),
+];
+
 void main() {
-  Widget wrap(Widget child, {Locale? locale}) {
+  Widget wrap(Widget child, {Locale? locale, List<Override>? overrides}) {
     final themedChild = Theme(
       data: DesignSystemTheme.dark(),
       child: Scaffold(
@@ -20,17 +29,20 @@ void main() {
       ),
     );
 
-    return makeTestableWidget2(
-      Builder(
-        builder: (context) => locale == null
-            ? themedChild
-            : Localizations.override(
-                context: context,
-                locale: locale,
-                child: themedChild,
-              ),
+    return ProviderScope(
+      overrides: overrides ?? _noOneLinerOverrides(['p1', 'p2']),
+      child: makeTestableWidget2(
+        Builder(
+          builder: (context) => locale == null
+              ? themedChild
+              : Localizations.override(
+                  context: context,
+                  locale: locale,
+                  child: themedChild,
+                ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
       ),
-      mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
     );
   }
 

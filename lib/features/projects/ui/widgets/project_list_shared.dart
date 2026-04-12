@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -191,7 +193,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
 
 /// A single project row in the list, with task-progress ring, task count,
 /// due label, and status tag.
-class ProjectRow extends StatelessWidget {
+class ProjectRow extends ConsumerWidget {
   const ProjectRow({
     required this.item,
     required this.selected,
@@ -216,16 +218,18 @@ class ProjectRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final metaStyle = tokens.typography.styles.others.caption.copyWith(
       color: ShowcasePalette.lowText(context),
     );
+    final projectId = item.project.meta.id;
+    final oneLiner = ref.watch(projectOneLinerProvider(projectId)).value;
 
     return GroupedCardRowSurface(
-      key: key ?? ValueKey('project-row-surface-${item.project.meta.id}'),
-      rowKey: ValueKey('project-overview-row-${item.project.meta.id}'),
-      backgroundKey: ValueKey('project-row-background-${item.project.meta.id}'),
+      key: key ?? ValueKey('project-row-surface-$projectId'),
+      rowKey: ValueKey('project-overview-row-$projectId'),
+      backgroundKey: ValueKey('project-row-background-$projectId'),
       selected: selected,
       hoverColor: ShowcasePalette.hoverFill(context),
       selectedColor: ShowcasePalette.selectedRow(context),
@@ -257,6 +261,17 @@ class ProjectRow extends StatelessWidget {
                     color: ShowcasePalette.highText(context),
                   ),
                 ),
+                if (oneLiner != null && oneLiner.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    oneLiner,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ShowcasePalette.lowText(context),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 RichText(
                   maxLines: 1,

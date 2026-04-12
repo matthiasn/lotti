@@ -42,7 +42,7 @@ final class PaneWidthControllerProvider
 }
 
 String _$paneWidthControllerHash() =>
-    r'645c279c3a6e1ecb4e6e6a1c3ed47345b8181e9b';
+    r'dbe6038574eeb269003e24d7238344639f6cf871';
 
 abstract class _$PaneWidthController extends $Notifier<PaneWidths> {
   PaneWidths build();

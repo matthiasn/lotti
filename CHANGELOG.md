@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.951] - 2026-04-12
+### Added
+- Project one-liner: AI-generated summary subtitle on project list cards,
+  giving an at-a-glance status for each project (mirrors the existing task
+  one-liner feature).
+- Project agent now produces a dedicated `one_liner` field in its report,
+  separate from the longer TLDR summary.
+
 ## [0.9.950] - 2026-04-11
 ### Removed
 - Removed the gamey theme and all gamey-styled widgets (GameyFab, GameyCard,
