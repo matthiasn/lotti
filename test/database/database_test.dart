@@ -1753,8 +1753,59 @@ void main() {
           );
 
           expect(visiblePlans.map((e) => e.meta.id), [publicPlan.meta.id]);
+
+          // Enable private flag → allPrivate path returns both plans
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: true,
+            ),
+          );
+
+          expect(await db!.getDayPlanById(privatePlan.meta.id), isNotNull);
+
+          final allPlans = await db!.getDayPlansInRange(
+            rangeStart: publicPlanDate.subtract(const Duration(days: 1)),
+            rangeEnd: privatePlanDate.add(const Duration(days: 2)),
+          );
+          expect(allPlans, hasLength(2));
         },
       );
+    });
+
+    group('Label definition queries -', () {
+      test('getAllLabelDefinitions and getLabelDefinitionById', () async {
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'label-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            name: 'Important',
+            color: '#FF0000',
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'label-2',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            name: 'Urgent',
+            color: '#00FF00',
+            vectorClock: null,
+          ),
+        );
+
+        final all = await db!.getAllLabelDefinitions();
+        expect(all.map((l) => l.id), containsAll(['label-1', 'label-2']));
+
+        final single = await db!.getLabelDefinitionById('label-1');
+        expect(single, isNotNull);
+        expect(single!.name, 'Important');
+
+        expect(await db!.getLabelDefinitionById('nonexistent'), isNull);
+      });
     });
 
     group('Watch streams -', () {
