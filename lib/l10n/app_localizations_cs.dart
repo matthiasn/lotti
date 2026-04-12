@@ -3126,9 +3126,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemMyDailyTapToExpandLabel => 'Klepni pro rozbalení';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'AI asistent';
-
-  @override
   String get designSystemNavigationCollapsedLabel => 'Sbalené';
 
   @override

@@ -119,7 +119,6 @@ void main() {
 
       expect(folder.name, 'Design System');
       expect(components.map((component) => component.name), [
-        'AI Icon',
         'Avatars',
         'Badges',
         'Branding',

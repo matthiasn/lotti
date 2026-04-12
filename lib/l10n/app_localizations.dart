@@ -5592,12 +5592,6 @@ abstract class AppLocalizations {
   /// **'Tap to expand'**
   String get designSystemMyDailyTapToExpandLabel;
 
-  /// No description provided for @designSystemNavigationAiAssistantSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Assistant'**
-  String get designSystemNavigationAiAssistantSectionTitle;
-
   /// No description provided for @designSystemNavigationCollapsedLabel.
   ///
   /// In en, this message translates to:

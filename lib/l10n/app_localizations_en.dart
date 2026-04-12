@@ -3106,9 +3106,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemMyDailyTapToExpandLabel => 'Tap to expand';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'AI Assistant';
-
-  @override
   String get designSystemNavigationCollapsedLabel => 'Collapsed';
 
   @override

@@ -232,32 +232,23 @@ class _TaskMobileDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesignSystemShowcaseMobileShell(
-      child: Stack(
+      child: Column(
         children: [
-          Column(
-            children: [
-              const DesignSystemShowcaseMobileStatusBar(),
-              Expanded(
-                child: DesignSystemScrollbar(
-                  child: SingleChildScrollView(
-                    child: TaskShowcaseDetailContent(
-                      record: record,
-                      compact: true,
-                      onBack: onBack,
-                    ),
-                  ),
+          const DesignSystemShowcaseMobileStatusBar(),
+          Expanded(
+            child: DesignSystemScrollbar(
+              child: SingleChildScrollView(
+                child: TaskShowcaseDetailContent(
+                  record: record,
+                  compact: true,
+                  onBack: onBack,
                 ),
               ),
-              SizedBox(height: context.designTokens.spacing.step3),
-              const Center(child: DesignSystemShowcaseMobileHomeIndicator()),
-              SizedBox(height: context.designTokens.spacing.step4),
-            ],
+            ),
           ),
-          const Positioned(
-            right: 16,
-            bottom: 132,
-            child: TaskShowcaseFloatingAiButton(),
-          ),
+          SizedBox(height: context.designTokens.spacing.step3),
+          const Center(child: DesignSystemShowcaseMobileHomeIndicator()),
+          SizedBox(height: context.designTokens.spacing.step4),
         ],
       ),
     );

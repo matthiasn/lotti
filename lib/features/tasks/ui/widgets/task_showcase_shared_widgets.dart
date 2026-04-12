@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_ai_assistant_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -673,19 +672,6 @@ class TaskShowcaseProfileButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class TaskShowcaseFloatingAiButton extends StatelessWidget {
-  const TaskShowcaseFloatingAiButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return DesignSystemAiAssistantButton(
-      assetName: 'assets/design_system/ai_assistant_variant_1.png',
-      semanticLabel:
-          context.messages.designSystemNavigationAiAssistantSectionTitle,
     );
   }
 }

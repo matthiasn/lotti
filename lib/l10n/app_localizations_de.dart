@@ -3153,9 +3153,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemMyDailyTapToExpandLabel => 'Zum Aufklappen tippen';
 
   @override
-  String get designSystemNavigationAiAssistantSectionTitle => 'KI-Assistent';
-
-  @override
   String get designSystemNavigationCollapsedLabel => 'Eingeklappt';
 
   @override
