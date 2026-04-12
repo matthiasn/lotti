@@ -648,6 +648,120 @@ void main() {
         expect(results.map((e) => e.meta.id), ['task-blocked']);
       });
 
+      test('getTasksSortedByDueDate orders by due date globally', () async {
+        final base = DateTime(2024, 7, 10, 8);
+        final taskNoDue = buildTaskEntry(
+          id: 'task-no-due',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-no-due',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-due',
+        );
+        final taskLateDue = buildTaskEntry(
+          id: 'task-late-due',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'status-late-due',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-due',
+          due: DateTime(2024, 12, 31),
+        );
+        final taskEarlyDue = buildTaskEntry(
+          id: 'task-early-due',
+          timestamp: base.add(const Duration(minutes: 2)),
+          status: TaskStatus.open(
+            id: 'status-early-due',
+            createdAt: base.add(const Duration(minutes: 2)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-due',
+          due: DateTime(2024, 6, 1),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(taskNoDue));
+        await db!.upsertJournalDbEntity(toDbEntity(taskLateDue));
+        await db!.upsertJournalDbEntity(toDbEntity(taskEarlyDue));
+
+        final results = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-due'],
+        );
+
+        // early due first, late due second, no due last
+        expect(
+          results.map((e) => e.meta.id),
+          ['task-early-due', 'task-late-due', 'task-no-due'],
+        );
+      });
+
+      test('getTasksSortedByDueDate returns empty for empty ids', () async {
+        final base = DateTime(2024, 7, 11, 8);
+        final task = buildTaskEntry(
+          id: 'task-empty-ids',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-empty-ids',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-empty',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+
+        final results = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-empty'],
+          ids: const [],
+        );
+
+        expect(results, isEmpty);
+      });
+
+      test('getTasksSortedByDueDate filters by starred', () async {
+        final base = DateTime(2024, 7, 12, 8);
+        final starredTask = buildTaskEntry(
+          id: 'task-starred',
+          timestamp: base,
+          starred: true,
+          status: TaskStatus.open(
+            id: 'status-starred',
+            createdAt: base,
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-star',
+          due: DateTime(2024, 8, 1),
+        );
+        final unstarredTask = buildTaskEntry(
+          id: 'task-unstarred',
+          timestamp: base.add(const Duration(minutes: 1)),
+          status: TaskStatus.open(
+            id: 'status-unstarred',
+            createdAt: base.add(const Duration(minutes: 1)),
+            utcOffset: base.timeZoneOffset.inMinutes,
+          ),
+          categoryId: 'cat-star',
+          due: DateTime(2024, 7, 1),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(starredTask));
+        await db!.upsertJournalDbEntity(toDbEntity(unstarredTask));
+
+        final results = await db!.getTasksSortedByDueDate(
+          starredStatuses: const [true],
+          taskStatuses: const ['OPEN'],
+          categoryIds: const ['cat-star'],
+        );
+
+        expect(results.map((e) => e.meta.id), ['task-starred']);
+      });
+
       test('getWipCount counts tasks with IN PROGRESS status', () async {
         final base = DateTime(2024, 7, 3, 10);
         final inProgressA = buildTaskEntry(
