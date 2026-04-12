@@ -117,21 +117,7 @@ void main() {
         fromSync: any<bool>(named: 'fromSync'),
       ),
     ).thenAnswer((_) {});
-    when(
-      () => loggingService.captureEvent(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) {});
-    when(
-      () => loggingService.captureException(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
+    stubLoggingService(loggingService);
     when(
       () => aiConfigRepository.saveConfig(
         any<AiConfig>(),
@@ -173,21 +159,7 @@ void main() {
 
     setUp(() {
       logging = MockLoggingService();
-      when(
-        () => logging.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) {});
-      when(
-        () => logging.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logging);
       validator = VectorClockValidator(loggingService: logging);
     });
 
@@ -328,21 +300,7 @@ void main() {
 
     setUp(() {
       logging = MockLoggingService();
-      when(
-        () => logging.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) {});
-      when(
-        () => logging.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logging);
       validator = VectorClockValidator(loggingService: logging);
       downloader = DescriptorDownloader(
         loggingService: logging,

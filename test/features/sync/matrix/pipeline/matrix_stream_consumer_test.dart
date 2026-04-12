@@ -67,21 +67,7 @@ void main() {
       final room = MockRoom();
       final timeline = MockTimeline();
 
-      when(
-        () => logger.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
-      when(
-        () => logger.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logger);
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -191,21 +177,7 @@ void main() {
       final room = MockRoom();
       final timeline = MockTimeline();
 
-      when(
-        () => logger.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
-      when(
-        () => logger.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logger);
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -303,21 +275,7 @@ void main() {
         final onTimelineController = StreamController<Event>.broadcast();
         addTearDown(onTimelineController.close);
 
-        when(
-          () => logger.captureEvent(
-            any<String>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ),
-        ).thenReturn(null);
-        when(
-          () => logger.captureException(
-            any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          ),
-        ).thenAnswer((_) async {});
+        stubLoggingService(logger);
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -479,21 +437,7 @@ void main() {
 
       addTearDown(onTimelineController.close);
 
-      when(
-        () => logger.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
-      when(
-        () => logger.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logger);
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -1225,21 +1169,7 @@ void main() {
       final room = MockRoom();
       final timeline = MockTimeline();
 
-      when(
-        () => logger.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenReturn(null);
-      when(
-        () => logger.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        ),
-      ).thenAnswer((_) async {});
+      stubLoggingService(logger);
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');

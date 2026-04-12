@@ -183,21 +183,7 @@ void main() {
     when(
       () => processor.processQueue(),
     ).thenAnswer((_) async => OutboxProcessingResult.none);
-    when(
-      () => loggingService.captureEvent(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) {});
-    when(
-      () => loggingService.captureException(
-        any<Object>(),
-        domain: any<String>(named: 'domain'),
-        subDomain: any<String>(named: 'subDomain'),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
+    stubLoggingService(loggingService);
     when(
       () => vectorClockService.getHostHash(),
     ).thenAnswer((_) async => 'hhash');

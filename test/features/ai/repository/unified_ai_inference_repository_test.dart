@@ -305,18 +305,10 @@ void main() {
             )
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Act
       await repository!.runInference(
@@ -1194,81 +1186,17 @@ void main() {
         final progressUpdates = <String>[];
         final statusChanges = <InferenceStatus>[];
 
-        // Mock the stream response from cloud inference
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-          CreateChatCompletionStreamResponse(
-            id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: ' world'),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-          CreateChatCompletionStreamResponse(
-            id: 'response-3',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: '!'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+        final mockStream = _createMockTextStream(['Hello', ' world', '!']);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => taskEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"task": "Test Task"}');
-
-        // Mock cloud inference repository
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: taskEntity,
+          model: model,
+          provider: provider,
+        );
+        _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
@@ -1356,84 +1284,17 @@ void main() {
           final progressUpdates = <String>[];
           final statusChanges = <InferenceStatus>[];
 
-          final mockStream =
-              Stream<CreateChatCompletionStreamResponse>.fromIterable([
-                CreateChatCompletionStreamResponse(
-                  choices: [
-                    const ChatCompletionStreamResponseChoice(
-                      delta: ChatCompletionStreamResponseDelta(
-                        content: 'Hello',
-                      ),
-                      index: 0,
-                    ),
-                  ],
-                  object: 'chat.completion.chunk',
-                  created:
-                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
-                      1000,
-                ),
-                CreateChatCompletionStreamResponse(
-                  choices: [
-                    const ChatCompletionStreamResponseChoice(
-                      delta: ChatCompletionStreamResponseDelta(
-                        content: ' world',
-                      ),
-                      index: 0,
-                    ),
-                  ],
-                  object: 'chat.completion.chunk',
-                  created:
-                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
-                      1000,
-                ),
-                CreateChatCompletionStreamResponse(
-                  choices: [
-                    const ChatCompletionStreamResponseChoice(
-                      delta: ChatCompletionStreamResponseDelta(content: '!'),
-                      finishReason: ChatCompletionFinishReason.stop,
-                      index: 0,
-                    ),
-                  ],
-                  object: 'chat.completion.chunk',
-                  created:
-                      DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/
-                      1000,
-                ),
-              ]);
+          final mockStream = _createMockTextStream(['Hello', ' world', '!']);
 
-          when(
-            () => mockAiInputRepo.getEntity('test-id'),
-          ).thenAnswer((_) async => taskEntity);
-          when(
-            () => mockAiConfigRepo.getConfigById('model-1'),
-          ).thenAnswer((_) async => model);
-          when(
-            () => mockAiConfigRepo.getConfigById('provider-1'),
-          ).thenAnswer((_) async => provider);
-          when(
-            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-          ).thenAnswer((_) async => '{"task": "Test Task"}');
-
-          when(
-            () => mockCloudInferenceRepo.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              provider: any(named: 'provider'),
-            ),
-          ).thenAnswer((_) => mockStream);
-
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: taskEntity,
+            model: model,
+            provider: provider,
+          );
+          _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
           when(
             () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
           ).thenAnswer((_) async => false);
@@ -1498,72 +1359,21 @@ void main() {
         final progressUpdates = <String>[];
         final statusChanges = <InferenceStatus>[];
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Image shows',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-          CreateChatCompletionStreamResponse(
-            id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: ' a cat'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+        final mockStream = _createMockTextStream(['Image shows', ' a cat']);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => imageEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+          taskDetailsJson: '{"image": "test.jpg"}',
+        );
         when(
           () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
         ).thenAnswer((_) async => []); // No linked task
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"image": "test.jpg"}');
-
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -1652,58 +1462,18 @@ void main() {
         final progressUpdates = <String>[];
         final statusChanges = <InferenceStatus>[];
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Hello world',
-                ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+        final mockStream = _createMockTextStream(['Hello world']);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => audioEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"audio": "test.mp3"}');
-
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: audioEntity,
+          model: model,
+          provider: provider,
+          taskDetailsJson: '{"audio": "test.mp3"}',
+        );
+        _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -1784,58 +1554,19 @@ void main() {
         final progressUpdates = <String>[];
         final statusChanges = <InferenceStatus>[];
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content:
-                      '<think>Let me analyze this task</think>Task completed successfully',
-                ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-          ),
+        final mockStream = _createMockTextStream([
+          '<think>Let me analyze this task</think>Task completed successfully',
         ]);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => taskEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"task": "Test Task"}');
-
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: taskEntity,
+          model: model,
+          provider: provider,
+        );
+        _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
         when(
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
@@ -2081,26 +1812,9 @@ void main() {
           () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
         ).thenAnswer((_) async => '{"task": "Test Task"}');
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
+        _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
         when(
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
@@ -2262,40 +1976,17 @@ void main() {
             ),
           ]);
 
-          when(
-            () => mockAiInputRepo.getEntity('test-id'),
-          ).thenAnswer((_) async => audioEntity);
-          when(
-            () => mockAiConfigRepo.getConfigById('model-1'),
-          ).thenAnswer((_) async => model);
-          when(
-            () => mockAiConfigRepo.getConfigById('provider-1'),
-          ).thenAnswer((_) async => provider);
-          when(
-            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-          ).thenAnswer((_) async => '{"audio": "test.mp3"}');
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: audioEntity,
+            model: model,
+            provider: provider,
+            taskDetailsJson: '{"audio": "test.mp3"}',
+          );
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
-
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           when(
             () => mockJournalRepo.updateJournalEntity(any()),
@@ -2438,40 +2129,17 @@ void main() {
             ),
           ]);
 
-          when(
-            () => mockAiInputRepo.getEntity('test-id'),
-          ).thenAnswer((_) async => audioEntity);
-          when(
-            () => mockAiConfigRepo.getConfigById('model-1'),
-          ).thenAnswer((_) async => model);
-          when(
-            () => mockAiConfigRepo.getConfigById('provider-1'),
-          ).thenAnswer((_) async => provider);
-          when(
-            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-          ).thenAnswer((_) async => '{"audio": "test.mp3"}');
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: audioEntity,
+            model: model,
+            provider: provider,
+            taskDetailsJson: '{"audio": "test.mp3"}',
+          );
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
-
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           when(
             () => mockJournalRepo.updateJournalEntity(any()),
@@ -2600,42 +2268,20 @@ void main() {
           ),
         ]);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => imageEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+          taskDetailsJson: '{"image": "test.jpg"}',
+        );
         when(
           () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
         ).thenAnswer((_) async => []); // No linked task
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"image": "test.jpg"}');
+        _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -2746,42 +2392,20 @@ void main() {
           ),
         ]);
 
-        when(
-          () => mockAiInputRepo.getEntity('test-id'),
-        ).thenAnswer((_) async => imageEntity);
-        when(
-          () => mockAiConfigRepo.getConfigById('model-1'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockAiConfigRepo.getConfigById('provider-1'),
-        ).thenAnswer((_) async => provider);
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: model,
+          provider: provider,
+          taskDetailsJson: '{"image": "test.jpg"}',
+        );
         when(
           () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
         ).thenAnswer((_) async => []); // No linked task
-        when(
-          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
-        ).thenAnswer((_) async => '{"image": "test.jpg"}');
+        _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -2890,27 +2514,9 @@ void main() {
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           when(
             () => mockJournalRepo.updateJournalEntity(any()),
@@ -3015,26 +2621,9 @@ void main() {
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
             ),
           ]);
-          when(
-            () => mockCloudInferenceRepo.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              provider: any(named: 'provider'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerate(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Run inference
           await repository!.runInference(
@@ -3178,26 +2767,9 @@ If the image IS relevant:
               '{"title": "Database Migration Task", "status": "IN PROGRESS"}',
         );
 
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-          ),
-        ).thenAnswer((_) => mockStream);
+        _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        _stubCreateAiResponseEntry(mockAiInputRepo);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -3352,26 +2924,9 @@ Extract ONLY information from the image that is relevant to this task. Be concis
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => []); // No linked entities
 
-          when(
-            () => mockCloudInferenceRepo.generateWithImages(
-              any(),
-              provider: any(named: 'provider'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              images: any(named: 'images'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           when(
             () => mockJournalRepo.updateJournalEntity(any()),
@@ -3527,18 +3082,7 @@ be consulted to ensure accuracy.''',
               '{"title": "Interview with John Smith", "status": "IN PROGRESS"}',
         );
 
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
+        _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
@@ -3680,18 +3224,7 @@ Take into account the following task context:
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => []); // No linked entities
 
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
           when(
             () => mockJournalRepo.updateJournalEntity(any()),
@@ -3921,30 +3454,13 @@ Take into account the following task context:
             ),
           ).thenAnswer((_) async => <JournalEntity>[]);
 
-          final mockStream = Stream.fromIterable([
-            _createStreamChunk('This is an image of a sunset'),
+          final mockStream = _createMockTextStream([
+            'This is an image of a sunset',
           ]);
 
-          when(
-            () => mockCloudInferenceRepo.generateWithImages(
-              any(),
-              provider: any(named: 'provider'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              images: any(named: 'images'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
           await repository!.runInference(
@@ -4064,31 +3580,13 @@ Take into account the following task context:
             ),
           ).thenAnswer((_) async => <JournalEntity>[]);
 
-          final mockStream = Stream.fromIterable([
-            _createStreamChunk('This is the transcribed audio content'),
-          ]);
+          final mockStream = _createMockTextStream(
+            ['This is the transcribed audio content'],
+          );
 
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
           await repository!.runInference(
@@ -4207,30 +3705,13 @@ Take into account the following task context:
             () => mockJournalRepo.updateJournalEntity(any()),
           ).thenAnswer((_) async => true);
 
-          final mockStream = Stream.fromIterable([
-            _createStreamChunk('AI analysis: Beautiful sunset'),
+          final mockStream = _createMockTextStream([
+            'AI analysis: Beautiful sunset',
           ]);
 
-          when(
-            () => mockCloudInferenceRepo.generateWithImages(
-              any(),
-              provider: any(named: 'provider'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              images: any(named: 'images'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithImages(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
           await repository!.runInference(
@@ -4350,31 +3831,11 @@ Take into account the following task context:
             ),
           ).thenAnswer((_) async => <JournalEntity>[]);
 
-          final mockStream = Stream.fromIterable([
-            _createStreamChunk('Transcribed content'),
-          ]);
+          final mockStream = _createMockTextStream(['Transcribed content']);
 
-          when(
-            () => mockCloudInferenceRepo.generateWithAudio(
-              provider: any(named: 'provider'),
-              any(),
-              model: any(named: 'model'),
-              audioBase64: any(named: 'audioBase64'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              stream: any(named: 'stream'),
-              audioFormat: any(named: 'audioFormat'),
-            ),
-          ).thenAnswer((_) => mockStream);
+          _stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
 
-          when(
-            () => mockAiInputRepo.createAiResponseEntry(
-              data: any(named: 'data'),
-              start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => null);
+          _stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute - should complete without throwing
           await repository!.runInference(
@@ -4493,18 +3954,10 @@ Take into account the following task context:
           ..add(_createStreamChunk('Task completed'))
           ..close();
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: streamController.stream,
+        );
 
         // Clear any captured suggestions from previous tests
         testChecklistCompletionService.capturedSuggestions.clear();
@@ -4590,18 +4043,10 @@ Take into account the following task context:
           ..add(_createStreamChunk('Task completed'))
           ..close();
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: streamController.stream,
+        );
 
         // Clear any captured suggestions from previous tests
         testChecklistCompletionService.capturedSuggestions.clear();
@@ -4701,18 +4146,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Done'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       when(
         () => mockAutoChecklistService.autoCreateChecklist(
@@ -4834,18 +4271,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -4962,18 +4391,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -5121,18 +4542,10 @@ Take into account the following task context:
               ..add(_createStreamChunk('Task analysis complete'))
               ..close();
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
+        _stubGenerate(
+          mockCloudInferenceRepo,
+          stream: streamController.stream,
+        );
 
         await repository!.runInference(
           entityId: taskEntity.id,
@@ -5273,18 +4686,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
@@ -5387,18 +4792,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
@@ -5501,18 +4898,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
@@ -5615,18 +5004,10 @@ Take into account the following task context:
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       testChecklistCompletionService.capturedSuggestions.clear();
       when(
@@ -5761,17 +5142,10 @@ Take into account the following task context:
         () => mockAiConfigRepo.getConfigById('provider-1'),
       ).thenAnswer((_) async => aiProvider);
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
@@ -5876,17 +5250,10 @@ Take into account the following task context:
         () => mockAiConfigRepo.getConfigById('provider-1'),
       ).thenAnswer((_) async => aiProvider);
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+      _stubGenerate(
+        mockCloudInferenceRepo,
+        stream: streamController.stream,
+      );
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
@@ -6100,6 +5467,127 @@ CreateChatCompletionStreamResponse _createStreamChunk(String content) {
     model: 'test-model',
     object: 'chat.completion.chunk',
   );
+}
+
+/// Creates a mock stream of text chunks. The last chunk includes a stop
+/// finish reason. Replaces verbose inline [Stream.fromIterable] blocks.
+Stream<CreateChatCompletionStreamResponse> _createMockTextStream(
+  List<String> chunks,
+) {
+  return Stream.fromIterable([
+    for (var i = 0; i < chunks.length; i++)
+      CreateChatCompletionStreamResponse(
+        id: 'response-${i + 1}',
+        choices: [
+          ChatCompletionStreamResponseChoice(
+            delta: ChatCompletionStreamResponseDelta(content: chunks[i]),
+            finishReason: i == chunks.length - 1
+                ? ChatCompletionFinishReason.stop
+                : null,
+            index: 0,
+          ),
+        ],
+        object: 'chat.completion.chunk',
+        created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+      ),
+  ]);
+}
+
+/// Stubs `CloudInferenceRepository.generate` to return [stream].
+void _stubGenerate(
+  MockCloudInferenceRepository mock, {
+  required Stream<CreateChatCompletionStreamResponse> stream,
+}) {
+  when(
+    () => mock.generate(
+      any(),
+      model: any(named: 'model'),
+      temperature: any(named: 'temperature'),
+      baseUrl: any(named: 'baseUrl'),
+      apiKey: any(named: 'apiKey'),
+      systemMessage: any(named: 'systemMessage'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      provider: any(named: 'provider'),
+      tools: any(named: 'tools'),
+    ),
+  ).thenAnswer((_) => stream);
+}
+
+/// Stubs `CloudInferenceRepository.generateWithImages` to return [stream].
+void _stubGenerateWithImages(
+  MockCloudInferenceRepository mock, {
+  required Stream<CreateChatCompletionStreamResponse> stream,
+}) {
+  when(
+    () => mock.generateWithImages(
+      any(),
+      provider: any(named: 'provider'),
+      model: any(named: 'model'),
+      temperature: any(named: 'temperature'),
+      images: any(named: 'images'),
+      baseUrl: any(named: 'baseUrl'),
+      apiKey: any(named: 'apiKey'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
+    ),
+  ).thenAnswer((_) => stream);
+}
+
+/// Stubs `CloudInferenceRepository.generateWithAudio` to return [stream].
+void _stubGenerateWithAudio(
+  MockCloudInferenceRepository mock, {
+  required Stream<CreateChatCompletionStreamResponse> stream,
+}) {
+  when(
+    () => mock.generateWithAudio(
+      any(),
+      provider: any(named: 'provider'),
+      model: any(named: 'model'),
+      audioBase64: any(named: 'audioBase64'),
+      baseUrl: any(named: 'baseUrl'),
+      apiKey: any(named: 'apiKey'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      stream: any(named: 'stream'),
+      audioFormat: any(named: 'audioFormat'),
+    ),
+  ).thenAnswer((_) => stream);
+}
+
+/// Stubs the common context lookups needed before `runInference`:
+/// entity fetch, model/provider resolution, and task details JSON.
+void _stubInferenceContext({
+  required MockAiInputRepository mockAiInputRepo,
+  required MockAiConfigRepository mockAiConfigRepo,
+  required JournalEntity entity,
+  required AiConfigModel model,
+  required AiConfigInferenceProvider provider,
+  String? entityId,
+  String taskDetailsJson = '{"task": "Test Task"}',
+}) {
+  final id = entityId ?? entity.id;
+  when(
+    () => mockAiInputRepo.getEntity(id),
+  ).thenAnswer((_) async => entity);
+  when(
+    () => mockAiConfigRepo.getConfigById(model.id),
+  ).thenAnswer((_) async => model);
+  when(
+    () => mockAiConfigRepo.getConfigById(provider.id),
+  ).thenAnswer((_) async => provider);
+  when(
+    () => mockAiInputRepo.buildTaskDetailsJson(id: id),
+  ).thenAnswer((_) async => taskDetailsJson);
+}
+
+/// Stubs `AiInputRepository.createAiResponseEntry` to return null.
+void _stubCreateAiResponseEntry(MockAiInputRepository mock) {
+  when(
+    () => mock.createAiResponseEntry(
+      data: any(named: 'data'),
+      start: any(named: 'start'),
+      linkedId: any(named: 'linkedId'),
+      categoryId: any(named: 'categoryId'),
+    ),
+  ).thenAnswer((_) async => null);
 }
 
 CreateChatCompletionStreamResponse _createStreamChunkWithToolCalls(
