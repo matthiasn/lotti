@@ -3290,6 +3290,249 @@ void main() {
           });
         },
       );
+
+      test(
+        'sequential retained refresh aborts loop iteration when a second '
+        'refresh supersedes the first',
+        () {
+          fakeAsync((async) {
+            final initialFirstPage = List<JournalEntity>.generate(
+              JournalPageController.pageSize,
+              (index) => _buildTestTask(
+                id: 'task-$index',
+                title: 'Initial task $index',
+                createdAt: _testDate.add(Duration(minutes: index)),
+                priority: TaskPriority.p1High,
+              ),
+              growable: false,
+            );
+            final initialSecondPageTask = _buildTestTask(
+              id: 'task-late',
+              title: 'Initial late task',
+              createdAt: _testDate.add(const Duration(hours: 3)),
+              priority: TaskPriority.p2Medium,
+            );
+            final winnerTask = _buildTestTask(
+              id: 'winner-task',
+              title: 'Winner task',
+              createdAt: _testDate.add(const Duration(hours: 10)),
+              priority: TaskPriority.p0Urgent,
+            );
+            final allProjectIds = {
+              ...initialFirstPage.map((e) => e.meta.id),
+              initialSecondPageTask.meta.id,
+              winnerTask.meta.id,
+            };
+            final firstRefreshPage0Completer = Completer<List<JournalEntity>>();
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects(any()),
+            ).thenAnswer((_) async => allProjectIds);
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            unawaited(controller.toggleProjectFilter('proj-1'));
+            async.flushMicrotasks();
+
+            // Set up two pages so sequential loop iterates twice.
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: [
+                initialFirstPage,
+                [initialSecondPageTask],
+              ],
+              keys: const [0, JournalPageController.pageSize],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              // First call (first refresh, page 0): slow — use completer.
+              if (getTasksCallCount == 1) {
+                return firstRefreshPage0Completer.future;
+              }
+              // All subsequent calls (second refresh): resolve instantly.
+              return Future.value([winnerTask]);
+            });
+
+            // Start first sequential retained refresh (page 0 will block).
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // First refresh is now awaiting page 0. Start second refresh
+            // which supersedes the first's refresh token.
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // Complete the first refresh's page 0 — the loop should detect
+            // the stale token and abort before fetching page 1.
+            firstRefreshPage0Completer.complete(initialFirstPage);
+            async.flushMicrotasks();
+
+            // The winning (second) refresh should have replaced the pages.
+            expect(
+              state.pagingController?.value.items,
+              equals([winnerTask]),
+            );
+            expect(state.pagingController?.value.isLoading, isFalse);
+          });
+        },
+      );
+
+      test(
+        'refreshQuery with preserveVisibleItems rethrows non-Exception errors',
+        () {
+          fakeAsync((async) {
+            final initialTask = _buildTestTask(
+              id: 'task-1',
+              title: 'Initial task',
+              createdAt: _testDate,
+              priority: TaskPriority.p1High,
+            );
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) {
+              getTasksCallCount++;
+              if (getTasksCallCount == 1) {
+                return Future.value([initialTask]);
+              }
+              // Throw a non-Exception (Error) to trigger the rethrow path.
+              return Future<List<JournalEntity>>.error(
+                StateError('fatal error'),
+              );
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            container.read(journalPageControllerProvider(true).notifier);
+
+            async.flushMicrotasks();
+
+            expect(
+              state.pagingController?.value.items,
+              equals([initialTask]),
+            );
+
+            // The Error should propagate as an uncaught error in the zone.
+            Object? caughtError;
+            runZonedGuarded(
+              () {
+                fakeAsync((innerAsync) {
+                  // Re-read because we're in a new fakeAsync zone — but we
+                  // only need to trigger refreshQuery on the existing
+                  // controller.  Directly call the paging controller's
+                  // retained-refresh path by calling refreshQuery.
+                  final ctrl = container.read(
+                    journalPageControllerProvider(true).notifier,
+                  );
+                  unawaited(
+                    ctrl.refreshQuery(preserveVisibleItems: true),
+                  );
+                  innerAsync.flushMicrotasks();
+                });
+              },
+              (error, stack) {
+                caughtError = error;
+              },
+            );
+
+            async.flushMicrotasks();
+
+            // StateError is not an Exception, so it should be rethrown.
+            expect(caughtError, isA<StateError>());
+          });
+        },
+      );
+
+      test(
+        'refreshQuery with preserveVisibleItems falls back to full refresh '
+        'when no visible page keys exist',
+        () {
+          fakeAsync((async) {
+            var getTasksCallCount = 0;
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async {
+              getTasksCallCount++;
+              return <JournalEntity>[];
+            });
+
+            final state = container.read(journalPageControllerProvider(true));
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.flushMicrotasks();
+
+            // Manually set paging state with an empty page so that
+            // hasVisibleItems is false — refreshQuery should fall through
+            // to the full refresh path.
+            state.pagingController!.value = PagingState<int, JournalEntity>(
+              pages: const [[]],
+              keys: const [0],
+              hasNextPage: false,
+            );
+
+            clearInteractions(mockJournalDb);
+            getTasksCallCount = 0;
+
+            // preserveVisibleItems=true but no visible items →
+            // hasVisibleItems is false, so it should do a full refresh.
+            unawaited(
+              controller.refreshQuery(preserveVisibleItems: true),
+            );
+            async.flushMicrotasks();
+
+            // A full refresh re-fetches page 0
+            expect(getTasksCallCount, greaterThan(0));
+          });
+        },
+      );
     });
 
     group('Visibility Edge Cases', () {
