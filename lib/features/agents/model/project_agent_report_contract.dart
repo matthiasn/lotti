@@ -11,6 +11,7 @@
 abstract final class ProjectAgentReportToolArgs {
   static const markdown = 'markdown';
   static const tldr = 'tldr';
+  static const oneLiner = 'one_liner';
   static const healthBand = 'health_band';
   static const healthRationale = 'health_rationale';
   static const healthConfidence = 'health_confidence';
@@ -18,6 +19,7 @@ abstract final class ProjectAgentReportToolArgs {
   static const required = <String>[
     markdown,
     tldr,
+    oneLiner,
     healthBand,
     healthRationale,
   ];

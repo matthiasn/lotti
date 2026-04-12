@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -12,7 +14,7 @@ import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
-  Widget wrap(Widget child, {Locale? locale}) {
+  Widget wrap(Widget child, {Locale? locale, List<Override>? overrides}) {
     final themedChild = Theme(
       data: DesignSystemTheme.dark(),
       child: Scaffold(
@@ -20,17 +22,20 @@ void main() {
       ),
     );
 
-    return makeTestableWidget2(
-      Builder(
-        builder: (context) => locale == null
-            ? themedChild
-            : Localizations.override(
-                context: context,
-                locale: locale,
-                child: themedChild,
-              ),
+    return ProviderScope(
+      overrides: overrides ?? noOneLinerOverrides(['p1', 'p2']),
+      child: makeTestableWidget2(
+        Builder(
+          builder: (context) => locale == null
+              ? themedChild
+              : Localizations.override(
+                  context: context,
+                  locale: locale,
+                  child: themedChild,
+                ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
       ),
-      mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
     );
   }
 

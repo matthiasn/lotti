@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.951" date="2026-04-12">
+      <description>
+          <p>Project one-liner: AI-generated summary subtitle on project list cards, giving an at-a-glance status for each project. The project agent now produces a dedicated one-liner field in its report, separate from the longer TLDR summary.</p>
+      </description>
+    </release>
     <release version="0.9.950" date="2026-04-11">
       <description>
           <p>Removed the gamey theme and all gamey-styled widgets. Standard Flutter widgets and existing modern cards are used instead.</p>

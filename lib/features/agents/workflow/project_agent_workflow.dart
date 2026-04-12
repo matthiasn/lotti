@@ -325,6 +325,7 @@ class ProjectAgentWorkflow {
       // 9. Persist all wake outputs.
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
+      final reportOneLiner = strategy.extractReportOneLiner();
       final reportHealthBand = strategy.extractReportHealthBand();
       final reportHealthRationale = strategy.extractReportHealthRationale();
       final reportHealthConfidence = strategy.extractReportHealthConfidence();
@@ -374,6 +375,7 @@ class ProjectAgentWorkflow {
               vectorClock: null,
               content: reportContent,
               tldr: reportTldr,
+              oneLiner: reportOneLiner,
               provenance: <String, Object?>{
                 ProjectAgentReportProvenanceKeys.healthBand: reportHealthBand,
                 ProjectAgentReportProvenanceKeys.healthRationale:

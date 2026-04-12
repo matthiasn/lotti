@@ -51,6 +51,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   String? _reportContent;
   String? _reportTldr;
+  String? _reportOneLiner;
   String? _reportHealthBand;
   String? _reportHealthRationale;
   double? _reportHealthConfidence;
@@ -154,6 +155,9 @@ class ProjectAgentStrategy extends ConversationStrategy {
   /// Extracts the TLDR published via `update_project_report`.
   String? extractReportTldr() => _reportTldr;
 
+  /// Extracts the one-liner published via `update_project_report`.
+  String? extractReportOneLiner() => _reportOneLiner;
+
   /// Extracts the health band published via `update_project_report`.
   String? extractReportHealthBand() => _reportHealthBand;
 
@@ -182,6 +186,10 @@ class ProjectAgentStrategy extends ConversationStrategy {
     final markdown = markdownValue is String ? markdownValue.trim() : '';
     final tldrValue = args[ProjectAgentReportToolArgs.tldr];
     final tldr = tldrValue is String ? tldrValue.trim() : null;
+    final rawOneLiner = args[ProjectAgentReportToolArgs.oneLiner];
+    final oneLiner = (rawOneLiner is String && rawOneLiner.trim().isNotEmpty)
+        ? rawOneLiner.trim()
+        : null;
     final healthBandValue = args[ProjectAgentReportToolArgs.healthBand];
     final healthBand = healthBandValue is String ? healthBandValue.trim() : '';
     final healthRationaleValue =
@@ -232,6 +240,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
     _reportContent = markdown;
     _reportTldr = tldr;
+    _reportOneLiner = oneLiner;
     _reportHealthBand = healthBand;
     _reportHealthRationale = healthRationale;
     _reportHealthConfidence = healthConfidence;

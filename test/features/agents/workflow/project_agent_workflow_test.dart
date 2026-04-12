@@ -1483,6 +1483,7 @@ void main() {
                       arguments: jsonEncode({
                         'markdown': '# Status Report\nAll good.',
                         'tldr': 'On track.',
+                        'one_liner': 'Steady progress; API v2 next.',
                         'health_band': 'on_track',
                         'health_rationale': 'Recent work is landing well.',
                         'health_confidence': 0.88,
@@ -1524,6 +1525,7 @@ void main() {
         expect(reports, hasLength(1));
         expect(reports.first.content, '# Status Report\nAll good.');
         expect(reports.first.tldr, 'On track.');
+        expect(reports.first.oneLiner, 'Steady progress; API v2 next.');
         expect(reports.first.provenance, {
           'project_health_band': 'on_track',
           'project_health_rationale': 'Recent work is landing well.',

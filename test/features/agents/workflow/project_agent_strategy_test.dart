@@ -56,13 +56,14 @@ void main() {
 
   group('ProjectAgentStrategy', () {
     group('update_project_report', () {
-      test('accumulates report content and tldr', () async {
+      test('accumulates report content, tldr, and oneLiner', () async {
         final toolCalls = [
           _makeToolCall(
             name: ProjectAgentToolNames.updateProjectReport,
             args: {
               'markdown': '# Project Report\nAll good.',
               'tldr': 'Everything is on track.',
+              'one_liner': 'Steady progress; API v2 next.',
               'health_band': 'on_track',
               'health_rationale': 'Recent work is landing cleanly.',
               'health_confidence': 0.82,
@@ -77,6 +78,10 @@ void main() {
 
         expect(strategy.extractReportContent(), '# Project Report\nAll good.');
         expect(strategy.extractReportTldr(), 'Everything is on track.');
+        expect(
+          strategy.extractReportOneLiner(),
+          'Steady progress; API v2 next.',
+        );
         expect(strategy.extractReportHealthBand(), 'on_track');
         expect(
           strategy.extractReportHealthRationale(),
@@ -90,6 +95,49 @@ void main() {
             response: 'Report updated successfully.',
           ),
         ).called(1);
+      });
+
+      test('oneLiner defaults to null when omitted', () async {
+        final toolCalls = [
+          _makeToolCall(
+            name: ProjectAgentToolNames.updateProjectReport,
+            args: {
+              'markdown': '# Report',
+              'tldr': 'Summary here.',
+              'health_band': 'on_track',
+              'health_rationale': 'All good.',
+            },
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportOneLiner(), isNull);
+      });
+
+      test('oneLiner trims whitespace and ignores blank values', () async {
+        final toolCalls = [
+          _makeToolCall(
+            name: ProjectAgentToolNames.updateProjectReport,
+            args: {
+              'markdown': '# Report',
+              'tldr': 'Summary.',
+              'one_liner': '   ',
+              'health_band': 'watch',
+              'health_rationale': 'Uncertain.',
+            },
+          ),
+        ];
+
+        await strategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(strategy.extractReportOneLiner(), isNull);
       });
 
       test('returns error when markdown is empty', () async {

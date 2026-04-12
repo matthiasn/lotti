@@ -41,6 +41,14 @@ const projectAgentTools = <AgentToolDefinition>[
               'A concise 1-3 sentence overview of the project state. This is '
               'shown in the collapsed view, so make it useful on its own.',
         },
+        ProjectAgentReportToolArgs.oneLiner: {
+          'type': 'string',
+          'description':
+              'A concise project tagline for compact project-card subtitles '
+              'in the project list. One or two short sentences that capture '
+              'the current state, next step, or primary risk. Longer than '
+              'a task one-liner but much shorter than the tldr.',
+        },
         ProjectAgentReportToolArgs.healthBand: {
           'type': 'string',
           'enum': ProjectAgentHealthBandValues.values,
