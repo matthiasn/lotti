@@ -340,6 +340,36 @@ void main() {
       });
     });
 
+    test('passes categoryIds when selectedCategoryIds is non-empty', () {
+      fakeAsync((async) {
+        final params = _defaultParams(
+          selectedCategoryIds: {'cat-1', 'cat-2'},
+        );
+
+        late List<JournalEntity> result;
+        runner.runQuery(params, 0, fullTextMatches: {}).then((r) => result = r);
+        async.flushMicrotasks();
+
+        final captured = verify(
+          () => mockJournalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: any(named: 'starredStatuses'),
+            privateStatuses: any(named: 'privateStatuses'),
+            flaggedStatuses: any(named: 'flaggedStatuses'),
+            ids: any(named: 'ids'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            categoryIds: captureAny(named: 'categoryIds'),
+          ),
+        ).captured;
+
+        final categoryIds = captured.first as Set<String>?;
+        expect(categoryIds, isNotNull);
+        expect(categoryIds, equals({'cat-1', 'cat-2'}));
+        expect(result, isEmpty);
+      });
+    });
+
     test('passes correct types filtered by feature flags', () {
       fakeAsync((async) {
         final params = _defaultParams(
@@ -823,6 +853,45 @@ void main() {
             categoryIds: any(named: 'categoryIds'),
           ),
         );
+      });
+    });
+
+    test('passes null categoryIds when selectedCategoryIds is empty', () {
+      fakeAsync((async) {
+        final mockVectorRepo = MockVectorSearchRepository();
+        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
+
+        final vectorResult = VectorSearchResult(
+          entities: <JournalEntity>[],
+          elapsed: const Duration(milliseconds: 10),
+        );
+
+        when(
+          () => mockVectorRepo.searchRelatedEntries(
+            query: any(named: 'query'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer((_) async => vectorResult);
+
+        final params = _defaultParams(
+          query: 'test query',
+          enableVectorSearch: true,
+          // selectedCategoryIds defaults to empty set
+        );
+
+        late JournalVectorSearchResult result;
+        runner.runVectorSearch(params).then((r) => result = r);
+        async.flushMicrotasks();
+
+        expect(result.entities, isEmpty);
+
+        // Verify categoryIds was passed as null (not an empty set).
+        verify(
+          () => mockVectorRepo.searchRelatedEntries(
+            query: 'test query',
+            categoryIds: null,
+          ),
+        ).called(1);
       });
     });
 

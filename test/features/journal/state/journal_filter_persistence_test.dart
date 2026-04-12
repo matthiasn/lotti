@@ -155,6 +155,22 @@ void main() {
         expect(result, isNull);
       });
     });
+
+    test('handles malformed JSON gracefully and returns null', () {
+      fakeAsync((async) {
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.selectedEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => 'not valid json');
+
+        late Set<String>? result;
+        sut.loadEntryTypes().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result, isNull);
+      });
+    });
   });
 
   group('saveFilters', () {
@@ -284,6 +300,27 @@ void main() {
         ).called(1);
       });
     });
+
+    test('proceeds when DB contains malformed JSON for tasks filter', () {
+      fakeAsync((async) {
+        // Stub returns malformed JSON that is not a valid Map.
+        when(
+          () => mockSettingsDb.itemByKey(filterKey),
+        ).thenAnswer((_) async => '[not a map]');
+
+        // saveFilters without prior loadFilters — seeds dedup via
+        // _normalizeTasksFilterValue, which catches and returns raw value.
+        sut.saveFilters(filter, filterKey);
+        async.flushMicrotasks();
+
+        // The normalize catch returns the raw malformed string, which differs
+        // from the encoded filter, so a write should occur.
+        verify(
+          () => mockSettingsDb.saveSettingsItem(filterKey, any()),
+        ).called(1);
+      });
+    });
+
     test(
       'saves two different keys independently without cross-key leakage',
       () {
@@ -380,6 +417,31 @@ void main() {
         sut.saveEntryTypes(entryTypes);
         async.flushMicrotasks();
 
+        verify(
+          () => mockSettingsDb.saveSettingsItem(
+            JournalFilterPersistence.selectedEntryTypesKey,
+            any(),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('proceeds when DB contains malformed JSON for entry types', () {
+      fakeAsync((async) {
+        // Stub returns malformed JSON that is not a valid List.
+        when(
+          () => mockSettingsDb.itemByKey(
+            JournalFilterPersistence.selectedEntryTypesKey,
+          ),
+        ).thenAnswer((_) async => '{not a list}');
+
+        // saveEntryTypes without prior loadEntryTypes — seeds dedup via
+        // _normalizeEntryTypesValue, which catches and returns raw value.
+        sut.saveEntryTypes(entryTypes);
+        async.flushMicrotasks();
+
+        // The normalize catch returns the raw malformed string, which differs
+        // from the encoded entry types, so a write should occur.
         verify(
           () => mockSettingsDb.saveSettingsItem(
             JournalFilterPersistence.selectedEntryTypesKey,

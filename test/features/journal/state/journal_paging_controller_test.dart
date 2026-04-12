@@ -246,6 +246,109 @@ void main() {
       });
     });
 
+    group('refreshLoadedPages', () {
+      test(
+        'falls back to refresh+fetchNextPage when no pages loaded',
+        () async {
+          // Controller starts with no pages — refreshLoadedPages should call
+          // refresh() and fetchNextPage() and return.
+          final ctrl = JournalPagingController(
+            getNextPageKey: (state) => null,
+            fetchPage: (key) async => <JournalEntity>[],
+          );
+
+          await ctrl.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
+              fail('runQuery should not be called for empty pages fallback');
+            },
+            requiresSequential: false,
+            pageSize: 10,
+            isMounted: () => true,
+            onPostFilterOffset: (_) {},
+            onLeadingItems: (_) {},
+          );
+
+          // fetchPage is invoked asynchronously by the paging framework after
+          // fetchNextPage(), so we just verify the method didn't throw and
+          // completed normally (the fallback path was taken).
+          // The controller should have called refresh() which resets state.
+          expect(ctrl.value.pages, isNull);
+
+          ctrl.dispose();
+        },
+      );
+
+      test(
+        'sequential refresh computes next page key from previous page',
+        () async {
+          // Create enough entries to fill a page (pageSize=2 for this test).
+          final entries1 = [_makeEntry('s-1'), _makeEntry('s-2')];
+          final entries2 = [_makeEntry('s-3'), _makeEntry('s-4')];
+
+          // Set up controller with 2 pages.
+          controller.replacePages(
+            [entries1, entries2],
+            keys: [0, 2],
+            hasNextPage: true,
+          );
+
+          final queriedKeys = <int>[];
+          await controller.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
+              queriedKeys.add(pageKey);
+              // Simulate post-filter offset that differs from item count.
+              setPostFilterNextRawOffset?.call(pageKey + 5);
+              return [_makeEntry('r-$pageKey-a'), _makeEntry('r-$pageKey-b')];
+            },
+            requiresSequential: true,
+            // pageSize matches returned items so loop doesn't exit early.
+            pageSize: 2,
+            isMounted: () => true,
+            onPostFilterOffset: (_) {},
+            onLeadingItems: (_) {},
+          );
+
+          // First page starts at 0, second page uses retainedNextRawOffset
+          // from page 1 (0 + 5 = 5).
+          expect(queriedKeys, [0, 5]);
+        },
+      );
+
+      test(
+        'only refreshes non-empty pages (skips empty pages in keys)',
+        () async {
+          final entry = _makeEntry('p1');
+
+          // Set up 2 pages where the second is empty.
+          controller.replacePages(
+            [
+              [entry],
+              <JournalEntity>[],
+            ],
+            keys: [0, 10],
+            hasNextPage: false,
+          );
+
+          // _loadedVisiblePageKeys only returns keys for non-empty pages.
+          final queriedKeys = <int>[];
+          await controller.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
+              queriedKeys.add(pageKey);
+              return [_makeEntry('refreshed-$pageKey')];
+            },
+            requiresSequential: false,
+            pageSize: 10,
+            isMounted: () => true,
+            onPostFilterOffset: (_) {},
+            onLeadingItems: (_) {},
+          );
+
+          // Only page at key 0 (non-empty) should be queried.
+          expect(queriedKeys, [0]);
+        },
+      );
+    });
+
     group('retained refresh lifecycle', () {
       test('full cycle: start refresh, replace pages, verify clean state', () {
         final token = Object();

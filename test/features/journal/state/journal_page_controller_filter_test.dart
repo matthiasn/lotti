@@ -1,5 +1,7 @@
 // ignore_for_file: cascade_invocations, avoid_redundant_argument_values
 
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -24,13 +27,17 @@ void main() {
     final setup = JournalControllerTestSetup();
 
     late MockJournalDb mockJournalDb;
+    late MockSettingsDb mockSettingsDb;
     late MockEntitiesCacheService mockEntitiesCacheService;
+    late StreamController<Set<String>> configFlagsController;
     late ProviderContainer container;
 
     setUp(() {
       setup.setUp();
       mockJournalDb = setup.mockJournalDb;
+      mockSettingsDb = setup.mockSettingsDb;
       mockEntitiesCacheService = setup.mockEntitiesCacheService;
+      configFlagsController = setup.configFlagsController;
       container = setup.container;
     });
 
@@ -1293,6 +1300,174 @@ void main() {
           });
         },
       );
+    });
+
+    group('Search Mode', () {
+      test('setSearchMode sets vector mode when vector search is enabled', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Enable vector search flag
+          configFlagsController.add({enableVectorSearchFlag});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setSearchMode(SearchMode.vector);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.searchMode, equals(SearchMode.vector));
+        });
+      });
+
+      test(
+        'setSearchMode falls back to fullText when vector search is disabled',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Do not enable vector search flag
+            controller.setSearchMode(SearchMode.vector);
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(journalPageControllerProvider(true));
+            expect(state.searchMode, equals(SearchMode.fullText));
+          });
+        },
+      );
+    });
+
+    group('Show Projects Header Toggle', () {
+      test('setShowProjectsHeader updates to false', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is true, so toggle to false
+          controller.setShowProjectsHeader(show: false);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showProjectsHeader, isFalse);
+
+          verify(
+            () => mockSettingsDb.saveSettingsItem(any(), any()),
+          ).called(greaterThan(0));
+        });
+      });
+
+      test('setShowProjectsHeader can toggle back to true', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setShowProjectsHeader(show: false)
+            ..setShowProjectsHeader(show: true);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showProjectsHeader, isTrue);
+        });
+      });
+
+      test('showProjectsHeader defaults to true', () {
+        fakeAsync((async) {
+          container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showProjectsHeader, isTrue);
+        });
+      });
+    });
+
+    group('Show Distances Toggle', () {
+      test('setShowDistances updates to true', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is false, so toggle to true
+          controller.setShowDistances(show: true);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDistances, isTrue);
+
+          verify(
+            () => mockSettingsDb.saveSettingsItem(any(), any()),
+          ).called(greaterThan(0));
+        });
+      });
+
+      test('setShowDistances can toggle back to false', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setShowDistances(show: true)
+            ..setShowDistances(show: false);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDistances, isFalse);
+        });
+      });
+
+      test('showDistances defaults to false', () {
+        fakeAsync((async) {
+          container.read(journalPageControllerProvider(true));
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.showDistances, isFalse);
+        });
+      });
     });
   });
 }
