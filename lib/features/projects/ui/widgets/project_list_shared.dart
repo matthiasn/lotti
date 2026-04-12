@@ -262,7 +262,7 @@ class ProjectRow extends ConsumerWidget {
                   ),
                 ),
                 if (oneLiner != null && oneLiner.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  SizedBox(height: tokens.spacing.step1),
                   Text(
                     oneLiner,
                     maxLines: 3,

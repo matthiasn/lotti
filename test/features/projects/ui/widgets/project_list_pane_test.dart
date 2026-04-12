@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -13,12 +12,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import '../../../../helpers/test_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
-
-/// Override to return null for all project one-liners matching the given IDs.
-List<Override> _noOneLinerOverrides(List<String> projectIds) => [
-  for (final id in projectIds)
-    projectOneLinerProvider(id).overrideWith((ref) async => null),
-];
 
 void main() {
   Widget wrap(Widget child, {Locale? locale, List<Override>? overrides}) {
@@ -30,7 +23,7 @@ void main() {
     );
 
     return ProviderScope(
-      overrides: overrides ?? _noOneLinerOverrides(['p1', 'p2']),
+      overrides: overrides ?? noOneLinerOverrides(['p1', 'p2']),
       child: makeTestableWidget2(
         Builder(
           builder: (context) => locale == null

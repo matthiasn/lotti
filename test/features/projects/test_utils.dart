@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -5,6 +6,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -197,6 +199,13 @@ ReviewSession makeTestReviewSession({
     expanded: expanded,
   );
 }
+
+/// Provider overrides that return null for all project one-liners matching
+/// the given [projectIds].
+List<Override> noOneLinerOverrides(List<String> projectIds) => [
+  for (final id in projectIds)
+    projectOneLinerProvider(id).overrideWith((ref) async => null),
+];
 
 /// Creates a [ProjectListData] for testing with two categories and two
 /// projects.

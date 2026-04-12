@@ -29,12 +29,6 @@ void main() {
     );
   }
 
-  /// Override to return null for all project one-liners matching the given IDs.
-  List<Override> noOneLinerOverrides(List<String> projectIds) => [
-    for (final id in projectIds)
-      projectOneLinerProvider(id).overrideWith((ref) async => null),
-  ];
-
   ProjectCategoryGroup makeGroupedProjectsSection() {
     final workCategory = makeTestProjectListData().categories.first;
     return ProjectCategoryGroup(
@@ -317,12 +311,6 @@ void main() {
   });
 
   group('ProjectRow', () {
-    List<Override> noOneLinerOverride(String projectId) => [
-      projectOneLinerProvider(projectId).overrideWith(
-        (ref) async => null,
-      ),
-    ];
-
     testWidgets('renders title, task progress, and status tag', (tester) async {
       final item = makeTestProjectListItemData();
 
@@ -336,7 +324,7 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
-          overrides: noOneLinerOverride(item.project.meta.id),
+          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
@@ -391,7 +379,7 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
-          overrides: noOneLinerOverride(item.project.meta.id),
+          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
@@ -419,7 +407,7 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () => tapped = true,
           ),
-          overrides: noOneLinerOverride(item.project.meta.id),
+          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
