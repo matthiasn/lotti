@@ -1259,6 +1259,7 @@
   "deleteDeviceLabel": "Șterge dispozitivul",
   "desktopEmptyStateSelectDashboard": "Selectați un tablou de bord pentru a vedea detaliile",
   "desktopEmptyStateSelectProject": "Selectați un proiect pentru a vedea detaliile",
+  "desktopEmptyStateSelectSetting": "Selectați o setare pentru a vedea detaliile",
   "desktopEmptyStateSelectTask": "Selectați o sarcină pentru a vedea detaliile",
   "designSystemActivatedLabel": "Activ",
   "designSystemAvatarAwayLabel": "Absent",

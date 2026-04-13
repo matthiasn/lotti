@@ -31,9 +31,10 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.951" date="2026-04-12">
+    <release version="0.9.951" date="2026-04-13">
       <description>
           <p>Project one-liner: AI-generated summary subtitle on project list cards, giving an at-a-glance status for each project. The project agent now produces a dedicated one-liner field in its report, separate from the longer TLDR summary.</p>
+          <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
       </description>
     </release>
     <release version="0.9.950" date="2026-04-11">

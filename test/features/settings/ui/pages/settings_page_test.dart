@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -256,6 +258,76 @@ void main() {
         expect(find.text('Measurable Types'), findsNothing);
       },
     );
+  });
+
+  group('SettingsPage desktop layout', () {
+    late MockSettingsDb mockSettingsDb;
+    late NavService navService;
+    late MockJournalDb desktopMockDb;
+
+    setUp(() {
+      desktopMockDb = MockJournalDb();
+      mockSettingsDb = MockSettingsDb();
+
+      when(desktopMockDb.getJournalCount).thenAnswer((_) async => 0);
+      when(desktopMockDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+      );
+      when(
+        () => desktopMockDb.watchConfigFlag(any()),
+      ).thenAnswer((_) => Stream.value(false));
+      when(() => mockSettingsDb.itemByKey(any())).thenAnswer(
+        (_) async => null,
+      );
+      when(
+        () => mockSettingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      navService = NavService(
+        journalDb: desktopMockDb,
+        settingsDb: mockSettingsDb,
+      )..isDesktopMode = true;
+
+      getIt
+        ..registerSingleton<JournalDb>(desktopMockDb)
+        ..registerSingleton<NavService>(navService)
+        ..registerSingleton<UserActivityService>(UserActivityService());
+
+      ensureThemingServicesRegistered();
+    });
+
+    tearDown(() async {
+      await navService.dispose();
+      await getIt.reset();
+    });
+
+    testWidgets('uses ValueListenableBuilder on desktop layout', (
+      tester,
+    ) async {
+      navService.desktopSelectedSettingsRoute.value = (
+        path: '/settings/ai',
+        pathParameters: <String, String>{},
+        queryParameters: <String, String>{},
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SettingsPage(),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
+          overrides: [
+            journalDbProvider.overrideWithValue(desktopMockDb),
+            whatsNewControllerProvider.overrideWith(
+              _TestWhatsNewController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The list items should render on desktop
+      expect(find.byType(DesignSystemListItem), findsWidgets);
+    });
   });
 }
 

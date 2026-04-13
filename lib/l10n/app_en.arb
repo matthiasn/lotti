@@ -1464,6 +1464,7 @@
   "deleteDeviceLabel": "Delete device",
   "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
   "desktopEmptyStateSelectProject": "Select a project to view details",
+  "desktopEmptyStateSelectSetting": "Select a setting to view details",
   "desktopEmptyStateSelectTask": "Select a task to view details",
   "designSystemActivatedLabel": "Activated",
   "designSystemAvatarAwayLabel": "Away",

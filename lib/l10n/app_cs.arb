@@ -1030,6 +1030,7 @@
   "deleteDeviceLabel": "Odstranit zařízení",
   "desktopEmptyStateSelectDashboard": "Vyber nástěnku pro zobrazení podrobností",
   "desktopEmptyStateSelectProject": "Vyber projekt pro zobrazení podrobností",
+  "desktopEmptyStateSelectSetting": "Vyber nastavení pro zobrazení podrobností",
   "desktopEmptyStateSelectTask": "Vyber úkol pro zobrazení podrobností",
   "designSystemActivatedLabel": "Aktivní",
   "designSystemAvatarAwayLabel": "Nepřítomen",

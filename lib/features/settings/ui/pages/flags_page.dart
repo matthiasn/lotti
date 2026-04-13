@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -164,6 +166,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     return StreamBuilder<Set<ConfigFlag>>(
       stream: getIt<JournalDb>().watchConfigFlags(),
       builder:
@@ -184,25 +188,50 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
             return SliverBoxAdapterPage(
               title: context.messages.settingsFlagsTitle,
               showBackButton: true,
-              child: Column(
-                children: [
-                  ...orderedFlags.map(
-                    (flag) => AnimatedModernSettingsCardWithIcon(
-                      title: _titleForFlag(context, flag),
-                      subtitle: _subtitleForFlag(context, flag),
-                      icon: _iconForFlag(flag.name),
-                      showChevron: false,
-                      trailing: Switch.adaptive(
-                        value: flag.status,
-                        onChanged: (bool status) {
-                          getIt<PersistenceLogic>().setConfigFlag(
-                            flag.copyWith(status: status),
-                          );
-                        },
-                      ),
-                    ),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step4,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: tokens.colors.background.level02,
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  border: Border.all(color: tokens.colors.decorative.level01),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final (index, flag) in orderedFlags.indexed)
+                        DesignSystemListItem(
+                          title: _titleForFlag(context, flag),
+                          subtitle: _subtitleForFlag(context, flag),
+                          leading: SettingsIcon(
+                            icon: _iconForFlag(flag.name),
+                          ),
+                          trailing: Switch.adaptive(
+                            value: flag.status,
+                            onChanged: (bool status) {
+                              getIt<PersistenceLogic>().setConfigFlag(
+                                flag.copyWith(status: status),
+                              );
+                            },
+                          ),
+                          onTap: () {
+                            getIt<PersistenceLogic>().setConfigFlag(
+                              flag.copyWith(status: !flag.status),
+                            );
+                          },
+                          showDivider: index < orderedFlags.length - 1,
+                          dividerIndent:
+                              tokens.spacing.step5 +
+                              SettingsIcon.containerSize +
+                              tokens.spacing.step3,
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },

@@ -34,6 +34,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -48,19 +50,45 @@ import '../../mocks/mocks.dart';
 class MockBuildContext extends Mock implements BuildContext {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SettingsLocation', () {
     late MockBuildContext mockBuildContext;
+    late NavService navService;
+    late MockJournalDb mockJournalDb;
+    late MockSettingsDb mockSettingsDb;
 
     setUp(() {
       mockBuildContext = MockBuildContext();
+      mockJournalDb = MockJournalDb();
+      mockSettingsDb = MockSettingsDb();
+
+      when(
+        () => mockJournalDb.watchConfigFlag(any()),
+      ).thenAnswer((_) => Stream.value(false));
+      when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(
+        () => mockSettingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      navService = NavService(
+        journalDb: mockJournalDb,
+        settingsDb: mockSettingsDb,
+      );
+
       getIt
         ..allowReassignment = true
-        ..registerSingleton<JournalDb>(MockJournalDb());
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<NavService>(navService);
     });
 
-    tearDown(() {
+    tearDown(() async {
+      await navService.dispose();
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
+      }
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
       }
     });
 
@@ -882,6 +910,109 @@ void main() {
       // Should have list page in stack (3 pages: Settings -> List -> Details)
       expect(categoriesPages.length, 3);
       expect(categoriesPages[1].child, isA<CategoriesListPage>());
+    });
+
+    group('desktop mode', () {
+      setUp(() {
+        navService.isDesktopMode = true;
+      });
+
+      test('returns only SettingsRootPage for /settings', () {
+        final routeInfo = RouteInformation(uri: Uri.parse('/settings'));
+        final location = SettingsLocation(routeInfo);
+        final beamState = BeamState.fromRouteInformation(routeInfo);
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<SettingsRootPage>());
+      });
+
+      test('sets desktopSelectedSettingsRoute to null for /settings', () {
+        final routeInfo = RouteInformation(uri: Uri.parse('/settings'));
+        final location = SettingsLocation(routeInfo);
+        final beamState = BeamState.fromRouteInformation(routeInfo);
+        location.buildPages(mockBuildContext, beamState);
+
+        expect(navService.desktopSelectedSettingsRoute.value, isNull);
+      });
+
+      test('returns only SettingsRootPage for sub-routes', () {
+        final routeInfo = RouteInformation(
+          uri: Uri.parse('/settings/ai'),
+        );
+        final location = SettingsLocation(routeInfo);
+        final beamState = BeamState.fromRouteInformation(routeInfo);
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<SettingsRootPage>());
+      });
+
+      test('sets route path for /settings/ai', () {
+        final routeInfo = RouteInformation(
+          uri: Uri.parse('/settings/ai'),
+        );
+        final location = SettingsLocation(routeInfo);
+        final beamState = BeamState.fromRouteInformation(routeInfo);
+        location.buildPages(mockBuildContext, beamState);
+
+        final route = navService.desktopSelectedSettingsRoute.value;
+        expect(route, isNotNull);
+        expect(route!.path, '/settings/ai');
+        expect(route.pathParameters, isEmpty);
+      });
+
+      test('sets route with path parameters for deep routes', () {
+        final routeInfo = RouteInformation(
+          uri: Uri.parse('/settings/categories/cat-42'),
+        );
+        final location = SettingsLocation(routeInfo);
+        var beamState = BeamState.fromRouteInformation(routeInfo);
+        beamState = beamState.copyWith(
+          pathParameters: {'categoryId': 'cat-42'},
+        );
+        location.buildPages(mockBuildContext, beamState);
+
+        final route = navService.desktopSelectedSettingsRoute.value;
+        expect(route, isNotNull);
+        expect(route!.path, '/settings/categories/cat-42');
+        expect(route.pathParameters['categoryId'], 'cat-42');
+      });
+
+      test('sets route with query parameters', () {
+        final routeInfo = RouteInformation(
+          uri: Uri.parse('/settings/labels/create?name=test'),
+        );
+        final location = SettingsLocation(routeInfo);
+        final beamState = BeamState.fromRouteInformation(routeInfo);
+        location.buildPages(mockBuildContext, beamState);
+
+        final route = navService.desktopSelectedSettingsRoute.value;
+        expect(route, isNotNull);
+        expect(route!.path, '/settings/labels/create');
+        expect(route.queryParameters['name'], 'test');
+      });
+
+      test('does not push sub-pages on desktop', () {
+        for (final path in [
+          '/settings/flags',
+          '/settings/theming',
+          '/settings/advanced',
+          '/settings/advanced/logging_domains',
+        ]) {
+          final routeInfo = RouteInformation(uri: Uri.parse(path));
+          final location = SettingsLocation(routeInfo);
+          final beamState = BeamState.fromRouteInformation(routeInfo);
+          final pages = location.buildPages(mockBuildContext, beamState);
+
+          expect(
+            pages.length,
+            1,
+            reason: '$path should only produce 1 page on desktop',
+          );
+          expect(pages[0].child, isA<SettingsRootPage>());
+        }
+      });
     });
   });
 }

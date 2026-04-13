@@ -1259,6 +1259,7 @@
   "deleteDeviceLabel": "Supprimer l'appareil",
   "desktopEmptyStateSelectDashboard": "Sélectionne un tableau de bord pour voir les détails",
   "desktopEmptyStateSelectProject": "Sélectionne un projet pour voir les détails",
+  "desktopEmptyStateSelectSetting": "Sélectionne un paramètre pour voir les détails",
   "desktopEmptyStateSelectTask": "Sélectionne une tâche pour voir les détails",
   "designSystemActivatedLabel": "Actif",
   "designSystemAvatarAwayLabel": "Absent",

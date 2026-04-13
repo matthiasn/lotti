@@ -2827,6 +2827,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați un proiect pentru a vedea detaliile';
 
   @override
+  String get desktopEmptyStateSelectSetting =>
+      'Selectați o setare pentru a vedea detaliile';
+
+  @override
   String get desktopEmptyStateSelectTask =>
       'Selectați o sarcină pentru a vedea detaliile';
 

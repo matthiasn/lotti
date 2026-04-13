@@ -2798,6 +2798,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber projekt pro zobrazení podrobností';
 
   @override
+  String get desktopEmptyStateSelectSetting =>
+      'Vyber nastavení pro zobrazení podrobností';
+
+  @override
   String get desktopEmptyStateSelectTask =>
       'Vyber úkol pro zobrazení podrobností';
 
