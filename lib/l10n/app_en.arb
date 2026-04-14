@@ -2418,6 +2418,22 @@
   "settingsLabelsEmptyState": "No labels yet",
   "settingsLabelsEmptyStateHint": "Tap the + button to create your first label.",
   "settingsLabelsErrorLoading": "Failed to load labels",
+  "settingsLabelsNoMatchCreate": "Create \"{query}\" label",
+  "@settingsLabelsNoMatchCreate": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsLabelsNoMatchQuery": "No labels match \"{query}\"",
+  "@settingsLabelsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsLabelsNameHint": "Bug, Release blocker, Sync…",
   "settingsLabelsNameLabel": "Label name",
   "settingsLabelsNameRequired": "Label name must not be empty.",

@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(PopupMenuButton<String>), findsNothing);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
   });
 
   testWidgets('list does not trigger delete dialog', (tester) async {

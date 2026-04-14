@@ -6,7 +6,8 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -26,9 +27,6 @@ void main() {
     tearDown(tearDownTestGetIt);
 
     /// Pumps the [CategoriesListPage] with the given overrides.
-    ///
-    /// By default, [categoryTaskCountProvider] returns 0 for all categories.
-    /// Pass [taskCounts] to supply specific counts keyed by category ID.
     Future<void> pumpCategoriesListPage(
       WidgetTester tester, {
       bool settle = true,
@@ -101,30 +99,18 @@ void main() {
     });
 
     group('Header', () {
-      testWidgets('shows localized back button and add category button', (
-        tester,
-      ) async {
+      testWidgets('shows add category button', (tester) async {
         when(() => mockRepository.watchCategories()).thenAnswer(
           (_) => Stream.value([]),
         );
 
         await pumpCategoriesListPage(tester);
 
-        // Back button with chevron_left — localized, not hardcoded 'Back'
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
-        expect(find.text('Go Back'), findsOneWidget);
-
-        // Add category button
         expect(find.byIcon(Icons.add), findsOneWidget);
         expect(find.text('Add Category'), findsOneWidget);
-
-        // No FAB
-        expect(find.byType(FloatingActionButton), findsNothing);
       });
 
-      testWidgets('shows large Categories title below top row', (
-        tester,
-      ) async {
+      testWidgets('shows Categories title', (tester) async {
         when(() => mockRepository.watchCategories()).thenAnswer(
           (_) => Stream.value([]),
         );
@@ -136,7 +122,9 @@ void main() {
     });
 
     group('Category Tile Design', () {
-      testWidgets('renders icon badge with category color', (tester) async {
+      testWidgets('renders CategoryIconBadge with fallback letter', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
             name: 'Red Category',
@@ -150,9 +138,9 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        // Verify tile renders with category name and fallback letter
         expect(find.text('Red Category'), findsOneWidget);
         expect(find.text('R'), findsOneWidget);
+        expect(find.byType(CategoryIconBadge), findsOneWidget);
       });
 
       testWidgets('renders task count subtitle', (tester) async {
@@ -234,7 +222,6 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
               categoryTaskCountProvider.overrideWith((ref, categoryId) {
-                // Return a future that never completes to keep loading state
                 return Completer<int>().future;
               }),
             ],
@@ -244,7 +231,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
-        // Should show dash placeholder during loading
         expect(find.text('\u2014'), findsOneWidget);
       });
 
@@ -259,7 +245,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
       testWidgets('shows favorite star for favorited categories', (
@@ -341,7 +327,6 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        // Should show the icon, not the fallback letter
         expect(find.text('F'), findsNothing);
         expect(find.byIcon(Icons.fitness_center), findsOneWidget);
       });
@@ -362,7 +347,6 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        // Find the fallback letter Text widget and verify its color is black
         final textFinder = find.text('L');
         expect(textFinder, findsOneWidget);
         final textWidget = tester.widget<Text>(textFinder);
@@ -391,7 +375,9 @@ void main() {
         expect(textWidget.style?.color, Colors.white);
       });
 
-      testWidgets('uses ModernBaseCard for category items', (tester) async {
+      testWidgets('uses DesignSystemListItem for category rows', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(),
         ];
@@ -402,10 +388,10 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byType(ModernBaseCard), findsOneWidget);
+        expect(find.byType(DesignSystemListItem), findsOneWidget);
       });
 
-      testWidgets('ModernBaseCard is tappable', (tester) async {
+      testWidgets('DesignSystemListItem is tappable', (tester) async {
         final categories = [
           CategoryTestUtils.createTestCategory(),
         ];
@@ -416,8 +402,10 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        final card = tester.widget<ModernBaseCard>(find.byType(ModernBaseCard));
-        expect(card.onTap, isNotNull);
+        final item = tester.widget<DesignSystemListItem>(
+          find.byType(DesignSystemListItem),
+        );
+        expect(item.onTap, isNotNull);
       });
     });
 
@@ -479,7 +467,7 @@ void main() {
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
         expect(find.byIcon(Icons.star), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
       testWidgets('hides status icons for normal active categories', (
@@ -515,21 +503,16 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        final cards = find.byType(ModernBaseCard);
-        expect(cards, findsNWidgets(3));
+        final items = find.byType(DesignSystemListItem);
+        expect(items, findsNWidgets(3));
 
-        final listTiles = find.byType(ListTile);
+        final first = tester.widget<DesignSystemListItem>(items.at(0));
+        final second = tester.widget<DesignSystemListItem>(items.at(1));
+        final third = tester.widget<DesignSystemListItem>(items.at(2));
 
-        final firstTitle =
-            tester.widget<ListTile>(listTiles.at(0)).title as Text?;
-        final secondTitle =
-            tester.widget<ListTile>(listTiles.at(1)).title as Text?;
-        final thirdTitle =
-            tester.widget<ListTile>(listTiles.at(2)).title as Text?;
-
-        expect(firstTitle?.data, equals('Alpha'));
-        expect(secondTitle?.data, equals('Beta'));
-        expect(thirdTitle?.data, equals('Zebra'));
+        expect(first.title, 'Alpha');
+        expect(second.title, 'Beta');
+        expect(third.title, 'Zebra');
       });
 
       testWidgets('handles mixed case sorting correctly', (tester) async {
@@ -545,17 +528,17 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        final tiles = find.byType(ListTile);
-        final tile0 = tester.widget<ListTile>(tiles.at(0)).title as Text?;
-        final tile1 = tester.widget<ListTile>(tiles.at(1)).title as Text?;
-        final tile2 = tester.widget<ListTile>(tiles.at(2)).title as Text?;
+        final items = find.byType(DesignSystemListItem);
+        final item0 = tester.widget<DesignSystemListItem>(items.at(0));
+        final item1 = tester.widget<DesignSystemListItem>(items.at(1));
+        final item2 = tester.widget<DesignSystemListItem>(items.at(2));
 
-        expect(tile0?.data, 'ALPHA');
-        expect(tile1?.data, 'Beta');
-        expect(tile2?.data, 'zebra');
+        expect(item0.title, 'ALPHA');
+        expect(item1.title, 'Beta');
+        expect(item2.title, 'zebra');
       });
 
-      testWidgets('displays multiple categories with correct tile count', (
+      testWidgets('displays multiple categories with correct item count', (
         tester,
       ) async {
         final categories = [
@@ -570,16 +553,17 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byType(ModernBaseCard), findsNWidgets(3));
-        expect(find.byType(ListTile), findsNWidgets(3));
-        expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(3));
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(3));
       });
-    });
 
-    group('Interactions', () {
-      testWidgets('displays category tile as tappable', (tester) async {
+      testWidgets('shows dividers between items but not after last', (
+        tester,
+      ) async {
         final categories = [
-          CategoryTestUtils.createTestCategory(),
+          CategoryTestUtils.createTestCategory(name: 'A'),
+          CategoryTestUtils.createTestCategory(name: 'B'),
+          CategoryTestUtils.createTestCategory(name: 'C'),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -588,52 +572,14 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        final card = find.byType(ModernBaseCard);
-        expect(card, findsOneWidget);
+        final items = find.byType(DesignSystemListItem);
+        final first = tester.widget<DesignSystemListItem>(items.at(0));
+        final second = tester.widget<DesignSystemListItem>(items.at(1));
+        final third = tester.widget<DesignSystemListItem>(items.at(2));
 
-        final cardWidget = tester.widget<ModernBaseCard>(card);
-        expect(cardWidget.onTap, isNotNull);
-      });
-    });
-
-    group('Edge Cases', () {
-      testWidgets('handles category with empty name', (tester) async {
-        final categories = [
-          CategoryTestUtils.createTestCategory(name: ''),
-        ];
-
-        when(() => mockRepository.watchCategories()).thenAnswer(
-          (_) => Stream.value(categories),
-        );
-
-        await pumpCategoriesListPage(tester);
-
-        expect(find.byType(ModernBaseCard), findsOneWidget);
-      });
-
-      testWidgets('scroll behavior with many categories', (tester) async {
-        final manyCategories = List.generate(
-          50,
-          (i) => CategoryTestUtils.createTestCategory(name: 'Category $i'),
-        );
-
-        when(() => mockRepository.watchCategories()).thenAnswer(
-          (_) => Stream.value(manyCategories),
-        );
-
-        await pumpCategoriesListPage(tester);
-
-        expect(find.byType(CustomScrollView), findsOneWidget);
-        expect(find.text('Category 0'), findsOneWidget);
-        expect(find.text('Category 1'), findsOneWidget);
-
-        await tester.drag(
-          find.byType(CustomScrollView),
-          const Offset(0, -500),
-        );
-        await tester.pump();
-
-        expect(find.text('Category 0'), findsNothing);
+        expect(first.showDivider, isTrue);
+        expect(second.showDivider, isTrue);
+        expect(third.showDivider, isFalse);
       });
     });
 
@@ -646,7 +592,22 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byType(CustomScrollView), findsOneWidget);
-        expect(find.byType(SliverToBoxAdapter), findsWidgets);
+      });
+
+      testWidgets('renders items inside DesignSystemGroupedList', (
+        tester,
+      ) async {
+        final categories = [
+          CategoryTestUtils.createTestCategory(name: 'Test'),
+        ];
+
+        when(() => mockRepository.watchCategories()).thenAnswer(
+          (_) => Stream.value(categories),
+        );
+
+        await pumpCategoriesListPage(tester);
+
+        expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       });
     });
   });

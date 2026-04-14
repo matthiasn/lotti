@@ -5162,6 +5162,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Nepodařilo se načíst štítky';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Vytvořit štítek \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Žádný štítek neodpovídá \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint =>
       'Chyba, Zabránění vydání, Synchronizace…';
 

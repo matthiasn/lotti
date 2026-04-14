@@ -2192,6 +2192,8 @@
   "settingsLabelsEmptyState": "Aún no hay etiquetas",
   "settingsLabelsEmptyStateHint": "Toca el botón + para crear tu primera etiqueta.",
   "settingsLabelsErrorLoading": "Error al cargar etiquetas",
+  "settingsLabelsNoMatchCreate": "Crear etiqueta \"{query}\"",
+  "settingsLabelsNoMatchQuery": "Ninguna etiqueta coincide con \"{query}\"",
   "settingsLabelsNameHint": "Error, Bloqueante, Sincronización…",
   "settingsLabelsNameLabel": "Nombre de etiqueta",
   "settingsLabelsNameRequired": "El nombre de la etiqueta no puede estar vacío.",

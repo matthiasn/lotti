@@ -5267,6 +5267,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Échec du chargement des étiquettes';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Créer l\'étiquette \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Aucune étiquette ne correspond à \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint => 'Bug, Bloquant, Synchronisation…';
 
   @override

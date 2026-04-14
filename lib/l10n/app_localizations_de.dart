@@ -5172,6 +5172,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Label \"$query\" erstellen';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Keine Labels passend zu \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
 
   @override

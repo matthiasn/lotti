@@ -11,6 +11,11 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Premium settings header that adapts to phone, tablet, and desktop layouts
 /// without overlapping the back button or status bar.
+///
+/// On desktop the header may be rendered inside a content pane that is narrower
+/// than the full window. All dimension calculations use the actual available
+/// width from a [LayoutBuilder] so that padding, font size, and heights adapt
+/// correctly regardless of the host container's width.
 class SettingsPageHeader extends StatelessWidget {
   const SettingsPageHeader({
     required this.title,
@@ -31,8 +36,18 @@ class SettingsPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use a SliverLayoutBuilder so we measure the actual pane width, not the
+    // full screen width (which would be wrong on desktop split-pane layouts).
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.crossAxisExtent;
+        return _buildSliverAppBar(context, width);
+      },
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context, double width) {
     final mediaQuery = MediaQuery.of(context);
-    final width = mediaQuery.size.width;
     final topInset = mediaQuery.padding.top;
     final textScale = mediaQuery.textScaler.scale(1);
 

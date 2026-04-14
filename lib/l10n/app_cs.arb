@@ -1945,6 +1945,8 @@
   "settingsLabelsEmptyState": "Zatím žádné štítky",
   "settingsLabelsEmptyStateHint": "Klepněte na tlačítko + pro vytvoření prvního štítku.",
   "settingsLabelsErrorLoading": "Nepodařilo se načíst štítky",
+  "settingsLabelsNoMatchCreate": "Vytvořit štítek \"{query}\"",
+  "settingsLabelsNoMatchQuery": "Žádný štítek neodpovídá \"{query}\"",
   "settingsLabelsNameHint": "Chyba, Zabránění vydání, Synchronizace…",
   "settingsLabelsNameLabel": "Název štítku",
   "settingsLabelsNameRequired": "Název štítku nesmí být prázdný.",
