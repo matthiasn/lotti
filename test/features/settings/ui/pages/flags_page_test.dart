@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -97,7 +98,6 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-    // Ensure ThemingController dependencies are registered
     ensureThemingServicesRegistered();
   });
 
@@ -105,340 +105,150 @@ void main() {
     await GetIt.I.reset();
   });
 
-  group('FlagsPage Widget Tests - ', () {
-    testWidgets('page is displayed', (tester) async {
+  group('FlagsPage', () {
+    testWidgets('renders DesignSystemListItem for each flag', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const FlagsPage(),
-        ),
+        makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-
       await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(FlagsPage));
-
-      // The card title is now the localized flag name
-      expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
-      // The subtitle/description should be present somewhere in the card
-      expect(
-        find.descendant(
-          of: find.byType(AnimatedModernSettingsCardWithIcon),
-          matching: find.text(context.messages.configFlagPrivateDescription),
-        ),
-        findsOneWidget,
-      );
-      // The icon should be present (may appear more than once)
-      expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
+      // 8 flags in the mock data
+      expect(find.byType(DesignSystemListItem), findsNWidgets(8));
     });
 
-    testWidgets('displays multiple flags with correct switch states', (
+    testWidgets('uses SettingsIcon as leading widget', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettingsIcon), findsNWidgets(8));
+    });
+
+    testWidgets('shows correct title and description for private flag', (
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const FlagsPage(),
-        ),
+        makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-
       await tester.pumpAndSettle();
-      final context = tester.element(find.byType(FlagsPage));
 
-      // Verify privateFlag is on
-      final privateFlagCard = find.widgetWithText(
-        AnimatedModernSettingsCardWithIcon,
+      final context = tester.element(find.byType(FlagsPage));
+      expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
+      expect(
+        find.text(context.messages.configFlagPrivateDescription),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows correct switch state for enabled flag', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(FlagsPage));
+      final privateFlagItem = find.widgetWithText(
+        DesignSystemListItem,
         context.messages.configFlagPrivate,
       );
-      expect(privateFlagCard, findsOneWidget);
       final privateFlagSwitch = tester.widget<Switch>(
-        find.descendant(of: privateFlagCard, matching: find.byType(Switch)),
+        find.descendant(of: privateFlagItem, matching: find.byType(Switch)),
       );
       expect(privateFlagSwitch.value, isTrue);
+    });
 
-      // Verify enableNotificationsFlag is off
-      final notificationsCard = find.widgetWithText(
-        AnimatedModernSettingsCardWithIcon,
+    testWidgets('shows correct switch state for disabled flag', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(FlagsPage));
+      final notificationsItem = find.widgetWithText(
+        DesignSystemListItem,
         context.messages.configFlagEnableNotifications,
       );
-      expect(notificationsCard, findsOneWidget);
       final notificationsSwitch = tester.widget<Switch>(
-        find.descendant(of: notificationsCard, matching: find.byType(Switch)),
+        find.descendant(
+          of: notificationsItem,
+          matching: find.byType(Switch),
+        ),
       );
       expect(notificationsSwitch.value, isFalse);
     });
 
-    testWidgets('toggles a flag when switch is tapped', (tester) async {
-      const initialFlag = ConfigFlag(
-        name: privateFlag,
-        description: 'Show private entries?',
-        status: true,
-      );
-      final updatedFlag = initialFlag.copyWith(status: false);
-
+    testWidgets('toggles flag when switch is tapped', (tester) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const FlagsPage(),
-        ),
+        makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-
       await tester.pumpAndSettle();
-      final context = tester.element(find.byType(FlagsPage));
 
-      final privateFlagCard = find.widgetWithText(
-        AnimatedModernSettingsCardWithIcon,
+      final context = tester.element(find.byType(FlagsPage));
+      final privateFlagItem = find.widgetWithText(
+        DesignSystemListItem,
         context.messages.configFlagPrivate,
       );
       await tester.tap(
-        find.descendant(of: privateFlagCard, matching: find.byType(Switch)),
+        find.descendant(of: privateFlagItem, matching: find.byType(Switch)),
       );
       await tester.pump();
 
-      verify(() => mockPersistenceLogic.setConfigFlag(updatedFlag)).called(1);
+      const expectedFlag = ConfigFlag(
+        name: privateFlag,
+        description: 'Show private entries?',
+        status: false,
+      );
+      verify(() => mockPersistenceLogic.setConfigFlag(expectedFlag)).called(1);
     });
 
-    testWidgets(
-      'displays enableEventsFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
+    testWidgets('toggles flag when row is tapped', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
+      final context = tester.element(find.byType(FlagsPage));
 
-        // Find the card for enableEventsFlag
-        final eventsFlagCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableEvents,
-        );
-        expect(eventsFlagCard, findsOneWidget);
+      // Tap the row itself (not the switch) — the onTap should toggle
+      await tester.tap(
+        find.text(context.messages.configFlagEnableNotifications),
+      );
+      await tester.pump();
 
-        // Assert: Description is present
-        expect(
-          find.descendant(
-            of: eventsFlagCard,
-            matching: find.text(
-              context.messages.configFlagEnableEventsDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
+      const expectedFlag = ConfigFlag(
+        name: enableNotificationsFlag,
+        description: 'Enable notifications?',
+        status: true,
+      );
+      verify(() => mockPersistenceLogic.setConfigFlag(expectedFlag)).called(1);
+    });
 
-        // Assert: Icon is present (Icons.event_rounded)
-        expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
+    testWidgets('shows correct icons for specific flags', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
 
-        // Assert: Switch is present with correct initial value (false)
-        final eventsSwitch = tester.widget<Switch>(
-          find.descendant(of: eventsFlagCard, matching: find.byType(Switch)),
-        );
-        expect(eventsSwitch.value, isFalse);
-      },
-    );
+      expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
+      expect(
+        find.byIcon(Icons.calendar_today_rounded),
+        findsAtLeastNWidgets(1),
+      );
+    });
 
-    testWidgets(
-      'displays enableAiStreamingFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
+    testWidgets('wraps items in decorated box with border', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
-
-        final aiStreamingCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableAiStreaming,
-        );
-        expect(aiStreamingCard, findsOneWidget);
-
-        expect(
-          find.descendant(
-            of: aiStreamingCard,
-            matching: find.text(
-              context.messages.configFlagEnableAiStreamingDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
-
-        expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
-
-        final streamingSwitch = tester.widget<Switch>(
-          find.descendant(
-            of: aiStreamingCard,
-            matching: find.byType(Switch),
-          ),
-        );
-        expect(streamingSwitch.value, isFalse);
-      },
-    );
-
-    testWidgets(
-      'displays enableDailyOsPageFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
-
-        final dailyOsCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableDailyOs,
-        );
-        expect(dailyOsCard, findsOneWidget);
-
-        expect(
-          find.descendant(
-            of: dailyOsCard,
-            matching: find.text(
-              context.messages.configFlagEnableDailyOsDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
-
-        expect(
-          find.byIcon(Icons.calendar_today_rounded),
-          findsAtLeastNWidgets(1),
-        );
-
-        final dailyOsSwitch = tester.widget<Switch>(
-          find.descendant(
-            of: dailyOsCard,
-            matching: find.byType(Switch),
-          ),
-        );
-        expect(dailyOsSwitch.value, isTrue);
-      },
-    );
-    testWidgets(
-      'displays enableAgentsFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
-
-        final agentsCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableAgents,
-        );
-        expect(agentsCard, findsOneWidget);
-
-        expect(
-          find.descendant(
-            of: agentsCard,
-            matching: find.text(
-              context.messages.configFlagEnableAgentsDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
-
-        expect(find.byIcon(Icons.smart_toy_outlined), findsAtLeastNWidgets(1));
-
-        final agentsSwitch = tester.widget<Switch>(
-          find.descendant(
-            of: agentsCard,
-            matching: find.byType(Switch),
-          ),
-        );
-        expect(agentsSwitch.value, isFalse);
-      },
-    );
-
-    testWidgets(
-      'displays enableEmbeddingsFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
-
-        final embeddingsCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableEmbeddings,
-        );
-        expect(embeddingsCard, findsOneWidget);
-
-        expect(
-          find.descendant(
-            of: embeddingsCard,
-            matching: find.text(
-              context.messages.configFlagAttemptEmbeddingDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
-
-        expect(find.byIcon(Icons.hub_outlined), findsAtLeastNWidgets(1));
-
-        final embeddingsSwitch = tester.widget<Switch>(
-          find.descendant(
-            of: embeddingsCard,
-            matching: find.byType(Switch),
-          ),
-        );
-        expect(embeddingsSwitch.value, isFalse);
-      },
-    );
-
-    testWidgets(
-      'displays enableVectorSearchFlag with correct icon, title, and description',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const FlagsPage(),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        final context = tester.element(find.byType(FlagsPage));
-
-        final vectorSearchCard = find.widgetWithText(
-          AnimatedModernSettingsCardWithIcon,
-          context.messages.configFlagEnableVectorSearch,
-        );
-        expect(vectorSearchCard, findsOneWidget);
-
-        expect(
-          find.descendant(
-            of: vectorSearchCard,
-            matching: find.text(
-              context.messages.configFlagEnableVectorSearchDescription,
-            ),
-          ),
-          findsOneWidget,
-        );
-
-        expect(
-          find.byIcon(Icons.manage_search_rounded),
-          findsAtLeastNWidgets(1),
-        );
-
-        final vectorSearchSwitch = tester.widget<Switch>(
-          find.descendant(
-            of: vectorSearchCard,
-            matching: find.byType(Switch),
-          ),
-        );
-        expect(vectorSearchSwitch.value, isFalse);
-      },
-    );
+      expect(find.byType(DecoratedBox), findsAtLeastNWidgets(1));
+      expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
+    });
   });
 }

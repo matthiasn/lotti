@@ -2826,6 +2826,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle ein Projekt aus, um Details anzuzeigen';
 
   @override
+  String get desktopEmptyStateSelectSetting =>
+      'Wähle eine Einstellung aus, um Details anzuzeigen';
+
+  @override
   String get desktopEmptyStateSelectTask =>
       'Wähle eine Aufgabe aus, um Details anzuzeigen';
 

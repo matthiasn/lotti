@@ -33,6 +33,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
+import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
@@ -40,6 +41,8 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
   SettingsLocation(RouteInformation super.routeInformation);
@@ -95,7 +98,34 @@ class SettingsLocation extends BeamLocation<BeamState> {
     bool pathContains(String s) => state.uri.path.contains(s);
     bool pathContainsKey(String s) => state.pathParameters.containsKey(s);
     final path = state.uri.path;
+    final navService = getIt<NavService>();
+    final isDesktop = navService.isDesktopMode;
 
+    // On desktop, set the route ValueNotifier and only push the root page.
+    // The SettingsRootPage renders the list on the left and routes content
+    // into the right pane via SettingsContentPane.
+    if (isDesktop) {
+      final hasSubRoute = path != '/settings';
+      navService.desktopSelectedSettingsRoute.value = hasSubRoute
+          ? (
+              path: path,
+              pathParameters: Map<String, String>.of(state.pathParameters),
+              queryParameters: Map<String, String>.of(
+                state.uri.queryParameters,
+              ),
+            )
+          : null;
+
+      return const [
+        BeamPage(
+          key: ValueKey('settings'),
+          title: 'Settings',
+          child: SettingsRootPage(),
+        ),
+      ];
+    }
+
+    // Mobile: keep the existing page-stack navigation.
     return [
       const BeamPage(
         key: ValueKey('settings'),

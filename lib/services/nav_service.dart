@@ -12,6 +12,14 @@ import 'package:rxdart/rxdart.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
+/// Lightweight snapshot of the current settings route for the desktop
+/// split-pane view.
+typedef DesktopSettingsRoute = ({
+  String path,
+  Map<String, String> pathParameters,
+  Map<String, String> queryParameters,
+});
+
 class NavService {
   NavService({
     JournalDb? journalDb,
@@ -66,6 +74,11 @@ class NavService {
       ValueNotifier<String?>(null);
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
+
+  /// Tracks the current settings sub-route on desktop so the right pane
+  /// can render the matching content page.
+  final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
+      ValueNotifier<DesktopSettingsRoute?>(null);
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
@@ -275,6 +288,7 @@ class NavService {
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
+    desktopSelectedSettingsRoute.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();
   }

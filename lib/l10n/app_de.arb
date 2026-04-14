@@ -1259,6 +1259,7 @@
   "deleteDeviceLabel": "Gerät löschen",
   "desktopEmptyStateSelectDashboard": "Wähle ein Dashboard aus, um Details anzuzeigen",
   "desktopEmptyStateSelectProject": "Wähle ein Projekt aus, um Details anzuzeigen",
+  "desktopEmptyStateSelectSetting": "Wähle eine Einstellung aus, um Details anzuzeigen",
   "desktopEmptyStateSelectTask": "Wähle eine Aufgabe aus, um Details anzuzeigen",
   "designSystemActivatedLabel": "Aktiv",
   "designSystemAvatarAwayLabel": "Abwesend",

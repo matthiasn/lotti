@@ -4968,6 +4968,12 @@ abstract class AppLocalizations {
   /// **'Select a project to view details'**
   String get desktopEmptyStateSelectProject;
 
+  /// No description provided for @desktopEmptyStateSelectSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a setting to view details'**
+  String get desktopEmptyStateSelectSetting;
+
   /// No description provided for @desktopEmptyStateSelectTask.
   ///
   /// In en, this message translates to:

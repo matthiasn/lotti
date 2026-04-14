@@ -177,17 +177,19 @@ class _DesktopSidebarNavItem extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 20,
+                    width: 32,
                     height: 20,
-                    child: IconTheme(
-                      data: IconThemeData(
-                        size: 20,
-                        color: tokens.colors.text.mediumEmphasis,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconTheme(
+                        data: IconThemeData(
+                          size: 20,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                        child: destination.iconBuilder(active: active),
                       ),
-                      child: destination.iconBuilder(active: active),
                     ),
                   ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       destination.label,

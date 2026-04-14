@@ -2861,6 +2861,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sélectionne un projet pour voir les détails';
 
   @override
+  String get desktopEmptyStateSelectSetting =>
+      'Sélectionne un paramètre pour voir les détails';
+
+  @override
   String get desktopEmptyStateSelectTask =>
       'Sélectionne une tâche pour voir les détails';
 
