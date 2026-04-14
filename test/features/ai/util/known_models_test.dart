@@ -377,6 +377,38 @@ void main() {
         expect(model.inputModalities, contains(Modality.image));
       });
 
+      test('Gemma 4 E4B should be a multimodal reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'gemma4:e4b',
+        );
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.outputModalities, contains(Modality.text));
+      });
+
+      test('Gemma 4 26B MoE should be a multimodal reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'gemma4:26b',
+        );
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.name, contains('MoE'));
+      });
+
+      test('Gemma 4 31B should be a multimodal reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'gemma4:31b',
+        );
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+      });
+
       test('should not contain removed models', () {
         final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
         expect(modelIds, isNot(contains('qwen3:8b')));

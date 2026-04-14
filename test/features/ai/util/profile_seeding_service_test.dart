@@ -32,10 +32,10 @@ void main() {
   });
 
   group('ProfileSeedingService', () {
-    test('seeds all 7 default profiles when none exist', () async {
+    test('seeds all 9 default profiles when none exist', () async {
       await service.seedDefaults();
 
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      verify(() => mockRepo.saveConfig(any())).called(9);
     });
 
     test('skips profiles that already exist', () async {
@@ -65,8 +65,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // Only 6 profiles should be saved (Gemini Flash skipped).
-      verify(() => mockRepo.saveConfig(any())).called(6);
+      // Only 8 profiles should be saved (Gemini Flash skipped).
+      verify(() => mockRepo.saveConfig(any())).called(8);
     });
 
     test('is fully idempotent — no saves when all exist and match', () async {
@@ -104,8 +104,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // Should save the updated local profile (+ 6 new ones).
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      // Should save the updated local profile (+ 8 new ones).
+      verify(() => mockRepo.saveConfig(any())).called(9);
     });
 
     test(
@@ -129,8 +129,8 @@ void main() {
 
         await service.seedDefaults();
 
-        // 6 new profiles + 1 updated (drifted local profile).
-        verify(() => mockRepo.saveConfig(any())).called(7);
+        // 8 new profiles + 1 updated (drifted local profile).
+        verify(() => mockRepo.saveConfig(any())).called(9);
       },
     );
 
@@ -151,8 +151,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // 6 new profiles only (local not updated — not isDefault).
-      verify(() => mockRepo.saveConfig(any())).called(6);
+      // 8 new profiles only (local not updated — not isDefault).
+      verify(() => mockRepo.saveConfig(any())).called(8);
     });
 
     test('seeds profiles with correct IDs', () async {
@@ -167,6 +167,8 @@ void main() {
         profileAlibabaId,
         profileLocalId,
         profileLocalPowerId,
+        profileLocalGemmaId,
+        profileLocalGemmaPowerId,
       ]) {
         verify(() => mockRepo.getConfigById(id)).called(1);
       }
@@ -194,8 +196,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // 6 new profiles saved (local skipped — no drift).
-      verify(() => mockRepo.saveConfig(any())).called(6);
+      // 8 new profiles saved (local skipped — no drift).
+      verify(() => mockRepo.saveConfig(any())).called(8);
     });
 
     test('detects drift on imageRecognitionModelId', () async {
@@ -213,8 +215,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // 7 saves: 6 new + 1 updated local profile.
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      // 9 saves: 8 new + 1 updated local profile.
+      verify(() => mockRepo.saveConfig(any())).called(9);
     });
 
     test('local power profile has correct configuration', () async {
@@ -279,8 +281,9 @@ void main() {
 
         for (final config in capturedConfigs) {
           final profile = config as AiConfigInferenceProfile;
-          if (profile.id == profileLocalPowerId) {
-            // Local Power is opt-in until Qwen3.5:27b tool-calling stabilises.
+          if (profile.id == profileLocalPowerId ||
+              profile.id == profileLocalGemmaPowerId) {
+            // Power profiles are opt-in (require large models).
             expect(
               profile.isDefault,
               isFalse,
@@ -311,8 +314,9 @@ void main() {
 
       for (final config in capturedConfigs) {
         final profile = config as AiConfigInferenceProfile;
-        // Local Power has no skill assignments (opt-in profile).
+        // Power profiles have no skill assignments (opt-in profiles).
         if (profile.id == profileLocalPowerId) continue;
+        if (profile.id == profileLocalGemmaPowerId) continue;
         expect(
           profile.skillAssignments,
           isNotEmpty,
