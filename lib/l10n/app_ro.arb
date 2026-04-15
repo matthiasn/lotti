@@ -2192,6 +2192,8 @@
   "settingsLabelsEmptyState": "Nicio etichetă încă",
   "settingsLabelsEmptyStateHint": "Apăsați butonul + pentru a crea prima etichetă.",
   "settingsLabelsErrorLoading": "Eșec la încărcarea etichetelor",
+  "settingsLabelsNoMatchCreate": "Creați eticheta \"{query}\"",
+  "settingsLabelsNoMatchQuery": "Nicio etichetă nu corespunde cu \"{query}\"",
   "settingsLabelsNameHint": "Bug, Blocant, Sincronizare…",
   "settingsLabelsNameLabel": "Nume etichetă",
   "settingsLabelsNameRequired": "Numele etichetei nu poate fi gol.",

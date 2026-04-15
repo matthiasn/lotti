@@ -2192,6 +2192,8 @@
   "settingsLabelsEmptyState": "Aucune étiquette pour le moment",
   "settingsLabelsEmptyStateHint": "Appuie sur le bouton + pour créer ta première étiquette.",
   "settingsLabelsErrorLoading": "Échec du chargement des étiquettes",
+  "settingsLabelsNoMatchCreate": "Créer l'étiquette \"{query}\"",
+  "settingsLabelsNoMatchQuery": "Aucune étiquette ne correspond à \"{query}\"",
   "settingsLabelsNameHint": "Bug, Bloquant, Synchronisation…",
   "settingsLabelsNameLabel": "Nom de l'étiquette",
   "settingsLabelsNameRequired": "Le nom de l'étiquette ne peut pas être vide.",

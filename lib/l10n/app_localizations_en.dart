@@ -5099,6 +5099,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Create \"$query\" label';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'No labels match \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
 
   @override

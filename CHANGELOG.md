@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   separate from the longer TLDR summary.
 
 ### Changed
+- Categories and labels list pages now use design system list items in a grouped
+  container, matching the visual style of the settings page.
+- Categories page header replaced with the standard SettingsPageHeader for
+  consistent back-button behavior across mobile and desktop layouts.
 - Task filter modal redesigned with the design system filter sheet, replacing
   the old Material chips and switches with pill-shaped sort/priority selectors,
   tappable selection fields for status/category/label, and Clear All / Apply

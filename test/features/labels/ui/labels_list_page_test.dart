@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,7 +30,6 @@ Widget _buildPage({
 
 void main() {
   setUp(() {
-    // Give enough viewport height so FAB and CTA are built and tappable.
     TestWidgetsFlutterBinding.ensureInitialized();
     TestWidgetsFlutterBinding
         .instance
@@ -50,24 +48,14 @@ void main() {
             .devicePixelRatio =
         1.0;
 
-    // Ensure ThemingController dependencies are registered
     ensureThemingServicesRegistered();
 
-    if (!getIt.isRegistered<EntitiesCacheService>()) {
-      final mock = MockEntitiesCacheService();
-      // No categories needed for this suite; return empty list
-      when(
-        () => mock.sortedCategories,
-      ).thenReturn(const <CategoryDefinition>[]);
-      getIt.registerSingleton<EntitiesCacheService>(mock);
-    }
     if (!getIt.isRegistered<NavService>()) {
       getIt.registerSingleton<NavService>(MockNavService());
     }
   });
 
   tearDown(() async {
-    // Reset surface size
     TestWidgetsFlutterBinding
         .instance
         .platformDispatcher
@@ -84,15 +72,14 @@ void main() {
             .first
             .devicePixelRatio =
         1.0;
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      await getIt.reset(dispose: false);
-    }
     if (getIt.isRegistered<NavService>()) {
       getIt.unregister<NavService>();
     }
   });
 
   testWidgets('renders labels with usage stats', (tester) async {
+    // testLabelDefinition1 has a description so subtitle shows description.
+    // testLabelDefinition2 has no description so subtitle shows usage count.
     await tester.pumpWidget(
       _buildPage(
         labels: [testLabelDefinition1, testLabelDefinition2],
@@ -103,7 +90,12 @@ void main() {
 
     expect(find.text('Urgent'), findsWidgets);
     expect(find.text('Backlog'), findsWidgets);
-    expect(find.textContaining('Used on 3 tasks'), findsOneWidget);
+    // Label 1 has description → subtitle is description, not usage count
+    expect(
+      find.text('Requires immediate attention'),
+      findsOneWidget,
+    );
+    // Label 2 has no description → subtitle is usage count
     expect(find.textContaining('Used on 1 task'), findsOneWidget);
   });
 
@@ -169,11 +161,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
     expect(find.byType(PopupMenuButton<String>), findsNothing);
   });
-
-  // Deletion now happens in the details page; list does not show a popup menu anymore.
 
   testWidgets('FAB navigates to create label page', (tester) async {
     final mockNav = getIt<NavService>() as MockNavService;
@@ -193,7 +183,6 @@ void main() {
 
   testWidgets('Create CTA navigates with encoded name', (tester) async {
     final mockNav = getIt<NavService>() as MockNavService;
-    // Need some labels to trigger the search empty state (not the "no labels at all" state)
     await tester.pumpWidget(_buildPage(labels: [testLabelDefinition1]));
     await tester.pumpAndSettle();
 
@@ -220,10 +209,10 @@ void main() {
     await tester.pumpWidget(_buildPage(labels: [testLabelDefinition1]));
     await tester.pumpAndSettle();
 
-    // Tap the first ListTile
-    final tile = find.byType(ListTile).first;
-    await tester.ensureVisible(tile);
-    await tester.tap(tile, warnIfMissed: false);
+    // Tap the DesignSystemListItem
+    final item = find.byType(DesignSystemListItem).first;
+    await tester.ensureVisible(item);
+    await tester.tap(item, warnIfMissed: false);
     await tester.pump();
 
     verify(
@@ -231,18 +220,17 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('private badge renders for private labels', (tester) async {
+  testWidgets('private badge renders lock icon for private labels', (
+    tester,
+  ) async {
     final privateLabel = testLabelDefinition1.copyWith(private: true);
     await tester.pumpWidget(
       _buildPage(labels: [privateLabel]),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Private'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
   });
-
-  // Note: FAB behavior is covered by dedicated editor sheet tests; here we
-  // verify presence and focus coverage via other interactions.
 
   testWidgets('shows create-from-search CTA with typed query', (tester) async {
     await tester.pumpWidget(
@@ -263,7 +251,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Enter a query that matches no existing label
     const query = 'NewLabelX';
     await tester.enterText(
       find.byType(TextField, skipOffstage: false).first,
@@ -271,10 +258,7 @@ void main() {
     );
     await tester.pump();
 
-    // CTA should reflect the exact typed casing
     expect(find.text('Create "$query" label'), findsOneWidget);
-
-    // We navigate to a new page in the app; here we only assert the CTA exists.
   });
 
   testWidgets('settings search field capitalizes words', (tester) async {
@@ -288,111 +272,6 @@ void main() {
     expect(tf.textCapitalization, TextCapitalization.words);
   });
 
-  testWidgets('renders applicable category chips under label when present', (
-    tester,
-  ) async {
-    // Arrange categories and mock cache lookups
-    final catWork = CategoryDefinition(
-      id: 'cat-work',
-      name: 'Work',
-      color: '#00AA00',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      private: false,
-      active: true,
-    );
-    final catPersonal = CategoryDefinition(
-      id: 'cat-personal',
-      name: 'Personal',
-      color: '#AA00AA',
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      private: false,
-      active: true,
-    );
-
-    // The setUp() registered a mock cache; enrich it for this test
-    final cache = getIt<EntitiesCacheService>();
-    when(() => cache.sortedCategories).thenReturn([catWork, catPersonal]);
-    when(() => cache.getCategoryById('cat-work')).thenReturn(catWork);
-    when(() => cache.getCategoryById('cat-personal')).thenReturn(catPersonal);
-
-    final scopedLabel = testLabelDefinition1.copyWith(
-      applicableCategoryIds: ['cat-work', 'cat-personal'],
-    );
-
-    // Act
-    await tester.pumpWidget(_buildPage(labels: [scopedLabel]));
-    await tester.pumpAndSettle();
-
-    // Assert: category chips show by name
-    expect(find.text('Work'), findsWidgets);
-    expect(find.text('Personal'), findsWidgets);
-  });
-
-  testWidgets('category chips use category color and contrast-aware text', (
-    tester,
-  ) async {
-    // Use one light and one dark color to test foreground selection.
-    final catLight = CategoryDefinition(
-      id: 'cat-light',
-      name: 'Bright',
-      color: '#F9F871', // light yellow
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      private: false,
-      active: true,
-    );
-    final catDark = CategoryDefinition(
-      id: 'cat-dark',
-      name: 'Deep',
-      color: '#3D0066', // dark purple
-      createdAt: testEpochDateTime,
-      updatedAt: testEpochDateTime,
-      vectorClock: null,
-      private: false,
-      active: true,
-    );
-
-    final cache = getIt<EntitiesCacheService>();
-    when(() => cache.sortedCategories).thenReturn([catLight, catDark]);
-    when(() => cache.getCategoryById('cat-light')).thenReturn(catLight);
-    when(() => cache.getCategoryById('cat-dark')).thenReturn(catDark);
-
-    final scopedLabel = testLabelDefinition1.copyWith(
-      applicableCategoryIds: ['cat-light', 'cat-dark'],
-    );
-
-    await tester.pumpWidget(_buildPage(labels: [scopedLabel]));
-    await tester.pumpAndSettle();
-
-    final lightChip = tester.widget<Chip>(find.widgetWithText(Chip, 'Bright'));
-    final darkChip = tester.widget<Chip>(find.widgetWithText(Chip, 'Deep'));
-
-    // Background equals category color
-    expect(lightChip.backgroundColor, colorFromCssHex(catLight.color));
-    expect(darkChip.backgroundColor, colorFromCssHex(catDark.color));
-
-    // Foreground contrast: get Text style inside each Chip
-    final lightText = tester.widget<Text>(
-      find.descendant(
-        of: find.widgetWithText(Chip, 'Bright'),
-        matching: find.text('Bright'),
-      ),
-    );
-    final darkText = tester.widget<Text>(
-      find.descendant(
-        of: find.widgetWithText(Chip, 'Deep'),
-        matching: find.text('Deep'),
-      ),
-    );
-    expect(lightText.style?.color, Colors.black);
-    expect(darkText.style?.color, Colors.white);
-  });
-
   group('SettingsPageHeader Integration', () {
     testWidgets('displays SettingsPageHeader with correct title', (
       tester,
@@ -400,35 +279,17 @@ void main() {
       await tester.pumpWidget(_buildPage(labels: []));
       await tester.pumpAndSettle();
 
-      // Should have SettingsPageHeader
       expect(find.byType(SettingsPageHeader), findsOneWidget);
-
-      // Should display SliverAppBar inside
       expect(find.byType(SliverAppBar), findsOneWidget);
-    });
-
-    testWidgets('shows back button in SettingsPageHeader', (tester) async {
-      await tester.pumpWidget(_buildPage(labels: []));
-      await tester.pumpAndSettle();
-
-      // Should have back button (chevron_left icon)
-      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
     testWidgets('uses CustomScrollView with slivers', (tester) async {
       await tester.pumpWidget(_buildPage(labels: []));
       await tester.pumpAndSettle();
 
-      // Should use CustomScrollView for sliver structure
       expect(find.byType(CustomScrollView), findsOneWidget);
-
-      // Should have SettingsPageHeader as a sliver
       expect(find.byType(SettingsPageHeader), findsOneWidget);
-
-      // Should have SliverToBoxAdapter for search bar
       expect(find.byType(SliverToBoxAdapter), findsWidgets);
     });
   });
 }
-
-// No longer needed in this suite.

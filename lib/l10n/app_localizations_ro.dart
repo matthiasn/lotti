@@ -5193,6 +5193,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Eșec la încărcarea etichetelor';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Creați eticheta \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Nicio etichetă nu corespunde cu \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint => 'Bug, Blocant, Sincronizare…';
 
   @override

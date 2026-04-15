@@ -9118,6 +9118,18 @@ abstract class AppLocalizations {
   /// **'Failed to load labels'**
   String get settingsLabelsErrorLoading;
 
+  /// No description provided for @settingsLabelsNoMatchCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create \"{query}\" label'**
+  String settingsLabelsNoMatchCreate(String query);
+
+  /// No description provided for @settingsLabelsNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No labels match \"{query}\"'**
+  String settingsLabelsNoMatchQuery(String query);
+
   /// No description provided for @settingsLabelsNameHint.
   ///
   /// In en, this message translates to:

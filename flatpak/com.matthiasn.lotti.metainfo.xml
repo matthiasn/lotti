@@ -35,6 +35,7 @@
       <description>
           <p>Project one-liner: AI-generated summary subtitle on project list cards, giving an at-a-glance status for each project. The project agent now produces a dedicated one-liner field in its report, separate from the longer TLDR summary.</p>
           <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
+          <p>Categories and labels list pages now use design system list items in a grouped container, matching the settings page visual style.</p>
       </description>
     </release>
     <release version="0.9.950" date="2026-04-11">

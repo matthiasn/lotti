@@ -5256,6 +5256,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Error al cargar etiquetas';
 
   @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Crear etiqueta \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Ninguna etiqueta coincide con \"$query\"';
+  }
+
+  @override
   String get settingsLabelsNameHint => 'Error, Bloqueante, Sincronización…';
 
   @override
