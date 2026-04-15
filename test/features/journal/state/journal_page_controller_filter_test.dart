@@ -27,7 +27,6 @@ void main() {
     final setup = JournalControllerTestSetup();
 
     late MockJournalDb mockJournalDb;
-    late MockSettingsDb mockSettingsDb;
     late MockEntitiesCacheService mockEntitiesCacheService;
     late StreamController<Set<String>> configFlagsController;
     late ProviderContainer container;
@@ -35,7 +34,6 @@ void main() {
     setUp(() {
       setup.setUp();
       mockJournalDb = setup.mockJournalDb;
-      mockSettingsDb = setup.mockSettingsDb;
       mockEntitiesCacheService = setup.mockEntitiesCacheService;
       configFlagsController = setup.configFlagsController;
       container = setup.container;
@@ -867,85 +865,6 @@ void main() {
       });
     });
 
-    group('Show Cover Art Toggle', () {
-      test('setShowCoverArt updates showCoverArt to false', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // Default is true, so toggle to false
-          controller.setShowCoverArt(show: false);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showCoverArt, isFalse);
-        });
-      });
-
-      test('setShowCoverArt can toggle back to true', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..setShowCoverArt(show: false)
-            ..setShowCoverArt(show: true);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showCoverArt, isTrue);
-        });
-      });
-
-      test('showCoverArt defaults to true', () {
-        fakeAsync((async) {
-          container.read(journalPageControllerProvider(true));
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showCoverArt, isTrue);
-        });
-      });
-
-      test('showCoverArt persists alongside other settings', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..setShowCoverArt(show: false)
-            ..setSortOption(TaskSortOption.byDate)
-            ..setFilters({DisplayFilter.starredEntriesOnly});
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showCoverArt, isFalse);
-          expect(state.sortOption, equals(TaskSortOption.byDate));
-          expect(state.filters, contains(DisplayFilter.starredEntriesOnly));
-        });
-      });
-    });
-
     group('Filter Management - Project', () {
       test('toggleProjectFilter adds project when not present', () {
         fakeAsync((async) {
@@ -1350,124 +1269,6 @@ void main() {
           });
         },
       );
-    });
-
-    group('Show Projects Header Toggle', () {
-      test('setShowProjectsHeader updates to false', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // Default is true, so toggle to false
-          controller.setShowProjectsHeader(show: false);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showProjectsHeader, isFalse);
-
-          verify(
-            () => mockSettingsDb.saveSettingsItem(any(), any()),
-          ).called(greaterThan(0));
-        });
-      });
-
-      test('setShowProjectsHeader can toggle back to true', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..setShowProjectsHeader(show: false)
-            ..setShowProjectsHeader(show: true);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showProjectsHeader, isTrue);
-        });
-      });
-
-      test('showProjectsHeader defaults to true', () {
-        fakeAsync((async) {
-          container.read(journalPageControllerProvider(true));
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showProjectsHeader, isTrue);
-        });
-      });
-    });
-
-    group('Show Distances Toggle', () {
-      test('setShowDistances updates to true', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // Default is false, so toggle to true
-          controller.setShowDistances(show: true);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showDistances, isTrue);
-
-          verify(
-            () => mockSettingsDb.saveSettingsItem(any(), any()),
-          ).called(greaterThan(0));
-        });
-      });
-
-      test('setShowDistances can toggle back to false', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..setShowDistances(show: true)
-            ..setShowDistances(show: false);
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showDistances, isFalse);
-        });
-      });
-
-      test('showDistances defaults to false', () {
-        fakeAsync((async) {
-          container.read(journalPageControllerProvider(true));
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.showDistances, isFalse);
-        });
-      });
     });
   });
 }

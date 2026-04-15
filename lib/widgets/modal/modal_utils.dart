@@ -159,23 +159,28 @@ class ModalUtils {
     String? title,
     Widget? titleWidget,
     Widget? stickyActionBar,
+    Widget Function(BuildContext)? stickyActionBarBuilder,
     EdgeInsets padding = defaultPadding,
     double? navBarHeight,
     bool hasTopBarLayer = true,
     Widget Function(Widget)? modalDecorator,
     bool showCloseButton = true,
+    bool? useRootNavigator,
   }) async {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return WoltModalSheet.show<T>(
       context: context,
-      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
+      useRootNavigator:
+          useRootNavigator ?? shouldUseRootNavigatorForBottomSheet(context),
       modalDecorator: modalDecorator,
       pageListBuilder: (modalSheetContext) {
         return [
           modalSheetPage(
-            stickyActionBar: stickyActionBar,
+            stickyActionBar:
+                stickyActionBar ??
+                stickyActionBarBuilder?.call(modalSheetContext),
             title: title,
             titleWidget: titleWidget,
             hasTopBarLayer: hasTopBarLayer,

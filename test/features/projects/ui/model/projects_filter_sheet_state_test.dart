@@ -38,7 +38,6 @@ void main() {
             selectedCategoryIds: {'study'},
           ),
           categories: categories,
-          showDragHandle: false,
         );
 
         expect(state.title, 'Apply filter');
@@ -46,7 +45,6 @@ void main() {
         expect(state.categoryField, isNotNull);
         expect(state.labelField, isNull);
         expect(state.priorityOptions, isEmpty);
-        expect(state.showDragHandle, isFalse);
         expect(
           state.statusField!.selectedIds,
           {ProjectStatusFilterIds.completed},

@@ -4,7 +4,6 @@ import 'package:lotti/features/design_system/components/avatars/design_system_av
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_chrome.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -57,7 +56,6 @@ class _ProjectMobileListDetailShowcaseState
                   initialFilter: state.filter,
                   categories: state.data.categories,
                   onApplied: controller.updateFilter,
-                  presentation: DesignSystemFilterPresentation.mobile,
                 ),
                 onProjectOpened: controller.selectProject,
               ),
@@ -92,7 +90,6 @@ class _ProjectMobileListDetailShowcaseState
             initialFilter: state.filter,
             categories: state.data.categories,
             onApplied: controller.updateFilter,
-            presentation: DesignSystemFilterPresentation.mobile,
           ),
           onProjectOpened: (projectId) {
             controller.selectProject(projectId);

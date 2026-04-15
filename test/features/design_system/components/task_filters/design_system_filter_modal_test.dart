@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 void main() {
   DesignSystemTaskFilterState buildMinimalState() {
@@ -33,7 +35,6 @@ void main() {
   /// fully visible before returning.
   Future<void> openModal(
     WidgetTester tester, {
-    required DesignSystemFilterPresentation presentation,
     required ValueChanged<DesignSystemTaskFilterState> onApplied,
     DesignSystemTaskFilterState? state,
     DesignSystemFilterFieldHandler? onFieldPressed,
@@ -47,6 +48,13 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: DesignSystemTheme.dark(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) {
@@ -57,7 +65,6 @@ void main() {
                     context: context,
                     initialState: filterState,
                     onApplied: onApplied,
-                    presentation: presentation,
                     onFieldPressed: onFieldPressed,
                   );
                 },
@@ -73,77 +80,40 @@ void main() {
     // Tap the trigger button to open the modal
     await tester.tap(find.byKey(const ValueKey('trigger')));
 
-    // Pump long enough to complete the modal entry animation (dialog
-    // uses 150ms, bottom sheet uses ~250ms).
-    await tester.pump(const Duration(milliseconds: 500));
-  }
-
-  /// Retrieves the [DesignSystemTaskFilterSheet] widget currently in the
-  /// tree. Useful for invoking callbacks directly when the widget is
-  /// rendered inside a modal bottom sheet (where hit-testing can fail
-  /// because the overlay positions content outside the render surface).
-  DesignSystemTaskFilterSheet findSheet(WidgetTester tester) {
-    return tester.widget<DesignSystemTaskFilterSheet>(
-      find.byType(DesignSystemTaskFilterSheet),
-    );
+    // Pump long enough to complete the Wolt modal entry animation.
+    await tester.pumpAndSettle();
   }
 
   group('showDesignSystemFilterModal', () {
-    group('desktop presentation', () {
-      testWidgets(
-        'opens a Dialog and renders filter sheet with showDragHandle false',
-        (tester) async {
-          await openModal(
-            tester,
-            presentation: DesignSystemFilterPresentation.desktop,
-            onApplied: (_) {},
-          );
+    testWidgets(
+      'opens modal and renders filter sheet and action bar',
+      (tester) async {
+        await openModal(
+          tester,
+          onApplied: (_) {},
+        );
 
-          expect(find.byType(Dialog), findsOneWidget);
-          expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
-          expect(find.text('Filter'), findsOneWidget);
-          expect(find.text('Sort by'), findsOneWidget);
-          expect(find.text('Due date'), findsOneWidget);
-          expect(find.text('Apply'), findsOneWidget);
-
-          // Desktop presentation sets showDragHandle to false
-          final sheet = findSheet(tester);
-          expect(sheet.state.showDragHandle, isFalse);
-        },
-      );
-    });
-
-    group('mobile presentation', () {
-      testWidgets(
-        'opens a ModalBottomSheet and renders filter sheet with '
-        'showDragHandle true',
-        (tester) async {
-          await openModal(
-            tester,
-            presentation: DesignSystemFilterPresentation.mobile,
-            onApplied: (_) {},
-          );
-
-          expect(find.byType(BottomSheet), findsOneWidget);
-          expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
-          expect(find.text('Filter'), findsOneWidget);
-
-          // Mobile presentation sets showDragHandle to true
-          final sheet = findSheet(tester);
-          expect(sheet.state.showDragHandle, isTrue);
-        },
-      );
-    });
+        expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
+        expect(
+          find.byType(DesignSystemTaskFilterActionBar),
+          findsOneWidget,
+        );
+        // Title comes from localization (tasksFilterTitle)
+        expect(find.text('Tasks Filter'), findsOneWidget);
+        expect(find.text('Sort by'), findsOneWidget);
+        expect(find.text('Due date'), findsOneWidget);
+        expect(find.text('Apply'), findsOneWidget);
+      },
+    );
 
     group('onApplyPressed', () {
       testWidgets(
-        'calls onApplied and closes dialog for desktop',
+        'calls onApplied and closes modal',
         (tester) async {
           DesignSystemTaskFilterState? appliedState;
 
           await openModal(
             tester,
-            presentation: DesignSystemFilterPresentation.desktop,
             onApplied: (nextState) => appliedState = nextState,
           );
 
@@ -157,37 +127,9 @@ void main() {
 
           expect(appliedState, isNotNull);
           expect(appliedState!.statusField!.selectedIds, {'open'});
-          expect(appliedState!.showDragHandle, isFalse);
 
-          // The dialog should be closed after apply
-          await tester.pump(const Duration(milliseconds: 500));
-          expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'calls onApplied and closes bottom sheet for mobile',
-        (tester) async {
-          DesignSystemTaskFilterState? appliedState;
-
-          await openModal(
-            tester,
-            presentation: DesignSystemFilterPresentation.mobile,
-            onApplied: (nextState) => appliedState = nextState,
-          );
-
-          // In mobile, the bottom sheet overlay renders content outside the
-          // surface bounds, so we invoke the apply callback directly.
-          final sheet = findSheet(tester);
-          sheet.onApplyPressed?.call(sheet.state);
-          await tester.pump();
-
-          expect(appliedState, isNotNull);
-          expect(appliedState!.statusField!.selectedIds, {'open'});
-          expect(appliedState!.showDragHandle, isTrue);
-
-          // The bottom sheet should be closed after apply
-          await tester.pump(const Duration(milliseconds: 500));
+          // The modal should be closed after apply
+          await tester.pumpAndSettle();
           expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
         },
       );
@@ -195,11 +137,10 @@ void main() {
 
     group('onClearAllPressed', () {
       testWidgets(
-        'clears draft state filters for desktop',
+        'clears draft state filters',
         (tester) async {
           await openModal(
             tester,
-            presentation: DesignSystemFilterPresentation.desktop,
             onApplied: (_) {},
           );
 
@@ -228,45 +169,16 @@ void main() {
           expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
         },
       );
-
-      testWidgets(
-        'clears draft state filters for mobile',
-        (tester) async {
-          await openModal(
-            tester,
-            presentation: DesignSystemFilterPresentation.mobile,
-            onApplied: (_) {},
-          );
-
-          // Verify the sheet has a status selection before clearing
-          var sheet = findSheet(tester);
-          expect(sheet.state.statusField!.selectedIds, {'open'});
-
-          // Invoke the clear-all callback directly because the bottom sheet
-          // overlay renders outside the surface bounds in tests.
-          final clearedState = sheet.state.clearAll();
-          sheet.onChanged(clearedState);
-          sheet.onClearAllPressed?.call(clearedState);
-          await tester.pump();
-
-          sheet = findSheet(tester);
-          expect(sheet.state.statusField!.selectedIds, isEmpty);
-
-          // Modal should still be open
-          expect(find.byType(DesignSystemTaskFilterSheet), findsOneWidget);
-        },
-      );
     });
 
     group('onFieldPressed', () {
       testWidgets(
-        'forwards field press to handler for desktop',
+        'forwards field press to handler',
         (tester) async {
           final tappedSections = <DesignSystemTaskFilterSection>[];
 
           await openModal(
             tester,
-            presentation: DesignSystemFilterPresentation.desktop,
             onApplied: (_) {},
             onFieldPressed: (context, draftState, section) async {
               tappedSections.add(section);
@@ -296,42 +208,10 @@ void main() {
       );
 
       testWidgets(
-        'forwards field press to handler for mobile',
-        (tester) async {
-          final tappedSections = <DesignSystemTaskFilterSection>[];
-
-          await openModal(
-            tester,
-            presentation: DesignSystemFilterPresentation.mobile,
-            onApplied: (_) {},
-            onFieldPressed: (context, draftState, section) async {
-              tappedSections.add(section);
-              return draftState.copyWith(
-                statusField: draftState.statusField?.clear(),
-              );
-            },
-          );
-
-          // Invoke the field press callback directly because the bottom sheet
-          // overlay renders outside the surface bounds in tests.
-          final sheet = findSheet(tester);
-          sheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
-          await tester.pump();
-
-          expect(tappedSections, [DesignSystemTaskFilterSection.status]);
-
-          // After the handler clears status, the draft should be updated
-          final updatedSheet = findSheet(tester);
-          expect(updatedSheet.state.statusField!.selectedIds, isEmpty);
-        },
-      );
-
-      testWidgets(
         'does not render field tap target when onFieldPressed is null',
         (tester) async {
           await openModal(
             tester,
-            presentation: DesignSystemFilterPresentation.desktop,
             onApplied: (_) {},
           );
 
@@ -341,7 +221,9 @@ void main() {
           expect(statusField, findsOneWidget);
 
           // The sheet should have null onFieldPressed
-          final sheet = findSheet(tester);
+          final sheet = tester.widget<DesignSystemTaskFilterSheet>(
+            find.byType(DesignSystemTaskFilterSheet),
+          );
           expect(sheet.onFieldPressed, isNull);
 
           // Tap the field; since onFieldPressed is null, the InkWell's onTap
@@ -360,7 +242,6 @@ void main() {
         (tester) async {
           await openModal(
             tester,
-            presentation: DesignSystemFilterPresentation.desktop,
             onApplied: (_) {},
             onFieldPressed: (context, draftState, section) async {
               return null;

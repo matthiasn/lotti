@@ -2811,7 +2811,7 @@
   "taskShowcaseTodo": "Todo",
   "taskShowcaseTodos": "Todos",
   "tasksLabelFilterAll": "All",
-  "tasksLabelFilterTitle": "Labels",
+  "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Unlabeled",
   "tasksLabelsDialogClose": "Close",
   "tasksLabelsHeaderEditTooltip": "Edit labels",

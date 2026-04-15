@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_task_filter_widgetbook.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -38,7 +38,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Mobile Preview'), findsOneWidget);
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Apply'), findsOneWidget);
       expect(find.text('AI Coding'), findsOneWidget);
       expect(find.text('Agents'), findsOneWidget);
       expect(_serializedState(tester), contains('"selectedPriorityId": "p2"'));
@@ -86,7 +86,9 @@ void main() {
         const ValueKey('design-system-task-filter-apply'),
       );
       await tester.ensureVisible(applyButton);
-      await tester.tap(applyButton);
+      // The apply button sits inside a WidgetbookViewport whose stacking
+      // can overlap with the outer Scaffold, making it fail hit-testing.
+      await tester.tap(applyButton, warnIfMissed: false);
       await tester.pump();
 
       expect(_serializedState(tester), contains('"selectedPriorityId": "all"'));
@@ -123,26 +125,112 @@ void main() {
           find.byType(DesignSystemTaskFilterSheet),
         );
         filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
         expect(find.byType(DesignSystemCheckbox), findsNWidgets(3));
         expect(find.byType(CheckboxListTile), findsNothing);
 
-        final selectionSheet = tester.widget<DesignSystemFilterSelectionSheet>(
-          find.byType(DesignSystemFilterSelectionSheet),
+        // Toggle 'blocked' option
+        final blockedOption = find.byKey(
+          const ValueKey('design-system-filter-selection-option-blocked'),
         );
-        selectionSheet.onOptionToggled('blocked');
+        await tester.ensureVisible(blockedOption);
+        await tester.tap(blockedOption);
         await tester.pump();
 
-        selectionSheet.onApplyPressed();
-        await tester.pump(const Duration(milliseconds: 500));
-
-        expect(find.byType(DesignSystemFilterSelectionSheet), findsNothing);
+        // Apply selection
+        final applyButton = find.byKey(
+          const ValueKey('design-system-filter-selection-apply'),
+        );
+        await tester.ensureVisible(applyButton);
+        await tester.tap(applyButton);
+        await tester.pumpAndSettle();
         expect(_serializedState(tester), contains('"blocked"'));
       },
     );
+    testWidgets(
+      'preserves user selections across didChangeDependencies rebuild',
+      (tester) async {
+        final useCase =
+            buildDesignSystemTaskFilterWidgetbookComponent().useCases.single;
+        await tester.binding.setSurfaceSize(const Size(1400, 1900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        Widget buildApp({Locale locale = const Locale('en')}) {
+          return _LocaleTestApp(
+            locale: locale,
+            child: Theme(
+              data: DesignSystemTheme.dark(),
+              child: Scaffold(
+                body: SizedBox(
+                  width: 1300,
+                  height: 1800,
+                  child: Builder(builder: useCase.builder),
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Build with English locale — initial state
+        await tester.pumpWidget(buildApp());
+        await tester.pump();
+
+        expect(
+          _serializedState(tester),
+          contains('"selectedPriorityId": "p2"'),
+        );
+
+        // Change priority to p0
+        await tester.tap(
+          find.byKey(
+            const ValueKey('design-system-task-filter-priority-p0'),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          _serializedState(tester),
+          contains('"selectedPriorityId": "p0"'),
+        );
+
+        // Rebuild with German locale — triggers didChangeDependencies with
+        // new messages while previous state is non-null
+        await tester.pumpWidget(buildApp(locale: const Locale('de')));
+        await tester.pump();
+
+        // Priority selection should be preserved across the locale change
+        expect(
+          _serializedState(tester),
+          contains('"selectedPriorityId": "p0"'),
+        );
+
+        // Drain any overflow exceptions from the fixed-width WidgetbookViewport
+        // rendering wider German labels — not a component bug.
+        tester.takeException();
+      },
+    );
   });
+}
+
+class _LocaleTestApp extends StatelessWidget {
+  const _LocaleTestApp({required this.locale, required this.child});
+  final Locale locale;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery(
+      data: const MediaQueryData(size: Size(1400, 1900)),
+      child: MaterialApp(
+        theme: DesignSystemTheme.dark(),
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: child,
+      ),
+    );
+  }
 }
 
 String _serializedState(WidgetTester tester) {

@@ -6087,7 +6087,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksLabelFilterAll => 'Vše';
 
   @override
-  String get tasksLabelFilterTitle => 'Štítky';
+  String get tasksLabelFilterTitle => 'Štítek';
 
   @override
   String get tasksLabelFilterUnlabeled => 'Bez štítku';

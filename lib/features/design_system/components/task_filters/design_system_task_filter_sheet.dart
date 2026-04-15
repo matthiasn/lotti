@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+List<T> _parseJsonList<T>(
+  dynamic jsonList,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  if (jsonList is! List) return const [];
+  return jsonList
+      .cast<Map<String, dynamic>>()
+      .map(fromJson)
+      .toList(growable: false);
+}
+
 enum DesignSystemTaskFilterSection {
   status,
   category,
   label,
+  project,
 }
 
 enum DesignSystemTaskFilterGlyph {
@@ -22,6 +34,8 @@ class DesignSystemTaskFilterOption {
     required this.id,
     required this.label,
     this.glyph = DesignSystemTaskFilterGlyph.none,
+    this.icon,
+    this.iconColor,
   });
 
   factory DesignSystemTaskFilterOption.fromJson(Map<String, dynamic> json) {
@@ -37,6 +51,12 @@ class DesignSystemTaskFilterOption {
   final String id;
   final String label;
   final DesignSystemTaskFilterGlyph glyph;
+
+  /// Optional leading icon for selected chips (e.g. status icons).
+  final IconData? icon;
+
+  /// Optional color for the leading icon or dot indicator.
+  final Color? iconColor;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -110,6 +130,42 @@ class DesignSystemTaskFilterFieldState {
   };
 }
 
+/// A toggle option within the filter sheet (e.g., "Show creation date").
+@immutable
+class DesignSystemTaskFilterToggle {
+  const DesignSystemTaskFilterToggle({
+    required this.id,
+    required this.label,
+    required this.value,
+  });
+
+  factory DesignSystemTaskFilterToggle.fromJson(Map<String, dynamic> json) {
+    return DesignSystemTaskFilterToggle(
+      id: json['id'] as String,
+      label: json['label'] as String,
+      value: json['value'] as bool? ?? false,
+    );
+  }
+
+  final String id;
+  final String label;
+  final bool value;
+
+  DesignSystemTaskFilterToggle copyWith({bool? value}) {
+    return DesignSystemTaskFilterToggle(
+      id: id,
+      label: label,
+      value: value ?? this.value,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'label': label,
+    'value': value,
+  };
+}
+
 @immutable
 class DesignSystemTaskFilterState {
   DesignSystemTaskFilterState({
@@ -125,7 +181,14 @@ class DesignSystemTaskFilterState {
     this.selectedPriorityId = allPriorityId,
     this.categoryField,
     this.labelField,
-    this.showDragHandle = true,
+    this.projectField,
+    this.agentFilterLabel = '',
+    this.agentFilterOptions = const <DesignSystemTaskFilterOption>[],
+    this.selectedAgentFilterId = '',
+    this.searchModeLabel = '',
+    this.searchModeOptions = const <DesignSystemTaskFilterOption>[],
+    this.selectedSearchModeId = '',
+    this.toggles = const <DesignSystemTaskFilterToggle>[],
   }) : assert(
          priorityOptions.isEmpty ||
              priorityOptions.any((option) => option.id == allPriorityId),
@@ -138,10 +201,10 @@ class DesignSystemTaskFilterState {
       clearAllLabel: json['clearAllLabel'] as String,
       applyLabel: json['applyLabel'] as String,
       sortLabel: json['sortLabel'] as String? ?? '',
-      sortOptions: ((json['sortOptions'] as List<dynamic>?) ?? const [])
-          .cast<Map<String, dynamic>>()
-          .map(DesignSystemTaskFilterOption.fromJson)
-          .toList(growable: false),
+      sortOptions: _parseJsonList(
+        json['sortOptions'],
+        DesignSystemTaskFilterOption.fromJson,
+      ),
       selectedSortId: json['selectedSortId'] as String? ?? '',
       statusField: switch (json['statusField']) {
         final Map<String, dynamic> value =>
@@ -149,10 +212,10 @@ class DesignSystemTaskFilterState {
         _ => null,
       },
       priorityLabel: json['priorityLabel'] as String? ?? '',
-      priorityOptions: ((json['priorityOptions'] as List<dynamic>?) ?? const [])
-          .cast<Map<String, dynamic>>()
-          .map(DesignSystemTaskFilterOption.fromJson)
-          .toList(growable: false),
+      priorityOptions: _parseJsonList(
+        json['priorityOptions'],
+        DesignSystemTaskFilterOption.fromJson,
+      ),
       selectedPriorityId:
           json['selectedPriorityId'] as String? ?? allPriorityId,
       categoryField: switch (json['categoryField']) {
@@ -165,7 +228,27 @@ class DesignSystemTaskFilterState {
           DesignSystemTaskFilterFieldState.fromJson(value),
         _ => null,
       },
-      showDragHandle: json['showDragHandle'] as bool? ?? true,
+      projectField: switch (json['projectField']) {
+        final Map<String, dynamic> value =>
+          DesignSystemTaskFilterFieldState.fromJson(value),
+        _ => null,
+      },
+      agentFilterLabel: json['agentFilterLabel'] as String? ?? '',
+      agentFilterOptions: _parseJsonList(
+        json['agentFilterOptions'],
+        DesignSystemTaskFilterOption.fromJson,
+      ),
+      selectedAgentFilterId: json['selectedAgentFilterId'] as String? ?? '',
+      searchModeLabel: json['searchModeLabel'] as String? ?? '',
+      searchModeOptions: _parseJsonList(
+        json['searchModeOptions'],
+        DesignSystemTaskFilterOption.fromJson,
+      ),
+      selectedSearchModeId: json['selectedSearchModeId'] as String? ?? '',
+      toggles: _parseJsonList(
+        json['toggles'],
+        DesignSystemTaskFilterToggle.fromJson,
+      ),
     );
   }
 
@@ -183,19 +266,35 @@ class DesignSystemTaskFilterState {
   final String selectedPriorityId;
   final DesignSystemTaskFilterFieldState? categoryField;
   final DesignSystemTaskFilterFieldState? labelField;
-  final bool showDragHandle;
+  final DesignSystemTaskFilterFieldState? projectField;
+  final String agentFilterLabel;
+  final List<DesignSystemTaskFilterOption> agentFilterOptions;
+  final String selectedAgentFilterId;
+  final String searchModeLabel;
+  final List<DesignSystemTaskFilterOption> searchModeOptions;
+  final String selectedSearchModeId;
+  final List<DesignSystemTaskFilterToggle> toggles;
 
   bool get hasSortSection => sortOptions.isNotEmpty;
   bool get hasStatusField => statusField != null;
   bool get hasPrioritySection => priorityOptions.isNotEmpty;
   bool get hasCategoryField => categoryField != null;
   bool get hasLabelField => labelField != null;
+  bool get hasProjectField => projectField != null;
+  bool get hasAgentFilter => agentFilterOptions.isNotEmpty;
+  bool get hasSearchMode => searchModeOptions.isNotEmpty;
 
   int get appliedCount =>
       (statusField?.selectedIds.length ?? 0) +
       (categoryField?.selectedIds.length ?? 0) +
       (labelField?.selectedIds.length ?? 0) +
-      (hasPrioritySection && selectedPriorityId != allPriorityId ? 1 : 0);
+      (projectField?.selectedIds.length ?? 0) +
+      (hasPrioritySection && selectedPriorityId != allPriorityId ? 1 : 0) +
+      (hasAgentFilter &&
+              selectedAgentFilterId.isNotEmpty &&
+              selectedAgentFilterId != agentFilterOptions.first.id
+          ? 1
+          : 0);
 
   DesignSystemTaskFilterState copyWith({
     String? title,
@@ -210,7 +309,14 @@ class DesignSystemTaskFilterState {
     String? selectedPriorityId,
     DesignSystemTaskFilterFieldState? categoryField,
     DesignSystemTaskFilterFieldState? labelField,
-    bool? showDragHandle,
+    DesignSystemTaskFilterFieldState? projectField,
+    String? agentFilterLabel,
+    List<DesignSystemTaskFilterOption>? agentFilterOptions,
+    String? selectedAgentFilterId,
+    String? searchModeLabel,
+    List<DesignSystemTaskFilterOption>? searchModeOptions,
+    String? selectedSearchModeId,
+    List<DesignSystemTaskFilterToggle>? toggles,
   }) {
     return DesignSystemTaskFilterState(
       title: title ?? this.title,
@@ -225,7 +331,15 @@ class DesignSystemTaskFilterState {
       selectedPriorityId: selectedPriorityId ?? this.selectedPriorityId,
       categoryField: categoryField ?? this.categoryField,
       labelField: labelField ?? this.labelField,
-      showDragHandle: showDragHandle ?? this.showDragHandle,
+      projectField: projectField ?? this.projectField,
+      agentFilterLabel: agentFilterLabel ?? this.agentFilterLabel,
+      agentFilterOptions: agentFilterOptions ?? this.agentFilterOptions,
+      selectedAgentFilterId:
+          selectedAgentFilterId ?? this.selectedAgentFilterId,
+      searchModeLabel: searchModeLabel ?? this.searchModeLabel,
+      searchModeOptions: searchModeOptions ?? this.searchModeOptions,
+      selectedSearchModeId: selectedSearchModeId ?? this.selectedSearchModeId,
+      toggles: toggles ?? this.toggles,
     );
   }
 
@@ -245,6 +359,31 @@ class DesignSystemTaskFilterState {
     return copyWith(selectedPriorityId: priorityId);
   }
 
+  DesignSystemTaskFilterState selectAgentFilter(String agentFilterId) {
+    if (!hasAgentFilter || agentFilterId == selectedAgentFilterId) {
+      return this;
+    }
+
+    return copyWith(selectedAgentFilterId: agentFilterId);
+  }
+
+  DesignSystemTaskFilterState selectSearchMode(String searchModeId) {
+    if (!hasSearchMode || searchModeId == selectedSearchModeId) {
+      return this;
+    }
+
+    return copyWith(selectedSearchModeId: searchModeId);
+  }
+
+  DesignSystemTaskFilterState toggleValue(String toggleId) {
+    final index = toggles.indexWhere((t) => t.id == toggleId);
+    if (index < 0) return this;
+
+    final updated = [...toggles];
+    updated[index] = updated[index].copyWith(value: !updated[index].value);
+    return copyWith(toggles: updated);
+  }
+
   DesignSystemTaskFilterState removeSelection(
     DesignSystemTaskFilterSection section,
     String id,
@@ -259,6 +398,9 @@ class DesignSystemTaskFilterState {
       DesignSystemTaskFilterSection.label => copyWith(
         labelField: labelField?.removeSelection(id),
       ),
+      DesignSystemTaskFilterSection.project => copyWith(
+        projectField: projectField?.removeSelection(id),
+      ),
     };
   }
 
@@ -268,6 +410,10 @@ class DesignSystemTaskFilterState {
       selectedPriorityId: allPriorityId,
       categoryField: categoryField?.clear(),
       labelField: labelField?.clear(),
+      projectField: projectField?.clear(),
+      selectedAgentFilterId: hasAgentFilter
+          ? agentFilterOptions.first.id
+          : selectedAgentFilterId,
     );
   }
 
@@ -288,24 +434,37 @@ class DesignSystemTaskFilterState {
     'selectedPriorityId': selectedPriorityId,
     'categoryField': categoryField?.toJson(),
     'labelField': labelField?.toJson(),
-    'showDragHandle': showDragHandle,
+    'projectField': projectField?.toJson(),
+    'agentFilterLabel': agentFilterLabel,
+    'agentFilterOptions': agentFilterOptions
+        .map((option) => option.toJson())
+        .toList(growable: false),
+    'selectedAgentFilterId': selectedAgentFilterId,
+    'searchModeLabel': searchModeLabel,
+    'searchModeOptions': searchModeOptions
+        .map((option) => option.toJson())
+        .toList(growable: false),
+    'selectedSearchModeId': selectedSearchModeId,
+    'toggles': toggles.map((t) => t.toJson()).toList(growable: false),
   };
 }
 
+/// The filter sheet content — designed to be placed inside a Wolt modal page.
+///
+/// This widget renders the scrollable filter sections (sort, status, priority,
+/// category, label, project, agent, search mode, toggles). It does NOT include
+/// the outer frame, background, drag handle, or action buttons — those are
+/// provided by the Wolt modal via [DesignSystemTaskFilterActionBar].
 class DesignSystemTaskFilterSheet extends StatelessWidget {
   const DesignSystemTaskFilterSheet({
     required this.state,
     required this.onChanged,
-    this.onApplyPressed,
-    this.onClearAllPressed,
     this.onFieldPressed,
     super.key,
   });
 
   final DesignSystemTaskFilterState state;
   final ValueChanged<DesignSystemTaskFilterState> onChanged;
-  final ValueChanged<DesignSystemTaskFilterState>? onApplyPressed;
-  final ValueChanged<DesignSystemTaskFilterState>? onClearAllPressed;
   final ValueChanged<DesignSystemTaskFilterSection>? onFieldPressed;
 
   @override
@@ -314,32 +473,67 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
     final palette = DesignSystemFilterPalette.fromTokens(tokens);
     final spacing = tokens.spacing;
     final contentSections = <Widget>[
-      if (state.hasSortSection) ...[
-        _TaskFilterSectionLabel(
-          text: state.sortLabel,
-          color: palette.secondaryText,
-          style: tokens.typography.styles.others.caption,
-        ),
-        SizedBox(height: spacing.step4),
-        Wrap(
-          spacing: spacing.step3,
-          runSpacing: spacing.step3,
+      if (state.hasSearchMode)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final option in state.sortOptions)
-              _TaskFilterChoicePill(
-                key: ValueKey(
-                  'design-system-task-filter-sort-${option.id}',
-                ),
-                label: option.label,
-                selected: option.id == state.selectedSortId,
-                palette: palette,
-                textStyle: tokens.typography.styles.subtitle.subtitle2,
-                onTap: () => onChanged(state.selectSort(option.id)),
-              ),
+            _TaskFilterSectionLabel(
+              text: state.searchModeLabel,
+              color: palette.secondaryText,
+              style: tokens.typography.styles.others.caption,
+            ),
+            SizedBox(height: spacing.step4),
+            Wrap(
+              spacing: spacing.step3,
+              runSpacing: spacing.step3,
+              children: [
+                for (final option in state.searchModeOptions)
+                  _TaskFilterChoicePill(
+                    key: ValueKey(
+                      'design-system-task-filter-search-mode-${option.id}',
+                    ),
+                    label: option.label,
+                    selected: option.id == state.selectedSearchModeId,
+                    palette: palette,
+                    textStyle: tokens.typography.styles.subtitle.subtitle2,
+                    onTap: () => onChanged(state.selectSearchMode(option.id)),
+                  ),
+              ],
+            ),
           ],
         ),
-      ],
-      if (state.hasStatusField) ...[
+      if (state.hasSortSection)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TaskFilterSectionLabel(
+              text: state.sortLabel,
+              color: palette.secondaryText,
+              style: tokens.typography.styles.others.caption,
+            ),
+            SizedBox(height: spacing.step4),
+            Wrap(
+              spacing: spacing.step3,
+              runSpacing: spacing.step3,
+              children: [
+                for (final option in state.sortOptions)
+                  _TaskFilterChoicePill(
+                    key: ValueKey(
+                      'design-system-task-filter-sort-${option.id}',
+                    ),
+                    label: option.label,
+                    selected: option.id == state.selectedSortId,
+                    palette: palette,
+                    textStyle: tokens.typography.styles.subtitle.subtitle2,
+                    onTap: () => onChanged(state.selectSort(option.id)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      if (state.hasStatusField)
         _TaskFilterSelectionField(
           key: const ValueKey(
             'design-system-task-filter-field-status',
@@ -360,39 +554,43 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
             ),
           ),
         ),
-      ],
-      if (state.hasPrioritySection) ...[
-        _TaskFilterSectionLabel(
-          text: state.priorityLabel,
-          color: palette.secondaryText,
-          style: tokens.typography.styles.others.caption,
-        ),
-        SizedBox(height: spacing.step4),
-        Wrap(
-          spacing: spacing.step3,
-          runSpacing: spacing.step3,
+      if (state.hasPrioritySection)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final option in state.priorityOptions)
-              _TaskFilterChoicePill(
-                key: ValueKey(
-                  'design-system-task-filter-priority-${option.id}',
-                ),
-                label: option.label,
-                selected: option.id == state.selectedPriorityId,
-                palette: palette,
-                textStyle: tokens.typography.styles.subtitle.subtitle2,
-                leading: option.glyph != DesignSystemTaskFilterGlyph.none
-                    ? _TaskFilterPriorityGlyph(
-                        glyph: option.glyph,
-                        palette: palette,
-                      )
-                    : null,
-                onTap: () => onChanged(state.selectPriority(option.id)),
-              ),
+            _TaskFilterSectionLabel(
+              text: state.priorityLabel,
+              color: palette.secondaryText,
+              style: tokens.typography.styles.others.caption,
+            ),
+            SizedBox(height: spacing.step4),
+            Wrap(
+              spacing: spacing.step1,
+              runSpacing: spacing.step1,
+              children: [
+                for (final option in state.priorityOptions)
+                  _TaskFilterChoicePill(
+                    key: ValueKey(
+                      'design-system-task-filter-priority-${option.id}',
+                    ),
+                    label: option.label,
+                    selected: option.id == state.selectedPriorityId,
+                    palette: palette,
+                    textStyle: tokens.typography.styles.subtitle.subtitle2,
+                    leading: option.glyph != DesignSystemTaskFilterGlyph.none
+                        ? _TaskFilterPriorityGlyph(
+                            glyph: option.glyph,
+                            palette: palette,
+                          )
+                        : null,
+                    onTap: () => onChanged(state.selectPriority(option.id)),
+                  ),
+              ],
+            ),
           ],
         ),
-      ],
-      if (state.hasCategoryField) ...[
+      if (state.hasCategoryField)
         _TaskFilterSelectionField(
           key: const ValueKey(
             'design-system-task-filter-field-category',
@@ -413,8 +611,28 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
             ),
           ),
         ),
-      ],
-      if (state.hasLabelField) ...[
+      if (state.hasProjectField)
+        _TaskFilterSelectionField(
+          key: const ValueKey(
+            'design-system-task-filter-field-project',
+          ),
+          label: state.projectField!.label,
+          items: state.projectField!.selectedOptions,
+          section: DesignSystemTaskFilterSection.project,
+          palette: palette,
+          onTap: onFieldPressed == null
+              ? null
+              : () => onFieldPressed!.call(
+                  DesignSystemTaskFilterSection.project,
+                ),
+          onRemove: (id) => onChanged(
+            state.removeSelection(
+              DesignSystemTaskFilterSection.project,
+              id,
+            ),
+          ),
+        ),
+      if (state.hasLabelField)
         _TaskFilterSelectionField(
           key: const ValueKey(
             'design-system-task-filter-field-label',
@@ -435,121 +653,129 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
             ),
           ),
         ),
-      ],
+      if (state.hasAgentFilter)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TaskFilterSectionLabel(
+              text: state.agentFilterLabel,
+              color: palette.secondaryText,
+              style: tokens.typography.styles.others.caption,
+            ),
+            SizedBox(height: spacing.step4),
+            Wrap(
+              spacing: spacing.step3,
+              runSpacing: spacing.step3,
+              children: [
+                for (final option in state.agentFilterOptions)
+                  _TaskFilterChoicePill(
+                    key: ValueKey(
+                      'design-system-task-filter-agent-${option.id}',
+                    ),
+                    label: option.label,
+                    selected: option.id == state.selectedAgentFilterId,
+                    palette: palette,
+                    textStyle: tokens.typography.styles.subtitle.subtitle2,
+                    onTap: () => onChanged(state.selectAgentFilter(option.id)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      if (state.toggles.isNotEmpty)
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final toggle in state.toggles)
+              _TaskFilterToggleRow(
+                key: ValueKey(
+                  'design-system-task-filter-toggle-${toggle.id}',
+                ),
+                toggle: toggle,
+                palette: palette,
+                onChanged: () => onChanged(state.toggleValue(toggle.id)),
+              ),
+          ],
+        ),
     ];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_TaskFilterMetrics.frameRadius),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: palette.sheetBackground),
-        child: SizedBox(
-          width: _TaskFilterMetrics.frameWidth,
-          height: _TaskFilterMetrics.frameHeight,
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    spacing.step5,
-                    spacing.step4,
-                    spacing.step5,
-                    spacing.step6,
-                  ),
-                  child: SizedBox(
-                    width: _TaskFilterMetrics.contentWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (state.showDragHandle)
-                          DesignSystemFilterDragHandle(
-                            color: palette.handleColor,
-                          ),
-                        SizedBox(height: spacing.step4),
-                        Text(
-                          state.title,
-                          style: tokens.typography.styles.heading.heading2
-                              .copyWith(color: palette.primaryText),
-                        ),
-                        if (contentSections.isNotEmpty) ...[
-                          SizedBox(height: spacing.step6),
-                          for (var i = 0; i < contentSections.length; i++) ...[
-                            contentSections[i],
-                            if (i != contentSections.length - 1)
-                              SizedBox(height: spacing.step6),
-                          ],
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (contentSections.isNotEmpty)
+          for (var i = 0; i < contentSections.length; i++) ...[
+            contentSections[i],
+            if (i != contentSections.length - 1)
+              SizedBox(height: spacing.step6),
+          ],
+      ],
+    );
+  }
+}
+
+/// Sticky action bar for the filter sheet — Clear All + Apply buttons.
+///
+/// Designed to be used as the `stickyActionBar` in a Wolt modal page.
+class DesignSystemTaskFilterActionBar extends StatelessWidget {
+  const DesignSystemTaskFilterActionBar({
+    required this.state,
+    required this.onChanged,
+    this.onApplyPressed,
+    this.onClearAllPressed,
+    super.key,
+  });
+
+  final DesignSystemTaskFilterState state;
+  final ValueChanged<DesignSystemTaskFilterState> onChanged;
+  final ValueChanged<DesignSystemTaskFilterState>? onApplyPressed;
+  final ValueChanged<DesignSystemTaskFilterState>? onClearAllPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final palette = DesignSystemFilterPalette.fromTokens(tokens);
+    final spacing = tokens.spacing;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.step5,
+        vertical: spacing.step4,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: DesignSystemFilterActionButton(
+              key: const ValueKey(
+                'design-system-task-filter-clear',
               ),
-              Container(height: 1, color: palette.dividerColor),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  spacing.step5,
-                  spacing.step4,
-                  spacing.step5,
-                  0,
-                ),
-                child: SizedBox(
-                  width: _TaskFilterMetrics.contentWidth,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DesignSystemFilterActionButton(
-                          key: const ValueKey(
-                            'design-system-task-filter-clear',
-                          ),
-                          label: state.clearAllLabel,
-                          palette: palette,
-                          highlighted: false,
-                          textStyle:
-                              tokens.typography.styles.subtitle.subtitle1,
-                          onTap: () {
-                            final clearedState = state.clearAll();
-                            onChanged(clearedState);
-                            onClearAllPressed?.call(clearedState);
-                          },
-                        ),
-                      ),
-                      SizedBox(width: spacing.step5),
-                      Expanded(
-                        child: DesignSystemFilterActionButton(
-                          key: const ValueKey(
-                            'design-system-task-filter-apply',
-                          ),
-                          label: state.applyLabel,
-                          palette: palette,
-                          highlighted: true,
-                          counter: state.appliedCount,
-                          textStyle:
-                              tokens.typography.styles.subtitle.subtitle1,
-                          onTap: () => onApplyPressed?.call(state),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: spacing.step4),
-              Padding(
-                padding: EdgeInsets.only(bottom: spacing.step3),
-                child: Container(
-                  width: 134,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: palette.handleColor,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              SizedBox(
-                height:
-                    spacing.step5 + spacing.step2 + spacing.step1 / 2, // 21px
-              ),
-            ],
+              label: state.clearAllLabel,
+              palette: palette,
+              highlighted: false,
+              textStyle: tokens.typography.styles.subtitle.subtitle1,
+              onTap: () {
+                final clearedState = state.clearAll();
+                onChanged(clearedState);
+                onClearAllPressed?.call(clearedState);
+              },
+            ),
           ),
-        ),
+          SizedBox(width: spacing.step5),
+          Expanded(
+            child: DesignSystemFilterActionButton(
+              key: const ValueKey(
+                'design-system-task-filter-apply',
+              ),
+              label: state.applyLabel,
+              palette: palette,
+              highlighted: true,
+              counter: state.appliedCount,
+              textStyle: tokens.typography.styles.subtitle.subtitle1,
+              onTap: () => onApplyPressed?.call(state),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -578,20 +804,22 @@ class _TaskFilterSelectionField extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
 
+    final radii = tokens.radii;
+
     return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
           color: palette.fieldBackground,
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.fieldRadius),
+          borderRadius: BorderRadius.circular(radii.badgesPills),
           border: Border.all(color: palette.fieldOutline),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.fieldRadius),
+          borderRadius: BorderRadius.circular(radii.badgesPills),
           onTap: onTap,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: _TaskFilterMetrics.fieldHeight,
+            constraints: BoxConstraints(
+              minHeight: spacing.step9 + spacing.step2, // 52
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -640,7 +868,7 @@ class _TaskFilterSelectionField extends StatelessWidget {
                   ),
                   SizedBox(width: spacing.step3),
                   Icon(
-                    Icons.keyboard_arrow_down_rounded,
+                    Icons.arrow_drop_down,
                     color: palette.secondaryText,
                     size: 24,
                   ),
@@ -673,7 +901,7 @@ class _TaskFilterSelectedChip extends StatelessWidget {
     final spacing = tokens.spacing;
 
     return Container(
-      height: 28,
+      height: spacing.step6 + spacing.step2, // 28
       padding: EdgeInsets.fromLTRB(
         spacing.step4,
         spacing.step1,
@@ -682,39 +910,41 @@ class _TaskFilterSelectedChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: palette.pillFill,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (option.icon != null) ...[
+            Icon(option.icon, color: option.iconColor, size: 18),
+            SizedBox(width: spacing.step2),
+          ] else if (option.iconColor != null) ...[
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: option.iconColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: spacing.step2),
+          ],
           Text(
             option.label,
             style: tokens.typography.styles.subtitle.subtitle2.copyWith(
               color: palette.primaryText,
             ),
           ),
-          SizedBox(width: spacing.step2 + spacing.step1), // 6px
-          Material(
-            color: Colors.transparent,
-            child: Ink(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: palette.dismissFill,
-                shape: BoxShape.circle,
-              ),
-              child: InkWell(
-                key: ValueKey(
-                  'design-system-task-filter-remove-${section.name}-${option.id}',
-                ),
-                borderRadius: BorderRadius.circular(999),
-                onTap: onRemove,
-                child: Icon(
-                  Icons.close_rounded,
-                  color: palette.dismissIcon,
-                  size: 14,
-                ),
-              ),
+          SizedBox(width: spacing.step2),
+          GestureDetector(
+            key: ValueKey(
+              'design-system-task-filter-remove-${section.name}-${option.id}',
+            ),
+            onTap: onRemove,
+            child: Icon(
+              Icons.cancel,
+              color: palette.dismissFill,
+              size: 18,
             ),
           ),
         ],
@@ -745,34 +975,33 @@ class _TaskFilterChoicePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
 
+    final radii = context.designTokens.radii;
+
     return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
           color: selected ? palette.selectedPillBackground : palette.pillFill,
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.pillRadius),
+          borderRadius: BorderRadius.circular(radii.badgesPills),
           border: Border.all(
             color: selected ? palette.accent : Colors.transparent,
             width: selected ? 1.5 : 1,
           ),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(_TaskFilterMetrics.pillRadius),
+          borderRadius: BorderRadius.circular(radii.badgesPills),
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: leading != null
-                  ? spacing.step5
-                  : spacing.step5 + spacing.step2,
-              vertical:
-                  spacing.step3 + spacing.step1 + spacing.step1 / 2, // 11px
+              horizontal: leading != null ? spacing.step4 : spacing.step5,
+              vertical: spacing.step3,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (leading != null) ...[
                   leading!,
-                  SizedBox(width: spacing.step3),
+                  SizedBox(width: spacing.step2),
                 ],
                 Text(
                   label,
@@ -798,49 +1027,59 @@ class _TaskFilterPriorityGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
-
+    // P0: new_releases icon (star burst)
     if (glyph == DesignSystemTaskFilterGlyph.priorityP0) {
       return Icon(
-        Icons.priority_high_rounded,
+        Icons.new_releases,
         color: palette.priorityP0,
-        size: 18,
+        size: 20,
+      );
+    }
+
+    // P1: signal_cellular_alt (3 ascending bars)
+    if (glyph == DesignSystemTaskFilterGlyph.priorityP1) {
+      return Icon(
+        Icons.signal_cellular_alt,
+        color: palette.priorityP1,
+        size: 20,
       );
     }
 
     final color = switch (glyph) {
-      DesignSystemTaskFilterGlyph.priorityP1 => palette.priorityP1,
       DesignSystemTaskFilterGlyph.priorityP2 => palette.priorityP2,
       DesignSystemTaskFilterGlyph.priorityP3 => palette.priorityP3,
       _ => palette.secondaryText,
     };
 
-    final alphaValues = switch (glyph) {
-      DesignSystemTaskFilterGlyph.priorityP1 => const [0.7, 0.85, 1.0],
-      DesignSystemTaskFilterGlyph.priorityP2 => const [0.8, 1.0, 0.6],
-      DesignSystemTaskFilterGlyph.priorityP3 => const [1.0, 0.7, 0.45],
-      _ => const [1.0, 1.0, 1.0],
+    // P2: 2 bars (medium signal), P3: 1 bar (low signal)
+    // Rendered as ascending bars with fewer filled
+    final filledBars = switch (glyph) {
+      DesignSystemTaskFilterGlyph.priorityP2 => 2,
+      DesignSystemTaskFilterGlyph.priorityP3 => 1,
+      _ => 3,
     };
 
+    const barWidths = [4.0, 4.0, 4.0];
+    const barHeights = [5.0, 9.0, 13.0];
+
     return SizedBox(
-      width: 18,
-      height: 18,
+      width: 16,
+      height: 16,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (var i = 0; i < _TaskFilterMetrics.priorityBarHeights.length; i++)
+          for (var i = 0; i < barHeights.length; i++)
             Padding(
               padding: EdgeInsets.only(
-                right: i == _TaskFilterMetrics.priorityBarHeights.length - 1
-                    ? 0
-                    : spacing.step1 / 2,
+                right: i < barHeights.length - 1 ? 1.0 : 0,
               ),
               child: Container(
-                width: 4,
-                height: _TaskFilterMetrics.priorityBarHeights[i],
+                width: barWidths[i],
+                height: barHeights[i],
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: alphaValues[i]),
-                  borderRadius: BorderRadius.circular(2),
+                  color: i < filledBars ? color : color.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(1),
                 ),
               ),
             ),
@@ -870,15 +1109,62 @@ class _TaskFilterSectionLabel extends StatelessWidget {
   }
 }
 
-class _TaskFilterMetrics {
-  const _TaskFilterMetrics._();
+class _TaskFilterToggleRow extends StatelessWidget {
+  const _TaskFilterToggleRow({
+    required this.toggle,
+    required this.palette,
+    required this.onChanged,
+    super.key,
+  });
 
-  static const double frameWidth = DesignSystemFilterMetrics.frameWidth;
-  static const frameHeight = 612.0;
-  static const double frameRadius = DesignSystemFilterMetrics.frameRadius;
-  static const contentWidth = 370.0;
-  static const fieldHeight = 56.0;
-  static const fieldRadius = 24.0;
-  static const pillRadius = 24.0;
-  static const priorityBarHeights = [6.0, 10.0, 14.0];
+  final DesignSystemTaskFilterToggle toggle;
+  final DesignSystemFilterPalette palette;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Semantics(
+      toggled: toggle.value,
+      label: toggle.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          onTap: onChanged,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    toggle.label,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: palette.primaryText,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: tokens.spacing.step6,
+                  width: tokens.spacing.step8,
+                  child: FittedBox(
+                    child: ExcludeSemantics(
+                      child: IgnorePointer(
+                        child: Switch.adaptive(
+                          value: toggle.value,
+                          activeTrackColor: palette.accent,
+                          onChanged: (_) {},
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -31,11 +31,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.952" date="2026-04-15">
+      <description>
+          <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
+          <p>Categories and labels list pages now use design system list items in a grouped container, matching the settings page visual style. Settings page uses a 3-column desktop layout for wider screens.</p>
+      </description>
+    </release>
     <release version="0.9.951" date="2026-04-13">
       <description>
           <p>Project one-liner: AI-generated summary subtitle on project list cards, giving an at-a-glance status for each project. The project agent now produces a dedicated one-liner field in its report, separate from the longer TLDR summary.</p>
-          <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
-          <p>Categories and labels list pages now use design system list items in a grouped container, matching the settings page visual style.</p>
       </description>
     </release>
     <release version="0.9.950" date="2026-04-11">
@@ -57,6 +61,7 @@
           <p>Desktop mode: responsive layout switches from mobile bottom navigation to a persistent left sidebar when the window is wider than 960px, with all navigation destinations and Settings pinned at the bottom.</p>
           <p>Desktop split-pane view for Tasks, Projects, and Dashboards: list and detail views shown side by side with reactive selection and active item highlighting in the list pane.</p>
           <p>Checklist filter tabs now include Open, Done, and All. Initial collapse animation on checklists is disabled to prevent jank on slower devices.</p>
+          <p>Task filter modal: replaced with the design system version, now includes project filter (grouped by category), agent assignment filter, and search mode toggle (desktop only). Cover art is now always shown on task cards.</p>
       </description>
     </release>
     <release version="0.9.947" date="2026-04-09">

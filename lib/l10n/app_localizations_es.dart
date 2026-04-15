@@ -6197,7 +6197,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksLabelFilterAll => 'Todas';
 
   @override
-  String get tasksLabelFilterTitle => 'Etiquetas';
+  String get tasksLabelFilterTitle => 'Etiqueta';
 
   @override
   String get tasksLabelFilterUnlabeled => 'Sin etiqueta';

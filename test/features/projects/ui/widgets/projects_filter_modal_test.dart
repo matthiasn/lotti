@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
@@ -42,7 +40,6 @@ void main() {
                     initialFilter: initialFilter,
                     categories: categories,
                     onApplied: onApplied,
-                    presentation: DesignSystemFilterPresentation.desktop,
                   ),
                   child: const Text('Open Filter'),
                 );
@@ -66,9 +63,9 @@ void main() {
       );
 
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-      expect(find.text('Apply filter'), findsOneWidget);
+      expect(find.text('Tasks Filter'), findsOneWidget);
       expect(find.text('Status'), findsOneWidget);
       expect(find.text('Category'), findsOneWidget);
     },
@@ -85,14 +82,14 @@ void main() {
     );
 
     await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     final applyButton = find.byKey(
       const ValueKey('design-system-task-filter-apply'),
     );
     await tester.ensureVisible(applyButton);
     await tester.tap(applyButton);
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     expect(appliedFilter, isNotNull);
     expect(appliedFilter!.selectedStatusIds, isEmpty);
@@ -110,7 +107,7 @@ void main() {
       );
 
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       final statusField = find.byKey(
         const ValueKey('design-system-task-filter-field-status'),
@@ -118,9 +115,8 @@ void main() {
       await tester.ensureVisible(statusField);
       await tester.pumpAndSettle();
       await tester.tap(statusField);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-      expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
       expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
@@ -151,7 +147,7 @@ void main() {
 
       // Open the filter modal
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Open the status selection modal
       final statusField = find.byKey(
@@ -160,31 +156,34 @@ void main() {
       await tester.ensureVisible(statusField);
       await tester.pumpAndSettle();
       await tester.tap(statusField);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Select the "Active" status option
       final activeOption = find.byKey(
         const ValueKey('design-system-filter-selection-option-active'),
       );
       await tester.ensureVisible(activeOption);
+      await tester.pumpAndSettle();
       await tester.tap(activeOption);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Confirm selection
       final selectionDone = find.byKey(
         const ValueKey('design-system-filter-selection-apply'),
       );
       await tester.ensureVisible(selectionDone);
+      await tester.pumpAndSettle();
       await tester.tap(selectionDone);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Apply the filter from the main filter modal
       final applyButton = find.byKey(
         const ValueKey('design-system-task-filter-apply'),
       );
       await tester.ensureVisible(applyButton);
+      await tester.pumpAndSettle();
       await tester.tap(applyButton);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(appliedFilter, isNotNull);
       expect(
@@ -208,7 +207,7 @@ void main() {
 
       // Open the filter modal
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Open the category selection modal
       final categoryField = find.byKey(
@@ -217,9 +216,8 @@ void main() {
       await tester.ensureVisible(categoryField);
       await tester.pumpAndSettle();
       await tester.tap(categoryField);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-      expect(find.byType(DesignSystemFilterSelectionSheet), findsOneWidget);
       expect(
         find.byType(DesignSystemCheckbox),
         findsNWidgets(categories.length),
@@ -243,7 +241,7 @@ void main() {
 
       // Open the filter modal
       await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Open the category selection modal
       final categoryField = find.byKey(
@@ -252,31 +250,34 @@ void main() {
       await tester.ensureVisible(categoryField);
       await tester.pumpAndSettle();
       await tester.tap(categoryField);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Select the "Work" category option
       final workOption = find.byKey(
         const ValueKey('design-system-filter-selection-option-cat-work'),
       );
       await tester.ensureVisible(workOption);
+      await tester.pumpAndSettle();
       await tester.tap(workOption);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Confirm selection
       final selectionDone = find.byKey(
         const ValueKey('design-system-filter-selection-apply'),
       );
       await tester.ensureVisible(selectionDone);
+      await tester.pumpAndSettle();
       await tester.tap(selectionDone);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Apply the filter from the main filter modal
       final applyButton = find.byKey(
         const ValueKey('design-system-task-filter-apply'),
       );
       await tester.ensureVisible(applyButton);
+      await tester.pumpAndSettle();
       await tester.tap(applyButton);
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(appliedFilter, isNotNull);
       expect(appliedFilter!.selectedCategoryIds, {'cat-work'});

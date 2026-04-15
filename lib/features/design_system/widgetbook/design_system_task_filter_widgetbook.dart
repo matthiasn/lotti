@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/task_filters/design_system_filter_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
@@ -72,31 +71,42 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
             title: 'Mobile Preview',
             child: WidgetbookViewport(
               width: 402,
-              child: DesignSystemTaskFilterSheet(
-                state: state,
-                onChanged: (nextState) {
-                  setState(() => _state = nextState);
-                },
-                onFieldPressed: (section) async {
-                  final nextState =
-                      await showDesignSystemTaskFilterFieldSelectionModal(
-                        context: context,
-                        draftState: state,
-                        section: section,
-                        presentation: DesignSystemFilterPresentation.mobile,
-                      );
-                  if (!mounted || nextState == null) {
-                    return;
-                  }
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DesignSystemTaskFilterSheet(
+                    state: state,
+                    onChanged: (nextState) {
+                      setState(() => _state = nextState);
+                    },
+                    onFieldPressed: (section) async {
+                      final nextState =
+                          await showDesignSystemTaskFilterFieldSelectionModal(
+                            context: context,
+                            draftState: state,
+                            section: section,
+                          );
+                      if (!mounted || nextState == null) {
+                        return;
+                      }
 
-                  setState(() => _state = nextState);
-                },
-                onApplyPressed: (nextState) {
-                  setState(() => _state = nextState);
-                },
-                onClearAllPressed: (nextState) {
-                  setState(() => _state = nextState);
-                },
+                      setState(() => _state = nextState);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DesignSystemTaskFilterActionBar(
+                    state: state,
+                    onChanged: (nextState) {
+                      setState(() => _state = nextState);
+                    },
+                    onApplyPressed: (nextState) {
+                      setState(() => _state = nextState);
+                    },
+                    onClearAllPressed: (nextState) {
+                      setState(() => _state = nextState);
+                    },
+                  ),
+                ],
               ),
             ),
           ),
