@@ -4,19 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.951] - 2026-04-13
-### Added
-- Project one-liner: AI-generated summary subtitle on project list cards,
-  giving an at-a-glance status for each project (mirrors the existing task
-  one-liner feature).
-- Project agent now produces a dedicated `one_liner` field in its report,
-  separate from the longer TLDR summary.
-
+## [0.9.952] - 2026-04-15
 ### Changed
-- Categories and labels list pages now use design system list items in a grouped
-  container, matching the visual style of the settings page.
-- Categories page header replaced with the standard SettingsPageHeader for
-  consistent back-button behavior across mobile and desktop layouts.
 - Task filter modal redesigned with the design system filter sheet, replacing
   the old Material chips and switches with pill-shaped sort/priority selectors,
   tappable selection fields for status/category/label, and Clear All / Apply
@@ -29,6 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Priority glyphs updated to match Figma: P0 uses new_releases icon, P1 uses
   signal_cellular_alt, P2/P3 use ascending bar variants with faded unfilled
   bars. Priority pill spacing tightened so all options fit on one row.
+- Categories and labels list pages now use design system list items in a grouped
+  container, matching the visual style of the settings page.
+- Categories page header replaced with the standard SettingsPageHeader for
+  consistent back-button behavior across mobile and desktop layouts.
+- Settings page uses a 3-column desktop layout for wider screens.
+
+## [0.9.951] - 2026-04-13
+### Added
+- Project one-liner: AI-generated summary subtitle on project list cards,
+  giving an at-a-glance status for each project (mirrors the existing task
+  one-liner feature).
+- Project agent now produces a dedicated `one_liner` field in its report,
+  separate from the longer TLDR summary.
 
 ## [0.9.950] - 2026-04-11
 ### Removed
