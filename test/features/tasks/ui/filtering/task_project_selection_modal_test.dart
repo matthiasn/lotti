@@ -66,6 +66,52 @@ void main() {
   });
 
   group('showProjectSelectionModal', () {
+    testWidgets('falls back to category ID when category name not found', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(500, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      // Project with a categoryId that has no matching CategoryDefinition
+      final orphanProject = [
+        ProjectWithCategory(
+          project: TestProjectFactory.create(
+            id: 'proj-orphan',
+            title: 'Orphan',
+            categoryId: 'unknown-cat',
+          ),
+          categoryId: 'unknown-cat',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  await showProjectSelectionModal(
+                    context: context,
+                    projects: orphanProject,
+                    categories: const [], // no matching categories
+                    initialSelectedIds: const {},
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      // Falls back to the raw categoryId as the group header
+      expect(find.text('unknown-cat'), findsOneWidget);
+      expect(find.text('Orphan'), findsOneWidget);
+    });
+
     testWidgets('renders projects grouped by category', (tester) async {
       await tester.binding.setSurfaceSize(const Size(500, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));

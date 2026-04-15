@@ -309,6 +309,64 @@ void main() {
     },
   );
 
+  testWidgets('returns null when field is null for the given section', (
+    tester,
+  ) async {
+    DesignSystemTaskFilterState? result = DesignSystemTaskFilterState(
+      title: 'sentinel',
+      clearAllLabel: '',
+      applyLabel: '',
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidget2(
+        Theme(
+          data: DesignSystemTheme.dark(),
+          child: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  key: const ValueKey('open-null-field-modal'),
+                  onPressed: () async {
+                    // projectField is null, so calling with project section
+                    // should return null immediately.
+                    result =
+                        await showDesignSystemTaskFilterFieldSelectionModal(
+                          context: context,
+                          draftState: DesignSystemTaskFilterState(
+                            title: 'Filter',
+                            clearAllLabel: 'Clear',
+                            applyLabel: 'Apply',
+                            statusField: const DesignSystemTaskFilterFieldState(
+                              label: 'Status',
+                              options: [
+                                DesignSystemTaskFilterOption(
+                                  id: 'open',
+                                  label: 'Open',
+                                ),
+                              ],
+                              selectedIds: {'open'},
+                            ),
+                          ),
+                          section: DesignSystemTaskFilterSection.project,
+                        );
+                  },
+                  child: const Text('Open'),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('open-null-field-modal')));
+    await tester.pump();
+
+    expect(result, isNull);
+  });
+
   testWidgets(
     'renders selection modal with light theme palette',
     (tester) async {

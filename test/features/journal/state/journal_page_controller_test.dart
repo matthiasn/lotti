@@ -1853,6 +1853,37 @@ void main() {
           });
         },
       );
+
+      test(
+        'applyBatchFilterUpdate applies searchMode when vector enabled',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Enable vector search via config flags
+            configFlagsController.add({enableVectorSearchFlag});
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            expect(controller.enableVectorSearchInternal, isTrue);
+
+            controller.applyBatchFilterUpdate(
+              searchMode: SearchMode.vector,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(journalPageControllerProvider(true));
+            expect(state.searchMode, SearchMode.vector);
+          });
+        },
+      );
     });
 
     group('Vector Search', () {

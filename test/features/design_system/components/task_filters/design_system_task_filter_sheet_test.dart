@@ -118,6 +118,33 @@ void main() {
       expect(labelRemoved.labelField!.selectedIds, {'agents'});
     });
 
+    test('removes project selection and counts project in appliedCount', () {
+      final state = _buildState().copyWith(
+        projectField: _buildFieldState(
+          label: 'Project',
+          options: const [
+            DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
+            DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
+          ],
+          selectedIds: const {'p1', 'p2'},
+        ),
+      );
+
+      // appliedCount includes project selections
+      // 2 status + 1 priority + 2 category + 2 label + 2 project = 9
+      expect(state.appliedCount, 9);
+
+      final projectRemoved = state.removeSelection(
+        DesignSystemTaskFilterSection.project,
+        'p1',
+      );
+      expect(projectRemoved.projectField!.selectedIds, {'p2'});
+
+      // clearAll clears project field too
+      final cleared = state.clearAll();
+      expect(cleared.projectField!.selectedIds, isEmpty);
+    });
+
     test('derives applied count and clears selected filters', () {
       final state = _buildState();
 
@@ -513,6 +540,57 @@ void main() {
 
       expect(find.text('Project'), findsOneWidget);
       expect(find.text('Alpha'), findsOneWidget);
+    });
+
+    testWidgets('project field supports chip removal and tap callback', (
+      tester,
+    ) async {
+      DesignSystemTaskFilterState? lastChanged;
+      final tappedSections = <DesignSystemTaskFilterSection>[];
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: DesignSystemTaskFilterSheet(
+              state: DesignSystemTaskFilterState(
+                title: 'Filters',
+                clearAllLabel: 'Clear',
+                applyLabel: 'Apply',
+                projectField: const DesignSystemTaskFilterFieldState(
+                  label: 'Project',
+                  options: [
+                    DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
+                    DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
+                  ],
+                  selectedIds: {'p1', 'p2'},
+                ),
+              ),
+              onChanged: (s) => lastChanged = s,
+              onFieldPressed: tappedSections.add,
+            ),
+          ),
+        ),
+      );
+
+      // Tap the project field to trigger onFieldPressed
+      await tester.tap(
+        find.byKey(
+          const ValueKey('design-system-task-filter-field-project'),
+        ),
+      );
+      await tester.pump();
+
+      expect(tappedSections, [DesignSystemTaskFilterSection.project]);
+
+      // Remove a project chip
+      await tester.tap(
+        find.byKey(
+          const ValueKey('design-system-task-filter-remove-project-p1'),
+        ),
+      );
+      await tester.pump();
+
+      expect(lastChanged!.projectField!.selectedIds, {'p2'});
     });
   });
 }
