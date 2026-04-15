@@ -1125,37 +1125,43 @@ class _TaskFilterToggleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        onTap: onChanged,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  toggle.label,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: palette.primaryText,
-                  ),
-                ),
-              ),
-              SizedBox(
-                height: tokens.spacing.step6,
-                width: tokens.spacing.step8,
-                child: FittedBox(
-                  child: IgnorePointer(
-                    child: Switch.adaptive(
-                      value: toggle.value,
-                      activeTrackColor: palette.accent,
-                      onChanged: (_) {},
+    return Semantics(
+      toggled: toggle.value,
+      label: toggle.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          onTap: onChanged,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    toggle.label,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: palette.primaryText,
                     ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(
+                  height: tokens.spacing.step6,
+                  width: tokens.spacing.step8,
+                  child: FittedBox(
+                    child: ExcludeSemantics(
+                      child: IgnorePointer(
+                        child: Switch.adaptive(
+                          value: toggle.value,
+                          activeTrackColor: palette.accent,
+                          onChanged: (_) {},
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
