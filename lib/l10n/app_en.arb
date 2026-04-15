@@ -1740,6 +1740,7 @@
   "errorLoadingPrompts": "Error loading prompts",
   "eventNameLabel": "Event:",
   "favoriteLabel": "Favorite",
+  "inactiveLabel": "Inactive",
   "fileMenuNewEllipsis": "New ...",
   "fileMenuNewEntry": "New Entry",
   "fileMenuNewScreenshot": "Screenshot",

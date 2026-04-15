@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   container, matching the visual style of the settings page.
 - Categories page header replaced with the standard SettingsPageHeader for
   consistent back-button behavior across mobile and desktop layouts.
+- Dashboards, measurables, and habits list pages now use design system list
+  items in a grouped container, consistent with categories and labels.
 - Settings page uses a 3-column desktop layout for wider screens.
 
 ## [0.9.951] - 2026-04-13

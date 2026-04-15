@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -19,14 +19,13 @@ void main() {
   late MockJournalDb mockJournalDb;
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  Future<void> pumpHabitsPage(
+  Future<void> pumpDashboardsPage(
     WidgetTester tester, {
-    required List<HabitDefinition> habits,
+    required List<DashboardDefinition> dashboards,
   }) async {
-    mockJournalDb = mockJournalDbWithHabits(habits);
-    when(mockJournalDb.getAllCategories).thenAnswer(
-      (_) async => [categoryMindfulness],
-    );
+    mockJournalDb = MockJournalDb();
+    when(mockJournalDb.close).thenAnswer((_) async {});
+    when(mockJournalDb.getAllDashboards).thenAnswer((_) async => dashboards);
 
     final mockUpdateNotifications = MockUpdateNotifications();
     when(
@@ -47,7 +46,7 @@ void main() {
             maxHeight: 1000,
             maxWidth: 1000,
           ),
-          child: const HabitsPage(),
+          child: const DashboardSettingsPage(),
         ),
       ),
     );
@@ -56,72 +55,54 @@ void main() {
 
   tearDown(getIt.reset);
 
-  group('HabitsPage', () {
+  group('DashboardSettingsPage', () {
     group('basic rendering', () {
-      testWidgets('displays habit name', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
+      testWidgets('displays dashboard names', (tester) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig, emptyTestDashboardConfig],
+        );
 
-        expect(find.text(habitFlossing.name), findsOneWidget);
+        expect(find.text(testDashboardConfig.name), findsOneWidget);
+        expect(find.text(emptyTestDashboardConfig.name), findsOneWidget);
+      });
+
+      testWidgets('displays description as subtitle when non-empty', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig],
+        );
+
+        expect(find.text(testDashboardConfig.description), findsOneWidget);
       });
 
       testWidgets('displays chevron trailing icon', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig],
+        );
 
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
     });
 
-    group('status icons', () {
+    group('private indicator', () {
       testWidgets('shows lock icon when private', (tester) async {
-        final privateHabit = habitFlossing.copyWith(private: true);
-        await pumpHabitsPage(tester, habits: [privateHabit]);
+        final privateDashboard = testDashboardConfig.copyWith(private: true);
+        await pumpDashboardsPage(tester, dashboards: [privateDashboard]);
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
       });
 
       testWidgets('hides lock icon when not private', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig],
+        );
 
         expect(find.byIcon(Icons.lock_outline), findsNothing);
-      });
-
-      testWidgets('shows inactive icon when not active', (tester) async {
-        final inactiveHabit = habitFlossing.copyWith(active: false);
-        await pumpHabitsPage(tester, habits: [inactiveHabit]);
-
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-      });
-
-      testWidgets('hides inactive icon when active', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
-
-        expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-      });
-
-      testWidgets('shows star icon when favorite', (tester) async {
-        final favoriteHabit = habitFlossing.copyWith(priority: true);
-        await pumpHabitsPage(tester, habits: [favoriteHabit]);
-
-        expect(find.byIcon(Icons.star), findsOneWidget);
-      });
-
-      testWidgets('hides star icon when not favorite', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
-
-        expect(find.byIcon(Icons.star), findsNothing);
-      });
-
-      testWidgets('shows all status icons together', (tester) async {
-        final fullHabit = habitFlossing.copyWith(
-          private: true,
-          active: false,
-          priority: true,
-        );
-        await pumpHabitsPage(tester, habits: [fullHabit]);
-
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star), findsOneWidget);
       });
     });
 
@@ -129,18 +110,17 @@ void main() {
       testWidgets('shows dividers between items but not after last', (
         tester,
       ) async {
-        final habits = [
-          habitFlossing,
-          habitFlossing.copyWith(
-            id: 'habit-2',
-            name: 'Meditation',
-          ),
-          habitFlossing.copyWith(
-            id: 'habit-3',
-            name: 'Yoga',
-          ),
-        ];
-        await pumpHabitsPage(tester, habits: habits);
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [
+            testDashboardConfig,
+            emptyTestDashboardConfig,
+            testDashboardConfig.copyWith(
+              name: 'Zeta Dashboard',
+              id: 'zeta-id',
+            ),
+          ],
+        );
 
         final items = find.byType(DesignSystemListItem);
         expect(items, findsNWidgets(3));
@@ -155,7 +135,10 @@ void main() {
       });
 
       testWidgets('single item has no divider', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig],
+        );
 
         final item = tester.widget<DesignSystemListItem>(
           find.byType(DesignSystemListItem),

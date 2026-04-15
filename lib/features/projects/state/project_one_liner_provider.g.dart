@@ -11,8 +11,8 @@ part of 'project_one_liner_provider.dart';
 /// Fetches the AI-generated one-liner subtitle for a project from its agent
 /// report.
 ///
-/// Chains [projectAgentProvider] to resolve the project's agent, then watches
-/// [agentReportProvider] for the latest report and extracts the [oneLiner]
+/// Chains `projectAgentProvider` to resolve the project's agent, then watches
+/// `agentReportProvider` for the latest report and extracts the `oneLiner`
 /// field. Auto-disposes when the project card scrolls off-screen.
 
 @ProviderFor(projectOneLiner)
@@ -21,8 +21,8 @@ final projectOneLinerProvider = ProjectOneLinerFamily._();
 /// Fetches the AI-generated one-liner subtitle for a project from its agent
 /// report.
 ///
-/// Chains [projectAgentProvider] to resolve the project's agent, then watches
-/// [agentReportProvider] for the latest report and extracts the [oneLiner]
+/// Chains `projectAgentProvider` to resolve the project's agent, then watches
+/// `agentReportProvider` for the latest report and extracts the `oneLiner`
 /// field. Auto-disposes when the project card scrolls off-screen.
 
 final class ProjectOneLinerProvider
@@ -31,8 +31,8 @@ final class ProjectOneLinerProvider
   /// Fetches the AI-generated one-liner subtitle for a project from its agent
   /// report.
   ///
-  /// Chains [projectAgentProvider] to resolve the project's agent, then watches
-  /// [agentReportProvider] for the latest report and extracts the [oneLiner]
+  /// Chains `projectAgentProvider` to resolve the project's agent, then watches
+  /// `agentReportProvider` for the latest report and extracts the `oneLiner`
   /// field. Auto-disposes when the project card scrolls off-screen.
   ProjectOneLinerProvider._({
     required ProjectOneLinerFamily super.from,
@@ -82,8 +82,8 @@ String _$projectOneLinerHash() => r'1519ce99e2f0d63f7859ce894925307f26df9bab';
 /// Fetches the AI-generated one-liner subtitle for a project from its agent
 /// report.
 ///
-/// Chains [projectAgentProvider] to resolve the project's agent, then watches
-/// [agentReportProvider] for the latest report and extracts the [oneLiner]
+/// Chains `projectAgentProvider` to resolve the project's agent, then watches
+/// `agentReportProvider` for the latest report and extracts the `oneLiner`
 /// field. Auto-disposes when the project card scrolls off-screen.
 
 final class ProjectOneLinerFamily extends $Family
@@ -100,8 +100,8 @@ final class ProjectOneLinerFamily extends $Family
   /// Fetches the AI-generated one-liner subtitle for a project from its agent
   /// report.
   ///
-  /// Chains [projectAgentProvider] to resolve the project's agent, then watches
-  /// [agentReportProvider] for the latest report and extracts the [oneLiner]
+  /// Chains `projectAgentProvider` to resolve the project's agent, then watches
+  /// `agentReportProvider` for the latest report and extracts the `oneLiner`
   /// field. Auto-disposes when the project card scrolls off-screen.
 
   ProjectOneLinerProvider call(String projectId) =>

@@ -37,7 +37,7 @@ void main() {
           stream: streamController.stream,
           title: 'Test Items',
           getName: (item) => item.name,
-          definitionCard: (index, item) => Card(
+          definitionCard: (index, item, {required bool isLast}) => Card(
             key: ValueKey('item_$index'),
             child: ListTile(title: Text(item.name)),
           ),
