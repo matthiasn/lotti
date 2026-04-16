@@ -1,17 +1,36 @@
-// ignore_for_file: one_member_abstracts, sort_constructors_first
+// ignore_for_file: sort_constructors_first
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/attachment_enumerator.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 abstract class OutboxMessageSender {
-  Future<bool> send(SyncMessage message);
+  /// Sends [message]. When [skipAttachmentPaths] is non-empty, the sender must
+  /// skip uploading any file whose relative path is in the set — typically
+  /// because the file was already uploaded out-of-band via
+  /// [sendAttachmentBundle].
+  Future<bool> send(
+    SyncMessage message, {
+    Set<String> skipAttachmentPaths = const <String>{},
+  });
+
+  /// Packages the supplied relativePath→bytes [entries] into a single zip
+  /// archive and uploads it as one Matrix file event. Returns the event id on
+  /// success, null on failure (including no available sync room).
+  Future<String?> sendAttachmentBundle({
+    required Map<String, Uint8List> entries,
+  });
 }
 
 class OutboxProcessingResult {
@@ -38,26 +57,36 @@ class OutboxProcessor {
     int? maxRetriesOverride,
     Duration? sendTimeoutOverride,
     DomainLogger? domainLogger,
+    JournalDb? journalDb,
+    Directory? documentsDirectory,
+    int? bundleMaxBytesOverride,
   }) : _repository = repository,
        _messageSender = messageSender,
        _loggingService = loggingService,
        _domainLogger = domainLogger,
+       _journalDb = journalDb,
+       _documentsDirectory = documentsDirectory,
        batchSize = batchSizeOverride ?? 10,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =
            maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
-       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
+       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout,
+       bundleMaxBytes =
+           bundleMaxBytesOverride ?? SyncTuning.outboxBundleMaxBytes;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
+  final JournalDb? _journalDb;
+  final Directory? _documentsDirectory;
   final int batchSize;
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
   final Duration sendTimeout;
+  final int bundleMaxBytes;
 
   void _syncLog(String message, {String? subDomain}) {
     _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
@@ -72,6 +101,15 @@ class OutboxProcessor {
     if (pendingItems.isEmpty) {
       return OutboxProcessingResult.none;
     }
+
+    // When the feature flag is on and enough items are pending to gain from
+    // one Matrix round-trip, attempt an attachment-bundle send first. The
+    // helper returns null when bundling is disabled or nothing was
+    // bundleable (e.g. every pending item's attachments exceed the cap or
+    // carry no files at all), so the existing head-only flow still runs as
+    // the default path.
+    final bundleOutcome = await _maybeProcessBundle(pendingItems);
+    if (bundleOutcome != null) return bundleOutcome;
 
     final nextItem = pendingItems.first;
     try {
@@ -238,5 +276,160 @@ class OutboxProcessor {
   SyncMessage _decodeMessage(OutboxItem item) {
     final jsonMap = json.decode(item.message) as Map<String, dynamic>;
     return SyncMessage.fromJson(jsonMap);
+  }
+
+  /// Attempts to coalesce as many of [pending] items' attachment files as
+  /// fit into a single zip (capped at [bundleMaxBytes]) and uploads them as
+  /// one Matrix file event before sending each included item's text event
+  /// with the bundled paths marked for skip. Returns null when bundling is
+  /// disabled or nothing was bundleable, so the caller can fall through to
+  /// the existing head-only flow.
+  Future<OutboxProcessingResult?> _maybeProcessBundle(
+    List<OutboxItem> pending,
+  ) async {
+    final docDir = _documentsDirectory;
+    final db = _journalDb;
+    if (docDir == null || db == null) return null;
+
+    final bundlingOn = await db.getConfigFlag(useBundledAttachmentsFlag);
+    if (!bundlingOn) return null;
+
+    // Enumerate attachments per item. Items that fail to decode or have no
+    // attachments are kept for the solo path.
+    final enumerated = <({OutboxItem item, List<AttachmentDescriptor> atts})>[];
+    for (final item in pending) {
+      try {
+        final msg = _decodeMessage(item);
+        final atts = await enumerateAttachments(
+          message: msg,
+          documentsDirectory: docDir,
+        );
+        enumerated.add((item: item, atts: atts));
+      } catch (_) {
+        enumerated.add((item: item, atts: const <AttachmentDescriptor>[]));
+      }
+    }
+
+    // Partition greedily: an item is included in the bundle if its own
+    // attachments fit within the remaining bundle budget. Items whose total
+    // attachment size exceeds the cap on their own go to the solo path via
+    // the existing head-only flow on the next tick.
+    final bundled = <({OutboxItem item, List<AttachmentDescriptor> atts})>[];
+    var bundleSize = 0;
+    for (final e in enumerated) {
+      if (e.atts.isEmpty) continue;
+      final total = e.atts.fold<int>(0, (s, a) => s + a.size);
+      if (total > bundleMaxBytes) continue;
+      if (bundleSize + total > bundleMaxBytes) continue;
+      bundled.add(e);
+      bundleSize += total;
+    }
+
+    if (bundled.isEmpty) return null;
+
+    // Read file contents and pack into the payload map. Any read failure
+    // falls through to the existing solo path, where the usual error handling
+    // applies per item.
+    final entries = <String, Uint8List>{};
+    try {
+      for (final e in bundled) {
+        for (final a in e.atts) {
+          entries[a.relativePath] = await File(a.fullPath).readAsBytes();
+        }
+      }
+    } catch (err, stackTrace) {
+      _loggingService.captureException(
+        err,
+        domain: 'OUTBOX',
+        subDomain: 'bundle.readFiles',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    _loggingService.captureEvent(
+      'bundle packing items=${bundled.length} files=${entries.length} '
+      'bytes=$bundleSize',
+      domain: 'OUTBOX',
+      subDomain: 'bundle.pack',
+    );
+    _syncLog(
+      'bundle pack items=${bundled.length} files=${entries.length} '
+      'bytes=$bundleSize',
+      subDomain: 'outbox.bundle.pack',
+    );
+
+    final bundleEventId = await _messageSender.sendAttachmentBundle(
+      entries: entries,
+    );
+    if (bundleEventId == null) {
+      for (final e in bundled) {
+        await _repository.markRetry(e.item);
+      }
+      _loggingService.captureEvent(
+        'bundle upload failed items=${bundled.length}',
+        domain: 'OUTBOX',
+        subDomain: 'bundle.fail',
+      );
+      return OutboxProcessingResult.schedule(errorDelay);
+    }
+    _loggingService.captureEvent(
+      'bundle uploaded eventId=$bundleEventId items=${bundled.length} '
+      'bytes=$bundleSize',
+      domain: 'OUTBOX',
+      subDomain: 'bundle.ok',
+    );
+
+    // Send each bundled item's text event. Per-item failures mark that item
+    // for retry without affecting the others.
+    final skipSet = entries.keys.toSet();
+    var anyFailure = false;
+    for (final e in bundled) {
+      final refreshed = await _repository.refreshItem(e.item);
+      if (refreshed == null) continue;
+      final SyncMessage msg;
+      try {
+        msg = _decodeMessage(refreshed);
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: 'OUTBOX',
+          subDomain: 'bundle.decode',
+          stackTrace: stackTrace,
+        );
+        await _repository.markRetry(refreshed);
+        anyFailure = true;
+        continue;
+      }
+      var timedOut = false;
+      final ok = await _messageSender
+          .send(msg, skipAttachmentPaths: skipSet)
+          .timeout(
+            sendTimeout,
+            onTimeout: () {
+              timedOut = true;
+              return false;
+            },
+          );
+      if (ok) {
+        await _repository.markSent(refreshed);
+      } else {
+        await _repository.markRetry(refreshed);
+        anyFailure = true;
+        _syncLog(
+          'bundle text-event sendFail subject=${refreshed.subject} '
+          'timedOut=$timedOut',
+          subDomain: 'outbox.bundle.retry',
+        );
+      }
+    }
+
+    final remaining = pending.length - bundled.length;
+    if (remaining > 0 || anyFailure) {
+      return OutboxProcessingResult.schedule(
+        anyFailure ? retryDelay : Duration.zero,
+      );
+    }
+    return OutboxProcessingResult.none;
   }
 }

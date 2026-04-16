@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 typedef MatrixMessageSentCallback =
     void Function(
@@ -158,6 +160,7 @@ class MatrixMessageSender {
         final normalized = await _sendJournalEntityPayload(
           room: room,
           message: outboundMessage,
+          skipAttachmentPaths: context.skipAttachmentPaths,
         );
         if (normalized == null) {
           _trace(
@@ -183,6 +186,7 @@ class MatrixMessageSender {
       final agentResult = await _enrichAndUploadAgentPayload(
         room: room,
         message: outboundMessage,
+        skipAttachmentPaths: context.skipAttachmentPaths,
       );
       if (agentResult == null) {
         _trace(
@@ -263,12 +267,86 @@ class MatrixMessageSender {
     }
   }
 
+  /// Packages the supplied relativePath→bytes [entries] into a single zip
+  /// archive and uploads it as one Matrix file event with
+  /// [attachmentBundleKey] set. The outer event's relativePath is
+  /// `.bundles/<bundleId>.zip`, a location no sync payload refers to, so
+  /// receivers that predate bundle support store the zip harmlessly while
+  /// newer receivers recognize the marker and unpack each entry to its
+  /// inner relativePath.
+  ///
+  /// Returns the Matrix event id on success, or null on failure.
+  Future<String?> sendAttachmentBundle({
+    required Room room,
+    required Map<String, Uint8List> entries,
+    String? bundleId,
+  }) async {
+    if (entries.isEmpty) return null;
+    final id = bundleId ?? const Uuid().v4();
+    final archive = Archive();
+    for (final entry in entries.entries) {
+      archive.addFile(
+        ArchiveFile(entry.key, entry.value.length, entry.value),
+      );
+    }
+    final encoded = ZipEncoder().encode(archive);
+    final zipBytes = encoded is Uint8List
+        ? encoded
+        : Uint8List.fromList(encoded);
+    final bundlePath = '.bundles/$id.zip';
+    try {
+      final eventId = await room.sendFileEvent(
+        MatrixFile(bytes: zipBytes, name: '$id.zip'),
+        extraContent: {
+          'relativePath': bundlePath,
+          attachmentBundleKey: true,
+        },
+      );
+      if (eventId == null) {
+        _loggingService.captureEvent(
+          'bundle send returned null id=$id count=${entries.length}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.bundle',
+        );
+        return null;
+      }
+      _loggingService.captureEvent(
+        'sent bundle id=$id count=${entries.length} '
+        'bytes=${zipBytes.length}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.bundle',
+      );
+      _sentEventRegistry.register(
+        eventId,
+        source: SentEventSource.file,
+      );
+      return eventId;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.bundle',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   Future<bool> _sendFile({
     required Room room,
     required String fullPath,
     required String relativePath,
     Uint8List? bytes,
+    Set<String> skipAttachmentPaths = const <String>{},
   }) async {
+    if (skipAttachmentPaths.contains(relativePath)) {
+      _loggingService.captureEvent(
+        'skipped $relativePath, already uploaded via bundle',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.bundled',
+      );
+      return true;
+    }
     try {
       final file = File(fullPath);
       // ignore: avoid_slow_async_io
@@ -358,6 +436,7 @@ class MatrixMessageSender {
   Future<SyncJournalEntity?> _sendJournalEntityPayload({
     required Room room,
     required SyncJournalEntity message,
+    Set<String> skipAttachmentPaths = const <String>{},
   }) async {
     final relativeJsonPath = p.joinAll(
       message.jsonPath.split('/').where((part) => part.isNotEmpty),
@@ -387,6 +466,7 @@ class MatrixMessageSender {
       fullPath: jsonFullPath,
       relativePath: message.jsonPath,
       bytes: jsonBytes,
+      skipAttachmentPaths: skipAttachmentPaths,
     );
 
     if (!jsonSent) {
@@ -503,6 +583,7 @@ class MatrixMessageSender {
             room: room,
             fullPath: audioPath,
             relativePath: AudioUtils.getRelativeAudioPath(journalAudio),
+            skipAttachmentPaths: skipAttachmentPaths,
           );
           attachmentsOk = attachmentsOk && sent;
         }
@@ -518,6 +599,7 @@ class MatrixMessageSender {
             room: room,
             fullPath: imagePath,
             relativePath: getRelativeImagePath(journalImage),
+            skipAttachmentPaths: skipAttachmentPaths,
           );
           attachmentsOk = attachmentsOk && sent;
         }
@@ -544,6 +626,7 @@ class MatrixMessageSender {
   Future<SyncMessage?> _enrichAndUploadAgentPayload({
     required Room room,
     required SyncMessage message,
+    Set<String> skipAttachmentPaths = const <String>{},
   }) async {
     final String? inlineJson;
     final String? jsonPath;
@@ -597,6 +680,7 @@ class MatrixMessageSender {
       room: room,
       relativePath: enrichedPath,
       logLabel: logLabel,
+      skipAttachmentPaths: skipAttachmentPaths,
     );
     if (!uploaded) return null;
 
@@ -619,6 +703,7 @@ class MatrixMessageSender {
     required Room room,
     required String relativePath,
     required String logLabel,
+    Set<String> skipAttachmentPaths = const <String>{},
   }) async {
     final relativeJoined = p.joinAll(
       relativePath.split('/').where((part) => part.isNotEmpty),
@@ -643,6 +728,7 @@ class MatrixMessageSender {
       fullPath: fullPath,
       relativePath: relativePath,
       bytes: jsonBytes,
+      skipAttachmentPaths: skipAttachmentPaths,
     );
   }
 
@@ -680,9 +766,16 @@ class MatrixMessageContext {
     required this.syncRoomId,
     required this.syncRoom,
     required this.unverifiedDevices,
+    this.skipAttachmentPaths = const <String>{},
   });
 
   final String? syncRoomId;
   final Room? syncRoom;
   final List<DeviceKeys> unverifiedDevices;
+
+  /// Relative paths whose file contents have already been uploaded out-of-band
+  /// (e.g. inside an attachment bundle) and must NOT be uploaded again during
+  /// this send. Short-circuits the per-file upload inside `_sendFile` while
+  /// keeping the surrounding vector-clock bookkeeping intact.
+  final Set<String> skipAttachmentPaths;
 }

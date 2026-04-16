@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
@@ -436,6 +437,7 @@ class MatrixService {
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
+    Set<String> skipAttachmentPaths = const <String>{},
   }) {
     var targetRoom = syncRoom;
     var targetRoomId = syncRoomId;
@@ -465,8 +467,31 @@ class MatrixService {
         syncRoomId: targetRoomId,
         syncRoom: targetRoom,
         unverifiedDevices: getUnverifiedDevices(),
+        skipAttachmentPaths: skipAttachmentPaths,
       ),
       onSent: (String _, SyncMessage _) => incrementSentCountOf(sentType),
+    );
+  }
+
+  /// Uploads a zip containing multiple sync attachment files as a single
+  /// Matrix event. See [MatrixMessageSender.sendAttachmentBundle] for the
+  /// wire format. Returns the bundle event id on success, or null on failure
+  /// or when no sync room is currently available.
+  Future<String?> sendAttachmentBundle({
+    required Map<String, Uint8List> entries,
+  }) async {
+    final room = syncRoom;
+    if (room == null) {
+      _loggingService.captureEvent(
+        'attachment bundle aborted: no sync room',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendAttachmentBundle',
+      );
+      return null;
+    }
+    return _messageSender.sendAttachmentBundle(
+      room: room,
+      entries: entries,
     );
   }
 

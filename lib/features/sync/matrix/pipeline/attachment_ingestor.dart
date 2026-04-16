@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -381,6 +382,18 @@ class AttachmentIngestor {
         return false;
       }
 
+      // Bundle attachments ship a zip whose entries are addressed by their
+      // real relative paths. Unpack each entry via the same target-file +
+      // agent-dedup logic used for individual attachments and skip writing
+      // the outer zip itself to disk.
+      if (event.content[attachmentBundleKey] == true) {
+        return _unpackBundle(
+          bundleRelativePath: relativePath,
+          downloadedBytes: downloadedBytes,
+          logging: logging,
+        );
+      }
+
       final bytes = decodeAttachmentBytes(
         event: event,
         downloadedBytes: downloadedBytes,
@@ -421,6 +434,61 @@ class AttachmentIngestor {
       );
       return false;
     }
+  }
+
+  /// Unpacks a zip bundle. Each entry's name is its target relative path
+  /// inside the documents directory. Entries are routed through
+  /// [_targetFile] for path-traversal guarding and apply the same non-agent
+  /// dedup rule as single-file saves: if a non-agent file already exists and
+  /// is non-empty locally, skip it. Agent-payload entries are always
+  /// overwritten to match single-file semantics.
+  Future<bool> _unpackBundle({
+    required String bundleRelativePath,
+    required Uint8List downloadedBytes,
+    required LoggingService logging,
+  }) async {
+    final docDir = documentsDirectory;
+    if (docDir == null) return false;
+    final archive = ZipDecoder().decodeBytes(downloadedBytes);
+    var writtenCount = 0;
+    var totalBytes = 0;
+    var skippedCount = 0;
+    for (final entry in archive) {
+      if (!entry.isFile) continue;
+      final entryPath = entry.name;
+      final target = _targetFile(entryPath);
+      if (target == null) {
+        logging.captureEvent(
+          'pathTraversal.blocked bundleEntry=$entryPath '
+          'outer=$bundleRelativePath',
+          domain: syncLoggingDomain,
+          subDomain: 'attachment.bundle.entry',
+        );
+        continue;
+      }
+      final isAgentPayload = isAgentPayloadPath(entryPath);
+      if (!isAgentPayload && target.existsSync() && target.lengthSync() > 0) {
+        skippedCount++;
+        continue;
+      }
+      final bytes = entry.content;
+      await atomicWriteBytes(
+        bytes: bytes,
+        filePath: target.path,
+        logging: logging,
+        subDomain: 'attachment.bundle.write',
+      );
+      writtenCount++;
+      totalBytes += bytes.length;
+    }
+    logging.captureEvent(
+      'bundleUnpacked outer=$bundleRelativePath '
+      'entries=${archive.length} written=$writtenCount '
+      'skipped=$skippedCount bytes=$totalBytes',
+      domain: syncLoggingDomain,
+      subDomain: 'attachment.bundle.unpack',
+    );
+    return writtenCount > 0;
   }
 }
 

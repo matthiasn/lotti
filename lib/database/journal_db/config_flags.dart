@@ -117,6 +117,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: useBundledAttachmentsFlag,
+      description: 'Pack multiple sync attachments into one zip on send?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableAgentsFlag,
       description: 'Enable Agents?',
       status: false,

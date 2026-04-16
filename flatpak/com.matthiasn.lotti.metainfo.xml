@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.955" date="2026-04-17">
+      <description>
+          <p>Outbox attachment bundling: when the new config flag is on, pending sync items' attachment files are packed into a single zip (capped at 8 MiB) and uploaded as one Matrix file event, collapsing many per-file uploads into one round-trip over slow links. Items whose own attachments exceed the cap fall through to the existing per-file path. Receivers recognize the bundle marker and unpack entries to their target paths unconditionally, so enabling bundling on a single device stays compatible with peers already on this release.</p>
+      </description>
+    </release>
     <release version="0.9.954" date="2026-04-17">
       <description>
           <p>Optional gzip compression for JSON sync attachments over Matrix, gated by a new config flag that is off by default. Receivers always decompress when the encoding marker is present on an attachment event, so turning compression on for a single device stays compatible with peers on this release. Only .json attachments are compressed; media files are already on compressed formats and skip the branch.</p>

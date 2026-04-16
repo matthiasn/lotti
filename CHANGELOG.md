@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.955] - 2026-04-17
+### Added
+- Outbox attachment bundling: when the `use_bundled_attachments` config flag
+  is on (off by default), the outbox packs as many pending items' attachment
+  files as fit into a single zip capped at 8 MiB and uploads the bundle as
+  one Matrix file event, then sends each bundled item's text event with the
+  bundled paths short-circuited. Items whose own attachments exceed the cap
+  fall through to the existing single-item send path. Receivers recognize
+  the `com.lotti.bundle` event marker and unpack the zip to each entry's
+  target relative path unconditionally, so turning the flag on is forward-
+  compatible with peers already on this release.
+- Attachment enumerator that derives the file-on-disk set (JSON plus any
+  journal audio/image file) for a `SyncMessage`. Used by the outbox bundling
+  path and available for future packing strategies.
+
 ## [0.9.954] - 2026-04-17
 ### Added
 - Optional gzip compression for JSON sync attachments, gated by the

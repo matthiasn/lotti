@@ -1,13 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1019,6 +1025,280 @@ void main() {
         // item2 sent successfully, no more items
         expect(result2.shouldSchedule, isFalse);
         verify(() => sender.send(any())).called(1);
+      },
+    );
+  });
+
+  group('attachment bundling', () {
+    Metadata meta(String id) {
+      final ts = DateTime(2026, 4, 17, 12);
+      return Metadata(
+        id: id,
+        createdAt: ts,
+        updatedAt: ts,
+        dateFrom: ts,
+        dateTo: ts,
+      );
+    }
+
+    OutboxItem pendingFor({
+      required int id,
+      required String entryId,
+      required String jsonPath,
+    }) {
+      return OutboxItem(
+        id: id,
+        message: jsonEncode(
+          SyncMessage.journalEntity(
+            id: entryId,
+            jsonPath: jsonPath,
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ).toJson(),
+        ),
+        subject: 'host:$id',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2026, 4, 17),
+        updatedAt: DateTime(2026, 4, 17),
+        priority: OutboxPriority.low.index,
+      );
+    }
+
+    test(
+      'bundles two pending items when flag is on and items fit under cap',
+      () async {
+        final tmp = Directory.systemTemp.createTempSync('outbox_bundle_test');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+        final db = MockJournalDb();
+
+        final entity1 = JournalEntity.journalEntry(
+          meta: meta('e1'),
+          entryText: const EntryText(plainText: 'Entry one'),
+        );
+        final entity2 = JournalEntity.journalEntry(
+          meta: meta('e2'),
+          entryText: const EntryText(plainText: 'Entry two'),
+        );
+        final jsonPath1 = relativeEntityPath(entity1);
+        final jsonPath2 = relativeEntityPath(entity2);
+        File('${tmp.path}$jsonPath1')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity1.toJson()));
+        File('${tmp.path}$jsonPath2')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity2.toJson()));
+
+        final item1 = pendingFor(id: 1, entryId: 'e1', jsonPath: jsonPath1);
+        final item2 = pendingFor(id: 2, entryId: 'e2', jsonPath: jsonPath2);
+
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item1, item2]);
+        when(() => repo.refreshItem(item1)).thenAnswer((_) async => item1);
+        when(() => repo.refreshItem(item2)).thenAnswer((_) async => item2);
+        when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+        when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+        when(
+          () => db.getConfigFlag(useBundledAttachmentsFlag),
+        ).thenAnswer((_) async => true);
+        final capturedBundles = <Map<String, Uint8List>>[];
+        when(
+          () => sender.sendAttachmentBundle(
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedBundles.add(
+            invocation.namedArguments[#entries] as Map<String, Uint8List>,
+          );
+          return r'$bundle-id';
+        });
+        final capturedSkipSets = <Set<String>>[];
+        when(
+          () => sender.send(
+            any(),
+            skipAttachmentPaths: any<Set<String>>(
+              named: 'skipAttachmentPaths',
+            ),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedSkipSets.add(
+            invocation.namedArguments[#skipAttachmentPaths] as Set<String>,
+          );
+          return true;
+        });
+        when(
+          () => log.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          journalDb: db,
+          documentsDirectory: tmp,
+        );
+
+        final result = await proc.processQueue();
+
+        // Bundle must have been uploaded once with both items' jsonPaths.
+        expect(capturedBundles, hasLength(1));
+        expect(
+          capturedBundles.single.keys.toSet(),
+          equals({jsonPath1, jsonPath2}),
+        );
+        // Both items' text events must have been sent with the skip set
+        // containing both paths.
+        expect(capturedSkipSets, hasLength(2));
+        for (final s in capturedSkipSets) {
+          expect(s, equals({jsonPath1, jsonPath2}));
+        }
+        verify(() => repo.markSent(item1)).called(1);
+        verify(() => repo.markSent(item2)).called(1);
+        verifyNever(() => repo.markRetry(any<OutboxItem>()));
+        // Everything drained this tick → no more schedule.
+        expect(result.shouldSchedule, isFalse);
+      },
+    );
+
+    test(
+      'falls through to head-only flow when flag is off',
+      () async {
+        final tmp = Directory.systemTemp.createTempSync('outbox_bundle_off');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+        final db = MockJournalDb();
+
+        final entity = JournalEntity.journalEntry(
+          meta: meta('off-1'),
+          entryText: const EntryText(plainText: 'x'),
+        );
+        final jsonPath = relativeEntityPath(entity);
+        File('${tmp.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+        final item = pendingFor(
+          id: 1,
+          entryId: 'off-1',
+          jsonPath: jsonPath,
+        );
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item]);
+        when(() => repo.refreshItem(item)).thenAnswer((_) async => item);
+        when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+        when(
+          () => db.getConfigFlag(useBundledAttachmentsFlag),
+        ).thenAnswer((_) async => false);
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        when(
+          () => log.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          journalDb: db,
+          documentsDirectory: tmp,
+        );
+
+        await proc.processQueue();
+
+        // Bundle upload must NOT have happened.
+        verifyNever(
+          () => sender.sendAttachmentBundle(
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        );
+        // Regular send path ran for the head item.
+        verify(() => sender.send(any())).called(1);
+      },
+    );
+
+    test(
+      'bundle upload failure marks bundled items for retry',
+      () async {
+        final tmp = Directory.systemTemp.createTempSync('outbox_bundle_fail');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+        final db = MockJournalDb();
+
+        final entity = JournalEntity.journalEntry(
+          meta: meta('fail-1'),
+          entryText: const EntryText(plainText: 'x'),
+        );
+        final jsonPath = relativeEntityPath(entity);
+        File('${tmp.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+        final item = pendingFor(
+          id: 1,
+          entryId: 'fail-1',
+          jsonPath: jsonPath,
+        );
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item]);
+        when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+        when(
+          () => db.getConfigFlag(useBundledAttachmentsFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => sender.sendAttachmentBundle(
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => log.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          journalDb: db,
+          documentsDirectory: tmp,
+          errorDelayOverride: const Duration(seconds: 1),
+        );
+
+        final result = await proc.processQueue();
+
+        verify(() => repo.markRetry(item)).called(1);
+        verifyNever(
+          () => sender.send(
+            any(),
+            skipAttachmentPaths: any<Set<String>>(
+              named: 'skipAttachmentPaths',
+            ),
+          ),
+        );
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, const Duration(seconds: 1));
       },
     );
   });

@@ -1623,7 +1623,20 @@ class MatrixOutboxMessageSender implements OutboxMessageSender {
   final MatrixService _matrixService;
 
   @override
-  Future<bool> send(SyncMessage message) {
-    return _matrixService.sendMatrixMsg(message);
+  Future<bool> send(
+    SyncMessage message, {
+    Set<String> skipAttachmentPaths = const <String>{},
+  }) {
+    return _matrixService.sendMatrixMsg(
+      message,
+      skipAttachmentPaths: skipAttachmentPaths,
+    );
+  }
+
+  @override
+  Future<String?> sendAttachmentBundle({
+    required Map<String, Uint8List> entries,
+  }) {
+    return _matrixService.sendAttachmentBundle(entries: entries);
   }
 }
