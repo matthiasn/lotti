@@ -3594,12 +3594,6 @@ abstract class AppLocalizations {
   /// **'All items completed!'**
   String get checklistAllDone;
 
-  /// No description provided for @checklistNoneDone.
-  ///
-  /// In en, this message translates to:
-  /// **'No completed items yet.'**
-  String get checklistNoneDone;
-
   /// No description provided for @checklistCompletedShort.
   ///
   /// In en, this message translates to:
@@ -3719,6 +3713,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get checklistMoreTooltip;
+
+  /// No description provided for @checklistNoneDone.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed items yet.'**
+  String get checklistNoneDone;
 
   /// No description provided for @checklistNoSuggestionsTitle.
   ///
@@ -4079,6 +4079,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use cloud-based AI services for enhanced features. This requires an internet connection.'**
   String get configFlagUseCloudInferenceDescription;
+
+  /// No description provided for @configFlagUseCompressedJsonAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Compress JSON sync payloads'**
+  String get configFlagUseCompressedJsonAttachments;
+
+  /// No description provided for @configFlagUseCompressedJsonAttachmentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.'**
+  String get configFlagUseCompressedJsonAttachmentsDescription;
 
   /// No description provided for @conflictEntityLabel.
   ///
@@ -4955,30 +4967,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete device'**
   String get deleteDeviceLabel;
-
-  /// No description provided for @desktopEmptyStateSelectDashboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a dashboard to view details'**
-  String get desktopEmptyStateSelectDashboard;
-
-  /// No description provided for @desktopEmptyStateSelectProject.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a project to view details'**
-  String get desktopEmptyStateSelectProject;
-
-  /// No description provided for @desktopEmptyStateSelectSetting.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a setting to view details'**
-  String get desktopEmptyStateSelectSetting;
-
-  /// No description provided for @desktopEmptyStateSelectTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a task to view details'**
-  String get desktopEmptyStateSelectTask;
 
   /// No description provided for @designSystemActivatedLabel.
   ///
@@ -6036,6 +6024,30 @@ abstract class AppLocalizations {
   /// **'With label'**
   String get designSystemWithLabelLabel;
 
+  /// No description provided for @desktopEmptyStateSelectDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a dashboard to view details'**
+  String get desktopEmptyStateSelectDashboard;
+
+  /// No description provided for @desktopEmptyStateSelectProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a project to view details'**
+  String get desktopEmptyStateSelectProject;
+
+  /// No description provided for @desktopEmptyStateSelectSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a setting to view details'**
+  String get desktopEmptyStateSelectSetting;
+
+  /// No description provided for @desktopEmptyStateSelectTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task to view details'**
+  String get desktopEmptyStateSelectTask;
+
   /// No description provided for @deviceDeletedSuccess.
   ///
   /// In en, this message translates to:
@@ -6312,12 +6324,6 @@ abstract class AppLocalizations {
   /// **'Favorite'**
   String get favoriteLabel;
 
-  /// No description provided for @inactiveLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Inactive'**
-  String get inactiveLabel;
-
   /// No description provided for @fileMenuNewEllipsis.
   ///
   /// In en, this message translates to:
@@ -6569,6 +6575,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Images'**
   String get images;
+
+  /// No description provided for @inactiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactiveLabel;
 
   /// No description provided for @inferenceProfileCreateTitle.
   ///
@@ -9124,18 +9136,6 @@ abstract class AppLocalizations {
   /// **'Failed to load labels'**
   String get settingsLabelsErrorLoading;
 
-  /// No description provided for @settingsLabelsNoMatchCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Create \"{query}\" label'**
-  String settingsLabelsNoMatchCreate(String query);
-
-  /// No description provided for @settingsLabelsNoMatchQuery.
-  ///
-  /// In en, this message translates to:
-  /// **'No labels match \"{query}\"'**
-  String settingsLabelsNoMatchQuery(String query);
-
   /// No description provided for @settingsLabelsNameHint.
   ///
   /// In en, this message translates to:
@@ -9153,6 +9153,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Label name must not be empty.'**
   String get settingsLabelsNameRequired;
+
+  /// No description provided for @settingsLabelsNoMatchCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create \"{query}\" label'**
+  String settingsLabelsNoMatchCreate(String query);
+
+  /// No description provided for @settingsLabelsNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No labels match \"{query}\"'**
+  String settingsLabelsNoMatchQuery(String query);
 
   /// No description provided for @settingsLabelsPrivateDescription.
   ///

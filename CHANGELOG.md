@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   compatible once the flag is flipped on. Only `.json` attachment paths are
   compressed; media files are already on compressed formats and skip the
   branch.
+- The new compression flag is toggleable from Settings → Flags, with
+  localized labels and descriptions across all supported languages.
 
 ## [0.9.953] - 2026-04-16
 ### Fixed

@@ -2047,9 +2047,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistAllDone => 'Toate elementele sunt finalizate!';
 
   @override
-  String get checklistNoneDone => 'Niciun element finalizat încă.';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total finalizate';
   }
@@ -2115,6 +2112,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checklistMoreTooltip => 'Mai mult';
+
+  @override
+  String get checklistNoneDone => 'Niciun element finalizat încă.';
 
   @override
   String get checklistNoSuggestionsTitle => 'Nu există sugestii de acțiuni';
@@ -2321,6 +2321,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
+
+  @override
+  String get configFlagUseCompressedJsonAttachments =>
+      'Comprimă payload-urile JSON de sincronizare';
+
+  @override
+  String get configFlagUseCompressedJsonAttachmentsDescription =>
+      'Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.';
 
   @override
   String get conflictEntityLabel => 'Entitate';
@@ -2817,22 +2825,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteDeviceLabel => 'Șterge dispozitivul';
-
-  @override
-  String get desktopEmptyStateSelectDashboard =>
-      'Selectați un tablou de bord pentru a vedea detaliile';
-
-  @override
-  String get desktopEmptyStateSelectProject =>
-      'Selectați un proiect pentru a vedea detaliile';
-
-  @override
-  String get desktopEmptyStateSelectSetting =>
-      'Selectați o setare pentru a vedea detaliile';
-
-  @override
-  String get desktopEmptyStateSelectTask =>
-      'Selectați o sarcină pentru a vedea detaliile';
 
   @override
   String get designSystemActivatedLabel => 'Activ';
@@ -3385,6 +3377,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemWithLabelLabel => 'Cu etichetă';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Selectați un tablou de bord pentru a vedea detaliile';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Selectați un proiect pentru a vedea detaliile';
+
+  @override
+  String get desktopEmptyStateSelectSetting =>
+      'Selectați o setare pentru a vedea detaliile';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Selectați o sarcină pentru a vedea detaliile';
+
+  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Dispozitivul $deviceName a fost șters cu succes';
   }
@@ -3538,9 +3546,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get favoriteLabel => 'Favorit';
 
   @override
-  String get inactiveLabel => 'Inactiv';
-
-  @override
   String get fileMenuNewEllipsis => 'Nou ...';
 
   @override
@@ -3680,6 +3685,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get images => 'Imagini';
+
+  @override
+  String get inactiveLabel => 'Inactiv';
 
   @override
   String get inferenceProfileCreateTitle => 'Creați un profil';
@@ -5196,6 +5204,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Eșec la încărcarea etichetelor';
 
   @override
+  String get settingsLabelsNameHint => 'Bug, Blocant, Sincronizare…';
+
+  @override
+  String get settingsLabelsNameLabel => 'Nume etichetă';
+
+  @override
+  String get settingsLabelsNameRequired => 'Numele etichetei nu poate fi gol.';
+
+  @override
   String settingsLabelsNoMatchCreate(String query) {
     return 'Creați eticheta \"$query\"';
   }
@@ -5204,15 +5221,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String settingsLabelsNoMatchQuery(String query) {
     return 'Nicio etichetă nu corespunde cu \"$query\"';
   }
-
-  @override
-  String get settingsLabelsNameHint => 'Bug, Blocant, Sincronizare…';
-
-  @override
-  String get settingsLabelsNameLabel => 'Nume etichetă';
-
-  @override
-  String get settingsLabelsNameRequired => 'Numele etichetei nu poate fi gol.';
 
   @override
   String get settingsLabelsPrivateDescription =>

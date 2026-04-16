@@ -2013,9 +2013,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistAllDone => 'All items completed!';
 
   @override
-  String get checklistNoneDone => 'No completed items yet.';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total done';
   }
@@ -2078,6 +2075,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistMoreTooltip => 'More';
+
+  @override
+  String get checklistNoneDone => 'No completed items yet.';
 
   @override
   String get checklistNoSuggestionsTitle => 'No suggested Action Items';
@@ -2281,6 +2281,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagUseCloudInferenceDescription =>
       'Use cloud-based AI services for enhanced features. This requires an internet connection.';
+
+  @override
+  String get configFlagUseCompressedJsonAttachments =>
+      'Compress JSON sync payloads';
+
+  @override
+  String get configFlagUseCompressedJsonAttachmentsDescription =>
+      'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.';
 
   @override
   String get conflictEntityLabel => 'Entity';
@@ -2770,21 +2778,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteDeviceLabel => 'Delete device';
-
-  @override
-  String get desktopEmptyStateSelectDashboard =>
-      'Select a dashboard to view details';
-
-  @override
-  String get desktopEmptyStateSelectProject =>
-      'Select a project to view details';
-
-  @override
-  String get desktopEmptyStateSelectSetting =>
-      'Select a setting to view details';
-
-  @override
-  String get desktopEmptyStateSelectTask => 'Select a task to view details';
 
   @override
   String get designSystemActivatedLabel => 'Activated';
@@ -3334,6 +3327,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemWithLabelLabel => 'With label';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Select a dashboard to view details';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Select a project to view details';
+
+  @override
+  String get desktopEmptyStateSelectSetting =>
+      'Select a setting to view details';
+
+  @override
+  String get desktopEmptyStateSelectTask => 'Select a task to view details';
+
+  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Device $deviceName deleted successfully';
   }
@@ -3487,9 +3495,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoriteLabel => 'Favorite';
 
   @override
-  String get inactiveLabel => 'Inactive';
-
-  @override
   String get fileMenuNewEllipsis => 'New ...';
 
   @override
@@ -3627,6 +3632,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get images => 'Images';
+
+  @override
+  String get inactiveLabel => 'Inactive';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -5102,6 +5110,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
+  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
+
+  @override
+  String get settingsLabelsNameLabel => 'Label name';
+
+  @override
+  String get settingsLabelsNameRequired => 'Label name must not be empty.';
+
+  @override
   String settingsLabelsNoMatchCreate(String query) {
     return 'Create \"$query\" label';
   }
@@ -5110,15 +5127,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsLabelsNoMatchQuery(String query) {
     return 'No labels match \"$query\"';
   }
-
-  @override
-  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
-
-  @override
-  String get settingsLabelsNameLabel => 'Label name';
-
-  @override
-  String get settingsLabelsNameRequired => 'Label name must not be empty.';
 
   @override
   String get settingsLabelsPrivateDescription =>
