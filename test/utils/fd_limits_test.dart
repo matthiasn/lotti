@@ -59,6 +59,44 @@ void main() {
       expect(adjustment.toString(), contains('FdLimitAdjustment'));
       expect(adjustment.toString(), contains('target='));
     });
+
+    test('toString surfaces the error when one was captured', () {
+      const adjustment = FdLimitAdjustment(
+        softBefore: -1,
+        hardBefore: -1,
+        softAfter: -1,
+        hardAfter: -1,
+        target: 10240,
+        raised: false,
+        error: 'synthetic failure',
+      );
+      final text = adjustment.toString();
+      expect(text, contains('FdLimitAdjustment'));
+      expect(text, contains('target=10240'));
+      expect(text, contains('synthetic failure'));
+      // Error form must not include the before/after detail.
+      expect(text, isNot(contains('soft ')));
+    });
+
+    test('FdLimitAdjustment exposes all fields as provided', () {
+      const adjustment = FdLimitAdjustment(
+        softBefore: 256,
+        hardBefore: 65536,
+        softAfter: 10240,
+        hardAfter: 65536,
+        target: 10240,
+        raised: true,
+      );
+      expect(adjustment.softBefore, 256);
+      expect(adjustment.hardBefore, 65536);
+      expect(adjustment.softAfter, 10240);
+      expect(adjustment.hardAfter, 65536);
+      expect(adjustment.target, 10240);
+      expect(adjustment.raised, isTrue);
+      expect(adjustment.error, isNull);
+      expect(adjustment.toString(), contains('soft 256 -> 10240'));
+      expect(adjustment.toString(), contains('raised=true'));
+    });
   });
 
   group('readFileDescriptorLimits', () {

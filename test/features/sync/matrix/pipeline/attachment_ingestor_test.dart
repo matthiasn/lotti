@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
@@ -484,6 +485,96 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'annotates EMFILE (errno 24) FileSystemException with FD limits',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_emfile');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_emfile');
+        when(
+          () => ev.content,
+        ).thenReturn({
+          'relativePath': '/data/emfile.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(ev.downloadAndDecryptAttachment).thenThrow(
+          const FileSystemException(
+            'Cannot open file',
+            '/data/emfile.json',
+            OSError('Too many open files', 24),
+          ),
+        );
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/data/emfile.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result, isFalse);
+
+        // The EMFILE-specific diagnostic event is emitted at warn level,
+        // carrying the current FD limits alongside the path.
+        verify(
+          () => logging.captureEvent(
+            any<String>(that: contains('emfile path=/data/emfile.json')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.save.emfile',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+
+        // The original exception is still logged through captureException.
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.save',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('overwrites stale agent entity file instead of deduping', () async {
       final logging = MockLoggingService();
