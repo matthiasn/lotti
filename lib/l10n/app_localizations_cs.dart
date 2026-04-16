@@ -2030,9 +2030,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistAllDone => 'Všechny položky splněny!';
 
   @override
-  String get checklistNoneDone => 'Zatím žádné dokončené položky.';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total hotovo';
   }
@@ -2097,6 +2094,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checklistMoreTooltip => 'Více';
+
+  @override
+  String get checklistNoneDone => 'Zatím žádné dokončené položky.';
 
   @override
   String get checklistNoSuggestionsTitle => 'Žádné navrhované akční položky';
@@ -2300,6 +2300,14 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagUseCloudInferenceDescription =>
       'Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.';
+
+  @override
+  String get configFlagUseCompressedJsonAttachments =>
+      'Komprimovat JSON payloady synchronizace';
+
+  @override
+  String get configFlagUseCompressedJsonAttachmentsDescription =>
+      'Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.';
 
   @override
   String get conflictEntityLabel => 'Entita';
@@ -2788,22 +2796,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get deleteDeviceLabel => 'Odstranit zařízení';
-
-  @override
-  String get desktopEmptyStateSelectDashboard =>
-      'Vyber nástěnku pro zobrazení podrobností';
-
-  @override
-  String get desktopEmptyStateSelectProject =>
-      'Vyber projekt pro zobrazení podrobností';
-
-  @override
-  String get desktopEmptyStateSelectSetting =>
-      'Vyber nastavení pro zobrazení podrobností';
-
-  @override
-  String get desktopEmptyStateSelectTask =>
-      'Vyber úkol pro zobrazení podrobností';
 
   @override
   String get designSystemActivatedLabel => 'Aktivní';
@@ -3357,6 +3349,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemWithLabelLabel => 'Se štítkem';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Vyber nástěnku pro zobrazení podrobností';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Vyber projekt pro zobrazení podrobností';
+
+  @override
+  String get desktopEmptyStateSelectSetting =>
+      'Vyber nastavení pro zobrazení podrobností';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Vyber úkol pro zobrazení podrobností';
+
+  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Zařízení $deviceName bylo úspěšně odstraněno';
   }
@@ -3510,9 +3518,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get favoriteLabel => 'Oblíbené';
 
   @override
-  String get inactiveLabel => 'Neaktivní';
-
-  @override
   String get fileMenuNewEllipsis => 'Nový ...';
 
   @override
@@ -3650,6 +3655,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get images => 'Obrázky';
+
+  @override
+  String get inactiveLabel => 'Neaktivní';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -5165,16 +5173,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Nepodařilo se načíst štítky';
 
   @override
-  String settingsLabelsNoMatchCreate(String query) {
-    return 'Vytvořit štítek \"$query\"';
-  }
-
-  @override
-  String settingsLabelsNoMatchQuery(String query) {
-    return 'Žádný štítek neodpovídá \"$query\"';
-  }
-
-  @override
   String get settingsLabelsNameHint =>
       'Chyba, Zabránění vydání, Synchronizace…';
 
@@ -5183,6 +5181,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsLabelsNameRequired => 'Název štítku nesmí být prázdný.';
+
+  @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Vytvořit štítek \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Žádný štítek neodpovídá \"$query\"';
+  }
 
   @override
   String get settingsLabelsPrivateDescription =>

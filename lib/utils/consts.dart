@@ -13,6 +13,7 @@ const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
+const useCompressedJsonAttachmentsFlag = 'use_compressed_json_attachments';
 const enableAgentsFlag = 'enable_agents';
 const enableProjectsFlag = 'enable_projects';
 const enableEmbeddingsFlag = 'enable_embeddings';

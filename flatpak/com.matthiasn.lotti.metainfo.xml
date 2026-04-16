@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.954" date="2026-04-17">
+      <description>
+          <p>Optional gzip compression for JSON sync attachments over Matrix, gated by a new config flag that is off by default. Receivers always decompress when the encoding marker is present on an attachment event, so turning compression on for a single device stays compatible with peers on this release. Only .json attachments are compressed; media files are already on compressed formats and skip the branch.</p>
+      </description>
+    </release>
     <release version="0.9.953" date="2026-04-16">
       <description>
           <p>Raise the open file descriptor soft limit to 10,240 at startup on macOS and Linux. The legacy 256 limit inherited by GUI apps on macOS was trivially exhausted under real-world load, which under slow-network conditions manifested as sporadic EMFILE errors on the Matrix sync pipeline and cascading DNS lookup failures until the app was restarted.</p>

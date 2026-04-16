@@ -1132,7 +1132,6 @@
   "checklistAiSuggestionBody": "This item appears to be completed:",
   "checklistAiSuggestionTitle": "AI Suggestion",
   "checklistAllDone": "All items completed!",
-  "checklistNoneDone": "No completed items yet.",
   "checklistCompletedShort": "{completed}/{total} done",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -1170,6 +1169,7 @@
   "checklistItemUnarchived": "Item unarchived",
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
+  "checklistNoneDone": "No completed items yet.",
   "checklistNoSuggestionsTitle": "No suggested Action Items",
   "checklistNothingToExport": "No items to export",
   "checklistProgressSemantics": "Checklist progress",
@@ -1230,6 +1230,8 @@
   "configFlagResendAttachments": "Resend attachments",
   "configFlagResendAttachmentsDescription": "Enable this to automatically resend failed attachment uploads when the connection is restored.",
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
+  "configFlagUseCompressedJsonAttachments": "Compress JSON sync payloads",
+  "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
   "conflictEntityLabel": "Entity",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Copy Text from Sync",
@@ -1462,10 +1464,6 @@
   "defaultLanguage": "Default Language",
   "deleteButton": "Delete",
   "deleteDeviceLabel": "Delete device",
-  "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
-  "desktopEmptyStateSelectProject": "Select a project to view details",
-  "desktopEmptyStateSelectSetting": "Select a setting to view details",
-  "desktopEmptyStateSelectTask": "Select a task to view details",
   "designSystemActivatedLabel": "Activated",
   "designSystemAvatarAwayLabel": "Away",
   "designSystemAvatarBusyLabel": "Busy",
@@ -1680,6 +1678,10 @@
   "designSystemWarningLabel": "Warning",
   "designSystemWeeklyCalendarLabel": "Weekly Calendar",
   "designSystemWithLabelLabel": "With label",
+  "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
+  "desktopEmptyStateSelectProject": "Select a project to view details",
+  "desktopEmptyStateSelectSetting": "Select a setting to view details",
+  "desktopEmptyStateSelectTask": "Select a task to view details",
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
   "@deviceDeletedSuccess": {
     "placeholders": {
@@ -1740,7 +1742,6 @@
   "errorLoadingPrompts": "Error loading prompts",
   "eventNameLabel": "Event:",
   "favoriteLabel": "Favorite",
-  "inactiveLabel": "Inactive",
   "fileMenuNewEllipsis": "New ...",
   "fileMenuNewEntry": "New Entry",
   "fileMenuNewScreenshot": "Screenshot",
@@ -1797,6 +1798,7 @@
   "imagePromptGenerationExpandTooltip": "Show full prompt",
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "images": "Images",
+  "inactiveLabel": "Inactive",
   "inferenceProfileCreateTitle": "Create Profile",
   "inferenceProfileDeleteInUseMessage": "This profile is in use by agents or templates and cannot be deleted.",
   "inferenceProfileDescriptionLabel": "Description",
@@ -2419,6 +2421,9 @@
   "settingsLabelsEmptyState": "No labels yet",
   "settingsLabelsEmptyStateHint": "Tap the + button to create your first label.",
   "settingsLabelsErrorLoading": "Failed to load labels",
+  "settingsLabelsNameHint": "Bug, Release blocker, Sync…",
+  "settingsLabelsNameLabel": "Label name",
+  "settingsLabelsNameRequired": "Label name must not be empty.",
   "settingsLabelsNoMatchCreate": "Create \"{query}\" label",
   "@settingsLabelsNoMatchCreate": {
     "placeholders": {
@@ -2435,9 +2440,6 @@
       }
     }
   },
-  "settingsLabelsNameHint": "Bug, Release blocker, Sync…",
-  "settingsLabelsNameLabel": "Label name",
-  "settingsLabelsNameRequired": "Label name must not be empty.",
   "settingsLabelsPrivateDescription": "Private labels only appear when “Show private entries” is enabled.",
   "settingsLabelsPrivateTitle": "Private label",
   "settingsLabelsSearchHint": "Search labels…",

@@ -2048,9 +2048,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistAllDone => 'Alle Punkte erledigt!';
 
   @override
-  String get checklistNoneDone => 'Noch keine erledigten Punkte.';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total erledigt';
   }
@@ -2114,6 +2111,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistMoreTooltip => 'Mehr';
+
+  @override
+  String get checklistNoneDone => 'Noch keine erledigten Punkte.';
 
   @override
   String get checklistNoSuggestionsTitle =>
@@ -2318,6 +2318,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagUseCloudInferenceDescription =>
       'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
+
+  @override
+  String get configFlagUseCompressedJsonAttachments =>
+      'JSON-Sync-Payloads komprimieren';
+
+  @override
+  String get configFlagUseCompressedJsonAttachmentsDescription =>
+      'Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.';
 
   @override
   String get conflictEntityLabel => 'Entität';
@@ -2816,22 +2824,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteDeviceLabel => 'Gerät löschen';
-
-  @override
-  String get desktopEmptyStateSelectDashboard =>
-      'Wähle ein Dashboard aus, um Details anzuzeigen';
-
-  @override
-  String get desktopEmptyStateSelectProject =>
-      'Wähle ein Projekt aus, um Details anzuzeigen';
-
-  @override
-  String get desktopEmptyStateSelectSetting =>
-      'Wähle eine Einstellung aus, um Details anzuzeigen';
-
-  @override
-  String get desktopEmptyStateSelectTask =>
-      'Wähle eine Aufgabe aus, um Details anzuzeigen';
 
   @override
   String get designSystemActivatedLabel => 'Aktiv';
@@ -3381,6 +3373,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemWithLabelLabel => 'Mit Label';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Wähle ein Dashboard aus, um Details anzuzeigen';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Wähle ein Projekt aus, um Details anzuzeigen';
+
+  @override
+  String get desktopEmptyStateSelectSetting =>
+      'Wähle eine Einstellung aus, um Details anzuzeigen';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Wähle eine Aufgabe aus, um Details anzuzeigen';
+
+  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Gerät $deviceName erfolgreich gelöscht';
   }
@@ -3535,9 +3543,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get favoriteLabel => 'Favorit';
 
   @override
-  String get inactiveLabel => 'Inaktiv';
-
-  @override
   String get fileMenuNewEllipsis => 'Neu ...';
 
   @override
@@ -3678,6 +3683,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get images => 'Bilder';
+
+  @override
+  String get inactiveLabel => 'Inaktiv';
 
   @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';
@@ -5175,6 +5183,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Failed to load labels';
 
   @override
+  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
+
+  @override
+  String get settingsLabelsNameLabel => 'Label name';
+
+  @override
+  String get settingsLabelsNameRequired => 'Label name must not be empty.';
+
+  @override
   String settingsLabelsNoMatchCreate(String query) {
     return 'Label \"$query\" erstellen';
   }
@@ -5183,15 +5200,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String settingsLabelsNoMatchQuery(String query) {
     return 'Keine Labels passend zu \"$query\"';
   }
-
-  @override
-  String get settingsLabelsNameHint => 'Bug, Release blocker, Sync…';
-
-  @override
-  String get settingsLabelsNameLabel => 'Label name';
-
-  @override
-  String get settingsLabelsNameRequired => 'Label name must not be empty.';
 
   @override
   String get settingsLabelsPrivateDescription =>

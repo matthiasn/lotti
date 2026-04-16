@@ -287,18 +287,31 @@ class MatrixMessageSender {
       );
 
       final fileBytes = bytes ?? await file.readAsBytes();
+
+      final shouldCompress =
+          relativePath.toLowerCase().endsWith('.json') &&
+          await _journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag);
+      // `gzip.encode` in dart:io returns a Uint8List-backed List<int>, so the
+      // cast avoids an unnecessary copy via Uint8List.fromList.
+      final uploadBytes = shouldCompress
+          ? gzip.encode(fileBytes) as Uint8List
+          : fileBytes;
+      final baseName = p.basename(fullPath);
+      final uploadName = shouldCompress ? '$baseName.gz' : baseName;
+      final extraContent = <String, dynamic>{
+        'relativePath': relativePath,
+        if (shouldCompress) attachmentEncodingKey: attachmentEncodingGzip,
+      };
+
       final eventId = await room.sendFileEvent(
-        MatrixFile(
-          bytes: fileBytes,
-          name: p.basename(fullPath),
-        ),
-        extraContent: {'relativePath': relativePath},
+        MatrixFile(bytes: uploadBytes, name: uploadName),
+        extraContent: extraContent,
       );
 
       if (eventId == null) {
         _trace(
           'FAIL sendFileEvent returned null path=$relativePath '
-          'bytes=${fileBytes.length}',
+          'bytes=${uploadBytes.length}',
           subDomain: 'matrix.send.error',
         );
         _loggingService.captureEvent(
@@ -310,7 +323,12 @@ class MatrixMessageSender {
       }
 
       _loggingService.captureEvent(
-        'sent $relativePath file message to $room, event ID $eventId',
+        shouldCompress
+            ? 'sent $relativePath file message (gzip '
+                  '${fileBytes.length}→${uploadBytes.length} bytes, '
+                  'ratio=${_formatCompressionRatio(raw: fileBytes.length, compressed: uploadBytes.length)}) '
+                  'to $room, event ID $eventId'
+            : 'sent $relativePath file message to $room, event ID $eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );
@@ -666,4 +684,12 @@ class MatrixMessageContext {
   final String? syncRoomId;
   final Room? syncRoom;
   final List<DeviceKeys> unverifiedDevices;
+}
+
+/// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
+/// Returns `'-'` when [raw] is 0 so the log line stays well-formed on the
+/// (unreachable but defensively handled) empty-payload path.
+String _formatCompressionRatio({required int raw, required int compressed}) {
+  if (raw <= 0) return '-';
+  return (compressed / raw).toStringAsFixed(3);
 }

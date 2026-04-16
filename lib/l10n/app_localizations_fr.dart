@@ -2075,9 +2075,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistAllDone => 'Tous les éléments sont terminés !';
 
   @override
-  String get checklistNoneDone => 'Aucun élément terminé pour le moment.';
-
-  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total terminés';
   }
@@ -2144,6 +2141,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get checklistMoreTooltip => 'Plus';
+
+  @override
+  String get checklistNoneDone => 'Aucun élément terminé pour le moment.';
 
   @override
   String get checklistNoSuggestionsTitle => 'Aucune suggestion d\'action';
@@ -2350,6 +2350,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagUseCloudInferenceDescription =>
       'Utiliser les services d\'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.';
+
+  @override
+  String get configFlagUseCompressedJsonAttachments =>
+      'Compresser les payloads JSON de sync';
+
+  @override
+  String get configFlagUseCompressedJsonAttachmentsDescription =>
+      'Compresse les pièces jointes JSON de synchronisation avec gzip avant l\'envoi. Économise de la bande passante sur les réseaux lents, au prix d\'un léger coût CPU à l\'envoi et à la réception.';
 
   @override
   String get conflictEntityLabel => 'Entité';
@@ -2851,22 +2859,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deleteDeviceLabel => 'Supprimer l\'appareil';
-
-  @override
-  String get desktopEmptyStateSelectDashboard =>
-      'Sélectionne un tableau de bord pour voir les détails';
-
-  @override
-  String get desktopEmptyStateSelectProject =>
-      'Sélectionne un projet pour voir les détails';
-
-  @override
-  String get desktopEmptyStateSelectSetting =>
-      'Sélectionne un paramètre pour voir les détails';
-
-  @override
-  String get desktopEmptyStateSelectTask =>
-      'Sélectionne une tâche pour voir les détails';
 
   @override
   String get designSystemActivatedLabel => 'Actif';
@@ -3425,6 +3417,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemWithLabelLabel => 'Avec libellé';
 
   @override
+  String get desktopEmptyStateSelectDashboard =>
+      'Sélectionne un tableau de bord pour voir les détails';
+
+  @override
+  String get desktopEmptyStateSelectProject =>
+      'Sélectionne un projet pour voir les détails';
+
+  @override
+  String get desktopEmptyStateSelectSetting =>
+      'Sélectionne un paramètre pour voir les détails';
+
+  @override
+  String get desktopEmptyStateSelectTask =>
+      'Sélectionne une tâche pour voir les détails';
+
+  @override
   String deviceDeletedSuccess(String deviceName) {
     return 'Appareil $deviceName supprimé avec succès';
   }
@@ -3581,9 +3589,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get favoriteLabel => 'Favori';
 
   @override
-  String get inactiveLabel => 'Inactif';
-
-  @override
   String get fileMenuNewEllipsis => 'Nouveau...';
 
   @override
@@ -3722,6 +3727,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get images => 'Images';
+
+  @override
+  String get inactiveLabel => 'Inactif';
 
   @override
   String get inferenceProfileCreateTitle => 'Créer un profil';
@@ -5270,16 +5278,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLabelsErrorLoading => 'Échec du chargement des étiquettes';
 
   @override
-  String settingsLabelsNoMatchCreate(String query) {
-    return 'Créer l\'étiquette \"$query\"';
-  }
-
-  @override
-  String settingsLabelsNoMatchQuery(String query) {
-    return 'Aucune étiquette ne correspond à \"$query\"';
-  }
-
-  @override
   String get settingsLabelsNameHint => 'Bug, Bloquant, Synchronisation…';
 
   @override
@@ -5288,6 +5286,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsLabelsNameRequired =>
       'Le nom de l\'étiquette ne peut pas être vide.';
+
+  @override
+  String settingsLabelsNoMatchCreate(String query) {
+    return 'Créer l\'étiquette \"$query\"';
+  }
+
+  @override
+  String settingsLabelsNoMatchQuery(String query) {
+    return 'Aucune étiquette ne correspond à \"$query\"';
+  }
 
   @override
   String get settingsLabelsPrivateDescription =>

@@ -331,6 +331,25 @@ Journal entities and agent payloads can be file-backed via `jsonPath`. Those
 payloads are resolved through the attachment/index loader path before they are
 applied, which is why attachment ordering and dedupe matter to sync behavior.
 
+### Attachment Encoding
+
+Attachment events may carry a `com.lotti.encoding` key in the Matrix event
+content that declares an on-wire encoding applied by the sender. The only
+value currently defined is `gzip`, which signals that the raw bytes returned
+from `event.downloadAndDecryptAttachment()` are a gzip stream and must be
+decompressed before the file is written to the local documents directory.
+The `relativePath` in the event is still the logical target path, unchanged
+by the encoding.
+
+Receivers decode this header unconditionally, so the receive path is
+forward-compatible with senders that later opt in. On the send side, gzip
+compression is gated by the `use_compressed_json_attachments` config flag
+(off by default) and only applies when the attachment's `relativePath` ends
+in `.json`, since media files are already compressed and would not benefit.
+When the flag is on, the uploaded file name gains a `.gz` suffix and the
+event content includes the encoding header; otherwise bytes are sent
+verbatim with no header and no suffix.
+
 ```mermaid
 flowchart TD
   Event["Matrix event"] --> Decode["Decode SyncMessage"]

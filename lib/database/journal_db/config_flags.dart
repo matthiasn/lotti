@@ -109,6 +109,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: useCompressedJsonAttachmentsFlag,
+      description: 'Gzip-compress JSON sync attachments on send?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableAgentsFlag,
       description: 'Enable Agents?',
       status: false,
