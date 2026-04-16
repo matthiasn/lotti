@@ -57,11 +57,56 @@ final class _Rlimit extends Struct {
 typedef _RlimitSyscallNative = Int32 Function(Int32, Pointer<_Rlimit>);
 typedef _RlimitSyscall = int Function(int, Pointer<_Rlimit>);
 
-typedef _MallocNative = Pointer<Void> Function(IntPtr);
 typedef _Malloc = Pointer<Void> Function(int);
-
-typedef _FreeNative = Void Function(Pointer<Void>);
 typedef _Free = void Function(Pointer<Void>);
+
+class _Libc {
+  const _Libc({
+    required this.getrlimit,
+    required this.setrlimit,
+    required this.malloc,
+    required this.free,
+  });
+
+  final _RlimitSyscall getrlimit;
+  final _RlimitSyscall setrlimit;
+  final _Malloc malloc;
+  final _Free free;
+}
+
+// Cached libc bindings. Top-level `final`s are lazily initialized in Dart, so
+// symbol resolution runs at most once per process even when
+// [readFileDescriptorLimits] is called repeatedly (e.g. on every EMFILE
+// caught in the sync pipeline).
+final _Libc? _libc = _resolveLibc();
+
+_Libc? _resolveLibc() {
+  if (!Platform.isMacOS && !Platform.isLinux) return null;
+  try {
+    final lib = DynamicLibrary.process();
+    return _Libc(
+      getrlimit: lib.lookupFunction<_RlimitSyscallNative, _RlimitSyscall>(
+        'getrlimit',
+      ),
+      setrlimit: lib.lookupFunction<_RlimitSyscallNative, _RlimitSyscall>(
+        'setrlimit',
+      ),
+      malloc: lib.lookupFunction<Pointer<Void> Function(IntPtr), _Malloc>(
+        'malloc',
+      ),
+      free: lib.lookupFunction<Void Function(Pointer<Void>), _Free>('free'),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+// On Linux, `RLIM_INFINITY == (rlim_t)-1 == 0xFFFFFFFFFFFFFFFF`, which Dart
+// reads from a Uint64 field as `-1` in its signed 64-bit `int`. On macOS,
+// `RLIM_INFINITY == INT64_MAX`, which reads as a large positive value. This
+// helper treats any negative reading as "no cap" so the clamp logic works
+// identically on both platforms.
+bool _isUnlimited(int value) => value < 0;
 
 /// Raises the soft limit for open file descriptors to at least [target] on
 /// macOS and Linux, never exceeding the current hard limit.
@@ -76,7 +121,8 @@ typedef _Free = void Function(Pointer<Void>);
 /// can emit a single structured log entry. Never throws; all errors are
 /// captured in [FdLimitAdjustment.error].
 FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
-  if (!Platform.isMacOS && !Platform.isLinux) {
+  final libc = _libc;
+  if (libc == null) {
     return FdLimitAdjustment(
       softBefore: -1,
       hardBefore: -1,
@@ -88,18 +134,8 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
   }
 
   try {
-    final libc = DynamicLibrary.process();
-    final getrlimit = libc.lookupFunction<_RlimitSyscallNative, _RlimitSyscall>(
-      'getrlimit',
-    );
-    final setrlimit = libc.lookupFunction<_RlimitSyscallNative, _RlimitSyscall>(
-      'setrlimit',
-    );
-    final malloc = libc.lookupFunction<_MallocNative, _Malloc>('malloc');
-    final free = libc.lookupFunction<_FreeNative, _Free>('free');
-
     final resource = _rlimitNofile();
-    final ptr = malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
+    final ptr = libc.malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
     if (ptr.address == 0) {
       return FdLimitAdjustment(
         softBefore: -1,
@@ -113,7 +149,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
     }
 
     try {
-      if (getrlimit(resource, ptr) != 0) {
+      if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: -1,
           hardBefore: -1,
@@ -139,14 +175,16 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
         );
       }
 
-      // Clamp to the hard limit. RLIM_INFINITY is (rlim_t)-1 == UINT64_MAX,
-      // which is always > target, so `target < hardBefore` picks target.
-      final newSoft = target < hardBefore ? target : hardBefore;
+      // Clamp to the hard limit, treating RLIM_INFINITY (negative when read
+      // as Dart int on Linux) as "no cap".
+      final newSoft = (_isUnlimited(hardBefore) || target < hardBefore)
+          ? target
+          : hardBefore;
 
       ptr.ref.rlimCur = newSoft;
       ptr.ref.rlimMax = hardBefore;
 
-      if (setrlimit(resource, ptr) != 0) {
+      if (libc.setrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: softBefore,
           hardBefore: hardBefore,
@@ -159,7 +197,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       }
 
       // Re-read to report the authoritative post-state.
-      if (getrlimit(resource, ptr) != 0) {
+      if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: softBefore,
           hardBefore: hardBefore,
@@ -178,7 +216,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
         raised: true,
       );
     } finally {
-      free(ptr.cast());
+      libc.free(ptr.cast());
     }
   } catch (e) {
     return FdLimitAdjustment(
@@ -200,22 +238,16 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
 /// pairs well with an `lsof` inspection to diagnose whether the process was
 /// at its ceiling when a resource request failed.
 ({int soft, int hard})? readFileDescriptorLimits() {
-  if (!Platform.isMacOS && !Platform.isLinux) return null;
+  final libc = _libc;
+  if (libc == null) return null;
   try {
-    final libc = DynamicLibrary.process();
-    final getrlimit = libc.lookupFunction<_RlimitSyscallNative, _RlimitSyscall>(
-      'getrlimit',
-    );
-    final malloc = libc.lookupFunction<_MallocNative, _Malloc>('malloc');
-    final free = libc.lookupFunction<_FreeNative, _Free>('free');
-
-    final ptr = malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
+    final ptr = libc.malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
     if (ptr.address == 0) return null;
     try {
-      if (getrlimit(_rlimitNofile(), ptr) != 0) return null;
+      if (libc.getrlimit(_rlimitNofile(), ptr) != 0) return null;
       return (soft: ptr.ref.rlimCur, hard: ptr.ref.rlimMax);
     } finally {
-      free(ptr.cast());
+      libc.free(ptr.cast());
     }
   } catch (_) {
     return null;
