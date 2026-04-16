@@ -325,7 +325,8 @@ class MatrixMessageSender {
       _loggingService.captureEvent(
         shouldCompress
             ? 'sent $relativePath file message (gzip '
-                  '${fileBytes.length}→${uploadBytes.length} bytes) '
+                  '${fileBytes.length}→${uploadBytes.length} bytes, '
+                  'ratio=${_formatCompressionRatio(raw: fileBytes.length, compressed: uploadBytes.length)}) '
                   'to $room, event ID $eventId'
             : 'sent $relativePath file message to $room, event ID $eventId',
         domain: 'MATRIX_SERVICE',
@@ -683,4 +684,12 @@ class MatrixMessageContext {
   final String? syncRoomId;
   final Room? syncRoom;
   final List<DeviceKeys> unverifiedDevices;
+}
+
+/// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
+/// Returns `'-'` when [raw] is 0 so the log line stays well-formed on the
+/// (unreachable but defensively handled) empty-payload path.
+String _formatCompressionRatio({required int raw, required int compressed}) {
+  if (raw <= 0) return '-';
+  return (compressed / raw).toStringAsFixed(3);
 }

@@ -439,11 +439,20 @@ Uint8List _decodeAttachmentBytes({
   final decoded = gzip.decode(downloadedBytes);
   logging.captureEvent(
     'gzipDecoded path=$relativePath '
-    'compressed=${downloadedBytes.length} decoded=${decoded.length}',
+    'compressed=${downloadedBytes.length} decoded=${decoded.length} '
+    'ratio=${_formatCompressionRatio(raw: decoded.length, compressed: downloadedBytes.length)}',
     domain: syncLoggingDomain,
     subDomain: 'attachment.decode',
   );
   return decoded is Uint8List ? decoded : Uint8List.fromList(decoded);
+}
+
+/// Formats a gzip compression ratio as `compressed / raw` to 3 decimals,
+/// matching the sender-side rendering so log lines on both ends of a sync
+/// can be aggregated with the same `ratio=` grep.
+String _formatCompressionRatio({required int raw, required int compressed}) {
+  if (raw <= 0) return '-';
+  return (compressed / raw).toStringAsFixed(3);
 }
 
 class _DownloadRequest {
