@@ -3,13 +3,13 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
+import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
@@ -381,7 +381,7 @@ class AttachmentIngestor {
         return false;
       }
 
-      final bytes = _decodeAttachmentBytes(
+      final bytes = decodeAttachmentBytes(
         event: event,
         downloadedBytes: downloadedBytes,
         relativePath: relativePath,
@@ -422,37 +422,6 @@ class AttachmentIngestor {
       return false;
     }
   }
-}
-
-/// Decodes the raw downloaded attachment bytes according to any encoding
-/// declared in the Matrix event content. Currently supports gzip. Unknown
-/// encodings fall through and return the bytes unchanged so older fields that
-/// we might add later do not accidentally corrupt files on legacy clients.
-Uint8List _decodeAttachmentBytes({
-  required Event event,
-  required Uint8List downloadedBytes,
-  required String relativePath,
-  required LoggingService logging,
-}) {
-  final encoding = event.content[attachmentEncodingKey];
-  if (encoding != attachmentEncodingGzip) return downloadedBytes;
-  final decoded = gzip.decode(downloadedBytes);
-  logging.captureEvent(
-    'gzipDecoded path=$relativePath '
-    'compressed=${downloadedBytes.length} decoded=${decoded.length} '
-    'ratio=${_formatCompressionRatio(raw: decoded.length, compressed: downloadedBytes.length)}',
-    domain: syncLoggingDomain,
-    subDomain: 'attachment.decode',
-  );
-  return decoded is Uint8List ? decoded : Uint8List.fromList(decoded);
-}
-
-/// Formats a gzip compression ratio as `compressed / raw` to 3 decimals,
-/// matching the sender-side rendering so log lines on both ends of a sync
-/// can be aggregated with the same `ratio=` grep.
-String _formatCompressionRatio({required int raw, required int compressed}) {
-  if (raw <= 0) return '-';
-  return (compressed / raw).toStringAsFixed(3);
 }
 
 class _DownloadRequest {

@@ -25,6 +25,7 @@ import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
+import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -140,10 +141,16 @@ class DescriptorDownloader {
   }) async {
     for (var attempt = 0; attempt < maxDescriptorDownloadAttempts; attempt++) {
       final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
-      final bytes = matrixFile.bytes;
-      if (bytes.isEmpty) {
+      final downloadedBytes = matrixFile.bytes;
+      if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
+      final bytes = decodeAttachmentBytes(
+        event: descriptorEvent,
+        downloadedBytes: downloadedBytes,
+        relativePath: jsonPath,
+        logging: _logging,
+      );
       final candidateJson = utf8.decode(bytes);
       final decoded = json.decode(candidateJson) as Map<String, dynamic>;
       final candidate = JournalEntity.fromJson(decoded);
@@ -388,10 +395,16 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         }
         try {
           final matrixFile = await eventForPath.downloadAndDecryptAttachment();
-          final bytes = matrixFile.bytes;
-          if (bytes.isEmpty) {
+          final downloadedBytes = matrixFile.bytes;
+          if (downloadedBytes.isEmpty) {
             throw const FileSystemException('empty attachment bytes');
           }
+          final bytes = decodeAttachmentBytes(
+            event: eventForPath,
+            downloadedBytes: downloadedBytes,
+            relativePath: jsonPath,
+            logging: _logging,
+          );
           final jsonString = utf8.decode(bytes);
           await saveJson(targetFile.path, jsonString);
           _logging.captureEvent(
@@ -477,10 +490,16 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     }
     try {
       final file = await ev.downloadAndDecryptAttachment();
-      final bytes = file.bytes;
-      if (bytes.isEmpty) {
+      final downloadedBytes = file.bytes;
+      if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
+      final bytes = decodeAttachmentBytes(
+        event: ev,
+        downloadedBytes: downloadedBytes,
+        relativePath: rp,
+        logging: _logging,
+      );
       await atomicWriteBytes(
         bytes: bytes,
         filePath: fp,
@@ -1221,10 +1240,16 @@ class SyncEventProcessor {
 
     try {
       final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
-      final bytes = matrixFile.bytes;
-      if (bytes.isEmpty) {
+      final downloadedBytes = matrixFile.bytes;
+      if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
+      final bytes = decodeAttachmentBytes(
+        event: descriptorEvent,
+        downloadedBytes: downloadedBytes,
+        relativePath: jsonPath,
+        logging: _loggingService,
+      );
       final jsonString = utf8.decode(bytes);
       await saveJson(targetFile.path, jsonString);
       _trace(
