@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
@@ -152,6 +155,69 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Re-sync entries'), findsOneWidget);
+    });
+
+    testWidgets('populate sequence log card opens modal', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(MatrixSyncMaintenancePage));
+      await tester.tap(
+        find.text(context.messages.maintenancePopulateSequenceLog),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.maintenancePopulateSequenceLogConfirm),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uses design system grouped list layout', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DesignSystemGroupedList), findsOneWidget);
+      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
+      expect(find.byType(SettingsIcon), findsNWidgets(4));
+    });
+
+    testWidgets('shows chevron trailing icon on each item', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(4));
+    });
+
+    testWidgets('shows correct settings icons', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.sync_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.sync_alt_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.playlist_add_check_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows dividers between items but not after last', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final items = tester.widgetList<DesignSystemListItem>(
+        find.byType(DesignSystemListItem),
+      );
+      final dividerFlags = items.map((item) => item.showDivider).toList();
+
+      for (var i = 0; i < dividerFlags.length - 1; i++) {
+        expect(
+          dividerFlags[i],
+          isTrue,
+          reason: 'Item $i should show divider',
+        );
+      }
+      expect(dividerFlags.last, isFalse, reason: 'Last item has no divider');
     });
 
     testWidgets('hides content when Matrix flag disabled', (tester) async {
