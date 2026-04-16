@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -9,7 +11,12 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ProvisionedSyncSettingsCard extends ConsumerStatefulWidget {
-  const ProvisionedSyncSettingsCard({super.key});
+  const ProvisionedSyncSettingsCard({
+    required this.showDivider,
+    super.key,
+  });
+
+  final bool showDivider;
 
   @override
   ConsumerState<ProvisionedSyncSettingsCard> createState() =>
@@ -34,10 +41,19 @@ class _ProvisionedSyncSettingsCardState
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedModernSettingsCardWithIcon(
+    final tokens = context.designTokens;
+
+    return DesignSystemListItem(
       title: context.messages.provisionedSyncTitle,
       subtitle: context.messages.provisionedSyncSubtitle,
-      icon: Icons.qr_code_scanner,
+      leading: const SettingsIcon(icon: Icons.qr_code_scanner),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        size: tokens.spacing.step6,
+        color: tokens.colors.text.lowEmphasis,
+      ),
+      showDivider: widget.showDivider,
+      dividerIndent: SettingsIcon.dividerIndent(tokens),
       onTap: () {
         final matrixService = ref.read(matrixServiceProvider);
         final isConfigured =

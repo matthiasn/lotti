@@ -7,13 +7,13 @@ class SettingsIcon extends StatelessWidget {
   static const containerSize = 36.0;
   static const _iconSize = 20.0;
 
-  /// Matches the surface.hover / decorative.level01 opacity from tokens.json.
-  static const _kBackgroundAlpha = 0.12;
-
-  /// Divider indent that aligns with the start of the title text, skipping
-  /// the leading padding, icon container, and gap.
+  /// Standard divider indent for settings list items with a leading
+  /// [SettingsIcon]. Aligns the divider to the start of the title text.
   static double dividerIndent(DsTokens tokens) =>
       tokens.spacing.step5 + containerSize + tokens.spacing.step3;
+
+  /// Matches the surface.hover / decorative.level01 opacity from tokens.json.
+  static const _kBackgroundAlpha = 0.12;
 
   /// Standard trailing chevron used on navigable settings rows.
   static Widget trailingChevron(DsTokens tokens) => Icon(

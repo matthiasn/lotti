@@ -40,7 +40,7 @@ void main() {
     testWidgets('displays correct title and subtitle', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(),
+          const ProvisionedSyncSettingsCard(showDivider: false),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
@@ -61,7 +61,7 @@ void main() {
     testWidgets('displays QR code scanner icon', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(),
+          const ProvisionedSyncSettingsCard(showDivider: false),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
@@ -74,7 +74,7 @@ void main() {
     testWidgets('card is tappable', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(),
+          const ProvisionedSyncSettingsCard(showDivider: false),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
@@ -96,7 +96,7 @@ void main() {
     testWidgets('renders without errors', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const ProvisionedSyncSettingsCard(),
+          const ProvisionedSyncSettingsCard(showDivider: false),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
@@ -115,7 +115,7 @@ void main() {
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(),
+              const ProvisionedSyncSettingsCard(showDivider: false),
               overrides: [
                 matrixServiceProvider.overrideWithValue(mockMatrixService),
               ],
@@ -148,7 +148,7 @@ void main() {
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(),
+              const ProvisionedSyncSettingsCard(showDivider: false),
               overrides: [
                 matrixServiceProvider.overrideWithValue(mockMatrixService),
               ],
@@ -191,7 +191,7 @@ void main() {
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(),
+              const ProvisionedSyncSettingsCard(showDivider: false),
               overrides: [
                 matrixServiceProvider.overrideWithValue(mockMatrixService),
               ],
@@ -223,7 +223,7 @@ void main() {
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
-              const ProvisionedSyncSettingsCard(),
+              const ProvisionedSyncSettingsCard(showDivider: false),
               overrides: [
                 matrixServiceProvider.overrideWithValue(mockMatrixService),
               ],

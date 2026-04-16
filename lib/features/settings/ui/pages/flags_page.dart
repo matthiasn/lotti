@@ -224,10 +224,7 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
                             );
                           },
                           showDivider: index < orderedFlags.length - 1,
-                          dividerIndent:
-                              tokens.spacing.step5 +
-                              SettingsIcon.containerSize +
-                              tokens.spacing.step3,
+                          dividerIndent: SettingsIcon.dividerIndent(tokens),
                         ),
                     ],
                   ),
