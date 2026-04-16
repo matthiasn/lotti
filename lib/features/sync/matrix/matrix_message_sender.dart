@@ -287,18 +287,29 @@ class MatrixMessageSender {
       );
 
       final fileBytes = bytes ?? await file.readAsBytes();
+
+      final shouldCompress =
+          relativePath.toLowerCase().endsWith('.json') &&
+          await _journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag);
+      final uploadBytes = shouldCompress
+          ? Uint8List.fromList(gzip.encode(fileBytes))
+          : fileBytes;
+      final baseName = p.basename(fullPath);
+      final uploadName = shouldCompress ? '$baseName.gz' : baseName;
+      final extraContent = <String, dynamic>{
+        'relativePath': relativePath,
+        if (shouldCompress) attachmentEncodingKey: attachmentEncodingGzip,
+      };
+
       final eventId = await room.sendFileEvent(
-        MatrixFile(
-          bytes: fileBytes,
-          name: p.basename(fullPath),
-        ),
-        extraContent: {'relativePath': relativePath},
+        MatrixFile(bytes: uploadBytes, name: uploadName),
+        extraContent: extraContent,
       );
 
       if (eventId == null) {
         _trace(
           'FAIL sendFileEvent returned null path=$relativePath '
-          'bytes=${fileBytes.length}',
+          'bytes=${uploadBytes.length}',
           subDomain: 'matrix.send.error',
         );
         _loggingService.captureEvent(
@@ -310,7 +321,11 @@ class MatrixMessageSender {
       }
 
       _loggingService.captureEvent(
-        'sent $relativePath file message to $room, event ID $eventId',
+        shouldCompress
+            ? 'sent $relativePath file message (gzip '
+                  '${fileBytes.length}→${uploadBytes.length} bytes) '
+                  'to $room, event ID $eventId'
+            : 'sent $relativePath file message to $room, event ID $eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg',
       );

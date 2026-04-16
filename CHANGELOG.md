@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.954] - 2026-04-17
+### Added
+- Optional gzip compression for JSON sync attachments, gated by the
+  `use_compressed_json_attachments` config flag (off by default). Receivers
+  unconditionally decompress attachment events that carry a
+  `com.lotti.encoding: gzip` marker, so peers already on this release stay
+  compatible once the flag is flipped on. Only `.json` attachment paths are
+  compressed; media files are already on compressed formats and skip the
+  branch.
+
 ## [0.9.953] - 2026-04-16
 ### Fixed
 - Raise the open file descriptor soft limit to 10,240 at startup on macOS and

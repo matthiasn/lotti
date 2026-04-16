@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
@@ -309,6 +310,145 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'decompresses gzip-encoded attachments before writing to disk',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_gzip');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        const originalJson = '{"hello":"world","n":42}';
+        final gzippedBytes = Uint8List.fromList(
+          gzip.encode(utf8.encode(originalJson)),
+        );
+        expect(
+          gzippedBytes.length,
+          isNot(utf8.encode(originalJson).length),
+          reason: 'test payload must actually differ once compressed',
+        );
+
+        final matrixFile = MockMatrixFile();
+        when(() => matrixFile.bytes).thenReturn(gzippedBytes);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_gzip');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/data/compressed.json',
+          'msgtype': 'm.file',
+          attachmentEncodingKey: attachmentEncodingGzip,
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/gzip');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/data/compressed.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result, isTrue);
+        final written = File('${tmp.path}/data/compressed.json');
+        expect(written.existsSync(), isTrue);
+        expect(written.readAsStringSync(), originalJson);
+
+        verify(
+          () => logging.captureEvent(
+            any<String>(that: contains('gzipDecoded')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.decode',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'writes plain bytes when no encoding header is present',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_plain');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final plainBytes = Uint8List.fromList(utf8.encode('{"ok":true}'));
+        final matrixFile = MockMatrixFile();
+        when(() => matrixFile.bytes).thenReturn(plainBytes);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_plain');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/data/plain.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/data/plain.json')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(
+          File('${tmp.path}/data/plain.json').readAsStringSync(),
+          '{"ok":true}',
+        );
+        verifyNever(
+          () => logging.captureEvent(
+            any<String>(that: contains('gzipDecoded')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.decode',
+          ),
+        );
+      },
+    );
 
     test('skips download if file already exists and is non-empty', () async {
       final logging = MockLoggingService();

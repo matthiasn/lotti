@@ -295,6 +295,146 @@ void main() {
     expect(sentEventRegistry.length, 0);
   });
 
+  test(
+    'gzip-compresses .json attachments when useCompressedJsonAttachmentsFlag '
+    'is on',
+    () async {
+      MatrixFile? capturedFile;
+      Map<String, dynamic>? capturedExtra;
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedFile = invocation.positionalArguments.first as MatrixFile;
+        capturedExtra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        return r'$file-event-id';
+      });
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => r'$text-event-id');
+      when(
+        () => journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag),
+      ).thenAnswer((_) async => true);
+
+      final meta = Metadata(
+        id: 'compressed-entry',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        updatedAt: DateTime(2024, 3, 15, 10, 30),
+        dateFrom: DateTime(2024, 3, 15, 10, 30),
+        dateTo: DateTime(2024, 3, 15, 10, 30),
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: EntryText(
+          plainText: 'a' * 2000, // make gzip win measurably
+        ),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      final rawJson = jsonEncode(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(rawJson);
+
+      final result = await sender.sendMatrixMessage(
+        message: SyncMessage.journalEntity(
+          id: meta.id,
+          jsonPath: jsonPath,
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        ),
+        context: buildContext(),
+        onSent: (_, _) {},
+      );
+
+      expect(result, isTrue);
+      expect(capturedFile, isNotNull);
+      expect(capturedExtra, isNotNull);
+
+      expect(capturedExtra![attachmentEncodingKey], attachmentEncodingGzip);
+      expect(capturedExtra!['relativePath'], jsonPath);
+      expect(capturedFile!.name, endsWith('.json.gz'));
+
+      final uploadedBytes = capturedFile!.bytes;
+      expect(
+        uploadedBytes.length,
+        lessThan(utf8.encode(rawJson).length),
+        reason: 'gzipped payload must be smaller than the raw JSON',
+      );
+      final decompressed = utf8.decode(gzip.decode(uploadedBytes));
+      expect(decompressed, rawJson);
+    },
+  );
+
+  test(
+    'leaves .json attachments uncompressed when '
+    'useCompressedJsonAttachmentsFlag is off',
+    () async {
+      MatrixFile? capturedFile;
+      Map<String, dynamic>? capturedExtra;
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedFile = invocation.positionalArguments.first as MatrixFile;
+        capturedExtra =
+            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+        return r'$file-event-id';
+      });
+      when(
+        () => room.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((_) async => r'$text-event-id');
+      // Flag defaults to false via the setUp stub; no override here.
+
+      final meta = Metadata(
+        id: 'plain-entry',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        updatedAt: DateTime(2024, 3, 15, 10, 30),
+        dateFrom: DateTime(2024, 3, 15, 10, 30),
+        dateTo: DateTime(2024, 3, 15, 10, 30),
+      );
+      final entity = JournalEntity.journalEntry(
+        meta: meta,
+        entryText: const EntryText(plainText: 'plain'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      final rawJson = jsonEncode(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(rawJson);
+
+      final result = await sender.sendMatrixMessage(
+        message: SyncMessage.journalEntity(
+          id: meta.id,
+          jsonPath: jsonPath,
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        ),
+        context: buildContext(),
+        onSent: (_, _) {},
+      );
+
+      expect(result, isTrue);
+      expect(capturedExtra!.containsKey(attachmentEncodingKey), isFalse);
+      expect(capturedFile!.name, isNot(endsWith('.gz')));
+      expect(utf8.decode(capturedFile!.bytes), rawJson);
+    },
+  );
+
   test('registers file event ID when sending journal payload', () async {
     when(
       () => room.sendFileEvent(

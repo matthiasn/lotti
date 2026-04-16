@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -370,8 +371,8 @@ class AttachmentIngestor {
       );
 
       final matrixFile = await event.downloadAndDecryptAttachment();
-      final bytes = matrixFile.bytes;
-      if (bytes.isEmpty) {
+      final downloadedBytes = matrixFile.bytes;
+      if (downloadedBytes.isEmpty) {
         logging.captureEvent(
           'emptyBytes path=$relativePath',
           domain: syncLoggingDomain,
@@ -379,6 +380,13 @@ class AttachmentIngestor {
         );
         return false;
       }
+
+      final bytes = _decodeAttachmentBytes(
+        event: event,
+        downloadedBytes: downloadedBytes,
+        relativePath: relativePath,
+        logging: logging,
+      );
 
       await atomicWriteBytes(
         bytes: bytes,
@@ -414,6 +422,28 @@ class AttachmentIngestor {
       return false;
     }
   }
+}
+
+/// Decodes the raw downloaded attachment bytes according to any encoding
+/// declared in the Matrix event content. Currently supports gzip. Unknown
+/// encodings fall through and return the bytes unchanged so older fields that
+/// we might add later do not accidentally corrupt files on legacy clients.
+Uint8List _decodeAttachmentBytes({
+  required Event event,
+  required Uint8List downloadedBytes,
+  required String relativePath,
+  required LoggingService logging,
+}) {
+  final encoding = event.content[attachmentEncodingKey];
+  if (encoding != attachmentEncodingGzip) return downloadedBytes;
+  final decoded = gzip.decode(downloadedBytes);
+  logging.captureEvent(
+    'gzipDecoded path=$relativePath '
+    'compressed=${downloadedBytes.length} decoded=${decoded.length}',
+    domain: syncLoggingDomain,
+    subDomain: 'attachment.decode',
+  );
+  return decoded is Uint8List ? decoded : Uint8List.fromList(decoded);
 }
 
 class _DownloadRequest {

@@ -122,6 +122,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: useCompressedJsonAttachmentsFlag,
+    description: 'Gzip-compress JSON sync attachments on send?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableAgentsFlag,
     description: 'Enable Agents?',
     status: false,
