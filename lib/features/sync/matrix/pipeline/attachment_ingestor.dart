@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -344,25 +346,12 @@ class AttachmentIngestor {
       }
 
       // Agent entities/links can be legitimately updated in-place (e.g.
-      // ChangeSetEntity pending → resolved). Always re-download to avoid
-      // stale reads.
-      final isAgentPayload = isAgentPayloadPath(relativePath);
-
-      // Fast-path dedupe (non-agent only): if the file already exists and is
-      // non-empty, skip re-downloading to avoid repeated writes and log spam.
-      // Note: We don't validate the file's vector clock here because
-      // SmartJournalEntityLoader.load() will do that validation and
-      // re-download via DescriptorDownloader if the local file is stale.
-      // ignore: avoid_slow_async_io
-      if (!isAgentPayload && await file.exists()) {
-        try {
-          final len = await file.length();
-          if (len > 0) {
-            return false; // already present
-          }
-        } catch (_) {
-          // If querying length fails, fall through to re-download.
-        }
+      // ChangeSetEntity pending → resolved), so [_shouldSkipExistingFile]
+      // never skips those. For non-agent payloads the vector clock is not
+      // validated here; SmartJournalEntityLoader.load() revalidates and
+      // re-downloads via DescriptorDownloader if the local file is stale.
+      if (await _shouldSkipExistingFile(file, relativePath)) {
+        return false;
       }
 
       logging.captureEvent(
@@ -436,12 +425,31 @@ class AttachmentIngestor {
     }
   }
 
+  /// Returns true when [target] should NOT be downloaded/written again —
+  /// the non-agent dedup rule used by both the single-file save path and
+  /// the bundle-entry write path. Agent payloads always return false so
+  /// in-place updates (e.g. ChangeSetEntity pending → resolved) are never
+  /// suppressed.
+  Future<bool> _shouldSkipExistingFile(
+    File target,
+    String relativePath,
+  ) async {
+    if (isAgentPayloadPath(relativePath)) return false;
+    // ignore: avoid_slow_async_io
+    if (!await target.exists()) return false;
+    try {
+      return await target.length() > 0;
+    } on FileSystemException {
+      return false;
+    }
+  }
+
   /// Unpacks a zip bundle. Each entry's name is its target relative path
   /// inside the documents directory. Entries are routed through
-  /// [_targetFile] for path-traversal guarding and apply the same non-agent
-  /// dedup rule as single-file saves: if a non-agent file already exists and
-  /// is non-empty locally, skip it. Agent-payload entries are always
-  /// overwritten to match single-file semantics.
+  /// [_targetFile] for path-traversal guarding and through
+  /// [_shouldSkipExistingFile] for the same non-agent dedup rule used by
+  /// single-file saves. Zip decoding runs on a worker isolate to keep the
+  /// sync isolate free for frame work while large bundles are parsed.
   Future<bool> _unpackBundle({
     required String bundleRelativePath,
     required Uint8List downloadedBytes,
@@ -449,13 +457,13 @@ class AttachmentIngestor {
   }) async {
     final docDir = documentsDirectory;
     if (docDir == null) return false;
-    final archive = ZipDecoder().decodeBytes(downloadedBytes);
+    final decoded = await Isolate.run(
+      () => _decodeBundleEntries(downloadedBytes),
+    );
     var writtenCount = 0;
     var totalBytes = 0;
     var skippedCount = 0;
-    for (final entry in archive) {
-      if (!entry.isFile) continue;
-      final entryPath = entry.name;
+    for (final entryPath in decoded.keys) {
       final target = _targetFile(entryPath);
       if (target == null) {
         logging.captureEvent(
@@ -466,12 +474,11 @@ class AttachmentIngestor {
         );
         continue;
       }
-      final isAgentPayload = isAgentPayloadPath(entryPath);
-      if (!isAgentPayload && target.existsSync() && target.lengthSync() > 0) {
+      if (await _shouldSkipExistingFile(target, entryPath)) {
         skippedCount++;
         continue;
       }
-      final bytes = entry.content;
+      final bytes = decoded[entryPath]!;
       await atomicWriteBytes(
         bytes: bytes,
         filePath: target.path,
@@ -483,7 +490,7 @@ class AttachmentIngestor {
     }
     logging.captureEvent(
       'bundleUnpacked outer=$bundleRelativePath '
-      'entries=${archive.length} written=$writtenCount '
+      'entries=${decoded.length} written=$writtenCount '
       'skipped=$skippedCount bytes=$totalBytes',
       domain: syncLoggingDomain,
       subDomain: 'attachment.bundle.unpack',
@@ -491,6 +498,18 @@ class AttachmentIngestor {
     return writtenCount > 0;
   }
 }
+
+/// Worker-isolate entry point for [ZipDecoder]. Returns a plain
+/// `relativePath -> bytes` map of file entries so the decoded archive does
+/// not have to cross the isolate boundary.
+Map<String, Uint8List> _decodeBundleEntries(Uint8List downloadedBytes) {
+  final archive = ZipDecoder().decodeBytes(downloadedBytes);
+  return {
+    for (final entry in archive)
+      if (entry.isFile) entry.name: entry.content,
+  };
+}
+
 
 class _DownloadRequest {
   const _DownloadRequest({

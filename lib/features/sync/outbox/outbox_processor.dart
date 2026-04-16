@@ -59,7 +59,6 @@ class OutboxProcessor {
     DomainLogger? domainLogger,
     JournalDb? journalDb,
     Directory? documentsDirectory,
-    int? bundleMaxBytesOverride,
   }) : _repository = repository,
        _messageSender = messageSender,
        _loggingService = loggingService,
@@ -71,9 +70,7 @@ class OutboxProcessor {
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =
            maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
-       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout,
-       bundleMaxBytes =
-           bundleMaxBytesOverride ?? SyncTuning.outboxBundleMaxBytes;
+       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
@@ -86,7 +83,6 @@ class OutboxProcessor {
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
   final Duration sendTimeout;
-  final int bundleMaxBytes;
 
   void _syncLog(String message, {String? subDomain}) {
     _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
@@ -102,12 +98,6 @@ class OutboxProcessor {
       return OutboxProcessingResult.none;
     }
 
-    // When the feature flag is on and enough items are pending to gain from
-    // one Matrix round-trip, attempt an attachment-bundle send first. The
-    // helper returns null when bundling is disabled or nothing was
-    // bundleable (e.g. every pending item's attachments exceed the cap or
-    // carry no files at all), so the existing head-only flow still runs as
-    // the default path.
     final bundleOutcome = await _maybeProcessBundle(pendingItems);
     if (bundleOutcome != null) return bundleOutcome;
 
@@ -279,11 +269,17 @@ class OutboxProcessor {
   }
 
   /// Attempts to coalesce as many of [pending] items' attachment files as
-  /// fit into a single zip (capped at [bundleMaxBytes]) and uploads them as
-  /// one Matrix file event before sending each included item's text event
-  /// with the bundled paths marked for skip. Returns null when bundling is
-  /// disabled or nothing was bundleable, so the caller can fall through to
-  /// the existing head-only flow.
+  /// fit into a single zip (capped at [SyncTuning.outboxBundleMaxBytes]) and
+  /// uploads them as one Matrix file event before sending each included
+  /// item's text event with the bundled paths marked for skip.
+  ///
+  /// Returns null when bundling is disabled or nothing was bundleable (e.g.
+  /// the batch carries no attachment files or every item's attachments
+  /// exceed the cap on their own), so the caller can fall through to the
+  /// existing head-only flow. Per-item failures mark only that item for
+  /// retry and mirror the head-only diagnostic retry-cap semantics so a
+  /// permanently failing item in a bundle still surfaces
+  /// `retryCapReached`.
   Future<OutboxProcessingResult?> _maybeProcessBundle(
     List<OutboxItem> pending,
   ) async {
@@ -294,8 +290,6 @@ class OutboxProcessor {
     final bundlingOn = await db.getConfigFlag(useBundledAttachmentsFlag);
     if (!bundlingOn) return null;
 
-    // Enumerate attachments per item. Items that fail to decode or have no
-    // attachments are kept for the solo path.
     final enumerated = <({OutboxItem item, List<AttachmentDescriptor> atts})>[];
     for (final item in pending) {
       try {
@@ -310,33 +304,22 @@ class OutboxProcessor {
       }
     }
 
-    // Partition greedily: an item is included in the bundle if its own
-    // attachments fit within the remaining bundle budget. Items whose total
-    // attachment size exceeds the cap on their own go to the solo path via
-    // the existing head-only flow on the next tick.
     final bundled = <({OutboxItem item, List<AttachmentDescriptor> atts})>[];
     var bundleSize = 0;
     for (final e in enumerated) {
       if (e.atts.isEmpty) continue;
       final total = e.atts.fold<int>(0, (s, a) => s + a.size);
-      if (total > bundleMaxBytes) continue;
-      if (bundleSize + total > bundleMaxBytes) continue;
+      if (total > SyncTuning.outboxBundleMaxBytes) continue;
+      if (bundleSize + total > SyncTuning.outboxBundleMaxBytes) continue;
       bundled.add(e);
       bundleSize += total;
     }
 
     if (bundled.isEmpty) return null;
 
-    // Read file contents and pack into the payload map. Any read failure
-    // falls through to the existing solo path, where the usual error handling
-    // applies per item.
-    final entries = <String, Uint8List>{};
+    final Map<String, Uint8List> entries;
     try {
-      for (final e in bundled) {
-        for (final a in e.atts) {
-          entries[a.relativePath] = await File(a.fullPath).readAsBytes();
-        }
-      }
+      entries = await _readBundleEntries(bundled);
     } catch (err, stackTrace) {
       _loggingService.captureException(
         err,
@@ -380,8 +363,6 @@ class OutboxProcessor {
       subDomain: 'bundle.ok',
     );
 
-    // Send each bundled item's text event. Per-item failures mark that item
-    // for retry without affecting the others.
     final skipSet = entries.keys.toSet();
     var anyFailure = false;
     for (final e in bundled) {
@@ -398,6 +379,7 @@ class OutboxProcessor {
           stackTrace: stackTrace,
         );
         await _repository.markRetry(refreshed);
+        _recordBundleItemFailure(refreshed);
         anyFailure = true;
         continue;
       }
@@ -412,15 +394,15 @@ class OutboxProcessor {
             },
           );
       if (ok) {
+        if (_lastFailedSubject == refreshed.subject) {
+          _lastFailedSubject = null;
+          _lastFailedRepeats = 0;
+        }
         await _repository.markSent(refreshed);
       } else {
         await _repository.markRetry(refreshed);
+        _recordBundleItemFailure(refreshed, timedOut: timedOut);
         anyFailure = true;
-        _syncLog(
-          'bundle text-event sendFail subject=${refreshed.subject} '
-          'timedOut=$timedOut',
-          subDomain: 'outbox.bundle.retry',
-        );
       }
     }
 
@@ -431,5 +413,72 @@ class OutboxProcessor {
       );
     }
     return OutboxProcessingResult.none;
+  }
+
+  /// Reads the per-file bytes for every attachment the enumerator chose for
+  /// [bundled]. Bytes already cached on a descriptor (the JSON payload the
+  /// enumerator parsed to find media paths) are reused so the same file is
+  /// not read twice; missing media bytes are loaded in parallel.
+  Future<Map<String, Uint8List>> _readBundleEntries(
+    List<({OutboxItem item, List<AttachmentDescriptor> atts})> bundled,
+  ) async {
+    final entries = <String, Uint8List>{};
+    final pendingReads = <Future<void>>[];
+    for (final e in bundled) {
+      for (final a in e.atts) {
+        final cached = a.bytes;
+        if (cached != null) {
+          entries[a.relativePath] = cached;
+          continue;
+        }
+        pendingReads.add(
+          File(a.fullPath).readAsBytes().then((bytes) {
+            entries[a.relativePath] = bytes;
+          }),
+        );
+      }
+    }
+    await Future.wait(pendingReads);
+    return entries;
+  }
+
+  /// Applies the head-only flow's retry-cap and repeat-subject diagnostics
+  /// to a failing bundled item so that permanent failures surface
+  /// `retryCapReached` even when they arrive via a bundle.
+  void _recordBundleItemFailure(
+    OutboxItem refreshed, {
+    bool timedOut = false,
+  }) {
+    final nextAttempts = refreshed.retries + 1;
+    if (_lastFailedSubject == refreshed.subject) {
+      _lastFailedRepeats++;
+    } else {
+      _lastFailedSubject = refreshed.subject;
+      _lastFailedRepeats = 1;
+    }
+    _syncLog(
+      'bundle sendFail subject=${refreshed.subject} '
+      'attempts=$nextAttempts timedOut=$timedOut',
+      subDomain: 'outbox.bundle.retry',
+    );
+    try {
+      _loggingService.captureEvent(
+        'bundle sendFailed subject=${refreshed.subject} '
+        'attempts=$nextAttempts repeats=$_lastFailedRepeats '
+        'backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
+        domain: 'OUTBOX',
+        subDomain: 'bundle.retry',
+      );
+    } catch (_) {}
+    if (nextAttempts >= maxRetriesForDiagnostics) {
+      try {
+        _loggingService.captureEvent(
+          'retryCapReached subject=${refreshed.subject} '
+          'attempts=$nextAttempts status=error → bundle',
+          domain: 'OUTBOX',
+          subDomain: 'retry.cap',
+        );
+      } catch (_) {}
+    }
   }
 }

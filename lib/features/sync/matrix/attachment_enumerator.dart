@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -9,23 +10,17 @@ import 'package:path/path.dart' as p;
 
 /// Describes a single file that a [SyncMessage] would upload individually via
 /// `MatrixMessageSender._sendFile` when bundling is disabled.
-class AttachmentDescriptor {
-  const AttachmentDescriptor({
-    required this.fullPath,
-    required this.relativePath,
-    required this.size,
-  });
-
-  /// Absolute path to the file on disk.
-  final String fullPath;
-
-  /// Logical relative path used as the sync-side file identifier. This is the
-  /// value read by receivers to decide where to write the file locally.
-  final String relativePath;
-
-  /// File size in bytes at enumeration time.
-  final int size;
-}
+///
+/// When the file is the JSON payload the enumerator already read to discover
+/// media paths, `bytes` is populated so downstream callers (e.g. the
+/// bundler) can avoid re-reading the same file from disk. For media files
+/// `bytes` is null and callers must load the contents themselves.
+typedef AttachmentDescriptor = ({
+  String fullPath,
+  String relativePath,
+  int size,
+  Uint8List? bytes,
+});
 
 /// Enumerates the on-disk files a [message] would upload individually.
 ///
@@ -47,36 +42,52 @@ Future<List<AttachmentDescriptor>> enumerateAttachments({
         documentsDirectory: documentsDirectory,
       );
     case final SyncAgentEntity msg:
-      final path = msg.jsonPath;
-      if (path == null) return const [];
-      return _forFile(
-        relativePath: path,
-        documentsDirectory: documentsDirectory,
-      );
+      return _forOptionalJsonPath(msg.jsonPath, documentsDirectory);
     case final SyncAgentLink msg:
-      final path = msg.jsonPath;
-      if (path == null) return const [];
-      return _forFile(
-        relativePath: path,
-        documentsDirectory: documentsDirectory,
-      );
+      return _forOptionalJsonPath(msg.jsonPath, documentsDirectory);
     case _:
       return const [];
   }
+}
+
+Future<List<AttachmentDescriptor>> _forOptionalJsonPath(
+  String? relativePath,
+  Directory documentsDirectory,
+) async {
+  if (relativePath == null) return const [];
+  return _forFile(
+    relativePath: relativePath,
+    documentsDirectory: documentsDirectory,
+  );
 }
 
 Future<List<AttachmentDescriptor>> _forJournalEntity({
   required SyncJournalEntity message,
   required Directory documentsDirectory,
 }) async {
-  final base = await _forFile(
-    relativePath: message.jsonPath,
-    documentsDirectory: documentsDirectory,
+  // Read once and cache: the same bytes feed the JournalEntity.fromJson pass
+  // below (to discover audio/image paths) and any downstream consumer such as
+  // the bundler, so subsequent reads can short-circuit.
+  final jsonFullPath = p.join(
+    documentsDirectory.path,
+    p.joinAll(message.jsonPath.split('/').where((part) => part.isNotEmpty)),
   );
-  if (base.isEmpty) return const [];
+  Uint8List bytes;
+  try {
+    bytes = await File(jsonFullPath).readAsBytes();
+  } on FileSystemException {
+    return const [];
+  }
+  if (bytes.isEmpty) return const [];
+
+  final base = (
+    fullPath: jsonFullPath,
+    relativePath: message.jsonPath,
+    size: bytes.length,
+    bytes: bytes,
+  );
 
   try {
-    final bytes = await File(base.first.fullPath).readAsBytes();
     final entity = JournalEntity.fromJson(
       json.decode(utf8.decode(bytes)) as Map<String, dynamic>,
     );
@@ -91,9 +102,9 @@ Future<List<AttachmentDescriptor>> _forJournalEntity({
       ),
       orElse: () async => const <AttachmentDescriptor>[],
     );
-    return [...base, ...media];
+    return [base, ...media];
   } catch (_) {
-    return base;
+    return [base];
   }
 }
 
@@ -105,20 +116,18 @@ Future<List<AttachmentDescriptor>> _forFile({
     relativePath.split('/').where((part) => part.isNotEmpty),
   );
   final fullPath = p.join(documentsDirectory.path, joined);
-  final file = File(fullPath);
   try {
-    // ignore: avoid_slow_async_io
-    if (!await file.exists()) return const [];
-    final size = await file.length();
+    final size = await File(fullPath).length();
     if (size <= 0) return const [];
     return [
-      AttachmentDescriptor(
+      (
         fullPath: fullPath,
         relativePath: relativePath,
         size: size,
+        bytes: null,
       ),
     ];
-  } catch (_) {
+  } on FileSystemException {
     return const [];
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -283,17 +284,10 @@ class MatrixMessageSender {
   }) async {
     if (entries.isEmpty) return null;
     final id = bundleId ?? const Uuid().v4();
-    final archive = Archive();
-    for (final entry in entries.entries) {
-      archive.addFile(
-        ArchiveFile(entry.key, entry.value.length, entry.value),
-      );
-    }
-    final encoded = ZipEncoder().encode(archive);
-    final zipBytes = encoded is Uint8List
-        ? encoded
-        : Uint8List.fromList(encoded);
-    final bundlePath = '.bundles/$id.zip';
+    // Encoding can take tens of milliseconds for multi-MiB bundles. Run it
+    // on a worker isolate so it doesn't block UI frames on the sync isolate.
+    final zipBytes = await Isolate.run(() => _encodeBundleBytes(entries));
+    final bundlePath = '$attachmentBundleDirPrefix$id.zip';
     try {
       final eventId = await room.sendFileEvent(
         MatrixFile(bytes: zipBytes, name: '$id.zip'),
@@ -778,4 +772,18 @@ class MatrixMessageContext {
   /// this send. Short-circuits the per-file upload inside `_sendFile` while
   /// keeping the surrounding vector-clock bookkeeping intact.
   final Set<String> skipAttachmentPaths;
+}
+
+/// Worker-isolate entry point for zip encoding. Builds the archive from
+/// [entries] and returns the encoded bytes as a single [Uint8List] so the
+/// archive value does not have to cross the isolate boundary.
+Uint8List _encodeBundleBytes(Map<String, Uint8List> entries) {
+  final archive = Archive();
+  for (final entry in entries.entries) {
+    archive.addFile(
+      ArchiveFile(entry.key, entry.value.length, entry.value),
+    );
+  }
+  final encoded = ZipEncoder().encode(archive);
+  return encoded is Uint8List ? encoded : Uint8List.fromList(encoded);
 }

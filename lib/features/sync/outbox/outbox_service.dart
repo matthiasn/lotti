@@ -93,6 +93,8 @@ class OutboxService {
           loggingService: _loggingService,
           maxRetriesOverride: maxRetries,
           domainLogger: _domainLogger,
+          journalDb: _journalDb,
+          documentsDirectory: _documentsDirectory,
         );
 
     _startRunner();

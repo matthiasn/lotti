@@ -21,5 +21,10 @@ const String attachmentEncodingGzip = 'gzip';
 /// unpack the zip and write each entry to its inner path instead of writing
 /// the zip itself. Receivers that do not understand the marker will still
 /// write the zip to the outer `relativePath`, which is harmless because that
-/// path is under `.bundles/` and is not referenced by any sync payload.
+/// path is under [attachmentBundleDirPrefix] and is not referenced by any
+/// sync payload.
 const String attachmentBundleKey = 'com.lotti.bundle';
+
+/// Documents-relative directory prefix used for the outer `relativePath` of
+/// bundle events. No sync payload resolves to a path under this prefix.
+const String attachmentBundleDirPrefix = '.bundles/';
