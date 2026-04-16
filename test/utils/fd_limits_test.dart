@@ -12,10 +12,24 @@ void main() {
       }
       final adjustment = ensureFileDescriptorSoftLimit();
       expect(adjustment.error, isNull);
+      // A positive-value check rejects the RLIM_INFINITY sign-flip regression
+      // (-1 signed readback of UINT64_MAX from a Uint64 field).
       expect(adjustment.softAfter, greaterThan(0));
       expect(adjustment.hardAfter, greaterThan(0));
+      expect(adjustment.softBefore, greaterThan(0));
+      expect(adjustment.hardBefore, greaterThan(0));
       expect(adjustment.softAfter, lessThanOrEqualTo(adjustment.hardAfter));
       expect(adjustment.softAfter, greaterThanOrEqualTo(adjustment.softBefore));
+      // When no error occurred, softAfter must reach the target (or the hard
+      // cap if that is lower — always a positive number in practice).
+      expect(
+        adjustment.softAfter,
+        greaterThanOrEqualTo(
+          adjustment.target < adjustment.hardAfter
+              ? adjustment.target
+              : adjustment.hardAfter,
+        ),
+      );
     });
 
     test('target is honoured when below hard limit', () {

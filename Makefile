@@ -294,10 +294,13 @@ fd_snapshot:
 	    echo "--- /proc/$$PID_VAL/limits (Max open files) ---"; \
 	    grep "Max open files" "/proc/$$PID_VAL/limits" || true; \
 	  fi; \
+	  LSOF_TMP=$$(mktemp -t lotti-fd-snapshot 2>/dev/null || mktemp); \
+	  lsof -p "$$PID_VAL" >"$$LSOF_TMP" 2>/dev/null || true; \
 	  echo "--- real FD count (excludes cwd/rtd/txt/mem) ---"; \
-	  lsof -p "$$PID_VAL" | awk 'NR>1 && $$4 ~ /^[0-9]+[rwu]?$$/' | wc -l | awk '{print "total_real_fds="$$1}'; \
+	  awk 'NR>1 && $$4 ~ /^[0-9]+[A-Za-z]*$$/' "$$LSOF_TMP" | wc -l | awk '{print "total_real_fds="$$1}'; \
 	  echo "--- grouped by type ---"; \
-	  lsof -p "$$PID_VAL" | awk 'NR>1 && $$4 ~ /^[0-9]+[rwu]?$$/ {print $$5}' | sort | uniq -c | sort -rn; \
+	  awk 'NR>1 && $$4 ~ /^[0-9]+[A-Za-z]*$$/ {print $$5}' "$$LSOF_TMP" | sort | uniq -c | sort -rn; \
+	  rm -f "$$LSOF_TMP"; \
 	} | tee "$$OUT"; \
 	echo ""; \
 	echo "Saved to $$OUT"

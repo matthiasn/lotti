@@ -164,7 +164,10 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       final softBefore = ptr.ref.rlimCur;
       final hardBefore = ptr.ref.rlimMax;
 
-      if (softBefore >= target) {
+      // An already-unlimited soft limit is strictly above any positive target;
+      // treat it as satisfied without a redundant `setrlimit` that would in
+      // fact *lower* it.
+      if (_isUnlimited(softBefore) || softBefore >= target) {
         return FdLimitAdjustment(
           softBefore: softBefore,
           hardBefore: hardBefore,
