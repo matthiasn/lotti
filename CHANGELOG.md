@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.953] - 2026-04-16
+### Fixed
+- Raise the open file descriptor soft limit to 10,240 at startup on macOS and
+  Linux. Apps launched from Finder/Spotlight on macOS inherited launchd's
+  legacy 256 limit, which was trivially exhausted under real-world load
+  (sockets, SQLite handles, attachment writes, log files). Under slow-network
+  conditions this manifested as sporadic `EMFILE` errors in the Matrix sync
+  pipeline and cascading DNS lookup failures until the app was restarted.
+
+### Added
+- Log the file descriptor soft/hard limits and the adjustment outcome at
+  startup (`MAIN / fdLimits`), so the current ceiling is discoverable from the
+  app logs without requiring `launchctl` or `ulimit` inspection.
+- Annotate `EMFILE` failures on the attachment save path with current
+  descriptor limits (`attachment.save.emfile` event), making future FD
+  pressure incidents self-diagnosing.
+
 ## [0.9.952] - 2026-04-15
 ### Changed
 - Task filter modal redesigned with the design system filter sheet, replacing
