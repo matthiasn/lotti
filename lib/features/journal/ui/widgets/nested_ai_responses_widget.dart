@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -284,10 +286,7 @@ class _NestedAiResponsesWidgetState
     BuildContext context,
     String responseId,
   ) async {
-    // Capture context values before async gap
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final errorMessage = context.messages.aiResponseDeleteError;
-    final errorColor = context.colorScheme.error;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -320,22 +319,18 @@ class _NestedAiResponsesWidgetState
           .read(journalRepositoryProvider)
           .deleteJournalEntity(responseId);
 
-      if (!success && mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: errorColor,
-          ),
+      if (!success && context.mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: errorMessage,
         );
       }
       return success;
     } catch (e) {
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: errorColor,
-          ),
+      if (context.mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: errorMessage,
         );
       }
       return false;

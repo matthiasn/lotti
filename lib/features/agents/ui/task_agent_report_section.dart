@@ -14,6 +14,8 @@ import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -366,10 +368,9 @@ class _TaskAgentReportSectionState
 
       if (templates.isEmpty) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentTemplateNoTemplates),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
         );
         return;
       }
@@ -400,12 +401,9 @@ class _TaskAgentReportSectionState
         stackTrace: s,
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.messages.taskAgentCreateError(e.toString()),
-            ),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.taskAgentCreateError(e.toString()),
         );
       }
     }

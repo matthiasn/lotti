@@ -775,4 +775,115 @@ void main() {
       }
     });
   });
+
+  group('DraggablePlannedBlock drag-disabled feedback', () {
+    testWidgets(
+      'long-press on a block overlapping a compressed region shows a '
+      'warning toast and does not start a drag',
+      (tester) async {
+        var dragActive = false;
+
+        // Block at 13:00–14:00 overlaps a compressed region at hour 13.
+        final slot = createTestSlot(
+          startHour: 13,
+          startMinute: 0,
+          endHour: 14,
+          endMinute: 0,
+        );
+
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 8, endHour: 13),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 13, endHour: 14),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 18,
+            foldingState: foldingState,
+            onDragActiveChanged: ({required bool isDragging}) =>
+                dragActive = isDragging,
+          ),
+        );
+        await tester.pump();
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Work')),
+        );
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Drag must not activate when the block is inside a compressed region.
+        expect(dragActive, isFalse);
+
+        // Warning toast is surfaced via the design-system extension.
+        expect(
+          find.text('Expand timeline to drag this block'),
+          findsOneWidget,
+        );
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'dragging into a compressed-region boundary shows a boundary-hint '
+      'toast exactly once',
+      (tester) async {
+        // Block at 11:00–12:00. The only drag cluster is 8–12 with a
+        // compressed region right after at 12–14. Dragging the block down
+        // is clamped at 12:00, which must trigger `_showBoundaryHint`.
+        final slot = createTestSlot(
+          startHour: 11,
+          startMinute: 0,
+          endHour: 12,
+          endMinute: 0,
+        );
+
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 8, endHour: 12),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 12, endHour: 14),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 12,
+            foldingState: foldingState,
+          ),
+        );
+        await tester.pump();
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Work')),
+        );
+        // Wait for long-press to activate the drag.
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Drag far past the section boundary — clamping pins end at 12:00.
+        await gesture.moveBy(const Offset(0, 400));
+        await tester.pump();
+
+        expect(
+          find.text('Expand timeline to move further'),
+          findsOneWidget,
+        );
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
+  });
 }

@@ -122,13 +122,11 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
         final svc = ref.read(matrixServiceProvider);
         final text = await svc.getSyncDiagnosticsText();
         if (!context.mounted) return;
-        await ClipboardHelper.copyTextWithSnackBar(
+        await ClipboardHelper.copyTextAndNotify(
           context,
           text,
-          snackBar: const SnackBar(
-            content: Text('Diagnostics copied'),
-            duration: Duration(milliseconds: 800),
-          ),
+          title: context.messages.settingsMatrixDiagnosticCopied,
+          duration: const Duration(milliseconds: 800),
         );
       },
       onRefresh: _refreshDiagnostics,

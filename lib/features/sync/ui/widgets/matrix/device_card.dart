@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
@@ -52,23 +54,18 @@ class DeviceCard extends ConsumerWidget {
                           deviceKeys.deviceDisplayName ??
                           deviceKeys.deviceId ??
                           'unknown';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.messages.deviceDeletedSuccess(deviceName),
-                          ),
+                      context.showToast(
+                        tone: DesignSystemToastTone.success,
+                        title: context.messages.deviceDeletedSuccess(
+                          deviceName,
                         ),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.messages.deviceDeleteFailed('$e'),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
+                      context.showToast(
+                        tone: DesignSystemToastTone.error,
+                        title: context.messages.deviceDeleteFailed('$e'),
                       );
                     }
                   }

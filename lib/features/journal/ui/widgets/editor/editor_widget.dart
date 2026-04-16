@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
@@ -49,11 +51,11 @@ String getSelectedText(QuillController controller) {
   );
 }
 
-/// Shows a snackbar with the dictionary result message if applicable.
-/// Returns true if a snackbar was shown, false otherwise.
+/// Shows a toast with the dictionary result message if applicable.
+/// Returns true if a toast was shown, false otherwise.
 ///
 /// This is extracted as a top-level function for testability.
-bool showDictionaryResultSnackbar(
+bool showDictionaryResultToast(
   BuildContext context,
   SpeechDictionaryResult result,
   AppLocalizations messages,
@@ -63,12 +65,16 @@ bool showDictionaryResultSnackbar(
     return false;
   }
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
+  // Silent results (emptyTerm / entryNotFound / categoryNotFound) return a
+  // null message above and never reach this switch — the default warning
+  // arm is the common fall-through for the remaining warning cases.
+  final tone = switch (result) {
+    SpeechDictionaryResult.success => DesignSystemToastTone.success,
+    SpeechDictionaryResult.saveFailed => DesignSystemToastTone.error,
+    _ => DesignSystemToastTone.warning,
+  };
+
+  context.showToast(tone: tone, title: message);
   return true;
 }
 
@@ -240,6 +246,6 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
 
     if (!context.mounted) return;
 
-    showDictionaryResultSnackbar(context, result, context.messages);
+    showDictionaryResultToast(context, result, context.messages);
   }
 }

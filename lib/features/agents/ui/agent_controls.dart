@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -170,12 +172,9 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
         stackTrace: s,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.messages.agentControlsActionError(e.toString()),
-            ),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.agentControlsActionError(e.toString()),
         );
       }
     } finally {

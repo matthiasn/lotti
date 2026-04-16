@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -132,6 +134,13 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
     if (_busy) return;
     setState(() => _busy = true);
 
+    // Capture both the messenger and the localized strings BEFORE the
+    // await: the parent provider rebuilds its list once the suggestion
+    // transitions out of `pending`, which unmounts this row and
+    // invalidates `context`.
+    final messenger = ScaffoldMessenger.of(context);
+    final messages = context.messages;
+
     final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = _suggestion.changeSet.agentId;
@@ -143,28 +152,29 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
       );
       notifier.notify({agentId});
 
-      if (context.mounted) {
-        final message = !result.success
-            ? context.messages.changeSetConfirmError
-            : result.errorMessage != null
-            ? context.messages.changeSetItemConfirmedWithWarning(
-                result.errorMessage!,
-              )
-            : context.messages.changeSetItemConfirmed;
+      final tone = !result.success
+          ? DesignSystemToastTone.error
+          : result.errorMessage != null
+          ? DesignSystemToastTone.warning
+          : DesignSystemToastTone.success;
+      final message = !result.success
+          ? messages.changeSetConfirmError
+          : result.errorMessage != null
+          ? messages.changeSetItemConfirmedWithWarning(result.errorMessage!)
+          : messages.changeSetItemConfirmed;
 
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(message)));
-      }
+      messenger.showDesignSystemToast(
+        tone: tone,
+        title: message,
+        replaceCurrent: true,
+      );
     } catch (e) {
       developer.log('confirmItem failed: $e', name: 'SuggestionRow');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(content: Text(context.messages.changeSetConfirmError)),
-          );
-      }
+      messenger.showDesignSystemToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.changeSetConfirmError,
+        replaceCurrent: true,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -173,6 +183,10 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
   Future<void> _reject(BuildContext context) async {
     if (_busy) return;
     setState(() => _busy = true);
+
+    // Capture before the await — see [_confirm].
+    final messenger = ScaffoldMessenger.of(context);
+    final messages = context.messages;
 
     final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
@@ -185,28 +199,22 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
       );
       notifier.notify({agentId});
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                applied
-                    ? context.messages.changeSetItemRejected
-                    : context.messages.changeSetConfirmError,
-              ),
-            ),
-          );
-      }
+      messenger.showDesignSystemToast(
+        tone: applied
+            ? DesignSystemToastTone.success
+            : DesignSystemToastTone.error,
+        title: applied
+            ? messages.changeSetItemRejected
+            : messages.changeSetConfirmError,
+        replaceCurrent: true,
+      );
     } catch (e) {
       developer.log('rejectItem failed: $e', name: 'SuggestionRow');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(content: Text(context.messages.changeSetConfirmError)),
-          );
-      }
+      messenger.showDesignSystemToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.changeSetConfirmError,
+        replaceCurrent: true,
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }

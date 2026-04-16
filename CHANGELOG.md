@@ -22,6 +22,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across all locales). The DB-side flag definition was already in
   place — this surfaces the toggle in the UI so users can hide the
   What's New tree leaf without editing the database.
+- `DesignSystemToast` grows two new affordances and is now the single
+  toast surface used across the app:
+  - `ToastAction(label, onPressed, semanticsLabel?)` renders an
+    inline call-to-action (e.g. "Undo") in the trailing slot. Action
+    and dismiss can coexist; the action label inherits the tone's
+    border color so the CTA reads as part of the tone, not a generic
+    link.
+  - `countdownDuration` paints a thin tone-coloured progress strip
+    along the toast's top edge that drains over the supplied
+    duration; `initialCountdownProgress` lets a resumed countdown
+    pick up mid-bar.
+  - `BuildContext.showToast` learns matching `action`, `countdown`,
+    `initialCountdownProgress`, and `replaceCurrent` parameters; a
+    new parallel extension `ScaffoldMessengerState.showDesignSystemToast`
+    exposes the same surface to async callbacks that may outlive the
+    calling widget (e.g. swipe-to-dismiss `onDismissed`, where the
+    row is removed from the tree before the toast fires — captured
+    `messenger` survives the unmount, captured `context` does not).
+    `replaceCurrent: true` only hides the *current* SnackBar; items
+    already queued behind it still appear afterwards.
+  - The shared SnackBar wrapper auto-extends its visible duration by
+    one second when `countdown: true` so the bar reaches zero before
+    the SnackBar fades.
+- Every remaining `ScaffoldMessenger.showSnackBar` call site that was
+  semantically a tone-coded notification now goes through
+  `DesignSystemToast`:
+  - Checklist item swipe-to-delete + swipe-to-archive (warning tone,
+    5s / 2s countdown, Undo action) — replaces the old
+    `showCountdownSnackBar` helper.
+  - Checklist correction-capture pending toast (success tone,
+    countdown matches `kCorrectionSaveDelay`, Cancel action) — the
+    `CorrectionUndoSnackbarContent` widget now renders
+    `DesignSystemToast` internally and ticks every 500 ms only to
+    refresh the "save in N s" title; the countdown bar runs off a
+    single animation controller so parent rebuilds don't stutter it.
+  - Agents: per-row Suggestion confirm / reject and AgentSuggestions
+    panel confirm-all (success / warning / error tones based on
+    result), with strings + messenger captured before the await so
+    the toast still fires after the row is unmounted by the
+    suggestion list rebuild.
+  - Sync: Backfill Sync `Catch up now` and `Retry skipped events`,
+    plus the QueueDepthCard `Retry all skipped` action (success on
+    completion, error on throw).
 
 ### Changed
 - Backfill Sync settings page rebuilt around the Option C "compact ledger"
@@ -72,6 +115,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keys (`configFlagEnableSettingsTree{,Description}`,
   `settingsV2DisableAction`, `settingsV2DisableFailed`) across all locales.
   The `placeholderButtonIconSize` constant is gone with its sole caller.
+- `lib/widgets/misc/countdown_snackbar_content.dart` (and its test) —
+  the `CountdownSnackBarContent` widget and its `showCountdownSnackBar`
+  helper had no callers left after the checklist swipe flows moved to
+  `DesignSystemToast`'s native `countdown` + `action` API.
 
 ### Fixed
 - Category selection modal now closes itself when a row is tapped on

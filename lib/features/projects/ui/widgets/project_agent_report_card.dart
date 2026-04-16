@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -46,10 +48,9 @@ class ProjectAgentReportCard extends ConsumerWidget {
 
       if (templates.isEmpty) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentTemplateNoTemplates),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
         );
         return;
       }
@@ -82,10 +83,9 @@ class ProjectAgentReportCard extends ConsumerWidget {
         stackTrace: s,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.taskAgentCreateError(e.toString())),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.taskAgentCreateError(e.toString()),
       );
     }
   }
@@ -264,10 +264,9 @@ class _ProjectRecommendationTile extends ConsumerWidget {
         .read(projectRecommendationServiceProvider)
         .markResolved(recommendation.id);
     if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.projectRecommendationUpdateError),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectRecommendationUpdateError,
       );
     }
   }
@@ -277,10 +276,9 @@ class _ProjectRecommendationTile extends ConsumerWidget {
         .read(projectRecommendationServiceProvider)
         .dismissRecommendation(recommendation.id);
     if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.projectRecommendationUpdateError),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectRecommendationUpdateError,
       );
     }
   }

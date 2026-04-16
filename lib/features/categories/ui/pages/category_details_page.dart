@@ -16,11 +16,12 @@ import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
@@ -147,11 +148,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   Future<void> _handleCreate() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.categoryNameRequired),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.categoryNameRequired,
       );
       return;
     }
@@ -174,11 +173,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error creating category. Please try again.'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.categoryCreationError,
         );
       }
     }
@@ -251,14 +248,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       return;
     }
 
-    // Success - show snackbar and navigate back to the list. Beaming
-    // (rather than popping) keeps V2's desktop inline panel in sync;
-    // mobile's Beamer stack reduces to the list page automatically.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.messages.saveSuccessful),
-        backgroundColor: successColor,
-      ),
+    // Success — surface a toast and beam to the list. Beaming (rather
+    // than popping) keeps V2's desktop inline panel in sync; mobile's
+    // Beamer stack reduces to the list page automatically.
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.saveSuccessful,
     );
     beamToNamed('/settings/categories');
   }
