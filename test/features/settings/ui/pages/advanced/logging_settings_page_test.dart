@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -13,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../test_utils.dart';
 
 /// Finds both [Switch] and [CupertinoSwitch] widgets, since
 /// `Switch.adaptive` renders platform-specifically.
@@ -261,6 +265,40 @@ void main() {
       expect(find.byIcon(Icons.play_circle_outline_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.sync_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.speed_rounded), findsAtLeast(1));
+    });
+
+    testWidgets('uses design system grouped list layout', (tester) async {
+      await pumpPage(tester, overrides: allEnabledOverrides());
+
+      expect(find.byType(DesignSystemGroupedList), findsOneWidget);
+      // 5 fixed items: global toggle + 4 domain toggles.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(5));
+      expect(find.byType(SettingsIcon), findsNWidgets(5));
+    });
+
+    testWidgets('shows dividers between items but not after last', (
+      tester,
+    ) async {
+      await pumpPage(tester, overrides: allEnabledOverrides());
+      expectDividersOnAllButLast(tester);
+    });
+
+    testWidgets('items do not appear dimmed despite having no onTap', (
+      tester,
+    ) async {
+      await pumpPage(tester, overrides: allEnabledOverrides());
+
+      final items = tester.widgetList<DesignSystemListItem>(
+        find.byType(DesignSystemListItem),
+      );
+
+      for (final item in items) {
+        expect(
+          item.forcedState,
+          DesignSystemListItemVisualState.idle,
+          reason: 'Toggle rows should not appear disabled',
+        );
+      }
     });
   });
 }

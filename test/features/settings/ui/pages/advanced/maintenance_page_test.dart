@@ -5,7 +5,10 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -15,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../test_utils.dart';
 
 Widget _constrainedMaintenancePage() {
   return ConstrainedBox(
@@ -263,6 +267,31 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Re-index All Embeddings'), findsNothing);
+    });
+
+    testWidgets('uses design system grouped list with chevrons', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DesignSystemGroupedList), findsOneWidget);
+      // 6 fixed items (EmbeddingStore not registered in this group).
+      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
+      expect(find.byType(SettingsIcon), findsNWidgets(6));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+    });
+
+    testWidgets('shows dividers between items but not after last', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pumpAndSettle();
+      expectDividersOnAllButLast(tester);
     });
   });
 }

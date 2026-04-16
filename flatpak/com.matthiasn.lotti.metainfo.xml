@@ -34,7 +34,7 @@
     <release version="0.9.952" date="2026-04-15">
       <description>
           <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
-          <p>Categories, labels, dashboards, measurables, and habits list pages now use design system list items in a grouped container, matching the settings page visual style. Settings page uses a 3-column desktop layout for wider screens.</p>
+          <p>Categories, labels, dashboards, measurables, and habits list pages now use design system list items in a grouped container, matching the settings page visual style. Maintenance and logging domain settings pages likewise updated to use design system list items. Settings page uses a 3-column desktop layout for wider screens.</p>
       </description>
     </release>
     <release version="0.9.951" date="2026-04-13">

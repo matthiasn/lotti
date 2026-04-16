@@ -6,8 +6,11 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
-import 'package:lotti/features/settings/ui/widgets/animated_settings_cards.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -20,14 +23,12 @@ class MaintenancePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final maintenance = getIt<Maintenance>();
 
-    return SliverBoxAdapterPage(
-      title: context.messages.settingsMaintenanceTitle,
-      showBackButton: true,
-      child: Column(
-        children: [
-          AnimatedModernSettingsCardWithIcon(
+    final items =
+        <({String title, String subtitle, IconData icon, VoidCallback onTap})>[
+          (
             title: context.messages.settingsResetHintsTitle,
             subtitle: context.messages.settingsResetHintsSubtitle,
             icon: Icons.tips_and_updates_outlined,
@@ -43,16 +44,14 @@ class MaintenancePage extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      context.messages.settingsResetHintsResult(
-                        removed,
-                      ),
+                      context.messages.settingsResetHintsResult(removed),
                     ),
                   ),
                 );
               }
             },
           ),
-          AnimatedModernSettingsCardWithIcon(
+          (
             title: context.messages.settingsResetGeminiTitle,
             subtitle: context.messages.settingsResetGeminiSubtitle,
             icon: Icons.auto_awesome,
@@ -68,7 +67,7 @@ class MaintenancePage extends ConsumerWidget {
                   .resetDismissal();
             },
           ),
-          AnimatedModernSettingsCardWithIcon(
+          (
             title: context.messages.maintenanceDeleteEditorDb,
             subtitle: context.messages.maintenanceDeleteEditorDbDescription,
             icon: Icons.edit_note_rounded,
@@ -85,7 +84,7 @@ class MaintenancePage extends ConsumerWidget {
               }
             },
           ),
-          AnimatedModernSettingsCardWithIcon(
+          (
             title: context.messages.maintenanceDeleteAgentDb,
             subtitle: context.messages.maintenanceDeleteAgentDbDescription,
             icon: Icons.smart_toy_outlined,
@@ -103,25 +102,43 @@ class MaintenancePage extends ConsumerWidget {
               }
             },
           ),
-          AnimatedModernSettingsCardWithIcon(
+          (
             title: context.messages.maintenancePurgeDeleted,
             subtitle: context.messages.maintenancePurgeDeletedDescription,
             icon: Icons.delete_forever_rounded,
             onTap: () => PurgeModal.show(context),
           ),
-          AnimatedModernSettingsCardWithIcon(
+          (
             title: context.messages.maintenanceRecreateFts5,
             subtitle: context.messages.maintenanceRecreateFts5Description,
             icon: Icons.search_rounded,
             onTap: () => Fts5RecreateModal.show(context),
           ),
           if (getIt.isRegistered<EmbeddingStore>())
-            AnimatedModernSettingsCardWithIcon(
+            (
               title: context.messages.maintenanceGenerateEmbeddings,
               subtitle:
                   context.messages.maintenanceGenerateEmbeddingsDescription,
               icon: Icons.hub_outlined,
               onTap: () => EmbeddingBackfillModal.show(context),
+            ),
+        ];
+
+    return SliverBoxAdapterPage(
+      title: context.messages.settingsMaintenanceTitle,
+      showBackButton: true,
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+      child: DesignSystemGroupedList(
+        children: [
+          for (final (index, item) in items.indexed)
+            DesignSystemListItem(
+              title: item.title,
+              subtitle: item.subtitle,
+              leading: SettingsIcon(icon: item.icon),
+              trailing: SettingsIcon.trailingChevron(tokens),
+              showDivider: index < items.length - 1,
+              dividerIndent: SettingsIcon.dividerIndent(tokens),
+              onTap: item.onTap,
             ),
         ],
       ),

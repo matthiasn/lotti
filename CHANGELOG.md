@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consistent back-button behavior across mobile and desktop layouts.
 - Dashboards, measurables, and habits list pages now use design system list
   items in a grouped container, consistent with categories and labels.
+- Maintenance and logging domain settings pages now use design system list items
+  in a grouped container, consistent with the rest of the settings pages.
 - Settings page uses a 3-column desktop layout for wider screens.
 
 ## [0.9.951] - 2026-04-13

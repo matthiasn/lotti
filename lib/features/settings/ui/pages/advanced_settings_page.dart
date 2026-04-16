@@ -68,16 +68,9 @@ class AdvancedSettingsPage extends ConsumerWidget {
                   title: item.title,
                   subtitle: item.subtitle,
                   leading: SettingsIcon(icon: item.icon),
-                  trailing: Icon(
-                    Icons.chevron_right_rounded,
-                    size: tokens.spacing.step6,
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
+                  trailing: SettingsIcon.trailingChevron(tokens),
                   showDivider: index < items.length - 1,
-                  dividerIndent:
-                      tokens.spacing.step5 +
-                      SettingsIcon.containerSize +
-                      tokens.spacing.step3,
+                  dividerIndent: SettingsIcon.dividerIndent(tokens),
                   onTap: item.onTap,
                 ),
             ],
