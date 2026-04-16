@@ -261,3 +261,43 @@ icons:
 
 .PHONY: clean_test
 clean_test: clean deps build_runner l10n test
+
+# Capture a file descriptor diagnostic snapshot of the running Lotti process.
+# Writes to tmp/fd/fd-<timestamp>.txt and prints to stdout. Compare snapshots
+# over time to spot monotonic FD growth (a leak) vs a stable working set.
+# Override the PID if auto-detection picks the wrong process:
+#   make fd_snapshot PID=12345
+.PHONY: fd_snapshot
+fd_snapshot:
+	@mkdir -p tmp/fd
+	@PID_VAL="$${PID:-}"; \
+	if [ -z "$$PID_VAL" ]; then PID_VAL=$$(pgrep -x Lotti 2>/dev/null | head -n1); fi; \
+	if [ -z "$$PID_VAL" ]; then PID_VAL=$$(pgrep -x lotti 2>/dev/null | head -n1); fi; \
+	if [ -z "$$PID_VAL" ]; then \
+	  echo "No running Lotti process found."; \
+	  echo "Launch Lotti, or pass an explicit PID: make fd_snapshot PID=<pid>"; \
+	  exit 1; \
+	fi; \
+	TS=$$(date +%Y-%m-%d-%H%M%S); \
+	OUT="tmp/fd/fd-$$TS.txt"; \
+	{ \
+	  echo "=== Lotti FD snapshot $$TS pid=$$PID_VAL ==="; \
+	  if command -v launchctl >/dev/null 2>&1; then \
+	    echo "--- launchctl limit maxfiles ---"; \
+	    launchctl limit maxfiles 2>/dev/null || true; \
+	  fi; \
+	  if command -v sysctl >/dev/null 2>&1; then \
+	    echo "--- sysctl ---"; \
+	    sysctl kern.maxfiles kern.maxfilesperproc 2>/dev/null || true; \
+	  fi; \
+	  if [ -r "/proc/$$PID_VAL/limits" ]; then \
+	    echo "--- /proc/$$PID_VAL/limits (Max open files) ---"; \
+	    grep "Max open files" "/proc/$$PID_VAL/limits" || true; \
+	  fi; \
+	  echo "--- real FD count (excludes cwd/rtd/txt/mem) ---"; \
+	  lsof -p "$$PID_VAL" | awk 'NR>1 && $$4 ~ /^[0-9]+[rwu]?$$/' | wc -l | awk '{print "total_real_fds="$$1}'; \
+	  echo "--- grouped by type ---"; \
+	  lsof -p "$$PID_VAL" | awk 'NR>1 && $$4 ~ /^[0-9]+[rwu]?$$/ {print $$5}' | sort | uniq -c | sort -rn; \
+	} | tee "$$OUT"; \
+	echo ""; \
+	echo "Saved to $$OUT"

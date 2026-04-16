@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.953" date="2026-04-16">
+      <description>
+          <p>Raise the open file descriptor soft limit to 10,240 at startup on macOS and Linux. The legacy 256 limit inherited by GUI apps on macOS was trivially exhausted under real-world load, which under slow-network conditions manifested as sporadic EMFILE errors on the Matrix sync pipeline and cascading DNS lookup failures until the app was restarted.</p>
+          <p>Startup now logs the soft/hard limits and the adjustment outcome, and EMFILE failures on the attachment save path are annotated with the current descriptor limits so future file-descriptor-pressure incidents are self-diagnosing.</p>
+      </description>
+    </release>
     <release version="0.9.952" date="2026-04-15">
       <description>
           <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>

@@ -20,6 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
+import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:media_kit/media_kit.dart';
@@ -34,11 +35,23 @@ class AppConstants {
 }
 
 Future<void> main() async {
+  // Raise the file descriptor soft limit before anything opens an FD. On
+  // macOS, GUI apps inherit launchd's legacy soft limit of 256, which is
+  // trivially exhausted (sockets, SQLite, attachments, logs). Captured
+  // synchronously so we can log the outcome once LoggingService exists.
+  final fdAdjustment = ensureFileDescriptorSoftLimit();
+
   await runZonedGuarded(
     () async {
       getIt.registerSingleton<LoggingService>(
         LoggingService(),
         dispose: (service) => service.dispose(),
+      );
+
+      getIt<LoggingService>().captureEvent(
+        fdAdjustment.toString(),
+        domain: 'MAIN',
+        subDomain: 'fdLimits',
       );
 
       WidgetsFlutterBinding.ensureInitialized();

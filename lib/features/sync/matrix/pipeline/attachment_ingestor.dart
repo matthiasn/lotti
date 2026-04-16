@@ -4,12 +4,14 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
@@ -393,6 +395,16 @@ class AttachmentIngestor {
       return true;
     } catch (e, st) {
       // Log but don't throw - SmartJournalEntityLoader can retry later
+      if (e is FileSystemException && e.osError?.errorCode == 24) {
+        final limits = readFileDescriptorLimits();
+        logging.captureEvent(
+          'emfile path=$relativePath '
+          'fd.soft=${limits?.soft ?? '?'} fd.hard=${limits?.hard ?? '?'}',
+          domain: syncLoggingDomain,
+          subDomain: 'attachment.save.emfile',
+          level: InsightLevel.warn,
+        );
+      }
       logging.captureException(
         e,
         domain: syncLoggingDomain,
