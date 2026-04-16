@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -36,12 +38,9 @@ class DiagnosticInfoButton extends ConsumerWidget {
                   await Clipboard.setData(ClipboardData(text: prettyJson));
                   if (dialogContext.mounted) {
                     Navigator.of(dialogContext).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          context.messages.settingsMatrixDiagnosticCopied,
-                        ),
-                      ),
+                    context.showToast(
+                      tone: DesignSystemToastTone.success,
+                      title: context.messages.settingsMatrixDiagnosticCopied,
                     );
                   }
                 },

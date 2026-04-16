@@ -2106,6 +2106,12 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
+  /// No description provided for @aiChatMessageCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get aiChatMessageCopied;
+
   /// No description provided for @aiConfigApiKeyEmptyError.
   ///
   /// In en, this message translates to:
@@ -2579,6 +2585,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Model Settings'**
   String get aiModelSettings;
+
+  /// No description provided for @aiOllamaModelInstalledSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Model \"{modelName}\" installed successfully!'**
+  String aiOllamaModelInstalledSuccessfully(String modelName);
 
   /// No description provided for @aiProviderAlibabaDescription.
   ///
@@ -3479,6 +3491,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm all'**
   String get changeSetConfirmAll;
+
+  /// No description provided for @changeSetConfirmAllPartialIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}'**
+  String changeSetConfirmAllPartialIssues(int count);
 
   /// No description provided for @changeSetConfirmError.
   ///
@@ -6011,6 +6029,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'24-hour'**
   String get designSystemTimePickerTwentyFourHourLabel;
+
+  /// No description provided for @designSystemTitleOnlyVariantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title Only Variant'**
+  String get designSystemTitleOnlyVariantTitle;
 
   /// No description provided for @designSystemToastDetailsLabel.
   ///

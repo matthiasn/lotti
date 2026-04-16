@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/rating_question.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
@@ -127,11 +129,9 @@ class _RatingModalState extends ConsumerState<RatingModal> {
         await HapticFeedback.heavyImpact();
         navigator.pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.sessionRatingSaveError),
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.sessionRatingSaveError,
         );
       }
     } finally {

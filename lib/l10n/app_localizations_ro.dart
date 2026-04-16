@@ -1178,6 +1178,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
+  String get aiChatMessageCopied => 'Copiat în clipboard';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'Cheia API nu poate fi goală';
 
   @override
@@ -1458,6 +1461,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiModelSettings => 'Setări model AI';
+
+  @override
+  String aiOllamaModelInstalledSuccessfully(String modelName) {
+    return 'Modelul „$modelName” a fost instalat cu succes!';
+  }
 
   @override
   String get aiProviderAlibabaDescription =>
@@ -1985,6 +1993,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get changeSetConfirmAll => 'Confirmați toate';
+
+  @override
+  String changeSetConfirmAllPartialIssues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente au avut probleme parțiale',
+      one: '1 element a avut probleme parțiale',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get changeSetConfirmError => 'Modificarea nu a putut fi aplicată';
@@ -3374,6 +3393,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemTimePickerTwentyFourHourLabel => '24 de ore';
+
+  @override
+  String get designSystemTitleOnlyVariantTitle => 'Variantă doar titlu';
 
   @override
   String get designSystemToastDetailsLabel => 'Detalii notificare';

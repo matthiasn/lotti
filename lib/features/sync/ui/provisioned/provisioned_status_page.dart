@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
@@ -317,17 +317,11 @@ class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
               IconButton(
                 key: const Key('statusCopyHandoverData'),
                 icon: const Icon(Icons.copy),
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final copiedMessage =
-                      context.messages.provisionedSyncCopiedToClipboard;
-                  await Clipboard.setData(
-                    ClipboardData(text: _handoverBase64!),
-                  );
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(copiedMessage)),
-                  );
-                },
+                onPressed: () => ClipboardHelper.copyTextAndNotify(
+                  context,
+                  _handoverBase64!,
+                  title: context.messages.provisionedSyncCopiedToClipboard,
+                ),
               ),
             ],
           ),

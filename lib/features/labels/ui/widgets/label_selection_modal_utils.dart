@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -131,12 +133,9 @@ class LabelSelectionStickyActionBar extends StatelessWidget {
                             if (ok) {
                               Navigator.of(context).pop();
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    context.messages.tasksLabelsUpdateFailed,
-                                  ),
-                                ),
+                              context.showToast(
+                                tone: DesignSystemToastTone.error,
+                                title: context.messages.tasksLabelsUpdateFailed,
                               );
                             }
                           },

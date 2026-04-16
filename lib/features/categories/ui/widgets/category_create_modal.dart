@@ -5,6 +5,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
@@ -108,20 +110,15 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
               const SizedBox(width: CategoryIconConstants.smallSectionSpacing),
               LottiTertiaryButton(
                 onPressed: () async {
-                  final scaffoldMessenger = ScaffoldMessenger.of(context);
                   final navigator = Navigator.of(context);
                   final messages = context.messages;
-                  final theme = Theme.of(context);
 
                   final categoryName = _nameController.text.trim();
 
-                  // Validate input
                   if (categoryName.isEmpty) {
-                    scaffoldMessenger.showSnackBar(
-                      SnackBar(
-                        content: Text(messages.categoryNameRequired),
-                        backgroundColor: theme.colorScheme.error,
-                      ),
+                    context.showToast(
+                      tone: DesignSystemToastTone.error,
+                      title: messages.categoryNameRequired,
                     );
                     return;
                   }
@@ -136,7 +133,6 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                     widget.onCategoryCreated(category);
                     navigator.pop();
                   } catch (e, s) {
-                    // Log the actual error with stack trace for debugging
                     DevLogger.error(
                       name: 'CategoryCreateModal',
                       message: 'Error creating category',
@@ -144,11 +140,10 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                       stackTrace: s,
                     );
 
-                    scaffoldMessenger.showSnackBar(
-                      SnackBar(
-                        content: Text(messages.categoryCreationError),
-                        backgroundColor: theme.colorScheme.error,
-                      ),
+                    if (!context.mounted) return;
+                    context.showToast(
+                      tone: DesignSystemToastTone.error,
+                      title: messages.categoryCreationError,
                     );
                   }
                 },

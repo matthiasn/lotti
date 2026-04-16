@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart'
         projectPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -189,17 +191,15 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
             .length;
 
         if (anyFailed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.messages.changeSetConfirmError)),
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.changeSetConfirmError,
           );
         } else if (warningCount > 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.messages.changeSetItemConfirmedWithWarning(
-                  '$warningCount item(s) had partial issues',
-                ),
-              ),
+          context.showToast(
+            tone: DesignSystemToastTone.warning,
+            title: context.messages.changeSetItemConfirmedWithWarning(
+              context.messages.changeSetConfirmAllPartialIssues(warningCount),
             ),
           );
         }
@@ -210,8 +210,9 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
         name: 'ChangeSetSummaryCard',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.changeSetConfirmError)),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.changeSetConfirmError,
         );
       }
     } finally {
@@ -359,17 +360,21 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       notifier.notify({agentId});
 
       if (context.mounted) {
-        final message = !result.success
-            ? context.messages.changeSetConfirmError
-            : result.errorMessage != null
-            ? context.messages.changeSetItemConfirmedWithWarning(
-                result.errorMessage!,
-              )
-            : context.messages.changeSetItemConfirmed;
-
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(message)));
+        final DesignSystemToastTone tone;
+        final String message;
+        if (!result.success) {
+          tone = DesignSystemToastTone.error;
+          message = context.messages.changeSetConfirmError;
+        } else if (result.errorMessage != null) {
+          tone = DesignSystemToastTone.warning;
+          message = context.messages.changeSetItemConfirmedWithWarning(
+            result.errorMessage!,
+          );
+        } else {
+          tone = DesignSystemToastTone.success;
+          message = context.messages.changeSetItemConfirmed;
+        }
+        context.showToast(tone: tone, title: message);
       }
     } catch (e) {
       developer.log(
@@ -377,11 +382,10 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
         name: 'ChangeSetSummaryCard',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(content: Text(context.messages.changeSetConfirmError)),
-          );
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.changeSetConfirmError,
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -402,17 +406,14 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       notifier.notify({agentId});
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                applied
-                    ? context.messages.changeSetItemRejected
-                    : context.messages.changeSetConfirmError,
-              ),
-            ),
-          );
+        context.showToast(
+          tone: applied
+              ? DesignSystemToastTone.success
+              : DesignSystemToastTone.error,
+          title: applied
+              ? context.messages.changeSetItemRejected
+              : context.messages.changeSetConfirmError,
+        );
       }
     } catch (e) {
       developer.log(
@@ -420,11 +421,10 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
         name: 'ChangeSetSummaryCard',
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(content: Text(context.messages.changeSetConfirmError)),
-          );
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.changeSetConfirmError,
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);

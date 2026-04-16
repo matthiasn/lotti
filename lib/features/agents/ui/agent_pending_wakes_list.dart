@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/wake_activity_chart.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -209,16 +211,12 @@ class _PendingWakeCardState extends ConsumerState<_PendingWakeCard> {
       if (!mounted) {
         return;
       }
-      final scaffold = Scaffold.maybeOf(context);
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      if (scaffold != null && messenger != null) {
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(context.messages.commonError),
-            ),
-          );
+      if (Scaffold.maybeOf(context) != null &&
+          ScaffoldMessenger.maybeOf(context) != null) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
       }
     } finally {
       if (mounted) {

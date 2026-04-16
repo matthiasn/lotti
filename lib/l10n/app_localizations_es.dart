@@ -1176,6 +1176,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Cambiar a grabación estándar';
 
   @override
+  String get aiChatMessageCopied => 'Copiado al portapapeles';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'La clave API no puede estar vacía';
 
   @override
@@ -1472,6 +1475,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiModelSettings => 'Ajustes de modelo AI';
+
+  @override
+  String aiOllamaModelInstalledSuccessfully(String modelName) {
+    return '¡Modelo \"$modelName\" instalado correctamente!';
+  }
 
   @override
   String get aiProviderAlibabaDescription =>
@@ -2012,6 +2020,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get changeSetConfirmAll => 'Confirmar todos';
+
+  @override
+  String changeSetConfirmAllPartialIssues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos tuvieron problemas parciales',
+      one: '1 elemento tuvo problemas parciales',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get changeSetConfirmError => 'No se pudo aplicar el cambio';
@@ -3415,6 +3434,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get designSystemTimePickerTwentyFourHourLabel => '24 horas';
+
+  @override
+  String get designSystemTitleOnlyVariantTitle => 'Variante solo título';
 
   @override
   String get designSystemToastDetailsLabel => 'Detalles de la notificación';

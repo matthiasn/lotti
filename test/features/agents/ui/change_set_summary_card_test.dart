@@ -142,6 +142,305 @@ void main() {
     });
 
     testWidgets(
+      'per-item confirm failure shows an error toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-004',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmItem(any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: false,
+            output: '',
+            errorMessage: 'Tool exploded',
+          ),
+        );
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.drag(
+          find.text('Update project status to active'),
+          const Offset(300, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'per-item confirm warning shows a warning toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-005',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmItem(any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'Done',
+            errorMessage: 'Partial success',
+          ),
+        );
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.drag(
+          find.text('Update project status to active'),
+          const Offset(300, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(
+          find.textContaining('Partial success'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'per-item confirm success shows a success toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-006',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmItem(any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+        );
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.drag(
+          find.text('Update project status to active'),
+          const Offset(300, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Change applied'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'per-item confirm exception shows an error toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-007',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmItem(any(), any()),
+        ).thenThrow(Exception('Confirmation service down'));
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.drag(
+          find.text('Update project status to active'),
+          const Offset(300, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets('reject success shows a success toast', (tester) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-008',
+        taskId: 'project-001',
+        items: const [
+          ChangeItem(
+            toolName: 'update_project_status',
+            args: {'status': 'on_hold'},
+            humanSummary: 'Update project status to on hold',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await pumpProjectCard(tester, changeSets: [changeSet]);
+
+      await tester.drag(
+        find.text('Update project status to on hold'),
+        const Offset(-300, 0),
+      );
+      await _pumpUi(tester);
+
+      expect(find.text('Change rejected'), findsOneWidget);
+    });
+
+    testWidgets('reject not-applied shows an error toast', (tester) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-009',
+        taskId: 'project-001',
+        items: const [
+          ChangeItem(
+            toolName: 'update_project_status',
+            args: {'status': 'on_hold'},
+            humanSummary: 'Update project status to on hold',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      await pumpProjectCard(tester, changeSets: [changeSet]);
+
+      await tester.drag(
+        find.text('Update project status to on hold'),
+        const Offset(-300, 0),
+      );
+      await _pumpUi(tester);
+
+      expect(find.text('Failed to apply change'), findsOneWidget);
+    });
+
+    testWidgets('reject exception shows an error toast', (tester) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'agent-010',
+        taskId: 'project-001',
+        items: const [
+          ChangeItem(
+            toolName: 'update_project_status',
+            args: {'status': 'on_hold'},
+            humanSummary: 'Update project status to on hold',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      ).thenThrow(Exception('Reject service down'));
+
+      await pumpProjectCard(tester, changeSets: [changeSet]);
+
+      await tester.drag(
+        find.text('Update project status to on hold'),
+        const Offset(-300, 0),
+      );
+      await _pumpUi(tester);
+
+      expect(find.text('Failed to apply change'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Confirm All with all failures shows an error toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-011',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(() => mockConfirmationService.confirmAll(any())).thenAnswer(
+          (_) async => [
+            const ToolExecutionResult(
+              success: false,
+              output: '',
+              errorMessage: 'Hard fail',
+            ),
+          ],
+        );
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.tap(find.text('Confirm all'));
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Confirm All exception shows an error toast',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          agentId: 'agent-012',
+          taskId: 'project-001',
+          items: const [
+            ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'active'},
+              humanSummary: 'Update project status to active',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmAll(any()),
+        ).thenThrow(Exception('Bulk service down'));
+
+        await pumpProjectCard(tester, changeSets: [changeSet]);
+
+        await tester.tap(find.text('Confirm all'));
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'Confirm All routes through project service and surfaces warnings',
       (tester) async {
         final changeSet = makeTestChangeSet(
@@ -180,7 +479,7 @@ void main() {
         verify(() => mockConfirmationService.confirmAll(changeSet)).called(1);
         verify(() => mockUpdateNotifications.notify({'agent-003'})).called(1);
         expect(
-          find.textContaining('1 item(s) had partial issues'),
+          find.textContaining('1 item had partial issues'),
           findsOneWidget,
         );
       },

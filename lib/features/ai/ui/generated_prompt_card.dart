@@ -4,6 +4,8 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -134,16 +136,12 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
   Future<void> _copyToClipboard() async {
     await Clipboard.setData(ClipboardData(text: _fullPrompt));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isImagePrompt
-                ? context.messages.imagePromptGenerationCopiedSnackbar
-                : context.messages.promptGenerationCopiedSnackbar,
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: _isImagePrompt
+            ? context.messages.imagePromptGenerationCopiedSnackbar
+            : context.messages.promptGenerationCopiedSnackbar,
+        duration: const Duration(seconds: 2),
       );
     }
   }
