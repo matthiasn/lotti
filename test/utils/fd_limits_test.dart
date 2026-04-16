@@ -92,6 +92,89 @@ void main() {
       expect(text, isNot(contains('soft ')));
     });
 
+    group('resolveFdSoftLimitPlan', () {
+      test('soft already at or above target is treated as satisfied', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 10240,
+          hardBefore: 65536,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isTrue);
+        expect(plan.newSoft, 10240);
+      });
+
+      test('soft comfortably above target is still satisfied', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 20000,
+          hardBefore: 65536,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isTrue);
+        expect(plan.newSoft, 20000);
+      });
+
+      test(
+        'soft reading as RLIM_INFINITY (negative) is treated as satisfied, '
+        'never *lowered* to target',
+        () {
+          // Linux RLIM_INFINITY reads as -1 through a Uint64 struct field.
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: -1,
+            hardBefore: -1,
+            target: 10240,
+          );
+          expect(plan.alreadySatisfied, isTrue);
+          expect(plan.newSoft, -1);
+        },
+      );
+
+      test('soft below target is raised to target when hard has room', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 256,
+          hardBefore: 65536,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isFalse);
+        expect(plan.newSoft, 10240);
+      });
+
+      test(
+        'hard reading as RLIM_INFINITY (negative on Linux) is treated '
+        'as no cap, so target wins',
+        () {
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: 256,
+            hardBefore: -1,
+            target: 10240,
+          );
+          expect(plan.alreadySatisfied, isFalse);
+          expect(plan.newSoft, 10240);
+        },
+      );
+
+      test('target above hard is clamped to hard', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 256,
+          hardBefore: 4096,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isFalse);
+        expect(plan.newSoft, 4096);
+      });
+
+      test('target equal to hard still takes target (no off-by-one)', () {
+        final plan = resolveFdSoftLimitPlan(
+          softBefore: 256,
+          hardBefore: 10240,
+          target: 10240,
+        );
+        expect(plan.alreadySatisfied, isFalse);
+        // target == hardBefore: `target < hardBefore` is false, so we pick
+        // hardBefore. Either choice yields 10240; verify we settle on one.
+        expect(plan.newSoft, 10240);
+      });
+    });
+
     test('FdLimitAdjustment exposes all fields as provided', () {
       const adjustment = FdLimitAdjustment(
         softBefore: 256,

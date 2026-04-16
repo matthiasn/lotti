@@ -41,9 +41,11 @@ class FdLimitAdjustment {
 int _rlimitNofile() {
   if (Platform.isMacOS) return 8;
   if (Platform.isLinux) return 7;
+  // coverage:ignore-start
   throw UnsupportedError(
     'RLIMIT_NOFILE is undefined for ${Platform.operatingSystem}',
   );
+  // coverage:ignore-end
 }
 
 final class _Rlimit extends Struct {
@@ -81,7 +83,9 @@ class _Libc {
 final _Libc? _libc = _resolveLibc();
 
 _Libc? _resolveLibc() {
+  // coverage:ignore-start
   if (!Platform.isMacOS && !Platform.isLinux) return null;
+  // coverage:ignore-end
   try {
     final lib = DynamicLibrary.process();
     return _Libc(
@@ -96,9 +100,11 @@ _Libc? _resolveLibc() {
       ),
       free: lib.lookupFunction<Void Function(Pointer<Void>), _Free>('free'),
     );
+    // coverage:ignore-start
   } catch (_) {
     return null;
   }
+  // coverage:ignore-end
 }
 
 // On Linux, `RLIM_INFINITY == (rlim_t)-1 == 0xFFFFFFFFFFFFFFFF`, which Dart
@@ -107,6 +113,33 @@ _Libc? _resolveLibc() {
 // helper treats any negative reading as "no cap" so the clamp logic works
 // identically on both platforms.
 bool _isUnlimited(int value) => value < 0;
+
+/// Pure planning step for [ensureFileDescriptorSoftLimit].
+///
+/// Given the current soft/hard values (as read from a `struct rlimit`) and a
+/// desired [target], decides whether a `setrlimit` call is needed and what
+/// `rlim_cur` to pass. Kept as a standalone function so the portability
+/// cases — in particular, the Linux `RLIM_INFINITY` sign-flip — can be unit
+/// tested without requiring an actual platform switch or an FFI mock.
+@visibleForTesting
+({bool alreadySatisfied, int newSoft}) resolveFdSoftLimitPlan({
+  required int softBefore,
+  required int hardBefore,
+  required int target,
+}) {
+  // An already-unlimited soft limit is strictly above any positive target;
+  // treat it as satisfied rather than issuing a redundant `setrlimit` that
+  // would in fact *lower* it.
+  if (_isUnlimited(softBefore) || softBefore >= target) {
+    return (alreadySatisfied: true, newSoft: softBefore);
+  }
+  // Clamp to the hard limit, treating RLIM_INFINITY (negative when read as
+  // Dart int on Linux) as "no cap".
+  final newSoft = (_isUnlimited(hardBefore) || target < hardBefore)
+      ? target
+      : hardBefore;
+  return (alreadySatisfied: false, newSoft: newSoft);
+}
 
 /// Raises the soft limit for open file descriptors to at least [target] on
 /// macOS and Linux, never exceeding the current hard limit.
@@ -122,6 +155,7 @@ bool _isUnlimited(int value) => value < 0;
 /// captured in [FdLimitAdjustment.error].
 FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
   final libc = _libc;
+  // coverage:ignore-start
   if (libc == null) {
     return FdLimitAdjustment(
       softBefore: -1,
@@ -132,10 +166,12 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       raised: false,
     );
   }
+  // coverage:ignore-end
 
   try {
     final resource = _rlimitNofile();
     final ptr = libc.malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
+    // coverage:ignore-start
     if (ptr.address == 0) {
       return FdLimitAdjustment(
         softBefore: -1,
@@ -147,8 +183,10 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
         error: StateError('malloc returned null'),
       );
     }
+    // coverage:ignore-end
 
     try {
+      // coverage:ignore-start
       if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: -1,
@@ -160,14 +198,18 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
           error: StateError('getrlimit failed'),
         );
       }
+      // coverage:ignore-end
 
       final softBefore = ptr.ref.rlimCur;
       final hardBefore = ptr.ref.rlimMax;
 
-      // An already-unlimited soft limit is strictly above any positive target;
-      // treat it as satisfied without a redundant `setrlimit` that would in
-      // fact *lower* it.
-      if (_isUnlimited(softBefore) || softBefore >= target) {
+      final plan = resolveFdSoftLimitPlan(
+        softBefore: softBefore,
+        hardBefore: hardBefore,
+        target: target,
+      );
+
+      if (plan.alreadySatisfied) {
         return FdLimitAdjustment(
           softBefore: softBefore,
           hardBefore: hardBefore,
@@ -178,12 +220,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
         );
       }
 
-      // Clamp to the hard limit, treating RLIM_INFINITY (negative when read
-      // as Dart int on Linux) as "no cap".
-      final newSoft = (_isUnlimited(hardBefore) || target < hardBefore)
-          ? target
-          : hardBefore;
-
+      final newSoft = plan.newSoft;
       ptr.ref.rlimCur = newSoft;
       ptr.ref.rlimMax = hardBefore;
 
@@ -200,6 +237,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       }
 
       // Re-read to report the authoritative post-state.
+      // coverage:ignore-start
       if (libc.getrlimit(resource, ptr) != 0) {
         return FdLimitAdjustment(
           softBefore: softBefore,
@@ -210,6 +248,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
           raised: true,
         );
       }
+      // coverage:ignore-end
       return FdLimitAdjustment(
         softBefore: softBefore,
         hardBefore: hardBefore,
@@ -221,6 +260,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
     } finally {
       libc.free(ptr.cast());
     }
+    // coverage:ignore-start
   } catch (e) {
     return FdLimitAdjustment(
       softBefore: -1,
@@ -232,6 +272,7 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
       error: e,
     );
   }
+  // coverage:ignore-end
 }
 
 /// Reads the current file descriptor soft/hard limits without modifying them.
@@ -242,17 +283,25 @@ FdLimitAdjustment ensureFileDescriptorSoftLimit({int target = 10240}) {
 /// at its ceiling when a resource request failed.
 ({int soft, int hard})? readFileDescriptorLimits() {
   final libc = _libc;
+  // coverage:ignore-start
   if (libc == null) return null;
+  // coverage:ignore-end
   try {
     final ptr = libc.malloc(sizeOf<_Rlimit>()).cast<_Rlimit>();
+    // coverage:ignore-start
     if (ptr.address == 0) return null;
+    // coverage:ignore-end
     try {
+      // coverage:ignore-start
       if (libc.getrlimit(_rlimitNofile(), ptr) != 0) return null;
+      // coverage:ignore-end
       return (soft: ptr.ref.rlimCur, hard: ptr.ref.rlimMax);
     } finally {
       libc.free(ptr.cast());
     }
+    // coverage:ignore-start
   } catch (_) {
     return null;
   }
+  // coverage:ignore-end
 }
