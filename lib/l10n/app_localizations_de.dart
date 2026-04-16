@@ -3535,6 +3535,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get favoriteLabel => 'Favorit';
 
   @override
+  String get inactiveLabel => 'Inaktiv';
+
+  @override
   String get fileMenuNewEllipsis => 'Neu ...';
 
   @override

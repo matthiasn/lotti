@@ -6312,6 +6312,12 @@ abstract class AppLocalizations {
   /// **'Favorite'**
   String get favoriteLabel;
 
+  /// No description provided for @inactiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactiveLabel;
+
   /// No description provided for @fileMenuNewEllipsis.
   ///
   /// In en, this message translates to:

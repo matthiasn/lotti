@@ -1535,6 +1535,7 @@
   "errorLoadingPrompts": "Eroare la încărcarea prompturilor",
   "eventNameLabel": "Eveniment:",
   "favoriteLabel": "Favorit",
+  "inactiveLabel": "Inactiv",
   "fileMenuNewEllipsis": "Nou ...",
   "fileMenuNewEntry": "Intrare nouă",
   "fileMenuNewScreenshot": "Captură de ecran",

@@ -1535,6 +1535,7 @@
   "errorLoadingPrompts": "Error al cargar los prompts",
   "eventNameLabel": "Evento:",
   "favoriteLabel": "Favorito",
+  "inactiveLabel": "Inactivo",
   "fileMenuNewEllipsis": "Nuevo ...",
   "fileMenuNewEntry": "Nueva entrada",
   "fileMenuNewScreenshot": "Captura de pantalla",

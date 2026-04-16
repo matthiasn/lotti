@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -21,7 +23,8 @@ class DefinitionsListPage<T> extends StatefulWidget {
   final Stream<List<T>> stream;
   final String title;
   final String Function(T) getName;
-  final Widget Function(int index, T item) definitionCard;
+  final Widget Function(int index, T item, {required bool isLast})
+  definitionCard;
   final Widget? floatingActionButton;
   final String? initialSearchTerm;
   final void Function(String)? searchCallback;
@@ -81,7 +84,7 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 slivers: <Widget>[
                   SettingsPageHeader(
                     title: widget.title,
-                    showBackButton: true,
+                    showBackButton: !isDesktopLayout(context),
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -97,22 +100,19 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Column(
-                        children: List.generate(
-                          filtered.length,
-                          (int index) {
-                            return widget.definitionCard(
+                  if (filtered.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: DesignSystemGroupedList(
+                        children: [
+                          for (var index = 0; index < filtered.length; index++)
+                            widget.definitionCard(
                               index,
-                              filtered.elementAt(index),
-                            );
-                          },
-                        ),
+                              filtered[index],
+                              isLast: index == filtered.length - 1,
+                            ),
+                        ],
                       ),
                     ),
-                  ),
                 ],
               ),
             );

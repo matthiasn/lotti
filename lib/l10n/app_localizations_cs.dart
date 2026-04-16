@@ -3510,6 +3510,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get favoriteLabel => 'Oblíbené';
 
   @override
+  String get inactiveLabel => 'Neaktivní';
+
+  @override
   String get fileMenuNewEllipsis => 'Nový ...';
 
   @override

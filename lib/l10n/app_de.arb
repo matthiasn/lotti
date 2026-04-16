@@ -1535,6 +1535,7 @@
   "errorLoadingPrompts": "Fehler beim Laden der Prompts",
   "eventNameLabel": "Ereignis:",
   "favoriteLabel": "Favorit",
+  "inactiveLabel": "Inaktiv",
   "fileMenuNewEllipsis": "Neu ...",
   "fileMenuNewEntry": "Neuer Eintrag",
   "fileMenuNewScreenshot": "Screenshot",

@@ -1306,6 +1306,7 @@
   "errorLoadingPrompts": "Chyba při načítání výzev",
   "eventNameLabel": "Událost:",
   "favoriteLabel": "Oblíbené",
+  "inactiveLabel": "Neaktivní",
   "fileMenuNewEllipsis": "Nový ...",
   "fileMenuNewEntry": "Nový záznam",
   "fileMenuNewScreenshot": "Snímek obrazovky",
