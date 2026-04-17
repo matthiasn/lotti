@@ -260,6 +260,53 @@ void main() {
       expect(result, isEmpty);
     });
 
+    test(
+      'empty JSON file returns an empty descriptor list',
+      () async {
+        // Enumerator treats a zero-byte JSON file the same as a missing one
+        // so the bundler won't ship a zero-byte payload that would decode to
+        // a null JournalEntity downstream.
+        const jsonPath = '/text_entries/empty.json';
+        writeFile(jsonPath, const <int>[]);
+
+        final result = await enumerateAttachments(
+          message: SyncMessage.journalEntity(
+            id: 'empty',
+            jsonPath: jsonPath,
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ),
+          documentsDirectory: docs,
+        );
+
+        expect(result, isEmpty);
+      },
+    );
+
+    test(
+      'unparseable JSON returns just the base descriptor without media',
+      () async {
+        // A JSON file that is present on disk but not a valid JournalEntity
+        // cannot yield media paths. Enumerator returns the base descriptor
+        // alone so the bundler can still pack the file.
+        const jsonPath = '/text_entries/bad.json';
+        writeFile(jsonPath, utf8.encode('{ not-a-journal-entity'));
+
+        final result = await enumerateAttachments(
+          message: SyncMessage.journalEntity(
+            id: 'bad',
+            jsonPath: jsonPath,
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ),
+          documentsDirectory: docs,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.single.relativePath, jsonPath);
+      },
+    );
+
     test('rejects an absolute jsonPath pointing outside docs', () async {
       // Write a target outside docs; an absolute jsonPath would resolve to
       // it if the helper didn't strip the root prefix and re-anchor under

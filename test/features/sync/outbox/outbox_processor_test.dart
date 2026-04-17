@@ -1870,6 +1870,84 @@ void main() {
     );
 
     test(
+      'bundled item send timeout triggers retry with timedOut=true',
+      () async {
+        // The timeout callback path has its own bookkeeping (timedOut=true
+        // logged alongside the subject diagnostic). A send() future that
+        // never completes exercises it.
+        final tmp = Directory.systemTemp.createTempSync('outbox_bundle_to');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+        final db = MockJournalDb();
+
+        final entity = JournalEntity.journalEntry(
+          meta: meta('to-1'),
+          entryText: const EntryText(plainText: 'x'),
+        );
+        final jsonPath = relativeEntityPath(entity);
+        File('${tmp.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity.toJson()));
+        final item = pendingFor(id: 1, entryId: 'to-1', jsonPath: jsonPath);
+
+        when(
+          () => repo.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [item]);
+        when(() => repo.refreshItem(item)).thenAnswer((_) async => item);
+        when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+        when(
+          () => db.getConfigFlag(useBundledAttachmentsFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => sender.sendAttachmentBundle(
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        ).thenAnswer((_) async => r'$bundle-ok');
+        when(
+          () => sender.send(
+            any(),
+            skipAttachmentPaths: any<Set<String>>(named: 'skipAttachmentPaths'),
+          ),
+        ).thenAnswer((_) => Completer<bool>().future);
+        final events = <String>[];
+        when(
+          () => log.captureEvent(
+            captureAny<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          journalDb: db,
+          documentsDirectory: tmp,
+          sendTimeoutOverride: const Duration(milliseconds: 20),
+        );
+
+        await proc.processQueue();
+
+        verify(() => repo.markRetry(item)).called(1);
+        expect(
+          events.any(
+            (e) =>
+                e.contains('bundle sendFailed subject=host:1') &&
+                e.contains('timedOut=true'),
+          ),
+          isTrue,
+          reason: 'expected the bundled-item timeout path to log timedOut=true',
+        );
+      },
+    );
+
+    test(
       'bundled item success resets repeated-subject diagnostic counters',
       () async {
         final tmp = Directory.systemTemp.createTempSync('outbox_bundle_reset');
@@ -1911,13 +1989,16 @@ void main() {
             skipAttachmentPaths: any<Set<String>>(named: 'skipAttachmentPaths'),
           ),
         ).thenAnswer((_) async => sendResult);
+        final events = <String>[];
         when(
           () => log.captureEvent(
-            any<Object>(),
+            captureAny<Object>(),
             domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
-        ).thenAnswer((_) {});
+        ).thenAnswer((inv) {
+          events.add(inv.positionalArguments.first.toString());
+        });
 
         final proc = OutboxProcessor(
           repository: repo,
@@ -1927,17 +2008,49 @@ void main() {
           documentsDirectory: tmp,
         );
 
-        // Tick 1: fail to seed _lastFailedSubject/_lastFailedRepeats for
-        // this subject.
+        // Tick 1: fail to seed _lastFailedSubject/_lastFailedRepeats=1.
         await proc.processQueue();
         verify(() => repo.markRetry(item)).called(1);
+        expect(
+          events.any(
+            (e) =>
+                e.contains('bundle sendFailed subject=host:1') &&
+                e.contains('repeats=1'),
+          ),
+          isTrue,
+        );
+        events.clear();
 
         // Tick 2: succeed → the success branch must reset the tracker.
         sendResult = true;
-        final result = await proc.processQueue();
+        final tick2 = await proc.processQueue();
         verify(() => repo.markSent(item)).called(1);
-        // Nothing remaining → no further schedule.
-        expect(result.shouldSchedule, isFalse);
+        expect(tick2.shouldSchedule, isFalse);
+        events.clear();
+
+        // Tick 3: fail again for the same subject. If the Tick 2 success
+        // reset the tracker, the repeats count restarts at 1. Without the
+        // reset it would already be 2 on the first failure after success.
+        sendResult = false;
+        await proc.processQueue();
+        expect(
+          events.any(
+            (e) =>
+                e.contains('bundle sendFailed subject=host:1') &&
+                e.contains('repeats=1'),
+          ),
+          isTrue,
+          reason:
+              'expected the repeat counter to restart at 1 after the Tick 2 '
+              'success — otherwise the reset branch on the success path is '
+              'not exercised.',
+        );
+        expect(
+          events.any((e) => e.contains('repeats=2')),
+          isFalse,
+          reason:
+              'counter should NOT be 2: Tick 2 success must have cleared it.',
+        );
       },
     );
   });
