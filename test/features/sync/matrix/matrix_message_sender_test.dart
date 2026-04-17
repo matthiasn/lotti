@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -2174,5 +2175,181 @@ void main() {
       expect(decoded['agentLink'], isNotNull);
       expect(decoded['jsonPath'], '/agent_links/legacy-link.json');
     });
+  });
+
+  group('attachment bundles', () {
+    test(
+      'sendAttachmentBundle packs entries into a zip and marks bundle header',
+      () async {
+        MatrixFile? capturedFile;
+        Map<String, dynamic>? capturedExtra;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedFile = invocation.positionalArguments.first as MatrixFile;
+          capturedExtra =
+              invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+          return r'$bundle-event';
+        });
+
+        final entries = <String, Uint8List>{
+          'text_entries/a.json': Uint8List.fromList(utf8.encode('{"id":"a"}')),
+          'images/b.jpg': Uint8List.fromList(List<int>.filled(64, 0xA)),
+        };
+
+        final eventId = await sender.sendAttachmentBundle(
+          room: room,
+          entries: entries,
+          bundleId: 'fixed-id',
+        );
+
+        expect(eventId, r'$bundle-event');
+        expect(capturedExtra, isNotNull);
+        expect(capturedExtra![attachmentBundleKey], isTrue);
+        expect(capturedExtra!['relativePath'], '.bundles/fixed-id.zip');
+        expect(capturedFile!.name, 'fixed-id.zip');
+        final decoded = ZipDecoder().decodeBytes(capturedFile!.bytes);
+        final names = decoded.map((f) => f.name).toSet();
+        expect(names, equals(entries.keys.toSet()));
+      },
+    );
+
+    test('sendAttachmentBundle returns null when entries is empty', () async {
+      final result = await sender.sendAttachmentBundle(
+        room: room,
+        entries: const <String, Uint8List>{},
+      );
+      expect(result, isNull);
+      verifyNever(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      );
+    });
+
+    test(
+      'sendAttachmentBundle returns null when room.sendFileEvent returns null',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await sender.sendAttachmentBundle(
+          room: room,
+          entries: {'a.json': Uint8List.fromList(utf8.encode('{"a":1}'))},
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(that: contains('bundle send returned null')),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.bundle',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'sendAttachmentBundle returns null and logs when sendFileEvent throws',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenThrow(Exception('matrix upload blew up'));
+
+        final result = await sender.sendAttachmentBundle(
+          room: room,
+          entries: {'a.json': Uint8List.fromList(utf8.encode('{"a":1}'))},
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.bundle',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'skipAttachmentPaths in MatrixMessageContext short-circuits file upload',
+      () async {
+        var fileSendCalls = 0;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async {
+          fileSendCalls++;
+          return r'$file-id';
+        });
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((_) async => r'$text-id');
+
+        final meta = Metadata(
+          id: 'skip-entry',
+          createdAt: DateTime(2026, 4, 17, 12),
+          updatedAt: DateTime(2026, 4, 17, 12),
+          dateFrom: DateTime(2026, 4, 17, 12),
+          dateTo: DateTime(2026, 4, 17, 12),
+        );
+        final entity = JournalEntity.journalEntry(
+          meta: meta,
+          entryText: const EntryText(plainText: 'Test'),
+        );
+        final jsonPath = relativeEntityPath(entity);
+        File('${documentsDirectory.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+        final result = await sender.sendMatrixMessage(
+          message: SyncMessage.journalEntity(
+            id: meta.id,
+            jsonPath: jsonPath,
+            vectorClock: null,
+            status: SyncEntryStatus.initial,
+          ),
+          context: MatrixMessageContext(
+            syncRoomId: '!room:test',
+            syncRoom: room,
+            unverifiedDevices: const <DeviceKeys>[],
+            skipAttachmentPaths: {jsonPath},
+          ),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isTrue);
+        // _sendFile should NOT have uploaded the JSON file — the text event
+        // still goes out, but sendFileEvent should have been called zero times.
+        expect(fileSendCalls, 0);
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(that: contains('already uploaded via bundle')),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.bundled',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

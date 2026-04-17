@@ -1,6 +1,7 @@
 // ignore_for_file:
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,15 @@ import 'package:lotti/services/logging_service.dart';
 
 class _SenderFalse implements OutboxMessageSender {
   @override
-  Future<bool> send(SyncMessage message) async => false;
+  Future<bool> send(
+    SyncMessage message, {
+    Set<String> skipAttachmentPaths = const <String>{},
+  }) async => false;
+
+  @override
+  Future<String?> sendAttachmentBundle({
+    required Map<String, Uint8List> entries,
+  }) async => null;
 }
 
 class _NoopLogging extends LoggingService {

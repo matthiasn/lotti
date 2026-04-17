@@ -1229,6 +1229,8 @@
   "configFlagRecordLocationDescription": "Automatically record your location with new entries. This helps with location-based organization and search.",
   "configFlagResendAttachments": "Resend attachments",
   "configFlagResendAttachmentsDescription": "Enable this to automatically resend failed attachment uploads when the connection is restored.",
+  "configFlagUseBundledAttachments": "Bundle sync attachments",
+  "configFlagUseBundledAttachmentsDescription": "Pack queued sync attachments into a single zip before upload (up to 8 MiB). Cuts round-trips on slow networks; the whole bundle retries if the upload fails.",
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
   "configFlagUseCompressedJsonAttachments": "Compress JSON sync payloads",
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",

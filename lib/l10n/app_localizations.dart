@@ -4074,6 +4074,18 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
+  /// No description provided for @configFlagUseBundledAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle sync attachments'**
+  String get configFlagUseBundledAttachments;
+
+  /// No description provided for @configFlagUseBundledAttachmentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack queued sync attachments into a single zip before upload (up to 8 MiB). Cuts round-trips on slow networks; the whole bundle retries if the upload fails.'**
+  String get configFlagUseBundledAttachmentsDescription;
+
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///
   /// In en, this message translates to:

@@ -1024,6 +1024,8 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch deinen Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
+  "configFlagUseBundledAttachments": "Sync-Anhänge bündeln",
+  "configFlagUseBundledAttachmentsDescription": "Packt mehrere anstehende Sync-Anhänge vor dem Upload in ein einziges ZIP (bis 8 MiB). Reduziert Round-Trips in langsamen Netzen; das gesamte Bündel wird erneut versucht, wenn der Upload fehlschlägt.",
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
   "configFlagUseCompressedJsonAttachments": "JSON-Sync-Payloads komprimieren",
   "configFlagUseCompressedJsonAttachmentsDescription": "Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.",

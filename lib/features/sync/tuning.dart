@@ -144,4 +144,12 @@ class SyncTuning {
   // is more restrictive. Deeper historical backfill requires manual trigger.
   static const Duration defaultBackfillMaxAge = Duration(days: 1);
   static const int defaultBackfillMaxEntriesPerHost = 250;
+
+  // Outbox attachment bundling. When the feature flag is on, the outbox packs
+  // as many pending items' attachment files as fit into one zip capped at
+  // [outboxBundleMaxBytes] and uploads them as a single Matrix file event.
+  // Items whose attachments exceed the cap are sent individually through the
+  // existing path. The cap is conservative relative to typical homeserver
+  // media limits (Synapse default 50 MiB, federated hosts often 10-20 MiB).
+  static const int outboxBundleMaxBytes = 8 * 1024 * 1024;
 }

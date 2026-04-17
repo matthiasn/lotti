@@ -3,7 +3,10 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -53,6 +56,17 @@ class AttachmentIngestor {
       <String, _DownloadRequest>{};
   final Set<String> _handledAttachmentEventIds = <String>{};
   final Queue<String> _handledAttachmentEventOrder = Queue<String>();
+  // Bundle events whose zip was successfully decoded and routed through the
+  // per-entry write path. Populated only after [_unpackBundle] returns from
+  // a successful decode — a failed download or decode leaves the id out so
+  // subsequent catch-up passes retry the bundle. Without this separation a
+  // first-pass failure would orphan the bundled items forever: each inner
+  // relativePath is never registered in AttachmentIndex, so
+  // DescriptorDownloader cannot re-fetch it, and the per-counter gap
+  // detection in SyncSequenceLogService never fires because the text event
+  // itself was received.
+  final Set<String> _appliedBundleEventIds = <String>{};
+  final Queue<String> _appliedBundleEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
 
@@ -98,11 +112,25 @@ class AttachmentIngestor {
       // handled once — new events always proceed.
       // Suppress repair if a save is already in flight for this path to avoid
       // concurrent writes to the same file.
+      //
+      // Bundle events use a different "needs repair" signal: their outer
+      // `.bundles/<id>.zip` path is never persisted (we write the unpacked
+      // entries instead), so [_isLocalFileMissingOrEmpty] would always
+      // report true and drive an endless re-download on every pass. Instead,
+      // retry until the zip has been successfully decoded
+      // ([_appliedBundleEventIds] records that state), and stop once
+      // applied. This recovers from a failed first-pass unpack without
+      // permanently orphaning the bundled items.
+      final isBundleEvent = event.content[attachmentBundleKey] == true;
+      final bundleNotYetApplied =
+          isBundleEvent && !_appliedBundleEventIds.contains(event.eventId);
       final shouldRepairLocal =
           alreadyHandled &&
           documentsDirectory != null &&
           !_inFlightSavePaths.contains(_normalizeKey(rpAny)) &&
-          _isLocalFileMissingOrEmpty(rpAny);
+          (isBundleEvent
+              ? bundleNotYetApplied
+              : _isLocalFileMissingOrEmpty(rpAny));
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
@@ -272,6 +300,17 @@ class AttachmentIngestor {
     }
   }
 
+  void _recordAppliedBundleEvent(String eventId) {
+    if (_appliedBundleEventIds.add(eventId)) {
+      _appliedBundleEventOrder.addLast(eventId);
+      while (_appliedBundleEventOrder.length >
+          _handledAttachmentEventCapacity) {
+        final oldest = _appliedBundleEventOrder.removeFirst();
+        _appliedBundleEventIds.remove(oldest);
+      }
+    }
+  }
+
   String _normalizeKey(String relativePath) =>
       normalizeAttachmentIndexKey(relativePath);
 
@@ -343,25 +382,12 @@ class AttachmentIngestor {
       }
 
       // Agent entities/links can be legitimately updated in-place (e.g.
-      // ChangeSetEntity pending → resolved). Always re-download to avoid
-      // stale reads.
-      final isAgentPayload = isAgentPayloadPath(relativePath);
-
-      // Fast-path dedupe (non-agent only): if the file already exists and is
-      // non-empty, skip re-downloading to avoid repeated writes and log spam.
-      // Note: We don't validate the file's vector clock here because
-      // SmartJournalEntityLoader.load() will do that validation and
-      // re-download via DescriptorDownloader if the local file is stale.
-      // ignore: avoid_slow_async_io
-      if (!isAgentPayload && await file.exists()) {
-        try {
-          final len = await file.length();
-          if (len > 0) {
-            return false; // already present
-          }
-        } catch (_) {
-          // If querying length fails, fall through to re-download.
-        }
+      // ChangeSetEntity pending → resolved), so [_shouldSkipExistingFile]
+      // never skips those. For non-agent payloads the vector clock is not
+      // validated here; SmartJournalEntityLoader.load() revalidates and
+      // re-downloads via DescriptorDownloader if the local file is stale.
+      if (_shouldSkipExistingFile(file, relativePath)) {
+        return false;
       }
 
       logging.captureEvent(
@@ -379,6 +405,19 @@ class AttachmentIngestor {
           subDomain: 'attachment.download',
         );
         return false;
+      }
+
+      // Bundle attachments ship a zip whose entries are addressed by their
+      // real relative paths. Unpack each entry via the same target-file +
+      // agent-dedup logic used for individual attachments and skip writing
+      // the outer zip itself to disk.
+      if (event.content[attachmentBundleKey] == true) {
+        return _unpackBundle(
+          eventId: event.eventId,
+          bundleRelativePath: relativePath,
+          downloadedBytes: downloadedBytes,
+          logging: logging,
+        );
       }
 
       final bytes = decodeAttachmentBytes(
@@ -422,6 +461,109 @@ class AttachmentIngestor {
       return false;
     }
   }
+
+  /// Returns true when [target] should NOT be downloaded/written again —
+  /// the non-agent dedup rule used by both the single-file save path and
+  /// the bundle-entry write path. Agent payloads always return false so
+  /// in-place updates (e.g. ChangeSetEntity pending → resolved) are never
+  /// suppressed.
+  bool _shouldSkipExistingFile(File target, String relativePath) {
+    if (isAgentPayloadPath(relativePath)) return false;
+    if (!target.existsSync()) return false;
+    try {
+      return target.lengthSync() > 0;
+    } on FileSystemException {
+      return false;
+    }
+  }
+
+  /// Unpacks a zip bundle. Each entry's name is its target relative path
+  /// inside the documents directory. Entries are routed through
+  /// [_targetFile] for path-traversal guarding and through
+  /// [_shouldSkipExistingFile] for the same non-agent dedup rule used by
+  /// single-file saves. Zip decoding runs on a worker isolate to keep the
+  /// sync isolate free for frame work while large bundles are parsed.
+  Future<bool> _unpackBundle({
+    required String eventId,
+    required String bundleRelativePath,
+    required Uint8List downloadedBytes,
+    required LoggingService logging,
+  }) async {
+    final docDir = documentsDirectory;
+    if (docDir == null) return false;
+    final Map<String, Uint8List> decoded;
+    try {
+      decoded = await Isolate.run(
+        () => _decodeBundleEntries(downloadedBytes),
+      );
+    } catch (error, stackTrace) {
+      logging.captureException(
+        error,
+        domain: syncLoggingDomain,
+        subDomain: 'attachment.bundle.decode',
+        stackTrace: stackTrace,
+      );
+      // Decode failed — do NOT mark applied so the next catch-up pass can
+      // retry the download and unpack. Without this recovery the bundled
+      // items' text events would be stuck: inner relativePaths are never in
+      // AttachmentIndex and DescriptorDownloader has nothing to pull.
+      return false;
+    }
+    // Decode succeeded. Record the event id as applied now, before the
+    // per-entry write loop — writes happen atomically per file and any one
+    // failing doesn't change whether the bundle itself was delivered. A
+    // single entry's write failure is recovered through the normal retry
+    // path that fires when its text event applies, not by re-downloading
+    // the whole zip.
+    _recordAppliedBundleEvent(eventId);
+    var writtenCount = 0;
+    var totalBytes = 0;
+    var skippedCount = 0;
+    for (final entryPath in decoded.keys) {
+      final target = _targetFile(entryPath);
+      if (target == null) {
+        logging.captureEvent(
+          'pathTraversal.blocked bundleEntry=$entryPath '
+          'outer=$bundleRelativePath',
+          domain: syncLoggingDomain,
+          subDomain: 'attachment.bundle.entry',
+        );
+        continue;
+      }
+      if (_shouldSkipExistingFile(target, entryPath)) {
+        skippedCount++;
+        continue;
+      }
+      final bytes = decoded[entryPath]!;
+      await atomicWriteBytes(
+        bytes: bytes,
+        filePath: target.path,
+        logging: logging,
+        subDomain: 'attachment.bundle.write',
+      );
+      writtenCount++;
+      totalBytes += bytes.length;
+    }
+    logging.captureEvent(
+      'bundleUnpacked outer=$bundleRelativePath '
+      'entries=${decoded.length} written=$writtenCount '
+      'skipped=$skippedCount bytes=$totalBytes',
+      domain: syncLoggingDomain,
+      subDomain: 'attachment.bundle.unpack',
+    );
+    return writtenCount > 0;
+  }
+}
+
+/// Worker-isolate entry point for [ZipDecoder]. Returns a plain
+/// `relativePath -> bytes` map of file entries so the decoded archive does
+/// not have to cross the isolate boundary.
+Map<String, Uint8List> _decodeBundleEntries(Uint8List downloadedBytes) {
+  final archive = ZipDecoder().decodeBytes(downloadedBytes);
+  return {
+    for (final entry in archive)
+      if (entry.isFile) entry.name: entry.content,
+  };
 }
 
 class _DownloadRequest {

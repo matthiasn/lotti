@@ -1024,6 +1024,8 @@
   "configFlagRecordLocationDescription": "Enregistrer automatiquement ta position avec les nouvelles entrées. Cela facilite l'organisation et la recherche basées sur la localisation.",
   "configFlagResendAttachments": "Renvoyer les pièces jointes",
   "configFlagResendAttachmentsDescription": "Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.",
+  "configFlagUseBundledAttachments": "Regrouper les pièces jointes de sync",
+  "configFlagUseBundledAttachmentsDescription": "Regroupe plusieurs pièces jointes de synchronisation en attente dans un seul zip avant l'envoi (jusqu'à 8 Mio). Réduit les allers-retours sur les réseaux lents ; l'ensemble du paquet est retenté si l'envoi échoue.",
   "configFlagUseCloudInferenceDescription": "Utiliser les services d'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.",
   "configFlagUseCompressedJsonAttachments": "Compresser les payloads JSON de sync",
   "configFlagUseCompressedJsonAttachmentsDescription": "Compresse les pièces jointes JSON de synchronisation avec gzip avant l'envoi. Économise de la bande passante sur les réseaux lents, au prix d'un léger coût CPU à l'envoi et à la réception.",

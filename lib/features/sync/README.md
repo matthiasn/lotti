@@ -350,6 +350,32 @@ When the flag is on, the uploaded file name gains a `.gz` suffix and the
 event content includes the encoding header; otherwise bytes are sent
 verbatim with no header and no suffix.
 
+### Attachment Bundling
+
+Attachment events may carry a `com.lotti.bundle: true` marker in the Matrix
+event content. The event's payload is then a zip archive whose entries are
+named by their logical `relativePath` values. When a receiver sees this
+marker it unpacks the zip instead of writing the zip itself, routing every
+entry through the same `_targetFile()` path-traversal guard and the
+non-agent-file existing-on-disk dedup that single-file saves use. The outer
+`relativePath` of a bundle event is `.bundles/<uuid>.zip`, a location no
+sync payload refers to, so older receivers that predate bundle support
+store the zip harmlessly while newer receivers recognize the marker.
+
+On the send side, bundling is gated by the `use_bundled_attachments` config
+flag (off by default). When the flag is on, `OutboxProcessor.processQueue`
+enumerates attachments across the current pending batch via
+`enumerateAttachments`, greedily packs as many as fit into one zip up to
+`SyncTuning.outboxBundleMaxBytes` (8 MiB), uploads the bundle as one Matrix
+file event, and then sends each bundled item's text event with the bundled
+relative paths in `MatrixMessageContext.skipAttachmentPaths`. The sender's
+`_sendFile` short-circuits for any path in that set. Items whose own
+attachments exceed the bundle cap fall through to the existing single-item
+path on the next tick, so large media uploads are never hidden behind a
+bundle. The bundle marker and the `com.lotti.encoding` marker are
+independent; a bundled event is always a zip and does not set the encoding
+header.
+
 ```mermaid
 flowchart TD
   Event["Matrix event"] --> Decode["Decode SyncMessage"]

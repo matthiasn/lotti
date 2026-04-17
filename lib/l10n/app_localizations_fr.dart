@@ -2348,6 +2348,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
+  String get configFlagUseBundledAttachments =>
+      'Regrouper les pièces jointes de sync';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Regroupe plusieurs pièces jointes de synchronisation en attente dans un seul zip avant l\'envoi (jusqu\'à 8 Mio). Réduit les allers-retours sur les réseaux lents ; l\'ensemble du paquet est retenté si l\'envoi échoue.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utiliser les services d\'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.';
 

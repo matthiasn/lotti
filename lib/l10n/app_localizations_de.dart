@@ -2316,6 +2316,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
+  String get configFlagUseBundledAttachments => 'Sync-Anhänge bündeln';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Packt mehrere anstehende Sync-Anhänge vor dem Upload in ein einziges ZIP (bis 8 MiB). Reduziert Round-Trips in langsamen Netzen; das gesamte Bündel wird erneut versucht, wenn der Upload fehlschlägt.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
 
