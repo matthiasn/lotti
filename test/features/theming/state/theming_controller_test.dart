@@ -233,6 +233,37 @@ void main() {
           );
         });
       });
+
+      test(
+        'user selection is not clobbered by a late _loadThemeMode resolution',
+        () {
+          fakeAsync((async) {
+            final loadCompleter = Completer<String?>();
+            when(
+              () => settingsDb.itemByKey(themeModeKey),
+            ).thenAnswer((_) => loadCompleter.future);
+
+            // Before the async load resolves, the user picks light.
+            container
+                .read(themingControllerProvider.notifier)
+                .onThemeSelectionChanged({ThemeMode.light});
+            expect(
+              container.read(themingControllerProvider).themeMode,
+              ThemeMode.light,
+            );
+
+            // The stored value was dark - resolving it should NOT override
+            // the user's fresh choice.
+            loadCompleter.complete('dark');
+            async.flushMicrotasks();
+
+            expect(
+              container.read(themingControllerProvider).themeMode,
+              ThemeMode.light,
+            );
+          });
+        },
+      );
     });
 
     group('cached top-level themes', () {

@@ -58,10 +58,10 @@ class ThemingPage extends ConsumerWidget {
                   ),
                   segment(
                     filter: ThemeMode.system,
-                    icon: isMobile ? Icons.smartphone : Icons.laptop,
-                    activeIcon: isMobile
+                    icon: isMobile
                         ? Icons.smartphone_outlined
                         : Icons.laptop_outlined,
+                    activeIcon: isMobile ? Icons.smartphone : Icons.laptop,
                     semanticLabel: context.messages.settingsThemingAutomatic,
                   ),
                   segment(

@@ -73,6 +73,10 @@ class ThemingState {
 /// app lifecycle.
 @Riverpod(keepAlive: true)
 class ThemingController extends _$ThemingController {
+  // Set once the user makes a selection. Guards against a late
+  // [_loadThemeMode] resolution overwriting a fresh user choice.
+  bool _userSelected = false;
+
   @override
   ThemingState build() {
     unawaited(_loadThemeMode());
@@ -85,6 +89,7 @@ class ThemingController extends _$ThemingController {
   Future<void> _loadThemeMode() async {
     try {
       final stored = await getIt<SettingsDb>().itemByKey(themeModeKey);
+      if (_userSelected) return;
       state = state.copyWith(themeMode: _themeModeFromStored(stored));
     } catch (e, st) {
       getIt<LoggingService>().captureException(
@@ -101,6 +106,7 @@ class ThemingController extends _$ThemingController {
   void onThemeSelectionChanged(Set<ThemeMode> modes) {
     if (modes.isEmpty) return;
     final themeMode = modes.first;
+    _userSelected = true;
     state = state.copyWith(themeMode: themeMode);
     unawaited(_persistThemeMode(themeMode));
   }
