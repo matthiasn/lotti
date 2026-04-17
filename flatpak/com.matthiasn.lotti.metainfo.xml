@@ -35,6 +35,7 @@
       <description>
           <p>Optional gzip compression for JSON sync attachments over Matrix, gated by a new config flag that is off by default. Receivers always decompress when the encoding marker is present on an attachment event, so turning compression on for a single device stays compatible with peers on this release. Only .json attachments are compressed; media files are already on compressed formats and skip the branch.</p>
           <p>Theme settings simplified to Light, Dark, and System (auto). The named-theme picker and the flex_color_scheme dependency have been removed; light and dark themes are now built directly from the Figma-derived design system tokens. Theme selection is now a per-device preference and is no longer synced across devices.</p>
+          <p>Desktop tasks UI is aligned with the Figma design system: sidebar and task details panel render on the deeper background/01 surface, the task list and cards sit on background/02, and dark-mode text tokens were raised to the Figma-specified opacities. The sidebar drops the legacy "+ New" quick action, always uses the filled settings glyph, and renames the Insights nav tab. Filter chips now use the design-system chip component inline under the search bar and the filter trigger icon matches the Figma funnel glyph. Group headers and task counts use the caption token. The task details action bar gains a teal + FAB with notification dot anchored bottom-right.</p>
       </description>
     </release>
     <release version="0.9.953" date="2026-04-16">

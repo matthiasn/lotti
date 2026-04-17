@@ -30,7 +30,6 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -365,7 +364,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ? () => navService.tapIndex(settingsIndex)
                 : null,
             isSettingsActive: isSettingsActive,
-            onNewPressed: createTextEntry,
             width: paneWidths.sidebarWidth,
           ),
           ResizableDivider(
@@ -515,9 +513,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
-        iconBuilder: ({required active}) => OutboxBadgeIcon(
-          icon: Icon(active ? Ionicons.settings : Ionicons.settings_outline),
-        ),
+        iconBuilder: ({required active}) =>
+            const OutboxBadgeIcon(icon: Icon(Ionicons.settings)),
       ),
     ];
 

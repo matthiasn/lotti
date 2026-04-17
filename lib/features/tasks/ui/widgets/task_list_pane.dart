@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class TaskListPane extends StatelessWidget {
@@ -32,6 +35,7 @@ class TaskListPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: TaskShowcasePalette.surface(context),
         border: Border(
           right: BorderSide(color: TaskShowcasePalette.border(context)),
         ),
@@ -47,6 +51,7 @@ class TaskListPane extends StatelessWidget {
           if (state.filterState.appliedCount > 0)
             TaskListActiveFilters(
               state: state,
+              onFilterPressed: onFilterPressed,
             ),
           Expanded(
             child: Padding(
@@ -214,62 +219,77 @@ class _TaskShowcaseBrowseItem {
 class TaskListActiveFilters extends StatelessWidget {
   const TaskListActiveFilters({
     required this.state,
+    required this.onFilterPressed,
     super.key,
   });
 
   final TaskListDetailState state;
+  final VoidCallback onFilterPressed;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final filterState = state.filterState;
-    final chips = <String>[
+    final chips = <_ActiveFilterChip>[
       ...?filterState.statusField?.selectedOptions.map(
-        (option) => option.label,
+        (option) => _ActiveFilterChip(label: option.label),
       ),
       if (filterState.selectedPriorityId !=
           DesignSystemTaskFilterState.allPriorityId)
-        filterState.priorityOptions
-                .where((option) => option.id == filterState.selectedPriorityId)
-                .firstOrNull
-                ?.label ??
-            '',
+        _ActiveFilterChip(
+          label:
+              filterState.priorityOptions
+                  .where(
+                    (option) => option.id == filterState.selectedPriorityId,
+                  )
+                  .firstOrNull
+                  ?.label ??
+              '',
+          priority: _taskPriorityForId(filterState.selectedPriorityId),
+        ),
       ...?filterState.categoryField?.selectedOptions.map(
-        (option) => option.label,
+        (option) => _ActiveFilterChip(label: option.label),
       ),
-      ...?filterState.labelField?.selectedOptions.map((option) => option.label),
-    ].where((label) => label.isNotEmpty).toList();
+      ...?filterState.labelField?.selectedOptions.map(
+        (option) => _ActiveFilterChip(label: option.label),
+      ),
+    ].where((chip) => chip.label.isNotEmpty).toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            Text(
-              context.messages.taskShowcaseActiveFilters,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: TaskShowcasePalette.mediumText(context),
-              ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final chip in chips)
+            DesignSystemChip(
+              label: chip.label,
+              onPressed: onFilterPressed,
+              showRemove: true,
+              avatar: chip.priority != null
+                  ? TaskShowcasePriorityGlyph(priority: chip.priority!)
+                  : null,
             ),
-            for (final chip in chips)
-              Chip(
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                label: Text(chip),
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
+}
+
+class _ActiveFilterChip {
+  const _ActiveFilterChip({required this.label, this.priority});
+
+  final String label;
+  final TaskPriority? priority;
+}
+
+TaskPriority? _taskPriorityForId(String id) {
+  return switch (id) {
+    TaskPriorityFilterIds.p0 => TaskPriority.p0Urgent,
+    TaskPriorityFilterIds.p1 => TaskPriority.p1High,
+    TaskPriorityFilterIds.p2 => TaskPriority.p2Medium,
+    TaskPriorityFilterIds.p3 => TaskPriority.p3Low,
+    _ => null,
+  };
 }
 
 class _TaskListSearchHeader extends StatelessWidget {
@@ -290,7 +310,7 @@ class _TaskListSearchHeader extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 132),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      color: TaskShowcasePalette.page(context),
+      color: TaskShowcasePalette.surface(context),
       child: Column(
         children: [
           Row(
@@ -309,7 +329,7 @@ class _TaskListSearchHeader extends StatelessWidget {
                 tooltip: context.messages.tasksFilterTitle,
                 onPressed: onFilterPressed,
                 icon: Icon(
-                  Icons.tune_rounded,
+                  Icons.filter_list_rounded,
                   color: TaskShowcasePalette.accent(context),
                 ),
               ),

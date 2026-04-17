@@ -574,61 +574,118 @@ class TaskShowcaseDesktopActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step5),
-        child: DesignSystemNavigationFrostedSurface(
-          borderRadius: BorderRadius.circular(tokens.radii.xl),
-          padding: EdgeInsets.all(tokens.spacing.step3),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  height: 60,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(
-                      tokens.radii.badgesPills,
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          DesignSystemNavigationFrostedSurface(
+            borderRadius: BorderRadius.circular(tokens.radii.xl),
+            padding: EdgeInsets.all(tokens.spacing.step3),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 60,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 20,
+                          color: TaskShowcasePalette.highText(context),
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                        Text(
+                          context.messages.addActionAddTimer,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: TaskShowcasePalette.highText(context),
+                              ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 20,
-                        color: TaskShowcasePalette.highText(context),
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                      Text(
-                        context.messages.addActionAddTimer,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: TaskShowcasePalette.highText(context),
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                for (final icon in const [
-                  Icons.checklist_rounded,
-                  Icons.image_outlined,
-                  Icons.mic_none_rounded,
-                  Icons.link_rounded,
-                ]) ...[
-                  _TaskShowcaseRoundAction(icon: icon),
                   SizedBox(width: tokens.spacing.step3),
+                  for (final icon in const [
+                    Icons.checklist_rounded,
+                    Icons.image_outlined,
+                    Icons.mic_none_rounded,
+                    Icons.subdirectory_arrow_right_rounded,
+                  ]) ...[
+                    _TaskShowcaseRoundAction(icon: icon),
+                    SizedBox(width: tokens.spacing.step3),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
+          const Positioned(
+            right: 0,
+            bottom: 0,
+            child: _TaskShowcaseDetailFab(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskShowcaseDetailFab extends StatelessWidget {
+  const _TaskShowcaseDetailFab();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: tokens.colors.interactive.enabled,
+            shape: const CircleBorder(),
+            elevation: 4,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {},
+              child: Center(
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: tokens.colors.text.onInteractiveAlert,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: tokens.colors.alert.error.defaultColor,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: tokens.colors.background.level01,
+                  width: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

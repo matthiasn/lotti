@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// A navigation destination displayed in the [DesktopNavigationSidebar].
 class DesktopSidebarDestination {
@@ -31,7 +29,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.settingsDestination,
     this.onSettingsSelected,
     this.isSettingsActive = false,
-    this.onNewPressed,
     this.width = 320,
     super.key,
   });
@@ -54,9 +51,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// Whether the Settings destination is currently active.
   final bool isSettingsActive;
 
-  /// Called when the "New" button is pressed.
-  final VoidCallback? onNewPressed;
-
   /// Width of the sidebar. Defaults to 320.
   final double width;
 
@@ -73,7 +67,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
         tokens.spacing.step6,
       ),
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: tokens.colors.background.level01,
         border: Border(
           right: BorderSide(color: tokens.colors.decorative.level01),
         ),
@@ -95,16 +89,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
                 const DesignSystemBrandLogo(),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Action: New button
-          DesignSystemButton(
-            label: context.messages.designSystemNavigationNewLabel,
-            size: DesignSystemButtonSize.medium,
-            leadingIcon: Icons.add_rounded,
-            trailingIcon: Icons.keyboard_arrow_down_rounded,
-            onPressed: onNewPressed,
           ),
           const SizedBox(height: 24),
 

@@ -24,7 +24,7 @@ class TaskDetailPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: TaskShowcasePalette.page(context),
+        color: context.designTokens.colors.background.level01,
         border: Border(
           left: showLeadingBorder
               ? BorderSide(color: TaskShowcasePalette.border(context))

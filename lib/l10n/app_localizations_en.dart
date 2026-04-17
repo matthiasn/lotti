@@ -4089,7 +4089,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabTitleHabits => 'Habits';
 
   @override
-  String get navTabTitleInsights => 'Dashboards';
+  String get navTabTitleInsights => 'Insights';
 
   @override
   String get navTabTitleJournal => 'Logbook';
@@ -6659,7 +6659,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get navTabTitleHabits => 'Habits';
 
   @override
-  String get navTabTitleInsights => 'Dashboards';
+  String get navTabTitleInsights => 'Insights';
 
   @override
   String get navTabTitleJournal => 'Logbook';

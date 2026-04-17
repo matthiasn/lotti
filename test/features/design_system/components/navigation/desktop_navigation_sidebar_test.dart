@@ -238,27 +238,5 @@ void main() {
       );
     });
 
-    testWidgets('tapping New button calls onNewPressed', (tester) async {
-      var newPressed = false;
-
-      await tester.pumpWidget(
-        wrap(
-          DesktopNavigationSidebar(
-            destinations: buildDestinations(),
-            activeIndex: 0,
-            onDestinationSelected: (_) {},
-            onNewPressed: () => newPressed = true,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // The New button displays the localized "New" label text.
-      // Find it via the DesignSystemButton containing that text.
-      await tester.tap(find.text('New'));
-      await tester.pump();
-
-      expect(newPressed, isTrue);
-    });
   });
 }

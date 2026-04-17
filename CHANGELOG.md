@@ -5,6 +5,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.954] - 2026-04-17
+### Changed
+- Align desktop tasks UI with the Figma design system: the sidebar and task
+  details panel now render on the deeper `background/01` surface while the
+  task list and cards sit on `background/02`, matching the Figma variables.
+  Dark-mode `text/*` tokens were raised to the Figma-specified opacities
+  (high 100%, medium 80%, low 64%) so headlines, subtitles and timestamps
+  read with the correct contrast without changing type weights.
+- Sidebar no longer shows the legacy "+ New" quick action and always uses the
+  filled settings glyph. The Insights nav tab now reads "Insights"
+  (English/en-GB) and "Einblicke" (German).
+- Task list filter chips use the design-system chip component and render
+  inline under the search bar, with priority chips carrying a leading
+  priority glyph. The filter trigger icon is now `filter_list_rounded` to
+  match the Figma funnel glyph.
+- Task group headers ("Today", "Yesterday" …) and the `N tasks` counter now
+  use the caption token for a lighter hierarchy.
+- Task details action bar adds a teal `+` FAB with notification dot anchored
+  bottom-right next to the existing action pill cluster; the "linked" round
+  action uses the Figma `subdirectory_arrow_right_rounded` glyph.
+
 ### Added
 - Optional gzip compression for JSON sync attachments, gated by the
   `use_compressed_json_attachments` config flag (off by default). Receivers

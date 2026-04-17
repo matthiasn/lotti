@@ -107,7 +107,7 @@ class TaskBrowseListItem extends StatelessWidget {
                   if (entry.sectionCount case final count?)
                     Text(
                       context.messages.taskShowcaseTaskCount(count),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                      style: tokens.typography.styles.others.caption.copyWith(
                         color: TaskShowcasePalette.mediumText(context),
                       ),
                     ),
@@ -547,8 +547,8 @@ class _SectionHeaderTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = context.designTokens.typography.styles.body.bodySmall
-        .copyWith(color: TaskShowcasePalette.highText(context));
+    final textStyle = context.designTokens.typography.styles.others.caption
+        .copyWith(color: TaskShowcasePalette.mediumText(context));
 
     if (titleOverride case final title?) {
       return Text(title, style: textStyle);
