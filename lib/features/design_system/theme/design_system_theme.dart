@@ -29,7 +29,7 @@ class DesignSystemTheme {
       onTertiaryContainer: tokens.colors.text.highEmphasis,
       errorContainer: tokens.colors.alert.error.hover,
       onErrorContainer: tokens.colors.text.onInteractiveAlert,
-      surfaceContainerHighest: tokens.colors.background.level03,
+      surfaceContainerHighest: tokens.colors.background.level02,
       onSurfaceVariant: tokens.colors.text.mediumEmphasis,
       outline: tokens.colors.decorative.level01,
       outlineVariant: tokens.colors.decorative.level02,

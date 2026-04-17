@@ -36,9 +36,6 @@ class TaskListPane extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: TaskShowcasePalette.page(context),
-        border: Border(
-          right: BorderSide(color: TaskShowcasePalette.border(context)),
-        ),
       ),
       child: Column(
         children: [
@@ -220,39 +217,83 @@ class TaskListActiveFilters extends StatelessWidget {
   const TaskListActiveFilters({
     required this.state,
     required this.onFilterPressed,
+    this.onFilterChanged,
+    this.onClearAll,
     super.key,
   });
 
   final TaskListDetailState state;
   final VoidCallback onFilterPressed;
 
+  /// Called with the filter state after a single chip has been removed.
+  /// When `null`, tapping a chip falls back to [onFilterPressed] (opens
+  /// the filter modal) so legacy callers keep working.
+  final ValueChanged<DesignSystemTaskFilterState>? onFilterChanged;
+
+  /// Called when the user taps "Clear all". When `null` the button is
+  /// hidden; otherwise it resets every filter section at once.
+  final VoidCallback? onClearAll;
+
   @override
   Widget build(BuildContext context) {
     final filterState = state.filterState;
+
     final chips = <_ActiveFilterChip>[
       ...?filterState.statusField?.selectedOptions.map(
-        (option) => _ActiveFilterChip(label: option.label),
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.status,
+                    option.id,
+                  ),
+                ),
+        ),
       ),
-      if (filterState.selectedPriorityId !=
-          DesignSystemTaskFilterState.allPriorityId)
+      for (final priorityId in filterState.selectedPriorityIds)
         _ActiveFilterChip(
-          label:
-              filterState.priorityOptions
-                  .where(
-                    (option) => option.id == filterState.selectedPriorityId,
-                  )
+          label: filterState.priorityOptions
+                  .where((option) => option.id == priorityId)
                   .firstOrNull
                   ?.label ??
-              '',
-          priority: _taskPriorityForId(filterState.selectedPriorityId),
+              priorityId.toUpperCase(),
+          priority: _taskPriorityForId(priorityId),
+          onRemove: onFilterChanged == null
+              ? null
+              : () =>
+                  onFilterChanged!(filterState.togglePriority(priorityId)),
         ),
       ...?filterState.categoryField?.selectedOptions.map(
-        (option) => _ActiveFilterChip(label: option.label),
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.category,
+                    option.id,
+                  ),
+                ),
+        ),
       ),
       ...?filterState.labelField?.selectedOptions.map(
-        (option) => _ActiveFilterChip(label: option.label),
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.label,
+                    option.id,
+                  ),
+                ),
+        ),
       ),
     ].where((chip) => chip.label.isNotEmpty).toList();
+
+    if (chips.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -263,11 +304,17 @@ class TaskListActiveFilters extends StatelessWidget {
           for (final chip in chips)
             DesignSystemChip(
               label: chip.label,
-              onPressed: onFilterPressed,
-              showRemove: true,
+              onPressed: chip.onRemove ?? onFilterPressed,
+              showRemove: chip.onRemove != null,
               avatar: chip.priority != null
                   ? TaskShowcasePriorityGlyph(priority: chip.priority!)
                   : null,
+            ),
+          if (onClearAll != null)
+            DesignSystemChip(
+              label: context.messages.tasksFilterClearAll,
+              onPressed: onClearAll,
+              leadingIcon: Icons.close_rounded,
             ),
         ],
       ),
@@ -276,10 +323,15 @@ class TaskListActiveFilters extends StatelessWidget {
 }
 
 class _ActiveFilterChip {
-  const _ActiveFilterChip({required this.label, this.priority});
+  const _ActiveFilterChip({
+    required this.label,
+    this.priority,
+    this.onRemove,
+  });
 
   final String label;
   final TaskPriority? priority;
+  final VoidCallback? onRemove;
 }
 
 TaskPriority? _taskPriorityForId(String id) {

@@ -320,7 +320,7 @@ void main() {
       expect(fakeController.applyBatchFilterUpdateCalled, 1);
       expect(fakeController.sortOptionCalls, [TaskSortOption.byDate]);
       expect(fakeController.setSelectedPrioritiesCalls, [
-        {'HIGH'},
+        {'P1'},
       ]);
     });
 
@@ -329,7 +329,7 @@ void main() {
       mockState = mockState.copyWith(
         selectedTaskStatuses: {'OPEN', 'BLOCKED'},
         selectedCategoryIds: {'cat-1'},
-        selectedPriorities: {'CRITICAL'},
+        selectedPriorities: {'P0'},
       );
 
       await tester.pumpWidget(buildSubject());

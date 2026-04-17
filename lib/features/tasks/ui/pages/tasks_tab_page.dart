@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -14,13 +17,16 @@ import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/tasks_tab_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -119,22 +125,21 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               : _noSelectionNotifier,
           builder: (context, activeTaskId, _) => Column(
             children: [
-              ProjectsOverviewContentWidth(
-                child: TasksTabHeader(
-                  query: state.match,
-                  onSearchChanged: (value) {
-                    unawaited(controller.setSearchString(value));
-                  },
-                  onSearchCleared: () {
-                    unawaited(controller.setSearchString(''));
-                  },
-                  onSearchPressed: (value) {
-                    unawaited(controller.setSearchString(value));
-                  },
-                  onFilterPressed: () =>
-                      showTaskFilterModal(context, showTasks: true),
-                ),
+              TasksTabHeader(
+                query: state.match,
+                onSearchChanged: (value) {
+                  unawaited(controller.setSearchString(value));
+                },
+                onSearchCleared: () {
+                  unawaited(controller.setSearchString(''));
+                },
+                onSearchPressed: (value) {
+                  unawaited(controller.setSearchString(value));
+                },
+                onFilterPressed: () =>
+                    showTaskFilterModal(context, showTasks: true),
               ),
+              const _TasksTabActiveFilters(),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: controller.refreshQuery,
@@ -284,6 +289,166 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     );
   }
 }
+
+final FutureProvider<Map<String, String>> _visibleProjectsTitleProvider =
+    FutureProvider.autoDispose<Map<String, String>>((ref) async {
+      final projects = await getIt<JournalDb>().getVisibleProjects();
+      return <String, String>{
+        for (final project in projects) project.meta.id: project.data.title,
+      };
+    });
+
+class _TasksTabActiveFilters extends ConsumerWidget {
+  const _TasksTabActiveFilters();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(journalPageControllerProvider(true));
+    final controller = ref.read(journalPageControllerProvider(true).notifier);
+    final cache = getIt<EntitiesCacheService>();
+    final projectTitles =
+        ref.watch(_visibleProjectsTitleProvider).asData?.value ??
+        const <String, String>{};
+
+    final statuses = state.selectedTaskStatuses;
+    final priorities = state.selectedPriorities;
+    final categoryIds = state.selectedCategoryIds;
+    final labelIds = state.selectedLabelIds;
+    final projectIds = state.selectedProjectIds;
+
+    final total =
+        statuses.length +
+        priorities.length +
+        categoryIds.length +
+        labelIds.length +
+        projectIds.length;
+    if (total == 0) return const SizedBox.shrink();
+
+    final chips = <Widget>[];
+
+    for (final status in statuses) {
+      chips.add(
+        DesignSystemChip(
+          label: taskLabelFromStatusString(status, context),
+          leadingIcon: taskIconFromStatusString(status),
+          showRemove: true,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              statuses: statuses.difference({status}),
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final priority in priorities) {
+      final taskPriority = _priorityFromInternalId(priority);
+      chips.add(
+        DesignSystemChip(
+          label: priority,
+          avatar: taskPriority != null
+              ? TaskShowcasePriorityGlyph(priority: taskPriority)
+              : null,
+          showRemove: true,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              priorities: priorities.difference({priority}),
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final id in categoryIds) {
+      final category = cache.getCategoryById(id);
+      if (category == null) continue;
+      chips.add(
+        DesignSystemChip(
+          label: category.name,
+          showRemove: true,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              categoryIds: categoryIds.difference({id}),
+              projectIds: const <String>{},
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final id in labelIds) {
+      final label = cache.getLabelById(id);
+      if (label == null) continue;
+      chips.add(
+        DesignSystemChip(
+          label: label.name,
+          showRemove: true,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              labelIds: labelIds.difference({id}),
+            ),
+          ),
+        ),
+      );
+    }
+
+    for (final id in projectIds) {
+      final title = projectTitles[id];
+      if (title == null) continue;
+      chips.add(
+        DesignSystemChip(
+          label: title,
+          leadingIcon: Icons.folder_outlined,
+          showRemove: true,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              projectIds: projectIds.difference({id}),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    if (chips.length > 1) {
+      chips.add(
+        DesignSystemChip(
+          label: context.messages.tasksFilterClearAll,
+          leadingIcon: Icons.close_rounded,
+          onPressed: () => unawaited(
+            controller.applyBatchFilterUpdate(
+              statuses: const <String>{},
+              priorities: const <String>{},
+              categoryIds: const <String>{},
+              labelIds: const <String>{},
+              projectIds: const <String>{},
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ProjectsOverviewContentWidth(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: chips,
+        ),
+      ),
+    );
+  }
+}
+
+TaskPriority? _priorityFromInternalId(String id) => switch (id) {
+  'P0' => TaskPriority.p0Urgent,
+  'P1' => TaskPriority.p1High,
+  'P2' => TaskPriority.p2Medium,
+  'P3' => TaskPriority.p3Low,
+  _ => null,
+};
 
 Future<void> _defaultCreateTaskPressed(
   WidgetRef ref,

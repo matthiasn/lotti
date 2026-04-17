@@ -57,7 +57,7 @@ class TaskListDetailState {
     final selectedCategories =
         filterState.categoryField?.selectedIds ?? const {};
     final selectedLabels = filterState.labelField?.selectedIds ?? const {};
-    final selectedPriorityId = filterState.selectedPriorityId;
+    final selectedPriorityIds = filterState.selectedPriorityIds;
 
     final visible =
         data.tasks.where((record) {
@@ -85,9 +85,10 @@ class TaskListDetailState {
               record.labels.any((label) => selectedLabels.contains(label.id));
 
           final matchesPriority =
-              selectedPriorityId == DesignSystemTaskFilterState.allPriorityId ||
-              selectedPriorityId ==
-                  _priorityFilterId(record.task.data.priority);
+              selectedPriorityIds.isEmpty ||
+              selectedPriorityIds.contains(
+                _priorityFilterId(record.task.data.priority),
+              );
 
           return matchesQuery &&
               matchesStatus &&

@@ -68,9 +68,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: tokens.colors.background.level01,
-        border: Border(
-          right: BorderSide(color: tokens.colors.decorative.level01),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +176,6 @@ class _DesktopSidebarNavItem extends StatelessWidget {
                       destination.label,
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
-                        fontWeight: FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

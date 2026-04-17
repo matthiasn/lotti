@@ -181,7 +181,9 @@ void main() {
           contains('"selectedPriorityId": "p2"'),
         );
 
-        // Change priority to p0
+        // Toggle p0 on. Priority is now multi-select, so the set grows to
+        // include both p2 (initial) and p0; the legacy single-id getter
+        // falls back to `all` when more than one is selected.
         await tester.tap(
           find.byKey(
             const ValueKey('design-system-task-filter-priority-p0'),
@@ -189,10 +191,10 @@ void main() {
         );
         await tester.pump();
 
-        expect(
-          _serializedState(tester),
-          contains('"selectedPriorityId": "p0"'),
-        );
+        final serialized = _serializedState(tester);
+        expect(serialized, contains('"selectedPriorityIds"'));
+        expect(serialized, contains('"p2"'));
+        expect(serialized, contains('"p0"'));
 
         // Rebuild with German locale — triggers didChangeDependencies with
         // new messages while previous state is non-null
@@ -200,10 +202,9 @@ void main() {
         await tester.pump();
 
         // Priority selection should be preserved across the locale change
-        expect(
-          _serializedState(tester),
-          contains('"selectedPriorityId": "p0"'),
-        );
+        final afterLocaleSwitch = _serializedState(tester);
+        expect(afterLocaleSwitch, contains('"p2"'));
+        expect(afterLocaleSwitch, contains('"p0"'));
 
         // Drain any overflow exceptions from the fixed-width WidgetbookViewport
         // rendering wider German labels — not a component bug.

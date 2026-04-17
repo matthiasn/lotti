@@ -78,21 +78,23 @@ abstract final class TasksFilterPriorityIds {
   static const p2 = 'p2';
   static const p3 = 'p3';
 
-  /// Maps an internal priority string to a display priority ID.
+  /// Maps an internal priority string (the `task_priority` column value,
+  /// e.g. `'P0'`) to a display priority ID used by the filter sheet.
   static String? toDisplayId(String internalId) => switch (internalId) {
-    'CRITICAL' => p0,
-    'HIGH' => p1,
-    'MEDIUM' => p2,
-    'LOW' => p3,
+    'P0' => p0,
+    'P1' => p1,
+    'P2' => p2,
+    'P3' => p3,
     _ => null,
   };
 
-  /// Maps a display priority ID to the internal priority string.
+  /// Maps a display priority ID to the internal priority string stored in
+  /// the `task_priority` column.
   static String? toInternalId(String displayId) => switch (displayId) {
-    p0 => 'CRITICAL',
-    p1 => 'HIGH',
-    p2 => 'MEDIUM',
-    p3 => 'LOW',
+    p0 => 'P0',
+    p1 => 'P1',
+    p2 => 'P2',
+    p3 => 'P3',
     _ => null,
   };
 }
@@ -171,8 +173,8 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
     ),
   ];
 
-  // Map internal priority set to single display ID
-  final selectedPriorityId = _prioritySetToDisplayId(
+  // Map internal priority set to the corresponding display IDs (multi-select).
+  final selectedPriorityIds = _prioritySetToDisplayIds(
     controllerState.selectedPriorities,
   );
 
@@ -268,7 +270,7 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
     ),
     priorityLabel: messages.tasksPriorityFilterTitle,
     priorityOptions: priorityOptions,
-    selectedPriorityId: selectedPriorityId,
+    selectedPriorityIds: selectedPriorityIds,
     categoryField: DesignSystemTaskFilterFieldState(
       label: stripTrailingColon(messages.taskCategoryLabel),
       options: categoryOptions,
@@ -333,14 +335,12 @@ DesignSystemTaskFilterFieldState? _buildProjectField(
 
 /// Converts the set-based internal priority selection to a single display ID.
 ///
-/// The design system filter uses single-select priority (pill UI), while the
-/// controller uses a set. If exactly one priority is selected, we map it;
-/// otherwise we treat it as "All".
-String _prioritySetToDisplayId(Set<String> priorities) {
-  if (priorities.isEmpty) return DesignSystemTaskFilterState.allPriorityId;
-  if (priorities.length == 1) {
-    return TasksFilterPriorityIds.toDisplayId(priorities.first) ??
-        DesignSystemTaskFilterState.allPriorityId;
-  }
-  return DesignSystemTaskFilterState.allPriorityId;
+/// Maps the controller's set of internal priority strings (e.g. `'P0'`,
+/// `'P1'`) to the corresponding display priority IDs the filter sheet
+/// understands. Unrecognised entries are dropped silently.
+Set<String> _prioritySetToDisplayIds(Set<String> priorities) {
+  return <String>{
+    for (final internal in priorities)
+      ?TasksFilterPriorityIds.toDisplayId(internal),
+  };
 }

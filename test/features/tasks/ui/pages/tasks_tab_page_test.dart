@@ -278,7 +278,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Active label filters'), findsOneWidget);
-      expect(find.text('Focus'), findsOneWidget);
+      // "Focus" label appears both in the active-filters chip row above the
+      // list and in the TaskLabelQuickFilter inside the list.
+      expect(find.text('Focus'), findsNWidgets(2));
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();

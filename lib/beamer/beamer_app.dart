@@ -465,7 +465,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleTasks,
         iconBuilder: ({required active}) => TasksBadge(
           child: Icon(
-            active ? Icons.check_box_rounded : Icons.check_box_outlined,
+            active ? Icons.list_rounded : Icons.list_outlined,
           ),
         ),
       ),
@@ -491,8 +491,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dashboards,
         label: context.messages.navTabTitleInsights,
-        iconBuilder: ({required active}) =>
-            Icon(active ? Icons.insights_rounded : Icons.insights_outlined),
+        iconBuilder: ({required active}) => Icon(
+          active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
+        ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,

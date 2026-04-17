@@ -34,6 +34,11 @@ class _ResizableDividerState extends State<ResizableDivider> {
         ? tokens.colors.interactive.enabled
         : tokens.colors.decorative.level01;
 
+    // The divider occupies a 1 px flush line in the row layout so adjacent
+    // panes sit edge-to-edge against it (matching the Figma reference —
+    // no extra gap between, e.g., the task list's vertical divider and a
+    // task cover art image). A wider invisible [OverflowBox] on top
+    // preserves the full hitTargetWidth drag/hover area.
     return MouseRegion(
       cursor: SystemMouseCursors.resizeColumn,
       onEnter: (_) => setState(() => _isHovering = true),
@@ -45,8 +50,9 @@ class _ResizableDividerState extends State<ResizableDivider> {
         onHorizontalDragCancel: () => setState(() => _isDragging = false),
         onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
         child: SizedBox(
-          width: widget.hitTargetWidth,
-          child: Center(
+          width: isActive ? 3 : 1,
+          child: OverflowBox(
+            maxWidth: widget.hitTargetWidth,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               width: isActive ? 3 : 1,

@@ -39,7 +39,7 @@ void main() {
         searchQuery: '',
         selectedTaskId: 'payment-confirmation',
         filterState: buildTaskShowcaseFilterState().copyWith(
-          selectedPriorityId: TaskPriorityFilterIds.p1,
+          selectedPriorityIds: const {TaskPriorityFilterIds.p1},
         ),
       );
 

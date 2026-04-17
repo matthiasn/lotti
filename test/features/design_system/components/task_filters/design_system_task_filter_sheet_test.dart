@@ -94,6 +94,7 @@ void main() {
       );
 
       expect(roundTrip.selectedSortId, state.selectedSortId);
+      expect(roundTrip.selectedPriorityIds, state.selectedPriorityIds);
       expect(roundTrip.selectedPriorityId, state.selectedPriorityId);
       expect(
         roundTrip.statusField!.selectedIds,
@@ -105,13 +106,20 @@ void main() {
       );
       expect(roundTrip.labelField!.selectedIds, state.labelField!.selectedIds);
       expect(state.selectSort('due-date'), same(state));
-      expect(state.selectPriority('p2'), same(state));
+      // Priority is multi-select: toggling an already-selected id removes
+      // it from the set, and tapping `allPriorityId` clears the set.
+      expect(state.togglePriority('p2').selectedPriorityIds, isEmpty);
+      expect(
+        state.togglePriority('p0').selectedPriorityIds,
+        {'p2', 'p0'},
+      );
       expect(copied.title, 'Updated title');
       expect(sorted.selectedSortId, 'priority');
       expect(
         prioritized.selectedPriorityId,
         DesignSystemTaskFilterState.allPriorityId,
       );
+      expect(prioritized.selectedPriorityIds, isEmpty);
       expect(prioritized.appliedCount, 6);
       expect(statusRemoved.statusField!.selectedIds, {'in-progress'});
       expect(categoryRemoved.categoryField!.selectedIds, {'study'});

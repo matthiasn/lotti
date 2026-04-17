@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 
@@ -30,21 +31,36 @@ void main() {
   }
 
   group('ResizableDivider rendering', () {
-    testWidgets('renders with correct hit target width', (tester) async {
+    testWidgets('renders a flush 1px line with the default hit target width', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(onDrag: (_) {}),
       );
 
+      // The visible line occupies only 1 px in the Row layout so adjacent
+      // panes sit edge-to-edge against the divider.
       final sizedBox = tester.widget<SizedBox>(
         find.descendant(
           of: find.byType(ResizableDivider),
           matching: find.byType(SizedBox),
         ),
       );
-      expect(sizedBox.width, 8);
+      expect(sizedBox.width, 1);
+
+      // A wider OverflowBox on top preserves the full hit target area.
+      final overflowBox = tester.widget<OverflowBox>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(OverflowBox),
+        ),
+      );
+      expect(overflowBox.maxWidth, 8);
     });
 
-    testWidgets('renders with custom hit target width', (tester) async {
+    testWidgets('custom hitTargetWidth drives the OverflowBox, not the line', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(onDrag: (_) {}, hitTargetWidth: 12),
       );
@@ -55,7 +71,15 @@ void main() {
           matching: find.byType(SizedBox),
         ),
       );
-      expect(sizedBox.width, 12);
+      expect(sizedBox.width, 1);
+
+      final overflowBox = tester.widget<OverflowBox>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(OverflowBox),
+        ),
+      );
+      expect(overflowBox.maxWidth, 12);
     });
 
     testWidgets('shows resize column cursor via MouseRegion', (tester) async {

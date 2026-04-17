@@ -182,11 +182,13 @@ Future<void> _applyFilterState(
   required JournalPageController controller,
   required JournalPageState controllerState,
 }) async {
-  // Extract priority
-  final priorityDisplayId = sheetState.selectedPriorityId;
-  final internalPriorityId = TasksFilterPriorityIds.toInternalId(
-    priorityDisplayId,
-  );
+  // Extract priorities (multi-select): map every selected display id to its
+  // internal priority string, dropping any that don't map (including the
+  // legacy `allPriorityId` sentinel).
+  final internalPriorities = <String>{
+    for (final displayId in sheetState.selectedPriorityIds)
+      ?TasksFilterPriorityIds.toInternalId(displayId),
+  };
 
   // Extract toggles
   final toggleMap = {
@@ -198,7 +200,7 @@ Future<void> _applyFilterState(
     categoryIds: sheetState.categoryField?.selectedIds,
     labelIds: sheetState.labelField?.selectedIds,
     projectIds: sheetState.projectField?.selectedIds,
-    priorities: internalPriorityId != null ? {internalPriorityId} : const {},
+    priorities: internalPriorities,
     sortOption: TasksFilterSortIds.toSortOption(sheetState.selectedSortId),
     agentAssignmentFilter: TasksFilterAgentIds.toFilter(
       sheetState.selectedAgentFilterId,
