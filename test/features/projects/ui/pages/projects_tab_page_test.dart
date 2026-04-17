@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -446,4 +448,97 @@ void main() {
       expect(find.text('Tasks Filter'), findsNothing);
     },
   );
+
+  group('active-filter chip row', () {
+    testWidgets('is hidden when no status or category filters are selected', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+      );
+
+      expect(find.byType(ActiveFilterChip), findsNothing);
+    });
+
+    testWidgets(
+      'renders one chip per selected status and clears that status when '
+      'the chip is tapped',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        // Seed the filter controller with a status selection before asserting.
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds(
+              const {ProjectStatusFilterIds.active},
+            );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(projectsFilterControllerProvider).selectedStatusIds,
+          isEmpty,
+        );
+      },
+    );
+
+    testWidgets(
+      'renders one chip per selected category and clears that category '
+      'when the chip is tapped',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedCategoryIds(const {'work'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(projectsFilterControllerProvider).selectedCategoryIds,
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('desktop split layout', () {
+    testWidgets(
+      'renders a ResizableDivider between list and detail panes so the '
+      'user can adjust the list-pane width',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        );
+
+        expect(find.byType(ResizableDivider), findsOneWidget);
+        // And the detail pane is present (empty-state placeholder when no
+        // project is selected).
+        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+      },
+    );
+  });
 }
