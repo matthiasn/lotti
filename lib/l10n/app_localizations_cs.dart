@@ -2298,6 +2298,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
+  String get configFlagUseBundledAttachments =>
+      'Seskupovat přílohy synchronizace';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Před nahráním seskupí více čekajících příloh synchronizace do jediného ZIPu (až 8 MiB). Sníží počet round-tripů v pomalých sítích; při selhání nahrávání se celý balíček zopakuje.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.';
 

@@ -2319,6 +2319,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
+  String get configFlagUseBundledAttachments =>
+      'Grupează atașamentele de sincronizare';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Grupează mai multe atașamente de sincronizare din coadă într-un singur ZIP înainte de încărcare (până la 8 MiB). Reduce numărul de round-trip-uri în rețele lente; dacă încărcarea eșuează, întregul pachet este reîncercat.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 

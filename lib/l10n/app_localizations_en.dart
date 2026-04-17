@@ -2279,6 +2279,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
+  String get configFlagUseBundledAttachments => 'Bundle sync attachments';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Pack queued sync attachments into a single zip before upload (up to 8 MiB). Cuts round-trips on slow networks; the whole bundle retries if the upload fails.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Use cloud-based AI services for enhanced features. This requires an internet connection.';
 

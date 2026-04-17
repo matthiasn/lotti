@@ -2354,6 +2354,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
+  String get configFlagUseBundledAttachments => 'Agrupar adjuntos de sync';
+
+  @override
+  String get configFlagUseBundledAttachmentsDescription =>
+      'Empaqueta varios adjuntos de sincronización en cola dentro de un único zip antes de subirlos (hasta 8 MiB). Reduce los round-trips en redes lentas; si la subida falla, se reintenta todo el paquete.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utiliza servicios de IA basados en la nube para funciones mejoradas. Esto requiere una conexión a Internet.';
 
