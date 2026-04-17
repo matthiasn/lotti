@@ -68,7 +68,10 @@ class TasksTabPage extends ConsumerWidget {
         journalPageScopeProvider.overrideWithValue(true),
       ],
       child: Scaffold(
-        backgroundColor: TaskShowcasePalette.page(context),
+        // Task list pane uses the darker `background.level01` (#181818)
+        // surface — Figma pairs it against the lighter sidebar (level02,
+        // #222222) for contrast.
+        backgroundColor: context.designTokens.colors.background.level01,
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: DesignSystemBottomNavigationFabPadding(
           child: floatingActionButton,

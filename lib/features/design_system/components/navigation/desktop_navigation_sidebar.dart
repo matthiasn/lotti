@@ -67,7 +67,10 @@ class DesktopNavigationSidebar extends StatelessWidget {
         tokens.spacing.step6,
       ),
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        // Sidebar sits on the lighter `background.level02` so it reads as a
+        // distinct surface from the task-list pane (level01). Matches the
+        // Figma reference where the nav sidebar is the lighter column.
+        color: tokens.colors.background.level02,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

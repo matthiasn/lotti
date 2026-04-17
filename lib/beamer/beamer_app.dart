@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -332,6 +333,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final paneWidths = ref.watch(paneWidthControllerProvider);
 
     return Scaffold(
+      // Scaffold fills behind the outer ResizableDivider's 3 px reserved
+      // SizedBox; without an explicit colour Flutter would paint the theme
+      // default (canvas / near-black) there, which shows through as a darker
+      // strip around the sidebar-↔-list divider. Using the list-pane token
+      // (background.level01 = #181818) keeps the divider flanked by the
+      // same surface on both visible edges, matching the right-side divider.
+      backgroundColor: context.designTokens.colors.background.level01,
       body: Row(
         children: [
           DesktopNavigationSidebar(

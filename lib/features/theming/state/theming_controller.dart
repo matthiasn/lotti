@@ -6,7 +6,6 @@ import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
@@ -171,12 +170,12 @@ class ThemingController extends _$ThemingController {
     final themeData = isDark
         ? FlexThemeData.dark(
             scheme: scheme,
-            fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+            fontFamily: 'Inter',
             fontFamilyFallback: _getEmojiFontFallback(),
           )
         : FlexThemeData.light(
             scheme: scheme,
-            fontFamily: GoogleFonts.inclusiveSans().fontFamily,
+            fontFamily: 'Inter',
             fontFamilyFallback: _getEmojiFontFallback(),
           );
 

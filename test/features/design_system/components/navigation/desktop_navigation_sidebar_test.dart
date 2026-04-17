@@ -238,32 +238,34 @@ void main() {
       );
     });
 
-    testWidgets('sidebar paints background.level01 (deep charcoal)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        wrap(
-          DesktopNavigationSidebar(
-            destinations: buildDestinations(),
-            activeIndex: 0,
-            onDestinationSelected: (_) {},
+    testWidgets(
+      'sidebar paints background.level02 so it reads as a lighter surface '
+      'than the task-list pane (level01) — matches the Figma reference',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(DesktopNavigationSidebar),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(DesktopNavigationSidebar),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
 
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.color, dsTokensDark.colors.background.level01);
-    });
+        final decoration = container.decoration! as BoxDecoration;
+        expect(decoration.color, dsTokensDark.colors.background.level02);
+      },
+    );
 
     testWidgets('sidebar does not render a "+ New" quick action', (
       tester,

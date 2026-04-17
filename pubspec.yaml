@@ -208,9 +208,6 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf
-    - family: InclusiveSans
-      fonts:
-        - asset: assets/fonts/InclusiveSans/InclusiveSans-Regular.ttf
 
   assets:
     - assets/design_system/
