@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
+import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ThemingPage extends ConsumerWidget {
   const ThemingPage({super.key});
@@ -36,45 +39,144 @@ class ThemingPage extends ConsumerWidget {
       );
     }
 
+    if (themingState.darkTheme == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Build the content that goes inside the card
+    Widget buildCardContent() {
+      return Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          children: [
+            SegmentedButton<ThemeMode>(
+              selected: {themingState.themeMode},
+              showSelectedIcon: false,
+              onSelectionChanged: controller.onThemeSelectionChanged,
+              segments: [
+                segment(
+                  filter: ThemeMode.dark,
+                  icon: Icons.nightlight_outlined,
+                  activeIcon: Icons.nightlight,
+                  semanticLabel: context.messages.settingsThemingDark,
+                ),
+                segment(
+                  filter: ThemeMode.system,
+                  icon: isMobile ? Icons.smartphone : Icons.laptop,
+                  activeIcon: isMobile
+                      ? Icons.smartphone_outlined
+                      : Icons.laptop_outlined,
+                  semanticLabel: context.messages.settingsThemingAutomatic,
+                ),
+                segment(
+                  filter: ThemeMode.light,
+                  icon: Icons.wb_sunny_outlined,
+                  activeIcon: Icons.sunny,
+                  semanticLabel: context.messages.settingsThemingLight,
+                ),
+              ],
+            ),
+            const SizedBox(height: 25),
+            SelectTheme(
+              setTheme: controller.setLightTheme,
+              labelText: context.messages.settingThemingLight,
+              semanticsLabel: context.messages.settingThemingLight,
+              getSelected: (state) => state.lightThemeName ?? '',
+            ),
+            const SizedBox(height: 25),
+            SelectTheme(
+              setTheme: controller.setDarkTheme,
+              labelText: context.messages.settingThemingDark,
+              semanticsLabel: context.messages.settingThemingDark,
+              getSelected: (state) => state.darkThemeName ?? '',
+            ),
+          ],
+        ),
+      );
+    }
+
     return SliverBoxAdapterPage(
       title: context.messages.settingsThemingTitle,
       showBackButton: true,
       child: Column(
         children: [
+          // Theme Mode and Color Selection
           ModernBaseCard(
             margin: const EdgeInsets.all(10),
-            child: Padding(
-              padding: const EdgeInsets.all(25),
-              child: SegmentedButton<ThemeMode>(
-                selected: {themingState.themeMode},
-                showSelectedIcon: false,
-                onSelectionChanged: controller.onThemeSelectionChanged,
-                segments: [
-                  segment(
-                    filter: ThemeMode.dark,
-                    icon: Icons.nightlight_outlined,
-                    activeIcon: Icons.nightlight,
-                    semanticLabel: context.messages.settingsThemingDark,
-                  ),
-                  segment(
-                    filter: ThemeMode.system,
-                    icon: isMobile
-                        ? Icons.smartphone_outlined
-                        : Icons.laptop_outlined,
-                    activeIcon: isMobile ? Icons.smartphone : Icons.laptop,
-                    semanticLabel: context.messages.settingsThemingAutomatic,
-                  ),
-                  segment(
-                    filter: ThemeMode.light,
-                    icon: Icons.wb_sunny_outlined,
-                    activeIcon: Icons.sunny,
-                    semanticLabel: context.messages.settingsThemingLight,
+            child: buildCardContent(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SelectTheme extends ConsumerWidget {
+  const SelectTheme({
+    required this.setTheme,
+    required this.getSelected,
+    required this.labelText,
+    required this.semanticsLabel,
+    super.key,
+  });
+
+  final void Function(String) setTheme;
+  final String Function(ThemingState) getSelected;
+  final String labelText;
+  final String semanticsLabel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themingState = ref.watch(themingControllerProvider);
+    final selectedThemeName = getSelected(themingState);
+    final themeData = Theme.of(context);
+
+    void onTap() {
+      ModalUtils.showBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (BuildContext _) {
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ...allThemeNames.map(
+                    (key) => SettingsCard(
+                      onTap: () {
+                        setTheme(key);
+                        Navigator.pop(context);
+                      },
+                      title: key,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          );
+        },
+      );
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: inputDecoration(
+          labelText: labelText,
+          semanticsLabel: semanticsLabel,
+          themeData: themeData,
+        ).copyWith(border: InputBorder.none),
+        child: Text(
+          selectedThemeName,
+          style: themeData.textTheme.titleMedium,
+        ),
       ),
     );
   }

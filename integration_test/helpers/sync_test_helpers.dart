@@ -264,6 +264,7 @@ MatrixService createMatrixService({
     loggingService: loggingService,
     updateNotifications: updateNotifications,
     aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
   );
 
   return MatrixService(

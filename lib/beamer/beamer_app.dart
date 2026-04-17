@@ -29,6 +29,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -575,6 +576,18 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
+
+    if (themingState.darkTheme == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: Colors.black87,
+        ),
+        home: const EmptyScaffoldWithTitle(
+          'Loading...',
+        ),
+      );
+    }
 
     final updateActivity =
         (widget.userActivityService ?? getIt<UserActivityService>())

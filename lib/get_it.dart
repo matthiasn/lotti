@@ -240,6 +240,7 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: attachmentIndex,
       loggingService: loggingService,
