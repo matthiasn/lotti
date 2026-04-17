@@ -620,8 +620,8 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                       'design-system-task-filter-priority-${option.id}',
                     ),
                     label: option.label,
-                    selected: option.id ==
-                            DesignSystemTaskFilterState.allPriorityId
+                    selected:
+                        option.id == DesignSystemTaskFilterState.allPriorityId
                         ? state.selectedPriorityIds.isEmpty
                         : state.selectedPriorityIds.contains(option.id),
                     palette: palette,

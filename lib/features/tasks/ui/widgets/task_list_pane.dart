@@ -254,7 +254,8 @@ class TaskListActiveFilters extends StatelessWidget {
       ),
       for (final priorityId in filterState.selectedPriorityIds)
         _ActiveFilterChip(
-          label: filterState.priorityOptions
+          label:
+              filterState.priorityOptions
                   .where((option) => option.id == priorityId)
                   .firstOrNull
                   ?.label ??
@@ -262,8 +263,7 @@ class TaskListActiveFilters extends StatelessWidget {
           priority: _taskPriorityForId(priorityId),
           onRemove: onFilterChanged == null
               ? null
-              : () =>
-                  onFilterChanged!(filterState.togglePriority(priorityId)),
+              : () => onFilterChanged!(filterState.togglePriority(priorityId)),
         ),
       ...?filterState.categoryField?.selectedOptions.map(
         (option) => _ActiveFilterChip(

@@ -591,7 +591,9 @@ class JournalPageController extends _$JournalPageController {
   }
 
   Future<void> persistTasksFilter() async {
-    await refreshQuery();
+    // Swap visible items in place instead of clearing-then-refetching so the
+    // list doesn't flicker when the user toggles a filter chip.
+    await refreshQuery(preserveVisibleItems: true);
     await _persistTasksFilterWithoutRefresh();
   }
 
