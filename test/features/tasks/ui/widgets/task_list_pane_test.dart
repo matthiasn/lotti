@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
+import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
@@ -209,6 +213,156 @@ void main() {
       await tester.pump();
 
       expect(find.text('Due task'), findsOneWidget);
+    });
+  });
+
+  group('TaskListActiveFilters', () {
+    TaskListDetailState buildStateWithPriority(String priorityId) {
+      final filterState = DesignSystemTaskFilterState(
+        title: 'Filters',
+        clearAllLabel: 'Clear',
+        applyLabel: 'Apply',
+        priorityOptions: const [
+          DesignSystemTaskFilterOption(
+            id: DesignSystemTaskFilterState.allPriorityId,
+            label: 'All',
+          ),
+          DesignSystemTaskFilterOption(id: 'p0', label: 'P0'),
+          DesignSystemTaskFilterOption(id: 'p1', label: 'P1'),
+          DesignSystemTaskFilterOption(id: 'p2', label: 'P2'),
+          DesignSystemTaskFilterOption(id: 'p3', label: 'P3'),
+        ],
+      ).selectPriority(priorityId);
+      return TaskListDetailState(
+        data: TaskListData(
+          categories: const [],
+          tasks: const [],
+          currentTime: DateTime(2026, 4, 17),
+        ),
+        searchQuery: '',
+        selectedTaskId: '',
+        filterState: filterState,
+      );
+    }
+
+    testWidgets(
+      'renders a DesignSystemChip per applied filter with the priority glyph',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithPriority(TaskPriorityFilterIds.p0),
+              onFilterPressed: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(DesignSystemChip), findsOneWidget);
+        // Material Chip must no longer be used.
+        expect(find.byType(Chip), findsNothing);
+        // Chip carries the priority id label.
+        expect(find.text('P0'), findsOneWidget);
+      },
+    );
+
+    testWidgets('tapping an active filter chip opens the filter sheet', (
+      tester,
+    ) async {
+      var filterPressed = 0;
+
+      await tester.pumpWidget(
+        wrap(
+          TaskListActiveFilters(
+            state: buildStateWithPriority(TaskPriorityFilterIds.p2),
+            onFilterPressed: () => filterPressed++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(DesignSystemChip));
+      await tester.pump();
+
+      expect(filterPressed, 1);
+    });
+  });
+
+  group('TaskListPane chrome', () {
+    testWidgets('list pane paints background.level01 to match sidebar', (
+      tester,
+    ) async {
+      final state = TaskListDetailState(
+        data: TaskListData(
+          categories: const [],
+          tasks: const [],
+          currentTime: DateTime(2026, 4, 17),
+        ),
+        searchQuery: '',
+        selectedTaskId: '',
+        filterState: DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          TaskListPane(
+            state: state,
+            onTaskSelected: (_) {},
+            onSearchChanged: (_) {},
+            onSearchCleared: () {},
+            onFilterPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: find.byType(TaskListPane),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final decoration = decoratedBox.decoration as BoxDecoration;
+      expect(decoration.color, dsTokensDark.colors.background.level01);
+    });
+
+    testWidgets('filter icon is the Figma funnel glyph', (tester) async {
+      final state = TaskListDetailState(
+        data: TaskListData(
+          categories: const [],
+          tasks: const [],
+          currentTime: DateTime(2026, 4, 17),
+        ),
+        searchQuery: '',
+        selectedTaskId: '',
+        filterState: DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          TaskListPane(
+            state: state,
+            onTaskSelected: (_) {},
+            onSearchChanged: (_) {},
+            onSearchCleared: () {},
+            onFilterPressed: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.tune_rounded), findsNothing);
     });
   });
 }

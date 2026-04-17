@@ -12,6 +12,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
+import 'package:lotti/features/tasks/ui/widgets/tasks_tab_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -203,7 +204,7 @@ void main() {
     await tester.pump();
     expect(fakeController.searchStringCalls, contains('agentic'));
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Tasks Filter'), findsOneWidget);
 
@@ -423,4 +424,32 @@ void main() {
     expect(find.text('Write migration'), findsOneWidget);
     expect(find.text('Validate grouping'), findsOneWidget);
   });
+
+  testWidgets(
+    'tasks header sits outside the RefreshIndicator so pull-to-refresh '
+    'only drags the list below it',
+    (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      final headerFinder = find.byType(TasksTabHeader);
+      final refreshFinder = find.byType(RefreshIndicator);
+      final scrollFinder = find.byType(CustomScrollView);
+
+      expect(headerFinder, findsOneWidget);
+      expect(refreshFinder, findsOneWidget);
+      expect(scrollFinder, findsOneWidget);
+
+      // Header must not be a descendant of either RefreshIndicator or the
+      // scroll view — otherwise the title would drag with pull-to-refresh.
+      expect(
+        find.descendant(of: refreshFinder, matching: headerFinder),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: scrollFinder, matching: headerFinder),
+        findsNothing,
+      );
+    },
+  );
 }

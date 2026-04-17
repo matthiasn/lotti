@@ -149,7 +149,7 @@ class _ProjectMobileListScreen extends StatelessWidget {
                     tooltip: context.messages.projectsFilterTooltip,
                     onPressed: onFilterPressed,
                     icon: Icon(
-                      Icons.tune_rounded,
+                      Icons.filter_list_rounded,
                       size: 24,
                       color: ShowcasePalette.teal(context),
                     ),

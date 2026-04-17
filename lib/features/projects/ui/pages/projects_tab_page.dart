@@ -173,7 +173,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
                   },
                 ),
                 icon: Icon(
-                  Icons.tune_rounded,
+                  Icons.filter_list_rounded,
                   size: 24,
                   color: ShowcasePalette.teal(context),
                 ),

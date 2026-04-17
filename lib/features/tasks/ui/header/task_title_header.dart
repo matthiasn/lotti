@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -38,10 +39,10 @@ class _TaskTitleHeaderState extends ConsumerState<TaskTitleHeader> {
     final hasCoverArt = task.data.coverArtId != null;
 
     return Material(
-      elevation: 2,
+      color: context.designTokens.colors.background.level01,
       child: Container(
         width: double.infinity,
-        color: Theme.of(context).appBarTheme.backgroundColor,
+        color: context.designTokens.colors.background.level01,
         padding: EdgeInsets.only(
           left: 20,
           right: 20,

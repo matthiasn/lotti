@@ -73,46 +73,50 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
   Widget build(BuildContext context) {
     final scrollController = _effectiveScrollController;
 
-    return DesignSystemScrollbar(
-      controller: scrollController,
-      child: CustomScrollView(
-        controller: scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ProjectsOverviewContentWidth(
-              child: ProjectsHeader(
-                title: widget.title,
-                query: widget.query,
-                searchEnabled: widget.searchEnabled,
-                onSearchChanged: widget.onSearchChanged,
-                onSearchCleared: widget.onSearchCleared,
-                onSearchPressed: widget.onSearchPressed,
-                titleTrailing: widget.titleTrailing,
-                searchTrailing: widget.searchTrailing,
-                padding: widget.headerPadding,
-                titleBottomSpacing: widget.titleBottomSpacing,
-              ),
+    return Column(
+      children: [
+        ProjectsOverviewContentWidth(
+          child: ProjectsHeader(
+            title: widget.title,
+            query: widget.query,
+            searchEnabled: widget.searchEnabled,
+            onSearchChanged: widget.onSearchChanged,
+            onSearchCleared: widget.onSearchCleared,
+            onSearchPressed: widget.onSearchPressed,
+            titleTrailing: widget.titleTrailing,
+            searchTrailing: widget.searchTrailing,
+            padding: widget.headerPadding,
+            titleBottomSpacing: widget.titleBottomSpacing,
+          ),
+        ),
+        Expanded(
+          child: DesignSystemScrollbar(
+            controller: scrollController,
+            child: CustomScrollView(
+              controller: scrollController,
+              slivers: [
+                if (widget.groups.isEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.only(bottom: widget.listBottomPadding),
+                    sliver: const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ProjectsOverviewContentWidth(
+                        child: NoResultsPane(),
+                      ),
+                    ),
+                  )
+                else
+                  ProjectsOverviewSliverList(
+                    groups: widget.groups,
+                    selectedProjectId: widget.selectedProjectId,
+                    onProjectTap: widget.onProjectTap,
+                    bottomPadding: widget.listBottomPadding,
+                  ),
+              ],
             ),
           ),
-          if (widget.groups.isEmpty)
-            SliverPadding(
-              padding: EdgeInsets.only(bottom: widget.listBottomPadding),
-              sliver: const SliverFillRemaining(
-                hasScrollBody: false,
-                child: ProjectsOverviewContentWidth(
-                  child: NoResultsPane(),
-                ),
-              ),
-            )
-          else
-            ProjectsOverviewSliverList(
-              groups: widget.groups,
-              selectedProjectId: widget.selectedProjectId,
-              onProjectTap: widget.onProjectTap,
-              bottomPadding: widget.listBottomPadding,
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

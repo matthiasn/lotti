@@ -238,5 +238,49 @@ void main() {
       );
     });
 
+    testWidgets('sidebar paints background.level01 (deep charcoal)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(DesktopNavigationSidebar),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.color, dsTokensDark.colors.background.level01);
+    });
+
+    testWidgets('sidebar does not render a "+ New" quick action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('New'), findsNothing);
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
+    });
   });
 }

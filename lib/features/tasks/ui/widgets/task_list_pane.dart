@@ -35,7 +35,7 @@ class TaskListPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: TaskShowcasePalette.surface(context),
+        color: TaskShowcasePalette.page(context),
         border: Border(
           right: BorderSide(color: TaskShowcasePalette.border(context)),
         ),
@@ -310,7 +310,7 @@ class _TaskListSearchHeader extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 132),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      color: TaskShowcasePalette.surface(context),
+      color: TaskShowcasePalette.page(context),
       child: Column(
         children: [
           Row(

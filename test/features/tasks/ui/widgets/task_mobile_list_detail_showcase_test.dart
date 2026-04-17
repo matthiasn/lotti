@@ -103,12 +103,14 @@ void main() {
         tester.widget<Text>(find.text('AI Task Summary')).style?.fontWeight,
         FontWeight.w600,
       );
-      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 14);
+      // Section headers and counts now use the caption token (12px) so the
+      // group hierarchy is lighter than the task title (Figma alignment).
+      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 12);
       expect(
         tester.widget<Text>(find.text('Today')).style?.fontWeight,
         FontWeight.w400,
       );
-      expect(tester.widget<Text>(find.text('3 tasks')).style?.fontSize, 14);
+      expect(tester.widget<Text>(find.text('3 tasks')).style?.fontSize, 12);
       expect(
         tester.widget<Text>(find.text('3 tasks')).style?.fontWeight,
         FontWeight.w400,
@@ -207,7 +209,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.tune_rounded).first);
+      await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
       await tester.pumpAndSettle();
 
       expect(find.text('Tasks Filter'), findsOneWidget);

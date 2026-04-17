@@ -126,8 +126,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // The page should show the Dashboards title in the header
-      expect(find.textContaining('Dashboards'), findsAtLeast(1));
+      // The page should show the Insights title (renamed from "Dashboards"
+      // to match the Figma nav label).
+      expect(find.textContaining('Insights'), findsAtLeast(1));
     });
 
     testWidgets('dashboards are sorted alphabetically by name', (tester) async {

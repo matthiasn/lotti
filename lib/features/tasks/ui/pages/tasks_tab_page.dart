@@ -117,159 +117,167 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
           valueListenable: isDesktopLayout(context)
               ? getIt<NavService>().desktopSelectedTaskId
               : _noSelectionNotifier,
-          builder: (context, activeTaskId, _) => RefreshIndicator(
-            onRefresh: controller.refreshQuery,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              controller: _scrollController,
-              cacheExtent: 1500,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: ProjectsOverviewContentWidth(
-                    child: TasksTabHeader(
-                      query: state.match,
-                      onSearchChanged: (value) {
-                        unawaited(controller.setSearchString(value));
-                      },
-                      onSearchCleared: () {
-                        unawaited(controller.setSearchString(''));
-                      },
-                      onSearchPressed: (value) {
-                        unawaited(controller.setSearchString(value));
-                      },
-                      onFilterPressed: () =>
-                          showTaskFilterModal(context, showTasks: true),
-                    ),
-                  ),
+          builder: (context, activeTaskId, _) => Column(
+            children: [
+              ProjectsOverviewContentWidth(
+                child: TasksTabHeader(
+                  query: state.match,
+                  onSearchChanged: (value) {
+                    unawaited(controller.setSearchString(value));
+                  },
+                  onSearchCleared: () {
+                    unawaited(controller.setSearchString(''));
+                  },
+                  onSearchPressed: (value) {
+                    unawaited(controller.setSearchString(value));
+                  },
+                  onFilterPressed: () =>
+                      showTaskFilterModal(context, showTasks: true),
                 ),
-                if (state.selectedLabelIds.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: ProjectsOverviewContentWidth(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(10),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: controller.refreshQuery,
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    cacheExtent: 1500,
+                    slivers: [
+                      if (state.selectedLabelIds.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: ProjectsOverviewContentWidth(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                child: const TaskLabelQuickFilter(),
+                              ),
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: const TaskLabelQuickFilter(),
                         ),
-                      ),
-                    ),
-                  ),
-                if (state.pagingController case final pagingController?)
-                  PagingListener<int, JournalEntity>(
-                    controller: pagingController,
-                    builder: (context, pagingState, fetchNextPage) {
-                      final entries = buildTaskBrowseEntries(
-                        items: pagingState.items ?? const <JournalEntity>[],
-                        sortOption: state.sortOption,
-                        now: clock.now(),
-                        hasNextPage: pagingState.hasNextPage,
-                      );
-                      final entryIndexByTaskId = <String, int>{
-                        for (var i = 0; i < entries.length; i++)
-                          entries[i].task.meta.id: i,
-                      };
+                      if (state.pagingController case final pagingController?)
+                        PagingListener<int, JournalEntity>(
+                          controller: pagingController,
+                          builder: (context, pagingState, fetchNextPage) {
+                            final entries = buildTaskBrowseEntries(
+                              items:
+                                  pagingState.items ?? const <JournalEntity>[],
+                              sortOption: state.sortOption,
+                              now: clock.now(),
+                              hasNextPage: pagingState.hasNextPage,
+                            );
+                            final entryIndexByTaskId = <String, int>{
+                              for (var i = 0; i < entries.length; i++)
+                                entries[i].task.meta.id: i,
+                            };
 
-                      return PagedSliverList<int, JournalEntity>(
-                        state: pagingState,
-                        fetchNextPage: fetchNextPage,
-                        builderDelegate:
-                            PagedChildBuilderDelegate<JournalEntity>(
-                              invisibleItemsThreshold: 10,
-                              firstPageProgressIndicatorBuilder: (_) =>
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 32),
-                                    child: Center(
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
+                            return PagedSliverList<int, JournalEntity>(
+                              state: pagingState,
+                              fetchNextPage: fetchNextPage,
+                              builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
+                                invisibleItemsThreshold: 10,
+                                firstPageProgressIndicatorBuilder: (_) =>
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 32),
+                                      child: Center(
+                                        child:
+                                            CircularProgressIndicator.adaptive(),
+                                      ),
                                     ),
-                                  ),
-                              newPageProgressIndicatorBuilder: (_) =>
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 24),
-                                    child: Center(
-                                      child:
-                                          CircularProgressIndicator.adaptive(),
+                                newPageProgressIndicatorBuilder: (_) =>
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 24,
+                                      ),
+                                      child: Center(
+                                        child:
+                                            CircularProgressIndicator.adaptive(),
+                                      ),
                                     ),
-                                  ),
-                              noItemsFoundIndicatorBuilder: (_) => Padding(
-                                padding: const EdgeInsets.only(top: 48),
-                                child: Center(
-                                  child: Text(
-                                    context.messages.taskShowcaseNoResults,
+                                noItemsFoundIndicatorBuilder: (_) => Padding(
+                                  padding: const EdgeInsets.only(top: 48),
+                                  child: Center(
+                                    child: Text(
+                                      context.messages.taskShowcaseNoResults,
+                                    ),
                                   ),
                                 ),
+                                itemBuilder: (context, item, index) {
+                                  if (item is! Task) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final entryIndex =
+                                      entryIndexByTaskId[item.meta.id];
+                                  if (entryIndex == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final entry = entries[entryIndex];
+
+                                  final distance = state.showDistances
+                                      ? state.vectorSearchDistances[item
+                                            .meta
+                                            .id]
+                                      : null;
+
+                                  return ProjectsOverviewContentWidth(
+                                    child: TaskBrowseListItem(
+                                      key: ValueKey(item.meta.id),
+                                      entry: entry,
+                                      sortOption: state.sortOption,
+                                      showCreationDate: state.showCreationDate,
+                                      showDueDate: state.showDueDate,
+                                      showCoverArt: true,
+                                      vectorDistance: distance,
+                                      previousTaskIdInSection:
+                                          entryIndex > 0 &&
+                                              !entry.isFirstInSection
+                                          ? entries[entryIndex - 1].task.meta.id
+                                          : null,
+                                      nextTaskIdInSection:
+                                          !entry.isLastInSection &&
+                                              entryIndex < entries.length - 1
+                                          ? entries[entryIndex + 1].task.meta.id
+                                          : null,
+                                      selectedTaskId: activeTaskId,
+                                      hoveredTaskIdNotifier:
+                                          _hoveredTaskIdNotifier,
+                                      onTap: () =>
+                                          getIt<NavService>().beamToNamed(
+                                            '/tasks/${item.meta.id}',
+                                          ),
+                                    ),
+                                  );
+                                },
                               ),
-                              itemBuilder: (context, item, index) {
-                                if (item is! Task) {
-                                  return const SizedBox.shrink();
-                                }
-                                final entryIndex =
-                                    entryIndexByTaskId[item.meta.id];
-                                if (entryIndex == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                final entry = entries[entryIndex];
-
-                                final distance = state.showDistances
-                                    ? state.vectorSearchDistances[item.meta.id]
-                                    : null;
-
-                                return ProjectsOverviewContentWidth(
-                                  child: TaskBrowseListItem(
-                                    key: ValueKey(item.meta.id),
-                                    entry: entry,
-                                    sortOption: state.sortOption,
-                                    showCreationDate: state.showCreationDate,
-                                    showDueDate: state.showDueDate,
-                                    showCoverArt: true,
-                                    vectorDistance: distance,
-                                    previousTaskIdInSection:
-                                        entryIndex > 0 &&
-                                            !entry.isFirstInSection
-                                        ? entries[entryIndex - 1].task.meta.id
-                                        : null,
-                                    nextTaskIdInSection:
-                                        !entry.isLastInSection &&
-                                            entryIndex < entries.length - 1
-                                        ? entries[entryIndex + 1].task.meta.id
-                                        : null,
-                                    selectedTaskId: activeTaskId,
-                                    hoveredTaskIdNotifier:
-                                        _hoveredTaskIdNotifier,
-                                    onTap: () =>
-                                        getIt<NavService>().beamToNamed(
-                                          '/tasks/${item.meta.id}',
-                                        ),
-                                  ),
-                                );
-                              },
+                            );
+                          },
+                        )
+                      else
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 32),
+                            child: Center(
+                              child: CircularProgressIndicator.adaptive(),
                             ),
-                      );
-                    },
-                  )
-                else
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 32),
-                      child: Center(
-                        child: CircularProgressIndicator.adaptive(),
+                          ),
+                        ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 120),
                       ),
-                    ),
+                    ],
                   ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 120),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

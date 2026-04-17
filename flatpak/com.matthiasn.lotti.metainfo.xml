@@ -31,11 +31,17 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.955" date="2026-04-17">
+      <description>
+          <p>Desktop tasks and projects surfaces are aligned with the Figma design system. Sidebar, task list, task details and projects list share the deeper background/01 surface while task cards sit on background/02, and dark-mode text tokens were raised to the Figma-specified opacities (high 100%, medium 80%, low 64%) so headlines, subtitles and timestamps read with the correct contrast without changing type weights. The selected task row now uses the Figma surface/selected token for a subtler highlight, and task group headers and counts use the caption token for a lighter hierarchy. The task title strip and its sliver app bars render on background/01 with no elevation so the header no longer reads darker than the body.</p>
+          <p>The sidebar drops the legacy "+ New" quick action, always uses the filled settings glyph, and swaps the Ionicons/MDI nav glyphs for Material rounded/outlined equivalents (Tasks, Projects, DailyOS, Habits, Insights, Journal, Settings). The Insights nav tab now reads "Insights" (English/en-GB) and "Einblicke" (German).</p>
+          <p>Task list filter chips use the design-system chip component and render inline under the search bar, with priority chips carrying a leading priority glyph. Tasks and projects filter triggers use filter_list_rounded to match the Figma funnel glyph. Tasks and projects headers are pinned outside the scroll view so the title stays static and pull-to-refresh only drags the list below it. The floating action button is now a rounded-24 teal surface matching Figma, and the journal and task details FABs were swapped from Flutter's default circular FAB to the design-system FAB so list and details FABs share the same shape and bottom-right anchor.</p>
+      </description>
+    </release>
     <release version="0.9.954" date="2026-04-17">
       <description>
           <p>Optional gzip compression for JSON sync attachments over Matrix, gated by a new config flag that is off by default. Receivers always decompress when the encoding marker is present on an attachment event, so turning compression on for a single device stays compatible with peers on this release. Only .json attachments are compressed; media files are already on compressed formats and skip the branch.</p>
           <p>Theme settings simplified to Light, Dark, and System (auto). The named-theme picker and the flex_color_scheme dependency have been removed; light and dark themes are now built directly from the Figma-derived design system tokens. Theme selection is now a per-device preference and is no longer synced across devices.</p>
-          <p>Desktop tasks UI is aligned with the Figma design system: sidebar and task details panel render on the deeper background/01 surface, the task list and cards sit on background/02, and dark-mode text tokens were raised to the Figma-specified opacities. The sidebar drops the legacy "+ New" quick action, always uses the filled settings glyph, and renames the Insights nav tab. Filter chips now use the design-system chip component inline under the search bar and the filter trigger icon matches the Figma funnel glyph. Group headers and task counts use the caption token. The task details action bar gains a teal + FAB with notification dot anchored bottom-right.</p>
       </description>
     </release>
     <release version="0.9.953" date="2026-04-16">

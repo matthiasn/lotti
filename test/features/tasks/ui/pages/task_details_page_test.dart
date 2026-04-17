@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -161,6 +162,26 @@ void main() {
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,
+      );
+
+      // Background matches sidebar / Figma background/01 and FAB location
+      // is anchored to end-float to align with the task list FAB.
+      final scaffold = tester.widget<Scaffold>(
+        find
+            .descendant(
+              of: find.byType(TaskDetailsPage),
+              matching: find.byType(Scaffold),
+            )
+            .first,
+      );
+      final context = tester.element(find.byType(TaskDetailsPage));
+      expect(
+        scaffold.backgroundColor,
+        context.designTokens.colors.background.level01,
+      );
+      expect(
+        scaffold.floatingActionButtonLocation,
+        FloatingActionButtonLocation.endFloat,
       );
     });
   });

@@ -240,7 +240,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
 
     expect(find.text('Tasks Filter'), findsOneWidget);
@@ -256,7 +256,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
 
     final statusField = find.byKey(
@@ -428,7 +428,7 @@ void main() {
       );
 
       // Open the filter modal
-      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
       await tester.pumpAndSettle();
 
       expect(find.text('Tasks Filter'), findsOneWidget);

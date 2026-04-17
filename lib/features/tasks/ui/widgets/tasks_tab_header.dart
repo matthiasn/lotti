@@ -73,7 +73,7 @@ class TasksTabHeader extends StatelessWidget {
                 tooltip: context.messages.tasksFilterTitle,
                 onPressed: onFilterPressed,
                 icon: Icon(
-                  Icons.tune_rounded,
+                  Icons.filter_list_rounded,
                   size: 24,
                   color: TaskShowcasePalette.accent(context),
                 ),
