@@ -1829,5 +1829,133 @@ void main() {
         verify(ev.downloadAndDecryptAttachment).called(1);
       },
     );
+
+    test(
+      'failed bundle unpack is retried on the next process() call',
+      () async {
+        // Regression test: the outer bundle path is never persisted, so the
+        // "applied" signal has to live in a separate set that's only
+        // populated once the zip decodes successfully. A first-pass failure
+        // must leave that set empty so the bundled items are not orphaned.
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_bundle_rcv');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        // Build a real zip for the successful retry; the first pass returns
+        // a MatrixFile that throws on `bytes` access to simulate a
+        // mid-download failure that `_saveAttachment`'s outer catch logs.
+        final entryBytes = utf8.encode('{"id":"rcv"}');
+        final archive = Archive()
+          ..addFile(
+            ArchiveFile(
+              'text_entries/rcv.json',
+              entryBytes.length,
+              entryBytes,
+            ),
+          );
+        final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+
+        final matrixFile = MockMatrixFile();
+        var passCount = 0;
+        when(() => matrixFile.bytes).thenAnswer((_) {
+          passCount++;
+          if (passCount == 1) {
+            throw const FileSystemException('simulated download failure');
+          }
+          return zipBytes;
+        });
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_bundle_rcv');
+        when(() => ev.content).thenReturn({
+          'relativePath': '.bundles/rcv.zip',
+          'msgtype': 'm.file',
+          attachmentBundleKey: true,
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/zip');
+        when(() => ev.senderId).thenReturn('@other:u');
+        var downloadCalls = 0;
+        when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
+          downloadCalls++;
+          return matrixFile;
+        });
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('.bundles/rcv.zip')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        // Pass 1: download proceeds, _saveAttachment's catch fires when
+        // MatrixFile.bytes throws → _unpackBundle never runs → event id is
+        // NOT in _appliedBundleEventIds.
+        final first = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        expect(first, isFalse);
+        expect(
+          File('${tmp.path}/text_entries/rcv.json').existsSync(),
+          isFalse,
+          reason: 'first pass must have failed cleanly without writing',
+        );
+
+        // Pass 2: MatrixFile.bytes now returns real zip bytes. The
+        // bundleNotYetApplied repair gate must fire, even though the event
+        // id is already in _handledAttachmentEventIds from pass 1, so the
+        // bundle downloads, decodes, and persists the inner entry.
+        final second = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        expect(second, isTrue);
+        expect(
+          File('${tmp.path}/text_entries/rcv.json').readAsStringSync(),
+          '{"id":"rcv"}',
+        );
+        expect(downloadCalls, 2);
+
+        // Pass 3: now that _appliedBundleEventIds contains the id, the
+        // repair gate must stop firing to avoid the every-pass re-download.
+        final third = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        expect(third, isFalse);
+        expect(
+          downloadCalls,
+          2,
+          reason: 'pass 3 must not trigger another download',
+        );
+      },
+    );
   });
 }

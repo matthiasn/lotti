@@ -56,6 +56,17 @@ class AttachmentIngestor {
       <String, _DownloadRequest>{};
   final Set<String> _handledAttachmentEventIds = <String>{};
   final Queue<String> _handledAttachmentEventOrder = Queue<String>();
+  // Bundle events whose zip was successfully decoded and routed through the
+  // per-entry write path. Populated only after [_unpackBundle] returns from
+  // a successful decode — a failed download or decode leaves the id out so
+  // subsequent catch-up passes retry the bundle. Without this separation a
+  // first-pass failure would orphan the bundled items forever: each inner
+  // relativePath is never registered in AttachmentIndex, so
+  // DescriptorDownloader cannot re-fetch it, and the per-counter gap
+  // detection in SyncSequenceLogService never fires because the text event
+  // itself was received.
+  final Set<String> _appliedBundleEventIds = <String>{};
+  final Queue<String> _appliedBundleEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
 
@@ -102,20 +113,24 @@ class AttachmentIngestor {
       // Suppress repair if a save is already in flight for this path to avoid
       // concurrent writes to the same file.
       //
-      // Bundle events are special-cased: their outer `.bundles/<id>.zip`
-      // path is never written locally (we only persist the unpacked entries),
-      // so [_isLocalFileMissingOrEmpty] would always report true and trigger
-      // an endless re-download of the bundle on every catch-up pass. Once
-      // the bundle event id is recorded as handled, skip re-processing — the
-      // inner files will be repaired through their own per-entry descriptor
-      // events if they go missing.
+      // Bundle events use a different "needs repair" signal: their outer
+      // `.bundles/<id>.zip` path is never persisted (we write the unpacked
+      // entries instead), so [_isLocalFileMissingOrEmpty] would always
+      // report true and drive an endless re-download on every pass. Instead,
+      // retry until the zip has been successfully decoded
+      // ([_appliedBundleEventIds] records that state), and stop once
+      // applied. This recovers from a failed first-pass unpack without
+      // permanently orphaning the bundled items.
       final isBundleEvent = event.content[attachmentBundleKey] == true;
+      final bundleNotYetApplied =
+          isBundleEvent && !_appliedBundleEventIds.contains(event.eventId);
       final shouldRepairLocal =
           alreadyHandled &&
           documentsDirectory != null &&
-          !isBundleEvent &&
           !_inFlightSavePaths.contains(_normalizeKey(rpAny)) &&
-          _isLocalFileMissingOrEmpty(rpAny);
+          (isBundleEvent
+              ? bundleNotYetApplied
+              : _isLocalFileMissingOrEmpty(rpAny));
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
@@ -285,6 +300,17 @@ class AttachmentIngestor {
     }
   }
 
+  void _recordAppliedBundleEvent(String eventId) {
+    if (_appliedBundleEventIds.add(eventId)) {
+      _appliedBundleEventOrder.addLast(eventId);
+      while (_appliedBundleEventOrder.length >
+          _handledAttachmentEventCapacity) {
+        final oldest = _appliedBundleEventOrder.removeFirst();
+        _appliedBundleEventIds.remove(oldest);
+      }
+    }
+  }
+
   String _normalizeKey(String relativePath) =>
       normalizeAttachmentIndexKey(relativePath);
 
@@ -387,6 +413,7 @@ class AttachmentIngestor {
       // the outer zip itself to disk.
       if (event.content[attachmentBundleKey] == true) {
         return _unpackBundle(
+          eventId: event.eventId,
           bundleRelativePath: relativePath,
           downloadedBytes: downloadedBytes,
           logging: logging,
@@ -457,6 +484,7 @@ class AttachmentIngestor {
   /// single-file saves. Zip decoding runs on a worker isolate to keep the
   /// sync isolate free for frame work while large bundles are parsed.
   Future<bool> _unpackBundle({
+    required String eventId,
     required String bundleRelativePath,
     required Uint8List downloadedBytes,
     required LoggingService logging,
@@ -475,8 +503,19 @@ class AttachmentIngestor {
         subDomain: 'attachment.bundle.decode',
         stackTrace: stackTrace,
       );
+      // Decode failed — do NOT mark applied so the next catch-up pass can
+      // retry the download and unpack. Without this recovery the bundled
+      // items' text events would be stuck: inner relativePaths are never in
+      // AttachmentIndex and DescriptorDownloader has nothing to pull.
       return false;
     }
+    // Decode succeeded. Record the event id as applied now, before the
+    // per-entry write loop — writes happen atomically per file and any one
+    // failing doesn't change whether the bundle itself was delivered. A
+    // single entry's write failure is recovered through the normal retry
+    // path that fires when its text event applies, not by re-downloading
+    // the whole zip.
+    _recordAppliedBundleEvent(eventId);
     var writtenCount = 0;
     var totalBytes = 0;
     var skippedCount = 0;
