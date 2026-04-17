@@ -8,11 +8,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
-import 'package:lotti/features/tasks/ui/widgets/tasks_tab_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -434,7 +434,7 @@ void main() {
       await tester.pumpWidget(buildSubject(state: state()));
       await tester.pumpAndSettle();
 
-      final headerFinder = find.byType(TasksTabHeader);
+      final headerFinder = find.byType(TabSectionHeader);
       final refreshFinder = find.byType(RefreshIndicator);
       final scrollFinder = find.byType(CustomScrollView);
 

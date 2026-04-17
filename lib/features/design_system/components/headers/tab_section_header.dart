@@ -2,24 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
-class TasksTabHeader extends StatelessWidget {
-  const TasksTabHeader({
+/// Compact header used by the Tasks and Projects tabs: a title row (with an
+/// optional trailing widget like a notification bell) and a search row with
+/// an optional trailing filter button.
+///
+/// The two rows are wrapped in [ProjectsOverviewContentWidth] so they align
+/// with the list content below — any full-bleed element (divider, chip row,
+/// etc.) is expected to be rendered outside this widget so it can span the
+/// full pane width.
+class TabSectionHeader extends StatelessWidget {
+  const TabSectionHeader({
+    required this.title,
     required this.query,
+    required this.searchHint,
     required this.onSearchChanged,
     required this.onSearchCleared,
     required this.onSearchPressed,
     required this.onFilterPressed,
+    required this.filterTooltip,
+    this.titleTrailing,
     super.key,
   });
 
+  final String title;
   final String query;
+  final String searchHint;
   final ValueChanged<String> onSearchChanged;
   final VoidCallback onSearchCleared;
   final ValueChanged<String> onSearchPressed;
   final VoidCallback onFilterPressed;
+  final String filterTooltip;
+  final Widget? titleTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +42,16 @@ class TasksTabHeader extends StatelessWidget {
     final topPadding = isCompact
         ? tokens.spacing.step5 + tokens.spacing.step2
         : tokens.spacing.step3;
+    final highText = tokens.colors.text.highEmphasis;
+    final accent = tokens.colors.interactive.enabled;
+
+    final effectiveTitleTrailing =
+        titleTrailing ??
+        Icon(
+          Icons.notifications_none_rounded,
+          size: 34,
+          color: highText,
+        );
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
@@ -39,35 +63,23 @@ class TasksTabHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    context.messages.navTabTitleTasks,
+                    title,
                     style: tokens.typography.styles.heading.heading3.copyWith(
-                      color: TaskShowcasePalette.highText(context),
+                      color: highText,
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.notifications_none_rounded,
-                  size: 34,
-                  color: TaskShowcasePalette.highText(context),
-                ),
+                effectiveTitleTrailing,
               ],
             ),
           ),
-          SizedBox(height: tokens.spacing.step4),
-          // Full-bleed divider so it touches the vertical pane edges
-          // instead of floating inside the horizontal padding.
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: TaskShowcasePalette.border(context),
-          ),
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step5),
           ProjectsOverviewContentWidth(
             child: Row(
               children: [
                 Expanded(
                   child: DesignSystemSearch(
-                    hintText: context.messages.searchTasksHint,
+                    hintText: searchHint,
                     size: DesignSystemSearchSize.small,
                     initialText: query,
                     onChanged: onSearchChanged,
@@ -77,18 +89,18 @@ class TasksTabHeader extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spacing.step4),
                 IconButton(
-                  tooltip: context.messages.tasksFilterTitle,
+                  tooltip: filterTooltip,
                   onPressed: onFilterPressed,
                   icon: Icon(
                     Icons.filter_list_rounded,
                     size: 24,
-                    color: TaskShowcasePalette.accent(context),
+                    color: accent,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step4),
         ],
       ),
     );

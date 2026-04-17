@@ -22,6 +22,7 @@ class ProjectsOverviewContent extends StatefulWidget {
     this.headerPadding = const EdgeInsets.only(top: 8),
     this.titleBottomSpacing = 24,
     this.listBottomPadding = 24,
+    this.renderHeader = true,
     super.key,
   });
 
@@ -40,6 +41,11 @@ class ProjectsOverviewContent extends StatefulWidget {
   final EdgeInsets headerPadding;
   final double titleBottomSpacing;
   final double listBottomPadding;
+
+  /// When `false`, [ProjectsOverviewContent] omits its built-in
+  /// [ProjectsHeader] so the caller can render its own header (e.g. the
+  /// shared tab-section header used by the live Projects tab).
+  final bool renderHeader;
 
   @override
   State<ProjectsOverviewContent> createState() =>
@@ -75,20 +81,21 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
 
     return Column(
       children: [
-        ProjectsOverviewContentWidth(
-          child: ProjectsHeader(
-            title: widget.title,
-            query: widget.query,
-            searchEnabled: widget.searchEnabled,
-            onSearchChanged: widget.onSearchChanged,
-            onSearchCleared: widget.onSearchCleared,
-            onSearchPressed: widget.onSearchPressed,
-            titleTrailing: widget.titleTrailing,
-            searchTrailing: widget.searchTrailing,
-            padding: widget.headerPadding,
-            titleBottomSpacing: widget.titleBottomSpacing,
+        if (widget.renderHeader)
+          ProjectsOverviewContentWidth(
+            child: ProjectsHeader(
+              title: widget.title,
+              query: widget.query,
+              searchEnabled: widget.searchEnabled,
+              onSearchChanged: widget.onSearchChanged,
+              onSearchCleared: widget.onSearchCleared,
+              onSearchPressed: widget.onSearchPressed,
+              titleTrailing: widget.titleTrailing,
+              searchTrailing: widget.searchTrailing,
+              padding: widget.headerPadding,
+              titleBottomSpacing: widget.titleBottomSpacing,
+            ),
           ),
-        ),
         Expanded(
           child: DesignSystemScrollbar(
             controller: scrollController,

@@ -9,6 +9,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -21,7 +23,6 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
-import 'package:lotti/features/tasks/ui/widgets/tasks_tab_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -126,8 +127,11 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               : _noSelectionNotifier,
           builder: (context, activeTaskId, _) => Column(
             children: [
-              TasksTabHeader(
+              TabSectionHeader(
+                title: context.messages.navTabTitleTasks,
                 query: state.match,
+                searchHint: context.messages.searchTasksHint,
+                filterTooltip: context.messages.tasksFilterTitle,
                 onSearchChanged: (value) {
                   unawaited(controller.setSearchString(value));
                 },
@@ -330,7 +334,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     for (final status in statuses) {
       chips.add(
-        _ActiveFilterChip(
+        ActiveFilterChip(
           label: taskLabelFromStatusString(status, context),
           accentColor: taskColorFromStatusString(
             status,
@@ -349,7 +353,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     for (final priority in priorities) {
       final taskPriority = _priorityFromInternalId(priority);
       chips.add(
-        _ActiveFilterChip(
+        ActiveFilterChip(
           label: priority,
           accentColor:
               _priorityAccent(priority, brightness: brightness) ?? accent,
@@ -369,7 +373,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final category = cache.getCategoryById(id);
       if (category == null) continue;
       chips.add(
-        _ActiveFilterChip(
+        ActiveFilterChip(
           label: category.name,
           accentColor: accent,
           onRemove: () => unawaited(
@@ -386,7 +390,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final label = cache.getLabelById(id);
       if (label == null) continue;
       chips.add(
-        _ActiveFilterChip(
+        ActiveFilterChip(
           label: label.name,
           accentColor: accent,
           onRemove: () => unawaited(
@@ -402,7 +406,7 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final title = projectTitles[id];
       if (title == null) continue;
       chips.add(
-        _ActiveFilterChip(
+        ActiveFilterChip(
           label: title,
           accentColor: accent,
           leadingIcon: Icons.folder_outlined,
@@ -427,95 +431,6 @@ class _TasksTabActiveFilters extends ConsumerWidget {
             spacing: tokens.spacing.step3,
             runSpacing: tokens.spacing.step3,
             children: chips,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Pill-shaped active-filter chip matching the Figma task filter chips:
-/// dark surface, accent-tinted outline, icon in the accent colour, label in
-/// high-emphasis text, and a filled ✕ to remove the filter.
-class _ActiveFilterChip extends StatelessWidget {
-  const _ActiveFilterChip({
-    required this.label,
-    required this.accentColor,
-    required this.onRemove,
-    this.leadingIcon,
-    this.avatar,
-  }) : assert(
-         leadingIcon == null || avatar == null,
-         'Use either leadingIcon or avatar, not both.',
-       );
-
-  final String label;
-  final Color accentColor;
-  final VoidCallback onRemove;
-  final IconData? leadingIcon;
-  final Widget? avatar;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final backgroundColor = TaskShowcasePalette.subtleFill(context);
-    final labelColor = TaskShowcasePalette.highText(context);
-    final removeIconColor = TaskShowcasePalette.mediumText(context);
-
-    final accessory = avatar != null
-        ? SizedBox.square(
-            dimension: 14,
-            child: ClipOval(child: avatar),
-          )
-        : leadingIcon != null
-        ? Icon(leadingIcon, size: 14, color: accentColor)
-        : null;
-
-    return Material(
-      color: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: accentColor),
-        borderRadius: radius,
-      ),
-      child: Ink(
-        decoration: ShapeDecoration(
-          color: backgroundColor,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(color: accentColor),
-            borderRadius: radius,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: radius,
-          onTap: onRemove,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 3, 6, 3),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (accessory != null) ...[
-                  accessory,
-                  const SizedBox(width: 5),
-                ],
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: labelColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.cancel_rounded,
-                  size: 14,
-                  color: removeIconColor,
-                ),
-              ],
-            ),
           ),
         ),
       ),
