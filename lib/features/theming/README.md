@@ -1,31 +1,36 @@
 # Theming Feature
 
-The `theming` feature owns app theme selection and theme construction.
+The `theming` feature owns the active theme mode and exposes the
+`ThemeData` objects that `MaterialApp` consumes.
 
-It takes stored user preferences and turns them into actual `ThemeData` objects for:
+The app supports exactly three modes:
 
-- light theme
-- dark theme
-- theme mode
+- **Light** — the design-system light theme
+- **Dark** — the design-system dark theme
+- **System** — follow the platform's brightness setting
 
-It also syncs theme selection across devices through the sync feature.
+There is no named-theme picker. Light and dark are built once from the
+Figma-derived design system tokens and reused for the entire app
+lifecycle. The user only selects which mode applies.
 
 ## What This Feature Owns
 
 At runtime, the feature owns:
 
-1. the current theming state (`lightTheme`, `darkTheme`, names, mode)
-2. building `ThemeData` from theme definitions
-3. persistence of theme selection to `SettingsDb`
-4. enqueueing theme-selection sync messages
-5. live reload when synced settings changes arrive
+1. the current `ThemeMode` selection
+2. the cached `ThemeData` for light and dark (built from
+   `DesignSystemTheme`)
+3. persistence of the selected mode to `SettingsDb` (`THEME_MODE` key)
+4. a `Stream<bool>` provider that surfaces the `enable_tooltip` config
+   flag (co-located here because tooltip behaviour follows app shell
+   theming concerns)
 
 ## Directory Shape
 
 ```text
 lib/features/theming/
-├── model/
 ├── state/
+│   └── theming_controller.dart
 └── README.md
 ```
 
@@ -33,85 +38,100 @@ lib/features/theming/
 
 ```mermaid
 flowchart LR
-  UI["Settings / app shell"] --> Ctl["ThemingController"]
-  Ctl --> Themes["theme_definitions.dart"]
-  Ctl --> Settings["SettingsDb"]
-  Ctl --> Notify["UpdateNotifications"]
-  Ctl --> Sync["OutboxService"]
-  Themes --> ThemeData["ThemeData builders"]
-  ThemeData --> App["MaterialApp theming"]
+  UI["Settings page"] --> Ctl["ThemingController"]
+  Ctl --> Settings["SettingsDb (THEME_MODE)"]
+  DS["DesignSystemTheme.light/.dark"] --> Overrides["withAppWidgetOverrides()"]
+  Overrides --> Singleton["lottiLightTheme / lottiDarkTheme"]
+  Singleton --> Ctl
+  Ctl --> App["MaterialApp.router (theme + darkTheme + themeMode)"]
 ```
 
-The feature is conceptually simple, but the runtime path matters because theme changes can come from:
+Theme construction is driven by the design tokens, with a thin layer of
+widget-level styling on top. The controller holds no theme-building
+logic of its own — it just wires the singleton themes into Riverpod
+state and toggles the active mode.
 
-- the local user
-- synced settings updates from another device
+## Theme Construction
 
-## Theme Construction Model
+`DesignSystemTheme.light()` and `DesignSystemTheme.dark()` (in
+`lib/features/design_system/theme/design_system_theme.dart`) build
+`ThemeData` directly from `DsTokens`:
 
-`ThemingController` builds theme data from:
+- color scheme is mapped from token color groups (background, text,
+  interactive, alert, decorative)
+- text theme is mapped from token typography styles
+- the active `DsTokens` instance is attached as a `ThemeExtension`, so
+  any widget can reach the design tokens via
+  `Theme.of(context).extension<DsTokens>()`
 
-- the selected light theme name
-- the selected dark theme name
-- the selected `ThemeMode`
+`withAppWidgetOverrides()` in `lib/themes/theme.dart` then layers on
+widget concerns that tokens do not express:
 
-Theme definitions come from standard `FlexScheme` mappings.
+- card, dialog, bottom-sheet, and app-bar shape / elevation
+- input-decoration borders and focus treatment
+- text-button, elevated-button, segmented-button, chip, slider, and
+  snack-bar styling
+- a `pageTransitionsTheme` with an empty builders map, which disables
+  Flutter's default per-platform transitions so navigation feels uniform
+  across iOS, Android, and desktop
+- `ThemeExtension`s for `GptMarkdownThemeData` (heading sizes, link
+  colors) and `WoltModalSheetThemeData` (pagination animation curve),
+  consumed by the AI/agent markdown surfaces and modal sheets
 
-The build path also applies:
+Both themes are top-level singletons in `theming_controller.dart`
+(`lottiLightTheme`, `lottiDarkTheme`) — they are pure functions of
+compile-time tokens and never change at runtime.
 
-- shared overrides
-- Linux emoji font fallback
-
-## Theming State Machine
-
-The explicit runtime lifecycle looks like this:
+## Theming Lifecycle
 
 ```mermaid
 stateDiagram-v2
-  [*] --> DefaultTheme: build()
-  DefaultTheme --> LoadedPrefs: _loadSelectedSchemes()
-  LoadedPrefs --> LocalUpdate: setLightTheme / setDarkTheme / onThemeSelectionChanged
-  LocalUpdate --> LoadedPrefs: settings saved + sync message enqueued
-  LoadedPrefs --> SyncedReload: settings notification from sync
-  SyncedReload --> LoadedPrefs: _loadSelectedSchemes()
+  [*] --> Default: build() returns ThemingState(themeMode: system)
+  Default --> Loaded: _loadThemeMode() reads THEME_MODE
+  Loaded --> Loaded: onThemeSelectionChanged({mode})\npersists THEME_MODE
 ```
 
-That split between local update and synced reload is important. The controller explicitly avoids enqueuing a new sync message while it is applying synced changes, which prevents theme ping-pong between devices.
+There is no sync-driven reload state and no debounced enqueue: theme
+mode is a per-device preference (see "Sync Semantics" below).
 
 ## Theme Selection Flow
 
 ```mermaid
 sequenceDiagram
-  participant User as "User"
+  participant User
   participant Ctl as "ThemingController"
   participant Settings as "SettingsDb"
-  participant Sync as "OutboxService"
 
-  User->>Ctl: choose light/dark theme or theme mode
-  Ctl->>Ctl: validate theme name and build ThemeData
-  Ctl->>Settings: save selected names / mode
-  Ctl->>Sync: enqueue themingSelection sync message
-  Ctl-->>User: updated theme state
+  User->>Ctl: tap Light/System/Dark segment
+  Ctl->>Ctl: state.copyWith(themeMode: ...)
+  Ctl->>Settings: saveSettingsItem(THEME_MODE, mode.name)
+  Ctl-->>User: MaterialApp re-themes
 ```
 
-## Theme Definitions
-
-`theme_definitions.dart` provides:
-
-- the map of standard theme names to `FlexScheme`
-- validation helpers
-- the default theme name
-- light-mode surface constants
+If `_loadThemeMode()` reads a missing or unrecognized stored value, the
+controller falls back to `ThemeMode.system` and logs the failure to
+`LoggingService` under `domain: THEMING_CONTROLLER, subDomain:
+loadThemeMode`.
 
 ## Sync Semantics
 
-Theme changes are synced via `SyncMessage.themingSelection`.
+Theme selection is **not synced across devices**. Each device picks its
+own mode — the same way most platforms treat appearance preferences
+(brightness on a phone, dark-mode toggle on a desktop).
 
-Theming therefore behaves like a user preference with cross-device propagation, not like a purely local UI tweak. That is the right choice for an app where users generally expect "my chosen theme" to follow them.
+The `SyncMessage.themingSelection` variant remains in the wire schema
+purely for backward compatibility with peers running older releases:
+
+- the controller never enqueues new `themingSelection` messages
+- the receiver in `sync_event_processor.dart` accepts the variant but
+  discards it (no settings written, just a trace log)
+
+This keeps cross-version sync robust without re-introducing a synced
+preference that users on one device would feel as a surprise on another.
 
 ## Relationship to Other Features
 
-- `settings` exposes the user-facing theme controls
-- `sync` transports theme-selection changes across devices
-
-This feature is small, but it is one of the cleanest examples in the codebase of a focused controller doing one job well: build theme state, persist it, and keep it in sync.
+- `settings` exposes the user-facing mode picker
+  (`features/settings/ui/pages/theming_page.dart`)
+- `design_system` owns the tokens and `DesignSystemTheme` builders
+- `sync` carries the (now no-op on receive) `themingSelection` variant

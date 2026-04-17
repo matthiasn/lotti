@@ -1,20 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:easy_debounce/easy_debounce.dart';
-import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
@@ -22,238 +13,117 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'theming_controller.g.dart';
 
-/// Get emoji font fallback list for the current platform.
-/// Only Linux needs explicit emoji font configuration.
-List<String>? _getEmojiFontFallback() {
-  return !kIsWeb && Platform.isLinux ? const ['Noto Color Emoji'] : null;
+/// Stream provider watching the tooltip enable flag from config.
+@riverpod
+Stream<bool> enableTooltips(Ref ref) {
+  return getIt<JournalDb>().watchConfigFlag(enableTooltipFlag);
+}
+
+/// App-wide light theme: design-system tokens ([DesignSystemTheme.light])
+/// with [withAppWidgetOverrides] layered on top. Singleton, built once
+/// at first access.
+final ThemeData lottiLightTheme = withAppWidgetOverrides(
+  DesignSystemTheme.light(),
+);
+
+/// App-wide dark theme: design-system tokens ([DesignSystemTheme.dark])
+/// with [withAppWidgetOverrides] layered on top. Singleton, built once
+/// at first access.
+final ThemeData lottiDarkTheme = withAppWidgetOverrides(
+  DesignSystemTheme.dark(),
+);
+
+/// Parses a stored [ThemeMode] name, falling back to [ThemeMode.system].
+ThemeMode _themeModeFromStored(String? stored) {
+  if (stored == null) return ThemeMode.system;
+  return ThemeMode.values.firstWhere(
+    (mode) => mode.name == stored,
+    orElse: () => ThemeMode.system,
+  );
 }
 
 /// Immutable state representing the current theming configuration.
+///
+/// The app exposes three theme modes only — Light, Dark, and System (auto).
+/// Light/dark `ThemeData` are built once from the design system tokens, so
+/// the state only varies by the selected mode.
 @immutable
 class ThemingState {
   const ThemingState({
-    this.darkTheme,
-    this.lightTheme,
-    this.darkThemeName,
-    this.lightThemeName,
+    required this.lightTheme,
+    required this.darkTheme,
     this.themeMode = ThemeMode.system,
   });
 
-  final ThemeData? darkTheme;
-  final ThemeData? lightTheme;
-  final String? darkThemeName;
-  final String? lightThemeName;
+  final ThemeData lightTheme;
+  final ThemeData darkTheme;
   final ThemeMode themeMode;
 
-  ThemingState copyWith({
-    ThemeData? darkTheme,
-    ThemeData? lightTheme,
-    String? darkThemeName,
-    String? lightThemeName,
-    ThemeMode? themeMode,
-  }) {
+  ThemingState copyWith({ThemeMode? themeMode}) {
     return ThemingState(
-      darkTheme: darkTheme ?? this.darkTheme,
-      lightTheme: lightTheme ?? this.lightTheme,
-      darkThemeName: darkThemeName ?? this.darkThemeName,
-      lightThemeName: lightThemeName ?? this.lightThemeName,
+      lightTheme: lightTheme,
+      darkTheme: darkTheme,
       themeMode: themeMode ?? this.themeMode,
     );
   }
 }
 
-/// Stream provider watching the tooltip enable flag from config.
-@riverpod
-Stream<bool> enableTooltips(Ref ref) {
-  final db = getIt<JournalDb>();
-  return db.watchConfigFlag(enableTooltipFlag);
-}
-
-/// Notifier managing the complete theming state.
-/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+/// Notifier managing the current [ThemeMode] selection.
+/// Marked as keepAlive since theme state should persist for the entire
+/// app lifecycle.
 @Riverpod(keepAlive: true)
 class ThemingController extends _$ThemingController {
-  StreamSubscription<Set<String>>? _settingsNotificationSub;
-  bool _isApplyingSyncedChanges = false;
-  final _debounceKey = 'theming.sync.${identityHashCode(Object())}';
+  // Set once the user makes a selection. Guards against a late
+  // [_loadThemeMode] resolution overwriting a fresh user choice.
+  bool _userSelected = false;
 
   @override
   ThemingState build() {
-    ref.onDispose(() {
-      _settingsNotificationSub?.cancel();
-      EasyDebounce.cancel(_debounceKey);
-    });
-
-    // Initialize asynchronously
-    _init();
-
-    // Return default state - will be updated once preferences are loaded
+    unawaited(_loadThemeMode());
     return ThemingState(
-      darkTheme: _buildTheme(defaultThemeName, isDark: true),
-      lightTheme: _buildTheme(defaultThemeName, isDark: false),
-      darkThemeName: defaultThemeName,
-      lightThemeName: defaultThemeName,
+      lightTheme: lottiLightTheme,
+      darkTheme: lottiDarkTheme,
     );
   }
 
-  Future<void> _init() async {
-    // Subscribe to notifications before the initial load so that any sync
-    // updates arriving during the await window are not lost.
-    _watchThemePrefsUpdates();
-
+  Future<void> _loadThemeMode() async {
     try {
-      await _loadSelectedSchemes();
+      final stored = await getIt<SettingsDb>().itemByKey(themeModeKey);
+      if (_userSelected) return;
+      state = state.copyWith(themeMode: _themeModeFromStored(stored));
     } catch (e, st) {
       getIt<LoggingService>().captureException(
         e,
         domain: 'THEMING_CONTROLLER',
-        subDomain: 'init',
+        subDomain: 'loadThemeMode',
         stackTrace: st,
       );
-      // Fallback is already set in build(), so we can continue
     }
   }
 
-  void _watchThemePrefsUpdates() {
-    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
-      (ids) async {
-        if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
-          _isApplyingSyncedChanges = true;
-          try {
-            await _loadSelectedSchemes();
-          } catch (e, st) {
-            getIt<LoggingService>().captureException(
-              e,
-              domain: 'THEMING_CONTROLLER',
-              subDomain: 'theme_prefs_reload',
-              stackTrace: st,
-            );
-            // Keep current theme if reload fails
-          }
-          _isApplyingSyncedChanges = false;
-        }
-      },
-    );
-  }
-
-  Future<void> _loadSelectedSchemes() async {
-    final settingsDb = getIt<SettingsDb>();
-    final storedSettings = await settingsDb.itemsByKeys({
-      darkSchemeNameKey,
-      lightSchemeNameKey,
-      themeModeKey,
-    });
-
-    final darkThemeName = storedSettings[darkSchemeNameKey];
-    final lightThemeName = storedSettings[lightSchemeNameKey];
-    final themeModeStr = storedSettings[themeModeKey];
-
-    final themeMode = themeModeStr != null
-        ? EnumToString.fromString(ThemeMode.values, themeModeStr) ??
-              ThemeMode.system
-        : ThemeMode.system;
-
-    final effectiveDarkThemeName = darkThemeName ?? defaultThemeName;
-    final effectiveLightThemeName = lightThemeName ?? defaultThemeName;
-
-    state = ThemingState(
-      darkTheme: _buildTheme(effectiveDarkThemeName, isDark: true),
-      lightTheme: _buildTheme(effectiveLightThemeName, isDark: false),
-      darkThemeName: effectiveDarkThemeName,
-      lightThemeName: effectiveLightThemeName,
-      themeMode: themeMode,
-    );
-  }
-
-  ThemeData _buildTheme(String? themeName, {required bool isDark}) {
-    final scheme = themes[themeName] ?? FlexScheme.greyLaw;
-
-    final themeData = isDark
-        ? FlexThemeData.dark(
-            scheme: scheme,
-            fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-            fontFamilyFallback: _getEmojiFontFallback(),
-          )
-        : FlexThemeData.light(
-            scheme: scheme,
-            fontFamily: GoogleFonts.inclusiveSans().fontFamily,
-            fontFamilyFallback: _getEmojiFontFallback(),
-          );
-
-    return withOverrides(themeData);
-  }
-
-  void _enqueueSyncMessage() {
-    // Skip enqueuing sync messages when applying synced changes
-    if (_isApplyingSyncedChanges) {
-      return;
-    }
-
-    EasyDebounce.debounce(
-      _debounceKey,
-      const Duration(milliseconds: 250),
-      () async {
-        if (!getIt.isRegistered<OutboxService>()) {
-          return;
-        }
-        try {
-          await getIt<OutboxService>().enqueueMessage(
-            SyncMessage.themingSelection(
-              lightThemeName: state.lightThemeName ?? defaultThemeName,
-              darkThemeName: state.darkThemeName ?? defaultThemeName,
-              themeMode: state.themeMode.name,
-              updatedAt: DateTime.now().millisecondsSinceEpoch,
-              status: SyncEntryStatus.update,
-            ),
-          );
-        } catch (e, st) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'THEMING_SYNC',
-            subDomain: 'enqueue',
-            stackTrace: st,
-          );
-        }
-      },
-    );
-  }
-
-  /// Sets the light theme to the specified theme name.
-  void setLightTheme(String themeName) {
-    if (!isValidThemeName(themeName)) return;
-
-    state = state.copyWith(
-      lightTheme: _buildTheme(themeName, isDark: false),
-      lightThemeName: themeName,
-    );
-
-    getIt<SettingsDb>().saveSettingsItem(lightSchemeNameKey, themeName);
-    _enqueueSyncMessage();
-  }
-
-  /// Sets the dark theme to the specified theme name.
-  void setDarkTheme(String themeName) {
-    if (!isValidThemeName(themeName)) return;
-
-    state = state.copyWith(
-      darkTheme: _buildTheme(themeName, isDark: true),
-      darkThemeName: themeName,
-    );
-
-    getIt<SettingsDb>().saveSettingsItem(darkSchemeNameKey, themeName);
-    _enqueueSyncMessage();
-  }
-
-  /// Called when the theme mode selection changes.
+  /// Persists the new theme mode. Theme selection is a per-device
+  /// preference and is not synced across devices.
   void onThemeSelectionChanged(Set<ThemeMode> modes) {
+    if (modes.isEmpty) return;
     final themeMode = modes.first;
-
+    _userSelected = true;
     state = state.copyWith(themeMode: themeMode);
+    unawaited(_persistThemeMode(themeMode));
+  }
 
-    getIt<SettingsDb>().saveSettingsItem(
-      themeModeKey,
-      EnumToString.convertToString(themeMode),
-    );
-    _enqueueSyncMessage();
+  Future<void> _persistThemeMode(ThemeMode themeMode) async {
+    try {
+      await getIt<SettingsDb>().saveSettingsItem(
+        themeModeKey,
+        themeMode.name,
+      );
+    } catch (e, st) {
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'THEMING_CONTROLLER',
+        subDomain: 'saveThemeMode',
+        stackTrace: st,
+      );
+    }
   }
 }

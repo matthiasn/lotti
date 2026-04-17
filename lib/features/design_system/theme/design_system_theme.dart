@@ -56,7 +56,13 @@ class DesignSystemTheme {
           bodySmall: tokens.typography.styles.body.bodySmall,
           labelLarge: tokens.typography.styles.subtitle.subtitle2,
           labelMedium: tokens.typography.styles.others.caption,
-          labelSmall: tokens.typography.styles.others.overline,
+          // labelSmall is Material's slot for chips, badges, navigation
+          // labels, and other dense UI text. The "overline" token is a
+          // wide-tracked (letterSpacing: 8.0) display style intended only
+          // for the design system's overline component — using it here
+          // makes every count/chip/badge in the app render with extreme
+          // letter spacing. Use the caption style instead.
+          labelSmall: tokens.typography.styles.others.caption,
         ).apply(
           bodyColor: tokens.colors.text.highEmphasis,
           displayColor: tokens.colors.text.highEmphasis,

@@ -9,10 +9,10 @@ import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -121,7 +121,7 @@ void main() {
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
-        theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: theme ?? lottiDarkTheme,
         overrides: overrides,
       ),
     );
@@ -181,7 +181,7 @@ void main() {
     await pumpPage(
       tester,
       groups: [buildWorkGroup(), buildStudyGroup()],
-      theme: withOverrides(ThemeData.light(useMaterial3: true)),
+      theme: lottiLightTheme,
     );
 
     expect(tester.takeException(), isNull);
@@ -373,7 +373,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
-        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: lottiDarkTheme,
         overrides: [
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(
@@ -398,7 +398,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
-        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: lottiDarkTheme,
         overrides: [
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(

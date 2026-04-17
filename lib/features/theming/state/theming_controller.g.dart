@@ -44,20 +44,23 @@ final class EnableTooltipsProvider
   }
 }
 
-String _$enableTooltipsHash() => r'd4ffad68f2eb7a43301add99bb014fa3fe0d2898';
+String _$enableTooltipsHash() => r'611d9afb7b5472e39c33e8d20b357cb0e85314e8';
 
-/// Notifier managing the complete theming state.
-/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+/// Notifier managing the current [ThemeMode] selection.
+/// Marked as keepAlive since theme state should persist for the entire
+/// app lifecycle.
 
 @ProviderFor(ThemingController)
 final themingControllerProvider = ThemingControllerProvider._();
 
-/// Notifier managing the complete theming state.
-/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+/// Notifier managing the current [ThemeMode] selection.
+/// Marked as keepAlive since theme state should persist for the entire
+/// app lifecycle.
 final class ThemingControllerProvider
     extends $NotifierProvider<ThemingController, ThemingState> {
-  /// Notifier managing the complete theming state.
-  /// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+  /// Notifier managing the current [ThemeMode] selection.
+  /// Marked as keepAlive since theme state should persist for the entire
+  /// app lifecycle.
   ThemingControllerProvider._()
     : super(
         from: null,
@@ -85,10 +88,11 @@ final class ThemingControllerProvider
   }
 }
 
-String _$themingControllerHash() => r'8226faba7a4fabe7e947989d83e02224a62f8733';
+String _$themingControllerHash() => r'ebc3ffd3d916caf71e9054f623e23f6041bb8f98';
 
-/// Notifier managing the complete theming state.
-/// Marked as keepAlive since theme state should persist for the entire app lifecycle.
+/// Notifier managing the current [ThemeMode] selection.
+/// Marked as keepAlive since theme state should persist for the entire
+/// app lifecycle.
 
 abstract class _$ThemingController extends $Notifier<ThemingState> {
   ThemingState build();

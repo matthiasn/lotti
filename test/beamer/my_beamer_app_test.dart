@@ -35,33 +35,7 @@ import '../widget_test_utils.dart';
 
 void main() {
   group('MyBeamerApp theming', () {
-    test('loading state has null darkTheme initially', () {
-      // Test the loading screen condition directly
-      // When darkTheme is null, MyBeamerApp shows EmptyScaffoldWithTitle
-      const loadingState = ThemingState();
-      expect(loadingState.darkTheme, isNull);
-      expect(loadingState.lightTheme, isNull);
-    });
-
-    testWidgets('loading message is shown in EmptyScaffoldWithTitle', (
-      tester,
-    ) async {
-      // The loading screen renders "Loading..." text
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: Colors.black87,
-          ),
-          home: const Scaffold(
-            body: Center(child: Text('Loading...')),
-          ),
-        ),
-      );
-
-      expect(find.text('Loading...'), findsOneWidget);
-    });
-
-    test('ThemingState with darkTheme not null is ready to render', () {
+    test('default ThemingState exposes both themes and ThemeMode.system', () {
       final readyState = ThemingState(
         darkTheme: ThemeData.dark(),
         lightTheme: ThemeData.light(),
@@ -72,7 +46,7 @@ void main() {
       expect(readyState.themeMode, ThemeMode.system);
     });
 
-    test('ThemingState copyWith preserves darkTheme', () {
+    test('ThemingState.copyWith updates only themeMode', () {
       final state = ThemingState(
         darkTheme: ThemeData.dark(),
         lightTheme: ThemeData.light(),
@@ -81,8 +55,8 @@ void main() {
 
       final updated = state.copyWith(themeMode: ThemeMode.light);
 
-      expect(updated.darkTheme, state.darkTheme);
-      expect(updated.lightTheme, state.lightTheme);
+      expect(updated.darkTheme, same(state.darkTheme));
+      expect(updated.lightTheme, same(state.lightTheme));
       expect(updated.themeMode, ThemeMode.light);
     });
 
@@ -211,46 +185,6 @@ void main() {
       const testPath = '/settings';
       expect(testPath, isNotEmpty);
       expect(testPath.startsWith('/'), isTrue);
-    });
-  });
-
-  group('MyBeamerApp startup wiring', () {
-    testWidgets('starts agent initialization on app startup', (tester) async {
-      final mockNavService = MockNavService();
-      when(() => mockNavService.currentPath).thenReturn('/');
-
-      var initializationRuns = 0;
-      final completer = Completer<void>();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            themingControllerProvider.overrideWith(
-              _LoadingThemingController.new,
-            ),
-            agentInitializationProvider.overrideWith((ref) async {
-              initializationRuns++;
-              await completer.future;
-            }),
-          ],
-          child: MyBeamerApp(navService: mockNavService),
-        ),
-      );
-
-      await tester.pump(const Duration(seconds: 1));
-
-      // Initialization started exactly once and remains in progress
-      expect(initializationRuns, 1);
-      expect(find.text('Loading...'), findsOneWidget);
-
-      // Pump again to verify the subscription stays active
-      await tester.pump(const Duration(seconds: 2));
-      expect(initializationRuns, 1);
-      expect(find.text('Loading...'), findsOneWidget);
-
-      // Complete initialization to allow clean teardown
-      completer.complete();
-      await tester.pump();
     });
   });
 
@@ -466,11 +400,6 @@ class _EmptyLocation extends BeamLocation<BeamState> {
 
   @override
   List<Pattern> get pathPatterns => ['*'];
-}
-
-class _LoadingThemingController extends ThemingController {
-  @override
-  ThemingState build() => const ThemingState();
 }
 
 class _ReadyThemingController extends ThemingController {

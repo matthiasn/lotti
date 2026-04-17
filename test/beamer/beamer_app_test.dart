@@ -15,13 +15,13 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
@@ -208,7 +208,7 @@ Future<void> _pumpAppScreen(
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
       ],
       child: MaterialApp.router(
-        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        theme: lottiDarkTheme,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         routerDelegate: routerDelegate,

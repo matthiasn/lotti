@@ -5,8 +5,6 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart'
     show CheckedFromJsonException;
 import 'package:lotti/classes/entity_definitions.dart';
@@ -14,14 +12,12 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
@@ -524,7 +520,6 @@ class SyncEventProcessor {
     required LoggingService loggingService,
     required UpdateNotifications updateNotifications,
     required AiConfigRepository aiConfigRepository,
-    required SettingsDb settingsDb,
     DomainLogger? domainLogger,
     SyncJournalEntityLoader? journalEntityLoader,
     SyncSequenceLogService? sequenceLogService,
@@ -534,7 +529,6 @@ class SyncEventProcessor {
        _domainLogger = domainLogger,
        _updateNotifications = updateNotifications,
        _aiConfigRepository = aiConfigRepository,
-       _settingsDb = settingsDb,
        _journalEntityLoader =
            journalEntityLoader ?? const FileSyncJournalEntityLoader(),
        _sequenceLogService = sequenceLogService,
@@ -544,7 +538,6 @@ class SyncEventProcessor {
   final DomainLogger? _domainLogger;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
-  final SettingsDb _settingsDb;
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
   final AttachmentIndex? _attachmentIndex;
@@ -1366,82 +1359,14 @@ class SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncThemingSelection(
-        :final lightThemeName,
-        :final darkThemeName,
-        :final themeMode,
-        :final updatedAt,
-      ):
-        try {
-          // Check if incoming update is newer than local
-          final localUpdatedAtStr = await _settingsDb.itemByKey(
-            themePrefsUpdatedAtKey,
-          );
-          final localUpdatedAt = localUpdatedAtStr != null
-              ? int.tryParse(localUpdatedAtStr)
-              : 0;
-
-          if (updatedAt < (localUpdatedAt ?? 0)) {
-            _trace(
-              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
-              subDomain: 'processor.apply',
-            );
-            _loggingService.captureEvent(
-              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
-              domain: 'THEMING_SYNC',
-              subDomain: 'apply',
-            );
-            return null;
-          }
-
-          // Normalize themeMode value
-          final normalizedMode =
-              EnumToString.fromString(
-                ThemeMode.values,
-                themeMode,
-              ) ??
-              ThemeMode.system;
-
-          // Apply all three settings
-          await _settingsDb.saveSettingsItem(
-            lightSchemeNameKey,
-            lightThemeName,
-          );
-          await _settingsDb.saveSettingsItem(
-            darkSchemeNameKey,
-            darkThemeName,
-          );
-          await _settingsDb.saveSettingsItem(
-            themeModeKey,
-            EnumToString.convertToString(normalizedMode),
-          );
-          await _settingsDb.saveSettingsItem(
-            themePrefsUpdatedAtKey,
-            updatedAt.toString(),
-          );
-
-          _updateNotifications.notify(
-            {settingsNotification},
-            fromSync: true,
-          );
-
-          _trace(
-            'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
-            subDomain: 'processor.apply',
-          );
-          _loggingService.captureEvent(
-            'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
-            domain: 'THEMING_SYNC',
-            subDomain: 'apply',
-          );
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'THEMING_SYNC',
-            subDomain: 'apply',
-            stackTrace: st,
-          );
-        }
+      case SyncThemingSelection():
+        // Theme selection is now a per-device preference and is no longer
+        // synced. Older peers may still send themingSelection messages; we
+        // accept and discard them so deserialization stays compatible.
+        _trace(
+          'themingSelection.ignored sync of theme is disabled',
+          subDomain: 'processor.apply',
+        );
         return null;
       case SyncBackfillRequest():
         // Handle backfill request - another device is asking for a missing entry

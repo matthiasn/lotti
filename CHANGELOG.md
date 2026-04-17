@@ -16,6 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The new compression flag is toggleable from Settings → Flags, with
   localized labels and descriptions across all supported languages.
 
+### Changed
+- Theme settings simplified to **Light**, **Dark**, and **System (auto)**.
+  The named-theme picker (Material, Grey Law, Sakura, Indigo, etc.) has
+  been removed. Light and dark themes are now built directly from the
+  Figma-derived design system tokens via `DesignSystemTheme`, so the
+  in-app appearance matches the design source of truth without an
+  intermediate theme library.
+- Theme selection is now a per-device preference and is no longer synced
+  across devices. The `SyncMessage.themingSelection` wire variant
+  remains in the schema; receivers accept it but discard it, so peers on
+  older releases continue to interoperate without errors.
+
+### Removed
+- The `flex_color_scheme` dependency and its 21 named theme presets.
+- The `LightModeSurfaces` constants in `lib/themes/`. Light-mode surface
+  colors now come from the design-system token set instead of a hand-
+  tuned constant table. Widget-level styling — card/dialog/bottom-sheet
+  shapes, button and input decoration, Wolt modal sheet animation, GPT
+  markdown header sizes, uniform page transitions — is preserved via the
+  new `withAppWidgetOverrides()` layer applied on top of
+  `DesignSystemTheme`.
+
 ## [0.9.953] - 2026-04-16
 ### Fixed
 - Raise the open file descriptor soft limit to 10,240 at startup on macOS and

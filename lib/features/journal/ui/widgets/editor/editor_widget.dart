@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 /// Returns the appropriate user-facing message for a speech dictionary result.
 /// Returns null for edge cases that should be silent (no user notification needed).
@@ -117,7 +117,7 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
     return Card(
       margin: widget.margin,
       color: shouldShowEditorToolBar
-          ? context.colorScheme.surface.brighten()
+          ? TinyColor.fromColor(context.colorScheme.surface).brighten().color
           : Colors.transparent,
       elevation: 0,
       clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,

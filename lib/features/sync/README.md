@@ -73,7 +73,8 @@ Current message families in `model/sync_message.dart`:
 - `entryLink`
 - `aiConfig`
 - `aiConfigDelete`
-- `themingSelection`
+- `themingSelection` (legacy, no-op on receive — kept for back-compat with
+  peers on releases prior to the per-device-theme migration)
 - `backfillRequest`
 - `backfillResponse`
 - `agentEntity`
@@ -444,7 +445,9 @@ The code still depends on a few sharp assumptions:
   links
 - `agents/sync/agent_sync_service.dart` enqueues agent entities and links
 - `ai` repositories enqueue AI config updates and deletes
-- theming changes enqueue `themingSelection`
+- theme selection is per-device and is **not** enqueued — incoming
+  `themingSelection` messages from older peers are accepted and discarded
+  in `sync_event_processor.dart`
 - sync-facing settings, verification, maintenance, and diagnostics UI live
   under `lib/features/sync/ui/` and `lib/features/sync/state/`
 

@@ -34,6 +34,7 @@
     <release version="0.9.954" date="2026-04-17">
       <description>
           <p>Optional gzip compression for JSON sync attachments over Matrix, gated by a new config flag that is off by default. Receivers always decompress when the encoding marker is present on an attachment event, so turning compression on for a single device stays compatible with peers on this release. Only .json attachments are compressed; media files are already on compressed formats and skip the branch.</p>
+          <p>Theme settings simplified to Light, Dark, and System (auto). The named-theme picker and the flex_color_scheme dependency have been removed; light and dark themes are now built directly from the Figma-derived design system tokens. Theme selection is now a per-device preference and is no longer synced across devices.</p>
       </description>
     </release>
     <release version="0.9.953" date="2026-04-16">
