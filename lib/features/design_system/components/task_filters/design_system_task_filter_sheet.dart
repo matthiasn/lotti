@@ -210,6 +210,20 @@ class DesignSystemTaskFilterState {
        );
 
   factory DesignSystemTaskFilterState.fromJson(Map<String, dynamic> json) {
+    // Only honour the new-format `selectedPriorityIds` key when it is
+    // actually present on the payload. A *missing* key falls through to
+    // the legacy `selectedPriorityId` migration so old JSON doesn't lose
+    // its single-priority selection; a *present* key — even if empty or
+    // non-List — is treated as the authoritative new-format value and
+    // overrides any stale legacy `selectedPriorityId` still on the payload.
+    Set<String>? parsedPriorityIds;
+    if (json.containsKey('selectedPriorityIds')) {
+      final raw = json['selectedPriorityIds'];
+      parsedPriorityIds = raw is List<dynamic>
+          ? raw.cast<String>().toSet()
+          : const <String>{};
+    }
+
     return DesignSystemTaskFilterState(
       title: json['title'] as String,
       clearAllLabel: json['clearAllLabel'] as String,
@@ -230,10 +244,7 @@ class DesignSystemTaskFilterState {
         json['priorityOptions'],
         DesignSystemTaskFilterOption.fromJson,
       ),
-      selectedPriorityIds: switch (json['selectedPriorityIds']) {
-        final List<dynamic> ids => ids.cast<String>().toSet(),
-        _ => null,
-      },
+      selectedPriorityIds: parsedPriorityIds,
       selectedPriorityId: json['selectedPriorityId'] as String?,
       categoryField: switch (json['categoryField']) {
         final Map<String, dynamic> value =>
