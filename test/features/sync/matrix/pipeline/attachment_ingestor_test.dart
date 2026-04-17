@@ -1495,16 +1495,19 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
+      // Use an isolated docs dir nested inside the temp root so the traversal
+      // attempt can try to escape the docs dir without touching any file
+      // outside the test fixture — keeps the assertion off host state like
+      // /etc/passwd.
       final tmp = Directory.systemTemp.createTempSync('ingestor_bundle_tr');
+      final docsDir = Directory('${tmp.path}/docs')..createSync();
       addTearDown(() => tmp.deleteSync(recursive: true));
 
       final safeBytes = utf8.encode('safe');
       final badBytes = utf8.encode('pwned');
       final archive = Archive()
         ..addFile(ArchiveFile('safe/ok.txt', safeBytes.length, safeBytes))
-        ..addFile(
-          ArchiveFile('../../../etc/passwd', badBytes.length, badBytes),
-        );
+        ..addFile(ArchiveFile('../escaped.txt', badBytes.length, badBytes));
       final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
 
       final matrixFile = MockMatrixFile();
@@ -1527,7 +1530,7 @@ void main() {
       final desc = MockDescriptorCatchUpManager();
       when(() => desc.removeIfPresent('.bundles/tr.zip')).thenReturn(false);
 
-      final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+      final ingestor = AttachmentIngestor(documentsDirectory: docsDir);
       final result = await ingestor.process(
         event: ev,
         logging: logging,
@@ -1538,9 +1541,9 @@ void main() {
       );
 
       expect(result, isTrue);
-      expect(File('${tmp.path}/safe/ok.txt').readAsStringSync(), 'safe');
+      expect(File('${docsDir.path}/safe/ok.txt').readAsStringSync(), 'safe');
       // Bad entry must not have escaped the documents directory.
-      expect(File('/etc/passwd').readAsStringSync(), isNot(contains('pwned')));
+      expect(File('${tmp.path}/escaped.txt').existsSync(), isFalse);
       verify(
         () => logging.captureEvent(
           any<String>(that: contains('pathTraversal.blocked bundleEntry=')),

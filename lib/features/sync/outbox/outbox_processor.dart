@@ -304,13 +304,19 @@ class OutboxProcessor {
       }
     }
 
+    // Stop bundling at the first pending item that cannot join the bundle —
+    // skipping it and packing later items would ship those before this one,
+    // violating the outbox's head-first ordering and creating avoidable
+    // causal gaps. The non-bundleable item itself will be sent via the
+    // existing head-only flow (either this tick if bundled ends up empty, or
+    // on the next tick once the bundle is drained).
     final bundled = <({OutboxItem item, List<AttachmentDescriptor> atts})>[];
     var bundleSize = 0;
     for (final e in enumerated) {
-      if (e.atts.isEmpty) continue;
+      if (e.atts.isEmpty) break;
       final total = e.atts.fold<int>(0, (s, a) => s + a.size);
-      if (total > SyncTuning.outboxBundleMaxBytes) continue;
-      if (bundleSize + total > SyncTuning.outboxBundleMaxBytes) continue;
+      if (total > SyncTuning.outboxBundleMaxBytes) break;
+      if (bundleSize + total > SyncTuning.outboxBundleMaxBytes) break;
       bundled.add(e);
       bundleSize += total;
     }
@@ -384,15 +390,29 @@ class OutboxProcessor {
         continue;
       }
       var timedOut = false;
-      final ok = await _messageSender
-          .send(msg, skipAttachmentPaths: skipSet)
-          .timeout(
-            sendTimeout,
-            onTimeout: () {
-              timedOut = true;
-              return false;
-            },
-          );
+      bool ok;
+      try {
+        ok = await _messageSender
+            .send(msg, skipAttachmentPaths: skipSet)
+            .timeout(
+              sendTimeout,
+              onTimeout: () {
+                timedOut = true;
+                return false;
+              },
+            );
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: 'OUTBOX',
+          subDomain: 'bundle.send',
+          stackTrace: stackTrace,
+        );
+        await _repository.markRetry(refreshed);
+        _recordBundleItemFailure(refreshed, timedOut: timedOut);
+        anyFailure = true;
+        continue;
+      }
       if (ok) {
         if (_lastFailedSubject == refreshed.subject) {
           _lastFailedSubject = null;

@@ -68,10 +68,11 @@ Future<List<AttachmentDescriptor>> _forJournalEntity({
   // Read once and cache: the same bytes feed the JournalEntity.fromJson pass
   // below (to discover audio/image paths) and any downstream consumer such as
   // the bundler, so subsequent reads can short-circuit.
-  final jsonFullPath = p.join(
-    documentsDirectory.path,
-    p.joinAll(message.jsonPath.split('/').where((part) => part.isNotEmpty)),
+  final jsonFullPath = _resolveWithinDocuments(
+    relativePath: message.jsonPath,
+    documentsDirectory: documentsDirectory,
   );
+  if (jsonFullPath == null) return const [];
   Uint8List bytes;
   try {
     bytes = await File(jsonFullPath).readAsBytes();
@@ -112,10 +113,11 @@ Future<List<AttachmentDescriptor>> _forFile({
   required String relativePath,
   required Directory documentsDirectory,
 }) async {
-  final joined = p.joinAll(
-    relativePath.split('/').where((part) => part.isNotEmpty),
+  final fullPath = _resolveWithinDocuments(
+    relativePath: relativePath,
+    documentsDirectory: documentsDirectory,
   );
-  final fullPath = p.join(documentsDirectory.path, joined);
+  if (fullPath == null) return const [];
   try {
     final size = await File(fullPath).length();
     if (size <= 0) return const [];
@@ -130,4 +132,24 @@ Future<List<AttachmentDescriptor>> _forFile({
   } on FileSystemException {
     return const [];
   }
+}
+
+/// Resolves [relativePath] against [documentsDirectory] and rejects anything
+/// that escapes the documents tree — defends the enumerator (and therefore
+/// any downstream read/upload) against `..` segments or absolute fragments
+/// in a crafted `jsonPath`. Returns the absolute path on success, or null
+/// when the path is outside the documents directory or cannot be normalized.
+String? _resolveWithinDocuments({
+  required String relativePath,
+  required Directory documentsDirectory,
+}) {
+  var rel = relativePath;
+  if (p.isAbsolute(rel)) {
+    final prefix = p.rootPrefix(rel);
+    rel = rel.substring(prefix.length);
+  }
+  final joined = p.joinAll(rel.split('/').where((part) => part.isNotEmpty));
+  final resolved = p.normalize(p.join(documentsDirectory.path, joined));
+  if (!p.isWithin(documentsDirectory.path, resolved)) return null;
+  return resolved;
 }

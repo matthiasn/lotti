@@ -350,7 +350,7 @@ class AttachmentIngestor {
       // never skips those. For non-agent payloads the vector clock is not
       // validated here; SmartJournalEntityLoader.load() revalidates and
       // re-downloads via DescriptorDownloader if the local file is stale.
-      if (await _shouldSkipExistingFile(file, relativePath)) {
+      if (_shouldSkipExistingFile(file, relativePath)) {
         return false;
       }
 
@@ -430,15 +430,11 @@ class AttachmentIngestor {
   /// the bundle-entry write path. Agent payloads always return false so
   /// in-place updates (e.g. ChangeSetEntity pending → resolved) are never
   /// suppressed.
-  Future<bool> _shouldSkipExistingFile(
-    File target,
-    String relativePath,
-  ) async {
+  bool _shouldSkipExistingFile(File target, String relativePath) {
     if (isAgentPayloadPath(relativePath)) return false;
-    // ignore: avoid_slow_async_io
-    if (!await target.exists()) return false;
+    if (!target.existsSync()) return false;
     try {
-      return await target.length() > 0;
+      return target.lengthSync() > 0;
     } on FileSystemException {
       return false;
     }
@@ -457,9 +453,20 @@ class AttachmentIngestor {
   }) async {
     final docDir = documentsDirectory;
     if (docDir == null) return false;
-    final decoded = await Isolate.run(
-      () => _decodeBundleEntries(downloadedBytes),
-    );
+    final Map<String, Uint8List> decoded;
+    try {
+      decoded = await Isolate.run(
+        () => _decodeBundleEntries(downloadedBytes),
+      );
+    } catch (error, stackTrace) {
+      logging.captureException(
+        error,
+        domain: syncLoggingDomain,
+        subDomain: 'attachment.bundle.decode',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
     var writtenCount = 0;
     var totalBytes = 0;
     var skippedCount = 0;
@@ -474,7 +481,7 @@ class AttachmentIngestor {
         );
         continue;
       }
-      if (await _shouldSkipExistingFile(target, entryPath)) {
+      if (_shouldSkipExistingFile(target, entryPath)) {
         skippedCount++;
         continue;
       }

@@ -284,11 +284,13 @@ class MatrixMessageSender {
   }) async {
     if (entries.isEmpty) return null;
     final id = bundleId ?? const Uuid().v4();
-    // Encoding can take tens of milliseconds for multi-MiB bundles. Run it
-    // on a worker isolate so it doesn't block UI frames on the sync isolate.
-    final zipBytes = await Isolate.run(() => _encodeBundleBytes(entries));
     final bundlePath = '$attachmentBundleDirPrefix$id.zip';
     try {
+      // Encoding can take tens of milliseconds for multi-MiB bundles. Run it
+      // on a worker isolate so it doesn't block UI frames on the sync
+      // isolate, and keep it inside the try so encoder errors are logged the
+      // same way as upload errors instead of propagating as unhandled.
+      final zipBytes = await Isolate.run(() => _encodeBundleBytes(entries));
       final eventId = await room.sendFileEvent(
         MatrixFile(bytes: zipBytes, name: '$id.zip'),
         extraContent: {

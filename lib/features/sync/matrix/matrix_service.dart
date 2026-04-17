@@ -489,6 +489,18 @@ class MatrixService {
       );
       return null;
     }
+    // Mirror [sendMatrixMsg]: block the upload when any room device is
+    // unverified so bundles do not orphan themselves ahead of text events
+    // that the normal send path would (correctly) refuse in the same state.
+    final unverified = getUnverifiedDevices();
+    if (unverified.isNotEmpty) {
+      _loggingService.captureException(
+        'Unverified devices found; skipping attachment bundle',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendAttachmentBundle',
+      );
+      return null;
+    }
     return _messageSender.sendAttachmentBundle(
       room: room,
       entries: entries,
