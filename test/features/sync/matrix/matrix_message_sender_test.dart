@@ -2232,6 +2232,59 @@ void main() {
     });
 
     test(
+      'sendAttachmentBundle returns null when room.sendFileEvent returns null',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await sender.sendAttachmentBundle(
+          room: room,
+          entries: {'a.json': Uint8List.fromList(utf8.encode('{"a":1}'))},
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(that: contains('bundle send returned null')),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.bundle',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'sendAttachmentBundle returns null and logs when sendFileEvent throws',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenThrow(Exception('matrix upload blew up'));
+
+        final result = await sender.sendAttachmentBundle(
+          room: room,
+          entries: {'a.json': Uint8List.fromList(utf8.encode('{"a":1}'))},
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.bundle',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'skipAttachmentPaths in MatrixMessageContext short-circuits file upload',
       () async {
         var fileSendCalls = 0;

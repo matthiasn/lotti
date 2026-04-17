@@ -1554,6 +1554,73 @@ void main() {
     });
 
     test(
+      'bundle unpack tolerates corrupt zip bytes and writes nothing',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_bundle_bad');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final badBytes = Uint8List.fromList(utf8.encode('not-a-zip'));
+        final matrixFile = MockMatrixFile();
+        when(() => matrixFile.bytes).thenReturn(badBytes);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_bundle_bad');
+        when(() => ev.content).thenReturn({
+          'relativePath': '.bundles/bad.zip',
+          'msgtype': 'm.file',
+          attachmentBundleKey: true,
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/zip');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('.bundles/bad.zip')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        // The pipeline must tolerate corrupt input without throwing or
+        // writing anything to disk. ZipDecoder in archive 4.x is lenient and
+        // produces an empty archive rather than throwing for these bytes;
+        // the try/catch around the isolate decode covers the stricter case
+        // where it does throw.
+        expect(result, isFalse);
+        expect(
+          Directory(tmp.path).listSync(recursive: true).whereType<File>(),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
       'bundle unpack skips entries that already exist for non-agent paths',
       () async {
         final logging = MockLoggingService();
@@ -1679,5 +1746,88 @@ void main() {
       // Verify download was NOT called
       verifyNever(ev.downloadAndDecryptAttachment);
     });
+
+    test(
+      'bundle event is not re-downloaded on repeat process() calls',
+      () async {
+        // The outer .bundles/<id>.zip path is never persisted locally — only
+        // the unpacked inner entries are. Earlier the repair heuristic would
+        // therefore see "local file missing" on every pass and re-download
+        // the bundle. The bundle-aware short-circuit keeps
+        // downloadAndDecryptAttachment at one call across repeated
+        // invocations for the same event id.
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_bundle_rpt');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final entryBytes = utf8.encode('{"id":"rpt"}');
+        final archive = Archive()
+          ..addFile(
+            ArchiveFile(
+              'text_entries/rpt.json',
+              entryBytes.length,
+              entryBytes,
+            ),
+          );
+        final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+
+        final matrixFile = MockMatrixFile();
+        when(() => matrixFile.bytes).thenReturn(zipBytes);
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_bundle_rpt');
+        when(() => ev.content).thenReturn({
+          'relativePath': '.bundles/rpt.zip',
+          'msgtype': 'm.file',
+          attachmentBundleKey: true,
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/zip');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('.bundles/rpt.zip')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        final first = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        final second = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(first, isTrue);
+        expect(second, isFalse);
+        expect(
+          File('${tmp.path}/text_entries/rpt.json').readAsStringSync(),
+          '{"id":"rpt"}',
+        );
+        // One download only, despite the outer .bundles/*.zip never being
+        // written to disk.
+        verify(ev.downloadAndDecryptAttachment).called(1);
+      },
+    );
   });
 }

@@ -101,9 +101,19 @@ class AttachmentIngestor {
       // handled once — new events always proceed.
       // Suppress repair if a save is already in flight for this path to avoid
       // concurrent writes to the same file.
+      //
+      // Bundle events are special-cased: their outer `.bundles/<id>.zip`
+      // path is never written locally (we only persist the unpacked entries),
+      // so [_isLocalFileMissingOrEmpty] would always report true and trigger
+      // an endless re-download of the bundle on every catch-up pass. Once
+      // the bundle event id is recorded as handled, skip re-processing — the
+      // inner files will be repaired through their own per-entry descriptor
+      // events if they go missing.
+      final isBundleEvent = event.content[attachmentBundleKey] == true;
       final shouldRepairLocal =
           alreadyHandled &&
           documentsDirectory != null &&
+          !isBundleEvent &&
           !_inFlightSavePaths.contains(_normalizeKey(rpAny)) &&
           _isLocalFileMissingOrEmpty(rpAny);
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
@@ -516,7 +526,6 @@ Map<String, Uint8List> _decodeBundleEntries(Uint8List downloadedBytes) {
       if (entry.isFile) entry.name: entry.content,
   };
 }
-
 
 class _DownloadRequest {
   const _DownloadRequest({

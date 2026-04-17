@@ -237,4 +237,50 @@ void main() {
       expect(result, isEmpty);
     });
   });
+
+  group('path hardening', () {
+    test('rejects a jsonPath that escapes the documents directory', () async {
+      // A sibling file that exists outside docs — the traversal target.
+      final escapeTarget = File('${docs.path}/../escape.json')
+        ..writeAsStringSync('{"secret":true}');
+      addTearDown(() {
+        if (escapeTarget.existsSync()) escapeTarget.deleteSync();
+      });
+
+      final result = await enumerateAttachments(
+        message: SyncMessage.journalEntity(
+          id: 'trav',
+          jsonPath: '../escape.json',
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        ),
+        documentsDirectory: docs,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('rejects an absolute jsonPath pointing outside docs', () async {
+      // Write a target outside docs; an absolute jsonPath would resolve to
+      // it if the helper didn't strip the root prefix and re-anchor under
+      // documentsDirectory.
+      final outside = File('${docs.path}/../absolute.json')
+        ..writeAsStringSync('{}');
+      addTearDown(() {
+        if (outside.existsSync()) outside.deleteSync();
+      });
+
+      final result = await enumerateAttachments(
+        message: SyncMessage.journalEntity(
+          id: 'abs',
+          jsonPath: outside.absolute.path,
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        ),
+        documentsDirectory: docs,
+      );
+
+      expect(result, isEmpty);
+    });
+  });
 }

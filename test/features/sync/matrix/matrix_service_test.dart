@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -83,6 +84,7 @@ void main() {
         applied: false,
       ),
     );
+    registerFallbackValue(_RoomFake());
   });
 
   setUp(() {
@@ -363,5 +365,80 @@ void main() {
 
       expect(service.debugPipeline, pipeline);
     });
+
+    group('sendAttachmentBundle', () {
+      test('returns null when no sync room is available', () async {
+        final service = createService();
+
+        final result = await service.sendAttachmentBundle(
+          entries: {
+            'a.json': Uint8List.fromList(const [1, 2, 3]),
+          },
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => messageSender.sendAttachmentBundle(
+            room: any<Room>(named: 'room'),
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        );
+      });
+
+      test('returns null when unverified devices block the send', () async {
+        final room = _MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        final unverified = _MockDeviceKeys();
+        when(() => gateway.unverifiedDevices()).thenReturn([unverified]);
+
+        final service = createService();
+
+        final result = await service.sendAttachmentBundle(
+          entries: {
+            'a.json': Uint8List.fromList(const [1, 2, 3]),
+          },
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => messageSender.sendAttachmentBundle(
+            room: any<Room>(named: 'room'),
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        );
+      });
+
+      test('delegates to message sender when room and verify ok', () async {
+        final room = _MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => messageSender.sendAttachmentBundle(
+            room: room,
+            entries: any<Map<String, Uint8List>>(named: 'entries'),
+          ),
+        ).thenAnswer((_) async => r'$bundle-evt');
+
+        final service = createService();
+
+        final entries = {
+          'a.json': Uint8List.fromList(const [1, 2, 3]),
+        };
+        final result = await service.sendAttachmentBundle(entries: entries);
+
+        expect(result, r'$bundle-evt');
+        verify(
+          () => messageSender.sendAttachmentBundle(
+            room: room,
+            entries: entries,
+          ),
+        ).called(1);
+      });
+    });
   });
 }
+
+class _RoomFake extends Fake implements Room {}
+
+class _MockRoom extends Mock implements Room {}
+
+class _MockDeviceKeys extends Mock implements DeviceKeys {}
