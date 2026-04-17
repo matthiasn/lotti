@@ -43,7 +43,6 @@ dependencies:
   extended_sliver: ^2.1.3
   fl_chart: ^1.0.0
   flex_color_picker: ^3.4.1
-  flex_color_scheme: ^8.2.1-dev.2
   flutter:
     sdk: flutter
   flutter_animate: ^4.1.1+1

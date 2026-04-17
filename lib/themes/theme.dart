@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -431,114 +430,80 @@ TextStyle searchLabelStyle() => TextStyle(
   fontWeight: FontWeight.w200, // Slightly bolder
 );
 
-ThemeData withOverrides(ThemeData themeData) {
+/// Layers app-wide widget-level theming on top of a token-driven [ThemeData].
+///
+/// `DesignSystemTheme` owns the token-derived primitives (colorScheme,
+/// scaffold colors, textTheme). This function adds orthogonal widget
+/// styling that tokens do not express: shapes, elevations, platform
+/// transition behavior, and theme extensions for third-party widgets
+/// (`GptMarkdown`, `WoltModalSheet`).
+ThemeData withAppWidgetOverrides(ThemeData themeData) {
   final isDark = themeData.brightness == Brightness.dark;
+  final colorScheme = themeData.colorScheme;
 
-  // LIGHT MODE: Force clean white backgrounds instead of grey
-  // DARK MODE: Use scheme-derived surface for consistency
-  final scaffoldColor = isDark
-      ? themeData.colorScheme.surface
-      : LightModeSurfaces.surface;
-
-  // Update colorScheme for light mode to use white surfaces
-  final updatedColorScheme = isDark
-      ? themeData.colorScheme
-      : themeData.colorScheme.copyWith(
-          surface: LightModeSurfaces.surface,
-          surfaceContainerLowest: LightModeSurfaces.surfaceContainerLowest,
-          surfaceContainerLow: LightModeSurfaces.surfaceContainerLow,
-          surfaceContainer: LightModeSurfaces.surfaceContainer,
-          surfaceContainerHigh: LightModeSurfaces.surfaceContainerHigh,
-          surfaceContainerHighest: LightModeSurfaces.surfaceContainerHighest,
-        );
+  // Re-list the DsTokens extension explicitly instead of spreading
+  // themeData.extensions.values — the CFE otherwise mis-infers the list
+  // element type because WoltModalSheetThemeData and GptMarkdownThemeData
+  // are each ThemeExtension<Self>.
+  final tokens = isDark ? dsTokensDark : dsTokensLight;
 
   return themeData.copyWith(
-    colorScheme: updatedColorScheme,
-    scaffoldBackgroundColor: scaffoldColor,
-    canvasColor: scaffoldColor,
     cardTheme: themeData.cardTheme.copyWith(
       clipBehavior: Clip.hardEdge,
       elevation: isDark ? 2 : 0,
-      color: isDark ? null : LightModeSurfaces.surface,
-      shadowColor: isDark ? null : Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
       ),
     ),
     appBarTheme: themeData.appBarTheme.copyWith(
-      backgroundColor: scaffoldColor,
+      backgroundColor: themeData.scaffoldBackgroundColor,
       elevation: 0,
       shadowColor: Colors.transparent,
     ),
     sliderTheme: themeData.sliderTheme.copyWith(
-      activeTrackColor: themeData.colorScheme.secondary,
-      inactiveTrackColor: themeData.colorScheme.secondary.withAlpha(
+      activeTrackColor: colorScheme.secondary,
+      inactiveTrackColor: colorScheme.secondary.withAlpha(
         AppTheme.alphaSliderInactiveTrack,
       ),
-      thumbColor: themeData.colorScheme.secondary,
+      thumbColor: colorScheme.secondary,
       thumbShape: const RoundSliderThumbShape(),
-      overlayColor: themeData.colorScheme.secondary.withAlpha(
+      overlayColor: colorScheme.secondary.withAlpha(
         AppTheme.alphaSliderOverlay,
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       clipBehavior: Clip.hardEdge,
       elevation: 0,
-      backgroundColor: isDark ? null : LightModeSurfaces.surface,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: isDark ? null : LightModeSurfaces.surface,
+      backgroundColor: colorScheme.surface,
       elevation: isDark ? 8 : 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-      ),
-    ),
-    textTheme: themeData.textTheme.copyWith(
-      titleMedium: themeData.textTheme.titleMedium?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w500, // Slightly bolder
-      ),
-      bodyLarge: themeData.textTheme.bodyLarge?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w400,
-      ),
-      bodyMedium: themeData.textTheme.bodyMedium?.copyWith(
-        fontSize: fontSizeMedium,
-        fontWeight: FontWeight.w400,
       ),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
         alignment: Alignment.center,
         visualDensity: VisualDensity.compact,
-        textStyle: WidgetStateProperty.resolveWith(
-          (states) => const TextStyle(
-            fontSize: fontSizeSmall,
-            fontWeight: FontWeight.w500, // Slightly bolder
+        side: WidgetStateProperty.resolveWith(
+          (states) => BorderSide(
+            color: colorScheme.tertiary,
+            width: 1.5,
           ),
         ),
-        side: WidgetStateProperty.resolveWith((states) {
-          return BorderSide(
-            color: themeData.colorScheme.tertiary,
-            width: 1.5, // Slightly thicker
-          );
-        }),
-        shape: WidgetStateProperty.resolveWith((states) {
-          return RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(
-              inputBorderRadius,
-            ),
-          );
-        }),
-        padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(
-            horizontal: 8, // Increased padding
-            vertical: 4,
-          );
-        }),
+        shape: WidgetStateProperty.resolveWith(
+          (states) => RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(inputBorderRadius),
+          ),
+        ),
+        padding: WidgetStateProperty.resolveWith(
+          (states) => const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
       ),
     ),
     chipTheme: ChipThemeData(
@@ -548,80 +513,63 @@ ThemeData withOverrides(ThemeData themeData) {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      fillColor: themeData.primaryColor.withAlpha(20), // Subtle fill
+      fillColor: colorScheme.primary.withAlpha(20),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
-        ),
+        borderRadius: BorderRadius.circular(inputBorderRadius),
         borderSide: BorderSide(
-          color: themeData.colorScheme.outline.withAlpha(60), // More subtle
+          color: colorScheme.outline.withAlpha(60),
         ),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
-        ),
-        borderSide: BorderSide(
-          color: themeData.colorScheme.error,
-        ),
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: colorScheme.error),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(
-          inputBorderRadius,
-        ),
+        borderRadius: BorderRadius.circular(inputBorderRadius),
         borderSide: BorderSide(
-          color: themeData.primaryColor,
-          width: 2.5, // Slightly thicker
+          color: colorScheme.primary,
+          width: 2.5,
         ),
       ),
       floatingLabelBehavior: FloatingLabelBehavior.always,
     ),
     textButtonTheme: TextButtonThemeData(
       style: ButtonStyle(
-        textStyle: WidgetStateProperty.resolveWith((states) {
-          return const TextStyle(
-            fontSize: fontSizeMediumLarge,
-            fontWeight: FontWeight.w500, // Slightly bolder
-          );
-        }),
-        padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          );
-        }),
+        padding: WidgetStateProperty.resolveWith(
+          (states) => const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ButtonStyle(
-        elevation: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.pressed) ? 2 : 4;
-        }),
-        shape: WidgetStateProperty.resolveWith((states) {
-          return RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // More rounded
-          );
-        }),
-        padding: WidgetStateProperty.resolveWith((states) {
-          return const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          );
-        }),
+        elevation: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.pressed) ? 2 : 4,
+        ),
+        shape: WidgetStateProperty.resolveWith(
+          (states) => RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        padding: WidgetStateProperty.resolveWith(
+          (states) => const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: themeData.colorScheme.primary,
+      backgroundColor: colorScheme.primary,
       contentTextStyle: TextStyle(
-        color: themeData.colorScheme.onPrimary,
+        color: colorScheme.onPrimary,
         fontSize: fontSizeMedium,
       ),
-      actionTextColor: themeData.colorScheme.onPrimary,
+      actionTextColor: colorScheme.onPrimary,
     ),
+    // Empty builders map disables default per-platform page transitions,
+    // keeping transitions uniform across iOS/Android/desktop.
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: <TargetPlatform, PageTransitionsBuilder>{},
     ),
-    extensions: <ThemeExtension>[
+    extensions: <ThemeExtension<dynamic>>[
+      tokens,
       const WoltModalSheetThemeData(
         animationStyle: WoltModalSheetAnimationStyle(
           paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
@@ -631,7 +579,7 @@ ThemeData withOverrides(ThemeData themeData) {
       ),
       GptMarkdownThemeData(
         brightness: themeData.brightness,
-        linkColor: themeData.colorScheme.primary,
+        linkColor: colorScheme.primary,
         h1: themeData.textTheme.titleLarge?.copyWith(
           fontSize: fontSizeMediumLarge,
           fontWeight: FontWeight.w600,
@@ -657,7 +605,6 @@ ThemeData withOverrides(ThemeData themeData) {
           fontWeight: FontWeight.w400,
         ),
       ),
-      if (isDark) dsTokensDark else dsTokensLight,
     ],
   );
 }
