@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -726,6 +727,12 @@ class JournalPageController extends _$JournalPageController {
   }
 
   JournalQueryParams _buildQueryParams() {
+    // An empty selection means "no status filter" → query across all statuses
+    // rather than returning zero rows because `task_status IN ()` matches
+    // nothing.
+    final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
+        ? allTaskStatuses.toSet()
+        : _selectedTaskStatuses;
     return JournalQueryParams(
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes,
@@ -733,7 +740,7 @@ class JournalPageController extends _$JournalPageController {
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
-      selectedTaskStatuses: _selectedTaskStatuses,
+      selectedTaskStatuses: effectiveTaskStatuses,
       sortOption: _sortOption,
       agentAssignmentFilter: _agentAssignmentFilter,
       filters: _filters,

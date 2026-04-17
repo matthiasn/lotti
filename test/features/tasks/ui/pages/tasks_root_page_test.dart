@@ -37,10 +37,11 @@ void main() {
         when(
           () => mockNavService.desktopSelectedTaskId,
         ).thenReturn(ValueNotifier<String?>(null));
-        getIt.registerSingleton<NavService>(mockNavService);
-        getIt.registerSingleton<EntitiesCacheService>(
-          MockEntitiesCacheService(),
-        );
+        getIt
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<EntitiesCacheService>(
+            MockEntitiesCacheService(),
+          );
       },
     );
     // `_TasksTabActiveFilters` reads `getVisibleProjects` from JournalDb to

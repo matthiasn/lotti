@@ -9,8 +9,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
@@ -28,6 +28,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -149,28 +150,18 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                     cacheExtent: 1500,
                     slivers: [
                       if (state.selectedLabelIds.isNotEmpty)
-                        SliverToBoxAdapter(
+                        const SliverToBoxAdapter(
+                          key: ValueKey('tasks-tab-label-quick-filter'),
                           child: ProjectsOverviewContentWidth(
                             child: Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                child: const TaskLabelQuickFilter(),
-                              ),
+                              padding: EdgeInsets.only(top: 8),
+                              child: _QuickLabelFilterContainer(),
                             ),
                           ),
                         ),
                       if (state.pagingController case final pagingController?)
                         PagingListener<int, JournalEntity>(
+                          key: const ValueKey('tasks-tab-paged-list'),
                           controller: pagingController,
                           builder: (context, pagingState, fetchNextPage) {
                             final entries = buildTaskBrowseEntries(
@@ -233,32 +224,41 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             .id]
                                       : null;
 
-                                  return ProjectsOverviewContentWidth(
-                                    child: TaskBrowseListItem(
-                                      key: ValueKey(item.meta.id),
-                                      entry: entry,
-                                      sortOption: state.sortOption,
-                                      showCreationDate: state.showCreationDate,
-                                      showDueDate: state.showDueDate,
-                                      showCoverArt: true,
-                                      vectorDistance: distance,
-                                      previousTaskIdInSection:
-                                          entryIndex > 0 &&
-                                              !entry.isFirstInSection
-                                          ? entries[entryIndex - 1].task.meta.id
-                                          : null,
-                                      nextTaskIdInSection:
-                                          !entry.isLastInSection &&
-                                              entryIndex < entries.length - 1
-                                          ? entries[entryIndex + 1].task.meta.id
-                                          : null,
-                                      selectedTaskId: activeTaskId,
-                                      hoveredTaskIdNotifier:
-                                          _hoveredTaskIdNotifier,
-                                      onTap: () =>
-                                          getIt<NavService>().beamToNamed(
-                                            '/tasks/${item.meta.id}',
-                                          ),
+                                  return KeyedSubtree(
+                                    key: ValueKey(item.meta.id),
+                                    child: ProjectsOverviewContentWidth(
+                                      child: TaskBrowseListItem(
+                                        entry: entry,
+                                        sortOption: state.sortOption,
+                                        showCreationDate:
+                                            state.showCreationDate,
+                                        showDueDate: state.showDueDate,
+                                        showCoverArt: true,
+                                        vectorDistance: distance,
+                                        previousTaskIdInSection:
+                                            entryIndex > 0 &&
+                                                !entry.isFirstInSection
+                                            ? entries[entryIndex - 1]
+                                                  .task
+                                                  .meta
+                                                  .id
+                                            : null,
+                                        nextTaskIdInSection:
+                                            !entry.isLastInSection &&
+                                                entryIndex < entries.length - 1
+                                            ? entries[entryIndex + 1]
+                                                  .task
+                                                  .meta
+                                                  .id
+                                            : null,
+                                        selectedTaskId: activeTaskId,
+                                        hoveredTaskIdNotifier:
+                                            _hoveredTaskIdNotifier,
+                                        onTap: () =>
+                                            getIt<NavService>().beamToNamed(
+                                              '/tasks/${item.meta.id}',
+                                            ),
+                                      ),
                                     ),
                                   );
                                 },
@@ -309,6 +309,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     final projectTitles =
         ref.watch(_visibleProjectsTitleProvider).asData?.value ??
         const <String, String>{};
+    final brightness = Theme.of(context).brightness;
+    final accent = TaskShowcasePalette.accent(context);
 
     final statuses = state.selectedTaskStatuses;
     final priorities = state.selectedPriorities;
@@ -328,11 +330,14 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     for (final status in statuses) {
       chips.add(
-        DesignSystemChip(
+        _ActiveFilterChip(
           label: taskLabelFromStatusString(status, context),
+          accentColor: taskColorFromStatusString(
+            status,
+            brightness: brightness,
+          ),
           leadingIcon: taskIconFromStatusString(status),
-          showRemove: true,
-          onPressed: () => unawaited(
+          onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               statuses: statuses.difference({status}),
             ),
@@ -344,13 +349,14 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     for (final priority in priorities) {
       final taskPriority = _priorityFromInternalId(priority);
       chips.add(
-        DesignSystemChip(
+        _ActiveFilterChip(
           label: priority,
+          accentColor:
+              _priorityAccent(priority, brightness: brightness) ?? accent,
           avatar: taskPriority != null
               ? TaskShowcasePriorityGlyph(priority: taskPriority)
               : null,
-          showRemove: true,
-          onPressed: () => unawaited(
+          onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               priorities: priorities.difference({priority}),
             ),
@@ -363,10 +369,10 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final category = cache.getCategoryById(id);
       if (category == null) continue;
       chips.add(
-        DesignSystemChip(
+        _ActiveFilterChip(
           label: category.name,
-          showRemove: true,
-          onPressed: () => unawaited(
+          accentColor: accent,
+          onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               categoryIds: categoryIds.difference({id}),
               projectIds: const <String>{},
@@ -380,10 +386,10 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final label = cache.getLabelById(id);
       if (label == null) continue;
       chips.add(
-        DesignSystemChip(
+        _ActiveFilterChip(
           label: label.name,
-          showRemove: true,
-          onPressed: () => unawaited(
+          accentColor: accent,
+          onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               labelIds: labelIds.difference({id}),
             ),
@@ -396,11 +402,11 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final title = projectTitles[id];
       if (title == null) continue;
       chips.add(
-        DesignSystemChip(
+        _ActiveFilterChip(
           label: title,
+          accentColor: accent,
           leadingIcon: Icons.folder_outlined,
-          showRemove: true,
-          onPressed: () => unawaited(
+          onRemove: () => unawaited(
             controller.applyBatchFilterUpdate(
               projectIds: projectIds.difference({id}),
             ),
@@ -411,33 +417,124 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     if (chips.isEmpty) return const SizedBox.shrink();
 
-    if (chips.length > 1) {
-      chips.add(
-        DesignSystemChip(
-          label: context.messages.tasksFilterClearAll,
-          leadingIcon: Icons.close_rounded,
-          onPressed: () => unawaited(
-            controller.applyBatchFilterUpdate(
-              statuses: const <String>{},
-              priorities: const <String>{},
-              categoryIds: const <String>{},
-              labelIds: const <String>{},
-              projectIds: const <String>{},
+    final tokens = context.designTokens;
+    return ProjectsOverviewContentWidth(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+        child: SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: chips,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pill-shaped active-filter chip matching the Figma task filter chips:
+/// dark surface, accent-tinted outline, icon in the accent colour, label in
+/// high-emphasis text, and a filled ✕ to remove the filter.
+class _ActiveFilterChip extends StatelessWidget {
+  const _ActiveFilterChip({
+    required this.label,
+    required this.accentColor,
+    required this.onRemove,
+    this.leadingIcon,
+    this.avatar,
+  }) : assert(
+         leadingIcon == null || avatar == null,
+         'Use either leadingIcon or avatar, not both.',
+       );
+
+  final String label;
+  final Color accentColor;
+  final VoidCallback onRemove;
+  final IconData? leadingIcon;
+  final Widget? avatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final backgroundColor = TaskShowcasePalette.subtleFill(context);
+    final labelColor = TaskShowcasePalette.highText(context);
+    final removeIconColor = TaskShowcasePalette.mediumText(context);
+
+    final accessory = avatar != null
+        ? SizedBox.square(
+            dimension: 14,
+            child: ClipOval(child: avatar),
+          )
+        : leadingIcon != null
+        ? Icon(leadingIcon, size: 14, color: accentColor)
+        : null;
+
+    return Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: accentColor),
+        borderRadius: radius,
+      ),
+      child: Ink(
+        decoration: ShapeDecoration(
+          color: backgroundColor,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: accentColor),
+            borderRadius: radius,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onRemove,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 3, 6, 3),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (accessory != null) ...[
+                  accessory,
+                  const SizedBox(width: 5),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: labelColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.cancel_rounded,
+                  size: 14,
+                  color: removeIconColor,
+                ),
+              ],
             ),
           ),
         ),
-      );
-    }
-
-    return ProjectsOverviewContentWidth(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: chips,
-        ),
       ),
+    );
+  }
+}
+
+class _QuickLabelFilterContainer extends StatelessWidget {
+  const _QuickLabelFilterContainer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: const TaskLabelQuickFilter(),
     );
   }
 }
@@ -449,6 +546,20 @@ TaskPriority? _priorityFromInternalId(String id) => switch (id) {
   'P3' => TaskPriority.p3Low,
   _ => null,
 };
+
+/// Accent colour for a priority chip — red for P0, green for P2, etc.,
+/// picked up from the shared task colour palette so the chip border and
+/// glyph match the priority badges used elsewhere in the app.
+Color? _priorityAccent(String id, {required Brightness brightness}) {
+  final isLight = brightness == Brightness.light;
+  return switch (id) {
+    'P0' => isLight ? taskIconColorDarkRed : taskIconColorRed,
+    'P1' => isLight ? taskIconColorDarkOrange : taskIconColorOrange,
+    'P2' => isLight ? taskIconColorDarkGreen : taskIconColorGreen,
+    'P3' => isLight ? taskIconColorDarkBlue : taskIconColorBlue,
+    _ => null,
+  };
+}
 
 Future<void> _defaultCreateTaskPressed(
   WidgetRef ref,
