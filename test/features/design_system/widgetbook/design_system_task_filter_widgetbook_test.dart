@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -191,10 +193,12 @@ void main() {
         );
         await tester.pump();
 
-        final serialized = _serializedState(tester);
-        expect(serialized, contains('"selectedPriorityIds"'));
-        expect(serialized, contains('"p2"'));
-        expect(serialized, contains('"p0"'));
+        final serialized =
+            jsonDecode(_serializedState(tester)) as Map<String, dynamic>;
+        expect(
+          (serialized['selectedPriorityIds'] as List).cast<String>(),
+          unorderedEquals(<String>['p2', 'p0']),
+        );
 
         // Rebuild with German locale — triggers didChangeDependencies with
         // new messages while previous state is non-null
@@ -202,9 +206,12 @@ void main() {
         await tester.pump();
 
         // Priority selection should be preserved across the locale change
-        final afterLocaleSwitch = _serializedState(tester);
-        expect(afterLocaleSwitch, contains('"p2"'));
-        expect(afterLocaleSwitch, contains('"p0"'));
+        final afterLocaleSwitch =
+            jsonDecode(_serializedState(tester)) as Map<String, dynamic>;
+        expect(
+          (afterLocaleSwitch['selectedPriorityIds'] as List).cast<String>(),
+          unorderedEquals(<String>['p2', 'p0']),
+        );
 
         // Drain any overflow exceptions from the fixed-width WidgetbookViewport
         // rendering wider German labels — not a component bug.

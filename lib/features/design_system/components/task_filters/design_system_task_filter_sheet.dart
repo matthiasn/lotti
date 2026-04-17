@@ -400,8 +400,22 @@ class DesignSystemTaskFilterState {
 
   /// Legacy single-select variant kept for callers that still pass an
   /// explicit id. Use [togglePriority] for new code.
-  DesignSystemTaskFilterState selectPriority(String priorityId) =>
-      togglePriority(priorityId);
+  ///
+  /// Unlike [togglePriority], this *replaces* the selection rather than
+  /// toggling: calling it with `allPriorityId` (or an empty id) clears the
+  /// selection, and any other id becomes the sole selected priority.
+  DesignSystemTaskFilterState selectPriority(String priorityId) {
+    if (!hasPrioritySection) return this;
+    if (priorityId == allPriorityId || priorityId.isEmpty) {
+      if (selectedPriorityIds.isEmpty) return this;
+      return copyWith(selectedPriorityIds: const <String>{});
+    }
+    if (selectedPriorityIds.length == 1 &&
+        selectedPriorityIds.contains(priorityId)) {
+      return this;
+    }
+    return copyWith(selectedPriorityIds: <String>{priorityId});
+  }
 
   DesignSystemTaskFilterState selectAgentFilter(String agentFilterId) {
     if (!hasAgentFilter || agentFilterId == selectedAgentFilterId) {

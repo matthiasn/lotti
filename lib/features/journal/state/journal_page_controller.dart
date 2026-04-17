@@ -14,7 +14,6 @@ import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/state/journal_paging_controller.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -35,6 +34,21 @@ class JournalPageController extends _$JournalPageController {
   static const tasksCategoryFiltersKey = 'TASKS_CATEGORY_FILTERS';
   static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
   static const int pageSize = JournalQueryRunner.pageSize;
+
+  /// Canonical list of task-status strings persisted in the DB.
+  ///
+  /// Kept here alongside the controller that drives the query so the
+  /// paging layer does not depend on the tasks UI module to know what
+  /// "all statuses" means.
+  static const List<String> allTaskStatusValues = <String>[
+    'OPEN',
+    'GROOMED',
+    'IN PROGRESS',
+    'BLOCKED',
+    'ON HOLD',
+    'DONE',
+    'REJECTED',
+  ];
 
   // Delegates
   late final JournalFilterPersistence _persistence;
@@ -141,15 +155,7 @@ class JournalPageController extends _$JournalPageController {
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
-      taskStatuses: const [
-        'OPEN',
-        'GROOMED',
-        'IN PROGRESS',
-        'BLOCKED',
-        'ON HOLD',
-        'DONE',
-        'REJECTED',
-      ],
+      taskStatuses: allTaskStatusValues,
       selectedTaskStatuses: _selectedTaskStatuses,
       sortOption: _sortOption,
       showCreationDate: _showCreationDate,
@@ -733,7 +739,7 @@ class JournalPageController extends _$JournalPageController {
     // rather than returning zero rows because `task_status IN ()` matches
     // nothing.
     final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
-        ? allTaskStatuses.toSet()
+        ? allTaskStatusValues.toSet()
         : _selectedTaskStatuses;
     return JournalQueryParams(
       showTasks: _showTasks,

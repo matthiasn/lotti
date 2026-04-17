@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -626,6 +627,9 @@ class TaskShowcaseDesktopActionBar extends StatelessWidget {
                     _TaskShowcaseRoundAction(icon: icon),
                     SizedBox(width: tokens.spacing.step3),
                   ],
+                  // Reserve room equal to the overlaid FAB so the last
+                  // action never sits behind it.
+                  SizedBox(width: 56 + tokens.spacing.step5),
                 ],
               ),
             ),
@@ -653,21 +657,12 @@ class _TaskShowcaseDetailFab extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Material(
-            color: tokens.colors.interactive.enabled,
-            shape: const CircleBorder(),
-            elevation: 4,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () {},
-              child: Center(
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 28,
-                  color: tokens.colors.text.onInteractiveAlert,
-                ),
-              ),
-            ),
+          // Showcase-only: delegates to the real design-system FAB so the
+          // shape, size and colour match production; no callback is wired
+          // because this widget lives inside the widgetbook showcase.
+          DesignSystemFloatingActionButton(
+            semanticLabel: context.messages.addActionAddTask,
+            onPressed: () {},
           ),
           Positioned(
             right: 0,

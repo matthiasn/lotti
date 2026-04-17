@@ -294,7 +294,8 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   }
 }
 
-final FutureProvider<Map<String, String>> _visibleProjectsTitleProvider =
+// ignore: specify_nonobvious_property_types
+final _visibleProjectsTitleProvider =
     FutureProvider.autoDispose<Map<String, String>>((ref) async {
       final projects = await getIt<JournalDb>().getVisibleProjects();
       return <String, String>{
@@ -443,12 +444,16 @@ class _QuickLabelFilterContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(10),
+        color: tokens.colors.surface.enabled,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step2,
+      ),
       child: const TaskLabelQuickFilter(),
     );
   }

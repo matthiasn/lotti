@@ -333,11 +333,13 @@ DesignSystemTaskFilterFieldState? _buildProjectField(
   );
 }
 
-/// Converts the set-based internal priority selection to a single display ID.
+/// Converts the set-based internal priority selection to the matching
+/// display priority IDs.
 ///
 /// Maps the controller's set of internal priority strings (e.g. `'P0'`,
 /// `'P1'`) to the corresponding display priority IDs the filter sheet
-/// understands. Unrecognised entries are dropped silently.
+/// understands — one display id per selected priority, preserving the
+/// multi-select semantics. Unrecognised entries are dropped silently.
 Set<String> _prioritySetToDisplayIds(Set<String> priorities) {
   return <String>{
     for (final internal in priorities)

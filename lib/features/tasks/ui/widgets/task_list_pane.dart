@@ -35,7 +35,7 @@ class TaskListPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: TaskShowcasePalette.page(context),
+        color: context.designTokens.colors.background.level01,
       ),
       child: Column(
         children: [
