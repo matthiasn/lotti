@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -108,7 +108,7 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
 
   Widget _buildTile(BuildContext context) {
     if (_suggestion.item.toolName == TaskAgentToolNames.createTimeEntry) {
-      return _buildTimeEntryTile(context);
+      return TimeEntryTile(args: _suggestion.item.args, busy: _busy);
     }
     return ListTile(
       dense: true,
@@ -130,119 +130,6 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : null,
-    );
-  }
-
-  Widget _buildTimeEntryTile(BuildContext context) {
-    final args = _suggestion.item.args;
-    final startRawValue = args['startTime'];
-    final startRaw = startRawValue is String && startRawValue.trim().isNotEmpty
-        ? startRawValue.trim()
-        : null;
-    final hasEndTime = args.containsKey('endTime');
-    final endRawValue = args['endTime'];
-    final endRaw = endRawValue is String && endRawValue.trim().isNotEmpty
-        ? endRawValue.trim()
-        : null;
-    final summary = args['summary'] is String
-        ? (args['summary'] as String).trim()
-        : '';
-
-    final start = startRaw != null
-        ? parseTimeEntryLocalDateTime(startRaw)
-        : null;
-    final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
-
-    final startStr = start != null
-        ? formatTimeEntryHhMm(start)
-        : (startRaw ?? '?');
-    final endStr = end != null
-        ? formatTimeEntryHhMm(end)
-        : hasEndTime
-        ? (endRaw ?? '?')
-        : context.messages.timeEntryItemRunning;
-
-    final dimStyle = context.textTheme.bodySmall?.copyWith(
-      color: context.colorScheme.onSurfaceVariant,
-    );
-    final valueStyle = context.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w600,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              Icons.timer_outlined,
-              size: 16,
-              color: context.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _timeFieldRow(
-                  label: context.messages.timeEntryItemStart,
-                  value: startStr,
-                  dimStyle: dimStyle,
-                  valueStyle: valueStyle,
-                ),
-                const SizedBox(height: 4),
-                _timeFieldRow(
-                  label: context.messages.timeEntryItemEnd,
-                  value: endStr,
-                  dimStyle: dimStyle,
-                  valueStyle: valueStyle,
-                ),
-                if (summary.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    summary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (_busy)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _timeFieldRow({
-    required String label,
-    required String value,
-    required TextStyle? dimStyle,
-    required TextStyle? valueStyle,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('$label: ', style: dimStyle),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
-            style: valueStyle,
-          ),
-        ),
-      ],
     );
   }
 

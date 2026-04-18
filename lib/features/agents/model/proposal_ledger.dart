@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
 /// A single row in the proposal ledger — one `ChangeItem` the agent has
@@ -81,9 +82,16 @@ class LedgerEntry {
 /// pending/partiallyResolved change sets for the task. Resolved entries
 /// are capped at a bounded recent window to keep LLM prompts small.
 class ProposalLedger {
-  const ProposalLedger({required this.open, required this.resolved});
+  const ProposalLedger({
+    required this.open,
+    required this.resolved,
+    this.pendingSets = const [],
+  });
 
-  const ProposalLedger.empty() : open = const [], resolved = const [];
+  const ProposalLedger.empty()
+    : open = const [],
+      resolved = const [],
+      pendingSets = const [];
 
   /// Still-pending proposals. Newest-first.
   final List<LedgerEntry> open;
@@ -92,10 +100,12 @@ class ProposalLedger {
   /// expired. Newest-first, bounded by the caller.
   final List<LedgerEntry> resolved;
 
-  bool get isEmpty => open.isEmpty && resolved.isEmpty;
+  /// The underlying pending (or partiallyResolved) `ChangeSetEntity`
+  /// snapshots that produced [open]. Exposed so callers like the prompt
+  /// builder and the UI provider do not have to re-query
+  /// `getPendingChangeSets` separately — one repository round-trip feeds
+  /// both the agent context and the user-facing list.
+  final List<ChangeSetEntity> pendingSets;
 
-  /// Fingerprints of every *open* entry. Convenient for persistence-time
-  /// dedup: a new proposal whose fingerprint matches one of these should
-  /// be suppressed.
-  Set<String> get openFingerprints => open.map((e) => e.fingerprint).toSet();
+  bool get isEmpty => open.isEmpty && resolved.isEmpty;
 }

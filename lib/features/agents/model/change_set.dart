@@ -52,4 +52,22 @@ abstract class ChangeItem with _$ChangeItem {
   /// same mutation are considered equal regardless of presentation.
   static String fingerprint(ChangeItem item) =>
       fingerprintFromParts(item.toolName, item.args);
+
+  /// Derives the overall `ChangeSetStatus` from a list of item statuses.
+  ///
+  /// Mirrors the contract enforced by both `ChangeSetConfirmationService`
+  /// (user confirm/reject) and `SuggestionRetractionService` (agent
+  /// retraction): when every item is resolved the set is resolved; when
+  /// some are still pending the set is partiallyResolved; when none have
+  /// been touched the set stays pending.
+  static ChangeSetStatus deriveSetStatus(List<ChangeItem> items) {
+    final anyResolved = items.any((i) => i.status != ChangeItemStatus.pending);
+    if (!anyResolved) return ChangeSetStatus.pending;
+    final allResolved = items.every(
+      (i) => i.status != ChangeItemStatus.pending,
+    );
+    return allResolved
+        ? ChangeSetStatus.resolved
+        : ChangeSetStatus.partiallyResolved;
+  }
 }

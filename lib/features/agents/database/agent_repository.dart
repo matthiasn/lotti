@@ -837,9 +837,20 @@ class AgentRepository {
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
   }) async {
-    final setRows = await _db
-        .getChangeSetsForAgent(agentId, changeSetFetchLimit)
-        .get();
+    // Two independent table scans — run in parallel to halve the wall
+    // clock on cold sqlite access.
+    final results = await Future.wait([
+      _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
+      _db
+          .getRecentDecisionsForAgent(
+            agentId,
+            resolvedLimit * _overFetchMultiplier,
+          )
+          .get(),
+    ]);
+    final setRows = results[0];
+    final decisionRows = results[1];
+
     final allSets = setRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
@@ -848,12 +859,14 @@ class AgentRepository {
 
     if (allSets.isEmpty) return const ProposalLedger.empty();
 
-    final decisionRows = await _db
-        .getRecentDecisionsForAgent(
-          agentId,
-          resolvedLimit * _overFetchMultiplier,
+    final pendingSets = allSets
+        .where(
+          (cs) =>
+              cs.status == ChangeSetStatus.pending ||
+              cs.status == ChangeSetStatus.partiallyResolved,
         )
-        .get();
+        .toList();
+
     final decisions = decisionRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeDecisionEntity>()
@@ -905,6 +918,7 @@ class AgentRepository {
     return ProposalLedger(
       open: open,
       resolved: resolved.take(resolvedLimit).toList(),
+      pendingSets: pendingSets,
     );
   }
 

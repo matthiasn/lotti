@@ -404,9 +404,9 @@ void main() {
         );
       });
 
-      test('queries pending change sets for deduplication', () async {
-        // Override with non-empty pending change sets to exercise the
-        // expand/where lambda in the dedup path.
+      test('queries proposal ledger for deduplication context', () async {
+        // Override with a non-empty ledger (pendingSets populated) to
+        // exercise the expand/where lambda in the dedup path.
         final pendingChangeSet =
             AgentDomainEntity.changeSet(
                   id: 'cs-existing',
@@ -428,12 +428,19 @@ void main() {
                 as ChangeSetEntity;
 
         when(
-          () => mockAgentRepository.getPendingChangeSets(
+          () => mockAgentRepository.getProposalLedger(
             any(),
             taskId: any(named: 'taskId'),
-            limit: any(named: 'limit'),
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
           ),
-        ).thenAnswer((_) async => [pendingChangeSet]);
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [pendingChangeSet],
+          ),
+        );
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -444,9 +451,8 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Verify getPendingChangeSets was called during the wake.
         verify(
-          () => mockAgentRepository.getPendingChangeSets(
+          () => mockAgentRepository.getProposalLedger(
             agentId,
             taskId: taskId,
           ),

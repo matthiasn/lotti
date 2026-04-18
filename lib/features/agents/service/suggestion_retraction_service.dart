@@ -151,7 +151,7 @@ class SuggestionRetractionService {
     return results;
   }
 
-  _ItemLocator? _locate(
+  ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})? _locate(
     List<ChangeSetEntity> pendingSets,
     String fingerprint,
     Set<String> alreadyRetractedInThisCall,
@@ -163,14 +163,10 @@ class SuggestionRetractionService {
         // If this fingerprint was already retracted earlier in the same
         // call, surface it as `notOpen` — the on-disk state is in flux
         // and a second retraction would double-write the decision.
-        if (alreadyRetractedInThisCall.contains(fingerprint)) {
-          return _ItemLocator(
-            changeSet: cs,
-            itemIndex: i,
-            item: item.copyWith(status: ChangeItemStatus.retracted),
-          );
-        }
-        return _ItemLocator(changeSet: cs, itemIndex: i, item: item);
+        final effectiveItem = alreadyRetractedInThisCall.contains(fingerprint)
+            ? item.copyWith(status: ChangeItemStatus.retracted)
+            : item;
+        return (changeSet: cs, itemIndex: i, item: effectiveItem);
       }
     }
     return null;
@@ -225,36 +221,17 @@ class SuggestionRetractionService {
       status: ChangeItemStatus.retracted,
     );
 
-    final allResolved = updatedItems.every(
-      (i) => i.status != ChangeItemStatus.pending,
-    );
-    final anyResolved = updatedItems.any(
-      (i) => i.status != ChangeItemStatus.pending,
-    );
-    final newSetStatus = allResolved
-        ? ChangeSetStatus.resolved
-        : anyResolved
-        ? ChangeSetStatus.partiallyResolved
-        : ChangeSetStatus.pending;
+    final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
+    final resolvedAt = newSetStatus == ChangeSetStatus.resolved
+        ? now
+        : current.resolvedAt;
 
     await _syncService.upsertEntity(
       current.copyWith(
         items: updatedItems,
         status: newSetStatus,
-        resolvedAt: allResolved ? now : current.resolvedAt,
+        resolvedAt: resolvedAt,
       ),
     );
   }
-}
-
-class _ItemLocator {
-  const _ItemLocator({
-    required this.changeSet,
-    required this.itemIndex,
-    required this.item,
-  });
-
-  final ChangeSetEntity changeSet;
-  final int itemIndex;
-  final ChangeItem item;
 }

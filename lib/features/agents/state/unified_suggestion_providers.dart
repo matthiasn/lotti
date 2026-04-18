@@ -70,16 +70,11 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   ref.watch(agentUpdateStreamProvider(agent.agentId));
 
   final repo = ref.watch(agentRepositoryProvider);
-
-  final pendingSets = await repo.getPendingChangeSets(
-    agent.agentId,
-    taskId: taskId,
-  );
-  final pendingChangeSets = pendingSets.whereType<ChangeSetEntity>().toList();
+  final ledger = await repo.getProposalLedger(agent.agentId, taskId: taskId);
 
   final open = <PendingSuggestion>[];
   final seenFingerprints = <String>{};
-  for (final cs in pendingChangeSets) {
+  for (final cs in ledger.pendingSets) {
     for (var i = 0; i < cs.items.length; i++) {
       final item = cs.items[i];
       if (item.status != ChangeItemStatus.pending) continue;
@@ -98,8 +93,6 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
     }
   }
   open.sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
-
-  final ledger = await repo.getProposalLedger(agent.agentId, taskId: taskId);
 
   return UnifiedSuggestionList(open: open, activity: ledger.resolved);
 }

@@ -7,15 +7,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
-/// Single consolidated section on the task detail page that surfaces
-/// everything the agent has to say about a task: the running-state header
-/// and narrative report (via [TaskAgentReportSection]), plus the unified
-/// list of open proposals the user can confirm or reject inline.
-///
-/// Replaces the pre-consolidation layout where `TaskAgentReportSection`
-/// and `ChangeSetSummaryCard` rendered as two adjacent but disconnected
-/// cards. The user now sees a single, cohesive section driven by the
-/// proposal ledger.
+/// Single consolidated section on the task detail page: the running-state
+/// header and narrative report (via [TaskAgentReportSection]) plus the
+/// unified list of open proposals the user can confirm or reject inline.
 class AgentSuggestionsPanel extends ConsumerWidget {
   const AgentSuggestionsPanel({required this.taskId, super.key});
 

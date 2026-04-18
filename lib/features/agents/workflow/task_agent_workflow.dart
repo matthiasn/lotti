@@ -262,15 +262,14 @@ class TaskAgentWorkflow {
     final provider = resolvedProfile.thinkingProvider;
 
     // 5. Assemble conversation context.
-    // Fetch pending change sets (still needed for the ChangeSetBuilder's
-    // cross-wake dedup) and the proposal ledger (the agent's status-sorted
-    // view of its own history for this task) in parallel.
-    final contextFetch = await Future.wait<Object>([
-      agentRepository.getPendingChangeSets(agentId, taskId: taskId),
-      agentRepository.getProposalLedger(agentId, taskId: taskId),
-    ]);
-    final pendingSets = contextFetch[0] as List<ChangeSetEntity>;
-    final ledger = contextFetch[1] as ProposalLedger;
+    // One ledger fetch feeds both the LLM prompt (status-sorted view of
+    // the agent's own history) and the ChangeSetBuilder (open pending
+    // sets for cross-wake dedup).
+    final ledger = await agentRepository.getProposalLedger(
+      agentId,
+      taskId: taskId,
+    );
+    final pendingSets = ledger.pendingSets;
 
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
