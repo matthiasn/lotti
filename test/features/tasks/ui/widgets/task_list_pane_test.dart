@@ -286,6 +286,229 @@ void main() {
 
       expect(filterPressed, 1);
     });
+
+    TaskListDetailState buildStateWithFields({
+      Set<String> statusIds = const {},
+      Set<String> priorityIds = const {},
+      Set<String> categoryIds = const {},
+      Set<String> labelIds = const {},
+    }) {
+      final base = DesignSystemTaskFilterState(
+        title: 'Filters',
+        clearAllLabel: 'Clear',
+        applyLabel: 'Apply',
+        priorityOptions: const [
+          DesignSystemTaskFilterOption(
+            id: DesignSystemTaskFilterState.allPriorityId,
+            label: 'All',
+          ),
+          DesignSystemTaskFilterOption(id: 'p0', label: 'P0'),
+          DesignSystemTaskFilterOption(id: 'p1', label: 'P1'),
+          DesignSystemTaskFilterOption(id: 'p2', label: 'P2'),
+          DesignSystemTaskFilterOption(id: 'p3', label: 'P3'),
+        ],
+        selectedPriorityIds: priorityIds,
+        statusField: DesignSystemTaskFilterFieldState(
+          label: 'Status',
+          options: const [
+            DesignSystemTaskFilterOption(id: 'OPEN', label: 'Open'),
+            DesignSystemTaskFilterOption(
+              id: 'IN PROGRESS',
+              label: 'In progress',
+            ),
+          ],
+          selectedIds: statusIds,
+        ),
+        categoryField: DesignSystemTaskFilterFieldState(
+          label: 'Category',
+          options: const [
+            DesignSystemTaskFilterOption(id: 'cat-1', label: 'Work'),
+            DesignSystemTaskFilterOption(id: 'cat-2', label: 'Personal'),
+          ],
+          selectedIds: categoryIds,
+        ),
+        labelField: DesignSystemTaskFilterFieldState(
+          label: 'Label',
+          options: const [
+            DesignSystemTaskFilterOption(id: 'label-1', label: 'Focus'),
+            DesignSystemTaskFilterOption(id: 'label-2', label: 'Deep Work'),
+          ],
+          selectedIds: labelIds,
+        ),
+      );
+      return TaskListDetailState(
+        data: TaskListData(
+          categories: const [],
+          tasks: const [],
+          currentTime: DateTime(2026, 4, 17),
+        ),
+        searchQuery: '',
+        selectedTaskId: '',
+        filterState: base,
+      );
+    }
+
+    testWidgets(
+      'returns SizedBox.shrink() when no filters are applied (no chip row)',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(),
+              onFilterPressed: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(DesignSystemChip), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders one chip per selected status / priority / category / label',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(
+                statusIds: const {'OPEN', 'IN PROGRESS'},
+                priorityIds: const {'p0', 'p2'},
+                categoryIds: const {'cat-1'},
+                labelIds: const {'label-1'},
+              ),
+              onFilterPressed: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // 2 statuses + 2 priorities + 1 category + 1 label = 6 chips.
+        expect(find.byType(DesignSystemChip), findsNWidgets(6));
+        expect(find.text('Open'), findsOneWidget);
+        expect(find.text('In progress'), findsOneWidget);
+        expect(find.text('P0'), findsOneWidget);
+        expect(find.text('P2'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('Focus'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'per-chip onRemove invokes onFilterChanged with the section removed '
+      'from the draft state (status chip)',
+      (tester) async {
+        DesignSystemTaskFilterState? observed;
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(
+                statusIds: const {'OPEN', 'IN PROGRESS'},
+              ),
+              onFilterPressed: () {},
+              onFilterChanged: (state) => observed = state,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Open'));
+        await tester.pump();
+
+        expect(observed, isNotNull);
+        expect(observed!.statusField!.selectedIds, equals({'IN PROGRESS'}));
+      },
+    );
+
+    testWidgets(
+      'priority chip remove toggles the priority off via togglePriority',
+      (tester) async {
+        DesignSystemTaskFilterState? observed;
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(priorityIds: const {'p0', 'p2'}),
+              onFilterPressed: () {},
+              onFilterChanged: (state) => observed = state,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('P0'));
+        await tester.pump();
+
+        expect(observed, isNotNull);
+        expect(observed!.selectedPriorityIds, equals({'p2'}));
+      },
+    );
+
+    testWidgets(
+      'category and label chip removes invoke onFilterChanged with the '
+      'id stripped from the respective field',
+      (tester) async {
+        DesignSystemTaskFilterState? observed;
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(
+                categoryIds: const {'cat-1', 'cat-2'},
+                labelIds: const {'label-1', 'label-2'},
+              ),
+              onFilterPressed: () {},
+              onFilterChanged: (state) => observed = state,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Work'));
+        await tester.pump();
+        expect(observed!.categoryField!.selectedIds, equals({'cat-2'}));
+
+        observed = null;
+        await tester.tap(find.text('Focus'));
+        await tester.pump();
+        expect(observed!.labelField!.selectedIds, equals({'label-2'}));
+      },
+    );
+
+    testWidgets(
+      'Clear-all chip is only rendered when onClearAll is supplied and '
+      'fires the callback on tap',
+      (tester) async {
+        var cleared = 0;
+
+        // Without onClearAll — no extra Clear-all chip rendered.
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(priorityIds: const {'p0'}),
+              onFilterPressed: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+        // With onClearAll — chip appears and reports on tap.
+        await tester.pumpWidget(
+          wrap(
+            TaskListActiveFilters(
+              state: buildStateWithFields(priorityIds: const {'p0'}),
+              onFilterPressed: () {},
+              onClearAll: () => cleared++,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pump();
+        expect(cleared, 1);
+      },
+    );
   });
 
   group('TaskListPane chrome', () {

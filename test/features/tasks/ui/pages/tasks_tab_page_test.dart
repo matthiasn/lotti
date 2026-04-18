@@ -434,6 +434,33 @@ void main() {
   });
 
   testWidgets(
+    'pull-to-refresh calls refreshQuery with preserveVisibleItems: true '
+    'so the list is swapped atomically without a visible blank flash',
+    (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      // Trigger pull-to-refresh by dragging the scroll view down enough
+      // for RefreshIndicator to fire.
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(fakeController.refreshQueryCalled, greaterThanOrEqualTo(1));
+      expect(
+        fakeController.refreshQueryPreserveFlags,
+        everyElement(isTrue),
+        reason:
+            'pull-to-refresh must use preserveVisibleItems to avoid the '
+            'empty-then-repopulate flicker users reported.',
+      );
+    },
+  );
+
+  testWidgets(
     'tasks header sits outside the RefreshIndicator so pull-to-refresh '
     'only drags the list below it',
     (tester) async {

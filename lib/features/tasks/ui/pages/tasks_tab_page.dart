@@ -150,7 +150,11 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
               const _TasksTabActiveFilters(),
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: controller.refreshQuery,
+                  // Keep the current page's items visible while re-fetching
+                  // so pull-to-refresh swaps the list atomically instead of
+                  // blanking it mid-animation.
+                  onRefresh: () =>
+                      controller.refreshQuery(preserveVisibleItems: true),
                   child: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     controller: _scrollController,

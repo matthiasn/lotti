@@ -242,9 +242,15 @@ class FakeJournalPageController extends JournalPageController {
     searchStringCalls.add(query);
   }
 
+  /// Captures the `preserveVisibleItems` flag passed to each
+  /// [refreshQuery] call, so tests can assert the flicker-safe variant
+  /// is used by callers like pull-to-refresh / filter-toggle flows.
+  final List<bool> refreshQueryPreserveFlags = <bool>[];
+
   @override
   Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
     refreshQueryCalled++;
+    refreshQueryPreserveFlags.add(preserveVisibleItems);
   }
 
   /// Resets all tracking counters and lists for fresh test assertions
@@ -279,6 +285,7 @@ class FakeJournalPageController extends JournalPageController {
     clearSelectedEntryTypesCalled = 0;
     clearProjectFilterCalled = 0;
     refreshQueryCalled = 0;
+    refreshQueryPreserveFlags.clear();
     applyBatchFilterUpdateCalled = 0;
   }
 }

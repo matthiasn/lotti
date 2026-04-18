@@ -541,4 +541,117 @@ void main() {
       },
     );
   });
+
+  group('header search wiring', () {
+    testWidgets(
+      'typing into the search field updates the projects filter '
+      'controller textQuery',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        await tester.enterText(find.byType(TextField), 'device');
+        await tester.pump();
+
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          'device',
+        );
+      },
+    );
+
+    testWidgets(
+      'clearing the search via the TextField ✕ resets the controller to '
+      'an empty query',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        await tester.enterText(find.byType(TextField), 'abc');
+        await tester.pump();
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          'abc',
+        );
+
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pump();
+
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('_ProjectsTabActiveFilters category resolution', () {
+    testWidgets(
+      'a selected categoryId that is not present in the overview is '
+      'silently skipped (no chip rendered) and does not crash',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedCategoryIds(const {'ghost-category'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'status + category selections render one chip each and update the '
+      'controller independently when removed',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container.read(projectsFilterControllerProvider.notifier)
+          ..setSelectedStatusIds(const {ProjectStatusFilterIds.active})
+          ..setSelectedCategoryIds(const {'work'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsNWidgets(2));
+
+        // Remove only the status chip — find its ActiveFilterChip by its
+        // descendant "Active" label to disambiguate from any duplicate
+        // Text nodes elsewhere in the tree.
+        final statusChip = find.ancestor(
+          of: find.text('Active').first,
+          matching: find.byType(ActiveFilterChip),
+        );
+        await tester.tap(statusChip.first);
+        await tester.pumpAndSettle();
+
+        final state = container.read(projectsFilterControllerProvider);
+        expect(state.selectedStatusIds, isEmpty);
+        expect(state.selectedCategoryIds, equals({'work'}));
+      },
+    );
+  });
 }
