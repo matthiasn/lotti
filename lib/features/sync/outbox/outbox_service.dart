@@ -554,7 +554,6 @@ class OutboxService {
       Future<void>.delayed(adjustedDelay).then((_) {
         if (_isDisposed) return;
         _clientRunner.enqueueRequest(DateTime.now().millisecondsSinceEpoch);
-        _loggingService.captureEvent('enqueueRequest() done', domain: 'OUTBOX');
       }),
     );
   }

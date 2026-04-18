@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.961] - 2026-04-18
+### Changed
+- Sync pipeline: removed duplicate-work in inbox attachment handling and
+  sync-family logging. `AttachmentIndex.record` now dedupes per eventId so
+  repeated observations from live scan + catch-up + backfill passes become
+  no-ops instead of thrashing the per-path slot between events sharing one
+  `relativePath`. `SyncEventProcessor` and `SyncSequenceLogService` no
+  longer emit each log line twice (once via `DomainLogger`, once via a
+  paired direct `LoggingService.captureEvent` to a sync-file domain) —
+  `DomainLogger` is the single emitter and falls back to a direct
+  `sync`-domain capture when no domain logger is wired. Descriptor catch-up
+  skips events whose `relativePath` is not in the pending set, so the
+  per-run scan no longer records ~1000 unrelated events into the
+  attachment index. Removed the per-tick `OUTBOX enqueueRequest() done`
+  log, which fired on every debounced wake and carried no signal.
+
 ## [0.9.959] - 2026-04-18
 ### Changed
 - Desktop task switcher: switching between open tasks in the desktop split

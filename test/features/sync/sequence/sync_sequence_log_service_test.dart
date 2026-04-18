@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -398,8 +399,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('backfilled hostId=$aliceHostId')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'backfillArrived',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
     });
@@ -561,8 +562,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('backfilled (non-originator)')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'backfillArrived',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.backfillArrived',
         ),
       ).called(1);
     });
@@ -659,8 +660,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('largeGapDetected')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'largeGap',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.largeGap',
         ),
       ).called(1);
     });
@@ -732,8 +733,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('extremeGapDetected')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'extremeGap',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.extremeGap',
         ),
       ).called(1);
     });
@@ -815,8 +816,8 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(that: contains('largeGapDetected')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'largeGap',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.largeGap',
         ),
       );
     });
@@ -867,8 +868,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('skipGapDetection')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'skipGap',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.skipGap',
         ),
       ).called(1);
 
@@ -1015,8 +1016,8 @@ void main() {
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('skipGapDetection')),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'skipGap',
+            domain: LogDomains.sync,
+            subDomain: 'sequence.skipGap',
           ),
         ).called(1);
       },
@@ -1627,8 +1628,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('reset 2 entries')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'reRequest',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.reRequest',
         ),
       ).called(1);
     });
@@ -3138,8 +3139,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('markCoveredCountersAsReceived')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'coveredClocks',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.coveredClocks',
         ),
       ).called(1);
     });
@@ -3358,8 +3359,8 @@ void main() {
       verify(
         () => mockLogging.captureEvent(
           any<String>(that: contains('reset 5 entries')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'resetUnresolvable',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.resetUnresolvable',
         ),
       ).called(1);
     });
@@ -3374,8 +3375,8 @@ void main() {
       verifyNever(
         () => mockLogging.captureEvent(
           any<String>(),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'resetUnresolvable',
+          domain: LogDomains.sync,
+          subDomain: 'sequence.resetUnresolvable',
         ),
       );
     });

@@ -162,16 +162,19 @@ class DescriptorCatchUpManager {
         );
         for (final e in events) {
           final rp = e.content['relativePath'];
-          if (rp is String && rp.isNotEmpty) {
-            final changed = _attachmentIndex.record(e);
-            recorded++;
-            if (changed) newRecords++;
-            if (contains(rp)) {
-              pendingHits++;
-              if (changed) {
-                freshHits++;
-              }
-            }
+          if (rp is! String || rp.isEmpty) continue;
+          // Skip non-pending paths — the live stream is responsible for
+          // populating the AttachmentIndex for general traffic; this
+          // catch-up exists specifically to unblock pending descriptors.
+          // Scanning non-pending events would do ~1000 wasted map writes
+          // per run on large rooms.
+          if (!contains(rp)) continue;
+          final changed = _attachmentIndex.record(e);
+          recorded++;
+          pendingHits++;
+          if (changed) {
+            newRecords++;
+            freshHits++;
           }
         }
       } finally {
