@@ -309,17 +309,20 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
     entryIdFromLinkedIds.values.forEach(linkedIds.addAll);
 
-    // Batch fetch linked entities
-    final linkedEntries = await _batchedGetEntitiesForIds(db, linkedIds);
-    final linkedEntriesMap = <String, JournalEntity>{
-      for (final entry in linkedEntries) entry.meta.id: entry,
-    };
+    // Batch fetch ONLY the categoryId for each linked entry. The aggregation
+    // step needs nothing else from those rows, so this lean projection skips
+    // the `serialized` JSON blob and avoids the fromDbEntity deserialization
+    // pass entirely — meaningful on hot paths with hundreds of linked ids.
+    final linkedCategoryIds = await _batchedGetCategoryIdsForIds(
+      db,
+      linkedIds,
+    );
 
     // Aggregate by day and category
     return _aggregateEntries(
       entries,
       entryIdFromLinkedIds,
-      linkedEntriesMap,
+      linkedCategoryIds,
       start,
       end,
     );
@@ -353,16 +356,30 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     Set<String> ids,
   ) => _runBatchedQuery(ids, db.linksForEntryIds);
 
-  /// Batch fetch entities to avoid SQLite variable limits.
-  Future<List<JournalEntity>> _batchedGetEntitiesForIds(
+  /// Batch fetch entry → categoryId pairs to avoid SQLite variable limits.
+  /// Uses the lean `journalCategoriesByIds` drift query to skip the fat
+  /// serialized payload that the aggregation doesn't read.
+  Future<Map<String, String?>> _batchedGetCategoryIdsForIds(
     JournalDb db,
     Set<String> ids,
-  ) => _runBatchedQuery(ids, db.getJournalEntitiesForIdsUnordered);
+  ) async {
+    if (ids.isEmpty) return const <String, String?>{};
+    final merged = <String, String?>{};
+    final idList = ids.toList();
+    for (var i = 0; i < idList.length; i += _batchSize) {
+      final batch = idList.sublist(
+        i,
+        (i + _batchSize).clamp(0, idList.length),
+      );
+      merged.addAll(await db.getCategoryIdsForEntryIds(batch.toSet()));
+    }
+    return merged;
+  }
 
   TimeHistoryData _aggregateEntries(
     List<JournalEntity> entries,
     Map<String, Set<String>> entryIdFromLinkedIds,
-    Map<String, JournalEntity> linkedEntriesMap,
+    Map<String, String?> linkedCategoryIds,
     DateTime start,
     DateTime end,
   ) {
@@ -399,16 +416,18 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       final duration = entryDuration(journalEntity);
       if (duration <= Duration.zero) continue;
 
-      // Find category through linked entries
-      final linkedTo =
-          (entryIdFromLinkedIds[journalEntity.meta.id] ?? <String>{})
-              .map((id) => linkedEntriesMap[id])
-              .nonNulls;
-
-      final categoryId = linkedTo
-          .map((item) => item.meta.categoryId)
-          .nonNulls
-          .firstOrNull;
+      // Find category through linked entries. `linkedCategoryIds` is the
+      // lean projection returned by `_batchedGetCategoryIdsForIds`, so this
+      // is a direct map lookup — no JournalEntity deserialization needed.
+      final linkedIds = entryIdFromLinkedIds[journalEntity.meta.id] ?? const {};
+      String? categoryId;
+      for (final linkedId in linkedIds) {
+        final resolved = linkedCategoryIds[linkedId];
+        if (resolved != null) {
+          categoryId = resolved;
+          break;
+        }
+      }
 
       final noon = journalEntity.meta.dateFrom.dayAtNoon;
       final dataByDay = data[noon];

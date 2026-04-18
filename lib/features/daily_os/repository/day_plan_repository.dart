@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -51,15 +53,52 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
 
+  // Microtask-coalescing batch for concurrent getDayPlan calls. When the
+  // time-history header prefetches a window of dates, each date fires a
+  // provider which each calls getDayPlan(date) inside the same synchronous
+  // sweep. Before the first microtask flushes we collect all requested ids
+  // and turn them into a single dayPlansByIds round-trip.
+  Set<String>? _pendingIds;
+  Completer<Map<String, DayPlanEntry>>? _pendingBatch;
+
   @override
-  Future<DayPlanEntry?> getDayPlan(DateTime date) async {
+  Future<DayPlanEntry?> getDayPlan(DateTime date) {
     final id = dayPlanId(date);
-    return _journalDb.getDayPlanById(id);
+    final completer = _pendingBatch ??=
+        Completer<Map<String, DayPlanEntry>>.sync();
+    var ids = _pendingIds;
+    if (ids == null) {
+      ids = <String>{};
+      _pendingIds = ids;
+    }
+    ids.add(id);
+
+    if (ids.length == 1) {
+      // First enqueued id owns the flush: schedule a microtask that batches
+      // every id enqueued before the event loop yields. `sync` completer so
+      // awaits in callers don't reorder relative to the DB future.
+      scheduleMicrotask(() async {
+        final toFetch = _pendingIds;
+        final target = _pendingBatch;
+        _pendingIds = null;
+        _pendingBatch = null;
+        if (toFetch == null || target == null) return;
+        try {
+          final rows = await _journalDb.getDayPlansByIds(toFetch);
+          target.complete({for (final row in rows) row.meta.id: row});
+        } catch (error, stack) {
+          target.completeError(error, stack);
+        }
+      });
+    }
+
+    return completer.future.then((map) => map[id]);
   }
 
   @override
   Future<DayPlanEntry> save(DayPlanEntry plan) async {
-    // Check if this is an update or a new create
+    // Check if this is an update or a new create. Bypass the batch path —
+    // saves run in their own call chains and the latency win doesn't apply.
     final existing = await _journalDb.getDayPlanById(plan.meta.id);
 
     if (existing == null) {

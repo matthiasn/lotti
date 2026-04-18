@@ -892,6 +892,42 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  /// Lean metadata-only fetch: returns the denormalized `category` column for
+  /// each id, without loading or deserializing the fat `serialized` JSON
+  /// payload. Intended for callers that only need the category-id lookup
+  /// (e.g. time-history header aggregation) — any caller that also needs
+  /// `meta.categoryId` as the source of truth can use this without losing
+  /// information because `conversions.toDbEntity` keeps the column in lock-
+  /// step with the JSON on every upsert.
+  ///
+  /// Entries filtered out by the private-status gate are simply absent from
+  /// the returned map. An empty category value in the `journal.category`
+  /// column is returned as `null` so callers can treat "no category" and
+  /// "not present" uniformly.
+  Future<Map<String, String?>> getCategoryIdsForEntryIds(
+    Iterable<String> ids,
+  ) async {
+    final idList = ids.toSet().toList(growable: false);
+    if (idList.isEmpty) return const <String, String?>{};
+    final pairs = await _queryWithPrivateFilter<List<MapEntry<String, String>>>(
+      allPrivate: () async {
+        final rows = await journalCategoriesByIds(idList).get();
+        return [for (final row in rows) MapEntry(row.id, row.category)];
+      },
+      filtered: (s) async {
+        final rows = await journalCategoriesByIdsByPrivateStatuses(
+          idList,
+          s,
+        ).get();
+        return [for (final row in rows) MapEntry(row.id, row.category)];
+      },
+    );
+    return {
+      for (final pair in pairs)
+        pair.key: pair.value.isEmpty ? null : pair.value,
+    };
+  }
+
   Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
     Iterable<String> ids,
   ) {
@@ -2074,6 +2110,19 @@ class JournalDb extends _$JournalDb {
     return fromDbEntity(res.first) as DayPlanEntry;
   }
 
+  /// Batch variant of [getDayPlanById]. Used by the coalescing layer in
+  /// the day-plan repository so a prefetch window of N dates collapses
+  /// into a single round-trip.
+  Future<List<DayPlanEntry>> getDayPlansByIds(Iterable<String> ids) async {
+    final idList = ids.toList(growable: false);
+    if (idList.isEmpty) return const [];
+    final res = await _queryWithPrivateFilter(
+      allPrivate: () => dayPlansByIds(idList).get(),
+      filtered: (s) => dayPlansByIdsByPrivateStatuses(idList, s).get(),
+    );
+    return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
+  }
+
   Future<List<DayPlanEntry>> getDayPlansInRange({
     required DateTime rangeStart,
     required DateTime rangeEnd,
@@ -2131,15 +2180,13 @@ class JournalDb extends _$JournalDb {
   /// Excludes completed (DONE) and rejected (REJECTED) tasks.
   /// This includes both tasks due on the specified day and overdue tasks.
   Future<List<Task>> getTasksDueOnOrBefore(DateTime date) async {
-    // Use end of day to capture tasks due on this day
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
-    final endIso = endOfDay.toIso8601String();
-
-    final res = await _selectTasksDue(
-      endIso: endIso,
-      privateStatuses: await _visiblePrivateStatuses(),
+    final privateStatuses = await _visiblePrivateStatuses();
+    final superset = await _coalesceOpenTasksDueUpTo(endOfDay, privateStatuses);
+    return _filterTasks(
+      superset,
+      endInclusive: endOfDay,
     );
-    return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
   /// Returns tasks that are due on the specified date only.
@@ -2148,15 +2195,93 @@ class JournalDb extends _$JournalDb {
   Future<List<Task>> getTasksDueOn(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
-    final startIso = startOfDay.toIso8601String();
-    final endIso = endOfDay.toIso8601String();
-
-    final res = await _selectTasksDue(
-      startIso: startIso,
-      endIso: endIso,
-      privateStatuses: await _visiblePrivateStatuses(),
+    final privateStatuses = await _visiblePrivateStatuses();
+    final superset = await _coalesceOpenTasksDueUpTo(endOfDay, privateStatuses);
+    return _filterTasks(
+      superset,
+      startInclusive: startOfDay,
+      endInclusive: endOfDay,
     );
-    return res.map(fromDbEntity).whereType<Task>().toList();
+  }
+
+  // Microtask-coalescing state for `_coalesceOpenTasksDueUpTo`.
+  //
+  // The DailyOS prefetch window fires `getTasksDueOn` / `getTasksDueOnOrBefore`
+  // once per date in a synchronous sweep. Instead of N round-trips through
+  // `_selectTasksDue`, we share the widest `due <= max(endOfDay)` superset
+  // across the whole wave and let each caller filter its own range
+  // client-side from the in-memory list.
+  //
+  // The coalescer is keyed by the private-status shape so that private-filter
+  // changes mid-wave (very rare but theoretically possible) still produce a
+  // correct batch per shape.
+  final Map<String, _PendingDueWave> _pendingDueWaves = {};
+
+  /// Single-shot query executed by the tasks-due coalescer. Extracted as a
+  /// protected seam so tests can count round-trips and inject failures
+  /// without depending on a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<Task>> runTasksDueFetch({
+    required DateTime endInclusive,
+    required List<bool> privateStatuses,
+  }) async {
+    final rows = await _selectTasksDue(
+      endIso: endInclusive.toIso8601String(),
+      privateStatuses: privateStatuses,
+    );
+    return rows.map(fromDbEntity).whereType<Task>().toList(growable: false);
+  }
+
+  Future<List<Task>> _coalesceOpenTasksDueUpTo(
+    DateTime endInclusive,
+    List<bool> privateStatuses,
+  ) {
+    final key = privateStatuses.join(',');
+    final existing = _pendingDueWaves[key];
+    if (existing != null) {
+      // Extend the existing wave's upper bound so the superset covers the
+      // latest caller as well. Filtering happens per caller, so a slightly
+      // wider range is free.
+      if (endInclusive.isAfter(existing.endInclusive)) {
+        existing.endInclusive = endInclusive;
+      }
+      return existing.completer.future;
+    }
+
+    final wave = _PendingDueWave(
+      endInclusive: endInclusive,
+      privateStatuses: List<bool>.unmodifiable(privateStatuses),
+    );
+    _pendingDueWaves[key] = wave;
+    scheduleMicrotask(() async {
+      _pendingDueWaves.remove(key);
+      try {
+        final tasks = await runTasksDueFetch(
+          endInclusive: wave.endInclusive,
+          privateStatuses: wave.privateStatuses,
+        );
+        wave.completer.complete(tasks);
+      } catch (error, stack) {
+        wave.completer.completeError(error, stack);
+      }
+    });
+    return wave.completer.future;
+  }
+
+  static List<Task> _filterTasks(
+    List<Task> superset, {
+    required DateTime endInclusive,
+    DateTime? startInclusive,
+  }) {
+    return [
+      for (final task in superset)
+        if (task.data.due != null &&
+            !task.data.due!.isAfter(endInclusive) &&
+            (startInclusive == null ||
+                !task.data.due!.isBefore(startInclusive)))
+          task,
+    ];
   }
 
   // Drift SQL doesn't support `INDEXED BY`, so keep the due-date hot path in
@@ -2417,14 +2542,58 @@ class JournalDb extends _$JournalDb {
 
   /// Returns only [BasicLink] entries for the given [ids], filtering out
   /// RatingLinks at the SQL level using the `type` column.
-  Future<List<EntryLink>> basicLinksForEntryIds(Set<String> ids) async {
-    if (ids.isEmpty) return <EntryLink>[];
-    final entryLinks =
+  ///
+  /// Concurrent callers within the same microtask (e.g. the DailyOS prefetch
+  /// window firing `_fetchAllData` per date) share a single round-trip: the
+  /// wave merges every caller's id set, issues one `to_id IN (…)` query, and
+  /// hands each caller the subset matching its own ids.
+  ///
+  /// The caller's set is snapshotted before scheduling so the post-query
+  /// filter never reads a mutated view if the caller reuses or clears the
+  /// set before the coalesced wave fires.
+  Future<List<EntryLink>> basicLinksForEntryIds(Set<String> ids) {
+    final snapshot = Set<String>.unmodifiable(ids);
+    if (snapshot.isEmpty) return Future.value(const <EntryLink>[]);
+    return _coalesceBasicLinks(snapshot);
+  }
+
+  _PendingLinksWave? _pendingBasicLinksWave;
+
+  /// Single-shot query executed by the basic-links coalescer. Extracted as a
+  /// protected seam so tests can count DB round-trips without depending on
+  /// a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<EntryLink>> runBasicLinksQueryForIds(Set<String> ids) async {
+    final rows =
         await (select(linkedEntries)..where(
               (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
             ))
             .get();
-    return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
+    return rows.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
+  Future<List<EntryLink>> _coalesceBasicLinks(Set<String> ids) {
+    final wave = _pendingBasicLinksWave ??= _PendingLinksWave();
+    wave.mergedIds.addAll(ids);
+    if (!wave.scheduled) {
+      wave.scheduled = true;
+      scheduleMicrotask(() async {
+        _pendingBasicLinksWave = null;
+        try {
+          final links = await runBasicLinksQueryForIds(wave.mergedIds);
+          wave.completer.complete(links);
+        } catch (error, stack) {
+          wave.completer.completeError(error, stack);
+        }
+      });
+    }
+    return wave.completer.future.then(
+      (links) => [
+        for (final link in links)
+          if (ids.contains(link.toId)) link,
+      ],
+    );
   }
 
   Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
@@ -2639,4 +2808,30 @@ WHERE EXISTS (
 
     return null;
   }
+}
+
+/// In-flight coalescing wave for the open-task-due-date superset fetch.
+/// Every caller in the same microtask wave that shares a private-status
+/// shape joins the same wave; the wave issues a single `_selectTasksDue`
+/// covering the widest `endInclusive` seen before the microtask fires.
+class _PendingDueWave {
+  _PendingDueWave({
+    required this.endInclusive,
+    required this.privateStatuses,
+  });
+
+  DateTime endInclusive;
+  final List<bool> privateStatuses;
+  final Completer<List<Task>> completer = Completer<List<Task>>.sync();
+}
+
+/// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers
+/// within the same microtask merge their id sets; the wave fires one
+/// `to_id IN (…)` query and each caller filters the full result down to
+/// its own ids.
+class _PendingLinksWave {
+  final Set<String> mergedIds = <String>{};
+  bool scheduled = false;
+  final Completer<List<EntryLink>> completer =
+      Completer<List<EntryLink>>.sync();
 }

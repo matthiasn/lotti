@@ -2125,6 +2125,209 @@ void main() {
           expect(allPlans, hasLength(2));
         },
       );
+
+      test('getDayPlansByIds returns empty list for empty input', () async {
+        expect(await db!.getDayPlansByIds(const <String>[]), isEmpty);
+      });
+
+      test(
+        'getDayPlansByIds batch-fetches matching plans and honors private flag',
+        () async {
+          final baseDate = DateTime(2026, 2, 10);
+          final publicA = DayPlanEntry(
+            meta: Metadata(
+              id: dayPlanId(baseDate),
+              createdAt: baseDate,
+              updatedAt: baseDate,
+              dateFrom: baseDate,
+              dateTo: baseDate.add(const Duration(days: 1)),
+            ),
+            data: DayPlanData(
+              planDate: baseDate,
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: const [],
+            ),
+          );
+          final publicB = DayPlanEntry(
+            meta: Metadata(
+              id: dayPlanId(baseDate.add(const Duration(days: 1))),
+              createdAt: baseDate.add(const Duration(days: 1)),
+              updatedAt: baseDate.add(const Duration(days: 1)),
+              dateFrom: baseDate.add(const Duration(days: 1)),
+              dateTo: baseDate.add(const Duration(days: 2)),
+            ),
+            data: DayPlanData(
+              planDate: baseDate.add(const Duration(days: 1)),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: const [],
+            ),
+          );
+          final privatePlan = DayPlanEntry(
+            meta: Metadata(
+              id: dayPlanId(baseDate.add(const Duration(days: 2))),
+              createdAt: baseDate.add(const Duration(days: 2)),
+              updatedAt: baseDate.add(const Duration(days: 2)),
+              dateFrom: baseDate.add(const Duration(days: 2)),
+              dateTo: baseDate.add(const Duration(days: 3)),
+              private: true,
+            ),
+            data: DayPlanData(
+              planDate: baseDate.add(const Duration(days: 2)),
+              status: const DayPlanStatus.draft(),
+              plannedBlocks: const [],
+            ),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(publicA));
+          await db!.upsertJournalDbEntity(toDbEntity(publicB));
+          await db!.upsertJournalDbEntity(toDbEntity(privatePlan));
+
+          // Filtered path: privateFlag = false → private plan is excluded
+          // from the batch, missing ids are silently skipped, and the two
+          // public plans come back.
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+
+          final filtered = await db!.getDayPlansByIds([
+            publicA.meta.id,
+            publicB.meta.id,
+            privatePlan.meta.id,
+            'dayplan-does-not-exist',
+          ]);
+          expect(
+            filtered.map((e) => e.meta.id).toSet(),
+            {publicA.meta.id, publicB.meta.id},
+          );
+
+          // allPrivate path: privateFlag = true → all three plans come back.
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: true,
+            ),
+          );
+
+          final all = await db!.getDayPlansByIds([
+            publicA.meta.id,
+            publicB.meta.id,
+            privatePlan.meta.id,
+          ]);
+          expect(
+            all.map((e) => e.meta.id).toSet(),
+            {publicA.meta.id, publicB.meta.id, privatePlan.meta.id},
+          );
+        },
+      );
+    });
+
+    group('getCategoryIdsForEntryIds -', () {
+      test(
+        'returns empty map for empty input without hitting the db',
+        () async {
+          expect(
+            await db!.getCategoryIdsForEntryIds(const <String>[]),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'returns denormalized category per id and maps empty column to null',
+        () async {
+          final base = DateTime(2026, 3, 1);
+          final withCategory = buildJournalEntry(
+            id: 'cat-id-entry-1',
+            timestamp: base,
+            text: 'has category',
+            categoryId: 'cat-alpha',
+          );
+          final withoutCategory = buildJournalEntry(
+            id: 'cat-id-entry-2',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'no category',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(withCategory));
+          await db!.upsertJournalDbEntity(toDbEntity(withoutCategory));
+
+          final result = await db!.getCategoryIdsForEntryIds([
+            withCategory.meta.id,
+            withoutCategory.meta.id,
+            // Duplicate id is deduplicated via toSet() before the query.
+            withCategory.meta.id,
+            // Missing ids are simply absent from the returned map.
+            'cat-id-missing',
+          ]);
+
+          expect(result, hasLength(2));
+          expect(result[withCategory.meta.id], 'cat-alpha');
+          // Empty column value is normalized to null so callers can treat
+          // "no category" and "not present" uniformly.
+          expect(result.containsKey(withoutCategory.meta.id), isTrue);
+          expect(result[withoutCategory.meta.id], isNull);
+          expect(result.containsKey('cat-id-missing'), isFalse);
+        },
+      );
+
+      test(
+        'filtered path drops private entries when privateFlag is off',
+        () async {
+          final base = DateTime(2026, 3, 2);
+          final publicEntry = buildJournalEntry(
+            id: 'cat-id-public',
+            timestamp: base,
+            text: 'public',
+            categoryId: 'cat-public',
+          );
+          final privateEntry = buildJournalEntry(
+            id: 'cat-id-private',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'private',
+            privateFlag: true,
+            categoryId: 'cat-private',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(publicEntry));
+          await db!.upsertJournalDbEntity(toDbEntity(privateEntry));
+
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+
+          final filtered = await db!.getCategoryIdsForEntryIds([
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          ]);
+          expect(filtered, {publicEntry.meta.id: 'cat-public'});
+
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: true,
+            ),
+          );
+
+          final all = await db!.getCategoryIdsForEntryIds([
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          ]);
+          expect(all, {
+            publicEntry.meta.id: 'cat-public',
+            privateEntry.meta.id: 'cat-private',
+          });
+        },
+      );
     });
 
     group('Label definition queries -', () {
