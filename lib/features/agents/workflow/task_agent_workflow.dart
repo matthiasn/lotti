@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -388,6 +389,10 @@ class TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
+        retractionService: SuggestionRetractionService(
+          syncService: syncService,
+          domainLogger: domainLogger,
+        ),
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
         resolveCategoryId: (entityId) async {
@@ -1036,10 +1041,13 @@ Use this as high-level planning context:
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
-- **Learn from past decisions**: Review the "Recent User Decisions" section
-  in the task context. If the user rejected a proposal, do not repeat the
-  same or a similar suggestion unless circumstances have clearly changed.
-  Confirmed proposals indicate the user's preferences — build on them.
+- **Learn from past decisions**: Review the `## Proposal Ledger` section in
+  the task context. Open entries are proposals you made in earlier wakes
+  that the user has not yet acted on. Resolved entries show user verdicts
+  (confirmed / rejected / deferred) and your own retractions. If the user
+  rejected a proposal, do not repeat the same or a similar suggestion
+  unless circumstances have clearly changed. Confirmed proposals indicate
+  the user's preferences — build on them.
 - **Observations**: Record private notes worth remembering for future wakes.
   Good observations include:
   - Why you transitioned a status (e.g., "Set BLOCKED because user mentioned
@@ -1126,6 +1134,28 @@ Use this as high-level planning context:
     The user can always move more later.
   - Priority defaults to P2 if not mentioned. The new task inherits the
     source task's category automatically.
+
+## Suggestion Hygiene
+
+Every wake you are shown a `## Proposal Ledger` listing every suggestion
+you have ever produced for this task, including its current status. Use it
+to keep the user-facing suggestion list clean and trustworthy:
+
+1. **Never duplicate an open proposal.** Before proposing a deferred
+   action, scan the Open group in the ledger. If an identical proposal
+   is already open, do NOT propose it again.
+2. **Retract stale open proposals.** If an open proposal is no longer
+   relevant — for example the current task state already matches it
+   (`priority` is already `P1`), the user made the change manually, or
+   it duplicates another open proposal you want to keep — call
+   `retract_suggestions` with the item's `fp=…` fingerprint and a short
+   one-sentence reason. The user is NOT prompted; the item simply
+   disappears from the active suggestion list and is recorded as
+   retracted in the ledger. Retraction is not a failure; it is how you
+   keep the user's trust in your proposals.
+3. **Do not re-propose rejected or retracted items** unless the task
+   context has materially changed. When you do re-propose after a
+   rejection/retraction, justify the decision in your report.
 
 ## Important
 

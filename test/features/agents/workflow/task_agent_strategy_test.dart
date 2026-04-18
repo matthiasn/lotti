@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -2171,5 +2172,230 @@ void main() {
         },
       );
     });
+
+    group('retract_suggestions routing', () {
+      test(
+        'dispatches to the retraction service without invoking the executor',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              RetractionResult(
+                fingerprint: requests.first.fingerprint,
+                outcome: RetractionOutcome.retracted,
+                toolName: 'update_task_priority',
+                humanSummary: 'Set priority to P1',
+              ),
+            ],
+          );
+
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(
+                  success: true,
+                  output: 'unused',
+                  mutatedEntityId: taskId,
+                ),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {
+                      'fingerprint': 'fp-abc',
+                      'reason': 'Already P1',
+                    },
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          // The retraction service, not the executor, handled the call.
+          expect(fakeService.capturedCalls, hasLength(1));
+          expect(fakeService.capturedCalls.single.agentId, agentId);
+          expect(fakeService.capturedCalls.single.taskId, taskId);
+          expect(
+            fakeService.capturedCalls.single.requests.single.fingerprint,
+            'fp-abc',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+
+          // The LLM sees a per-entry outcome report.
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-1',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('[fp=fp-abc] retracted'));
+          expect(response, contains('Set priority to P1'));
+        },
+      );
+
+      test(
+        'malformed proposals payload surfaces a non-empty error without '
+        'invoking the retraction service',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (_) => const [],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-bad',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                // `proposals` is not an array — should error.
+                arguments: jsonEncode({'proposals': 'not-an-array'}),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, isEmpty);
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-bad',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, startsWith('Error:'));
+        },
+      );
+
+      test(
+        'omitting the retraction service returns a wiring error to the LLM',
+        () async {
+          final noServiceStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            // retractionService intentionally omitted.
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-nowire',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-abc', 'reason': 'x'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await noServiceStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-nowire',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('retract_suggestions is not wired up'));
+        },
+      );
+    });
   });
+}
+
+/// Captures every call and returns a scripted response list.
+class _FakeRetractionService implements SuggestionRetractionService {
+  _FakeRetractionService({required this.responses});
+
+  final List<RetractionResult> Function(List<RetractionRequest>) responses;
+  final capturedCalls = <_CapturedRetract>[];
+
+  @override
+  Future<List<RetractionResult>> retract({
+    required String agentId,
+    required String taskId,
+    required List<RetractionRequest> requests,
+  }) async {
+    capturedCalls.add(
+      _CapturedRetract(
+        agentId: agentId,
+        taskId: taskId,
+        requests: requests,
+      ),
+    );
+    return responses(requests);
+  }
+}
+
+class _CapturedRetract {
+  const _CapturedRetract({
+    required this.agentId,
+    required this.taskId,
+    required this.requests,
+  });
+  final String agentId;
+  final String taskId;
+  final List<RetractionRequest> requests;
 }

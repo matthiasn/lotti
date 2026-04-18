@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -71,6 +72,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     required this.readVectorClock,
     required this.executeToolHandler,
     this.changeSetBuilder,
+    this.retractionService,
     this.resolveTaskMetadata,
     this.resolveRelatedTaskDetails,
     this.allowedRelatedTaskIds = const <String>{},
@@ -112,6 +114,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// set is persisted at the end of the wake via [ChangeSetBuilder.build].
   final ChangeSetBuilder? changeSetBuilder;
 
+  /// Optional service for handling agent-autonomous `retract_suggestions`
+  /// tool calls. When omitted, the tool call is rejected with an error
+  /// response — retraction is always available to the LLM as part of the
+  /// task-agent tool surface, but tests / specialized strategies may elect
+  /// to leave the wiring off.
+  final SuggestionRetractionService? retractionService;
+
   /// Optional resolver for the current task metadata. Used to detect and
   /// suppress redundant non-batch tool proposals (e.g. setting priority to
   /// the value it already has).
@@ -149,6 +158,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Tool name for the read-only related-task drill-down tool.
   static const String relatedTaskDetailsToolName =
       TaskAgentToolNames.getRelatedTaskDetails;
+
+  /// Tool name for the agent-autonomous retraction tool.
+  static const String retractSuggestionsToolName =
+      TaskAgentToolNames.retractSuggestions;
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -203,6 +216,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == relatedTaskDetailsToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleRelatedTaskDetails(args, call.id, manager);
+        continue;
+      }
+      if (toolName == retractSuggestionsToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleRetractSuggestions(args, call.id, manager);
         continue;
       }
 
@@ -513,6 +531,106 @@ class TaskAgentStrategy extends ConversationStrategy {
 
     manager.addToolResponse(toolCallId: callId, response: response);
     await _recordToolResultMessage(toolName: relatedTaskDetailsToolName);
+  }
+
+  /// Handles the `retract_suggestions` tool call: parses the proposals
+  /// array, dispatches each retraction to [SuggestionRetractionService],
+  /// and feeds a per-entry outcome report back to the LLM.
+  Future<void> _handleRetractSuggestions(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final service = retractionService;
+    if (service == null) {
+      const errorMsg =
+          'Error: retract_suggestions is not wired up for this agent.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: retractSuggestionsToolName,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    final rawProposals = args['proposals'];
+    if (rawProposals is! List || rawProposals.isEmpty) {
+      const errorMsg =
+          'Error: "proposals" must be a non-empty array of '
+          '{fingerprint, reason} objects.';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: retractSuggestionsToolName,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    final requests = <RetractionRequest>[];
+    final parseErrors = <String>[];
+    for (var i = 0; i < rawProposals.length; i++) {
+      final entry = rawProposals[i];
+      if (entry is! Map) {
+        parseErrors.add('proposals[$i] is not an object');
+        continue;
+      }
+      final fp = entry['fingerprint'];
+      final reason = entry['reason'];
+      if (fp is! String || fp.trim().isEmpty) {
+        parseErrors.add('proposals[$i].fingerprint missing or empty');
+        continue;
+      }
+      if (reason is! String || reason.trim().isEmpty) {
+        parseErrors.add('proposals[$i].reason missing or empty');
+        continue;
+      }
+      requests.add(
+        RetractionRequest(fingerprint: fp.trim(), reason: reason.trim()),
+      );
+    }
+
+    if (requests.isEmpty) {
+      final errorMsg =
+          'Error: no valid proposals to retract. '
+          '${parseErrors.join('; ')}';
+      manager.addToolResponse(toolCallId: callId, response: errorMsg);
+      await _recordToolResultMessage(
+        toolName: retractSuggestionsToolName,
+        errorMessage: errorMsg,
+      );
+      return;
+    }
+
+    final results = await service.retract(
+      agentId: agentId,
+      taskId: taskId,
+      requests: requests,
+    );
+
+    final response = StringBuffer('Retraction results:');
+    for (final r in results) {
+      final label = switch (r.outcome) {
+        RetractionOutcome.retracted => 'retracted',
+        RetractionOutcome.notOpen => 'not_open (already resolved)',
+        RetractionOutcome.notFound => 'not_found',
+      };
+      final summary = r.humanSummary?.trim();
+      final detail = (summary != null && summary.isNotEmpty)
+          ? ' — "$summary"'
+          : (r.toolName != null ? ' — ${r.toolName}' : '');
+      response.writeln('\n- [fp=${r.fingerprint}] $label$detail');
+    }
+    if (parseErrors.isNotEmpty) {
+      response
+        ..writeln()
+        ..writeln('Skipped malformed entries: ${parseErrors.join('; ')}');
+    }
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: response.toString().trim(),
+    );
+    await _recordToolResultMessage(toolName: retractSuggestionsToolName);
   }
 
   /// Parses a single observation item from the tool call arguments.

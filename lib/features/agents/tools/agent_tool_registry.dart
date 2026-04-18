@@ -38,6 +38,7 @@ abstract final class TaskAgentToolNames {
   static const updateChecklistItems = 'update_checklist_items';
   static const updateReport = 'update_report';
   static const recordObservations = 'record_observations';
+  static const retractSuggestions = 'retract_suggestions';
   static const assignTaskLabels = 'assign_task_labels';
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
@@ -438,6 +439,55 @@ class AgentToolRegistry {
           },
         },
         'required': ['oneLiner', 'tldr', 'content'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.retractSuggestions,
+      description:
+          'Withdraw one or more of your own previously-proposed changes that '
+          'are no longer relevant (the current task state already matches '
+          'them, or they duplicate another open proposal). The user is NOT '
+          'prompted — the retraction is recorded in your decision history '
+          'and the items disappear from the active suggestion list. Use this '
+          'to keep the user-facing list free of stale proposals. Only '
+          'already-pending items can be retracted; items already confirmed, '
+          'rejected, or retracted are no-ops.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'proposals': {
+            'type': 'array',
+            'minItems': 1,
+            'items': {
+              'type': 'object',
+              'properties': {
+                'fingerprint': {
+                  'type': 'string',
+                  'description':
+                      'The fingerprint shown in the proposal ledger for the '
+                      'item you want to withdraw. Must exactly match an '
+                      "`fp=...` value from the ledger's Open section.",
+                },
+                'reason': {
+                  'type': 'string',
+                  'minLength': 1,
+                  'maxLength': 500,
+                  'description':
+                      'One short sentence explaining why this proposal is '
+                      'no longer relevant (e.g. "priority is already P1", '
+                      '"user added this item manually", "duplicate of '
+                      'open proposal fp=a7c…").',
+                },
+              },
+              'required': ['fingerprint', 'reason'],
+              'additionalProperties': false,
+            },
+            'description':
+                'One entry per proposal you want to retract in this call.',
+          },
+        },
+        'required': ['proposals'],
         'additionalProperties': false,
       },
     ),
