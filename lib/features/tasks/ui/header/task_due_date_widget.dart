@@ -26,14 +26,14 @@ Future<void> showDueDatePicker({
       );
     },
     title: context.messages.taskDueDateLabel,
-    stickyActionBar: _DueDateStickyActionBar(
-      onCancel: () => Navigator.of(context).pop(),
+    stickyActionBarBuilder: (modalContext) => _DueDateStickyActionBar(
+      onCancel: () => Navigator.of(modalContext).pop(),
       onClear: () async {
-        Navigator.of(context).pop();
+        Navigator.of(modalContext).pop();
         await onDueDateChanged(null);
       },
       onDone: () async {
-        Navigator.of(context).pop();
+        Navigator.of(modalContext).pop();
         // Update if:
         // 1. User interacted with the picker (scrolled/selected), OR
         // 2. There was no initial date (user is explicitly setting a date for
