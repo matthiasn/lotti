@@ -10,6 +10,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -5742,4 +5743,56 @@ void main() {
   // Note: Sequence log integration tests for the sync processor are covered
   // by sync_sequence_log_service_test.dart which tests recordReceivedEntry
   // behavior including gap detection and status transitions.
+
+  group('_trace routing', () {
+    test(
+      'routes through DomainLogger when one is injected and skips the '
+      'direct captureEvent fallback',
+      () async {
+        final domainLogger = MockDomainLogger();
+        when(
+          () => domainLogger.log(
+            any<String>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          domainLogger: domainLogger,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+        );
+
+        // Trigger a _trace emission via the undeserializable-skip path.
+        when(() => event.text).thenReturn(
+          base64.encode(utf8.encode(json.encode(<String, dynamic>{}))),
+        );
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => domainLogger.log(
+            LogDomains.sync,
+            any<String>(
+              that: contains('skipping undeserializable sync message'),
+            ),
+            subDomain: 'processor.skipUnrecoverable',
+          ),
+        ).called(1);
+        verifyNever(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains('skipping undeserializable sync message'),
+            ),
+            domain: LogDomains.sync,
+            subDomain: 'processor.skipUnrecoverable',
+          ),
+        );
+      },
+    );
+  });
 }
