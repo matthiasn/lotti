@@ -79,6 +79,7 @@ void main() {
   late MockLoggingService loggingService;
   Directory? testDirectory;
   Directory? previousDirectory;
+  LoggingService? previousLoggingService;
 
   setUp(() async {
     if (getIt.isRegistered<Directory>()) {
@@ -119,7 +120,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     if (getIt.isRegistered<LoggingService>()) {
+      previousLoggingService = getIt<LoggingService>();
       getIt.unregister<LoggingService>();
+    } else {
+      previousLoggingService = null;
     }
     getIt.registerSingleton<LoggingService>(loggingService);
 
@@ -136,6 +140,9 @@ void main() {
     await db.close();
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
+    }
+    if (previousLoggingService != null) {
+      getIt.registerSingleton<LoggingService>(previousLoggingService!);
     }
     getIt.unregister<Directory>();
     if (previousDirectory != null) {
@@ -261,9 +268,14 @@ void main() {
           failingDb.getRatingIdsForTimeEntries({'te-B'}),
         ];
 
-        for (final f in futures) {
-          await expectLater(f, throwsA(same(failingDb.failure)));
-        }
+        // Register expectLater on every future before awaiting: the
+        // coalesced wave completes both with the same error in one
+        // microtask, so a sequential `await` would leave the second
+        // future briefly unhandled.
+        await Future.wait([
+          for (final f in futures)
+            expectLater(f, throwsA(same(failingDb.failure))),
+        ]);
         expect(failingDb.attempts, 1);
       },
     );
