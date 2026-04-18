@@ -23,10 +23,10 @@ Future<void> showEstimatePicker({
       );
     },
     title: context.messages.taskEstimateLabel,
-    stickyActionBar: _EstimatedTimeStickyActionBar(
-      onCancel: () => Navigator.of(context).pop(),
+    stickyActionBarBuilder: (modalContext) => _EstimatedTimeStickyActionBar(
+      onCancel: () => Navigator.of(modalContext).pop(),
       onDone: () async {
-        Navigator.of(context).pop();
+        Navigator.of(modalContext).pop();
         if (selectedDuration != initialDuration) {
           await onEstimateChanged(selectedDuration);
         }
