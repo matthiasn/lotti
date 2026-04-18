@@ -196,7 +196,14 @@ class DescriptorCatchUpManager {
         domain: syncLoggingDomain,
         subDomain: 'descriptorCatchUp',
       );
-      if (freshHits > 0) {
+      // Gate the retry/live-scan nudge on pendingHits (not freshHits): the
+      // AttachmentIndex per-eventId dedup returns false when the live stream
+      // has already indexed the descriptor, so freshHits stays zero for
+      // pending paths that are in fact now resolvable. We want the nudge
+      // whenever a pending path has at least one matching event in the
+      // scanned window, regardless of whether this pass was the first to
+      // record it.
+      if (pendingHits > 0) {
         await _retryNow();
         _scheduleLiveScan();
       }

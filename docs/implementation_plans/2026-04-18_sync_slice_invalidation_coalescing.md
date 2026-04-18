@@ -8,7 +8,7 @@ Not started. Scoping only — do not implement without further agreement.
 
 Slow query log for 2026-04-18 shows sync-driven UI-controller thrash:
 
-```
+```text
 256 855 ms  / 409 calls   SELECT * FROM journal WHERE deleted = FALSE AND id IN (?…)
 134 220 ms  / 272 calls   SELECT le.from_id, le.to_id FROM linked_entries le
                            INNER JOIN journal j ON j.id = le.from_id WHERE le.to_id IN (?…)
@@ -135,7 +135,7 @@ coalesce before the expensive query re-runs.
 3. Apply the chosen fix (start with Option A using `batch`).
 4. Re-run. Target: ≤1 query execution per controller per slice.
 5. **Slow query budget:** re-enable slow-query logging on a real
-   device, apply a real catchup, confirm the cumulative time in the
+   device, apply a real catch-up, confirm the cumulative time in the
    top-3 query fingerprints drops by at least an order of magnitude.
 
 ## Out of scope

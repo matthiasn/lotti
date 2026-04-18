@@ -35,12 +35,6 @@ class AttachmentIndex {
         }
         final key = rp.startsWith('/') ? rp : '/$rp';
         final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
-        final existing = _byPath[key] ?? _byPath[noSlash];
-        if (existing != null &&
-            eventId != null &&
-            _safeEventId(existing) == eventId) {
-          return false;
-        }
         _byPath[key] = e;
         // For robustness, also record a variant without the leading slash in
         // case callers use that form.

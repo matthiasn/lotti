@@ -249,7 +249,9 @@ void main() {
   });
 
   test(
-    'pending hit with unchanged descriptor does not trigger callbacks',
+    'pending hit with already-indexed descriptor still triggers callbacks — '
+    'retry is gated on pendingHits, not freshHits, so pending paths whose '
+    'descriptor the live stream already indexed still get nudged',
     () async {
       final logging = MockLoggingService();
       when(
@@ -277,6 +279,8 @@ void main() {
       when(() => ev.content).thenReturn(<String, dynamic>{
         'relativePath': '/p.json',
       });
+      // Pre-record via the live-stream path so the catch-up pass sees an
+      // already-known eventId and record() returns false.
       index.record(ev);
 
       when(() => timeline.events).thenReturn(<Event>[ev]);
@@ -298,8 +302,8 @@ void main() {
       )..addPending('/p.json');
       await manager.debugRunNow();
       expect(manager.runs, 1);
-      expect(liveScanCalls, 0);
-      expect(retryNowCalls, 0);
+      expect(liveScanCalls, 1);
+      expect(retryNowCalls, 1);
     },
   );
 
