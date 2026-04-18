@@ -2119,9 +2119,12 @@ class JournalDb extends _$JournalDb {
   /// the day-plan repository so a prefetch window of N dates collapses
   /// into a single round-trip. Chunks inputs to stay under SQLite's
   /// default 999-variable limit even if a caller fans out far past the
-  /// DailyOS prefetch window.
+  /// DailyOS prefetch window. Duplicate ids are removed before chunking
+  /// so the `IN (…)` semantics of the original single-query form are
+  /// preserved — otherwise dupes in different chunks would yield dupe
+  /// rows.
   Future<List<DayPlanEntry>> getDayPlansByIds(Iterable<String> ids) async {
-    final idList = ids.toList(growable: false);
+    final idList = ids.toSet().toList(growable: false);
     if (idList.isEmpty) return const [];
     final out = <DayPlanEntry>[];
     for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
@@ -2397,13 +2400,27 @@ class JournalDb extends _$JournalDb {
 
   /// Single-shot query executed by the ratings coalescer. Extracted as a
   /// protected seam so tests can count DB round-trips without depending on
-  /// a query interceptor.
+  /// a query interceptor. The merged wave set can grow past SQLite's
+  /// 999-variable limit when many prefetched dates converge in one
+  /// microtask; chunk through [_sqliteInListChunk] with a stable
+  /// `updated_at ASC` order preserved across chunks so last-write-wins
+  /// holds at the map-comprehension step.
   @protected
   @visibleForTesting
   Future<List<RatingsForTimeEntriesResult>> runRatingsForTimeEntriesQueryForIds(
     Set<String> ids,
-  ) {
-    return ratingsForTimeEntries(ids.toList()).get();
+  ) async {
+    final idList = ids.toList(growable: false);
+    if (idList.length <= _sqliteInListChunk) {
+      return ratingsForTimeEntries(idList).get();
+    }
+    final combined = <RatingsForTimeEntriesResult>[];
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      combined.addAll(await ratingsForTimeEntries(chunk).get());
+    }
+    return combined;
   }
 
   Future<Map<String, String>> _coalesceRatings(Set<String> ids) {
