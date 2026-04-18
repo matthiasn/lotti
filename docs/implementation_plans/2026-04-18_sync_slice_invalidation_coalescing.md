@@ -2,7 +2,15 @@
 
 ## Status
 
-Not started. Scoping only — do not implement without further agreement.
+Implemented (Option A, transaction wrap). The second-pass apply loop in
+`MatrixStreamProcessor._processOrderedInternal` now runs inside a single
+`_journalDb.transaction(() async {...})`. Per-event error handling is
+unchanged — exceptions raised by `_eventProcessor.process(...)` are caught
+inside `_processSyncPayloadEvent` and converted into retry-tracker entries,
+so the transaction commits the whole slice and only rolls back if the
+commit itself fails. Verified by
+`test/features/sync/matrix/pipeline/matrix_stream_processor_test.dart`
+→ `coalesces per-event writes into a single journalDb transaction`.
 
 ## Problem
 

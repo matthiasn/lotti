@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per-run scan no longer records ~1000 unrelated events into the
   attachment index. Removed the per-tick `OUTBOX enqueueRequest() done`
   log, which fired on every debounced wake and carried no signal.
+- Sync pipeline: the per-event apply loop in `MatrixStreamProcessor` now
+  runs inside a single `JournalDb.transaction`, so a slice of N sync
+  events commits once instead of N times. Drift coalesces the journal
+  table stream emissions to one notification per slice, collapsing the
+  reader/writer lock contention that produced multi-second waits behind
+  otherwise-cheap `id IN (?)` lookups during large catch-up replays.
+  Per-event error handling is unchanged: individual apply failures are
+  still caught locally and scheduled for retry, so the transaction only
+  rolls back when a commit genuinely fails.
 
 ## [0.9.959] - 2026-04-18
 ### Changed

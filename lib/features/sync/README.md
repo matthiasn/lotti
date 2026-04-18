@@ -322,6 +322,12 @@ The important runtime rules are:
 - client-stream and timeline callbacks act as scheduling signals, not as the
   payload-processing path
 - marker advancement happens inside ordered batches, not per callback
+- the per-event apply loop in `MatrixStreamProcessor._processOrderedInternal`
+  runs inside a single `JournalDb.transaction`, so a slice of N events
+  commits once and Drift emits one journal-table stream notification per
+  slice instead of N. Per-event errors are still caught locally and
+  converted to retry-tracker entries, so the transaction only rolls back
+  when a commit itself fails.
 
 `SyncEventProcessor` decodes `SyncMessage`, resolves file-backed payloads,
 applies them to local stores, records sequence state, and delegates backfill
