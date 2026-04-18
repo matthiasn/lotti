@@ -88,7 +88,7 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   @override
   MigrationStrategy get migration {
@@ -420,6 +420,47 @@ class JournalDb extends _$JournalDb {
               'DROP INDEX IF EXISTS idx_journal_project_id',
             );
             await m.createIndex(idxJournalProjectId);
+          }();
+        }
+
+        // v39: Add a partial expression index for the open-task due-date
+        // query (`_selectTasksDue`) so the ORDER BY streams from the index,
+        // and add idx_journal_task_status_private so `countInProgressTasks`
+        // and similar global task-status counts can use a narrow partial
+        // index instead of scanning the full task set. The existing
+        // non-partial `idx_journal_tasks_due_active` is intentionally left
+        // in place — other callers (e.g. `getTasksSortedByDueDate`) pin it
+        // via INDEXED BY with IN-list task_status predicates that can't
+        // prove the partial's WHERE.
+        if (from < 39) {
+          await () async {
+            if (!await _tableExists('journal')) return;
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Adding open-task due-date partial index and '
+                  'task_status/private count index',
+            );
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_tasks_due_open',
+            );
+            await customStatement(
+              'CREATE INDEX idx_journal_tasks_due_open '
+              r"ON journal(json_extract(serialized, '$.data.due') ASC) "
+              "WHERE type = 'Task' "
+              'AND task = 1 '
+              'AND deleted = FALSE '
+              "AND task_status NOT IN ('DONE', 'REJECTED')",
+            );
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_task_status_private',
+            );
+            await customStatement(
+              'CREATE INDEX idx_journal_task_status_private '
+              'ON journal(task_status COLLATE BINARY ASC, '
+              'private COLLATE BINARY ASC) '
+              "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
+            );
           }();
         }
       },
@@ -2120,6 +2161,9 @@ class JournalDb extends _$JournalDb {
 
   // Drift SQL doesn't support `INDEXED BY`, so keep the due-date hot path in
   // raw SQL to force the dedicated expression index on large journal tables.
+  // Uses the partial `idx_journal_tasks_due_open` so the ORDER BY streams
+  // from the index without an external sort. The WHERE clause must match
+  // the partial's predicates verbatim for SQLite to resolve INDEXED BY.
   Future<List<JournalDbEntity>> _selectTasksDue({
     required String endIso,
     required List<bool> privateStatuses,
@@ -2127,9 +2171,10 @@ class JournalDb extends _$JournalDb {
   }) {
     final variables = <Variable<Object>>[];
     final buffer = StringBuffer()
-      ..write('SELECT * FROM journal INDEXED BY idx_journal_tasks_due_active ')
+      ..write('SELECT * FROM journal INDEXED BY idx_journal_tasks_due_open ')
       ..write("WHERE type = 'Task' ")
-      ..write('AND deleted = 0 ')
+      ..write('AND task = 1 ')
+      ..write('AND deleted = FALSE ')
       ..write("AND task_status NOT IN ('DONE', 'REJECTED') ")
       ..write(r"AND json_extract(serialized, '$.data.due') IS NOT NULL ");
 

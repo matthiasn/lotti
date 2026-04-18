@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.957" date="2026-04-18">
+      <description>
+          <p>Database schema bumped to v39 with two new partial indexes on the journal table. idx_journal_tasks_due_open is keyed on the JSON-extracted due date for open tasks so the due-date query streams straight from the index without an external sort, and idx_journal_task_status_private covers countInProgressTasks and similar global task-status counts with a narrow index instead of scanning the full task set. Both partials carry type = 'Task' AND task = 1 AND deleted = FALSE so they stay consistent with the other task indexes and SQLite's theorem prover reliably proves coverage for the paired queries.</p>
+      </description>
+    </release>
     <release version="0.9.956" date="2026-04-18">
       <description>
           <p>Fix a P0 bug that prevented AI-proposed time entries from being confirmed from the task "Proposed changes" panel. The approval-time validator previously rejected any create_time_entry whose startTime or endTime fell after the originating wake timestamp, which left suggestions like 11:13–11:48 or 11:00–13:00 stuck as pending with a "Failed to apply change" toast whenever the agent rounded or estimated a session past the wake instant. The wake timestamp is still used for the same-day check (so after-midnight approvals keep working), but the "not in the future" cutoff no longer applies at approval time — the user is the authority when confirming. endTime must still land on the same day as startTime.</p>

@@ -5518,6 +5518,14 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_tasks_due_active',
     'CREATE INDEX idx_journal_tasks_due_active ON journal (type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, json_extract(serialized, \'\$.data.due\') ASC)',
   );
+  late final Index idxJournalTasksDueOpen = Index(
+    'idx_journal_tasks_due_open',
+    'CREATE INDEX idx_journal_tasks_due_open ON journal (json_extract(serialized, \'\$.data.due\') ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND task_status NOT IN (\'DONE\', \'REJECTED\')',
+  );
+  late final Index idxJournalTaskStatusPrivate = Index(
+    'idx_journal_task_status_private',
+    'CREATE INDEX idx_journal_task_status_private ON journal (task_status COLLATE BINARY ASC, private COLLATE BINARY ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
+  );
   late final Index idxJournalProjectId = Index(
     'idx_journal_project_id',
     'CREATE INDEX idx_journal_project_id ON journal (project_id) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND project_id IS NOT NULL',
@@ -6864,7 +6872,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += taskStatuses.length;
     return customSelect(
-      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND private IN ($expandedprivateStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses)',
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND type = \'Task\' AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses)',
       variables: [
         for (var $ in privateStatuses) Variable<bool>($),
         for (var $ in taskStatuses) Variable<String>($),
@@ -7525,6 +7533,8 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalTasksDatePriority,
     idxJournalTypeSubtype,
     idxJournalTasksDueActive,
+    idxJournalTasksDueOpen,
+    idxJournalTaskStatusPrivate,
     idxJournalProjectId,
     conflicts,
     measurableTypes,

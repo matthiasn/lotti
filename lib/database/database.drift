@@ -66,11 +66,36 @@ WHERE type = 'Task'
   AND deleted = FALSE
   AND task = 1;
 CREATE INDEX idx_journal_type_subtype ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+-- Non-partial composite index for `getTasksSortedByDueDate`, whose caller
+-- may filter task_status with arbitrary IN-lists. Left as a non-partial
+-- index so INDEXED BY resolves regardless of the predicate.
 CREATE INDEX idx_journal_tasks_due_active ON journal(
   type COLLATE BINARY ASC,
   deleted COLLATE BINARY ASC,
   json_extract(serialized, '$.data.due') ASC
 );
+-- Partial expression index narrowed to the open-task subset that
+-- `_selectTasksDue` queries. Keyed on json_extract(due) so
+-- ORDER BY json_extract(...) ASC can stream straight from the index without
+-- an external sort. Partial WHERE must match the query's WHERE verbatim
+-- for INDEXED BY to resolve (SQLite's theorem prover expects exact terms).
+CREATE INDEX idx_journal_tasks_due_open ON journal(
+  json_extract(serialized, '$.data.due') ASC
+)
+WHERE type = 'Task'
+  AND task = 1
+  AND deleted = FALSE
+  AND task_status NOT IN ('DONE', 'REJECTED');
+-- Covers `countInProgressTasks` and any other global task-status counts.
+-- task_status leads because queries filter it; private trails because it is
+-- small-cardinality. Both task signals (`type = 'Task'` and `task = 1`) are
+-- kept on the WHERE clause so the partial index stays consistent with the
+-- other task indexes and SQLite's theorem prover reliably proves coverage.
+CREATE INDEX idx_journal_task_status_private ON journal(
+  task_status COLLATE BINARY ASC,
+  private COLLATE BINARY ASC
+)
+WHERE type = 'Task' AND task = 1 AND deleted = FALSE;
 CREATE INDEX idx_journal_project_id ON journal(project_id)
 WHERE type = 'Task'
   AND task = 1
@@ -797,8 +822,9 @@ SELECT COUNT(*) FROM journal
 countInProgressTasks:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false
-  AND private IN :privateStatuses
+  AND type = 'Task'
   AND task = 1
+  AND private IN :privateStatuses
   AND task_status IN :taskStatuses;
 
 countTasksByCategory:
