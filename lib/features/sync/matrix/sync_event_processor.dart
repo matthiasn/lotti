@@ -575,10 +575,19 @@ class SyncEventProcessor {
   num? startupTimestamp;
 
   void _trace(String message, {String? subDomain}) {
-    _domainLogger?.log(
-      LogDomains.sync,
+    final sub = subDomain ?? 'processor';
+    final domainLogger = _domainLogger;
+    if (domainLogger != null) {
+      domainLogger.log(LogDomains.sync, message, subDomain: sub);
+      return;
+    }
+    // Fallback for callers that did not inject a DomainLogger (e.g. tests).
+    // Emitting directly under the `sync` domain keeps sync-file routing in
+    // LoggingService working so the log line still lands in the sync file.
+    _loggingService.captureEvent(
       message,
-      subDomain: subDomain ?? 'processor',
+      domain: LogDomains.sync,
+      subDomain: sub,
     );
   }
 
@@ -621,12 +630,6 @@ class SyncEventProcessor {
           'eventId=${event.eventId}',
           subDomain: 'processor.skipUnrecoverable',
         );
-        _loggingService.captureEvent(
-          'skipping undeserializable sync message: $e '
-          'eventId=${event.eventId}',
-          domain: 'MATRIX_SYNC',
-          subDomain: 'skipUnrecoverable',
-        );
         return;
       }
 
@@ -643,11 +646,6 @@ class SyncEventProcessor {
       _trace(
         'processing ${event.originServerTs} ${event.eventId}',
         subDomain: 'processor.SyncEventProcessor',
-      );
-      _loggingService.captureEvent(
-        'processing ${event.originServerTs} ${event.eventId}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
       );
 
       final diag = await _handleMessage(
@@ -725,11 +723,6 @@ class SyncEventProcessor {
             'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
             subDomain: 'processor.apply.entryLink.embedded',
           );
-          _loggingService.captureEvent(
-            'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply.entryLink.embedded',
-          );
         }
         affectedIds.addAll({link.fromId, link.toId});
       } catch (e, st) {
@@ -806,11 +799,6 @@ class SyncEventProcessor {
       'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
       subDomain: 'processor.apply',
     );
-    _loggingService.captureEvent(
-      'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'apply',
-    );
 
     if (_sequenceLogService != null && syncMessage.originatingHostId != null) {
       try {
@@ -825,11 +813,6 @@ class SyncEventProcessor {
           _trace(
             'apply.gapsDetected count=${gaps.length} for entity=${syncMessage.id}',
             subDomain: 'processor.gapDetection',
-          );
-          _loggingService.captureEvent(
-            'apply.gapsDetected count=${gaps.length} for entity=${syncMessage.id}',
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'gapDetection',
           );
         }
       } catch (e, st) {
@@ -901,12 +884,6 @@ class SyncEventProcessor {
         'id=${syncMessage.id}',
         subDomain: 'processor.apply',
       );
-      _loggingService.captureEvent(
-        'apply journalEntity skipped duplicate eventId=${event.eventId} '
-        'id=${syncMessage.id}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'apply',
-      );
       return diag;
     }
 
@@ -966,15 +943,6 @@ class SyncEventProcessor {
       'embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
       subDomain: 'processor.apply',
     );
-    _loggingService.captureEvent(
-      'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} '
-      'rowsWritten=$rows applied=${updateResult.applied} '
-      'skip=${updateResult.skipReason?.label ?? 'none'} '
-      'status=${diag.conflictStatus} '
-      'embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'apply',
-    );
     _markJournalEntityProcessed(
       journalEntity.meta.id,
       vcB ?? syncMessage.vectorClock,
@@ -1005,12 +973,6 @@ class SyncEventProcessor {
               'apply.gapsDetected count=${gaps.length} '
               'for entity=${journalEntity.meta.id}',
               subDomain: 'processor.gapDetection',
-            );
-            _loggingService.captureEvent(
-              'apply.gapsDetected count=${gaps.length} '
-              'for entity=${journalEntity.meta.id}',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'gapDetection',
             );
           }
         } catch (e, st) {
@@ -1044,12 +1006,6 @@ class SyncEventProcessor {
           'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} '
           'rows=$rows',
           subDomain: 'processor.apply.entryLink',
-        );
-        _loggingService.captureEvent(
-          'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} '
-          'rows=$rows',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.entryLink',
         );
       }
     } catch (_) {
@@ -1097,12 +1053,6 @@ class SyncEventProcessor {
               'for link=${entryLink.id}',
               subDomain: 'processor.gapDetection',
             );
-            _loggingService.captureEvent(
-              'apply.entryLink.gapsDetected count=${gaps.length} '
-              'for link=${entryLink.id}',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'gapDetection',
-            );
           }
         } catch (e, st) {
           _loggingService.captureException(
@@ -1143,11 +1093,6 @@ class SyncEventProcessor {
       _trace(
         '$typeName.skipped no payload and no jsonPath',
         subDomain: 'processor.resolve',
-      );
-      _loggingService.captureEvent(
-        '$typeName.skipped no payload and no jsonPath',
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve',
       );
       return null;
     }
@@ -1230,11 +1175,6 @@ class SyncEventProcessor {
         '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
         subDomain: 'processor.resolve',
       );
-      _loggingService.captureEvent(
-        '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve',
-      );
       return null;
     }
 
@@ -1255,11 +1195,6 @@ class SyncEventProcessor {
       _trace(
         '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
         subDomain: 'processor.resolve',
-      );
-      _loggingService.captureEvent(
-        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
-        domain: 'AGENT_SYNC',
-        subDomain: 'resolve',
       );
       return jsonString;
     } catch (e, st) {
@@ -1452,11 +1387,6 @@ class SyncEventProcessor {
             'backfillRequest.ignored no handler configured',
             subDomain: 'processor.apply',
           );
-          _loggingService.captureEvent(
-            'backfillRequest.ignored no handler configured',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'apply',
-          );
         }
         return null;
       case SyncBackfillResponse():
@@ -1467,11 +1397,6 @@ class SyncEventProcessor {
           _trace(
             'backfillResponse.ignored no handler configured',
             subDomain: 'processor.apply',
-          );
-          _loggingService.captureEvent(
-            'backfillResponse.ignored no handler configured',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'apply',
           );
         }
         return null;
@@ -1532,11 +1457,6 @@ class SyncEventProcessor {
             'apply agentEntity id=${resolvedEntity.id}',
             subDomain: 'processor.apply',
           );
-          _loggingService.captureEvent(
-            'apply agentEntity id=${resolvedEntity.id}',
-            domain: 'AGENT_SYNC',
-            subDomain: 'apply',
-          );
 
           // Record in sequence log for gap detection (self-healing sync)
           if (_sequenceLogService != null &&
@@ -1557,12 +1477,6 @@ class SyncEventProcessor {
                   'for entity=${resolvedEntity.id}',
                   subDomain: 'processor.gapDetection',
                 );
-                _loggingService.captureEvent(
-                  'apply.agentEntity.gapsDetected count=${gaps.length} '
-                  'for entity=${resolvedEntity.id}',
-                  domain: 'SYNC_SEQUENCE',
-                  subDomain: 'gapDetection',
-                );
               }
             } catch (e, st) {
               _loggingService.captureException(
@@ -1577,11 +1491,6 @@ class SyncEventProcessor {
           _trace(
             'agentEntity.ignored no repository',
             subDomain: 'processor.apply',
-          );
-          _loggingService.captureEvent(
-            'agentEntity.ignored no repository',
-            domain: 'AGENT_SYNC',
-            subDomain: 'apply',
           );
         }
         return null;
@@ -1622,11 +1531,6 @@ class SyncEventProcessor {
             'apply agentLink id=${resolvedLink.id}',
             subDomain: 'processor.apply',
           );
-          _loggingService.captureEvent(
-            'apply agentLink id=${resolvedLink.id}',
-            domain: 'AGENT_SYNC',
-            subDomain: 'apply',
-          );
 
           // Record in sequence log for gap detection (self-healing sync)
           if (_sequenceLogService != null &&
@@ -1647,12 +1551,6 @@ class SyncEventProcessor {
                   'for link=${resolvedLink.id}',
                   subDomain: 'processor.gapDetection',
                 );
-                _loggingService.captureEvent(
-                  'apply.agentLink.gapsDetected count=${gaps.length} '
-                  'for link=${resolvedLink.id}',
-                  domain: 'SYNC_SEQUENCE',
-                  subDomain: 'gapDetection',
-                );
               }
             } catch (e, st) {
               _loggingService.captureException(
@@ -1667,11 +1565,6 @@ class SyncEventProcessor {
           _trace(
             'agentLink.ignored no repository',
             subDomain: 'processor.apply',
-          );
-          _loggingService.captureEvent(
-            'agentLink.ignored no repository',
-            domain: 'AGENT_SYNC',
-            subDomain: 'apply',
           );
         }
         return null;

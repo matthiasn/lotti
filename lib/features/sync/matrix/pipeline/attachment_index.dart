@@ -14,6 +14,12 @@ class AttachmentIndex {
 
   final Map<String, Event> _byPath = <String, Event>{};
 
+  // Per-eventId idempotency guard. Keyed by eventId so repeated observations
+  // of the same Matrix event (from live scan + catch-up + backfill passes)
+  // are no-ops, even when several events share one relativePath and would
+  // otherwise thrash the _byPath slot back and forth between them.
+  final Set<String> _seenEventIds = <String>{};
+
   /// Records an attachment event keyed by its relativePath. Later events
   /// overwrite earlier ones for the same path.
   ///
@@ -23,10 +29,16 @@ class AttachmentIndex {
       final mimetype = e.attachmentMimetype;
       final rp = e.content['relativePath'];
       if (rp is String && rp.isNotEmpty) {
+        final eventId = _safeEventId(e);
+        if (eventId != null && !_seenEventIds.add(eventId)) {
+          return false;
+        }
         final key = rp.startsWith('/') ? rp : '/$rp';
         final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
         final existing = _byPath[key] ?? _byPath[noSlash];
-        if (existing != null && existing.eventId == e.eventId) {
+        if (existing != null &&
+            eventId != null &&
+            _safeEventId(existing) == eventId) {
           return false;
         }
         _byPath[key] = e;
@@ -34,7 +46,7 @@ class AttachmentIndex {
         // case callers use that form.
         _byPath[noSlash] = e;
         _logging?.captureEvent(
-          'attachmentIndex.record path=$key mime=$mimetype id=${e.eventId}',
+          'attachmentIndex.record path=$key mime=$mimetype id=${eventId ?? '?'}',
           domain: syncLoggingDomain,
           subDomain: 'attachmentIndex.record',
         );
@@ -48,6 +60,18 @@ class AttachmentIndex {
       );
     }
     return false;
+  }
+
+  // Safe access to [Event.eventId]. Returns null when the field is missing or
+  // empty, so callers can treat the event as "not known yet" instead of
+  // failing the whole record path.
+  static String? _safeEventId(Event e) {
+    try {
+      final id = e.eventId;
+      return id.isEmpty ? null : id;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Returns the last-seen attachment event for [relativePath], or null.
