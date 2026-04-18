@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.959" date="2026-04-18">
+      <description>
+          <p>Desktop task switcher: switching between open tasks in the desktop split layout now crossfades the detail pane instead of cutting abruptly. The transition is a 480 ms easeInOutCubic fade driven by an AnimatedSwitcher keyed on the selected task id, so it fires only when a genuinely different task is opened — reloads and in-place data updates for the currently open task do not trigger the animation.</p>
+      </description>
+    </release>
     <release version="0.9.958" date="2026-04-18">
       <description>
           <p>Desktop navigation sidebar: the Tasks and Settings notification counts now render as a design-system number badge in a dedicated trailing slot on the right of each row instead of a Material Badge overlapping the icon and label. Vertical spacing between sidebar items is now 24 px to match the Figma layout. Sidebar rows are no longer pinned to a fixed 48 px height — each row grows with its label, so increasing the OS or app text scale no longer vertically clips "Projects", "DailyOS", "Insights", "Logbook" or "Settings". The mobile bottom-nav preserves its existing overlay badge.</p>
