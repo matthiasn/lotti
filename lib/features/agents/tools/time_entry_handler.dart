@@ -139,7 +139,12 @@ class TimeEntryHandler {
           errorMessage: 'startTime is not on ${completedReference.label} day',
         );
       }
-      if (startTime.isAfter(completedReference.timestamp)) {
+      // At approval time (deferred execution), the user is the authority and
+      // may intentionally confirm an entry whose start/end drifted past the
+      // wake timestamp (e.g. a meeting the agent estimated would end at
+      // 13:00). Only enforce the "not in the future" cutoff at wake time.
+      if (completedReference.enforceFutureCutoff &&
+          startTime.isAfter(completedReference.timestamp)) {
         return ToolExecutionResult(
           success: false,
           output:
@@ -165,7 +170,8 @@ class TimeEntryHandler {
           errorMessage: 'endTime is on a different day',
         );
       }
-      if (endTime.isAfter(completedReference.timestamp)) {
+      if (completedReference.enforceFutureCutoff &&
+          endTime.isAfter(completedReference.timestamp)) {
         return ToolExecutionResult(
           success: false,
           output:
@@ -278,23 +284,46 @@ class TimeEntryHandler {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  static ({DateTime timestamp, String label}) _resolveCompletedSessionReference(
+  /// Resolves the reference timestamp used for same-day and future-cutoff
+  /// validation.
+  ///
+  /// When called directly by the agent at wake time, no `_referenceTimestamp`
+  /// arg is injected so [fallback] (clock.now()) is used and
+  /// [enforceFutureCutoff] is true — the agent cannot fabricate times after
+  /// the current instant.
+  ///
+  /// At approval time, `ChangeSetConfirmationService` injects the originating
+  /// wake timestamp. The same-day check still runs against that timestamp so
+  /// after-midnight approvals of same-day-as-wake entries still work, but the
+  /// future cutoff is disabled so the user can confirm entries the agent
+  /// estimated to extend past the wake instant (e.g. an ongoing meeting).
+  static ({DateTime timestamp, String label, bool enforceFutureCutoff})
+  _resolveCompletedSessionReference(
     Map<String, dynamic> args,
     DateTime fallback,
   ) {
     final raw = args[timeEntryReferenceTimestampArg];
     if (raw is! String) {
-      return (timestamp: fallback, label: 'current time');
+      return (
+        timestamp: fallback,
+        label: 'current time',
+        enforceFutureCutoff: true,
+      );
     }
 
     final parsed = DateTime.tryParse(raw);
     if (parsed == null) {
-      return (timestamp: fallback, label: 'current time');
+      return (
+        timestamp: fallback,
+        label: 'current time',
+        enforceFutureCutoff: true,
+      );
     }
 
     return (
       timestamp: parsed.isUtc ? parsed.toLocal() : parsed,
       label: 'wake timestamp',
+      enforceFutureCutoff: false,
     );
   }
 
