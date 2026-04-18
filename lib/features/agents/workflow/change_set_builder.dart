@@ -337,9 +337,13 @@ class ChangeSetBuilder {
   ///
   /// Items that already appear in [existingPendingSets] (matched by
   /// `toolName` + `args`) are silently dropped to avoid showing the user
-  /// duplicate proposals across consecutive agent wakes. Rejected and
-  /// deferred items are included in the dedup set so the agent cannot
-  /// re-propose a mutation the user already rejected.
+  /// duplicate proposals across consecutive agent wakes. Pending, rejected,
+  /// and deferred items are included in the dedup set so the agent cannot
+  /// re-propose a mutation the user already rejected or one that is still
+  /// awaiting review. Confirmed and retracted items are deliberately
+  /// excluded — confirmed items were already applied, and retracted items
+  /// are agent self-corrections that should not block a later, intentional
+  /// re-proposal after the task context has changed.
   ///
   /// [rejectedFingerprints] contains fingerprints reconstructed from
   /// persisted [ChangeDecisionEntity] records whose verdict was `rejected`.
@@ -359,13 +363,16 @@ class ChangeSetBuilder {
   }) async {
     if (!hasItems) return null;
 
-    // Extract all non-confirmed items from existing change sets for
-    // deduplication. Rejected and deferred items must be included so the
-    // agent cannot re-propose a mutation the user already rejected.
+    // Extract items from existing change sets that should block a new
+    // identical proposal. Confirmed items were applied; retracted items
+    // are agent self-corrections that must not block re-proposal after
+    // material change.
     final existingItems = existingPendingSets
         .expand(
           (cs) => cs.items.where(
-            (i) => i.status != ChangeItemStatus.confirmed,
+            (i) =>
+                i.status != ChangeItemStatus.confirmed &&
+                i.status != ChangeItemStatus.retracted,
           ),
         )
         .toList();

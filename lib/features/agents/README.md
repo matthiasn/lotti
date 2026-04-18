@@ -477,6 +477,60 @@ sequenceDiagram
   Confirm->>Store: finalize item status
 ```
 
+### Proposal Ledger and Agent-Autonomous Retraction
+
+Every task-agent wake is shown a **proposal ledger** — a single
+status-sorted view of every `ChangeItem` the agent has ever produced for
+the current task, assembled by `AgentRepository.getProposalLedger`. The
+ledger replaces the earlier split between "pending proposals" and "recent
+user decisions" with one unified section the agent reasons about.
+
+Each ledger entry carries a stable fingerprint (`toolName + args`). Open
+entries are rendered in the `AgentSuggestionsPanel` UI for the user to
+confirm or reject; resolved entries (user verdicts and agent retractions)
+are kept in the LLM prompt within a bounded window so the agent learns
+from its own history.
+
+When an open proposal is no longer relevant the agent calls a dedicated
+immediate tool, `retract_suggestions`, with one or more
+`{fingerprint, reason}` entries. `SuggestionRetractionService` looks each
+one up across the task's pending change sets, transitions the item to
+`ChangeItemStatus.retracted`, and persists a matching
+`ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`.
+Retraction is **not user-gated** — the user simply sees the item leave the
+active list and surface in the ledger's resolved slice.
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: ChangeSetBuilder.build()
+  pending --> confirmed: user swipe-confirm
+  pending --> rejected: user swipe-reject
+  pending --> retracted: agent retract_suggestions
+  pending --> expired: review window elapsed
+  confirmed --> [*]
+  rejected --> [*]
+  retracted --> [*]
+  expired --> [*]
+
+  note right of retracted
+    Actor: agent. Decision persisted with
+    verdict=retracted and a free-text reason.
+    Does not block later re-proposal after
+    the task context materially changes.
+  end note
+```
+
+`ChangeSetBuilder` co-operates with retraction by excluding both
+`confirmed` and `retracted` items from its dedup basis, while keeping
+`pending`, `rejected`, and `deferred` items sticky. The result: the agent
+can re-propose something it previously retracted if circumstances change,
+but cannot re-propose a user rejection without materially different args.
+
+Feedback-extraction heuristics that read the `rejectionReason` slot to
+detect user grievances are explicitly decoupled from the
+`retractionReason` slot, so agent self-talk never pollutes the user
+feedback signal.
+
 ## Project Agents
 
 `ProjectAgentService.createProjectAgent()`:
