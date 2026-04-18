@@ -287,10 +287,10 @@ class TimeEntryHandler {
   /// Resolves the reference timestamp used for same-day and future-cutoff
   /// validation.
   ///
-  /// When called directly by the agent at wake time, no `_referenceTimestamp`
-  /// arg is injected so [fallback] (clock.now()) is used and
-  /// [enforceFutureCutoff] is true — the agent cannot fabricate times after
-  /// the current instant.
+  /// When called directly by the agent at wake time, no
+  /// `_referenceTimestamp` arg is injected so `fallback` (clock.now()) is
+  /// used and `enforceFutureCutoff` is `true` — the agent cannot fabricate
+  /// times after the current instant.
   ///
   /// At approval time, `ChangeSetConfirmationService` injects the originating
   /// wake timestamp. The same-day check still runs against that timestamp so
@@ -303,15 +303,8 @@ class TimeEntryHandler {
     DateTime fallback,
   ) {
     final raw = args[timeEntryReferenceTimestampArg];
-    if (raw is! String) {
-      return (
-        timestamp: fallback,
-        label: 'current time',
-        enforceFutureCutoff: true,
-      );
-    }
+    final parsed = raw is String ? DateTime.tryParse(raw) : null;
 
-    final parsed = DateTime.tryParse(raw);
     if (parsed == null) {
       return (
         timestamp: fallback,

@@ -587,7 +587,7 @@ void main() {
         'still rejects completed session when endTime spills into the next '
         'day (same-day constraint is preserved)',
         () async {
-          await withClock(Clock.fixed(DateTime(2026, 4, 18, 23, 0)), () async {
+          await withClock(Clock.fixed(DateTime(2026, 4, 18, 23)), () async {
             final result = await handler.handle(
               sourceTaskId,
               {
