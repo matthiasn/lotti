@@ -451,10 +451,20 @@ like any other immediate tool — the title is applied without a user
 confirmation prompt so a freshly dictated task gets a meaningful name
 without an empty-looking suggestion sitting in the panel waiting for
 approval. Once a title is present the tool reverts to the normal
-deferred path, and `TaskToolDispatcher._handleSetTaskTitle` adds a
-second silent-abort guard at write time so a concurrent manual edit,
-synced edit, or previously-confirmed proposal can never be overwritten
-by a straggling agent call.
+deferred path.
+
+The auto-apply check (`_shouldAutoApplyInitialTitle`) deliberately
+re-runs the metadata resolver on every call rather than trusting the
+cached snapshot, so a title populated by any source — a concurrent
+user edit, a prior auto-apply in the same wake, a synced edit from
+another device — is seen before dispatch. After a successful auto-apply
+the strategy also marks `set_task_title` as used in `_usedDeferredTools`
+and invalidates the cached snapshot, so a repeat call in the same wake
+cannot re-auto-apply on the pre-write snapshot. The dispatcher itself
+stays simple: it is the single write path for both auto-applied initial
+titles and user-confirmed renames, so the "don't overwrite a populated
+title" invariant is enforced at the strategy boundary and not at the
+mutation boundary (where it would otherwise block legitimate renames).
 
 ### Confirmation Path
 

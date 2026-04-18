@@ -2127,6 +2127,95 @@ void main() {
       );
 
       test(
+        'set_task_title cannot auto-apply twice in the same wake',
+        () async {
+          // Regression guard against the stale-cache double-apply bug:
+          // if an LLM emits two back-to-back set_task_title calls (a
+          // common failure mode for smaller models), only the first
+          // should auto-apply. The second must either (a) observe the
+          // freshly-populated title on a forced re-read, or (b) hit the
+          // single-use deferred guard — in either case, it must not
+          // silently overwrite the title the executor just wrote.
+          var autoApplied = 0;
+          var currentTitle = '';
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async {
+              return (
+                    title: currentTitle.isEmpty ? null : currentTitle,
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+            },
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer((invocation) async {
+            autoApplied += 1;
+            final args =
+                invocation.namedArguments[const Symbol('args')]!
+                    as Map<String, dynamic>;
+            currentTitle = args['title']! as String;
+            return const ToolExecutionResult(
+              success: true,
+              output: 'applied',
+              mutatedEntityId: 'task-001',
+            );
+          });
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-first',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'First title'}),
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'call-second',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Second title'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            autoApplied,
+            1,
+            reason: 'only the first call must auto-apply',
+          );
+          expect(
+            currentTitle,
+            'First title',
+            reason:
+                'the second call must not silently overwrite the first '
+                'via the stale-cache path',
+          );
+        },
+      );
+
+      test(
         'set_task_title stays deferred when no resolveTaskMetadata is wired',
         () async {
           final (:strategy, :builder) = _createStrategyWithMetadata(

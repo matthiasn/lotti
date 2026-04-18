@@ -227,79 +227,36 @@ void main() {
         ).thenAnswer((_) async => _makeTestTask(taskId));
       });
 
-      test(
-        'set_task_title delegates to TaskTitleHandler for an untitled task',
-        () async {
-          // Override the default fixture: the dispatcher must see a task
-          // with an empty title to actually write. Non-empty titles are
-          // silent-skipped by the concurrency guard (covered below).
-          when(
-            () => mockJournalDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => _makeTestTask(taskId, title: ''));
-          when(
-            () => mockJournalRepository.updateJournalEntityDate(
-              any(),
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-            ),
-          ).thenAnswer((_) async => true);
-          when(
-            () => mockJournalRepository.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+      test('set_task_title delegates to TaskTitleHandler', () async {
+        // The dispatcher is the single write path for both auto-applied
+        // initial titles and user-confirmed renames — it does NOT gate
+        // on current title. The "never overwrite a populated title"
+        // invariant lives in TaskAgentStrategy._shouldAutoApplyInitialTitle
+        // for the auto-apply path; user-confirmed renames are explicit
+        // user intent and must write regardless.
+        when(
+          () => mockJournalRepository.updateJournalEntityDate(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepository.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
-          final result = await dispatcher.dispatch(
-            'set_task_title',
-            {'title': 'Updated Title'},
-            taskId,
-          );
+        final result = await dispatcher.dispatch(
+          'set_task_title',
+          {'title': 'Updated Title'},
+          taskId,
+        );
 
-          expect(result.success, isTrue);
-          expect(result.output, isNotEmpty);
-          verify(
-            () => mockJournalRepository.updateJournalEntity(any()),
-          ).called(1);
-        },
-      );
-
-      test(
-        'set_task_title silently skips when the task already has a title',
-        () async {
-          // Default fixture supplies title="Test Task".
-          final result = await dispatcher.dispatch(
-            'set_task_title',
-            {'title': 'Hijacked title'},
-            taskId,
-          );
-
-          expect(result.success, isTrue);
-          expect(result.output, contains('Skipped'));
-          expect(result.output, contains('Test Task'));
-          verifyNever(() => mockJournalRepository.updateJournalEntity(any()));
-        },
-      );
-
-      test(
-        'set_task_title silently skips whitespace-equivalent existing title',
-        () async {
-          // Title is non-empty whitespace-only → guard still treats it as
-          // populated because the UX invariant is "agent only sets an
-          // untitled task automatically"; a manually-typed space is a
-          // user decision even if it looks empty.
-          when(
-            () => mockJournalDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => _makeTestTask(taskId, title: 'x'));
-
-          final result = await dispatcher.dispatch(
-            'set_task_title',
-            {'title': 'Overwrite'},
-            taskId,
-          );
-
-          expect(result.success, isTrue);
-          expect(result.output, contains('Skipped'));
-          verifyNever(() => mockJournalRepository.updateJournalEntity(any()));
-        },
-      );
+        expect(result.success, isTrue);
+        expect(result.output, isNotEmpty);
+        verify(
+          () => mockJournalRepository.updateJournalEntity(any()),
+        ).called(1);
+      });
 
       test('set_task_status delegates to TaskStatusHandler', () async {
         when(
