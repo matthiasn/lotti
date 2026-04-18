@@ -432,4 +432,212 @@ void main() {
       expect(restored.status, ChangeItemStatus.pending);
     });
   });
+
+  group('getProposalLedger', () {
+    test('splits items into open and resolved groups, newest-first', () async {
+      final oldSet = makeTestChangeSet(
+        id: 'cs-old',
+        taskId: 'task-ledger',
+        createdAt: kAgentTestDate,
+        status: ChangeSetStatus.resolved,
+        resolvedAt: kAgentTestDate.add(const Duration(hours: 1)),
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'Old title'},
+            humanSummary: 'Rename task to "Old title"',
+            status: ChangeItemStatus.confirmed,
+          ),
+        ],
+      );
+      final newerSet = makeTestChangeSet(
+        id: 'cs-new',
+        taskId: 'task-ledger',
+        createdAt: kAgentTestDate.add(const Duration(hours: 2)),
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Set priority to P1',
+          ),
+          ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'title': 'Write migration'},
+            humanSummary: 'Add checklist item: "Write migration"',
+          ),
+        ],
+      );
+      final confirmedDecision = makeTestChangeDecision(
+        id: 'cd-confirm-old',
+        changeSetId: 'cs-old',
+        toolName: 'set_task_title',
+        taskId: 'task-ledger',
+        args: const {'title': 'Old title'},
+        humanSummary: 'Rename task to "Old title"',
+        createdAt: kAgentTestDate.add(const Duration(hours: 1)),
+      );
+
+      await repo.upsertEntity(oldSet);
+      await repo.upsertEntity(newerSet);
+      await repo.upsertEntity(confirmedDecision);
+
+      final ledger = await repo.getProposalLedger(
+        kTestAgentId,
+        taskId: 'task-ledger',
+      );
+
+      expect(ledger.open, hasLength(2));
+      // Open items are newest-first by parent change set createdAt.
+      expect(ledger.open.first.toolName, 'update_task_priority');
+      expect(ledger.open.first.status, ChangeItemStatus.pending);
+      expect(
+        ledger.open.first.fingerprint,
+        ChangeItem.fingerprintFromParts(
+          'update_task_priority',
+          const {'priority': 'P1'},
+        ),
+      );
+
+      expect(ledger.resolved, hasLength(1));
+      final resolvedEntry = ledger.resolved.single;
+      expect(resolvedEntry.toolName, 'set_task_title');
+      expect(resolvedEntry.status, ChangeItemStatus.confirmed);
+      expect(resolvedEntry.verdict, ChangeDecisionVerdict.confirmed);
+      expect(resolvedEntry.resolvedBy, DecisionActor.user);
+    });
+
+    test(
+      'attaches agent retraction metadata (actor, verdict, retractionReason)',
+      () async {
+        final retractedSet = makeTestChangeSet(
+          id: 'cs-retracted',
+          taskId: 'task-retract',
+          status: ChangeSetStatus.resolved,
+          createdAt: kAgentTestDate,
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+              status: ChangeItemStatus.retracted,
+            ),
+          ],
+        );
+        final retractionDecision = makeTestChangeDecision(
+          id: 'cd-retract',
+          changeSetId: 'cs-retracted',
+          toolName: 'update_task_priority',
+          verdict: ChangeDecisionVerdict.retracted,
+          actor: DecisionActor.agent,
+          taskId: 'task-retract',
+          args: const {'priority': 'P1'},
+          retractionReason: 'Already P1 on the task',
+          humanSummary: 'Set priority to P1',
+          createdAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+
+        await repo.upsertEntity(retractedSet);
+        await repo.upsertEntity(retractionDecision);
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: 'task-retract',
+        );
+
+        expect(ledger.open, isEmpty);
+        expect(ledger.resolved, hasLength(1));
+        final entry = ledger.resolved.single;
+        expect(entry.status, ChangeItemStatus.retracted);
+        expect(entry.verdict, ChangeDecisionVerdict.retracted);
+        expect(entry.resolvedBy, DecisionActor.agent);
+        expect(entry.reason, 'Already P1 on the task');
+      },
+    );
+
+    test('filters change sets from other tasks out of the ledger', () async {
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-target',
+          taskId: 'target-task',
+          createdAt: kAgentTestDate,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-other',
+          taskId: 'other-task',
+          createdAt: kAgentTestDate,
+        ),
+      );
+
+      final ledger = await repo.getProposalLedger(
+        kTestAgentId,
+        taskId: 'target-task',
+      );
+
+      expect(ledger.open, hasLength(1));
+      expect(ledger.open.single.changeSetId, 'cs-target');
+      expect(ledger.resolved, isEmpty);
+    });
+
+    test(
+      'returns ProposalLedger.empty when the task has no change sets',
+      () async {
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: 'task-with-nothing',
+        );
+
+        expect(ledger.isEmpty, isTrue);
+        expect(ledger.open, isEmpty);
+        expect(ledger.resolved, isEmpty);
+      },
+    );
+
+    test('caps resolved entries at resolvedLimit most-recent', () async {
+      // Ten resolved sets, each with one confirmed item.
+      for (var i = 0; i < 10; i++) {
+        final csId = 'cs-$i';
+        await repo.upsertEntity(
+          makeTestChangeSet(
+            id: csId,
+            taskId: 'task-cap',
+            status: ChangeSetStatus.resolved,
+            createdAt: kAgentTestDate.add(Duration(minutes: i)),
+            items: [
+              ChangeItem(
+                toolName: 'set_task_title',
+                args: {'title': 'Title $i'},
+                humanSummary: 'Rename $i',
+                status: ChangeItemStatus.confirmed,
+              ),
+            ],
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestChangeDecision(
+            id: 'cd-$i',
+            changeSetId: csId,
+            taskId: 'task-cap',
+            toolName: 'set_task_title',
+            args: {'title': 'Title $i'},
+            humanSummary: 'Rename $i',
+            createdAt: kAgentTestDate.add(Duration(minutes: i, seconds: 30)),
+          ),
+        );
+      }
+
+      final ledger = await repo.getProposalLedger(
+        kTestAgentId,
+        taskId: 'task-cap',
+        resolvedLimit: 3,
+      );
+
+      expect(ledger.resolved, hasLength(3));
+      // Newest first — latest three are Title 9, 8, 7.
+      expect(ledger.resolved[0].humanSummary, 'Rename 9');
+      expect(ledger.resolved[1].humanSummary, 'Rename 8');
+      expect(ledger.resolved[2].humanSummary, 'Rename 7');
+    });
+  });
 }

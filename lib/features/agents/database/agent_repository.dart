@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
 /// Typed CRUD repository wrapping [AgentDatabase] and [AgentDbConversions].
@@ -809,6 +811,101 @@ class AgentRepository {
       results = results.where((d) => d.taskId == taskId).toList();
     }
     return results.take(limit).toList();
+  }
+
+  /// Build a [ProposalLedger] for [taskId] under [agentId] — every
+  /// [ChangeItem] the agent has ever produced for this task, annotated with
+  /// its current lifecycle status and (if resolved) who resolved it.
+  ///
+  /// The ledger feeds two consumers:
+  ///
+  ///  * the LLM prompt (`TaskAgentWorkflow._formatProposalLedger`), so the
+  ///    agent sees a single status-sorted view of its own history and can
+  ///    avoid duplicate proposals or explicitly retract stale ones;
+  ///  * the consolidated `AgentSuggestionsPanel` UI, which renders only
+  ///    open items and exposes resolved history in a collapsed activity
+  ///    strip.
+  ///
+  /// Open entries are extracted from pending/partiallyResolved change sets.
+  /// Resolved entries come from all change sets (including resolved and
+  /// expired ones) joined with their [ChangeDecisionEntity] records, and
+  /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
+  /// prompt bounded.
+  Future<ProposalLedger> getProposalLedger(
+    String agentId, {
+    required String taskId,
+    int changeSetFetchLimit = 200,
+    int resolvedLimit = 50,
+  }) async {
+    final setRows = await _db
+        .getChangeSetsForAgent(agentId, changeSetFetchLimit)
+        .get();
+    final allSets = setRows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeSetEntity>()
+        .where((cs) => cs.taskId == taskId)
+        .toList();
+
+    if (allSets.isEmpty) return const ProposalLedger.empty();
+
+    final decisionRows = await _db
+        .getRecentDecisionsForAgent(
+          agentId,
+          resolvedLimit * _overFetchMultiplier,
+        )
+        .get();
+    final decisions = decisionRows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeDecisionEntity>()
+        .where((d) => d.taskId == taskId)
+        .toList();
+
+    final decisionByKey = <String, ChangeDecisionEntity>{};
+    for (final d in decisions) {
+      decisionByKey['${d.changeSetId}:${d.itemIndex}'] = d;
+    }
+
+    final open = <LedgerEntry>[];
+    final resolved = <LedgerEntry>[];
+
+    for (final set in allSets) {
+      for (var i = 0; i < set.items.length; i++) {
+        final item = set.items[i];
+        final decision = decisionByKey['${set.id}:$i'];
+        final entry = LedgerEntry(
+          changeSetId: set.id,
+          itemIndex: i,
+          toolName: item.toolName,
+          args: item.args,
+          humanSummary: item.humanSummary,
+          fingerprint: ChangeItem.fingerprint(item),
+          status: item.status,
+          createdAt: set.createdAt,
+          resolvedAt: decision?.createdAt ?? set.resolvedAt,
+          resolvedBy: decision?.actor,
+          verdict: decision?.verdict,
+          reason: decision?.retractionReason ?? decision?.rejectionReason,
+          groupId: item.groupId,
+        );
+        if (entry.isOpen) {
+          open.add(entry);
+        } else {
+          resolved.add(entry);
+        }
+      }
+    }
+
+    open.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    resolved.sort((a, b) {
+      final aResolved = a.resolvedAt ?? a.createdAt;
+      final bResolved = b.resolvedAt ?? b.createdAt;
+      return bResolved.compareTo(aResolved);
+    });
+
+    return ProposalLedger(
+      open: open,
+      resolved: resolved.take(resolvedLimit).toList(),
+    );
   }
 
   /// Fetch change decisions across all instances of [templateId] created on
