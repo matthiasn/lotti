@@ -61,11 +61,19 @@ Future<void> createDbBackup(String fileName) async {
 ///
 /// Applied via the `setup` callback so that every connection (including
 /// read-pool isolates) inherits these settings.
+///
+/// `wal_autocheckpoint` is lowered from SQLite's default of 1000 pages to
+/// 200 pages (~800 KB at the default 4 KB page size). A shorter WAL means
+/// smaller, more frequent checkpoints and a narrower window in which a
+/// checkpoint can starve a reader — slow-query capture observed a 9-minute
+/// stall on a `sync_sequence_log` read whose p95 is <60 ms, consistent
+/// with a WAL checkpoint pause rather than a bad plan.
 void _setupDatabase(Database database) {
   database
     ..execute('PRAGMA journal_mode = WAL;')
     ..execute('PRAGMA busy_timeout = 5000;')
-    ..execute('PRAGMA synchronous = NORMAL;');
+    ..execute('PRAGMA synchronous = NORMAL;')
+    ..execute('PRAGMA wal_autocheckpoint = 200;');
 }
 
 /// Opens a database connection with lazy initialization.
@@ -83,9 +91,13 @@ void _setupDatabase(Database database) {
 ///   (default: 0). Only effective when [background] is true.
 /// - [slowQueryThreshold]: Threshold used by the shared slow-query interceptor.
 ///   Slow-query writes remain disabled until the corresponding logging domain
-///   is enabled in Settings > Advanced > Logging Domains. Default is 50 ms —
-///   the user-visible jank floor. Tests and deep-dive captures pass
-///   [Duration.zero] or a smaller value to surface every query.
+///   is enabled in Settings > Advanced > Logging Domains. Default is 10 ms —
+///   a fraction of the 16 ms frame budget, so any single query logged here
+///   is already a meaningful slice of a frame. n+1 chains are not caught
+///   by thresholding individual queries (each link is under the bar); they
+///   are caught by the coalescers in `JournalDb` and by counting round-trips
+///   in tests. Pass [Duration.zero] in tests and deep-dive captures to
+///   surface every query.
 /// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///
@@ -104,7 +116,7 @@ LazyDatabase openDbConnection(
   bool inMemoryDatabase = false,
   bool background = true,
   int readPool = 0,
-  Duration slowQueryThreshold = const Duration(milliseconds: 50),
+  Duration slowQueryThreshold = const Duration(milliseconds: 10),
   SlowQueryReporter? slowQueryReporter,
   Future<Directory> Function()? documentsDirectoryProvider,
   Future<Directory> Function()? tempDirectoryProvider,

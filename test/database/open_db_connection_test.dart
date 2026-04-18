@@ -84,6 +84,11 @@ void main() {
     // NORMAL = 1
     expect(syncResult.read<int>('synchronous'), 1);
 
+    final checkpointResult = await db
+        .customSelect('PRAGMA wal_autocheckpoint')
+        .getSingle();
+    expect(checkpointResult.read<int>('wal_autocheckpoint'), 200);
+
     await db.close();
   });
 
