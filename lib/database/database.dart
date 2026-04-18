@@ -2361,12 +2361,61 @@ class JournalDb extends _$JournalDb {
   /// The query orders by `updated_at ASC` so that when multiple ratings
   /// link to the same time entry, the most recently updated one wins
   /// (last-write-wins in the map comprehension).
+  ///
+  /// Concurrent callers within the same microtask (the DailyOS prefetch
+  /// window fires `_fetchAllData` per date) share a single round-trip: the
+  /// wave merges every caller's id set, issues one `ratingsForTimeEntries`
+  /// query, and hands each caller a map restricted to its own ids.
+  ///
+  /// Per-row ordering (`j.updated_at ASC`) is preserved across the wave so
+  /// last-write-wins remains stable within each caller's subset. The
+  /// caller's set is snapshotted before scheduling so the post-query filter
+  /// never reads a mutated view if the caller reuses or clears the set
+  /// before the coalesced wave fires.
   Future<Map<String, String>> getRatingIdsForTimeEntries(
     Set<String> timeEntryIds,
-  ) async {
-    if (timeEntryIds.isEmpty) return {};
-    final rows = await ratingsForTimeEntries(timeEntryIds.toList()).get();
-    return {for (final row in rows) row.timeEntryId: row.ratingId};
+  ) {
+    final snapshot = Set<String>.unmodifiable(timeEntryIds);
+    if (snapshot.isEmpty) return Future.value(const <String, String>{});
+    return _coalesceRatings(snapshot);
+  }
+
+  _PendingRatingsWave? _pendingRatingsWave;
+
+  /// Single-shot query executed by the ratings coalescer. Extracted as a
+  /// protected seam so tests can count DB round-trips without depending on
+  /// a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<RatingsForTimeEntriesResult>> runRatingsForTimeEntriesQueryForIds(
+    Set<String> ids,
+  ) {
+    return ratingsForTimeEntries(ids.toList()).get();
+  }
+
+  Future<Map<String, String>> _coalesceRatings(Set<String> ids) {
+    final wave = _pendingRatingsWave ??= _PendingRatingsWave();
+    wave.mergedIds.addAll(ids);
+    if (!wave.scheduled) {
+      wave.scheduled = true;
+      scheduleMicrotask(() async {
+        _pendingRatingsWave = null;
+        try {
+          final rows = await runRatingsForTimeEntriesQueryForIds(
+            wave.mergedIds,
+          );
+          wave.completer.complete(rows);
+        } catch (error, stack) {
+          wave.completer.completeError(error, stack);
+        }
+      });
+    }
+    return wave.completer.future.then(
+      (rows) => {
+        for (final row in rows)
+          if (ids.contains(row.timeEntryId)) row.timeEntryId: row.ratingId,
+      },
+    );
   }
 
   Future<List<JournalEntity>> getQuantitativeByType({
@@ -2834,4 +2883,14 @@ class _PendingLinksWave {
   bool scheduled = false;
   final Completer<List<EntryLink>> completer =
       Completer<List<EntryLink>>.sync();
+}
+
+/// In-flight coalescing wave for `getRatingIdsForTimeEntries`. Mirrors
+/// [_PendingLinksWave] but keeps drift's rating-query result rows so each
+/// caller can reconstruct its own last-write-wins map for its id subset.
+class _PendingRatingsWave {
+  final Set<String> mergedIds = <String>{};
+  bool scheduled = false;
+  final Completer<List<RatingsForTimeEntriesResult>> completer =
+      Completer<List<RatingsForTimeEntriesResult>>.sync();
 }

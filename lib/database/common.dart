@@ -61,11 +61,19 @@ Future<void> createDbBackup(String fileName) async {
 ///
 /// Applied via the `setup` callback so that every connection (including
 /// read-pool isolates) inherits these settings.
+///
+/// `wal_autocheckpoint` is lowered from SQLite's default of 1000 pages to
+/// 200 pages (~800 KB at the default 4 KB page size). A shorter WAL means
+/// smaller, more frequent checkpoints and a narrower window in which a
+/// checkpoint can starve a reader — slow-query capture observed a 9-minute
+/// stall on a `sync_sequence_log` read whose p95 is <60 ms, consistent
+/// with a WAL checkpoint pause rather than a bad plan.
 void _setupDatabase(Database database) {
   database
     ..execute('PRAGMA journal_mode = WAL;')
     ..execute('PRAGMA busy_timeout = 5000;')
-    ..execute('PRAGMA synchronous = NORMAL;');
+    ..execute('PRAGMA synchronous = NORMAL;')
+    ..execute('PRAGMA wal_autocheckpoint = 200;');
 }
 
 /// Opens a database connection with lazy initialization.
