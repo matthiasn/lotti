@@ -271,12 +271,15 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = ChangeSetEntity;
 
-  /// Records a user's verdict on a single change item.
+  /// Records a verdict on a single change item.
   ///
   /// Persisted for decision history so the agent can learn which kinds of
-  /// suggestions are typically accepted or rejected. The optional [taskId]
-  /// field is likewise historical and may contain either a task ID or a
-  /// project ID depending on the agent scope.
+  /// suggestions are typically accepted or rejected — and so the agent can
+  /// see the outcome of its own past retractions. The [actor] field
+  /// distinguishes end-user verdicts (`confirmed` / `rejected` / `deferred`)
+  /// from agent-autonomous `retracted` verdicts. The optional [taskId]
+  /// field is historical and may contain either a task ID or a project ID
+  /// depending on the agent scope.
   const factory AgentDomainEntity.changeDecision({
     required String id,
     required String agentId,
@@ -286,8 +289,26 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required ChangeDecisionVerdict verdict,
     required DateTime createdAt,
     required VectorClock? vectorClock,
+
+    /// Who recorded this decision. Defaults to [DecisionActor.user] so
+    /// pre-existing rows (which did not store this field) deserialize as
+    /// user decisions — which is what they all were before the agent
+    /// gained the ability to retract its own proposals.
+    @Default(DecisionActor.user) DecisionActor actor,
     String? taskId,
+
+    /// Free-text reason a *user* supplied when rejecting a proposal.
+    /// Only populated when `verdict` is `ChangeDecisionVerdict.rejected`
+    /// and `actor` is `DecisionActor.user`. Kept separate from
+    /// `retractionReason` so feedback-extraction heuristics that treat
+    /// this text as a user signal are not polluted by agent self-talk.
     String? rejectionReason,
+
+    /// Free-text reason the *agent* supplied when retracting its own
+    /// proposal. Only populated when `verdict` is
+    /// `ChangeDecisionVerdict.retracted` and `actor` is
+    /// `DecisionActor.agent`.
+    String? retractionReason,
 
     /// Human-readable summary of the change item (e.g., 'Check off: "Buy
     /// milk"'). Stored at decision time so the agent can see *what* was

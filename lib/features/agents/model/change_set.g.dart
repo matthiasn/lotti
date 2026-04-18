@@ -30,4 +30,5 @@ const _$ChangeItemStatusEnumMap = {
   ChangeItemStatus.confirmed: 'confirmed',
   ChangeItemStatus.rejected: 'rejected',
   ChangeItemStatus.deferred: 'deferred',
+  ChangeItemStatus.retracted: 'retracted',
 };

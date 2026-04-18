@@ -1355,6 +1355,7 @@ Use this as high-level planning context:
         ChangeDecisionVerdict.confirmed => '\u2713',
         ChangeDecisionVerdict.rejected => '\u2717',
         ChangeDecisionVerdict.deferred => '\u23f8',
+        ChangeDecisionVerdict.retracted => '\u21ba',
       };
       final verdictLabel = d.verdict.name;
       final trimmedSummary = d.humanSummary?.trim();

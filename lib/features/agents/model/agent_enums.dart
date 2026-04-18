@@ -171,9 +171,14 @@ enum ChangeItemStatus {
 
   /// User deferred — will review later.
   deferred,
+
+  /// The agent withdrew this proposal on its own (e.g., it became redundant
+  /// with the current task state or duplicated another open proposal).
+  /// No user action occurred.
+  retracted,
 }
 
-/// User's verdict on a single change item, persisted for decision history.
+/// Verdict on a single change item, persisted for decision history.
 enum ChangeDecisionVerdict {
   /// User approved the proposed change.
   confirmed,
@@ -183,6 +188,19 @@ enum ChangeDecisionVerdict {
 
   /// User deferred the decision.
   deferred,
+
+  /// The agent withdrew its own proposal autonomously — never user-gated.
+  retracted,
+}
+
+/// Who recorded a [ChangeDecisionVerdict] — disambiguates user decisions from
+/// agent-autonomous retractions.
+enum DecisionActor {
+  /// The end user confirmed, rejected, or deferred the proposal.
+  user,
+
+  /// The task agent retracted its own proposal during a wake.
+  agent,
 }
 
 /// Lifecycle state of a persisted project recommendation.

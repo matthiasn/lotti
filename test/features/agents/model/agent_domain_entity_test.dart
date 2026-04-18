@@ -495,5 +495,121 @@ void main() {
         expect(unknown.deletedAt, equals(DateTime(2026, 2, 20, 16, 30)));
       });
     });
+
+    group('ChangeDecisionEntity (changeDecision variant)', () {
+      test(
+        'user rejection roundtrips with rejectionReason and default actor',
+        () {
+          final original =
+              AgentDomainEntity.changeDecision(
+                    id: 'decision-001',
+                    agentId: 'agent-010',
+                    changeSetId: 'cs-001',
+                    itemIndex: 2,
+                    toolName: 'update_task_priority',
+                    verdict: ChangeDecisionVerdict.rejected,
+                    createdAt: createdAt,
+                    vectorClock: vectorClock,
+                    taskId: 'task-001',
+                    rejectionReason: 'Already P1, unnecessary',
+                    humanSummary: 'Set priority to P1',
+                    args: const {'priority': 'P1'},
+                  )
+                  as ChangeDecisionEntity;
+
+          final roundtripped = roundtrip(original) as ChangeDecisionEntity;
+
+          expect(roundtripped, equals(original));
+          expect(roundtripped.actor, equals(DecisionActor.user));
+          expect(
+            roundtripped.rejectionReason,
+            equals('Already P1, unnecessary'),
+          );
+          expect(roundtripped.retractionReason, isNull);
+          expect(roundtripped.verdict, equals(ChangeDecisionVerdict.rejected));
+        },
+      );
+
+      test('agent retraction roundtrips with actor and retractionReason', () {
+        final original =
+            AgentDomainEntity.changeDecision(
+                  id: 'decision-002',
+                  agentId: 'agent-010',
+                  changeSetId: 'cs-001',
+                  itemIndex: 0,
+                  toolName: 'update_task_priority',
+                  verdict: ChangeDecisionVerdict.retracted,
+                  actor: DecisionActor.agent,
+                  retractionReason: 'Duplicate of open proposal fp=a7c',
+                  humanSummary: 'Set priority to P1',
+                  args: const {'priority': 'P1'},
+                  createdAt: createdAt,
+                  vectorClock: vectorClock,
+                  taskId: 'task-001',
+                )
+                as ChangeDecisionEntity;
+
+        final roundtripped = roundtrip(original) as ChangeDecisionEntity;
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped.actor, equals(DecisionActor.agent));
+        expect(roundtripped.verdict, equals(ChangeDecisionVerdict.retracted));
+        expect(
+          roundtripped.retractionReason,
+          equals('Duplicate of open proposal fp=a7c'),
+        );
+        expect(roundtripped.rejectionReason, isNull);
+      });
+
+      test(
+        'deserializing legacy JSON without actor defaults to DecisionActor.user',
+        () {
+          // Simulates a row persisted before the actor field existed: no
+          // `actor` key present in the JSON blob. The @Default on the factory
+          // must backfill `DecisionActor.user` so old decisions are still
+          // classified as user verdicts.
+          final legacyJson = <String, dynamic>{
+            'runtimeType': 'changeDecision',
+            'id': 'decision-legacy-001',
+            'agentId': 'agent-010',
+            'changeSetId': 'cs-legacy',
+            'itemIndex': 1,
+            'toolName': 'set_task_title',
+            'verdict': 'confirmed',
+            'createdAt': createdAt.toIso8601String(),
+            'vectorClock': const {'host-a': 1},
+            'taskId': 'task-legacy',
+            'humanSummary': 'Set title to "Fix bug"',
+          };
+
+          final decoded =
+              AgentDomainEntity.fromJson(legacyJson) as ChangeDecisionEntity;
+
+          expect(decoded.actor, equals(DecisionActor.user));
+          expect(decoded.verdict, equals(ChangeDecisionVerdict.confirmed));
+          expect(decoded.retractionReason, isNull);
+          expect(decoded.rejectionReason, isNull);
+        },
+      );
+
+      test('runtimeType discriminator key is "changeDecision"', () {
+        final original =
+            AgentDomainEntity.changeDecision(
+                  id: 'decision-003',
+                  agentId: 'agent-010',
+                  changeSetId: 'cs-001',
+                  itemIndex: 0,
+                  toolName: 'update_task_due_date',
+                  verdict: ChangeDecisionVerdict.confirmed,
+                  createdAt: createdAt,
+                  vectorClock: vectorClock,
+                )
+                as ChangeDecisionEntity;
+
+        final json = original.toJson();
+
+        expect(json['runtimeType'], equals('changeDecision'));
+      });
+    });
   });
 }

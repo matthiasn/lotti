@@ -232,6 +232,9 @@ class FeedbackExtractionService {
       ChangeDecisionVerdict.confirmed => FeedbackSentiment.positive,
       ChangeDecisionVerdict.rejected => FeedbackSentiment.negative,
       ChangeDecisionVerdict.deferred => FeedbackSentiment.neutral,
+      // Agent-autonomous retractions are not user feedback; they carry no
+      // sentiment signal about proposal quality.
+      ChangeDecisionVerdict.retracted => FeedbackSentiment.neutral,
     };
 
     final detail = _decisionDetailText(decision, changeSetMap);

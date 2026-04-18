@@ -597,8 +597,12 @@ ChangeDecisionEntity _$ChangeDecisionEntityFromJson(
   vectorClock: json['vectorClock'] == null
       ? null
       : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  actor:
+      $enumDecodeNullable(_$DecisionActorEnumMap, json['actor']) ??
+      DecisionActor.user,
   taskId: json['taskId'] as String?,
   rejectionReason: json['rejectionReason'] as String?,
+  retractionReason: json['retractionReason'] as String?,
   humanSummary: json['humanSummary'] as String?,
   args: json['args'] as Map<String, dynamic>?,
   deletedAt: json['deletedAt'] == null
@@ -618,8 +622,10 @@ Map<String, dynamic> _$ChangeDecisionEntityToJson(
   'verdict': _$ChangeDecisionVerdictEnumMap[instance.verdict]!,
   'createdAt': instance.createdAt.toIso8601String(),
   'vectorClock': instance.vectorClock,
+  'actor': _$DecisionActorEnumMap[instance.actor]!,
   'taskId': instance.taskId,
   'rejectionReason': instance.rejectionReason,
+  'retractionReason': instance.retractionReason,
   'humanSummary': instance.humanSummary,
   'args': instance.args,
   'deletedAt': instance.deletedAt?.toIso8601String(),
@@ -630,6 +636,12 @@ const _$ChangeDecisionVerdictEnumMap = {
   ChangeDecisionVerdict.confirmed: 'confirmed',
   ChangeDecisionVerdict.rejected: 'rejected',
   ChangeDecisionVerdict.deferred: 'deferred',
+  ChangeDecisionVerdict.retracted: 'retracted',
+};
+
+const _$DecisionActorEnumMap = {
+  DecisionActor.user: 'user',
+  DecisionActor.agent: 'agent',
 };
 
 ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
