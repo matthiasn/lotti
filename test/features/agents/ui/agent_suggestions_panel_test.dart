@@ -192,11 +192,7 @@ void main() {
           changeSetId: 'cs-reject',
         );
         when(
-          () => mockConfirmation.rejectItem(
-            any(),
-            any(),
-            reason: any(named: 'reason'),
-          ),
+          () => mockConfirmation.rejectItem(any(), any()),
         ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(
@@ -372,11 +368,7 @@ void main() {
           changeSetId: 'cs-reject-skip',
         );
         when(
-          () => mockConfirmation.rejectItem(
-            any(),
-            any(),
-            reason: any(named: 'reason'),
-          ),
+          () => mockConfirmation.rejectItem(any(), any()),
         ).thenAnswer((_) async => false);
 
         await tester.pumpWidget(
@@ -409,11 +401,7 @@ void main() {
           changeSetId: 'cs-reject-throws',
         );
         when(
-          () => mockConfirmation.rejectItem(
-            any(),
-            any(),
-            reason: any(named: 'reason'),
-          ),
+          () => mockConfirmation.rejectItem(any(), any()),
         ).thenThrow(StateError('boom'));
 
         await tester.pumpWidget(

@@ -224,6 +224,27 @@ class TaskAgentStrategy extends ConversationStrategy {
         continue;
       }
 
+      // Initial-title carve-out: when the task has no title yet, apply
+      // set_task_title immediately rather than queuing it for user
+      // confirmation. The "empty item in the list until I confirm"
+      // friction the user sees during dictation goes away, and title
+      // renames on existing tasks still flow through the deferred path
+      // below (existing redundancy filters in ChangeProposalFilter also
+      // still apply once a title is present).
+      if (toolName == TaskAgentToolNames.setTaskTitle &&
+          await _shouldAutoApplyInitialTitle()) {
+        final result = await executor.execute(
+          toolName: toolName,
+          args: args,
+          targetEntityId: taskId,
+          resolveCategoryId: resolveCategoryId,
+          executeHandler: () => executeToolHandler(toolName, args, manager),
+          readVectorClock: readVectorClock,
+        );
+        manager.addToolResponse(toolCallId: call.id, response: result.output);
+        continue;
+      }
+
       // Route deferred tools to the change set builder when available.
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
@@ -942,6 +963,37 @@ class TaskAgentStrategy extends ConversationStrategy {
       args,
       snapshot,
     );
+  }
+
+  /// Returns true when the current task has no title yet, meaning
+  /// `set_task_title` should apply immediately instead of waiting for
+  /// user confirmation. Reuses the cached [TaskMetadataSnapshot]
+  /// populated by [_checkTaskMetadataRedundancy] so a single LLM turn
+  /// that proposes multiple deferred tools pays at most one resolver
+  /// round-trip.
+  ///
+  /// When the resolver is unavailable or throws, returns false so the
+  /// deferred-approval path is used conservatively.
+  Future<bool> _shouldAutoApplyInitialTitle() async {
+    final resolver = resolveTaskMetadata;
+    if (resolver == null) return false;
+
+    if (!_taskMetadataResolved) {
+      _taskMetadataResolved = true;
+      try {
+        _cachedTaskMetadata = await resolver();
+      } catch (_) {
+        _cachedTaskMetadata = null;
+      }
+    }
+
+    // Conservative: if we could not resolve the snapshot (resolver threw
+    // or the target entity is not a Task) fall back to the deferred path
+    // rather than assuming the title is empty.
+    final snapshot = _cachedTaskMetadata;
+    if (snapshot == null) return false;
+    final current = snapshot.title?.trim();
+    return current == null || current.isEmpty;
   }
 
   /// Builds a hint string listing remaining non-batch deferred tools that

@@ -1939,6 +1939,322 @@ void main() {
         },
       );
 
+      test(
+        'set_task_title auto-applies when current title is null',
+        () async {
+          const emptyTitleSnapshot =
+              (
+                    title: null,
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => emptyTitleSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Title applied immediately.',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-initial-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Buy groceries'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isFalse,
+            reason: 'initial title should bypass the change-set builder',
+          );
+          final executed = verify(
+            () => mockExecutor.execute(
+              toolName: captureAny(named: 'toolName'),
+              args: captureAny(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).captured;
+          expect(executed[0], TaskAgentToolNames.setTaskTitle);
+          expect(executed[1], equals(const {'title': 'Buy groceries'}));
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-initial-title',
+              response: 'Title applied immediately.',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'set_task_title auto-applies when current title is whitespace-only',
+        () async {
+          const blankTitleSnapshot =
+              (
+                    title: '   ',
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => blankTitleSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'ok',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-blank-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Write specs'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isFalse);
+          verify(
+            () => mockExecutor.execute(
+              toolName: TaskAgentToolNames.setTaskTitle,
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when an existing title is present',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-rename',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'New name'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          expect(
+            builder.items.single.toolName,
+            TaskAgentToolNames.setTaskTitle,
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when no resolveTaskMetadata is wired',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            // resolveTaskMetadata intentionally omitted.
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-no-resolver',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Something'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isTrue,
+            reason: 'without a resolver, fall back to the deferred path',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when resolveTaskMetadata throws',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => throw Exception('resolver down'),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-throws',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Any'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isTrue,
+            reason:
+                'resolver failure should not auto-apply; must fall through '
+                'to the deferred path',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when resolveTaskMetadata returns null',
+        () async {
+          // Mirrors the non-Task-entity case where
+          // ChangeProposalFilter.resolveTaskMetadata returns null.
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => null,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-null-snap',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Any'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
       test('keeps tool when resolver throws (conservative)', () async {
         final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,

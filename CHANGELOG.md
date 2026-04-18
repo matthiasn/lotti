@@ -4,8 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.962] - 2026-04-18
+## [0.9.962] - 2026-04-19
 ### Added
+- Initial-title auto-apply: when the task agent calls `set_task_title` on
+  a task whose title is still null or empty, the title is applied
+  immediately without a user-approval prompt, so a freshly dictated task
+  lands with a meaningful name instead of an empty-looking suggestion
+  waiting in the panel. Once a title is present the tool reverts to the
+  standard deferred confirmation flow, and a second silent-abort guard
+  inside `TaskToolDispatcher` no-ops any race in which a manual edit,
+  synced edit, or previously-confirmed proposal populated the title
+  between the LLM emitting the call and the dispatcher running.
 - Task agent suggestions are now surfaced in a single consolidated panel
   on the task detail page instead of two disconnected cards, and the
   agent itself can autonomously retract its own stale proposals. On every

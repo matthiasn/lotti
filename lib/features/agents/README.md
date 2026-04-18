@@ -418,7 +418,7 @@ Task agents have two immediate local tools:
 
 The current deferred task tools are:
 
-- `set_task_title`
+- `set_task_title` *(conditionally immediate — see carve-out below)*
 - `update_task_estimate`
 - `update_task_due_date`
 - `update_task_priority`
@@ -441,6 +441,20 @@ and tool results.
 - explodes batch tools into individually reviewable items
 - deduplicates identical proposals within the same wake
 - suppresses redundant proposals when they would not change current state
+
+#### Initial-title carve-out
+
+`set_task_title` is the one deferred tool that can run on the immediate
+path. When the strategy resolves the current task metadata and the title
+is null or empty-after-trim, the call routes through `AgentToolExecutor`
+like any other immediate tool — the title is applied without a user
+confirmation prompt so a freshly dictated task gets a meaningful name
+without an empty-looking suggestion sitting in the panel waiting for
+approval. Once a title is present the tool reverts to the normal
+deferred path, and `TaskToolDispatcher._handleSetTaskTitle` adds a
+second silent-abort guard at write time so a concurrent manual edit,
+synced edit, or previously-confirmed proposal can never be overwritten
+by a straggling agent call.
 
 ### Confirmation Path
 

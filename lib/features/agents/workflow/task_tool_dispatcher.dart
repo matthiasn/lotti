@@ -182,6 +182,24 @@ class TaskToolDispatcher {
       );
     }
 
+    // Silent-abort guard: the "agent sets the initial title" UX promise is
+    // that the title only lands automatically while the field is still
+    // empty. If anything wrote a non-empty title between the LLM emitting
+    // the call and this dispatch (user typed one manually, a concurrent
+    // wake confirmed a deferred proposal, sync delivered an edit), no-op
+    // rather than overwrite. Covers both the auto-apply path and any
+    // deferred-confirmation path that routes through this dispatcher.
+    final currentTitle = task.data.title.trim();
+    if (currentTitle.isNotEmpty) {
+      return ToolExecutionResult(
+        success: true,
+        output:
+            'Skipped: task already has a title ("$currentTitle"); '
+            'title changes require explicit user approval.',
+        mutatedEntityId: taskId,
+      );
+    }
+
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,
