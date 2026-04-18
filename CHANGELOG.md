@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.958] - 2026-04-18
+### Changed
+- Desktop navigation sidebar: the Tasks and Settings notification counts now
+  render as a design-system number badge in a dedicated trailing slot on the
+  right of each row (instead of a Material `Badge` overlapping the icon and
+  label). The vertical spacing between sidebar items is now 24 px to match
+  the Figma layout. Sidebar rows are no longer pinned to a fixed 48 px
+  height — each row grows with its label, so increasing the OS/app text
+  scale no longer vertically clips "Projects", "DailyOS", "Insights",
+  "Logbook" or "Settings". The mobile bottom-nav preserves its existing
+  overlay badge.
+
 ## [0.9.957] - 2026-04-18
 ### Changed
 - Database schema bumped to v39 with two new partial indexes on the

@@ -267,6 +267,153 @@ void main() {
       },
     );
 
+    testWidgets(
+      'renders trailingBuilder widget on the right side of the row, '
+      'to the right of the label',
+      (tester) async {
+        const trailingKey = Key('trailing-badge');
+
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: [
+                DesktopSidebarDestination(
+                  label: 'Tasks',
+                  iconBuilder: ({required bool active}) =>
+                      const Icon(Icons.list_outlined),
+                  trailingBuilder: ({required bool active}) => const SizedBox(
+                    key: trailingKey,
+                    width: 32,
+                    height: 24,
+                  ),
+                ),
+              ],
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final trailingFinder = find.byKey(trailingKey);
+        expect(trailingFinder, findsOneWidget);
+
+        // Trailing sits to the right of the label.
+        final trailingLeft = tester.getTopLeft(trailingFinder).dx;
+        final labelRight = tester.getTopRight(find.text('Tasks')).dx;
+        expect(
+          trailingLeft,
+          greaterThanOrEqualTo(labelRight),
+          reason: 'Trailing badge should be to the right of the label',
+        );
+      },
+    );
+
+    testWidgets('label text is rendered without forced single-line clipping', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: [
+              DesktopSidebarDestination(
+                label: 'Insights',
+                iconBuilder: ({required bool active}) =>
+                    const Icon(Icons.insert_chart_outlined),
+              ),
+            ],
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The label uses the Text defaults so the row can grow with the
+      // text scaler instead of getting clipped to a fixed 48 px item.
+      final text = tester.widget<Text>(find.text('Insights'));
+      expect(text.overflow, isNull);
+      expect(text.softWrap, isNull);
+      expect(text.maxLines, isNull);
+    });
+
+    testWidgets(
+      'item grows vertically to fit the label when the text scaler is large',
+      (tester) async {
+        Widget buildSidebar(double scale) {
+          return makeTestableWidget2(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: MediaQuery(
+                data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+                child: Scaffold(
+                  body: SizedBox(
+                    width: 320,
+                    height: 900,
+                    child: DesktopNavigationSidebar(
+                      destinations: [
+                        DesktopSidebarDestination(
+                          label: 'Projects',
+                          iconBuilder: ({required bool active}) =>
+                              const Icon(Icons.folder_outlined),
+                        ),
+                      ],
+                      activeIndex: 0,
+                      onDestinationSelected: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(buildSidebar(1));
+        await tester.pump();
+        final baseHeight = tester.getSize(find.text('Projects')).height;
+        final baseRow = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Projects'),
+                    matching: find.byType(Row),
+                  )
+                  .first,
+            )
+            .height;
+
+        await tester.pumpWidget(buildSidebar(2));
+        await tester.pump();
+        final largeHeight = tester.getSize(find.text('Projects')).height;
+        final largeRow = tester
+            .getSize(
+              find
+                  .ancestor(
+                    of: find.text('Projects'),
+                    matching: find.byType(Row),
+                  )
+                  .first,
+            )
+            .height;
+
+        expect(
+          largeHeight,
+          greaterThan(baseHeight),
+          reason: 'Scaled-up label should take more vertical space',
+        );
+        expect(
+          largeRow,
+          greaterThanOrEqualTo(largeHeight),
+          reason: 'Row must grow to fit the scaled label, not clip it',
+        );
+        expect(
+          largeRow,
+          greaterThan(baseRow),
+          reason: 'The row should grow with the label',
+        );
+      },
+    );
+
     testWidgets('sidebar does not render a "+ New" quick action', (
       tester,
     ) async {
