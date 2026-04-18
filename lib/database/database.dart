@@ -448,7 +448,8 @@ class JournalDb extends _$JournalDb {
               'CREATE INDEX idx_journal_tasks_due_open '
               r"ON journal(json_extract(serialized, '$.data.due') ASC) "
               "WHERE type = 'Task' "
-              'AND deleted = 0 '
+              'AND task = 1 '
+              'AND deleted = FALSE '
               "AND task_status NOT IN ('DONE', 'REJECTED')",
             );
             await customStatement(
@@ -458,7 +459,7 @@ class JournalDb extends _$JournalDb {
               'CREATE INDEX idx_journal_task_status_private '
               'ON journal(task_status COLLATE BINARY ASC, '
               'private COLLATE BINARY ASC) '
-              'WHERE task = 1 AND deleted = 0',
+              "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
             );
           }();
         }
@@ -2172,7 +2173,8 @@ class JournalDb extends _$JournalDb {
     final buffer = StringBuffer()
       ..write('SELECT * FROM journal INDEXED BY idx_journal_tasks_due_open ')
       ..write("WHERE type = 'Task' ")
-      ..write('AND deleted = 0 ')
+      ..write('AND task = 1 ')
+      ..write('AND deleted = FALSE ')
       ..write("AND task_status NOT IN ('DONE', 'REJECTED') ")
       ..write(r"AND json_extract(serialized, '$.data.due') IS NOT NULL ");
 

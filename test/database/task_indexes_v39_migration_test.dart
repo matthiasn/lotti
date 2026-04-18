@@ -133,7 +133,8 @@ void main() {
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
         expect(sql, contains(r"json_extract(serialized, '$.data.due')"));
         expect(sql, contains("WHERE type = 'Task'"));
-        expect(sql, contains('deleted = 0'));
+        expect(sql, contains('task = 1'));
+        expect(sql, contains('deleted = FALSE'));
         expect(sql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
 
         // The pre-existing non-partial composite must remain intact for
@@ -160,8 +161,9 @@ void main() {
       final sql = await indexSql(db, 'idx_journal_task_status_private');
       expect(sql, contains('task_status COLLATE BINARY ASC'));
       expect(sql, contains('private COLLATE BINARY ASC'));
-      expect(sql, contains('WHERE task = 1'));
-      expect(sql, contains('deleted = 0'));
+      expect(sql, contains("type = 'Task'"));
+      expect(sql, contains('task = 1'));
+      expect(sql, contains('deleted = FALSE'));
     });
 
     test('is idempotent when the v39 indexes already exist', () async {
@@ -174,12 +176,12 @@ void main() {
         'CREATE INDEX idx_journal_task_status_private '
         'ON journal(task_status COLLATE BINARY ASC, '
         'private COLLATE BINARY ASC) '
-        'WHERE task = 1 AND deleted = 0',
+        "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
       );
       sqlite.execute(
         'CREATE INDEX idx_journal_tasks_due_open '
         r"ON journal(json_extract(serialized, '$.data.due') ASC) "
-        "WHERE type = 'Task' AND deleted = 0 "
+        "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
         "AND task_status NOT IN ('DONE', 'REJECTED')",
       );
       sqlite.execute('PRAGMA user_version = 38');
@@ -211,9 +213,12 @@ void main() {
             .customSelect(
               'EXPLAIN QUERY PLAN '
               'SELECT COUNT(*) FROM journal '
-              'WHERE deleted = 0 AND private IN (0, 1) '
-              'AND task = 1 AND task_status IN (?)',
-              variables: [Variable.withString('IN_PROGRESS')],
+              'WHERE deleted = FALSE '
+              "AND type = 'Task' "
+              'AND task = 1 '
+              'AND private IN (0, 1) '
+              'AND task_status IN (?)',
+              variables: [Variable.withString('IN PROGRESS')],
             )
             .get();
 
@@ -240,7 +245,9 @@ void main() {
             .customSelect(
               'EXPLAIN QUERY PLAN '
               'SELECT * FROM journal INDEXED BY idx_journal_tasks_due_open '
-              "WHERE type = 'Task' AND deleted = 0 "
+              "WHERE type = 'Task' "
+              'AND task = 1 '
+              'AND deleted = FALSE '
               "AND task_status NOT IN ('DONE', 'REJECTED') "
               r"AND json_extract(serialized, '$.data.due') IS NOT NULL "
               r"AND json_extract(serialized, '$.data.due') <= ? "

@@ -83,17 +83,19 @@ CREATE INDEX idx_journal_tasks_due_open ON journal(
   json_extract(serialized, '$.data.due') ASC
 )
 WHERE type = 'Task'
-  AND deleted = 0
+  AND task = 1
+  AND deleted = FALSE
   AND task_status NOT IN ('DONE', 'REJECTED');
 -- Covers `countInProgressTasks` and any other global task-status counts.
 -- task_status leads because queries filter it; private trails because it is
--- small-cardinality. Partial predicates are written as integers to match the
--- literal form used by drift-generated SQL.
+-- small-cardinality. Both task signals (`type = 'Task'` and `task = 1`) are
+-- kept on the WHERE clause so the partial index stays consistent with the
+-- other task indexes and SQLite's theorem prover reliably proves coverage.
 CREATE INDEX idx_journal_task_status_private ON journal(
   task_status COLLATE BINARY ASC,
   private COLLATE BINARY ASC
 )
-WHERE task = 1 AND deleted = 0;
+WHERE type = 'Task' AND task = 1 AND deleted = FALSE;
 CREATE INDEX idx_journal_project_id ON journal(project_id)
 WHERE type = 'Task'
   AND task = 1
@@ -820,8 +822,9 @@ SELECT COUNT(*) FROM journal
 countInProgressTasks:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false
-  AND private IN :privateStatuses
+  AND type = 'Task'
   AND task = 1
+  AND private IN :privateStatuses
   AND task_status IN :taskStatuses;
 
 countTasksByCategory:
