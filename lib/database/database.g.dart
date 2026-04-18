@@ -7244,6 +7244,52 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalCategoriesByIdsResult> journalCategoriesByIds(
+    List<String> ids,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+      'SELECT id, category FROM journal WHERE deleted = FALSE AND id IN ($expandedids)',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal},
+    ).map(
+      (QueryRow row) => JournalCategoriesByIdsResult(
+        id: row.read<String>('id'),
+        category: row.read<String>('category'),
+      ),
+    );
+  }
+
+  Selectable<JournalCategoriesByIdsByPrivateStatusesResult>
+  journalCategoriesByIdsByPrivateStatuses(
+    List<String> ids,
+    List<bool> privateStatuses,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    return customSelect(
+      'SELECT id, category FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses)',
+      variables: [
+        for (var $ in ids) Variable<String>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+      ],
+      readsFrom: {journal},
+    ).map(
+      (QueryRow row) => JournalCategoriesByIdsByPrivateStatusesResult(
+        id: row.read<String>('id'),
+        category: row.read<String>('category'),
+      ),
+    );
+  }
+
   Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
     var $arrayStartIndex = 2;
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
@@ -7365,6 +7411,39 @@ abstract class _$JournalDb extends GeneratedDatabase {
       'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN ($expandedprivateStatuses)',
       variables: [
         Variable<String>(id),
+        for (var $ in privateStatuses) Variable<bool>($),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> dayPlansByIds(List<String> ids) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id IN ($expandedids) AND deleted = FALSE',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> dayPlansByIdsByPrivateStatuses(
+    List<String> ids,
+    List<bool> privateStatuses,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id IN ($expandedids) AND deleted = FALSE AND private IN ($expandedprivateStatuses)',
+      variables: [
+        for (var $ in ids) Variable<String>($),
         for (var $ in privateStatuses) Variable<bool>($),
       ],
       readsFrom: {journal},
@@ -10331,6 +10410,21 @@ class CountTasksGroupedByCategoryResult {
   CountTasksGroupedByCategoryResult({
     required this.category,
     required this.taskCount,
+  });
+}
+
+class JournalCategoriesByIdsResult {
+  final String id;
+  final String category;
+  JournalCategoriesByIdsResult({required this.id, required this.category});
+}
+
+class JournalCategoriesByIdsByPrivateStatusesResult {
+  final String id;
+  final String category;
+  JournalCategoriesByIdsByPrivateStatusesResult({
+    required this.id,
+    required this.category,
   });
 }
 

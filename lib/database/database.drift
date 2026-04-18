@@ -1007,6 +1007,20 @@ SELECT * FROM journal
   WHERE deleted = false
   AND id IN :ids;
 
+-- Lean projection returning only (id, category) for callers that just need
+-- the denormalized category column to build a lookup map. Skips the
+-- serialized JSON blob and the fromDbEntity deserialization pass.
+journalCategoriesByIds:
+SELECT id, category FROM journal
+  WHERE deleted = false
+  AND id IN :ids;
+
+journalCategoriesByIdsByPrivateStatuses:
+SELECT id, category FROM journal
+  WHERE deleted = false
+  AND id IN :ids
+  AND private IN :privateStatuses;
+
 linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
@@ -1067,6 +1081,22 @@ dayPlanByIdByPrivateStatuses:
 SELECT * FROM journal
   WHERE type = 'DayPlanEntry'
   AND id = :id
+  AND deleted = false
+  AND private IN :privateStatuses;
+
+-- Batch fetch variants: used by the microtask-coalescing layer in
+-- DayPlanRepositoryImpl so a prefetch window of N dates collapses into a
+-- single round-trip instead of N single-row SELECTs.
+dayPlansByIds:
+SELECT * FROM journal
+  WHERE type = 'DayPlanEntry'
+  AND id IN :ids
+  AND deleted = false;
+
+dayPlansByIdsByPrivateStatuses:
+SELECT * FROM journal
+  WHERE type = 'DayPlanEntry'
+  AND id IN :ids
   AND deleted = false
   AND private IN :privateStatuses;
 

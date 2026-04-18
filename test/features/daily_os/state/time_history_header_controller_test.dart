@@ -129,6 +129,13 @@ void main() {
       createCategory('cat-personal', 'Personal'),
     ]);
 
+    // Default blanket stub for the lean category projection used during
+    // time-history aggregation. Individual tests override with the
+    // specific id→categoryId map they need.
+    when(
+      () => mockDb.getCategoryIdsForEntryIds(any()),
+    ).thenAnswer((_) async => const <String, String?>{});
+
     getIt
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -205,6 +212,9 @@ void main() {
         when(
           () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [task]);
+        when(() => mockDb.getCategoryIdsForEntryIds(any())).thenAnswer(
+          (_) async => {'task-1': 'cat-work'},
+        );
 
         final result = await container.read(
           timeHistoryHeaderControllerProvider.future,
@@ -355,6 +365,9 @@ void main() {
         when(
           () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [task1, task2]);
+        when(() => mockDb.getCategoryIdsForEntryIds(any())).thenAnswer(
+          (_) async => {'task-1': 'cat-work', 'task-2': 'cat-personal'},
+        );
 
         final result = await container.read(
           timeHistoryHeaderControllerProvider.future,
@@ -599,6 +612,9 @@ void main() {
           when(
             () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => [task1]);
+          when(() => mockDb.getCategoryIdsForEntryIds(any())).thenAnswer(
+            (_) async => {'task-1': 'cat-work'},
+          );
 
           // Initial load
           await container.read(timeHistoryHeaderControllerProvider.future);
@@ -649,6 +665,9 @@ void main() {
           when(
             () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => [task2]);
+          when(() => mockDb.getCategoryIdsForEntryIds(any())).thenAnswer(
+            (_) async => {'task-2': 'cat-work'},
+          );
 
           final notifier = container.read(
             timeHistoryHeaderControllerProvider.notifier,
