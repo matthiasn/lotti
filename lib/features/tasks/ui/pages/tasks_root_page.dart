@@ -41,14 +41,32 @@ class TasksRootPage extends ConsumerWidget {
             child: ValueListenableBuilder<String?>(
               valueListenable: getIt<NavService>().desktopSelectedTaskId,
               builder: (context, selectedTaskId, _) {
-                if (selectedTaskId != null) {
-                  return TaskDetailsPage(
-                    key: ValueKey(selectedTaskId),
-                    taskId: selectedTaskId,
-                  );
-                }
-                return DesktopDetailEmptyState(
-                  message: context.messages.desktopEmptyStateSelectTask,
+                final child = selectedTaskId != null
+                    ? TaskDetailsPage(
+                        key: ValueKey(selectedTaskId),
+                        taskId: selectedTaskId,
+                      )
+                    : DesktopDetailEmptyState(
+                        key: const ValueKey<String>(
+                          'tasks-root-empty-detail',
+                        ),
+                        message: context.messages.desktopEmptyStateSelectTask,
+                      );
+
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 480),
+                  switchInCurve: Curves.easeInOutCubic,
+                  switchOutCurve: Curves.easeInOutCubic,
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        ...previousChildren,
+                        ?currentChild,
+                      ],
+                    );
+                  },
+                  child: child,
                 );
               },
             ),

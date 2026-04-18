@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.959] - 2026-04-18
+### Changed
+- Desktop task switcher: switching between open tasks in the desktop split
+  layout now crossfades the detail pane instead of cutting abruptly. The
+  transition is a 480 ms `easeInOutCubic` fade driven by an `AnimatedSwitcher`
+  keyed on the selected task id, so it fires only when a genuinely different
+  task is opened — reloads and in-place data updates for the currently open
+  task do not trigger the animation.
+
 ## [0.9.958] - 2026-04-18
 ### Changed
 - Desktop navigation sidebar: the Tasks and Settings notification counts now

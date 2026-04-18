@@ -149,6 +149,103 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets(
+    'wraps detail pane in AnimatedSwitcher and crossfades between tasks',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final selectedNotifier = ValueNotifier<String?>('task-a');
+      when(
+        () => navService.desktopSelectedTaskId,
+      ).thenReturn(selectedNotifier);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(AnimatedSwitcher), findsOneWidget);
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
+        const ValueKey('task-a'),
+      );
+
+      // Switch to a different task id — mid-transition both pages coexist.
+      selectedNotifier.value = 'task-b';
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(TaskDetailsPage), findsNWidgets(2));
+
+      // After the 480ms fade, only the new task remains.
+      await tester.pump(const Duration(milliseconds: 360));
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
+        const ValueKey('task-b'),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'does not animate when the selected task id stays the same',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final selectedNotifier = ValueNotifier<String?>('task-stable');
+      when(
+        () => navService.desktopSelectedTaskId,
+      ).thenReturn(selectedNotifier);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+
+      // Re-emit the same id — simulates a data-reload code path that
+      // happens to rebuild the outer ValueListenableBuilder.
+      selectedNotifier.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Still exactly one TaskDetailsPage — no crossfade in flight.
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
+        const ValueKey('task-stable'),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
   testWidgets('dragging divider updates list pane width', (tester) async {
     fakeController = FakeJournalPageController(state());
 
