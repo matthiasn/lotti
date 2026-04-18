@@ -447,6 +447,12 @@ class MatrixStreamProcessor {
     // `_processSyncPayloadEvent`, so the transaction only sees an
     // uncaught throw if commit itself fails — in which case rolling back
     // the slice is the correct behaviour.
+    //
+    // IDs to record as completed *after* the transaction commits. Recording
+    // inside the transaction would leave these in `_completedSyncIds` even
+    // if the commit rolls back, causing later ingestion paths to skip
+    // events whose DB writes never persisted.
+    final completedSyncIds = <String>[];
     await _journalDb.transaction(() async {
       for (final e in ordered) {
         final ts = TimelineEventOrdering.timestamp(e);
@@ -516,6 +522,7 @@ class MatrixStreamProcessor {
               isSyncPayloadEvent = true;
               processedOk = true;
               treatAsHandled = true;
+              syncPayloadsSkippedCompleted++;
             } else {
               isSyncPayloadEvent = true;
               syncPayloadEventsSeen++;
@@ -527,6 +534,7 @@ class MatrixStreamProcessor {
                 );
                 processedOk = outcome.processedOk;
                 treatAsHandled = outcome.treatAsHandled;
+                if (processedOk) syncPayloadsApplied++;
                 if (outcome.hadFailure) hadFailure = true;
                 if (outcome.failureDelta > 0) {
                   batchFailures += outcome.failureDelta;
@@ -570,13 +578,15 @@ class MatrixStreamProcessor {
           latestTs = ts;
           latestEventId = id;
         }
-        // Record completed sync payloads to suppress duplicate applies across
-        // overlapping ingestion paths (e.g., live scan + client stream).
+        // Defer the completion bookkeeping until the transaction commits —
+        // see the comment above the transaction block.
         if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
-          _recordCompletedSync(id);
+          completedSyncIds.add(id);
         }
       }
     });
+
+    completedSyncIds.forEach(_recordCompletedSync);
 
     // Log batch processing summary for diagnostics
     _loggingService.captureEvent(

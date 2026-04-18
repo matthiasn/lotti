@@ -166,52 +166,13 @@ void main() {
       test(
         'coalesces per-event writes into a single journalDb transaction',
         () async {
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
-          final mockRoom = _MockRoom();
-          when(() => roomManager.currentRoom).thenReturn(mockRoom);
-          when(sentEventRegistry.prune).thenReturn(null);
-          when(
-            () => sentEventRegistry.consume(any<String>()),
-          ).thenReturn(false);
-          when(
-            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
-          ).thenAnswer((_) async => 1);
-
-          // Track whether eventProcessor.process calls happen while the
-          // journalDb transaction callback is running.
-          var insideTransaction = false;
-          var processCallsInsideTransaction = 0;
-          var processCallsOutsideTransaction = 0;
-          var transactionInvocations = 0;
-
-          when(
-            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
-          ).thenAnswer((invocation) async {
-            transactionInvocations += 1;
-            final action =
-                invocation.positionalArguments.first as Future<void> Function();
-            insideTransaction = true;
-            try {
-              await action();
-            } finally {
-              insideTransaction = false;
-            }
-          });
-
-          when(
-            () => eventProcessor.process(
-              event: any<Event>(named: 'event'),
-              journalDb: any<JournalDb>(named: 'journalDb'),
-            ),
-          ).thenAnswer((_) async {
-            if (insideTransaction) {
-              processCallsInsideTransaction += 1;
-            } else {
-              processCallsOutsideTransaction += 1;
-            }
-          });
+          final txn = _stubCommonProcessOrdered(
+            roomManager: roomManager,
+            sentEventRegistry: sentEventRegistry,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            eventProcessor: eventProcessor,
+          );
 
           final events = List<Event>.generate(
             5,
@@ -227,16 +188,248 @@ void main() {
           await processor.processOrdered(events);
 
           expect(
-            transactionInvocations,
+            txn.transactionInvocations,
             1,
             reason: 'slice must commit via a single journalDb transaction',
           );
           expect(
-            processCallsInsideTransaction,
+            txn.processCallsInsideTransaction,
             events.length,
             reason: 'every per-event apply must run inside the transaction',
           );
-          expect(processCallsOutsideTransaction, 0);
+          expect(txn.processCallsOutsideTransaction, 0);
+        },
+      );
+
+      test(
+        'defers _recordCompletedSync until after transaction commits',
+        () async {
+          final processor = createProcessor();
+          var wasCompletedInsideTxn = false;
+
+          final txn = _stubCommonProcessOrdered(
+            roomManager: roomManager,
+            sentEventRegistry: sentEventRegistry,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            eventProcessor: eventProcessor,
+            onBeforeCommit: () {
+              wasCompletedInsideTxn |= processor.wasCompletedSync(r'$ev1');
+            },
+          );
+
+          final event = _createMockSyncEvent(
+            r'$ev1',
+            1000,
+            content: <String, dynamic>{'msgtype': syncMessageType},
+          );
+          await processor.processOrdered([event]);
+
+          expect(txn.transactionInvocations, 1);
+          expect(
+            wasCompletedInsideTxn,
+            isFalse,
+            reason: 'completion must not be recorded inside the transaction',
+          );
+          expect(
+            processor.wasCompletedSync(r'$ev1'),
+            isTrue,
+            reason: 'completion must be recorded after a successful commit',
+          );
+        },
+      );
+
+      test(
+        'does not record completion when the transaction throws',
+        () async {
+          registerFallbackValue(_MockEvent());
+          registerFallbackValue(_MockJournalDb());
+
+          final mockRoom = _MockRoom();
+          when(() => roomManager.currentRoom).thenReturn(mockRoom);
+          when(sentEventRegistry.prune).thenReturn(null);
+          when(
+            () => sentEventRegistry.consume(any<String>()),
+          ).thenReturn(false);
+          when(
+            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => eventProcessor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+          ).thenAnswer((invocation) async {
+            final action =
+                invocation.positionalArguments.first as Future<void> Function();
+            await action();
+            // Simulate commit failure after the callback ran. The whole slice
+            // rolls back, so any in-memory flags we set inside the callback
+            // must NOT be applied to long-lived processor state.
+            throw StateError('simulated commit failure');
+          });
+
+          final processor = createProcessor();
+          final event = _createMockSyncEvent(
+            r'$ev1',
+            1000,
+            content: <String, dynamic>{'msgtype': syncMessageType},
+          );
+
+          await expectLater(
+            () => processor.processOrdered([event]),
+            throwsA(isA<StateError>()),
+          );
+
+          expect(
+            processor.wasCompletedSync(r'$ev1'),
+            isFalse,
+            reason:
+                'a rolled-back slice must not leave events flagged as completed',
+          );
+        },
+      );
+
+      test(
+        'processes valid no-msgtype fallback sync events in the transaction',
+        () async {
+          final txn = _stubCommonProcessOrdered(
+            roomManager: roomManager,
+            sentEventRegistry: sentEventRegistry,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            eventProcessor: eventProcessor,
+          );
+
+          // Base64 of {"runtimeType":"journalEntity"} — classifies as a Lotti
+          // sync payload via runtimeType presence, without the `msgtype`
+          // header that the primary path keys off.
+          const fallbackBody = 'eyJydW50aW1lVHlwZSI6ImpvdXJuYWxFbnRpdHkifQ==';
+          final event = _createMockSyncEvent(
+            r'$fallbackEv',
+            2000,
+            content: <String, dynamic>{'body': fallbackBody},
+          );
+
+          final processor = createProcessor();
+          await processor.processOrdered([event]);
+
+          expect(
+            txn.transactionInvocations,
+            1,
+            reason: 'fallback path must still apply inside a transaction',
+          );
+          expect(
+            txn.processCallsInsideTransaction,
+            1,
+            reason: 'fallback sync payload must be handed to the processor',
+          );
+          expect(
+            processor.wasCompletedSync(r'$fallbackEv'),
+            isTrue,
+            reason: 'fallback completion must be recorded after commit',
+          );
+        },
+      );
+
+      test(
+        'skips events already flagged as completed by an earlier pass',
+        () async {
+          final txn = _stubCommonProcessOrdered(
+            roomManager: roomManager,
+            sentEventRegistry: sentEventRegistry,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            eventProcessor: eventProcessor,
+          );
+
+          final processor = createProcessor();
+          final event = _createMockSyncEvent(
+            r'$repeatEv',
+            3000,
+            content: <String, dynamic>{'msgtype': syncMessageType},
+          );
+
+          // First pass records completion after commit.
+          await processor.processOrdered([event]);
+          expect(processor.wasCompletedSync(r'$repeatEv'), isTrue);
+          expect(txn.processCallsInsideTransaction, 1);
+
+          // Second pass must short-circuit — no new process() call, and the
+          // skip path must increment its own counter (verified indirectly via
+          // the non-increasing processor call count).
+          await processor.processOrdered([event]);
+          expect(
+            txn.processCallsInsideTransaction,
+            1,
+            reason: 'completed events must not be handed to the processor',
+          );
+          expect(
+            txn.transactionInvocations,
+            2,
+            reason: 'the slice still opens a transaction to flush side-effects',
+          );
+        },
+      );
+
+      test(
+        'suppresses events the registry marks as our own sends',
+        () async {
+          registerFallbackValue(_MockEvent());
+          registerFallbackValue(_MockJournalDb());
+
+          final mockRoom = _MockRoom();
+          when(() => roomManager.currentRoom).thenReturn(mockRoom);
+          when(sentEventRegistry.prune).thenReturn(null);
+          when(
+            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+          ).thenAnswer((_) async => 1);
+          // This eventId is flagged as something we sent ourselves.
+          when(
+            () => sentEventRegistry.consume(r'$selfEv'),
+          ).thenReturn(true);
+          when(
+            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+          ).thenAnswer((invocation) async {
+            final action =
+                invocation.positionalArguments.first as Future<void> Function();
+            await action();
+          });
+
+          var processCalls = 0;
+          when(
+            () => eventProcessor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {
+            processCalls += 1;
+          });
+
+          final processor = createProcessor();
+          final event = _createMockSyncEvent(
+            r'$selfEv',
+            4000,
+            content: <String, dynamic>{'msgtype': syncMessageType},
+          );
+          await processor.processOrdered([event]);
+
+          expect(
+            processCalls,
+            0,
+            reason: 'suppressed events must not be handed to the processor',
+          );
+          expect(
+            processor.wasCompletedSync(r'$selfEv'),
+            isTrue,
+            reason:
+                'suppressed events are still marked completed so that '
+                'overlapping ingestion paths do not reprocess them',
+          );
+          expect(metrics.selfEventsSuppressed, 1);
         },
       );
     });
@@ -253,20 +446,111 @@ void main() {
 
 class _MockRoom extends Mock implements Room {}
 
+class _StubbedTransaction {
+  _StubbedTransaction();
+
+  int transactionInvocations = 0;
+  int processCallsInsideTransaction = 0;
+  int processCallsOutsideTransaction = 0;
+}
+
+/// Installs the common `processOrdered` stub set:
+///
+/// - `roomManager.currentRoom` returns a live room
+/// - `sentEventRegistry.prune` / `.consume` are no-ops
+/// - `settingsDb.saveSettingsItem` succeeds
+/// - `journalDb.transaction` runs the callback and tracks inside/outside
+///   status
+/// - `eventProcessor.process` increments the inside/outside counters
+///
+/// Returns a handle whose counters tests can assert on. Optionally runs
+/// [onBeforeCommit] after the callback body finishes but before the
+/// transaction itself returns, to assert on transient in-transaction state.
+_StubbedTransaction _stubCommonProcessOrdered({
+  required _MockRoomManager roomManager,
+  required _MockSentEventRegistry sentEventRegistry,
+  required _MockSettingsDb settingsDb,
+  required _MockJournalDb journalDb,
+  required _MockEventProcessor eventProcessor,
+  void Function()? onBeforeCommit,
+}) {
+  registerFallbackValue(_MockEvent());
+  registerFallbackValue(_MockJournalDb());
+
+  final handle = _StubbedTransaction();
+  var insideTransaction = false;
+
+  final mockRoom = _MockRoom();
+  when(() => roomManager.currentRoom).thenReturn(mockRoom);
+  when(sentEventRegistry.prune).thenReturn(null);
+  when(() => sentEventRegistry.consume(any<String>())).thenReturn(false);
+  when(
+    () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+  ).thenAnswer((_) async => 1);
+
+  // Dart infers `T = Null` for `transaction(() async { ... })` when the
+  // closure has no explicit return — hence the `<Null>` stub here matches the
+  // production invocation.
+  when(
+    () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+  ).thenAnswer((invocation) async {
+    handle.transactionInvocations += 1;
+    final action =
+        invocation.positionalArguments.first as Future<void> Function();
+    insideTransaction = true;
+    try {
+      await action();
+      onBeforeCommit?.call();
+    } finally {
+      insideTransaction = false;
+    }
+  });
+
+  when(
+    () => eventProcessor.process(
+      event: any<Event>(named: 'event'),
+      journalDb: any<JournalDb>(named: 'journalDb'),
+    ),
+  ).thenAnswer((_) async {
+    if (insideTransaction) {
+      handle.processCallsInsideTransaction += 1;
+    } else {
+      handle.processCallsOutsideTransaction += 1;
+    }
+  });
+
+  return handle;
+}
+
 Event _createMockSyncEvent(
   String eventId,
   int tsMs, {
   Map<String, dynamic>? content,
+  String? text,
 }) {
   final event = _MockEvent();
   when(() => event.eventId).thenReturn(eventId);
   when(
     () => event.originServerTs,
   ).thenReturn(DateTime.fromMillisecondsSinceEpoch(tsMs));
-  when(() => event.content).thenReturn(content ?? <String, dynamic>{});
+  final effectiveContent = content ?? <String, dynamic>{};
+  when(() => event.content).thenReturn(effectiveContent);
   when(() => event.roomId).thenReturn('!room:server');
   when(() => event.type).thenReturn('m.room.message');
   when(() => event.senderId).thenReturn('@user:server');
+  // Non-null by construction so the attachment classifier never blows up on a
+  // plain sync payload mock. Tests that want an attachment set this via
+  // [content].
+  when(() => event.attachmentMimetype).thenReturn('');
+  // `text` is used by the no-msgtype fallback classifier to detect sync
+  // payloads via base64-encoded runtimeType; default to the body field when
+  // present so tests can drive both paths from one factory.
+  final bodyText =
+      text ??
+      (effectiveContent['body'] is String
+          ? effectiveContent['body'] as String
+          : '');
+  when(() => event.text).thenReturn(bodyText);
   return event;
 }
 
