@@ -165,17 +165,20 @@ class _DesktopSidebarNavItem extends StatelessWidget {
                 vertical: tokens.spacing.step4,
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
                     width: 32,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: IconTheme(
-                        data: IconThemeData(
-                          size: 20,
-                          color: tokens.colors.text.mediumEmphasis,
+                      child: ExcludeSemantics(
+                        child: IconTheme(
+                          data: IconThemeData(
+                            size: 20,
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
+                          child: destination.iconBuilder(active: active),
                         ),
-                        child: destination.iconBuilder(active: active),
                       ),
                     ),
                   ),
