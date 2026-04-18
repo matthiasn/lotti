@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.956] - 2026-04-18
+### Fixed
+- AI-proposed time entries can now be confirmed from the task "Proposed
+  changes" panel. The approval-time validator previously rejected any
+  `create_time_entry` whose `startTime` or `endTime` fell after the
+  originating wake timestamp, which left suggestions like 11:13–11:48 or
+  11:00–13:00 stuck as pending with a "Failed to apply change" toast
+  whenever the agent rounded or estimated a session past the wake instant.
+  The wake timestamp is still used for the same-day check (so
+  after-midnight approvals keep working), but the "not in the future"
+  cutoff no longer applies at approval time — the user is the authority
+  when confirming. `endTime` must still land on the same day as
+  `startTime`. Direct agent-time tool calls (if ever wired) still refuse
+  fabricated future times.
+
 ## [0.9.955] - 2026-04-17
 ### Changed
 - Align the desktop tasks and projects surfaces with the Figma design system.

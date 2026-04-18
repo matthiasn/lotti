@@ -538,22 +538,90 @@ void main() {
       );
 
       test(
-        'returns failure when completed session ends after wake timestamp',
+        'accepts completed session whose endTime extends past the wake '
+        'timestamp (user is the authority at approval time)',
         () async {
-          await withClock(Clock.fixed(DateTime(2026, 3, 18, 0, 5)), () async {
+          // Reproduces the P0 scenario: agent wakes at 11:48:23, model
+          // rounds/estimates endTime past wake, user approves later. The
+          // "not in the future" cutoff must not apply at approval time.
+          await withClock(Clock.fixed(DateTime(2026, 4, 18, 12, 54)), () async {
             final result = await handler.handle(
               sourceTaskId,
               {
-                'startTime': '2026-03-17T23:00:00',
-                'endTime': '2026-03-17T23:59:00',
-                'summary': 'Late session',
-                timeEntryReferenceTimestampArg: '2026-03-17T23:55:00',
+                'startTime': '2026-04-18T11:13:50',
+                'endTime': '2026-04-18T11:48:50',
+                'summary': 'Design walkthrough',
+                timeEntryReferenceTimestampArg: '2026-04-18T11:48:23.029723',
+              },
+            );
+
+            expect(result.success, isTrue);
+            expect(result.output, contains('11:13–11:48'));
+          });
+        },
+      );
+
+      test(
+        'accepts completed session whose endTime is in the actual future at '
+        'approval time as long as it stays on the same day',
+        () async {
+          // Item 23 from the P0 logs: end=13:00, wake=11:48, approval<13:00.
+          await withClock(Clock.fixed(DateTime(2026, 4, 18, 12, 57)), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-04-18T11:00:00',
+                'endTime': '2026-04-18T13:00:00',
+                'summary': 'Comprehensive walkthrough',
+                timeEntryReferenceTimestampArg: '2026-04-18T11:48:23.029723',
+              },
+            );
+
+            expect(result.success, isTrue);
+            expect(result.output, contains('11:00–13:00'));
+          });
+        },
+      );
+
+      test(
+        'still rejects completed session when endTime spills into the next '
+        'day (same-day constraint is preserved)',
+        () async {
+          await withClock(Clock.fixed(DateTime(2026, 4, 18, 23)), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-04-18T23:30:00',
+                'endTime': '2026-04-19T00:30:00',
+                'summary': 'Crossing midnight',
+                timeEntryReferenceTimestampArg: '2026-04-18T22:00:00',
               },
             );
 
             expect(result.success, isFalse);
-            expect(result.output, contains('wake timestamp'));
-            expect(result.errorMessage, 'endTime is after wake timestamp');
+            expect(result.output, contains('same day'));
+            expect(result.errorMessage, 'endTime is on a different day');
+          });
+        },
+      );
+
+      test(
+        'at wake time (no reference timestamp injected) still rejects '
+        'completed session with endTime in the future',
+        () async {
+          // testNow = 2026-03-17T15:30 — endTime 16:00 is in the future.
+          await withClock(Clock.fixed(testNow), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T14:00:00',
+                'endTime': '2026-03-17T16:00:00',
+                'summary': 'Would be hallucinated',
+              },
+            );
+
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'endTime is after current time');
           });
         },
       );
