@@ -10,6 +10,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -885,8 +887,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('agentEntity')),
-          domain: 'AGENT_SYNC',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
       verify(
@@ -1090,8 +1092,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('agentLink')),
-          domain: 'AGENT_SYNC',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
       verify(
@@ -1195,8 +1197,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('ignored')),
-          domain: 'AGENT_SYNC',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
     });
@@ -1225,8 +1227,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(that: contains('ignored')),
-          domain: 'AGENT_SYNC',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
     });
@@ -1428,8 +1430,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('apply.agentEntity.gapsDetected count=1'),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'gapDetection',
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
           ),
         ).called(1);
       });
@@ -2067,8 +2069,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<Object>(that: contains('no payload and no jsonPath')),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve',
+            domain: LogDomains.sync,
+            subDomain: 'processor.resolve',
           ),
         ).called(1);
       });
@@ -2085,8 +2087,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<Object>(that: contains('no payload and no jsonPath')),
-            domain: 'AGENT_SYNC',
-            subDomain: 'resolve',
+            domain: LogDomains.sync,
+            subDomain: 'processor.resolve',
           ),
         ).called(1);
       });
@@ -2523,8 +2525,8 @@ void main() {
         any<Object>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: 'MATRIX_SYNC',
-        subDomain: 'skipUnrecoverable',
+        domain: LogDomains.sync,
+        subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);
   });
@@ -2577,8 +2579,8 @@ void main() {
         any<String>(
           that: contains('skipping undeserializable sync message'),
         ),
-        domain: 'MATRIX_SYNC',
-        subDomain: 'skipUnrecoverable',
+        domain: LogDomains.sync,
+        subDomain: 'processor.skipUnrecoverable',
       ),
     ).called(1);
   });
@@ -4100,8 +4102,8 @@ void main() {
     verify(
       () => loggingService.captureEvent(
         contains('apply entryLink from=from-id to=to-id rows=1'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'apply.entryLink',
+        domain: LogDomains.sync,
+        subDomain: 'processor.apply.entryLink',
       ),
     ).called(1);
   });
@@ -4308,8 +4310,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('apply.gapsDetected count=1'),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'gapDetection',
+          domain: LogDomains.sync,
+          subDomain: 'processor.gapDetection',
         ),
       ).called(1);
       verifyNever(() => journalDb.updateJournalEntity(any()));
@@ -4646,8 +4648,8 @@ void main() {
             contains(
               'apply entryLink.embedded from=${link1.fromId} to=${link1.toId}',
             ),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply.entryLink.embedded',
+            domain: LogDomains.sync,
+            subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
 
@@ -4656,8 +4658,8 @@ void main() {
             contains(
               'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
             ),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply.entryLink.embedded',
+            domain: LogDomains.sync,
+            subDomain: 'processor.apply.entryLink.embedded',
           ),
         ).called(1);
 
@@ -4665,8 +4667,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('embeddedLinks=2/2'),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'apply',
+            domain: LogDomains.sync,
+            subDomain: 'processor.apply',
           ),
         ).called(1);
 
@@ -4744,8 +4746,8 @@ void main() {
           contains(
             'apply entryLink.embedded from=${link.fromId} to=${link.toId}',
           ),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.entryLink.embedded',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply.entryLink.embedded',
         ),
       ).called(1);
 
@@ -4753,8 +4755,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=1/1'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
 
@@ -4827,8 +4829,8 @@ void main() {
           contains(
             'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
           ),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.entryLink.embedded',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply.entryLink.embedded',
         ),
       ).called(1);
 
@@ -4836,8 +4838,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=1/2'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
     });
@@ -4865,8 +4867,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=0/0'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
     });
@@ -4905,7 +4907,7 @@ void main() {
         () => loggingService.captureEvent(
           contains('apply entryLink.embedded'),
           domain: any(named: 'domain'),
-          subDomain: 'apply.entryLink.embedded',
+          subDomain: 'processor.apply.entryLink.embedded',
         ),
       );
 
@@ -4913,8 +4915,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains('embeddedLinks=0/1'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
 
@@ -4985,8 +4987,8 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           any<Object>(),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'apply',
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
         ),
       ).called(1);
     });
@@ -5009,8 +5011,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<Object>(),
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'apply',
+            domain: LogDomains.sync,
+            subDomain: 'processor.apply',
           ),
         ).called(1);
       },
@@ -5388,8 +5390,8 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             contains('apply.entryLink.gapsDetected count=2'),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'gapDetection',
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
           ),
         ).called(1);
       },
@@ -5741,4 +5743,56 @@ void main() {
   // Note: Sequence log integration tests for the sync processor are covered
   // by sync_sequence_log_service_test.dart which tests recordReceivedEntry
   // behavior including gap detection and status transitions.
+
+  group('_trace routing', () {
+    test(
+      'routes through DomainLogger when one is injected and skips the '
+      'direct captureEvent fallback',
+      () async {
+        final domainLogger = MockDomainLogger();
+        when(
+          () => domainLogger.log(
+            any<String>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          domainLogger: domainLogger,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+        );
+
+        // Trigger a _trace emission via the undeserializable-skip path.
+        when(() => event.text).thenReturn(
+          base64.encode(utf8.encode(json.encode(<String, dynamic>{}))),
+        );
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => domainLogger.log(
+            LogDomains.sync,
+            any<String>(
+              that: contains('skipping undeserializable sync message'),
+            ),
+            subDomain: 'processor.skipUnrecoverable',
+          ),
+        ).called(1);
+        verifyNever(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains('skipping undeserializable sync message'),
+            ),
+            domain: LogDomains.sync,
+            subDomain: 'processor.skipUnrecoverable',
+          ),
+        );
+      },
+    );
+  });
 }

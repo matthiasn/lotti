@@ -12,6 +12,67 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
+  Event makeEvent({
+    required String eventId,
+    required String relativePath,
+    String mime = 'image/jpeg',
+  }) {
+    final e = MockEvent();
+    when(() => e.eventId).thenReturn(eventId);
+    when(() => e.attachmentMimetype).thenReturn(mime);
+    when(() => e.content).thenReturn({'relativePath': relativePath});
+    return e;
+  }
+
+  test(
+    'record is idempotent per eventId — repeat observations are no-ops '
+    'and emit no log',
+    () {
+      final logging = MockLoggingService();
+      final index = AttachmentIndex(logging: logging);
+      final e = makeEvent(eventId: 'ev1', relativePath: 'images/a.jpg');
+
+      expect(index.record(e), isTrue);
+      expect(index.record(e), isFalse);
+      expect(index.record(e), isFalse);
+
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('attachmentIndex.record')),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'attachmentIndex.record',
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'record does not thrash when multiple events share one relativePath — '
+    'each eventId logs exactly once regardless of interleaving',
+    () {
+      final logging = MockLoggingService();
+      final index = AttachmentIndex(logging: logging);
+      final a = makeEvent(eventId: 'A', relativePath: 'audio/x.m4a');
+      final b = makeEvent(eventId: 'B', relativePath: 'audio/x.m4a');
+
+      // Interleave observations like catch-up + live-scan would.
+      expect(index.record(a), isTrue);
+      expect(index.record(b), isTrue);
+      expect(index.record(a), isFalse);
+      expect(index.record(b), isFalse);
+      expect(index.record(a), isFalse);
+      expect(index.record(b), isFalse);
+
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('attachmentIndex.record')),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'attachmentIndex.record',
+        ),
+      ).called(2);
+    },
+  );
+
   test('record and find works with and without leading slash', () {
     final logging = MockLoggingService();
     final index = AttachmentIndex(logging: logging);

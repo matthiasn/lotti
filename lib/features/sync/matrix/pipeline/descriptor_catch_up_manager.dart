@@ -162,16 +162,19 @@ class DescriptorCatchUpManager {
         );
         for (final e in events) {
           final rp = e.content['relativePath'];
-          if (rp is String && rp.isNotEmpty) {
-            final changed = _attachmentIndex.record(e);
-            recorded++;
-            if (changed) newRecords++;
-            if (contains(rp)) {
-              pendingHits++;
-              if (changed) {
-                freshHits++;
-              }
-            }
+          if (rp is! String || rp.isEmpty) continue;
+          // Skip non-pending paths — the live stream is responsible for
+          // populating the AttachmentIndex for general traffic; this
+          // catch-up exists specifically to unblock pending descriptors.
+          // Scanning non-pending events would do ~1000 wasted map writes
+          // per run on large rooms.
+          if (!contains(rp)) continue;
+          final changed = _attachmentIndex.record(e);
+          recorded++;
+          pendingHits++;
+          if (changed) {
+            newRecords++;
+            freshHits++;
           }
         }
       } finally {
@@ -193,7 +196,14 @@ class DescriptorCatchUpManager {
         domain: syncLoggingDomain,
         subDomain: 'descriptorCatchUp',
       );
-      if (freshHits > 0) {
+      // Gate the retry/live-scan nudge on pendingHits (not freshHits): the
+      // AttachmentIndex per-eventId dedup returns false when the live stream
+      // has already indexed the descriptor, so freshHits stays zero for
+      // pending paths that are in fact now resolvable. We want the nudge
+      // whenever a pending path has at least one matching event in the
+      // scanned window, regardless of whether this pass was the first to
+      // record it.
+      if (pendingHits > 0) {
         await _retryNow();
         _scheduleLiveScan();
       }

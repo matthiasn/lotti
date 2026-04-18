@@ -124,10 +124,19 @@ class SyncSequenceLogService {
   bool _pendingMissingEntriesDetected = false;
 
   void _trace(String message, {String? subDomain}) {
-    _domainLogger?.log(
-      LogDomains.sync,
+    final sub = subDomain ?? 'sequence';
+    final domainLogger = _domainLogger;
+    if (domainLogger != null) {
+      domainLogger.log(LogDomains.sync, message, subDomain: sub);
+      return;
+    }
+    // Fallback for callers that did not inject a DomainLogger (e.g. tests).
+    // Emitting directly under the `sync` domain keeps sync-file routing in
+    // LoggingService working so the log line still lands in the sync file.
+    _loggingService.captureEvent(
       message,
-      subDomain: subDomain ?? 'sequence',
+      domain: LogDomains.sync,
+      subDomain: sub,
     );
   }
 
@@ -254,11 +263,6 @@ class SyncSequenceLogService {
         'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
         subDomain: 'sequence.recordSent',
       );
-      _loggingService.captureEvent(
-        'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordSent',
-      );
     }
   }
 
@@ -375,11 +379,6 @@ class SyncSequenceLogService {
           'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
           subDomain: 'sequence.skipGap',
         );
-        _loggingService.captureEvent(
-          'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'skipGap',
-        );
       }
 
       final lastSeen = await _getCachedLastCounterForHost(hostId);
@@ -404,11 +403,6 @@ class SyncSequenceLogService {
             'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
             subDomain: 'sequence.largeGap',
           );
-          _loggingService.captureEvent(
-            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'largeGap',
-          );
           final insertedCount = await _materializeLargeGap(
             hostId: hostId,
             startCounter: startCounter,
@@ -425,12 +419,6 @@ class SyncSequenceLogService {
             'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
             'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
             subDomain: 'sequence.gapDetected',
-          );
-          _loggingService.captureEvent(
-            'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
-            'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'gapDetected',
           );
         } else {
           final existingCounters = await _syncDatabase
@@ -459,11 +447,6 @@ class SyncSequenceLogService {
               _trace(
                 'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
                 subDomain: 'sequence.gapDetected',
-              );
-              _loggingService.captureEvent(
-                'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'gapDetected',
               );
             }
           }
@@ -524,17 +507,6 @@ class SyncSequenceLogService {
             'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
             subDomain: 'sequence.requestedResolved',
           );
-          _loggingService
-            ..captureEvent(
-              'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'backfillArrived',
-            )
-            ..captureEvent(
-              'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'requestedResolved',
-            );
         }
       } else {
         // For other hosts in the VC, also record with entryId.
@@ -588,17 +560,6 @@ class SyncSequenceLogService {
             'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
             subDomain: 'sequence.requestedResolved',
           );
-          _loggingService
-            ..captureEvent(
-              'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'backfillArrived',
-            )
-            ..captureEvent(
-              'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'requestedResolved',
-            );
         }
       }
 
@@ -610,11 +571,6 @@ class SyncSequenceLogService {
       _trace(
         'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
         subDomain: 'sequence.recordReceived',
-      );
-      _loggingService.captureEvent(
-        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'recordReceived',
       );
     }
 
@@ -659,13 +615,6 @@ class SyncSequenceLogService {
         'start=$startCounter end=$endCounter '
         'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
         subDomain: 'sequence.extremeGap',
-      );
-      _loggingService.captureEvent(
-        'extremeGapDetected hostId=$hostId gapSize=$gapSize '
-        'start=$startCounter end=$endCounter '
-        'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'extremeGap',
       );
     }
 
@@ -815,11 +764,6 @@ class SyncSequenceLogService {
               'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
               subDomain: 'sequence.requestedResolved',
             );
-            _loggingService.captureEvent(
-              'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'requestedResolved',
-            );
           }
         }
         // If already received/backfilled, skip - don't downgrade status
@@ -835,11 +779,6 @@ class SyncSequenceLogService {
       _trace(
         'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
         subDomain: 'sequence.coveredClocks',
-      );
-      _loggingService.captureEvent(
-        'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'coveredClocks',
       );
     }
   }
@@ -901,11 +840,6 @@ class SyncSequenceLogService {
         'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
         subDomain: 'sequence.backfillResponse',
       );
-      _loggingService.captureEvent(
-        'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillResponse',
-      );
       return;
     }
 
@@ -921,11 +855,6 @@ class SyncSequenceLogService {
       _trace(
         'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
         subDomain: 'sequence.backfillResponse',
-      );
-      _loggingService.captureEvent(
-        'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillResponse',
       );
       return;
     }
@@ -958,11 +887,6 @@ class SyncSequenceLogService {
         'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
         subDomain: 'sequence.backfillHint',
       );
-      _loggingService.captureEvent(
-        'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillHint',
-      );
       return;
     }
 
@@ -973,11 +897,6 @@ class SyncSequenceLogService {
       _trace(
         'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
         subDomain: 'sequence.backfillResponse',
-      );
-      _loggingService.captureEvent(
-        'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillResponse',
       );
       return;
     }
@@ -1013,11 +932,6 @@ class SyncSequenceLogService {
       'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
       subDomain: 'sequence.backfillHint',
     );
-    _loggingService.captureEvent(
-      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
-      domain: 'SYNC_SEQUENCE',
-      subDomain: 'backfillHint',
-    );
   }
 
   /// Verify that we have an entry locally and its VC covers the requested
@@ -1037,11 +951,6 @@ class SyncSequenceLogService {
       _trace(
         'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
         subDomain: 'sequence.backfillVerify',
-      );
-      _loggingService.captureEvent(
-        'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillVerify',
       );
       return false;
     }
@@ -1076,11 +985,6 @@ class SyncSequenceLogService {
     _trace(
       'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
       subDomain: 'sequence.backfillVerified',
-    );
-    _loggingService.captureEvent(
-      'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
-      domain: 'SYNC_SEQUENCE',
-      subDomain: 'backfillVerified',
     );
     return true;
   }
@@ -1117,11 +1021,6 @@ class SyncSequenceLogService {
         'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
         subDomain: 'sequence.backfillResolved',
       );
-      _loggingService.captureEvent(
-        'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'backfillResolved',
-      );
     }
 
     return resolved;
@@ -1137,11 +1036,6 @@ class SyncSequenceLogService {
       _trace(
         'resetUnresolvableEntries: reset $count entries back to missing',
         subDomain: 'sequence.resetUnresolvable',
-      );
-      _loggingService.captureEvent(
-        'resetUnresolvableEntries: reset $count entries back to missing',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'resetUnresolvable',
       );
     }
 
@@ -1206,11 +1100,6 @@ class SyncSequenceLogService {
     _trace(
       'resetRequestCounts: reset ${entries.length} entries for re-request',
       subDomain: 'sequence.reRequest',
-    );
-    _loggingService.captureEvent(
-      'resetRequestCounts: reset ${entries.length} entries for re-request',
-      domain: 'SYNC_SEQUENCE',
-      subDomain: 'reRequest',
     );
   }
 
@@ -1373,11 +1262,6 @@ class SyncSequenceLogService {
       _trace(
         '$label: added $populated sequence log entries',
         subDomain: 'sequence.populate',
-      );
-      _loggingService.captureEvent(
-        '$label: added $populated sequence log entries',
-        domain: 'SYNC_SEQUENCE',
-        subDomain: 'populate',
       );
     }
 

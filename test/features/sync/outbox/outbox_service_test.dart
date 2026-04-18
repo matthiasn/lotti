@@ -2757,13 +2757,6 @@ void main() {
             subDomain: 'dbNudge',
           ),
         ).called(1);
-        verify(
-          () => loggingService.captureEvent(
-            'enqueueRequest() done',
-            domain: 'OUTBOX',
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).called(1);
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
@@ -2807,13 +2800,6 @@ void main() {
           () => loggingService.captureEvent(
             startsWith('dbNudge'),
             domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          ),
-        );
-        verifyNever(
-          () => loggingService.captureEvent(
-            'enqueueRequest() done',
-            domain: 'OUTBOX',
             subDomain: any(named: 'subDomain'),
           ),
         );
