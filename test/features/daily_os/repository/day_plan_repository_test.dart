@@ -145,8 +145,13 @@ void main() {
         final f1 = repository.getDayPlan(d1);
         final f2 = repository.getDayPlan(d2);
 
-        await expectLater(f1, throwsA(same(failure)));
-        await expectLater(f2, throwsA(same(failure)));
+        // Register both expectations before awaiting: the shared batch
+        // completes both futures with the same error in one microtask,
+        // so sequential awaits would leave the second one unhandled.
+        await Future.wait([
+          expectLater(f1, throwsA(same(failure))),
+          expectLater(f2, throwsA(same(failure))),
+        ]);
         verify(() => journalDb.getDayPlansByIds(any())).called(1);
       },
     );

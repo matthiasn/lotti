@@ -2547,9 +2547,14 @@ class JournalDb extends _$JournalDb {
   /// window firing `_fetchAllData` per date) share a single round-trip: the
   /// wave merges every caller's id set, issues one `to_id IN (…)` query, and
   /// hands each caller the subset matching its own ids.
+  ///
+  /// The caller's set is snapshotted before scheduling so the post-query
+  /// filter never reads a mutated view if the caller reuses or clears the
+  /// set before the coalesced wave fires.
   Future<List<EntryLink>> basicLinksForEntryIds(Set<String> ids) {
-    if (ids.isEmpty) return Future.value(const <EntryLink>[]);
-    return _coalesceBasicLinks(ids);
+    final snapshot = Set<String>.unmodifiable(ids);
+    if (snapshot.isEmpty) return Future.value(const <EntryLink>[]);
+    return _coalesceBasicLinks(snapshot);
   }
 
   _PendingLinksWave? _pendingBasicLinksWave;

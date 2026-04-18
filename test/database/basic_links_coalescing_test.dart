@@ -214,9 +214,13 @@ void main() {
           failingDb.basicLinksForEntryIds({'b'}),
         ];
 
-        for (final f in futures) {
-          await expectLater(f, throwsA(same(failure)));
-        }
+        // Register expectLater on every future before awaiting: the
+        // coalesced wave completes both with the same error in one
+        // microtask, so a sequential `await` would leave the second
+        // future briefly unhandled.
+        await Future.wait([
+          for (final f in futures) expectLater(f, throwsA(same(failure))),
+        ]);
         expect(failingDb.attempts, 1);
       },
     );

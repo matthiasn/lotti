@@ -281,9 +281,14 @@ void main() {
           failingDb.getTasksDueOnOrBefore(DateTime(2026, 4, 12)),
         ];
 
-        for (final f in futures) {
-          await expectLater(f, throwsA(same(failingDb.failure)));
-        }
+        // Register expectLater on every future before awaiting: the
+        // coalesced wave completes both with the same error in one
+        // microtask, so a sequential `await` would leave the second
+        // future briefly unhandled.
+        await Future.wait([
+          for (final f in futures)
+            expectLater(f, throwsA(same(failingDb.failure))),
+        ]);
         expect(failingDb.attempts, 1);
       },
     );
