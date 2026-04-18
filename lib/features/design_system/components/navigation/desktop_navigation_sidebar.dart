@@ -7,6 +7,7 @@ class DesktopSidebarDestination {
   const DesktopSidebarDestination({
     required this.label,
     required this.iconBuilder,
+    this.trailingBuilder,
   });
 
   /// Display label for this destination.
@@ -14,6 +15,10 @@ class DesktopSidebarDestination {
 
   /// Builder that returns an icon widget based on the active state.
   final Widget Function({required bool active}) iconBuilder;
+
+  /// Optional builder for a trailing widget (e.g. a count badge) rendered
+  /// on the right side of the row, aligned with the label.
+  final Widget Function({required bool active})? trailingBuilder;
 }
 
 /// Persistent left-hand navigation sidebar for the desktop layout.
@@ -104,7 +109,8 @@ class DesktopNavigationSidebar extends StatelessWidget {
                       active: i == activeIndex && !isSettingsActive,
                       onTap: () => onDestinationSelected(i),
                     ),
-                    if (i < destinations.length - 1) const SizedBox(height: 4),
+                    if (i < destinations.length - 1)
+                      SizedBox(height: tokens.spacing.step6),
                   ],
                 ],
               ),
@@ -149,7 +155,6 @@ class _DesktopSidebarNavItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(tokens.radii.m),
           onTap: onTap,
           child: Ink(
-            height: 48,
             decoration: BoxDecoration(
               color: active ? tokens.colors.surface.active : Colors.transparent,
               borderRadius: BorderRadius.circular(tokens.radii.m),
@@ -157,12 +162,12 @@ class _DesktopSidebarNavItem extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step4,
               ),
               child: Row(
                 children: [
                   SizedBox(
                     width: 32,
-                    height: 20,
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: IconTheme(
@@ -180,9 +185,12 @@ class _DesktopSidebarNavItem extends StatelessWidget {
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (destination.trailingBuilder != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    destination.trailingBuilder!(active: active),
+                  ],
                 ],
               ),
             ),

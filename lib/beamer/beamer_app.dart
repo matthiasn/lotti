@@ -19,10 +19,12 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
+import 'package:lotti/features/tasks/ui/tasks_trailing_badge.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -70,11 +72,29 @@ class _AppNavigationDestination {
     required this.kind,
     required this.label,
     required this.iconBuilder,
+    this.mobileIconWrapper,
+    this.trailingBuilder,
   });
 
   final _AppNavigationDestinationKind kind;
   final String label;
+
+  /// Plain icon (no badge overlay). Used directly in the desktop sidebar,
+  /// where the count lives in [trailingBuilder].
   final Widget Function({required bool active}) iconBuilder;
+
+  /// Optional wrapper applied to the icon in compact (mobile) contexts where
+  /// the count must overlay the icon rather than sit in its own row slot.
+  final Widget Function(Widget icon)? mobileIconWrapper;
+
+  /// Optional trailing widget shown on the right side of the desktop sidebar
+  /// row. Typically a count pill.
+  final Widget Function({required bool active})? trailingBuilder;
+
+  Widget _mobileIcon({required bool active}) {
+    final icon = iconBuilder(active: active);
+    return mobileIconWrapper?.call(icon) ?? icon;
+  }
 
   DesignSystemNavigationTabBarItem toDesignSystemItem({
     required bool active,
@@ -82,8 +102,8 @@ class _AppNavigationDestination {
   }) {
     return DesignSystemNavigationTabBarItem(
       label: label,
-      icon: iconBuilder(active: false),
-      activeIcon: iconBuilder(active: true),
+      icon: _mobileIcon(active: false),
+      activeIcon: _mobileIcon(active: true),
       active: active,
       onTap: onTap,
     );
@@ -93,6 +113,7 @@ class _AppNavigationDestination {
     return DesktopSidebarDestination(
       label: label,
       iconBuilder: iconBuilder,
+      trailingBuilder: trailingBuilder,
     );
   }
 }
@@ -472,11 +493,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.tasks,
         label: context.messages.navTabTitleTasks,
-        iconBuilder: ({required active}) => TasksBadge(
-          child: Icon(
-            active ? Icons.list_rounded : Icons.list_outlined,
-          ),
-        ),
+        iconBuilder: ({required active}) =>
+            Icon(active ? Icons.list_rounded : Icons.list_outlined),
+        mobileIconWrapper: (icon) => TasksBadge(child: icon),
+        trailingBuilder: ({required active}) => const TasksTrailingBadge(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.projects,
@@ -514,8 +534,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
-        iconBuilder: ({required active}) =>
-            const OutboxBadgeIcon(icon: Icon(Icons.settings_rounded)),
+        iconBuilder: ({required active}) => const Icon(Icons.settings_rounded),
+        mobileIconWrapper: (icon) => OutboxBadgeIcon(icon: icon),
+        trailingBuilder: ({required active}) => const OutboxTrailingBadge(),
       ),
     ];
 

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.958" date="2026-04-18">
+      <description>
+          <p>Desktop navigation sidebar: the Tasks and Settings notification counts now render as a design-system number badge in a dedicated trailing slot on the right of each row instead of a Material Badge overlapping the icon and label. Vertical spacing between sidebar items is now 24 px to match the Figma layout. Sidebar rows are no longer pinned to a fixed 48 px height — each row grows with its label, so increasing the OS or app text scale no longer vertically clips "Projects", "DailyOS", "Insights", "Logbook" or "Settings". The mobile bottom-nav preserves its existing overlay badge.</p>
+      </description>
+    </release>
     <release version="0.9.957" date="2026-04-18">
       <description>
           <p>Database schema bumped to v39 with two new partial indexes on the journal table. idx_journal_tasks_due_open is keyed on the JSON-extracted due date for open tasks so the due-date query streams straight from the index without an external sort, and idx_journal_task_status_private covers countInProgressTasks and similar global task-status counts with a narrow index instead of scanning the full task set. Both partials carry type = 'Task' AND task = 1 AND deleted = FALSE so they stay consistent with the other task indexes and SQLite's theorem prover reliably proves coverage for the paired queries.</p>
