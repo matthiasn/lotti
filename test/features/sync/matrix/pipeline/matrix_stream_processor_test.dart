@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -161,6 +162,83 @@ void main() {
 
         await processor.processOrdered([]);
       });
+
+      test(
+        'coalesces per-event writes into a single journalDb transaction',
+        () async {
+          registerFallbackValue(_MockEvent());
+          registerFallbackValue(_MockJournalDb());
+
+          final mockRoom = _MockRoom();
+          when(() => roomManager.currentRoom).thenReturn(mockRoom);
+          when(sentEventRegistry.prune).thenReturn(null);
+          when(
+            () => sentEventRegistry.consume(any<String>()),
+          ).thenReturn(false);
+          when(
+            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+          ).thenAnswer((_) async => 1);
+
+          // Track whether eventProcessor.process calls happen while the
+          // journalDb transaction callback is running.
+          var insideTransaction = false;
+          var processCallsInsideTransaction = 0;
+          var processCallsOutsideTransaction = 0;
+          var transactionInvocations = 0;
+
+          when(
+            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+          ).thenAnswer((invocation) async {
+            transactionInvocations += 1;
+            final action =
+                invocation.positionalArguments.first as Future<void> Function();
+            insideTransaction = true;
+            try {
+              await action();
+            } finally {
+              insideTransaction = false;
+            }
+          });
+
+          when(
+            () => eventProcessor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {
+            if (insideTransaction) {
+              processCallsInsideTransaction += 1;
+            } else {
+              processCallsOutsideTransaction += 1;
+            }
+          });
+
+          final events = List<Event>.generate(
+            5,
+            (i) => _createMockSyncEvent(
+              r'$ev'
+              '${i + 1}',
+              1000 + i,
+              content: <String, dynamic>{'msgtype': syncMessageType},
+            ),
+          );
+
+          final processor = createProcessor();
+          await processor.processOrdered(events);
+
+          expect(
+            transactionInvocations,
+            1,
+            reason: 'slice must commit via a single journalDb transaction',
+          );
+          expect(
+            processCallsInsideTransaction,
+            events.length,
+            reason: 'every per-event apply must run inside the transaction',
+          );
+          expect(processCallsOutsideTransaction, 0);
+        },
+      );
     });
 
     group('retryNow', () {
@@ -175,13 +253,17 @@ void main() {
 
 class _MockRoom extends Mock implements Room {}
 
-Event _createMockSyncEvent(String eventId, int tsMs) {
+Event _createMockSyncEvent(
+  String eventId,
+  int tsMs, {
+  Map<String, dynamic>? content,
+}) {
   final event = _MockEvent();
   when(() => event.eventId).thenReturn(eventId);
   when(
     () => event.originServerTs,
   ).thenReturn(DateTime.fromMillisecondsSinceEpoch(tsMs));
-  when(() => event.content).thenReturn(<String, dynamic>{});
+  when(() => event.content).thenReturn(content ?? <String, dynamic>{});
   when(() => event.roomId).thenReturn('!room:server');
   when(() => event.type).thenReturn('m.room.message');
   when(() => event.senderId).thenReturn('@user:server');

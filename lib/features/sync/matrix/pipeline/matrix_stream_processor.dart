@@ -437,130 +437,146 @@ class MatrixStreamProcessor {
     var syncPayloadEventsSeen = 0;
     var syncPayloadsApplied = 0;
     var syncPayloadsSkippedCompleted = 0;
-    for (final e in ordered) {
-      final ts = TimelineEventOrdering.timestamp(e);
-      final id = e.eventId;
-      final content = e.content;
-      var processedOk = true;
-      var treatAsHandled =
-          false; // allow advancement even if skipped by retry cap
-      var isSyncPayloadEvent = false;
 
-      // If this looks like a sync payload and another ingestion path is already
-      // processing it, skip to avoid duplicate applies.
-      final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
-      final wasSuppressed = suppressedIds.contains(id);
-      if (!wasSuppressed && isPotentialSync && _inFlightSyncIds.contains(id)) {
-        // Defer; the completing path will record completion and advancement.
-        continue;
-      }
+    // Wrap the per-event apply loop in a single JournalDb transaction so
+    // that Drift coalesces the stream emissions produced by per-event
+    // writes into one notification per slice. Without this, a slice of N
+    // events fires N separate writer commits, each of which wakes every
+    // journal watcher/controller and queues up readers behind the writer
+    // lock. Per-event errors are already caught inside
+    // `_processSyncPayloadEvent`, so the transaction only sees an
+    // uncaught throw if commit itself fails — in which case rolling back
+    // the slice is the correct behaviour.
+    await _journalDb.transaction(() async {
+      for (final e in ordered) {
+        final ts = TimelineEventOrdering.timestamp(e);
+        final id = e.eventId;
+        final content = e.content;
+        var processedOk = true;
+        var treatAsHandled =
+            false; // allow advancement even if skipped by retry cap
+        var isSyncPayloadEvent = false;
 
-      if (wasSuppressed) {
-        isSyncPayloadEvent = isPotentialSync;
-        processedOk = true;
-        treatAsHandled = true;
-      } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-          content['msgtype'] == syncMessageType) {
-        // Skip already-completed sync events to avoid redundant logging
-        // and DB checks.
-        if (wasCompletedSync(id)) {
-          isSyncPayloadEvent = true;
+        // If this looks like a sync payload and another ingestion path is already
+        // processing it, skip to avoid duplicate applies.
+        final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
+        final wasSuppressed = suppressedIds.contains(id);
+        if (!wasSuppressed &&
+            isPotentialSync &&
+            _inFlightSyncIds.contains(id)) {
+          // Defer; the completing path will record completion and advancement.
+          continue;
+        }
+
+        if (wasSuppressed) {
+          isSyncPayloadEvent = isPotentialSync;
           processedOk = true;
           treatAsHandled = true;
-          syncPayloadsSkippedCompleted++;
-        } else {
-          isSyncPayloadEvent = true;
-          syncPayloadEventsSeen++;
-          _inFlightSyncIds.add(id);
-          try {
-            final outcome = await _processSyncPayloadEvent(e);
-            processedOk = outcome.processedOk;
-            treatAsHandled = outcome.treatAsHandled;
-            if (processedOk) syncPayloadsApplied++;
-            if (outcome.hadFailure) hadFailure = true;
-            if (outcome.failureDelta > 0) batchFailures += outcome.failureDelta;
-            if (outcome.nextDue != null &&
-                (earliestNextDue == null ||
-                    outcome.nextDue!.isBefore(earliestNextDue))) {
-              earliestNextDue = outcome.nextDue;
-            }
-          } finally {
-            _inFlightSyncIds.remove(id);
-          }
-        }
-      } else {
-        // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-        final validFallback =
-            ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-            content['msgtype'] != syncMessageType;
-
-        if (validFallback) {
+        } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+            content['msgtype'] == syncMessageType) {
           // Skip already-completed sync events to avoid redundant logging
           // and DB checks.
           if (wasCompletedSync(id)) {
             isSyncPayloadEvent = true;
             processedOk = true;
             treatAsHandled = true;
+            syncPayloadsSkippedCompleted++;
           } else {
             isSyncPayloadEvent = true;
             syncPayloadEventsSeen++;
             _inFlightSyncIds.add(id);
             try {
-              final outcome = await _processSyncPayloadEvent(
-                e,
-                dropSuffix: ' (no-msgtype)',
-              );
+              final outcome = await _processSyncPayloadEvent(e);
               processedOk = outcome.processedOk;
               treatAsHandled = outcome.treatAsHandled;
+              if (processedOk) syncPayloadsApplied++;
               if (outcome.hadFailure) hadFailure = true;
               if (outcome.failureDelta > 0) {
                 batchFailures += outcome.failureDelta;
               }
-              if (outcome.nextDue != null &&
-                  (earliestNextDue == null ||
-                      outcome.nextDue!.isBefore(earliestNextDue))) {
-                earliestNextDue = outcome.nextDue;
-              }
-              if (processedOk && _collectMetrics) {
-                _loggingService.captureEvent(
-                  'processed via no-msgtype fallback: $id',
-                  domain: syncLoggingDomain,
-                  subDomain: 'fallback',
-                );
+              final due = outcome.nextDue;
+              final prev = earliestNextDue;
+              if (due != null && (prev == null || due.isBefore(prev))) {
+                earliestNextDue = due;
               }
             } finally {
               _inFlightSyncIds.remove(id);
             }
           }
         } else {
-          // Do not count attachment events as "skipped" - they are part of
-          // the sync flow.
-          if (!ec.MatrixEventClassifier.isAttachment(e)) {
-            if (_collectMetrics) _metrics.incSkipped();
+          // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+          final validFallback =
+              ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+              content['msgtype'] != syncMessageType;
+
+          if (validFallback) {
+            // Skip already-completed sync events to avoid redundant logging
+            // and DB checks.
+            if (wasCompletedSync(id)) {
+              isSyncPayloadEvent = true;
+              processedOk = true;
+              treatAsHandled = true;
+            } else {
+              isSyncPayloadEvent = true;
+              syncPayloadEventsSeen++;
+              _inFlightSyncIds.add(id);
+              try {
+                final outcome = await _processSyncPayloadEvent(
+                  e,
+                  dropSuffix: ' (no-msgtype)',
+                );
+                processedOk = outcome.processedOk;
+                treatAsHandled = outcome.treatAsHandled;
+                if (outcome.hadFailure) hadFailure = true;
+                if (outcome.failureDelta > 0) {
+                  batchFailures += outcome.failureDelta;
+                }
+                final due = outcome.nextDue;
+                final prev = earliestNextDue;
+                if (due != null && (prev == null || due.isBefore(prev))) {
+                  earliestNextDue = due;
+                }
+                if (processedOk && _collectMetrics) {
+                  _loggingService.captureEvent(
+                    'processed via no-msgtype fallback: $id',
+                    domain: syncLoggingDomain,
+                    subDomain: 'fallback',
+                  );
+                }
+              } finally {
+                _inFlightSyncIds.remove(id);
+              }
+            }
+          } else {
+            // Do not count attachment events as "skipped" - they are part of
+            // the sync flow.
+            if (!ec.MatrixEventClassifier.isAttachment(e)) {
+              if (_collectMetrics) _metrics.incSkipped();
+            }
           }
         }
+        if (!processedOk && !treatAsHandled) {
+          blockedByFailure = true;
+        }
+        if (!blockedByFailure &&
+            (processedOk || treatAsHandled) &&
+            isSyncPayloadEvent &&
+            TimelineEventOrdering.isNewer(
+              candidateTimestamp: ts,
+              candidateEventId: id,
+              latestTimestamp: latestTs,
+              latestEventId: latestEventId,
+            )) {
+          latestTs = ts;
+          latestEventId = id;
+        }
+        // Record completed sync payloads to suppress duplicate applies across
+        // overlapping ingestion paths (e.g., live scan + client stream).
+        if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
+          _recordCompletedSync(id);
+        }
       }
-      if (!processedOk && !treatAsHandled) {
-        blockedByFailure = true;
-      }
-      if (!blockedByFailure &&
-          (processedOk || treatAsHandled) &&
-          isSyncPayloadEvent &&
-          TimelineEventOrdering.isNewer(
-            candidateTimestamp: ts,
-            candidateEventId: id,
-            latestTimestamp: latestTs,
-            latestEventId: latestEventId,
-          )) {
-        latestTs = ts;
-        latestEventId = id;
-      }
-      // Record completed sync payloads to suppress duplicate applies across
-      // overlapping ingestion paths (e.g., live scan + client stream).
-      if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
-        _recordCompletedSync(id);
-      }
-    }
+    });
 
     // Log batch processing summary for diagnostics
     _loggingService.captureEvent(
@@ -569,19 +585,21 @@ class MatrixStreamProcessor {
       subDomain: 'batch',
     );
 
-    if (latestEventId != null && latestTs != null) {
+    final advancedEventId = latestEventId;
+    final advancedTs = latestTs;
+    if (advancedEventId != null && advancedTs != null) {
       final shouldAdvance = msh.shouldAdvanceMarker(
-        candidateTimestamp: latestTs,
-        candidateEventId: latestEventId,
+        candidateTimestamp: advancedTs,
+        candidateEventId: advancedEventId,
         lastTimestamp: _lastProcessedTs,
         lastEventId: _lastProcessedEventId,
       );
       if (shouldAdvance) {
-        final isDurableMarker = isServerAssignedMatrixEventId(latestEventId);
+        final isDurableMarker = isServerAssignedMatrixEventId(advancedEventId);
         if (isDurableMarker) {
-          _lastProcessedEventId = latestEventId;
+          _lastProcessedEventId = advancedEventId;
         }
-        _lastProcessedTs = latestTs;
+        _lastProcessedTs = advancedTs;
         // Persist locally immediately to avoid losing progress if the app
         // backgrounds or exits before the debounced remote flush fires. Only
         // durable server event ids are safe to reuse as restart anchors; local
@@ -589,14 +607,14 @@ class MatrixStreamProcessor {
         // into the persisted read marker.
         try {
           if (isDurableMarker) {
-            await setLastReadMatrixEventId(latestEventId, _settingsDb);
+            await setLastReadMatrixEventId(advancedEventId, _settingsDb);
           }
-          await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
+          await setLastReadMatrixEventTs(advancedTs.toInt(), _settingsDb);
           if (_collectMetrics) {
             _loggingService.captureEvent(
               isDurableMarker
-                  ? 'marker.local id=$latestEventId ts=${latestTs.toInt()}'
-                  : 'marker.local.skip(nonServerId) id=$latestEventId ts=${latestTs.toInt()}',
+                  ? 'marker.local id=$advancedEventId ts=${advancedTs.toInt()}'
+                  : 'marker.local.skip(nonServerId) id=$advancedEventId ts=${advancedTs.toInt()}',
               domain: syncLoggingDomain,
               subDomain: 'marker.local',
             );
@@ -610,7 +628,7 @@ class MatrixStreamProcessor {
           );
         }
         if (isDurableMarker) {
-          _readMarkerManager.schedule(room, latestEventId);
+          _readMarkerManager.schedule(room, advancedEventId);
         }
         _circuit.reset(); // reset on successful advancement
         // Nudge a quick tail rescan to catch immediately subsequent events
