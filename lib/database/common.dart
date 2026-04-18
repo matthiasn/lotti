@@ -83,7 +83,9 @@ void _setupDatabase(Database database) {
 ///   (default: 0). Only effective when [background] is true.
 /// - [slowQueryThreshold]: Threshold used by the shared slow-query interceptor.
 ///   Slow-query writes remain disabled until the corresponding logging domain
-///   is enabled in Settings > Advanced > Logging Domains.
+///   is enabled in Settings > Advanced > Logging Domains. Default is 50 ms —
+///   the user-visible jank floor. Tests and deep-dive captures pass
+///   [Duration.zero] or a smaller value to surface every query.
 /// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///
@@ -102,7 +104,7 @@ LazyDatabase openDbConnection(
   bool inMemoryDatabase = false,
   bool background = true,
   int readPool = 0,
-  Duration slowQueryThreshold = const Duration(milliseconds: 5),
+  Duration slowQueryThreshold = const Duration(milliseconds: 50),
   SlowQueryReporter? slowQueryReporter,
   Future<Directory> Function()? documentsDirectoryProvider,
   Future<Directory> Function()? tempDirectoryProvider,

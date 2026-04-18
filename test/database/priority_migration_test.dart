@@ -187,7 +187,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 38);
+        expect(db.schemaVersion, 39);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -247,7 +247,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 38);
+      expect(db.schemaVersion, 39);
 
       final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -379,7 +379,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 38);
+        expect(db.schemaVersion, 39);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -520,7 +520,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 38);
+        expect(db.schemaVersion, 39);
 
         final taskIdx = await db.customSelect("""
         SELECT sql FROM sqlite_master
