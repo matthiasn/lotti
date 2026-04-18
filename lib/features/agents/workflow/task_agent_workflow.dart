@@ -10,9 +10,10 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -261,12 +262,14 @@ class TaskAgentWorkflow {
     final provider = resolvedProfile.thinkingProvider;
 
     // 5. Assemble conversation context.
-    // Fetch pending change sets early so they can be included in the prompt
-    // (to prevent duplicate proposals) and reused later for dedup filtering.
-    final pendingSets = await agentRepository.getPendingChangeSets(
+    // One ledger fetch feeds both the LLM prompt (status-sorted view of
+    // the agent's own history) and the ChangeSetBuilder (open pending
+    // sets for cross-wake dedup).
+    final ledger = await agentRepository.getProposalLedger(
       agentId,
       taskId: taskId,
     );
+    final pendingSets = ledger.pendingSets;
 
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = await _buildUserMessage(
@@ -278,7 +281,7 @@ class TaskAgentWorkflow {
       linkedTasksJson: linkedTasksJson,
       triggerTokens: triggerTokens,
       taskId: taskId,
-      pendingChangeSets: pendingSets,
+      ledger: ledger,
     );
 
     // 6. Create conversation and run with strategy.
@@ -385,6 +388,10 @@ class TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
+        retractionService: SuggestionRetractionService(
+          syncService: syncService,
+          domainLogger: domainLogger,
+        ),
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
         resolveCategoryId: (entityId) async {
@@ -588,19 +595,12 @@ class TaskAgentWorkflow {
         // Pass the full pending sets so the builder can merge into an
         // existing one rather than creating a duplicate entity.
         //
-        // Reconstruct fingerprints from rejected decisions so that items
-        // the user previously rejected (in now-resolved change sets) are
-        // still blocked from re-proposal.
-        final recentDecisions = await agentRepository.getRecentDecisions(
-          agentId,
-          taskId: taskId,
-        );
-        final rejectedFingerprints = recentDecisions
-            .where((d) => d.verdict == ChangeDecisionVerdict.rejected)
-            .where((d) => d.args != null)
-            .map(
-              (d) => ChangeItem.fingerprintFromParts(d.toolName, d.args!),
-            )
+        // Reuse the proposal ledger we already fetched at step 5 to derive
+        // rejected fingerprints — avoids a second round-trip to the
+        // repository for the same data.
+        final rejectedFingerprints = ledger.resolved
+            .where((e) => e.verdict == ChangeDecisionVerdict.rejected)
+            .map((e) => e.fingerprint)
             .toSet();
 
         await changeSetBuilder.build(
@@ -1040,10 +1040,13 @@ Use this as high-level planning context:
 - Do not call tools speculatively or redundantly.
 - When a tool call fails, note the failure in observations and move on.
 - Each tool call is audited and must stay within the task's category scope.
-- **Learn from past decisions**: Review the "Recent User Decisions" section
-  in the task context. If the user rejected a proposal, do not repeat the
-  same or a similar suggestion unless circumstances have clearly changed.
-  Confirmed proposals indicate the user's preferences — build on them.
+- **Learn from past decisions**: Review the `## Proposal Ledger` section in
+  the task context. Open entries are proposals you made in earlier wakes
+  that the user has not yet acted on. Resolved entries show user verdicts
+  (confirmed / rejected / deferred) and your own retractions. If the user
+  rejected a proposal, do not repeat the same or a similar suggestion
+  unless circumstances have clearly changed. Confirmed proposals indicate
+  the user's preferences — build on them.
 - **Observations**: Record private notes worth remembering for future wakes.
   Good observations include:
   - Why you transitioned a status (e.g., "Set BLOCKED because user mentioned
@@ -1131,6 +1134,28 @@ Use this as high-level planning context:
   - Priority defaults to P2 if not mentioned. The new task inherits the
     source task's category automatically.
 
+## Suggestion Hygiene
+
+Every wake you are shown a `## Proposal Ledger` listing every suggestion
+you have ever produced for this task, including its current status. Use it
+to keep the user-facing suggestion list clean and trustworthy:
+
+1. **Never duplicate an open proposal.** Before proposing a deferred
+   action, scan the Open group in the ledger. If an identical proposal
+   is already open, do NOT propose it again.
+2. **Retract stale open proposals.** If an open proposal is no longer
+   relevant — for example the current task state already matches it
+   (`priority` is already `P1`), the user made the change manually, or
+   it duplicates another open proposal you want to keep — call
+   `retract_suggestions` with the item's `fp=…` fingerprint and a short
+   one-sentence reason. The user is NOT prompted; the item simply
+   disappears from the active suggestion list and is recorded as
+   retracted in the ledger. Retraction is not a failure; it is how you
+   keep the user's trust in your proposals.
+3. **Do not re-propose rejected or retracted items** unless the task
+   context has materially changed. When you do re-propose after a
+   rejection/retraction, justify the decision in your report.
+
 ## Important
 
 - You observe journal-domain data but do not own it.
@@ -1148,7 +1173,7 @@ Use this as high-level planning context:
     required String linkedTasksJson,
     required Set<String> triggerTokens,
     required String taskId,
-    List<ChangeSetEntity> pendingChangeSets = const [],
+    ProposalLedger ledger = const ProposalLedger.empty(),
   }) async {
     final buffer = StringBuffer();
 
@@ -1259,27 +1284,13 @@ Use this as high-level planning context:
       // Non-fatal: continue without context.
     }
 
-    // Decision history — feed back user confirmations/rejections so the
-    // agent learns from past proposals.
-    try {
-      final decisions = await agentRepository.getRecentDecisions(
-        agentId,
-        taskId: taskId,
-      );
-      if (decisions.isNotEmpty) {
-        buffer.writeln(_formatDecisionHistory(decisions));
-      }
-    } catch (e, s) {
-      _logError(
-        'failed to build decision history context',
-        error: e,
-        stackTrace: s,
-      );
-      // Non-fatal: continue without decision history.
-    }
-
-    if (pendingChangeSets.isNotEmpty) {
-      buffer.writeln(_formatPendingProposals(pendingChangeSets));
+    // Proposal ledger — a single status-sorted view of every suggestion the
+    // agent has ever produced for this task. Supersedes the older split
+    // between "recent user decisions" and "pending proposals": both are now
+    // different status slices of the same ledger, so the agent can reason
+    // about its own history without duplicated or conflicting sections.
+    if (!ledger.isEmpty) {
+      buffer.writeln(_formatProposalLedger(ledger));
     }
 
     if (triggerTokens.isNotEmpty) {
@@ -1300,76 +1311,74 @@ Use this as high-level planning context:
     return buffer.toString();
   }
 
-  /// Formats pending [ChangeSetEntity] items into a markdown section so the
-  /// agent knows which proposals are already queued and avoids re-proposing
-  /// them.
-  String _formatPendingProposals(List<ChangeSetEntity> pendingSets) {
-    // Only include items that are still awaiting user review. Partially
-    // resolved change sets may contain confirmed/rejected items alongside
-    // pending ones — listing those would mislead the model.
-    final pendingItems = [
-      for (final cs in pendingSets)
-        for (final item in cs.items)
-          if (item.status == ChangeItemStatus.pending) item,
-    ];
-
-    if (pendingItems.isEmpty) return '';
-
-    final buffer = StringBuffer()
-      ..writeln('## Pending Proposals Awaiting Review')
-      ..writeln()
-      ..writeln(
-        'Your previous wake cycles produced the change sets listed below. '
-        'Each item is a tool call you proposed that is now part of a pending '
-        'change set waiting for the user to confirm or reject. '
-        'Do not re-propose any of these items.',
-      )
-      ..writeln();
-
-    for (final item in pendingItems) {
-      final tool = item.toolName;
-      final summary = item.humanSummary.trim();
-      buffer.writeln('- `$tool`: $summary');
-    }
-    buffer.writeln();
-    return buffer.toString();
-  }
-
-  /// Formats a list of [ChangeDecisionEntity] into a markdown section for the
-  /// agent's user message context.
+  /// Formats the [ProposalLedger] into a single markdown section the agent
+  /// consumes during a wake.
   ///
-  /// Uses `✓` for confirmed, `✗` for rejected, and `⏸` for deferred verdicts.
-  /// Appends the rejection reason when present.
-  String _formatDecisionHistory(List<ChangeDecisionEntity> decisions) {
+  /// The ledger is the agent's memory of its own suggestions for this task.
+  /// Open entries carry fingerprints so the agent can call
+  /// `retract_suggestions` with those fingerprints when a proposal is no
+  /// longer relevant. Resolved entries show user verdicts (confirmed /
+  /// rejected / deferred) and the agent's own retractions so the agent
+  /// avoids repeating patterns the user has already rejected.
+  String _formatProposalLedger(ProposalLedger ledger) {
+    if (ledger.isEmpty) return '';
+
     final buffer = StringBuffer()
-      ..writeln('## Recent User Decisions')
+      ..writeln('## Proposal Ledger')
       ..writeln()
       ..writeln(
-        'The following shows how the user responded to your recent proposals. '
-        'Learn from rejections — do not repeat rejected patterns.',
+        'This is a complete record of suggestions you have produced for this '
+        'task. Do not re-propose an identical OPEN item. If an OPEN item is '
+        'no longer relevant (the current task state already matches it, or '
+        'it duplicates another open proposal), call `retract_suggestions` '
+        'with its fingerprint. For RESOLVED items, learn from the verdict: '
+        'do not re-propose rejected items unless the task context has '
+        'materially changed.',
+      )
+      ..writeln()
+      ..writeln('### Open (${ledger.open.length})')
+      ..writeln(
+        ledger.open.isEmpty
+            ? '- (none)'
+            : ledger.open
+                  .map(
+                    (e) =>
+                        '- [fp=${e.fingerprint}] `${e.toolName}`: '
+                        '${e.humanSummary.trim()}',
+                  )
+                  .join('\n'),
       )
       ..writeln();
 
-    for (final d in decisions) {
-      final icon = switch (d.verdict) {
-        ChangeDecisionVerdict.confirmed => '\u2713',
-        ChangeDecisionVerdict.rejected => '\u2717',
-        ChangeDecisionVerdict.deferred => '\u23f8',
-        ChangeDecisionVerdict.retracted => '\u21ba',
-      };
-      final verdictLabel = d.verdict.name;
-      final trimmedSummary = d.humanSummary?.trim();
-      final summary = (trimmedSummary != null && trimmedSummary.isNotEmpty)
-          ? ' "$trimmedSummary"'
-          : ' ${d.toolName}';
-      final trimmedReason = d.rejectionReason?.trim();
-      final reason = (trimmedReason != null && trimmedReason.isNotEmpty)
-          ? ' (reason: "$trimmedReason")'
-          : '';
-      buffer.writeln('- $icon$summary — $verdictLabel$reason');
+    if (ledger.resolved.isNotEmpty) {
+      buffer.writeln('### Resolved (${ledger.resolved.length}, most recent)');
+      for (final e in ledger.resolved) {
+        final icon = switch (e.verdict) {
+          ChangeDecisionVerdict.confirmed => '\u2713',
+          ChangeDecisionVerdict.rejected => '\u2717',
+          ChangeDecisionVerdict.deferred => '\u23f8',
+          ChangeDecisionVerdict.retracted => '\u21ba',
+          null => '\u25cb',
+        };
+        final verdictLabel = e.verdict?.name ?? e.status.name;
+        final actorLabel = switch (e.resolvedBy) {
+          DecisionActor.user => ' by user',
+          DecisionActor.agent => ' by agent',
+          null => '',
+        };
+        final summary = e.humanSummary.trim();
+        final trimmedReason = e.reason?.trim();
+        final reasonSuffix = (trimmedReason != null && trimmedReason.isNotEmpty)
+            ? ' (reason: "$trimmedReason")'
+            : '';
+        buffer.writeln(
+          '- [fp=${e.fingerprint}] $icon `${e.toolName}`: $summary '
+          '— $verdictLabel$actorLabel$reasonSuffix',
+        );
+      }
+      buffer.writeln();
     }
 
-    buffer.writeln();
     return buffer.toString();
   }
 

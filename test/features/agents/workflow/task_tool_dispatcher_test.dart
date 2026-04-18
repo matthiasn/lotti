@@ -228,6 +228,12 @@ void main() {
       });
 
       test('set_task_title delegates to TaskTitleHandler', () async {
+        // The dispatcher is the single write path for both auto-applied
+        // initial titles and user-confirmed renames — it does NOT gate
+        // on current title. The "never overwrite a populated title"
+        // invariant lives in TaskAgentStrategy._shouldAutoApplyInitialTitle
+        // for the auto-apply path; user-confirmed renames are explicit
+        // user intent and must write regardless.
         when(
           () => mockJournalRepository.updateJournalEntityDate(
             any(),
@@ -236,9 +242,7 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
         when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
+          () => mockJournalRepository.updateJournalEntity(any()),
         ).thenAnswer((_) async => true);
 
         final result = await dispatcher.dispatch(
@@ -247,9 +251,11 @@ void main() {
           taskId,
         );
 
-        // TaskTitleHandler.handle should succeed for a valid title.
         expect(result.success, isTrue);
         expect(result.output, isNotEmpty);
+        verify(
+          () => mockJournalRepository.updateJournalEntity(any()),
+        ).called(1);
       });
 
       test('set_task_status delegates to TaskStatusHandler', () async {
@@ -654,7 +660,7 @@ LabelDefinition _makeLabelDef(String id) {
 }
 
 /// Creates a minimal [Task] entity for testing dispatch.
-Task _makeTestTask(String id) {
+Task _makeTestTask(String id, {String title = 'Test Task'}) {
   return Task(
     meta: Metadata(
       id: id,
@@ -672,7 +678,7 @@ Task _makeTestTask(String id) {
       dateFrom: DateTime(2024, 3, 15),
       dateTo: DateTime(2024, 3, 15),
       statusHistory: [],
-      title: 'Test Task',
+      title: title,
     ),
   );
 }

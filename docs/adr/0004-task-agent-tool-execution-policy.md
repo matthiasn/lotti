@@ -58,7 +58,30 @@ sequenceDiagram
 - Audit history is durable and tied to deterministic operation IDs.
 - Orchestrator suppression gets precise post-mutation vector clocks.
 
+## Addendum 2026-04-18: `retract_suggestions`
+
+The task-agent tool surface gained `retract_suggestions`, an immediate
+(non-deferred) tool that lets the agent withdraw its own previously
+proposed change items without a user prompt. It fits the same execution
+policy as the other immediate tools (`update_report`,
+`record_observations`, `get_related_task_details`):
+
+- Routed through `TaskAgentStrategy.processToolCalls` and dispatched via
+  `SuggestionRetractionService`.
+- Action + tool-result messages are persisted on the same audit path as
+  any other tool call, so every retraction leaves an auditable trail.
+- The mutation target is agent-side state only (`ChangeSetEntity` +
+  `ChangeDecisionEntity` in `agent.sqlite`). No journal entity is touched,
+  so category-scope enforcement is inherited from the owning task but
+  does not require resolving a separate target entity category.
+- Concurrency: `SuggestionRetractionService` writes the decision record
+  first, then re-reads the parent change set before transitioning the
+  item — same ordering as `ChangeSetConfirmationService.confirmItem`.
+  Racing a user confirmation produces either outcome (confirmed or
+  retracted) cleanly; both leave a matching decision record.
+
 ## Related
 
 - `lib/features/agents/tools/agent_tool_executor.dart`
 - `lib/features/agents/workflow/task_agent_strategy.dart`
+- `lib/features/agents/service/suggestion_retraction_service.dart`

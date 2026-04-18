@@ -524,26 +524,19 @@ class ChangeSetConfirmationService {
       status: newStatus,
     );
 
-    // Determine overall status.
-    final allResolved = updatedItems.every(
-      (item) => item.status != ChangeItemStatus.pending,
-    );
-    final anyResolved = updatedItems.any(
-      (item) => item.status != ChangeItemStatus.pending,
-    );
-
-    final newSetStatus = allResolved
-        ? ChangeSetStatus.resolved
-        : anyResolved
-        ? ChangeSetStatus.partiallyResolved
-        : ChangeSetStatus.pending;
-
-    final updatedChangeSet = current.copyWith(
-      items: updatedItems,
-      status: newSetStatus,
-      resolvedAt: allResolved ? clock.now() : current.resolvedAt,
+    final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
+    final resolvedAt = ChangeItem.deriveResolvedAt(
+      newStatus: newSetStatus,
+      existingResolvedAt: current.resolvedAt,
+      now: clock.now(),
     );
 
-    await _syncService.upsertEntity(updatedChangeSet);
+    await _syncService.upsertEntity(
+      current.copyWith(
+        items: updatedItems,
+        status: newSetStatus,
+        resolvedAt: resolvedAt,
+      ),
+    );
   }
 }

@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
@@ -167,6 +168,14 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <ChangeSetEntity>[]);
+    when(
+      () => mockAgentRepository.getProposalLedger(
+        any(),
+        taskId: any(named: 'taskId'),
+        changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+        resolvedLimit: any(named: 'resolvedLimit'),
+      ),
+    ).thenAnswer((_) async => const ProposalLedger.empty());
     when(
       () => mockAiInputRepository.buildLinkedFromContext(any()),
     ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
@@ -395,9 +404,9 @@ void main() {
         );
       });
 
-      test('queries pending change sets for deduplication', () async {
-        // Override with non-empty pending change sets to exercise the
-        // expand/where lambda in the dedup path.
+      test('queries proposal ledger for deduplication context', () async {
+        // Override with a non-empty ledger (pendingSets populated) to
+        // exercise the expand/where lambda in the dedup path.
         final pendingChangeSet =
             AgentDomainEntity.changeSet(
                   id: 'cs-existing',
@@ -419,12 +428,19 @@ void main() {
                 as ChangeSetEntity;
 
         when(
-          () => mockAgentRepository.getPendingChangeSets(
+          () => mockAgentRepository.getProposalLedger(
             any(),
             taskId: any(named: 'taskId'),
-            limit: any(named: 'limit'),
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
           ),
-        ).thenAnswer((_) async => [pendingChangeSet]);
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [pendingChangeSet],
+          ),
+        );
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -435,9 +451,8 @@ void main() {
 
         expect(result.success, isTrue);
 
-        // Verify getPendingChangeSets was called during the wake.
         verify(
-          () => mockAgentRepository.getPendingChangeSets(
+          () => mockAgentRepository.getProposalLedger(
             agentId,
             taskId: taskId,
           ),
@@ -2395,386 +2410,220 @@ void main() {
         },
       );
 
-      group('decision history', () {
-        ChangeDecisionEntity makeDecision({
+      group('proposal ledger', () {
+        LedgerEntry openEntry({
           required String toolName,
-          required ChangeDecisionVerdict verdict,
-          String? rejectionReason,
-          String? humanSummary,
+          required Map<String, dynamic> args,
+          required String humanSummary,
+          DateTime? createdAt,
         }) {
-          return AgentDomainEntity.changeDecision(
-                id: 'dec-${toolName.hashCode}',
-                agentId: agentId,
-                changeSetId: 'cs-1',
-                itemIndex: 0,
-                toolName: toolName,
-                verdict: verdict,
-                createdAt: DateTime(2024, 6, 15),
-                vectorClock: null,
-                taskId: taskId,
-                rejectionReason: rejectionReason,
-                humanSummary: humanSummary,
-              )
-              as ChangeDecisionEntity;
+          return LedgerEntry(
+            changeSetId: 'cs-${toolName.hashCode}',
+            itemIndex: 0,
+            toolName: toolName,
+            args: args,
+            humanSummary: humanSummary,
+            fingerprint: ChangeItem.fingerprintFromParts(toolName, args),
+            status: ChangeItemStatus.pending,
+            createdAt: createdAt ?? DateTime(2024, 6, 15, 10),
+          );
         }
 
-        test('includes decision history when decisions exist', () async {
+        LedgerEntry resolvedEntry({
+          required String toolName,
+          required Map<String, dynamic> args,
+          required String humanSummary,
+          required ChangeItemStatus status,
+          required ChangeDecisionVerdict verdict,
+          DecisionActor? resolvedBy = DecisionActor.user,
+          String? reason,
+        }) {
+          return LedgerEntry(
+            changeSetId: 'cs-${toolName.hashCode}',
+            itemIndex: 0,
+            toolName: toolName,
+            args: args,
+            humanSummary: humanSummary,
+            fingerprint: ChangeItem.fingerprintFromParts(toolName, args),
+            status: status,
+            createdAt: DateTime(2024, 6, 15, 10),
+            resolvedAt: DateTime(2024, 6, 15, 11),
+            resolvedBy: resolvedBy,
+            verdict: verdict,
+            reason: reason,
+          );
+        }
+
+        void stubLedger(ProposalLedger ledger) {
           when(
-            () => mockAgentRepository.getRecentDecisions(
+            () => mockAgentRepository.getProposalLedger(
               any(),
               taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
+              changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+              resolvedLimit: any(named: 'resolvedLimit'),
             ),
-          ).thenAnswer(
-            (_) async => [
-              makeDecision(
-                toolName: 'set_task_title',
-                verdict: ChangeDecisionVerdict.confirmed,
-              ),
-            ],
-          );
-
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(message, contains('## Recent User Decisions'));
-          expect(message, contains('set_task_title'));
-          expect(message, contains('confirmed'));
-        });
-
-        test('omits decision history when no decisions exist', () async {
-          // Default stub returns empty list.
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(message, isNot(contains('## Recent User Decisions')));
-        });
-
-        test('displays rejection reason when present', () async {
-          when(
-            () => mockAgentRepository.getRecentDecisions(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              makeDecision(
-                toolName: 'update_task_estimate',
-                verdict: ChangeDecisionVerdict.rejected,
-                rejectionReason: 'I know better',
-              ),
-            ],
-          );
-
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(message, contains('I know better'));
-          expect(message, contains('rejected'));
-          expect(message, contains('\u2717')); // ✗
-        });
-
-        test('formats mixed verdicts correctly', () async {
-          when(
-            () => mockAgentRepository.getRecentDecisions(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              makeDecision(
-                toolName: 'set_task_title',
-                verdict: ChangeDecisionVerdict.confirmed,
-              ),
-              makeDecision(
-                toolName: 'update_task_estimate',
-                verdict: ChangeDecisionVerdict.rejected,
-                rejectionReason: 'Too high',
-              ),
-              makeDecision(
-                toolName: 'assign_task_labels',
-                verdict: ChangeDecisionVerdict.deferred,
-              ),
-            ],
-          );
-
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          // Confirmed
-          expect(message, contains('\u2713 set_task_title'));
-          // Rejected with reason
-          expect(message, contains('\u2717 update_task_estimate'));
-          expect(message, contains('(reason: "Too high")'));
-          // Deferred
-          expect(message, contains('\u23f8 assign_task_labels'));
-          expect(message, contains('deferred'));
-        });
+          ).thenAnswer((_) async => ledger);
+        }
 
         test(
-          'displays human summary instead of tool name when available',
+          'renders a single ## Proposal Ledger section with fingerprints',
           () async {
-            when(
-              () => mockAgentRepository.getRecentDecisions(
-                any(),
-                taskId: any(named: 'taskId'),
-                limit: any(named: 'limit'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                makeDecision(
-                  toolName: 'update_checklist_item',
-                  verdict: ChangeDecisionVerdict.rejected,
-                  humanSummary: 'Check off: "Buy milk"',
-                  rejectionReason: 'Not relevant',
-                ),
-              ],
-            );
-
-            final message = await executeAndCaptureMessage();
-
-            expect(message, isNotNull);
-            expect(
-              message,
-              contains('Check off: "Buy milk"'),
-              reason: 'should show human summary, not raw tool name',
-            );
-            expect(
-              message,
-              isNot(contains('update_checklist_item')),
-              reason: 'tool name should be replaced by human summary',
-            );
-            expect(message, contains('(reason: "Not relevant")'));
-          },
-        );
-
-        test('error in getRecentDecisions does not crash the wake', () async {
-          when(
-            () => mockAgentRepository.getRecentDecisions(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenThrow(Exception('DB error'));
-
-          final message = await executeAndCaptureMessage();
-
-          // Should still get a valid message, just without decision history.
-          expect(message, isNotNull);
-          expect(message, isNot(contains('## Recent User Decisions')));
-          expect(message, contains('Current Task Context'));
-        });
-      });
-
-      group('pending proposals', () {
-        ChangeSetEntity makeChangeSet({
-          required List<ChangeItem> items,
-        }) {
-          return AgentDomainEntity.changeSet(
-                id: 'cs-${items.hashCode}',
-                agentId: agentId,
-                taskId: taskId,
-                threadId: threadId,
-                runKey: runKey,
-                status: ChangeSetStatus.pending,
-                items: items,
-                createdAt: DateTime(2024, 6, 15),
-                vectorClock: null,
-              )
-              as ChangeSetEntity;
-        }
-
-        test('includes pending proposals when change sets exist', () async {
-          when(
-            () => mockAgentRepository.getPendingChangeSets(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              makeChangeSet(
-                items: [
-                  const ChangeItem(
+            stubLedger(
+              ProposalLedger(
+                open: [
+                  openEntry(
                     toolName: 'set_task_title',
-                    args: <String, dynamic>{'title': 'New Title'},
+                    args: const {'title': 'New Title'},
                     humanSummary: 'Rename task to "New Title"',
                   ),
                 ],
+                resolved: const [],
               ),
-            ],
-          );
-
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(
-            message,
-            contains('## Pending Proposals Awaiting Review'),
-          );
-          expect(
-            message,
-            contains('`set_task_title`: Rename task to "New Title"'),
-          );
-        });
-
-        test('omits pending proposals when no change sets exist', () async {
-          // Default stub returns empty list.
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(
-            message,
-            isNot(contains('## Pending Proposals Awaiting Review')),
-          );
-        });
-
-        test('lists items from multiple change sets', () async {
-          when(
-            () => mockAgentRepository.getPendingChangeSets(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              makeChangeSet(
-                items: [
-                  const ChangeItem(
-                    toolName: 'set_task_title',
-                    args: <String, dynamic>{'title': 'Title A'},
-                    humanSummary: 'Rename task to "Title A"',
-                  ),
-                ],
-              ),
-              makeChangeSet(
-                items: [
-                  const ChangeItem(
-                    toolName: 'add_checklist_item',
-                    args: <String, dynamic>{'text': 'Buy milk'},
-                    humanSummary: 'Add checklist item: "Buy milk"',
-                  ),
-                  const ChangeItem(
-                    toolName: 'add_checklist_item',
-                    args: <String, dynamic>{'text': 'Buy bread'},
-                    humanSummary: 'Add checklist item: "Buy bread"',
-                  ),
-                ],
-              ),
-            ],
-          );
-
-          final message = await executeAndCaptureMessage();
-
-          expect(message, isNotNull);
-          expect(
-            message,
-            contains('`set_task_title`: Rename task to "Title A"'),
-          );
-          expect(
-            message,
-            contains('`add_checklist_item`: Add checklist item: "Buy milk"'),
-          );
-          expect(
-            message,
-            contains('`add_checklist_item`: Add checklist item: "Buy bread"'),
-          );
-        });
-
-        test(
-          'excludes already-resolved items from partially resolved sets',
-          () async {
-            when(
-              () => mockAgentRepository.getPendingChangeSets(
-                any(),
-                taskId: any(named: 'taskId'),
-                limit: any(named: 'limit'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                makeChangeSet(
-                  items: [
-                    const ChangeItem(
-                      toolName: 'set_task_title',
-                      args: <String, dynamic>{'title': 'Already Done'},
-                      humanSummary: 'Rename task to "Already Done"',
-                      status: ChangeItemStatus.confirmed,
-                    ),
-                    const ChangeItem(
-                      toolName: 'add_checklist_item',
-                      args: <String, dynamic>{'text': 'Still waiting'},
-                      humanSummary: 'Add checklist item: "Still waiting"',
-                    ),
-                    const ChangeItem(
-                      toolName: 'update_task_estimate',
-                      args: <String, dynamic>{'estimate': '2h'},
-                      humanSummary: 'Set estimate to 2 hours',
-                      status: ChangeItemStatus.rejected,
-                    ),
-                  ],
-                ),
-              ],
             );
 
             final message = await executeAndCaptureMessage();
 
             expect(message, isNotNull);
+            expect(message, contains('## Proposal Ledger'));
+            // The unified section replaces the legacy split.
+            expect(message, isNot(contains('## Recent User Decisions')));
+            expect(message, isNot(contains('## Pending Proposals')));
+            // Open items carry a fingerprint so the agent can retract them.
+            final expectedFingerprint = ChangeItem.fingerprintFromParts(
+              'set_task_title',
+              const {'title': 'New Title'},
+            );
+            expect(message, contains('[fp=$expectedFingerprint]'));
             expect(
               message,
-              contains('## Pending Proposals Awaiting Review'),
+              contains('`set_task_title`: Rename task to "New Title"'),
             );
-            // Only the pending item should appear.
-            expect(
-              message,
-              contains('Add checklist item: "Still waiting"'),
-            );
-            // Confirmed and rejected items must be excluded.
-            expect(
-              message,
-              isNot(contains('Already Done')),
-              reason: 'confirmed items should be filtered out',
-            );
-            expect(
-              message,
-              isNot(contains('Set estimate to 2 hours')),
-              reason: 'rejected items should be filtered out',
-            );
+            expect(message, contains('### Open (1)'));
           },
         );
 
-        test('omits section when all items in sets are resolved', () async {
-          when(
-            () => mockAgentRepository.getPendingChangeSets(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              makeChangeSet(
-                items: [
-                  const ChangeItem(
+        test(
+          'omits the Proposal Ledger section when the ledger is empty',
+          () async {
+            // Default stub is an empty ledger; do not override.
+            final message = await executeAndCaptureMessage();
+
+            expect(message, isNotNull);
+            expect(message, isNot(contains('## Proposal Ledger')));
+          },
+        );
+
+        test(
+          'renders resolved entries with verdict icon, actor, and reason',
+          () async {
+            stubLedger(
+              ProposalLedger(
+                open: const [],
+                resolved: [
+                  resolvedEntry(
                     toolName: 'set_task_title',
-                    args: <String, dynamic>{'title': 'Done'},
-                    humanSummary: 'Rename task',
+                    args: const {'title': 'Done'},
+                    humanSummary: 'Rename task to "Done"',
                     status: ChangeItemStatus.confirmed,
+                    verdict: ChangeDecisionVerdict.confirmed,
+                  ),
+                  resolvedEntry(
+                    toolName: 'update_task_estimate',
+                    args: const {'estimate': '2h'},
+                    humanSummary: 'Set estimate to 2 hours',
+                    status: ChangeItemStatus.rejected,
+                    verdict: ChangeDecisionVerdict.rejected,
+                    reason: 'Too high',
+                  ),
+                  resolvedEntry(
+                    toolName: 'update_task_priority',
+                    args: const {'priority': 'P1'},
+                    humanSummary: 'Set priority to P1',
+                    status: ChangeItemStatus.retracted,
+                    verdict: ChangeDecisionVerdict.retracted,
+                    resolvedBy: DecisionActor.agent,
+                    reason: 'Already P1',
                   ),
                 ],
               ),
-            ],
-          );
+            );
 
-          final message = await executeAndCaptureMessage();
+            final message = await executeAndCaptureMessage();
 
-          expect(message, isNotNull);
-          expect(
-            message,
-            isNot(contains('## Pending Proposals Awaiting Review')),
-            reason: 'section should be omitted when no pending items remain',
-          );
-        });
+            expect(message, isNotNull);
+            expect(message, contains('### Resolved (3, most recent)'));
+            // Confirmed by user
+            expect(message, contains('\u2713 `set_task_title`'));
+            expect(message, contains('by user'));
+            // Rejected with reason
+            expect(message, contains('\u2717 `update_task_estimate`'));
+            expect(message, contains('(reason: "Too high")'));
+            // Retracted by agent with its own reason
+            expect(message, contains('\u21ba `update_task_priority`'));
+            expect(message, contains('by agent'));
+            expect(message, contains('(reason: "Already P1")'));
+          },
+        );
+
+        test(
+          'renders both open and resolved groups side by side',
+          () async {
+            stubLedger(
+              ProposalLedger(
+                open: [
+                  openEntry(
+                    toolName: 'add_checklist_item',
+                    args: const {'text': 'Still waiting'},
+                    humanSummary: 'Add checklist item: "Still waiting"',
+                  ),
+                ],
+                resolved: [
+                  resolvedEntry(
+                    toolName: 'set_task_title',
+                    args: const {'title': 'Already Done'},
+                    humanSummary: 'Rename task to "Already Done"',
+                    status: ChangeItemStatus.confirmed,
+                    verdict: ChangeDecisionVerdict.confirmed,
+                  ),
+                ],
+              ),
+            );
+
+            final message = await executeAndCaptureMessage();
+
+            expect(message, isNotNull);
+            expect(message, contains('### Open (1)'));
+            expect(message, contains('Add checklist item: "Still waiting"'));
+            expect(message, contains('### Resolved (1, most recent)'));
+            expect(message, contains('Rename task to "Already Done"'));
+          },
+        );
+
+        test(
+          'Open group shows "(none)" when there are no open entries',
+          () async {
+            stubLedger(
+              ProposalLedger(
+                open: const [],
+                resolved: [
+                  resolvedEntry(
+                    toolName: 'set_task_title',
+                    args: const {'title': 'x'},
+                    humanSummary: 'Rename task',
+                    status: ChangeItemStatus.confirmed,
+                    verdict: ChangeDecisionVerdict.confirmed,
+                  ),
+                ],
+              ),
+            );
+
+            final message = await executeAndCaptureMessage();
+
+            expect(message, isNotNull);
+            expect(message, contains('### Open (0)'));
+            expect(message, contains('- (none)'));
+          },
+        );
       });
 
       test('caps observations to 20 most recent', () async {

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
-import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
+import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
@@ -43,8 +42,7 @@ class TaskForm extends ConsumerWidget {
           EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
           const SizedBox(height: 10),
         ],
-        TaskAgentReportSection(taskId: taskId),
-        ChangeSetSummaryCard(taskId: taskId),
+        AgentSuggestionsPanel(taskId: taskId),
         LinkedTasksWidget(taskId: taskId),
         ChecklistsWidget(entryId: taskId, task: task),
       ],

@@ -182,6 +182,14 @@ class TaskToolDispatcher {
       );
     }
 
+    // Note: we deliberately do NOT short-circuit on a populated existing
+    // title here. User-confirmed renames route through this dispatcher
+    // too, and the user already explicitly approved them — blocking
+    // those would contradict the "existing title goes through
+    // confirmation" contract. The "agent auto-apply must never overwrite
+    // a non-empty title" invariant is enforced one layer up, in
+    // `TaskAgentStrategy._shouldAutoApplyInitialTitle`, with a fresh
+    // resolver re-read immediately before dispatch.
     final handler = TaskTitleHandler(
       task: task,
       journalRepository: journalRepository,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -1938,6 +1939,411 @@ void main() {
         },
       );
 
+      test(
+        'set_task_title auto-applies when current title is null',
+        () async {
+          const emptyTitleSnapshot =
+              (
+                    title: null,
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => emptyTitleSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Title applied immediately.',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-initial-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Buy groceries'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isFalse,
+            reason: 'initial title should bypass the change-set builder',
+          );
+          final executed = verify(
+            () => mockExecutor.execute(
+              toolName: captureAny(named: 'toolName'),
+              args: captureAny(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).captured;
+          expect(executed[0], TaskAgentToolNames.setTaskTitle);
+          expect(executed[1], equals(const {'title': 'Buy groceries'}));
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-initial-title',
+              response: 'Title applied immediately.',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'set_task_title auto-applies when current title is whitespace-only',
+        () async {
+          const blankTitleSnapshot =
+              (
+                    title: '   ',
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => blankTitleSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'ok',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-blank-title',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Write specs'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isFalse);
+          verify(
+            () => mockExecutor.execute(
+              toolName: TaskAgentToolNames.setTaskTitle,
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when an existing title is present',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-rename',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'New name'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          expect(
+            builder.items.single.toolName,
+            TaskAgentToolNames.setTaskTitle,
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title cannot auto-apply twice in the same wake',
+        () async {
+          // Regression guard against the stale-cache double-apply bug:
+          // if an LLM emits two back-to-back set_task_title calls (a
+          // common failure mode for smaller models), only the first
+          // should auto-apply. The second must either (a) observe the
+          // freshly-populated title on a forced re-read, or (b) hit the
+          // single-use deferred guard — in either case, it must not
+          // silently overwrite the title the executor just wrote.
+          var autoApplied = 0;
+          var currentTitle = '';
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async {
+              return (
+                    title: currentTitle.isEmpty ? null : currentTitle,
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: 'en',
+                  )
+                  as TaskMetadataSnapshot;
+            },
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer((invocation) async {
+            autoApplied += 1;
+            final args =
+                invocation.namedArguments[const Symbol('args')]!
+                    as Map<String, dynamic>;
+            currentTitle = args['title']! as String;
+            return const ToolExecutionResult(
+              success: true,
+              output: 'applied',
+              mutatedEntityId: 'task-001',
+            );
+          });
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-first',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'First title'}),
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'call-second',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Second title'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            autoApplied,
+            1,
+            reason: 'only the first call must auto-apply',
+          );
+          expect(
+            currentTitle,
+            'First title',
+            reason:
+                'the second call must not silently overwrite the first '
+                'via the stale-cache path',
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when no resolveTaskMetadata is wired',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            // resolveTaskMetadata intentionally omitted.
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-no-resolver',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Something'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isTrue,
+            reason: 'without a resolver, fall back to the deferred path',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when resolveTaskMetadata throws',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => throw Exception('resolver down'),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-throws',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Any'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isTrue,
+            reason:
+                'resolver failure should not auto-apply; must fall through '
+                'to the deferred path',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_title stays deferred when resolveTaskMetadata returns null',
+        () async {
+          // Mirrors the non-Task-entity case where
+          // ChangeProposalFilter.resolveTaskMetadata returns null.
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => null,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-null-snap',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskTitle,
+                arguments: jsonEncode({'title': 'Any'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
       test('keeps tool when resolver throws (conservative)', () async {
         final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,
@@ -2171,5 +2577,437 @@ void main() {
         },
       );
     });
+
+    group('retract_suggestions routing', () {
+      test(
+        'dispatches to the retraction service without invoking the executor',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              RetractionResult(
+                fingerprint: requests.first.fingerprint,
+                outcome: RetractionOutcome.retracted,
+                toolName: 'update_task_priority',
+                humanSummary: 'Set priority to P1',
+              ),
+            ],
+          );
+
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(
+                  success: true,
+                  output: 'unused',
+                  mutatedEntityId: taskId,
+                ),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-1',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {
+                      'fingerprint': 'fp-abc',
+                      'reason': 'Already P1',
+                    },
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          // The retraction service, not the executor, handled the call.
+          expect(fakeService.capturedCalls, hasLength(1));
+          expect(fakeService.capturedCalls.single.agentId, agentId);
+          expect(fakeService.capturedCalls.single.taskId, taskId);
+          expect(
+            fakeService.capturedCalls.single.requests.single.fingerprint,
+            'fp-abc',
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+
+          // The LLM sees a per-entry outcome report.
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-1',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('[fp=fp-abc] retracted'));
+          expect(response, contains('Set priority to P1'));
+        },
+      );
+
+      test(
+        'malformed proposals payload surfaces a non-empty error without '
+        'invoking the retraction service',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (_) => const [],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-bad',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                // `proposals` is not an array — should error.
+                arguments: jsonEncode({'proposals': 'not-an-array'}),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, isEmpty);
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-bad',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, startsWith('Error:'));
+        },
+      );
+
+      test(
+        'drops malformed proposal entries but still retracts the valid ones',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              for (final r in requests)
+                RetractionResult(
+                  fingerprint: r.fingerprint,
+                  outcome: RetractionOutcome.retracted,
+                  humanSummary: 'ok: ${r.fingerprint}',
+                ),
+            ],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-mixed',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    'not-an-object',
+                    {'fingerprint': '  ', 'reason': 'empty fp'},
+                    {'fingerprint': 'fp-ok', 'reason': '  '},
+                    {'fingerprint': 'fp-valid', 'reason': 'Looks stale'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, hasLength(1));
+          final requests = fakeService.capturedCalls.single.requests;
+          expect(requests, hasLength(1));
+          expect(requests.single.fingerprint, 'fp-valid');
+          expect(requests.single.reason, 'Looks stale');
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-mixed',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('retracted'));
+          expect(response, contains('Skipped malformed entries'));
+          expect(response, contains('proposals[0] is not an object'));
+          expect(response, contains('fingerprint missing or empty'));
+          expect(response, contains('reason missing or empty'));
+        },
+      );
+
+      test(
+        'all entries malformed yields an error response and no service call',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (_) => const [],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-all-bad',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': null, 'reason': 'x'},
+                    {'fingerprint': 'fp', 'reason': ''},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, isEmpty);
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-all-bad',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, startsWith('Error: no valid proposals to retract.'));
+        },
+      );
+
+      test(
+        'outcome labels cover retracted, notOpen, and notFound per-entry',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => const [
+              RetractionResult(
+                fingerprint: 'fp-retracted',
+                outcome: RetractionOutcome.retracted,
+                toolName: 'set_task_title',
+                humanSummary: 'Rename',
+              ),
+              RetractionResult(
+                fingerprint: 'fp-closed',
+                outcome: RetractionOutcome.notOpen,
+                toolName: 'update_task_priority',
+                humanSummary: 'Already confirmed',
+              ),
+              RetractionResult(
+                fingerprint: 'fp-missing',
+                outcome: RetractionOutcome.notFound,
+              ),
+            ],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-labels',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-retracted', 'reason': 'r'},
+                    {'fingerprint': 'fp-closed', 'reason': 'r'},
+                    {'fingerprint': 'fp-missing', 'reason': 'r'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-labels',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('[fp=fp-retracted] retracted'));
+          expect(
+            response,
+            contains('[fp=fp-closed] not_open (already resolved)'),
+          );
+          expect(response, contains('[fp=fp-missing] not_found'));
+          // Items without a humanSummary still report the tool name when
+          // available; the not_found line has neither, so only the tool
+          // name / humanSummary ones get the suffix.
+          expect(response, contains('— "Rename"'));
+          expect(response, contains('— "Already confirmed"'));
+        },
+      );
+
+      test(
+        'omitting the retraction service returns a wiring error to the LLM',
+        () async {
+          final noServiceStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            // retractionService intentionally omitted.
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-retract-nowire',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-abc', 'reason': 'x'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await noServiceStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-retract-nowire',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('retract_suggestions is not wired up'));
+        },
+      );
+    });
   });
+}
+
+/// Captures every call and returns a scripted response list.
+class _FakeRetractionService implements SuggestionRetractionService {
+  _FakeRetractionService({required this.responses});
+
+  final List<RetractionResult> Function(List<RetractionRequest>) responses;
+  final capturedCalls = <_CapturedRetract>[];
+
+  @override
+  Future<List<RetractionResult>> retract({
+    required String agentId,
+    required String taskId,
+    required List<RetractionRequest> requests,
+  }) async {
+    capturedCalls.add(
+      _CapturedRetract(
+        agentId: agentId,
+        taskId: taskId,
+        requests: requests,
+      ),
+    );
+    return responses(requests);
+  }
+}
+
+class _CapturedRetract {
+  const _CapturedRetract({
+    required this.agentId,
+    required this.taskId,
+    required this.requests,
+  });
+  final String agentId;
+  final String taskId;
+  final List<RetractionRequest> requests;
 }

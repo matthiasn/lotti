@@ -418,7 +418,7 @@ Task agents have two immediate local tools:
 
 The current deferred task tools are:
 
-- `set_task_title`
+- `set_task_title` *(conditionally immediate — see carve-out below)*
 - `update_task_estimate`
 - `update_task_due_date`
 - `update_task_priority`
@@ -441,6 +441,30 @@ and tool results.
 - explodes batch tools into individually reviewable items
 - deduplicates identical proposals within the same wake
 - suppresses redundant proposals when they would not change current state
+
+#### Initial-title carve-out
+
+`set_task_title` is the one deferred tool that can run on the immediate
+path. When the strategy resolves the current task metadata and the title
+is null or empty-after-trim, the call routes through `AgentToolExecutor`
+like any other immediate tool — the title is applied without a user
+confirmation prompt so a freshly dictated task gets a meaningful name
+without an empty-looking suggestion sitting in the panel waiting for
+approval. Once a title is present the tool reverts to the normal
+deferred path.
+
+The auto-apply check (`_shouldAutoApplyInitialTitle`) deliberately
+re-runs the metadata resolver on every call rather than trusting the
+cached snapshot, so a title populated by any source — a concurrent
+user edit, a prior auto-apply in the same wake, a synced edit from
+another device — is seen before dispatch. After a successful auto-apply
+the strategy also marks `set_task_title` as used in `_usedDeferredTools`
+and invalidates the cached snapshot, so a repeat call in the same wake
+cannot re-auto-apply on the pre-write snapshot. The dispatcher itself
+stays simple: it is the single write path for both auto-applied initial
+titles and user-confirmed renames, so the "don't overwrite a populated
+title" invariant is enforced at the strategy boundary and not at the
+mutation boundary (where it would otherwise block legitimate renames).
 
 ### Confirmation Path
 
@@ -476,6 +500,60 @@ sequenceDiagram
   Journal-->>Confirm: ToolExecutionResult
   Confirm->>Store: finalize item status
 ```
+
+### Proposal Ledger and Agent-Autonomous Retraction
+
+Every task-agent wake is shown a **proposal ledger** — a single
+status-sorted view of every `ChangeItem` the agent has ever produced for
+the current task, assembled by `AgentRepository.getProposalLedger`. The
+ledger replaces the earlier split between "pending proposals" and "recent
+user decisions" with one unified section the agent reasons about.
+
+Each ledger entry carries a stable fingerprint (`toolName + args`). Open
+entries are rendered in the `AgentSuggestionsPanel` UI for the user to
+confirm or reject; resolved entries (user verdicts and agent retractions)
+are kept in the LLM prompt within a bounded window so the agent learns
+from its own history.
+
+When an open proposal is no longer relevant the agent calls a dedicated
+immediate tool, `retract_suggestions`, with one or more
+`{fingerprint, reason}` entries. `SuggestionRetractionService` looks each
+one up across the task's pending change sets, transitions the item to
+`ChangeItemStatus.retracted`, and persists a matching
+`ChangeDecisionEntity{verdict: retracted, actor: agent, retractionReason}`.
+Retraction is **not user-gated** — the user simply sees the item leave the
+active list and surface in the ledger's resolved slice.
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: ChangeSetBuilder.build()
+  pending --> confirmed: user swipe-confirm
+  pending --> rejected: user swipe-reject
+  pending --> retracted: agent retract_suggestions
+  pending --> expired: review window elapsed
+  confirmed --> [*]
+  rejected --> [*]
+  retracted --> [*]
+  expired --> [*]
+
+  note right of retracted
+    Actor: agent. Decision persisted with
+    verdict=retracted and a free-text reason.
+    Does not block later re-proposal after
+    the task context materially changes.
+  end note
+```
+
+`ChangeSetBuilder` co-operates with retraction by excluding both
+`confirmed` and `retracted` items from its dedup basis, while keeping
+`pending`, `rejected`, and `deferred` items sticky. The result: the agent
+can re-propose something it previously retracted if circumstances change,
+but cannot re-propose a user rejection without materially different args.
+
+Feedback-extraction heuristics that read the `rejectionReason` slot to
+detect user grievances are explicitly decoupled from the
+`retractionReason` slot, so agent self-talk never pollutes the user
+feedback signal.
 
 ## Project Agents
 

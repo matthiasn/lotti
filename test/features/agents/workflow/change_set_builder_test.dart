@@ -978,6 +978,55 @@ void main() {
       expect(result, isNotNull, reason: 'confirmed items are not in dedup set');
     });
 
+    test(
+      'allows re-proposal after the agent retracted an identical item',
+      () async {
+        // The agent retracted this exact proposal in an earlier wake (e.g.
+        // it had inferred the task was already at this state). If the task
+        // context has since changed such that the proposal is once again
+        // valuable, the agent must be allowed to re-propose — retraction
+        // is a self-correction, not a sticky veto like user rejection.
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+
+        final existingSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+              status: ChangeItemStatus.retracted,
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
+
+        expect(
+          result,
+          isNotNull,
+          reason: 'retracted items are not in the dedup set',
+        );
+        // The newly proposed pending item lands alongside the retained
+        // retracted record from the prior wake.
+        expect(result!.items, hasLength(2));
+        expect(
+          result.items.where((i) => i.status == ChangeItemStatus.pending),
+          hasLength(1),
+        );
+        expect(
+          result.items.where((i) => i.status == ChangeItemStatus.retracted),
+          hasLength(1),
+        );
+      },
+    );
+
     test('creates new entity when no existing pending set', () async {
       await builder.addItem(
         toolName: 'set_task_title',

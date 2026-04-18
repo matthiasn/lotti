@@ -1733,15 +1733,15 @@ class ChangeDecisionEntity implements AgentDomainEntity {
 @JsonKey() final  DecisionActor actor;
  final  String? taskId;
 /// Free-text reason a *user* supplied when rejecting a proposal.
-/// Only populated when [verdict] is [ChangeDecisionVerdict.rejected]
-/// and [actor] is [DecisionActor.user]. Kept separate from
-/// [retractionReason] so feedback-extraction heuristics that treat
+/// Only populated when `verdict` is `ChangeDecisionVerdict.rejected`
+/// and `actor` is `DecisionActor.user`. Kept separate from
+/// `retractionReason` so feedback-extraction heuristics that treat
 /// this text as a user signal are not polluted by agent self-talk.
  final  String? rejectionReason;
 /// Free-text reason the *agent* supplied when retracting its own
-/// proposal. Only populated when [verdict] is
-/// [ChangeDecisionVerdict.retracted] and [actor] is
-/// [DecisionActor.agent].
+/// proposal. Only populated when `verdict` is
+/// `ChangeDecisionVerdict.retracted` and `actor` is
+/// `DecisionActor.agent`.
  final  String? retractionReason;
 /// Human-readable summary of the change item (e.g., 'Check off: "Buy
 /// milk"'). Stored at decision time so the agent can see *what* was

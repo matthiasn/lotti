@@ -26,32 +26,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'change_set_providers.g.dart';
 
-/// Fetches pending (and partially resolved) change sets for a given task.
-///
-/// Resolves the task's agent via [taskAgentProvider], then watches the
-/// [agentUpdateStreamProvider] for reactive invalidation, and finally
-/// queries the repository.
-@riverpod
-Future<List<AgentDomainEntity>> pendingChangeSets(
-  Ref ref,
-  String taskId,
-) async {
-  final agent = ref
-      .watch(taskAgentProvider(taskId))
-      .value
-      ?.mapOrNull(agent: (a) => a);
-
-  if (agent == null) return [];
-
-  // Watch the agent's update stream so this provider rebuilds when the
-  // agent's data changes (e.g., after a wake produces new change sets).
-  ref.watch(agentUpdateStreamProvider(agent.agentId));
-
-  final repo = ref.watch(agentRepositoryProvider);
-  final sets = await repo.getPendingChangeSets(agent.agentId, taskId: taskId);
-  return _deduplicateChangeSets(sets);
-}
-
 /// Deduplicates change sets that have identical pending-item fingerprints.
 ///
 /// When two wake cycles race, they may produce genuinely duplicate
