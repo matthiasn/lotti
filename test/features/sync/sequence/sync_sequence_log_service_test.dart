@@ -2,6 +2,7 @@
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -3721,6 +3722,57 @@ void main() {
         expect(gaps.length, 2);
         expect(gaps[0], (hostId: aliceHostId, counter: 3));
         expect(gaps[1], (hostId: aliceHostId, counter: 4));
+      },
+    );
+  });
+
+  group('_trace routing', () {
+    test(
+      'routes through DomainLogger when one is injected and skips the '
+      'direct captureEvent fallback',
+      () async {
+        final mockDomainLogger = MockDomainLogger();
+        when(
+          () => mockDomainLogger.log(
+            any<String>(),
+            any<String>(),
+            subDomain: any<String>(named: 'subDomain'),
+            level: any<InsightLevel>(named: 'level'),
+          ),
+        ).thenReturn(null);
+
+        final svc = SyncSequenceLogService(
+          syncDatabase: mockDb,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          domainLogger: mockDomainLogger,
+        );
+
+        when(
+          () => mockDb.resetUnresolvableWithKnownPayload(),
+        ).thenAnswer((_) async => 3);
+
+        // resetUnresolvableEntries emits exactly one _trace when count > 0.
+        await svc.resetUnresolvableEntries();
+
+        verify(
+          () => mockDomainLogger.log(
+            LogDomains.sync,
+            any<String>(
+              that: contains('resetUnresolvableEntries: reset 3 entries'),
+            ),
+            subDomain: 'sequence.resetUnresolvable',
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(
+              that: contains('resetUnresolvableEntries: reset 3 entries'),
+            ),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.resetUnresolvable',
+          ),
+        );
       },
     );
   });
