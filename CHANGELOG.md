@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.962] - 2026-04-18
+### Added
+- Task agent suggestions are now surfaced in a single consolidated panel
+  on the task detail page instead of two disconnected cards, and the
+  agent itself can autonomously retract its own stale proposals. On every
+  wake the agent receives a unified proposal ledger listing every
+  suggestion it has ever made for the task, grouped into open vs.
+  resolved entries and carrying stable fingerprints. A new immediate
+  `retract_suggestions` tool lets the agent withdraw proposals that are
+  no longer relevant (the task state already matches them, the user made
+  the change manually, or they duplicate another open proposal) without
+  any user prompt — the item simply disappears from the active
+  suggestion list, leaving an auditable trail alongside user
+  confirmations and rejections. Dedup now excludes retracted items from
+  its basis so the agent can cleanly re-propose after the task context
+  materially changes, while user rejections remain sticky.
+
 ## [0.9.961] - 2026-04-18
 ### Changed
 - Sync pipeline: removed duplicate-work in inbox attachment handling and
@@ -30,22 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rolls back when a commit genuinely fails.
 
 ## [0.9.959] - 2026-04-18
-### Added
-- Task agent suggestions are now surfaced in a single consolidated panel
-  on the task detail page instead of two disconnected cards, and the
-  agent itself can autonomously retract its own stale proposals. On every
-  wake the agent receives a unified proposal ledger listing every
-  suggestion it has ever made for the task, grouped into open vs.
-  resolved entries and carrying stable fingerprints. A new immediate
-  `retract_suggestions` tool lets the agent withdraw proposals that are
-  no longer relevant (the task state already matches them, the user made
-  the change manually, or they duplicate another open proposal) without
-  any user prompt — the item simply disappears from the active
-  suggestion list, leaving an auditable trail alongside user
-  confirmations and rejections. Dedup now excludes retracted items from
-  its basis so the agent can cleanly re-propose after the task context
-  materially changes, while user rejections remain sticky.
-
 ### Changed
 - Desktop task switcher: switching between open tasks in the desktop split
   layout now crossfades the detail pane instead of cutting abruptly. The

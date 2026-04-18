@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.962" date="2026-04-18">
+      <description>
+          <p>Task agent suggestions are now surfaced in a single consolidated panel on the task detail page instead of two disconnected cards, and the agent itself can autonomously retract its own stale proposals. On every wake the agent receives a unified proposal ledger listing every suggestion it has ever made for the task, grouped into open vs. resolved entries and carrying stable fingerprints. A new immediate retract_suggestions tool lets the agent withdraw proposals that are no longer relevant (the task state already matches them, the user made the change manually, or they duplicate another open proposal) without any user prompt — the item simply disappears from the active suggestion list, leaving an auditable trail alongside user confirmations and rejections. Dedup now excludes retracted items from its basis so the agent can cleanly re-propose after the task context materially changes, while user rejections remain sticky.</p>
+      </description>
+    </release>
     <release version="0.9.961" date="2026-04-18">
       <description>
           <p>Sync pipeline: removed duplicate-work in inbox attachment handling and sync-family logging. AttachmentIndex.record now dedupes per eventId so repeated observations from live scan, catch-up, and backfill passes become no-ops instead of thrashing the per-path slot between events sharing one relativePath. SyncEventProcessor and SyncSequenceLogService no longer emit each log line twice — DomainLogger is the single emitter and falls back to a direct sync-domain capture when no domain logger is wired. Descriptor catch-up skips events whose relativePath is not in the pending set, so the per-run scan no longer records ~1000 unrelated events into the attachment index. Removed the per-tick OUTBOX enqueueRequest() done log, which fired on every debounced wake and carried no signal.</p>
@@ -39,7 +44,6 @@
     </release>
     <release version="0.9.959" date="2026-04-18">
       <description>
-          <p>Task agent suggestions are now surfaced in a single consolidated panel on the task detail page instead of two disconnected cards, and the agent itself can autonomously retract its own stale proposals. On every wake the agent receives a unified proposal ledger listing every suggestion it has ever made for the task, grouped into open vs. resolved entries and carrying stable fingerprints. A new immediate retract_suggestions tool lets the agent withdraw proposals that are no longer relevant (the task state already matches them, the user made the change manually, or they duplicate another open proposal) without any user prompt — the item simply disappears from the active suggestion list, leaving an auditable trail alongside user confirmations and rejections. Dedup now excludes retracted items from its basis so the agent can cleanly re-propose after the task context materially changes, while user rejections remain sticky.</p>
           <p>Desktop task switcher: switching between open tasks in the desktop split layout now crossfades the detail pane instead of cutting abruptly. The transition is a 480 ms easeInOutCubic fade driven by an AnimatedSwitcher keyed on the selected task id, so it fires only when a genuinely different task is opened — reloads and in-place data updates for the currently open task do not trigger the animation.</p>
       </description>
     </release>

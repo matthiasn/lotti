@@ -2314,6 +2314,213 @@ void main() {
       );
 
       test(
+        'drops malformed proposal entries but still retracts the valid ones',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => [
+              for (final r in requests)
+                RetractionResult(
+                  fingerprint: r.fingerprint,
+                  outcome: RetractionOutcome.retracted,
+                  humanSummary: 'ok: ${r.fingerprint}',
+                ),
+            ],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-mixed',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    'not-an-object',
+                    {'fingerprint': '  ', 'reason': 'empty fp'},
+                    {'fingerprint': 'fp-ok', 'reason': '  '},
+                    {'fingerprint': 'fp-valid', 'reason': 'Looks stale'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, hasLength(1));
+          final requests = fakeService.capturedCalls.single.requests;
+          expect(requests, hasLength(1));
+          expect(requests.single.fingerprint, 'fp-valid');
+          expect(requests.single.reason, 'Looks stale');
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-mixed',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('retracted'));
+          expect(response, contains('Skipped malformed entries'));
+          expect(response, contains('proposals[0] is not an object'));
+          expect(response, contains('fingerprint missing or empty'));
+          expect(response, contains('reason missing or empty'));
+        },
+      );
+
+      test(
+        'all entries malformed yields an error response and no service call',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (_) => const [],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-all-bad',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': null, 'reason': 'x'},
+                    {'fingerprint': 'fp', 'reason': ''},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(fakeService.capturedCalls, isEmpty);
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-all-bad',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, startsWith('Error: no valid proposals to retract.'));
+        },
+      );
+
+      test(
+        'outcome labels cover retracted, notOpen, and notFound per-entry',
+        () async {
+          final fakeService = _FakeRetractionService(
+            responses: (requests) => const [
+              RetractionResult(
+                fingerprint: 'fp-retracted',
+                outcome: RetractionOutcome.retracted,
+                toolName: 'set_task_title',
+                humanSummary: 'Rename',
+              ),
+              RetractionResult(
+                fingerprint: 'fp-closed',
+                outcome: RetractionOutcome.notOpen,
+                toolName: 'update_task_priority',
+                humanSummary: 'Already confirmed',
+              ),
+              RetractionResult(
+                fingerprint: 'fp-missing',
+                outcome: RetractionOutcome.notFound,
+              ),
+            ],
+          );
+          final retractionStrategy = TaskAgentStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (_, _, _) async =>
+                const ToolExecutionResult(success: true, output: 'unused'),
+            retractionService: fakeService,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-labels',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {'fingerprint': 'fp-retracted', 'reason': 'r'},
+                    {'fingerprint': 'fp-closed', 'reason': 'r'},
+                    {'fingerprint': 'fp-missing', 'reason': 'r'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await retractionStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          final response =
+              verify(
+                    () => mockManager.addToolResponse(
+                      toolCallId: 'call-labels',
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(response, contains('[fp=fp-retracted] retracted'));
+          expect(
+            response,
+            contains('[fp=fp-closed] not_open (already resolved)'),
+          );
+          expect(response, contains('[fp=fp-missing] not_found'));
+          // Items without a humanSummary still report the tool name when
+          // available; the not_found line has neither, so only the tool
+          // name / humanSummary ones get the suffix.
+          expect(response, contains('— "Rename"'));
+          expect(response, contains('— "Already confirmed"'));
+        },
+      );
+
+      test(
         'omitting the retraction service returns a wiring error to the LLM',
         () async {
           final noServiceStrategy = TaskAgentStrategy(

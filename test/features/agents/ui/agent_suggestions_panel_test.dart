@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
 import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
+import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -219,6 +220,219 @@ void main() {
         ).captured;
         expect((captured[0] as ChangeSetEntity).id, 'cs-reject');
         expect(captured[1], equals(0));
+      },
+    );
+
+    testWidgets(
+      'create_time_entry item renders TimeEntryTile instead of the generic tile',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'create_time_entry',
+          args: const {
+            'startTime': '2026-04-18T10:00:00',
+            'endTime': '2026-04-18T11:00:00',
+            'summary': 'Pair on migration',
+          },
+          humanSummary: 'Log time entry',
+          changeSetId: 'cs-time',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.byType(TimeEntryTile), findsOneWidget);
+        expect(find.text('10:00'), findsOneWidget);
+        expect(find.text('11:00'), findsOneWidget);
+        expect(find.text('Pair on migration'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'confirm success with a warning message shows the warning snackbar',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'update_task_priority',
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          changeSetId: 'cs-warn',
+        );
+        when(() => mockConfirmation.confirmItem(any(), any())).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'ok',
+            errorMessage: 'partial issue',
+            mutatedEntityId: taskId,
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.drag(
+          find.text('Set priority to P1'),
+          const Offset(400, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.textContaining('partial issue'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'confirm returning success=false surfaces the error snackbar',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'New'},
+          humanSummary: 'Rename to "New"',
+          changeSetId: 'cs-failure',
+        );
+        when(() => mockConfirmation.confirmItem(any(), any())).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: false,
+            output: 'failed',
+            errorMessage: 'dispatch failed',
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.drag(
+          find.text('Rename to "New"'),
+          const Offset(400, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'confirm that throws is caught and surfaces the error snackbar',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Crash'},
+          humanSummary: 'Rename task (throws)',
+          changeSetId: 'cs-throws',
+        );
+        when(() => mockConfirmation.confirmItem(any(), any())).thenThrow(
+          StateError('boom'),
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.drag(
+          find.text('Rename task (throws)'),
+          const Offset(400, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'reject returning false surfaces the error snackbar',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Skip'},
+          humanSummary: 'Rename (reject-skip)',
+          changeSetId: 'cs-reject-skip',
+        );
+        when(
+          () => mockConfirmation.rejectItem(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.drag(
+          find.text('Rename (reject-skip)'),
+          const Offset(-400, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'reject that throws is caught and surfaces the error snackbar',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Kaboom'},
+          humanSummary: 'Rename (reject-throws)',
+          changeSetId: 'cs-reject-throws',
+        );
+        when(
+          () => mockConfirmation.rejectItem(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+          ),
+        ).thenThrow(StateError('boom'));
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.drag(
+          find.text('Rename (reject-throws)'),
+          const Offset(-400, 0),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
       },
     );
   });
