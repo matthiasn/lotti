@@ -6,7 +6,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -149,8 +149,10 @@ void main() {
 
       expect(find.byType(TaskHeaderMetaCard), findsOneWidget);
       expect(find.byType(TaskLabelsWrapper), findsOneWidget);
+      // AgentSuggestionsPanel composes TaskAgentReportSection internally,
+      // so both should be found in the tree after the consolidation.
+      expect(find.byType(AgentSuggestionsPanel), findsOneWidget);
       expect(find.byType(TaskAgentReportSection), findsOneWidget);
-      expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       expect(find.byType(LinkedTasksWidget), findsOneWidget);
       expect(find.byType(ChecklistsWidget), findsOneWidget);
     });
