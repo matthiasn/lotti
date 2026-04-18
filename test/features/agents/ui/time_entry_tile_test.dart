@@ -135,19 +135,19 @@ void main() {
     });
 
     testWidgets(
-      'treats empty-string timestamps as missing on both ends',
+      'blank-string endTime is treated as a running timer',
       (tester) async {
         await tester.pumpWidget(
           host(const {
-            'startTime': '   ',
+            'startTime': '2026-04-18T09:00:00',
             'endTime': '',
           }),
         );
 
-        // startTime normalizes to null → '?'. endTime also normalizes to
-        // null BUT the key is present, so the widget prefers the raw-string
-        // branch ('?') over the running label.
-        expect(find.text('?'), findsNWidgets(2));
+        // startTime parses cleanly; endTime normalizes to null so the
+        // widget shows the localized running label instead of '?'.
+        expect(find.text('09:00'), findsOneWidget);
+        expect(find.text('?'), findsNothing);
       },
     );
 
@@ -160,10 +160,10 @@ void main() {
         }),
       );
 
-      // Non-string startTime and null endTime both fall to '?' placeholder.
-      // Non-string summary is treated as empty → row omitted; the widget
-      // should not throw.
-      expect(find.text('?'), findsNWidgets(2));
+      // Non-string startTime falls to '?'. Null endTime normalizes to null
+      // and renders as the running label, not '?'. Non-string summary is
+      // treated as empty → row omitted; the widget should not throw.
+      expect(find.text('?'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

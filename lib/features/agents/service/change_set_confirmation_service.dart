@@ -525,9 +525,11 @@ class ChangeSetConfirmationService {
     );
 
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
-    final resolvedAt = newSetStatus == ChangeSetStatus.resolved
-        ? clock.now()
-        : current.resolvedAt;
+    final resolvedAt = ChangeItem.deriveResolvedAt(
+      newStatus: newSetStatus,
+      existingResolvedAt: current.resolvedAt,
+      now: clock.now(),
+    );
 
     await _syncService.upsertEntity(
       current.copyWith(

@@ -837,9 +837,19 @@ class AgentRepository {
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
   }) async {
-    // Two independent table scans — run in parallel to halve the wall
-    // clock on cold sqlite access.
+    // Three independent table scans — run in parallel to keep wall-clock
+    // bounded on cold sqlite access. The dedicated pending query is what
+    // guarantees an old-but-still-open consolidated change set is never
+    // dropped by the recent-history cap: `getChangeSetsForAgent` is
+    // newest-first and would otherwise bury a long-lived open set past
+    // `changeSetFetchLimit` once enough resolved history accumulates.
     final results = await Future.wait([
+      _db
+          .getPendingChangeSetsForAgent(
+            agentId,
+            changeSetFetchLimit * _overFetchMultiplier,
+          )
+          .get(),
       _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
       _db
           .getRecentDecisionsForAgent(
@@ -848,24 +858,30 @@ class AgentRepository {
           )
           .get(),
     ]);
-    final setRows = results[0];
-    final decisionRows = results[1];
+    final pendingRows = results[0];
+    final recentRows = results[1];
+    final decisionRows = results[2];
 
-    final allSets = setRows
+    final pendingSets = pendingRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
         .where((cs) => cs.taskId == taskId)
         .toList();
+    final recentSets = recentRows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ChangeSetEntity>()
+        .where((cs) => cs.taskId == taskId);
+
+    final setsById = <String, ChangeSetEntity>{
+      for (final cs in recentSets) cs.id: cs,
+      // Pending wins the union: its rows are freshly queried by status
+      // and may reflect state that newer resolved rows have not yet
+      // picked up if a confirmation landed between the two scans.
+      for (final cs in pendingSets) cs.id: cs,
+    };
+    final allSets = setsById.values.toList();
 
     if (allSets.isEmpty) return const ProposalLedger.empty();
-
-    final pendingSets = allSets
-        .where(
-          (cs) =>
-              cs.status == ChangeSetStatus.pending ||
-              cs.status == ChangeSetStatus.partiallyResolved,
-        )
-        .toList();
 
     final decisions = decisionRows
         .map(AgentDbConversions.fromEntityRow)

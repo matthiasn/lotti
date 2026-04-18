@@ -214,7 +214,34 @@ class SuggestionRetractionService {
     // 2. Re-read the parent change set and transition the item + set status.
     final latest = await _syncService.repository.getEntity(changeSet.id);
     final current = latest is ChangeSetEntity ? latest : changeSet;
-    if (itemIndex < 0 || itemIndex >= current.items.length) return;
+    if (itemIndex < 0 || itemIndex >= current.items.length) {
+      // Rare: a concurrent writer truncated items between the initial
+      // locate and the re-read. The decision entity was already persisted,
+      // so surface the orphan so it is diagnosable if it ever happens.
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
+        'Retraction bounds mismatch after re-read: itemIndex=$itemIndex, '
+        'items=${current.items.length}, changeSet=${changeSet.id}, '
+        'decision=${decision.id}',
+        subDomain: _sub,
+      );
+      return;
+    }
+    if (current.items[itemIndex].status != ChangeItemStatus.pending) {
+      // The user confirmed/rejected the item between the initial pending
+      // check in retract() and this re-read. Do not overwrite their
+      // decision. The agent's retraction decision record stays persisted
+      // so the audit trail shows both the agent's intent and the user's
+      // winning action.
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
+        'Retraction lost race to user action: itemIndex=$itemIndex, '
+        'observedStatus=${current.items[itemIndex].status.name}, '
+        'changeSet=${changeSet.id}, decision=${decision.id}',
+        subDomain: _sub,
+      );
+      return;
+    }
 
     final updatedItems = List<ChangeItem>.from(current.items);
     updatedItems[itemIndex] = updatedItems[itemIndex].copyWith(
@@ -222,9 +249,11 @@ class SuggestionRetractionService {
     );
 
     final newSetStatus = ChangeItem.deriveSetStatus(updatedItems);
-    final resolvedAt = newSetStatus == ChangeSetStatus.resolved
-        ? now
-        : current.resolvedAt;
+    final resolvedAt = ChangeItem.deriveResolvedAt(
+      newStatus: newSetStatus,
+      existingResolvedAt: current.resolvedAt,
+      now: now,
+    );
 
     await _syncService.upsertEntity(
       current.copyWith(

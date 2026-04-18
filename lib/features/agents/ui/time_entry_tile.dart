@@ -22,7 +22,6 @@ class TimeEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startRaw = _trimmedString(args['startTime']);
-    final hasEndTime = args.containsKey('endTime');
     final endRaw = _trimmedString(args['endTime']);
     final summary = _trimmedString(args['summary']) ?? '';
 
@@ -36,9 +35,7 @@ class TimeEntryTile extends StatelessWidget {
         : (startRaw ?? '?');
     final endStr = end != null
         ? formatTimeEntryHhMm(end)
-        : hasEndTime
-        ? (endRaw ?? '?')
-        : context.messages.timeEntryItemRunning;
+        : endRaw ?? context.messages.timeEntryItemRunning;
 
     final dimStyle = context.textTheme.bodySmall?.copyWith(
       color: context.colorScheme.onSurfaceVariant,

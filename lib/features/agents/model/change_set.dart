@@ -70,4 +70,20 @@ abstract class ChangeItem with _$ChangeItem {
         ? ChangeSetStatus.resolved
         : ChangeSetStatus.partiallyResolved;
   }
+
+  /// Derives the `resolvedAt` timestamp consistent with [newStatus].
+  ///
+  /// Only `ChangeSetStatus.resolved` carries a non-null value; any other
+  /// status clears the field so queries that treat `resolvedAt != null` as
+  /// "resolved" do not see stale timestamps after a revert path. An
+  /// already-set timestamp is preserved on idempotent re-resolves so the
+  /// original resolution time is not overwritten.
+  static DateTime? deriveResolvedAt({
+    required ChangeSetStatus newStatus,
+    required DateTime? existingResolvedAt,
+    required DateTime now,
+  }) {
+    if (newStatus != ChangeSetStatus.resolved) return null;
+    return existingResolvedAt ?? now;
+  }
 }
