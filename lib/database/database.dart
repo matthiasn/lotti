@@ -90,6 +90,11 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 39;
 
+  /// Conservative chunk size for `IN :ids` drift queries to stay under
+  /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
+  /// for other variables in the same statement.
+  static const int _sqliteInListChunk = 500;
+
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
@@ -2112,15 +2117,23 @@ class JournalDb extends _$JournalDb {
 
   /// Batch variant of [getDayPlanById]. Used by the coalescing layer in
   /// the day-plan repository so a prefetch window of N dates collapses
-  /// into a single round-trip.
+  /// into a single round-trip. Chunks inputs to stay under SQLite's
+  /// default 999-variable limit even if a caller fans out far past the
+  /// DailyOS prefetch window.
   Future<List<DayPlanEntry>> getDayPlansByIds(Iterable<String> ids) async {
     final idList = ids.toList(growable: false);
     if (idList.isEmpty) return const [];
-    final res = await _queryWithPrivateFilter(
-      allPrivate: () => dayPlansByIds(idList).get(),
-      filtered: (s) => dayPlansByIdsByPrivateStatuses(idList, s).get(),
-    );
-    return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
+    final out = <DayPlanEntry>[];
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final res = await _queryWithPrivateFilter(
+        allPrivate: () => dayPlansByIds(chunk).get(),
+        filtered: (s) => dayPlansByIdsByPrivateStatuses(chunk, s).get(),
+      );
+      out.addAll(res.map((e) => fromDbEntity(e) as DayPlanEntry));
+    }
+    return out;
   }
 
   Future<List<DayPlanEntry>> getDayPlansInRange({
