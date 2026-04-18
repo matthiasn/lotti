@@ -35,6 +35,21 @@ class JournalPageController extends _$JournalPageController {
   static const journalCategoryFiltersKey = 'JOURNAL_CATEGORY_FILTERS';
   static const int pageSize = JournalQueryRunner.pageSize;
 
+  /// Canonical list of task-status strings persisted in the DB.
+  ///
+  /// Kept here alongside the controller that drives the query so the
+  /// paging layer does not depend on the tasks UI module to know what
+  /// "all statuses" means.
+  static const List<String> allTaskStatusValues = <String>[
+    'OPEN',
+    'GROOMED',
+    'IN PROGRESS',
+    'BLOCKED',
+    'ON HOLD',
+    'DONE',
+    'REJECTED',
+  ];
+
   // Delegates
   late final JournalFilterPersistence _persistence;
   late final JournalQueryRunner _queryRunner;
@@ -140,15 +155,7 @@ class JournalPageController extends _$JournalPageController {
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
-      taskStatuses: const [
-        'OPEN',
-        'GROOMED',
-        'IN PROGRESS',
-        'BLOCKED',
-        'ON HOLD',
-        'DONE',
-        'REJECTED',
-      ],
+      taskStatuses: allTaskStatusValues,
       selectedTaskStatuses: _selectedTaskStatuses,
       sortOption: _sortOption,
       showCreationDate: _showCreationDate,
@@ -590,7 +597,9 @@ class JournalPageController extends _$JournalPageController {
   }
 
   Future<void> persistTasksFilter() async {
-    await refreshQuery();
+    // Swap visible items in place instead of clearing-then-refetching so the
+    // list doesn't flicker when the user toggles a filter chip.
+    await refreshQuery(preserveVisibleItems: true);
     await _persistTasksFilterWithoutRefresh();
   }
 
@@ -726,6 +735,12 @@ class JournalPageController extends _$JournalPageController {
   }
 
   JournalQueryParams _buildQueryParams() {
+    // An empty selection means "no status filter" → query across all statuses
+    // rather than returning zero rows because `task_status IN ()` matches
+    // nothing.
+    final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
+        ? allTaskStatusValues.toSet()
+        : _selectedTaskStatuses;
     return JournalQueryParams(
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes,
@@ -733,7 +748,7 @@ class JournalPageController extends _$JournalPageController {
       selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
-      selectedTaskStatuses: _selectedTaskStatuses,
+      selectedTaskStatuses: effectiveTaskStatuses,
       sortOption: _sortOption,
       agentAssignmentFilter: _agentAssignmentFilter,
       filters: _filters,

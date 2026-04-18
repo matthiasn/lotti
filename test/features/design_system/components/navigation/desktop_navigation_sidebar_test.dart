@@ -238,27 +238,51 @@ void main() {
       );
     });
 
-    testWidgets('tapping New button calls onNewPressed', (tester) async {
-      var newPressed = false;
+    testWidgets(
+      'sidebar paints background.level02 so it reads as a lighter surface '
+      'than the task-list pane (level01) — matches the Figma reference',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
 
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(DesktopNavigationSidebar),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+
+        final decoration = container.decoration! as BoxDecoration;
+        expect(decoration.color, dsTokensDark.colors.background.level02);
+      },
+    );
+
+    testWidgets('sidebar does not render a "+ New" quick action', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrap(
           DesktopNavigationSidebar(
             destinations: buildDestinations(),
             activeIndex: 0,
             onDestinationSelected: (_) {},
-            onNewPressed: () => newPressed = true,
           ),
         ),
       );
       await tester.pump();
 
-      // The New button displays the localized "New" label text.
-      // Find it via the DesignSystemButton containing that text.
-      await tester.tap(find.text('New'));
-      await tester.pump();
-
-      expect(newPressed, isTrue);
+      expect(find.text('New'), findsNothing);
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
     });
   });
 }

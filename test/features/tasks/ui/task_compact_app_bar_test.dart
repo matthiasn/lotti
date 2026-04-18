@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -36,6 +37,7 @@ void main() {
   Widget buildTestWidget(Task task) {
     return ProviderScope(
       child: MaterialApp(
+        theme: DesignSystemTheme.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(

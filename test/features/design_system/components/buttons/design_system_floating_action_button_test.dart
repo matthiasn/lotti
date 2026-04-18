@@ -58,5 +58,33 @@ void main() {
 
       expect(iconCenter.dx, closeTo(buttonCenter.dx, 0.01));
     });
+
+    testWidgets('uses rounded-xl (24) corners matching the Figma FAB', (
+      tester,
+    ) async {
+      await pumpFab(tester);
+
+      final ink = tester.widget<Ink>(
+        find.descendant(
+          of: find.byType(DesignSystemFloatingActionButton),
+          matching: find.byType(Ink),
+        ),
+      );
+      final decoration = ink.decoration! as BoxDecoration;
+      expect(decoration.shape, BoxShape.rectangle);
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(24),
+        reason: 'FAB must match the Figma radii.xl (24) corner radius',
+      );
+
+      final inkWell = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byType(DesignSystemFloatingActionButton),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(inkWell.borderRadius, BorderRadius.circular(24));
+    });
   });
 }

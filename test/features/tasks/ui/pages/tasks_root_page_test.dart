@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -35,9 +37,19 @@ void main() {
         when(
           () => mockNavService.desktopSelectedTaskId,
         ).thenReturn(ValueNotifier<String?>(null));
-        getIt.registerSingleton<NavService>(mockNavService);
+        getIt
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<EntitiesCacheService>(
+            MockEntitiesCacheService(),
+          );
       },
     );
+    // `_TasksTabActiveFilters` reads `getVisibleProjects` from JournalDb to
+    // resolve selected project chips. Stub to an empty list so the
+    // FutureProvider resolves cleanly.
+    when(
+      () => (getIt<JournalDb>() as MockJournalDb).getVisibleProjects(),
+    ).thenAnswer((_) async => const []);
   });
 
   tearDown(tearDownTestGetIt);

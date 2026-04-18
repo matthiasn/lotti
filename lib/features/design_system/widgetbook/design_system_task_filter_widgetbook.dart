@@ -45,7 +45,7 @@ class _TaskFilterOverviewPageState extends State<_TaskFilterOverviewPage> {
           ? fresh
           : fresh.copyWith(
               selectedSortId: previous.selectedSortId,
-              selectedPriorityId: previous.selectedPriorityId,
+              selectedPriorityIds: previous.selectedPriorityIds,
               statusField: fresh.statusField?.copyWith(
                 selectedIds: previous.statusField?.selectedIds ?? const {},
               ),

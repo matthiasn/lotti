@@ -9,58 +9,56 @@ DefaultStyles customEditorStyles({
   final textColor = themeData.textTheme.bodyLarge?.color;
   final codeBlockBackground = themeData.primaryColorLight;
 
+  TextStyle inter({
+    required double fontSize,
+    Color? color,
+    FontWeight? fontWeight,
+  }) {
+    return TextStyle(
+      fontFamily: 'Inter',
+      fontSize: fontSize,
+      color: color,
+      fontWeight: fontWeight,
+    );
+  }
+
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: fontSizeLarge,
-        color: textColor,
-      ),
+      inter(fontSize: fontSizeLarge, color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     h2: DefaultTextBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: 20,
-        color: textColor,
-      ),
+      inter(fontSize: 20, color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     h3: DefaultTextBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: 18,
-        color: textColor,
-      ),
+      inter(fontSize: 18, color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     paragraph: DefaultTextBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: fontSizeMedium,
-        color: textColor,
-      ),
+      inter(fontSize: fontSizeMedium, color: textColor),
       const HorizontalSpacing(2, 0),
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     placeHolder: DefaultTextBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: fontSizeMedium,
-        color: textColor?.withAlpha(72),
-      ),
+      inter(fontSize: fontSizeMedium, color: textColor?.withAlpha(72)),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
-    bold: GoogleFonts.inclusiveSans(
+    bold: inter(
       fontSize: fontSizeMedium,
       color: textColor,
       fontWeight: FontWeight.w900,
@@ -74,10 +72,7 @@ DefaultStyles customEditorStyles({
       backgroundColor: codeBlockBackground,
     ),
     lists: DefaultListBlockStyle(
-      GoogleFonts.inclusiveSans(
-        fontSize: fontSizeMedium,
-        color: textColor,
-      ),
+      inter(fontSize: fontSizeMedium, color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,

@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -34,8 +35,7 @@ class FilterChoiceChip extends StatelessWidget {
                   isSelected: isSelected,
                 ).copyWith(
                   color: isSelected
-                      ? ThemeData.estimateBrightnessForColor(selectedColor) ==
-                                Brightness.light
+                      ? selectedColor.isLight
                             ? Colors.black
                             : Colors.white
                       : context.colorScheme.onSurface,

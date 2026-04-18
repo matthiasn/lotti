@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -20,11 +21,12 @@ class TaskCompactAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
+      backgroundColor: context.designTokens.colors.background.level01,
       leadingWidth: 100,
       titleSpacing: 0,
       toolbarHeight: 45,
       scrolledUnderElevation: 0,
-      elevation: 10,
+      elevation: 0,
       leading: const BackWidget(),
       actions: _buildActions(context),
       pinned: true,

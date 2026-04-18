@@ -22,6 +22,7 @@ class ProjectsOverviewContent extends StatefulWidget {
     this.headerPadding = const EdgeInsets.only(top: 8),
     this.titleBottomSpacing = 24,
     this.listBottomPadding = 24,
+    this.renderHeader = true,
     super.key,
   });
 
@@ -40,6 +41,11 @@ class ProjectsOverviewContent extends StatefulWidget {
   final EdgeInsets headerPadding;
   final double titleBottomSpacing;
   final double listBottomPadding;
+
+  /// When `false`, [ProjectsOverviewContent] omits its built-in
+  /// [ProjectsHeader] so the caller can render its own header (e.g. the
+  /// shared tab-section header used by the live Projects tab).
+  final bool renderHeader;
 
   @override
   State<ProjectsOverviewContent> createState() =>
@@ -73,46 +79,51 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
   Widget build(BuildContext context) {
     final scrollController = _effectiveScrollController;
 
-    return DesignSystemScrollbar(
-      controller: scrollController,
-      child: CustomScrollView(
-        controller: scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: ProjectsOverviewContentWidth(
-              child: ProjectsHeader(
-                title: widget.title,
-                query: widget.query,
-                searchEnabled: widget.searchEnabled,
-                onSearchChanged: widget.onSearchChanged,
-                onSearchCleared: widget.onSearchCleared,
-                onSearchPressed: widget.onSearchPressed,
-                titleTrailing: widget.titleTrailing,
-                searchTrailing: widget.searchTrailing,
-                padding: widget.headerPadding,
-                titleBottomSpacing: widget.titleBottomSpacing,
-              ),
+    return Column(
+      children: [
+        if (widget.renderHeader)
+          ProjectsOverviewContentWidth(
+            child: ProjectsHeader(
+              title: widget.title,
+              query: widget.query,
+              searchEnabled: widget.searchEnabled,
+              onSearchChanged: widget.onSearchChanged,
+              onSearchCleared: widget.onSearchCleared,
+              onSearchPressed: widget.onSearchPressed,
+              titleTrailing: widget.titleTrailing,
+              searchTrailing: widget.searchTrailing,
+              padding: widget.headerPadding,
+              titleBottomSpacing: widget.titleBottomSpacing,
             ),
           ),
-          if (widget.groups.isEmpty)
-            SliverPadding(
-              padding: EdgeInsets.only(bottom: widget.listBottomPadding),
-              sliver: const SliverFillRemaining(
-                hasScrollBody: false,
-                child: ProjectsOverviewContentWidth(
-                  child: NoResultsPane(),
-                ),
-              ),
-            )
-          else
-            ProjectsOverviewSliverList(
-              groups: widget.groups,
-              selectedProjectId: widget.selectedProjectId,
-              onProjectTap: widget.onProjectTap,
-              bottomPadding: widget.listBottomPadding,
+        Expanded(
+          child: DesignSystemScrollbar(
+            controller: scrollController,
+            child: CustomScrollView(
+              controller: scrollController,
+              slivers: [
+                if (widget.groups.isEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.only(bottom: widget.listBottomPadding),
+                    sliver: const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ProjectsOverviewContentWidth(
+                        child: NoResultsPane(),
+                      ),
+                    ),
+                  )
+                else
+                  ProjectsOverviewSliverList(
+                    groups: widget.groups,
+                    selectedProjectId: widget.selectedProjectId,
+                    onProjectTap: widget.onProjectTap,
+                    bottomPadding: widget.listBottomPadding,
+                  ),
+              ],
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

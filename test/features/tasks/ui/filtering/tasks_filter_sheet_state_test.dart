@@ -111,18 +111,21 @@ void main() {
 
   group('TasksFilterPriorityIds', () {
     test('maps internal priority to display ID', () {
-      expect(TasksFilterPriorityIds.toDisplayId('CRITICAL'), 'p0');
-      expect(TasksFilterPriorityIds.toDisplayId('HIGH'), 'p1');
-      expect(TasksFilterPriorityIds.toDisplayId('MEDIUM'), 'p2');
-      expect(TasksFilterPriorityIds.toDisplayId('LOW'), 'p3');
+      // Internal ids are the short codes stored in the `task_priority`
+      // column (`P0`..`P3`), not the legacy `CRITICAL`/`HIGH`/`MEDIUM`/`LOW`
+      // labels.
+      expect(TasksFilterPriorityIds.toDisplayId('P0'), 'p0');
+      expect(TasksFilterPriorityIds.toDisplayId('P1'), 'p1');
+      expect(TasksFilterPriorityIds.toDisplayId('P2'), 'p2');
+      expect(TasksFilterPriorityIds.toDisplayId('P3'), 'p3');
       expect(TasksFilterPriorityIds.toDisplayId('UNKNOWN'), isNull);
     });
 
     test('maps display ID back to internal priority', () {
-      expect(TasksFilterPriorityIds.toInternalId('p0'), 'CRITICAL');
-      expect(TasksFilterPriorityIds.toInternalId('p1'), 'HIGH');
-      expect(TasksFilterPriorityIds.toInternalId('p2'), 'MEDIUM');
-      expect(TasksFilterPriorityIds.toInternalId('p3'), 'LOW');
+      expect(TasksFilterPriorityIds.toInternalId('p0'), 'P0');
+      expect(TasksFilterPriorityIds.toInternalId('p1'), 'P1');
+      expect(TasksFilterPriorityIds.toInternalId('p2'), 'P2');
+      expect(TasksFilterPriorityIds.toInternalId('p3'), 'P3');
       expect(TasksFilterPriorityIds.toInternalId('unknown'), isNull);
     });
   });
@@ -168,7 +171,7 @@ void main() {
       selectedTaskStatuses: {'OPEN', 'IN PROGRESS'},
       selectedCategoryIds: {'cat-1'},
       selectedLabelIds: {'label-1'},
-      selectedPriorities: {'HIGH'},
+      selectedPriorities: {'P1'},
       sortOption: TaskSortOption.byDueDate,
       showCreationDate: true,
       showDueDate: false,
@@ -205,6 +208,9 @@ void main() {
       expect(result.statusField!.selectedIds, {'OPEN', 'IN PROGRESS'});
       expect(result.statusField!.options, hasLength(7));
       expect(result.hasPrioritySection, isTrue);
+      // Controller holds `{'P1'}`, so the sheet exposes `{'p1'}` as its
+      // multi-select set. The legacy single getter picks that same value.
+      expect(result.selectedPriorityIds, {'p1'});
       expect(result.selectedPriorityId, 'p1');
       expect(result.hasCategoryField, isTrue);
       expect(result.categoryField!.selectedIds, {'cat-1'});
@@ -279,7 +285,9 @@ void main() {
       expect(result.selectedSearchModeId, 'fullText');
     });
 
-    testWidgets('maps empty priorities to allPriorityId', (tester) async {
+    testWidgets('maps empty priorities to an empty selection set', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       await tester.pumpWidget(
@@ -301,13 +309,17 @@ void main() {
         ),
       );
 
+      expect(result.selectedPriorityIds, isEmpty);
+      // Empty set is equivalent to the legacy `allPriorityId` sentinel.
       expect(
         result.selectedPriorityId,
         DesignSystemTaskFilterState.allPriorityId,
       );
     });
 
-    testWidgets('maps multi-priority set to allPriorityId', (tester) async {
+    testWidgets('maps multi-priority set through to the sheet selection', (
+      tester,
+    ) async {
       late DesignSystemTaskFilterState result;
 
       await tester.pumpWidget(
@@ -317,7 +329,7 @@ void main() {
               result = buildTasksFilterSheetState(
                 context,
                 controllerState: controllerState.copyWith(
-                  selectedPriorities: const {'CRITICAL', 'HIGH'},
+                  selectedPriorities: const {'P0', 'P1'},
                 ),
                 categories: categories,
                 labels: labels,
@@ -329,6 +341,8 @@ void main() {
         ),
       );
 
+      expect(result.selectedPriorityIds, {'p0', 'p1'});
+      // Legacy single getter falls back to `allPriorityId` for multi-select.
       expect(
         result.selectedPriorityId,
         DesignSystemTaskFilterState.allPriorityId,

@@ -248,9 +248,9 @@ const DsTokens dsTokensLight = DsTokens(
 const DsTokens dsTokensDark = DsTokens(
   colors: DsColors(
     text: DsColorsText(
-      highEmphasis: Color(0xE0FFFFFF),
-      mediumEmphasis: Color(0xA3FFFFFF),
-      lowEmphasis: Color(0x52FFFFFF),
+      highEmphasis: Color(0xFFFFFFFF),
+      mediumEmphasis: Color(0xCCFFFFFF),
+      lowEmphasis: Color(0xA3FFFFFF),
       onInteractiveAlert: Color(0xFF0D0D0D),
     ),
     surface: DsColorsSurface(

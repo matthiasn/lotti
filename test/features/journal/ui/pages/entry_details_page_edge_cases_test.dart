@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -237,8 +238,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify FloatingActionButton is present
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      // Verify the design-system FAB is present (rounded-24 teal button
+      // matching the Figma spec; swapped from Flutter's default FAB).
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,

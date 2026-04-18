@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
+import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
+import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -47,6 +54,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     final isDesktop = isDesktopLayout(context);
 
     if (isDesktop) {
+      final paneWidths = ref.watch(paneWidthControllerProvider);
       return DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
@@ -54,10 +62,15 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         child: Row(
           children: [
             SizedBox(
-              width: 540,
+              width: paneWidths.listPaneWidth,
               child: _ProjectsListScaffold(
                 scrollController: _scrollController,
               ),
+            ),
+            ResizableDivider(
+              onDrag: (delta) => ref
+                  .read(paneWidthControllerProvider.notifier)
+                  .updateListPaneWidth(delta),
             ),
             Expanded(
               child: ValueListenableBuilder<String?>(
@@ -65,6 +78,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
                 builder: (context, selectedProjectId, _) {
                   if (selectedProjectId != null) {
                     return ProjectDetailsPage(
+                      key: ValueKey(selectedProjectId),
                       projectId: selectedProjectId,
                     );
                   }
@@ -99,8 +113,6 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final overviewAsync = ref.watch(projectsOverviewProvider);
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
-    final isCompact = MediaQuery.sizeOf(context).width < 600;
-    final topPadding = isCompact ? 20.0 : 8.0;
     final categories = overviewAsync.maybeWhen(
       data: (overview) => _filterCategoriesFromOverview(overview.groups),
       orElse: () => const <CategoryDefinition>[],
@@ -128,56 +140,56 @@ class _ProjectsListScaffold extends ConsumerWidget {
             valueListenable: isDesktopLayout(context)
                 ? getIt<NavService>().desktopSelectedProjectId
                 : _noProjectSelectionNotifier,
-            builder: (context, activeProjectId, _) => ProjectsOverviewContent(
-              title: context.messages.navTabTitleProjects,
-              groups: groups,
-              query: filter.textQuery,
-              selectedProjectId: activeProjectId,
-              scrollController: scrollController,
-              headerPadding: EdgeInsets.fromLTRB(16, topPadding, 16, 0),
-              listBottomPadding: 112,
-              onSearchChanged: (value) {
-                ref
-                    .read(projectsFilterControllerProvider.notifier)
-                    .setTextQuery(value);
-              },
-              onSearchCleared: () {
-                ref
-                    .read(projectsFilterControllerProvider.notifier)
-                    .setTextQuery(
-                      '',
-                    );
-              },
-              onSearchPressed: (value) {
-                ref
-                    .read(projectsFilterControllerProvider.notifier)
-                    .setTextQuery(value);
-              },
-              onProjectTap: (project) {
-                beamToNamed('/projects/${project.project.meta.id}');
-              },
-              titleTrailing: Icon(
-                Icons.notifications_none_rounded,
-                size: 34,
-                color: ShowcasePalette.highText(context),
-              ),
-              searchTrailing: IconButton(
-                tooltip: context.messages.projectsFilterTooltip,
-                onPressed: () => showProjectsFilterModal(
-                  context: context,
-                  initialFilter: filter,
-                  categories: categories,
-                  onApplied: (nextFilter) {
-                    ref.read(projectsFilterControllerProvider.notifier).filter =
-                        nextFilter;
+            builder: (context, activeProjectId, _) => Column(
+              children: [
+                TabSectionHeader(
+                  title: context.messages.navTabTitleProjects,
+                  query: filter.textQuery,
+                  searchHint: context.messages.projectShowcaseSearchHint,
+                  filterTooltip: context.messages.projectsFilterTooltip,
+                  onSearchChanged: (value) {
+                    ref
+                        .read(projectsFilterControllerProvider.notifier)
+                        .setTextQuery(value);
                   },
+                  onSearchCleared: () {
+                    ref
+                        .read(projectsFilterControllerProvider.notifier)
+                        .setTextQuery('');
+                  },
+                  onSearchPressed: (value) {
+                    ref
+                        .read(projectsFilterControllerProvider.notifier)
+                        .setTextQuery(value);
+                  },
+                  onFilterPressed: () => showProjectsFilterModal(
+                    context: context,
+                    initialFilter: filter,
+                    categories: categories,
+                    onApplied: (nextFilter) {
+                      ref
+                              .read(projectsFilterControllerProvider.notifier)
+                              .filter =
+                          nextFilter;
+                    },
+                  ),
                 ),
-                icon: Icon(
-                  Icons.tune_rounded,
-                  size: 24,
-                  color: ShowcasePalette.teal(context),
+                _ProjectsTabActiveFilters(categories: categories),
+                Expanded(
+                  child: ProjectsOverviewContent(
+                    title: context.messages.navTabTitleProjects,
+                    renderHeader: false,
+                    groups: groups,
+                    query: filter.textQuery,
+                    selectedProjectId: activeProjectId,
+                    scrollController: scrollController,
+                    listBottomPadding: 112,
+                    onProjectTap: (project) {
+                      beamToNamed('/projects/${project.project.meta.id}');
+                    },
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           loading: () => const Center(
@@ -185,6 +197,78 @@ class _ProjectsListScaffold extends ConsumerWidget {
           ),
           error: (error, _) => Center(
             child: Text(context.messages.commonError),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Renders a chip row reflecting the currently active Projects-tab filters
+/// (status + category). Each chip removes its filter when tapped or when
+/// its ✕ is pressed. Hidden entirely when no filters are active.
+class _ProjectsTabActiveFilters extends ConsumerWidget {
+  const _ProjectsTabActiveFilters({required this.categories});
+
+  final List<CategoryDefinition> categories;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(projectsFilterControllerProvider);
+    final controller = ref.read(projectsFilterControllerProvider.notifier);
+    final tokens = context.designTokens;
+    final accent = tokens.colors.interactive.enabled;
+
+    final statusIds = filter.selectedStatusIds;
+    final categoryIds = filter.selectedCategoryIds;
+    if (statusIds.isEmpty && categoryIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final chips = <Widget>[];
+
+    for (final id in statusIds) {
+      final kind = projectStatusKindFromFilterId(id);
+      final status = buildProjectStatus(kind, DateTime(2000));
+      final (label, color, icon) = projectStatusAttributes(context, status);
+      chips.add(
+        ActiveFilterChip(
+          label: label,
+          accentColor: color,
+          leadingIcon: icon,
+          onRemove: () => controller.setSelectedStatusIds(
+            statusIds.difference({id}),
+          ),
+        ),
+      );
+    }
+
+    final categoriesById = {for (final c in categories) c.id: c};
+    for (final id in categoryIds) {
+      final category = categoriesById[id];
+      if (category == null) continue;
+      chips.add(
+        ActiveFilterChip(
+          label: category.name,
+          accentColor: accent,
+          onRemove: () => controller.setSelectedCategoryIds(
+            categoryIds.difference({id}),
+          ),
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return ProjectsOverviewContentWidth(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+        child: SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: chips,
           ),
         ),
       ),

@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.955] - 2026-04-17
+### Changed
+- Align the desktop tasks and projects surfaces with the Figma design system.
+  Sidebar, task list, task details and projects list now share the deeper
+  `background/01` surface, and task cards sit on `background/02` so the
+  subtle card/raised-surface contrast matches the Figma reference. Dark-mode
+  `text/*` tokens are raised to the Figma-specified opacities (high 100%,
+  medium 80%, low 64%) so headlines, subtitles and timestamps read with the
+  correct contrast without changing type weights.
+- The selected task row uses the Figma `surface/selected` token (teal at
+  16%) for a subtler highlight instead of the previous stronger tint.
+- Task group headers ("Today", "Yesterday" …) and the `N tasks` counter use
+  the caption (12 px) token for a lighter hierarchy.
+- Task title header and the pinned `SliverAppBar`s above it render on
+  `background/01` with no elevation, so the strip no longer reads darker
+  than the body.
+- Sidebar drops the legacy "+ New" quick action, always uses the filled
+  settings glyph, and swaps the Ionicons/MDI nav glyphs for Material
+  rounded/outlined equivalents (Tasks, Projects, DailyOS, Habits, Insights,
+  Journal, Settings). The Insights nav tab now reads "Insights"
+  (English/en-GB) and "Einblicke" (German).
+- Task list filter chips use the design-system chip component and render
+  inline under the search bar, with priority chips carrying a leading
+  priority glyph. Tasks and projects filter triggers now use
+  `filter_list_rounded` to match the Figma funnel glyph.
+- Tasks and projects headers are pinned outside the scroll view so the
+  title stays static and pull-to-refresh only drags the list below it.
+- The floating action button component is now a rounded-24 teal surface
+  (`radii.xl`) matching Figma, and the journal/task details FAB was swapped
+  from Flutter's default circular FAB to the design-system FAB so list and
+  details FABs share the same shape and bottom-right anchor. The task
+  details showcase action bar uses the Figma `subdirectory_arrow_right`
+  glyph for the "linked" round action.
+
 ## [0.9.954] - 2026-04-17
 ### Added
 - Optional gzip compression for JSON sync attachments, gated by the
@@ -15,28 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   branch.
 - The new compression flag is toggleable from Settings → Flags, with
   localized labels and descriptions across all supported languages.
-
-### Changed
-- Theme settings simplified to **Light**, **Dark**, and **System (auto)**.
-  The named-theme picker (Material, Grey Law, Sakura, Indigo, etc.) has
-  been removed. Light and dark themes are now built directly from the
-  Figma-derived design system tokens via `DesignSystemTheme`, so the
-  in-app appearance matches the design source of truth without an
-  intermediate theme library.
-- Theme selection is now a per-device preference and is no longer synced
-  across devices. The `SyncMessage.themingSelection` wire variant
-  remains in the schema; receivers accept it but discard it, so peers on
-  older releases continue to interoperate without errors.
-
-### Removed
-- The `flex_color_scheme` dependency and its 21 named theme presets.
-- The `LightModeSurfaces` constants in `lib/themes/`. Light-mode surface
-  colors now come from the design-system token set instead of a hand-
-  tuned constant table. Widget-level styling — card/dialog/bottom-sheet
-  shapes, button and input decoration, Wolt modal sheet animation, GPT
-  markdown header sizes, uniform page transitions — is preserved via the
-  new `withAppWidgetOverrides()` layer applied on top of
-  `DesignSystemTheme`.
 
 ## [0.9.953] - 2026-04-16
 ### Fixed

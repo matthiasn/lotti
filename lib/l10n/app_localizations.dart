@@ -7375,7 +7375,7 @@ abstract class AppLocalizations {
   /// No description provided for @navTabTitleInsights.
   ///
   /// In en, this message translates to:
-  /// **'Dashboards'**
+  /// **'Insights'**
   String get navTabTitleInsights;
 
   /// No description provided for @navTabTitleJournal.

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class TaskListPane extends StatelessWidget {
@@ -32,9 +35,7 @@ class TaskListPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(color: TaskShowcasePalette.border(context)),
-        ),
+        color: context.designTokens.colors.background.level01,
       ),
       child: Column(
         children: [
@@ -47,6 +48,7 @@ class TaskListPane extends StatelessWidget {
           if (state.filterState.appliedCount > 0)
             TaskListActiveFilters(
               state: state,
+              onFilterPressed: onFilterPressed,
             ),
           Expanded(
             child: Padding(
@@ -214,62 +216,132 @@ class _TaskShowcaseBrowseItem {
 class TaskListActiveFilters extends StatelessWidget {
   const TaskListActiveFilters({
     required this.state,
+    required this.onFilterPressed,
+    this.onFilterChanged,
+    this.onClearAll,
     super.key,
   });
 
   final TaskListDetailState state;
+  final VoidCallback onFilterPressed;
+
+  /// Called with the filter state after a single chip has been removed.
+  /// When `null`, tapping a chip falls back to [onFilterPressed] (opens
+  /// the filter modal) so legacy callers keep working.
+  final ValueChanged<DesignSystemTaskFilterState>? onFilterChanged;
+
+  /// Called when the user taps "Clear all". When `null` the button is
+  /// hidden; otherwise it resets every filter section at once.
+  final VoidCallback? onClearAll;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final filterState = state.filterState;
-    final chips = <String>[
+
+    final chips = <_ActiveFilterChip>[
       ...?filterState.statusField?.selectedOptions.map(
-        (option) => option.label,
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.status,
+                    option.id,
+                  ),
+                ),
+        ),
       ),
-      if (filterState.selectedPriorityId !=
-          DesignSystemTaskFilterState.allPriorityId)
-        filterState.priorityOptions
-                .where((option) => option.id == filterState.selectedPriorityId)
-                .firstOrNull
-                ?.label ??
-            '',
+      for (final priorityId in filterState.selectedPriorityIds)
+        _ActiveFilterChip(
+          label:
+              filterState.priorityOptions
+                  .where((option) => option.id == priorityId)
+                  .firstOrNull
+                  ?.label ??
+              priorityId.toUpperCase(),
+          priority: _taskPriorityForId(priorityId),
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(filterState.togglePriority(priorityId)),
+        ),
       ...?filterState.categoryField?.selectedOptions.map(
-        (option) => option.label,
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.category,
+                    option.id,
+                  ),
+                ),
+        ),
       ),
-      ...?filterState.labelField?.selectedOptions.map((option) => option.label),
-    ].where((label) => label.isNotEmpty).toList();
+      ...?filterState.labelField?.selectedOptions.map(
+        (option) => _ActiveFilterChip(
+          label: option.label,
+          onRemove: onFilterChanged == null
+              ? null
+              : () => onFilterChanged!(
+                  filterState.removeSelection(
+                    DesignSystemTaskFilterSection.label,
+                    option.id,
+                  ),
+                ),
+        ),
+      ),
+    ].where((chip) => chip.label.isNotEmpty).toList();
+
+    if (chips.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            Text(
-              context.messages.taskShowcaseActiveFilters,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: TaskShowcasePalette.mediumText(context),
-              ),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final chip in chips)
+            DesignSystemChip(
+              label: chip.label,
+              onPressed: chip.onRemove ?? onFilterPressed,
+              showRemove: chip.onRemove != null,
+              avatar: chip.priority != null
+                  ? TaskShowcasePriorityGlyph(priority: chip.priority!)
+                  : null,
             ),
-            for (final chip in chips)
-              Chip(
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                label: Text(chip),
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
-        ),
+          if (onClearAll != null)
+            DesignSystemChip(
+              label: context.messages.tasksFilterClearAll,
+              onPressed: onClearAll,
+              leadingIcon: Icons.close_rounded,
+            ),
+        ],
       ),
     );
   }
+}
+
+class _ActiveFilterChip {
+  const _ActiveFilterChip({
+    required this.label,
+    this.priority,
+    this.onRemove,
+  });
+
+  final String label;
+  final TaskPriority? priority;
+  final VoidCallback? onRemove;
+}
+
+TaskPriority? _taskPriorityForId(String id) {
+  return switch (id) {
+    TaskPriorityFilterIds.p0 => TaskPriority.p0Urgent,
+    TaskPriorityFilterIds.p1 => TaskPriority.p1High,
+    TaskPriorityFilterIds.p2 => TaskPriority.p2Medium,
+    TaskPriorityFilterIds.p3 => TaskPriority.p3Low,
+    _ => null,
+  };
 }
 
 class _TaskListSearchHeader extends StatelessWidget {
@@ -309,7 +381,7 @@ class _TaskListSearchHeader extends StatelessWidget {
                 tooltip: context.messages.tasksFilterTitle,
                 onPressed: onFilterPressed,
                 icon: Icon(
-                  Icons.tune_rounded,
+                  Icons.filter_list_rounded,
                   color: TaskShowcasePalette.accent(context),
                 ),
               ),

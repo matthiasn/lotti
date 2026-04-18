@@ -169,7 +169,7 @@ class _TaskMobileListScreen extends StatelessWidget {
                     IconButton(
                       onPressed: onFilterPressed,
                       icon: Icon(
-                        Icons.tune_rounded,
+                        Icons.filter_list_rounded,
                         color: TaskShowcasePalette.accent(context),
                       ),
                     ),
@@ -177,7 +177,10 @@ class _TaskMobileListScreen extends StatelessWidget {
                 ),
               ),
               if (state.filterState.appliedCount > 0)
-                TaskListActiveFilters(state: state),
+                TaskListActiveFilters(
+                  state: state,
+                  onFilterPressed: onFilterPressed,
+                ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

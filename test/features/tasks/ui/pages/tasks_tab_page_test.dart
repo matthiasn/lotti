@@ -8,6 +8,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -155,6 +157,9 @@ void main() {
   JournalPageState state({
     Set<String> selectedLabelIds = const <String>{},
     Set<String> selectedCategoryIds = const <String>{'cat-1'},
+    Set<String> selectedTaskStatuses = const <String>{'OPEN'},
+    Set<String> selectedPriorities = const <String>{},
+    Set<String> selectedProjectIds = const <String>{},
     bool enableVectorSearch = false,
     bool enableProjects = false,
   }) {
@@ -163,9 +168,11 @@ void main() {
       showTasks: true,
       pagingController: pagingController,
       taskStatuses: const ['OPEN', 'IN PROGRESS'],
-      selectedTaskStatuses: const {'OPEN'},
+      selectedTaskStatuses: selectedTaskStatuses,
       selectedCategoryIds: selectedCategoryIds,
       selectedLabelIds: selectedLabelIds,
+      selectedPriorities: selectedPriorities,
+      selectedProjectIds: selectedProjectIds,
       selectedEntryTypes: const ['Task'],
       fullTextMatches: const <String>{},
       enableVectorSearch: enableVectorSearch,
@@ -203,7 +210,7 @@ void main() {
     await tester.pump();
     expect(fakeController.searchStringCalls, contains('agentic'));
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Tasks Filter'), findsOneWidget);
 
@@ -277,7 +284,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Active label filters'), findsOneWidget);
-      expect(find.text('Focus'), findsOneWidget);
+      // "Focus" label appears both in the active-filters chip row above the
+      // list and in the TaskLabelQuickFilter inside the list.
+      expect(find.text('Focus'), findsNWidgets(2));
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -422,5 +431,228 @@ void main() {
     // Both tasks should still be visible
     expect(find.text('Write migration'), findsOneWidget);
     expect(find.text('Validate grouping'), findsOneWidget);
+  });
+
+  testWidgets(
+    'pull-to-refresh calls refreshQuery with preserveVisibleItems: true '
+    'so the list is swapped atomically without a visible blank flash',
+    (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      // Trigger pull-to-refresh by dragging the scroll view down enough
+      // for RefreshIndicator to fire.
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(fakeController.refreshQueryCalled, greaterThanOrEqualTo(1));
+      expect(
+        fakeController.refreshQueryPreserveFlags,
+        everyElement(isTrue),
+        reason:
+            'pull-to-refresh must use preserveVisibleItems to avoid the '
+            'empty-then-repopulate flicker users reported.',
+      );
+    },
+  );
+
+  testWidgets(
+    'tasks header sits outside the RefreshIndicator so pull-to-refresh '
+    'only drags the list below it',
+    (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      final headerFinder = find.byType(TabSectionHeader);
+      final refreshFinder = find.byType(RefreshIndicator);
+      final scrollFinder = find.byType(CustomScrollView);
+
+      expect(headerFinder, findsOneWidget);
+      expect(refreshFinder, findsOneWidget);
+      expect(scrollFinder, findsOneWidget);
+
+      // Header must not be a descendant of either RefreshIndicator or the
+      // scroll view — otherwise the title would drag with pull-to-refresh.
+      expect(
+        find.descendant(of: refreshFinder, matching: headerFinder),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: scrollFinder, matching: headerFinder),
+        findsNothing,
+      );
+    },
+  );
+
+  group('active-filter chip row', () {
+    testWidgets(
+      'is hidden entirely when no status/priority/category/label/project '
+      'filters are selected',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders a status chip with the localised label and removes it via '
+      'applyBatchFilterUpdate when ✕ is tapped',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{'OPEN'},
+              selectedCategoryIds: const <String>{},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The only ActiveFilterChip rendered is the OPEN status chip.
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final chip = tester.widget<ActiveFilterChip>(
+          find.byType(ActiveFilterChip),
+        );
+        expect(chip.label, isNotEmpty);
+        expect(chip.leadingIcon, Icons.radio_button_unchecked);
+
+        // Tapping the chip's InkWell fires onRemove, which the widget wires
+        // to applyBatchFilterUpdate(statuses: {}).
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+
+        expect(fakeController.applyBatchFilterUpdateCalled, 1);
+        expect(fakeController.setSelectedTaskStatusesCalls.last, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'renders a category chip for each selected category using the '
+      'EntitiesCacheService name and removes it on tap',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{'cat-1'},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Category chip uses the category's name from EntitiesCacheService.
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final chip = tester.widget<ActiveFilterChip>(
+          find.byType(ActiveFilterChip),
+        );
+        expect(chip.label, 'Work');
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+
+        // Removing a category chip clears that category *and* any project
+        // selection, since category change invalidates the project set.
+        expect(fakeController.applyBatchFilterUpdateCalled, 1);
+        expect(fakeController.setSelectedCategoryIdsCalls.last, isEmpty);
+        expect(fakeController.setSelectedProjectIdsCalls.last, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'renders a priority chip with the P-label avatar and calls '
+      'applyBatchFilterUpdate on remove',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{},
+              selectedPriorities: const <String>{'P0'},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final chip = tester.widget<ActiveFilterChip>(
+          find.byType(ActiveFilterChip),
+        );
+        expect(chip.label, 'P0');
+        // Priority chips use the shared TaskShowcasePriorityGlyph via the
+        // [avatar] slot — no leadingIcon set.
+        expect(chip.avatar, isNotNull);
+        expect(chip.leadingIcon, isNull);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+
+        expect(fakeController.applyBatchFilterUpdateCalled, 1);
+        expect(fakeController.setSelectedPrioritiesCalls.last, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'renders a label chip for each selected label (in addition to the '
+      'quick-label filter inside the list) and removes it on tap',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedCategoryIds: const <String>{},
+              selectedLabelIds: const <String>{'label-1'},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Exactly one ActiveFilterChip for the label (the TaskLabelQuickFilter
+        // below the chip row renders its own non-ActiveFilterChip control).
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        final chip = tester.widget<ActiveFilterChip>(
+          find.byType(ActiveFilterChip),
+        );
+        expect(chip.label, 'Focus');
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+
+        expect(fakeController.applyBatchFilterUpdateCalled, 1);
+        expect(fakeController.setSelectedLabelIdsCalls.last, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'renders one chip per active filter when several are selected at once',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: state(
+              selectedTaskStatuses: const <String>{'OPEN', 'IN PROGRESS'},
+              selectedCategoryIds: const <String>{'cat-1'},
+              selectedLabelIds: const <String>{'label-1'},
+              selectedPriorities: const <String>{'P0', 'P2'},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 2 statuses + 2 priorities + 1 category + 1 label = 6 chips.
+        expect(find.byType(ActiveFilterChip), findsNWidgets(6));
+      },
+    );
   });
 }

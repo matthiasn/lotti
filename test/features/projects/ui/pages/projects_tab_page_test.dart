@@ -4,15 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
-import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -121,7 +123,7 @@ void main() {
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
         mediaQueryData: mediaQueryData,
-        theme: theme ?? lottiDarkTheme,
+        theme: theme ?? withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: overrides,
       ),
     );
@@ -181,7 +183,7 @@ void main() {
     await pumpPage(
       tester,
       groups: [buildWorkGroup(), buildStudyGroup()],
-      theme: lottiLightTheme,
+      theme: withOverrides(ThemeData.light(useMaterial3: true)),
     );
 
     expect(tester.takeException(), isNull);
@@ -240,7 +242,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
 
     expect(find.text('Tasks Filter'), findsOneWidget);
@@ -256,7 +258,7 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
     await tester.pumpAndSettle();
 
     final statusField = find.byKey(
@@ -373,7 +375,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
-        theme: lottiDarkTheme,
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(
@@ -398,7 +400,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const ProjectsTabPage(),
-        theme: lottiDarkTheme,
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         overrides: [
           projectsOverviewProvider.overrideWith(
             (ref) => Stream.value(
@@ -428,7 +430,7 @@ void main() {
       );
 
       // Open the filter modal
-      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
       await tester.pumpAndSettle();
 
       expect(find.text('Tasks Filter'), findsOneWidget);
@@ -446,4 +448,210 @@ void main() {
       expect(find.text('Tasks Filter'), findsNothing);
     },
   );
+
+  group('active-filter chip row', () {
+    testWidgets('is hidden when no status or category filters are selected', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+      );
+
+      expect(find.byType(ActiveFilterChip), findsNothing);
+    });
+
+    testWidgets(
+      'renders one chip per selected status and clears that status when '
+      'the chip is tapped',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        // Seed the filter controller with a status selection before asserting.
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds(
+              const {ProjectStatusFilterIds.active},
+            );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(projectsFilterControllerProvider).selectedStatusIds,
+          isEmpty,
+        );
+      },
+    );
+
+    testWidgets(
+      'renders one chip per selected category and clears that category '
+      'when the chip is tapped',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedCategoryIds(const {'work'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(projectsFilterControllerProvider).selectedCategoryIds,
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('desktop split layout', () {
+    testWidgets(
+      'renders a ResizableDivider between list and detail panes so the '
+      'user can adjust the list-pane width',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        );
+
+        expect(find.byType(ResizableDivider), findsOneWidget);
+        // And the detail pane is present (empty-state placeholder when no
+        // project is selected).
+        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+      },
+    );
+  });
+
+  group('header search wiring', () {
+    testWidgets(
+      'typing into the search field updates the projects filter '
+      'controller textQuery',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        await tester.enterText(find.byType(TextField), 'device');
+        await tester.pump();
+
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          'device',
+        );
+      },
+    );
+
+    testWidgets(
+      'clearing the search via the TextField ✕ resets the controller to '
+      'an empty query',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+
+        await tester.enterText(find.byType(TextField), 'abc');
+        await tester.pump();
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          'abc',
+        );
+
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pump();
+
+        expect(
+          container.read(projectsFilterControllerProvider).textQuery,
+          isEmpty,
+        );
+      },
+    );
+  });
+
+  group('_ProjectsTabActiveFilters category resolution', () {
+    testWidgets(
+      'a selected categoryId that is not present in the overview is '
+      'silently skipped (no chip rendered) and does not crash',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedCategoryIds(const {'ghost-category'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'status + category selections render one chip each and update the '
+      'controller independently when removed',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage)),
+        );
+        container.read(projectsFilterControllerProvider.notifier)
+          ..setSelectedStatusIds(const {ProjectStatusFilterIds.active})
+          ..setSelectedCategoryIds(const {'work'});
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActiveFilterChip), findsNWidgets(2));
+
+        // Remove only the status chip — find its ActiveFilterChip by its
+        // descendant "Active" label to disambiguate from any duplicate
+        // Text nodes elsewhere in the tree.
+        final statusChip = find.ancestor(
+          of: find.text('Active').first,
+          matching: find.byType(ActiveFilterChip),
+        );
+        await tester.tap(statusChip.first);
+        await tester.pumpAndSettle();
+
+        final state = container.read(projectsFilterControllerProvider);
+        expect(state.selectedStatusIds, isEmpty);
+        expect(state.selectedCategoryIds, equals({'work'}));
+      },
+    );
+  });
 }

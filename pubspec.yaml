@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.954+3929
+version: 0.9.955+3933
 
 msix_config:
   display_name: LottiApp
@@ -43,6 +43,7 @@ dependencies:
   extended_sliver: ^2.1.3
   fl_chart: ^1.0.0
   flex_color_picker: ^3.4.1
+  flex_color_scheme: ^8.2.1-dev.2
   flutter:
     sdk: flutter
   flutter_animate: ^4.1.1+1
@@ -85,7 +86,7 @@ dependencies:
   latlong2: ^0.9.0
   location: ^8.0.0
   material_design_icons_flutter: ^7.0.7096
-  matrix: ^6.1.0
+  matrix: ^7.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
@@ -207,9 +208,6 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf
-    - family: InclusiveSans
-      fonts:
-        - asset: assets/fonts/InclusiveSans/InclusiveSans-Regular.ttf
 
   assets:
     - assets/design_system/

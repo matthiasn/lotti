@@ -178,7 +178,8 @@ class DesignSystemTaskFilterState {
     this.statusField,
     this.priorityLabel = '',
     this.priorityOptions = const <DesignSystemTaskFilterOption>[],
-    this.selectedPriorityId = allPriorityId,
+    String? selectedPriorityId,
+    Set<String>? selectedPriorityIds,
     this.categoryField,
     this.labelField,
     this.projectField,
@@ -193,9 +194,36 @@ class DesignSystemTaskFilterState {
          priorityOptions.isEmpty ||
              priorityOptions.any((option) => option.id == allPriorityId),
          'priorityOptions must contain an option with id "$allPriorityId"',
+       ),
+       // Priority selection is multi-select; the set is the source of truth.
+       // Legacy callers that still pass a single [selectedPriorityId] are
+       // migrated to a single-element set, and `allPriorityId`/null/empty
+       // all resolve to an empty selection (meaning "no priority filter
+       // applied, all priorities visible").
+       selectedPriorityIds = Set<String>.unmodifiable(
+         selectedPriorityIds ??
+             (selectedPriorityId == null ||
+                     selectedPriorityId == allPriorityId ||
+                     selectedPriorityId.isEmpty
+                 ? const <String>{}
+                 : <String>{selectedPriorityId}),
        );
 
   factory DesignSystemTaskFilterState.fromJson(Map<String, dynamic> json) {
+    // Only honour the new-format `selectedPriorityIds` key when it is
+    // actually present on the payload. A *missing* key falls through to
+    // the legacy `selectedPriorityId` migration so old JSON doesn't lose
+    // its single-priority selection; a *present* key — even if empty or
+    // non-List — is treated as the authoritative new-format value and
+    // overrides any stale legacy `selectedPriorityId` still on the payload.
+    Set<String>? parsedPriorityIds;
+    if (json.containsKey('selectedPriorityIds')) {
+      final raw = json['selectedPriorityIds'];
+      parsedPriorityIds = raw is List<dynamic>
+          ? raw.cast<String>().toSet()
+          : const <String>{};
+    }
+
     return DesignSystemTaskFilterState(
       title: json['title'] as String,
       clearAllLabel: json['clearAllLabel'] as String,
@@ -216,8 +244,8 @@ class DesignSystemTaskFilterState {
         json['priorityOptions'],
         DesignSystemTaskFilterOption.fromJson,
       ),
-      selectedPriorityId:
-          json['selectedPriorityId'] as String? ?? allPriorityId,
+      selectedPriorityIds: parsedPriorityIds,
+      selectedPriorityId: json['selectedPriorityId'] as String?,
       categoryField: switch (json['categoryField']) {
         final Map<String, dynamic> value =>
           DesignSystemTaskFilterFieldState.fromJson(value),
@@ -263,7 +291,20 @@ class DesignSystemTaskFilterState {
   final DesignSystemTaskFilterFieldState? statusField;
   final String priorityLabel;
   final List<DesignSystemTaskFilterOption> priorityOptions;
-  final String selectedPriorityId;
+
+  /// The set of currently selected priority IDs. Multi-select: zero or more
+  /// of [priorityOptions] may be selected simultaneously. An empty set means
+  /// "no priority filter applied" (equivalent to the legacy
+  /// [allPriorityId] sentinel).
+  final Set<String> selectedPriorityIds;
+
+  /// Legacy single-select view of [selectedPriorityIds]. Returns
+  /// [allPriorityId] when the set is empty, the single selected id when
+  /// exactly one is selected, or [allPriorityId] when multiple are
+  /// selected (so legacy callers keep a sensible default).
+  String get selectedPriorityId => selectedPriorityIds.length == 1
+      ? selectedPriorityIds.first
+      : allPriorityId;
   final DesignSystemTaskFilterFieldState? categoryField;
   final DesignSystemTaskFilterFieldState? labelField;
   final DesignSystemTaskFilterFieldState? projectField;
@@ -289,7 +330,7 @@ class DesignSystemTaskFilterState {
       (categoryField?.selectedIds.length ?? 0) +
       (labelField?.selectedIds.length ?? 0) +
       (projectField?.selectedIds.length ?? 0) +
-      (hasPrioritySection && selectedPriorityId != allPriorityId ? 1 : 0) +
+      (hasPrioritySection ? selectedPriorityIds.length : 0) +
       (hasAgentFilter &&
               selectedAgentFilterId.isNotEmpty &&
               selectedAgentFilterId != agentFilterOptions.first.id
@@ -306,7 +347,7 @@ class DesignSystemTaskFilterState {
     DesignSystemTaskFilterFieldState? statusField,
     String? priorityLabel,
     List<DesignSystemTaskFilterOption>? priorityOptions,
-    String? selectedPriorityId,
+    Set<String>? selectedPriorityIds,
     DesignSystemTaskFilterFieldState? categoryField,
     DesignSystemTaskFilterFieldState? labelField,
     DesignSystemTaskFilterFieldState? projectField,
@@ -328,7 +369,7 @@ class DesignSystemTaskFilterState {
       statusField: statusField ?? this.statusField,
       priorityLabel: priorityLabel ?? this.priorityLabel,
       priorityOptions: priorityOptions ?? this.priorityOptions,
-      selectedPriorityId: selectedPriorityId ?? this.selectedPriorityId,
+      selectedPriorityIds: selectedPriorityIds ?? this.selectedPriorityIds,
       categoryField: categoryField ?? this.categoryField,
       labelField: labelField ?? this.labelField,
       projectField: projectField ?? this.projectField,
@@ -351,12 +392,40 @@ class DesignSystemTaskFilterState {
     return copyWith(selectedSortId: sortId);
   }
 
-  DesignSystemTaskFilterState selectPriority(String priorityId) {
-    if (!hasPrioritySection || priorityId == selectedPriorityId) {
-      return this;
+  /// Toggles [priorityId] in the current priority selection set. Tapping
+  /// the `allPriorityId` sentinel clears every selection.
+  DesignSystemTaskFilterState togglePriority(String priorityId) {
+    if (!hasPrioritySection) return this;
+
+    if (priorityId == allPriorityId) {
+      if (selectedPriorityIds.isEmpty) return this;
+      return copyWith(selectedPriorityIds: const <String>{});
     }
 
-    return copyWith(selectedPriorityId: priorityId);
+    final next = {...selectedPriorityIds};
+    if (!next.remove(priorityId)) {
+      next.add(priorityId);
+    }
+    return copyWith(selectedPriorityIds: next);
+  }
+
+  /// Legacy single-select variant kept for callers that still pass an
+  /// explicit id. Use [togglePriority] for new code.
+  ///
+  /// Unlike [togglePriority], this *replaces* the selection rather than
+  /// toggling: calling it with `allPriorityId` (or an empty id) clears the
+  /// selection, and any other id becomes the sole selected priority.
+  DesignSystemTaskFilterState selectPriority(String priorityId) {
+    if (!hasPrioritySection) return this;
+    if (priorityId == allPriorityId || priorityId.isEmpty) {
+      if (selectedPriorityIds.isEmpty) return this;
+      return copyWith(selectedPriorityIds: const <String>{});
+    }
+    if (selectedPriorityIds.length == 1 &&
+        selectedPriorityIds.contains(priorityId)) {
+      return this;
+    }
+    return copyWith(selectedPriorityIds: <String>{priorityId});
   }
 
   DesignSystemTaskFilterState selectAgentFilter(String agentFilterId) {
@@ -407,7 +476,7 @@ class DesignSystemTaskFilterState {
   DesignSystemTaskFilterState clearAll() {
     return copyWith(
       statusField: statusField?.clear(),
-      selectedPriorityId: allPriorityId,
+      selectedPriorityIds: const <String>{},
       categoryField: categoryField?.clear(),
       labelField: labelField?.clear(),
       projectField: projectField?.clear(),
@@ -432,6 +501,7 @@ class DesignSystemTaskFilterState {
         .map((option) => option.toJson())
         .toList(growable: false),
     'selectedPriorityId': selectedPriorityId,
+    'selectedPriorityIds': selectedPriorityIds.toList(growable: false),
     'categoryField': categoryField?.toJson(),
     'labelField': labelField?.toJson(),
     'projectField': projectField?.toJson(),
@@ -575,7 +645,10 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                       'design-system-task-filter-priority-${option.id}',
                     ),
                     label: option.label,
-                    selected: option.id == state.selectedPriorityId,
+                    selected:
+                        option.id == DesignSystemTaskFilterState.allPriorityId
+                        ? state.selectedPriorityIds.isEmpty
+                        : state.selectedPriorityIds.contains(option.id),
                     palette: palette,
                     textStyle: tokens.typography.styles.subtitle.subtitle2,
                     leading: option.glyph != DesignSystemTaskFilterGlyph.none
@@ -584,7 +657,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
                             palette: palette,
                           )
                         : null,
-                    onTap: () => onChanged(state.selectPriority(option.id)),
+                    onTap: () => onChanged(state.togglePriority(option.id)),
                   ),
               ],
             ),

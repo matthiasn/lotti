@@ -64,11 +64,11 @@ class _DesignSystemFloatingActionButtonState
             width: dimension,
             height: dimension,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(tokens.radii.xl),
               color: backgroundColor,
             ),
             child: InkWell(
-              customBorder: const CircleBorder(),
+              borderRadius: BorderRadius.circular(tokens.radii.xl),
               onTap: widget.onPressed,
               onHighlightChanged: enabled
                   ? (value) => setState(() => _pressed = value)

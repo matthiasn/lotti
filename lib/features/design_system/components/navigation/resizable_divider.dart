@@ -34,6 +34,11 @@ class _ResizableDividerState extends State<ResizableDivider> {
         ? tokens.colors.interactive.enabled
         : tokens.colors.decorative.level01;
 
+    // The divider reserves a constant 3 px of width in the row layout so
+    // adjacent panes never shift while the pointer crosses it. The visible
+    // line inside animates between a thin 1 px hairline (idle) and the full
+    // 3 px width (hover/drag), while a wider invisible [OverflowBox] on top
+    // preserves the full hitTargetWidth drag/hover area.
     return MouseRegion(
       cursor: SystemMouseCursors.resizeColumn,
       onEnter: (_) => setState(() => _isHovering = true),
@@ -45,12 +50,15 @@ class _ResizableDividerState extends State<ResizableDivider> {
         onHorizontalDragCancel: () => setState(() => _isDragging = false),
         onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
         child: SizedBox(
-          width: widget.hitTargetWidth,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: isActive ? 3 : 1,
-              color: lineColor,
+          width: 3,
+          child: OverflowBox(
+            maxWidth: widget.hitTargetWidth,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: isActive ? 3 : 1,
+                color: lineColor,
+              ),
             ),
           ),
         ),

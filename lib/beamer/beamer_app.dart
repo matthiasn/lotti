@@ -6,7 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -30,7 +30,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -38,7 +38,6 @@ import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class AppScreenConstants {
@@ -334,6 +333,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final paneWidths = ref.watch(paneWidthControllerProvider);
 
     return Scaffold(
+      // Scaffold fills behind the outer ResizableDivider's 3 px reserved
+      // SizedBox; without an explicit colour Flutter would paint the theme
+      // default (canvas / near-black) there, which shows through as a darker
+      // strip around the sidebar-↔-list divider. Using the list-pane token
+      // (background.level01 = #181818) keeps the divider flanked by the
+      // same surface on both visible edges, matching the right-side divider.
+      backgroundColor: context.designTokens.colors.background.level01,
       body: Row(
         children: [
           DesktopNavigationSidebar(
@@ -365,7 +371,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ? () => navService.tapIndex(settingsIndex)
                 : null,
             isSettingsActive: isSettingsActive,
-            onNewPressed: createTextEntry,
             width: paneWidths.sidebarWidth,
           ),
           ResizableDivider(
@@ -469,55 +474,48 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleTasks,
         iconBuilder: ({required active}) => TasksBadge(
           child: Icon(
-            active
-                ? MdiIcons.checkboxMarkedCircle
-                : MdiIcons.checkboxMarkedCircleOutline,
+            active ? Icons.list_rounded : Icons.list_outlined,
           ),
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.projects,
         label: context.messages.navTabTitleProjects,
-        iconBuilder: ({required active}) => Icon(
-          active ? Ionicons.folder : Ionicons.folder_outline,
-        ),
+        iconBuilder: ({required active}) =>
+            Icon(active ? Icons.folder_rounded : Icons.folder_outlined),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dailyOs,
         label: context.messages.navTabTitleCalendar,
-        iconBuilder: ({required active}) => Icon(
-          active ? Ionicons.calendar : Ionicons.calendar_outline,
-        ),
+        iconBuilder: ({required active}) =>
+            Icon(active ? Icons.today_rounded : Icons.today_outlined),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,
         label: context.messages.navTabTitleHabits,
         iconBuilder: ({required active}) => Icon(
-          active
-              ? MdiIcons.checkboxMultipleMarked
-              : MdiIcons.checkboxMultipleMarkedOutline,
+          active ? Icons.checklist_rounded : Icons.checklist_outlined,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.dashboards,
         label: context.messages.navTabTitleInsights,
         iconBuilder: ({required active}) => Icon(
-          active ? Ionicons.bar_chart : Ionicons.bar_chart_outline,
+          active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,
         label: context.messages.navTabTitleJournal,
         iconBuilder: ({required active}) => Icon(
-          active ? Ionicons.book : Ionicons.book_outline,
+          active ? Icons.menu_book_rounded : Icons.menu_book_outlined,
         ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
-        iconBuilder: ({required active}) => OutboxBadgeIcon(
-          icon: Icon(active ? Ionicons.settings : Ionicons.settings_outline),
-        ),
+        iconBuilder: ({required active}) =>
+            const OutboxBadgeIcon(icon: Icon(Icons.settings_rounded)),
       ),
     ];
 
@@ -586,6 +584,18 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
+
+    if (themingState.darkTheme == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: Colors.black87,
+        ),
+        home: const EmptyScaffoldWithTitle(
+          'Loading...',
+        ),
+      );
+    }
 
     final updateActivity =
         (widget.userActivityService ?? getIt<UserActivityService>())

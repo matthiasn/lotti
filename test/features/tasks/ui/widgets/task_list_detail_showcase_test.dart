@@ -134,7 +134,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.tune_rounded).first);
+      await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
       await tester.pumpAndSettle();
 
       expect(find.text('Tasks Filter'), findsOneWidget);

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
@@ -123,4 +124,48 @@ void main() {
     // TitleTextField should be present in edit mode
     expect(find.byType(TextField), findsOneWidget);
   });
+
+  testWidgets(
+    'TaskTitleHeader uses background.level01 to match sidebar/details surface',
+    (tester) async {
+      final task = testTask;
+
+      final overrides = <Override>[
+        entryControllerProvider(id: task.meta.id).overrideWith(
+          () => _TestEntryController(task),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: overrides,
+          child: TaskTitleHeader(taskId: task.meta.id),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TaskTitleHeader));
+      final expected = context.designTokens.colors.background.level01;
+
+      final material = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(TaskTitleHeader),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(material.color, expected);
+
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(TaskTitleHeader),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(container.color, expected);
+    },
+  );
 }

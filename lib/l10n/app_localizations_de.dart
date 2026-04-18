@@ -4149,7 +4149,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navTabTitleHabits => 'Gewohnheiten';
 
   @override
-  String get navTabTitleInsights => 'Dashboards';
+  String get navTabTitleInsights => 'Einblicke';
 
   @override
   String get navTabTitleJournal => 'Logbuch';

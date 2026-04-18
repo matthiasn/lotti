@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
@@ -119,6 +120,8 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         );
       },
       child: Scaffold(
+        backgroundColor: context.designTokens.colors.background.level01,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: FloatingAddActionButton(
           linkedFromId: task.meta.id,
           categoryId: task.meta.categoryId,

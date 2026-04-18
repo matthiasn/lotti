@@ -127,7 +127,7 @@ class _SearchHeader extends StatelessWidget {
                   tooltip: context.messages.projectsFilterTooltip,
                   onPressed: onFilterPressed,
                   icon: Icon(
-                    Icons.tune_rounded,
+                    Icons.filter_list_rounded,
                     size: 18,
                     color: ShowcasePalette.teal(context),
                   ),

@@ -1,5 +1,8 @@
+// ignore_for_file: cascade_invocations
+
 import 'dart:async';
 
+import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +11,10 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,40 +25,71 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ThemingController', () {
+    late MockOutboxService outboxService;
     late MockSettingsDb settingsDb;
     late MockJournalDb journalDb;
     late MockLoggingService loggingService;
+    late MockUpdateNotifications mockUpdateNotifications;
     late StreamController<bool> tooltipController;
+    late StreamController<Set<String>> notificationsController;
     late ProviderContainer container;
-    late Map<String, String?> storedSettings;
+    late Map<String, String?> storedThemeSettings;
+    late Future<Map<String, String?>> Function(Iterable<String> keys)
+    settingsBatchLoader;
 
     setUpAll(() {
+      registerFallbackValue(
+        const SyncMessage.themingSelection(
+          lightThemeName: '',
+          darkThemeName: '',
+          themeMode: '',
+          updatedAt: 0,
+          status: SyncEntryStatus.update,
+        ),
+      );
       registerFallbackValue(StackTrace.empty);
     });
 
-    setUp(() {
+    setUp(() async {
       GetIt.I.allowReassignment = true;
 
+      outboxService = MockOutboxService();
       settingsDb = MockSettingsDb();
       journalDb = MockJournalDb();
       loggingService = MockLoggingService();
-      tooltipController = StreamController<bool>.broadcast();
-      storedSettings = <String, String?>{};
+      mockUpdateNotifications = MockUpdateNotifications();
 
-      when(() => settingsDb.itemByKey(any())).thenAnswer(
-        (invocation) async =>
-            storedSettings[invocation.positionalArguments.first as String],
-      );
+      tooltipController = StreamController<bool>.broadcast();
+      notificationsController = StreamController<Set<String>>.broadcast();
+      storedThemeSettings = <String, String?>{
+        darkSchemeNameKey: 'Grey Law',
+        lightSchemeNameKey: 'Grey Law',
+        themeModeKey: 'system',
+      };
+      settingsBatchLoader = (keys) async => <String, String?>{
+        for (final key in keys) key: storedThemeSettings[key],
+      };
+
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => notificationsController.stream);
+
+      // Setup default mock behaviors
+      when(
+        () => settingsDb.itemsByKeys(any()),
+      ).thenAnswer((invocation) async {
+        final keys = invocation.positionalArguments.first as Iterable<String>;
+        return settingsBatchLoader(keys);
+      });
       when(
         () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
-      ).thenAnswer((invocation) async {
-        storedSettings[invocation.positionalArguments[0] as String] =
-            invocation.positionalArguments[1] as String;
-        return 1;
-      });
+      ).thenAnswer((_) async => 1);
       when(
         () => journalDb.watchConfigFlag(enableTooltipFlag),
       ).thenAnswer((_) => tooltipController.stream);
+      when(
+        () => outboxService.enqueueMessage(any<SyncMessage>()),
+      ).thenAnswer((_) async {});
       when(
         () => loggingService.captureException(
           any<Object>(),
@@ -63,6 +100,8 @@ void main() {
       ).thenAnswer((_) async {});
 
       GetIt.I
+        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+        ..registerSingleton<OutboxService>(outboxService)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingService>(loggingService);
@@ -71,281 +110,621 @@ void main() {
     });
 
     tearDown(() async {
+      EasyDebounce.cancelAll();
       await tooltipController.close();
+      await notificationsController.close();
       container.dispose();
       await GetIt.I.reset();
     });
 
-    group('initial state', () {
-      test('exposes light/dark themes built from design system tokens', () {
+    group('themingControllerProvider', () {
+      test('initial state has default Grey Law theme', () {
         final state = container.read(themingControllerProvider);
-        expect(state.lightTheme, same(lottiLightTheme));
-        expect(state.darkTheme, same(lottiDarkTheme));
-        expect(state.lightTheme.brightness, Brightness.light);
-        expect(state.darkTheme.brightness, Brightness.dark);
+        expect(state.darkThemeName, equals('Grey Law'));
+        expect(state.lightThemeName, equals('Grey Law'));
+        expect(state.themeMode, equals(ThemeMode.system));
+        expect(state.darkTheme, isNotNull);
+        expect(state.lightTheme, isNotNull);
       });
 
-      test('defaults themeMode to system before settings load', () {
-        final state = container.read(themingControllerProvider);
-        expect(state.themeMode, ThemeMode.system);
+      test('loads saved theme preferences on init', () {
+        fakeAsync((async) {
+          storedThemeSettings[lightSchemeNameKey] = 'Indigo';
+          storedThemeSettings[darkSchemeNameKey] = 'Shark';
+          storedThemeSettings[themeModeKey] = 'dark';
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          expect(states.last.lightThemeName, equals('Indigo'));
+          expect(states.last.darkThemeName, equals('Shark'));
+          expect(states.last.themeMode, equals(ThemeMode.dark));
+        });
+      });
+
+      test('setLightTheme updates light theme and enqueues sync', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+          clearInteractions(outboxService);
+
+          controller.setLightTheme('Indigo');
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          final state = container.read(themingControllerProvider);
+          expect(state.lightThemeName, equals('Indigo'));
+
+          verify(
+            () => settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'),
+          ).called(1);
+
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+
+          final message = captured.first as SyncThemingSelection;
+          expect(message.lightThemeName, 'Indigo');
+          expect(message.status, SyncEntryStatus.update);
+        });
+      });
+
+      test('setDarkTheme updates dark theme and enqueues sync', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+          clearInteractions(outboxService);
+
+          controller.setDarkTheme('Shark');
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          final state = container.read(themingControllerProvider);
+          expect(state.darkThemeName, equals('Shark'));
+
+          verify(
+            () => settingsDb.saveSettingsItem(darkSchemeNameKey, 'Shark'),
+          ).called(1);
+
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+
+          final message = captured.first as SyncThemingSelection;
+          expect(message.darkThemeName, 'Shark');
+        });
+      });
+
+      test('onThemeSelectionChanged updates mode and enqueues sync', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+          clearInteractions(outboxService);
+
+          controller.onThemeSelectionChanged({ThemeMode.dark});
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          final state = container.read(themingControllerProvider);
+          expect(state.themeMode, equals(ThemeMode.dark));
+
+          verify(
+            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
+          ).called(1);
+
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+
+          final message = captured.first as SyncThemingSelection;
+          expect(message.themeMode, 'dark');
+        });
+      });
+
+      test('debouncing - rapid changes send only final state', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+          clearInteractions(outboxService);
+
+          controller
+            ..setLightTheme('Indigo')
+            ..setDarkTheme('Shark')
+            ..onThemeSelectionChanged({ThemeMode.dark});
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 300));
+          async.flushMicrotasks();
+
+          // Verify enqueueMessage called exactly once (debounced)
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured.length, 1);
+
+          // Verify message contains all three changes
+          final message = captured.first as SyncThemingSelection;
+          expect(message.lightThemeName, 'Indigo');
+          expect(message.darkThemeName, 'Shark');
+          expect(message.themeMode, 'dark');
+        });
+      });
+
+      test('reloads themes when sync updates arrive', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          settingsBatchLoader = (keys) async {
+            callCount++;
+            final lightThemeName = callCount == 1 ? 'Grey Law' : 'Indigo';
+            return <String, String?>{
+              for (final key in keys)
+                key: switch (key) {
+                  lightSchemeNameKey => lightThemeName,
+                  darkSchemeNameKey => 'Grey Law',
+                  themeModeKey => 'system',
+                  _ => null,
+                },
+            };
+          };
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          clearInteractions(settingsDb);
+          clearInteractions(outboxService);
+
+          // Trigger reload via settings notification
+          notificationsController.add({settingsNotification});
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // Verify theme settings were reloaded
+          verify(() => settingsDb.itemsByKeys(any())).called(1);
+
+          // Verify NO sync message was enqueued (synced changes don't re-sync)
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        });
+      });
+
+      test('invalid theme name is ignored', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final originalState = container.read(themingControllerProvider);
+
+          controller.setLightTheme('NonExistentTheme');
+
+          final newState = container.read(themingControllerProvider);
+          expect(newState.lightThemeName, equals(originalState.lightThemeName));
+        });
       });
     });
 
-    group('themeMode loading', () {
-      test('loads persisted ThemeMode.dark on init', () {
-        fakeAsync((async) {
-          storedSettings[themeModeKey] = 'dark';
+    group('enableTooltipsProvider', () {
+      test('initial state is loading', () {
+        final state = container.read(enableTooltipsProvider);
+        expect(state, const AsyncValue<bool>.loading());
+      });
 
-          container.read(themingControllerProvider);
+      test('emits true when flag is enabled', () {
+        fakeAsync((async) {
+          final states = <AsyncValue<bool>>[];
+          container.listen(
+            enableTooltipsProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
           async.flushMicrotasks();
 
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.dark,
-          );
+          tooltipController.add(true);
+          async.flushMicrotasks();
+
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, isTrue);
         });
       });
 
-      test('loads persisted ThemeMode.light on init', () {
+      test('emits false when flag is disabled', () {
         fakeAsync((async) {
-          storedSettings[themeModeKey] = 'light';
+          final states = <AsyncValue<bool>>[];
+          container.listen(
+            enableTooltipsProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
 
-          container.read(themingControllerProvider);
           async.flushMicrotasks();
 
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.light,
-          );
+          tooltipController.add(false);
+          async.flushMicrotasks();
+
+          expect(states.last.hasValue, isTrue);
+          expect(states.last.value, isFalse);
         });
       });
 
-      test('falls back to system when stored value is null', () {
-        fakeAsync((async) {
-          storedSettings[themeModeKey] = null;
+      test('handles stream errors', () async {
+        final error = Exception('Database error');
+        final completer = Completer<void>();
 
-          container.read(themingControllerProvider);
-          async.flushMicrotasks();
+        container.listen(
+          enableTooltipsProvider,
+          (_, next) {
+            if (next.hasError && !completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        );
 
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.system,
-          );
-        });
+        tooltipController.addError(error);
+
+        await completer.future.timeout(const Duration(milliseconds: 100));
+
+        final state = container.read(enableTooltipsProvider);
+        expect(state.hasError, isTrue);
       });
+    });
 
-      test('falls back to system when stored value is unrecognized', () {
+    group('error handling', () {
+      test('handles error in _loadSelectedSchemes and logs it', () {
         fakeAsync((async) {
-          storedSettings[themeModeKey] = 'not_a_real_mode';
-
-          container.read(themingControllerProvider);
-          async.flushMicrotasks();
-
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.system,
-          );
-        });
-      });
-
-      test('logs and recovers when settings DB throws on load', () {
-        fakeAsync((async) {
-          when(() => settingsDb.itemByKey(any())).thenAnswer(
-            (_) => Future<String?>.error(Exception('boom')),
+          settingsBatchLoader = (_) => Future<Map<String, String?>>.error(
+            Exception('Database error'),
           );
 
-          container.read(themingControllerProvider);
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 200));
           async.flushMicrotasks();
 
+          // Controller should still be in valid state (with default values)
+          final state = container.read(themingControllerProvider);
+          expect(state, isNotNull);
+          expect(state.darkThemeName, equals('Grey Law'));
+
+          // Verify error was captured
           verify(
             () => loggingService.captureException(
               any<Object>(),
               domain: 'THEMING_CONTROLLER',
-              subDomain: 'loadThemeMode',
+              subDomain: 'init',
               stackTrace: any<StackTrace>(named: 'stackTrace'),
             ),
           ).called(1);
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.system,
+        });
+      });
+
+      test('gracefully handles OutboxService not registered', () {
+        fakeAsync((async) {
+          GetIt.I.unregister<OutboxService>();
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          controller.setLightTheme('Indigo');
+
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          // Should not throw exception
+          // Test passes if no exception is thrown
+        });
+      });
+
+      test('ignores notifications without settingsNotification key', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
           );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          clearInteractions(settingsDb);
+
+          // Emit unrelated notification
+          notificationsController.add({'unrelated_notification'});
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Verify settings were NOT reloaded
+          verifyNever(() => settingsDb.itemsByKeys(any()));
+        });
+      });
+
+      test('handles error during theme reload from sync and logs it', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          settingsBatchLoader = (keys) {
+            callCount++;
+            if (callCount > 1) {
+              return Future<Map<String, String?>>.error(
+                Exception('Reload error'),
+              );
+            }
+            return Future<Map<String, String?>>.value(<String, String?>{
+              for (final key in keys)
+                key: switch (key) {
+                  darkSchemeNameKey => 'Grey Law',
+                  lightSchemeNameKey => 'Grey Law',
+                  themeModeKey => 'system',
+                  _ => null,
+                },
+            });
+          };
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Trigger reload via settings notification
+          notificationsController.add({settingsNotification});
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // Verify error was logged
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'THEMING_CONTROLLER',
+              subDomain: 'theme_prefs_reload',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+
+          // Controller should still be in valid state
+          final state = container.read(themingControllerProvider);
+          expect(state, isNotNull);
+        });
+      });
+
+      test('handles error in enqueueMessage and logs it', () {
+        fakeAsync((async) {
+          when(
+            () => outboxService.enqueueMessage(any<SyncMessage>()),
+          ).thenThrow(Exception('Enqueue error'));
+
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          controller.setLightTheme('Indigo');
+
+          // Wait for debounce
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          // Verify error was logged
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'THEMING_SYNC',
+              subDomain: 'enqueue',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('does not enqueue sync message when applying synced changes', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          clearInteractions(outboxService);
+
+          // Trigger reload via settings notification (simulates sync update)
+          notificationsController.add({settingsNotification});
+
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+
+          // Verify NO sync message was enqueued during sync application
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        });
+      });
+
+      test('handles null theme mode string gracefully', () {
+        fakeAsync((async) {
+          storedThemeSettings[themeModeKey] = null;
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to system theme mode
+          expect(states.last.themeMode, equals(ThemeMode.system));
+        });
+      });
+
+      test('handles invalid theme mode string gracefully', () {
+        fakeAsync((async) {
+          storedThemeSettings[themeModeKey] = 'invalid_mode';
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to system theme mode
+          expect(states.last.themeMode, equals(ThemeMode.system));
+        });
+      });
+
+      test('handles null theme names gracefully', () {
+        fakeAsync((async) {
+          storedThemeSettings[lightSchemeNameKey] = null;
+          storedThemeSettings[darkSchemeNameKey] = null;
+
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Should default to Grey Law
+          expect(states.last.lightThemeName, equals('Grey Law'));
+          expect(states.last.darkThemeName, equals('Grey Law'));
+        });
+      });
+
+      test('invalid dark theme name is ignored', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final originalState = container.read(themingControllerProvider);
+
+          controller.setDarkTheme('NonExistentTheme');
+
+          final newState = container.read(themingControllerProvider);
+          expect(newState.darkThemeName, equals(originalState.darkThemeName));
+        });
+      });
+
+      test('unrelated notification does not trigger theme reload', () {
+        fakeAsync((async) {
+          final states = <ThemingState>[];
+          container.listen(
+            themingControllerProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Initial load completed
+          verify(() => settingsDb.itemsByKeys(any())).called(1);
+
+          // Emit unrelated notification (should be ignored)
+          notificationsController.add({'some_other_notification'});
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          // No additional load triggered
+          verifyNever(() => settingsDb.itemsByKeys(any()));
         });
       });
     });
 
-    group('onThemeSelectionChanged', () {
-      test('updates themeMode and persists the new value', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-          async.flushMicrotasks();
-
-          controller.onThemeSelectionChanged({ThemeMode.dark});
-
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            ThemeMode.dark,
-          );
-          verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
-          ).called(1);
-        });
-      });
-
-      test('persists each of light, dark, and system selections', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-          async.flushMicrotasks();
-
-          for (final mode in ThemeMode.values) {
-            controller.onThemeSelectionChanged({mode});
-            expect(
-              container.read(themingControllerProvider).themeMode,
-              mode,
-            );
-          }
-
-          verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'system'),
-          ).called(1);
-          verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'light'),
-          ).called(1);
-          verify(
-            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
-          ).called(1);
-        });
-      });
-
-      test('ignores empty selection set', () {
-        fakeAsync((async) {
-          final controller = container.read(themingControllerProvider.notifier);
-          async.flushMicrotasks();
-
-          final before = container.read(themingControllerProvider).themeMode;
-          controller.onThemeSelectionChanged({});
-
-          expect(
-            container.read(themingControllerProvider).themeMode,
-            before,
-          );
-          verifyNever(
-            () => settingsDb.saveSettingsItem(themeModeKey, any<String>()),
-          );
-        });
-      });
-
-      test(
-        'user selection is not clobbered by a late _loadThemeMode resolution',
-        () {
-          fakeAsync((async) {
-            final loadCompleter = Completer<String?>();
-            when(
-              () => settingsDb.itemByKey(themeModeKey),
-            ).thenAnswer((_) => loadCompleter.future);
-
-            // Before the async load resolves, the user picks light.
-            container
-                .read(themingControllerProvider.notifier)
-                .onThemeSelectionChanged({ThemeMode.light});
-            expect(
-              container.read(themingControllerProvider).themeMode,
-              ThemeMode.light,
-            );
-
-            // The stored value was dark - resolving it should NOT override
-            // the user's fresh choice.
-            loadCompleter.complete('dark');
-            async.flushMicrotasks();
-
-            expect(
-              container.read(themingControllerProvider).themeMode,
-              ThemeMode.light,
-            );
-          });
-        },
-      );
-    });
-
-    group('cached top-level themes', () {
-      test('lottiLightTheme is light brightness Material 3', () {
-        expect(lottiLightTheme.brightness, Brightness.light);
-        expect(lottiLightTheme.useMaterial3, isTrue);
-      });
-
-      test('lottiDarkTheme is dark brightness Material 3', () {
-        expect(lottiDarkTheme.brightness, Brightness.dark);
-        expect(lottiDarkTheme.useMaterial3, isTrue);
-      });
-    });
-
-    group('ThemingState.copyWith', () {
-      test('returns identical state when no field is provided', () {
+    group('ThemingState', () {
+      test('copyWith preserves all values when no arguments provided', () {
         final original = ThemingState(
-          lightTheme: ThemeData(brightness: Brightness.light),
-          darkTheme: ThemeData(brightness: Brightness.dark),
+          darkTheme: ThemeData.dark(),
+          lightTheme: ThemeData.light(),
+          darkThemeName: 'Shark',
+          lightThemeName: 'Indigo',
           themeMode: ThemeMode.dark,
         );
 
         final copy = original.copyWith();
 
-        expect(copy.themeMode, ThemeMode.dark);
-        expect(copy.lightTheme, same(original.lightTheme));
-        expect(copy.darkTheme, same(original.darkTheme));
+        expect(copy.darkThemeName, equals('Shark'));
+        expect(copy.lightThemeName, equals('Indigo'));
+        expect(copy.themeMode, equals(ThemeMode.dark));
       });
 
-      test('updates only themeMode and preserves cached themes', () {
+      test('copyWith can update individual theme fields', () {
         final original = ThemingState(
-          lightTheme: ThemeData(brightness: Brightness.light),
-          darkTheme: ThemeData(brightness: Brightness.dark),
+          darkTheme: ThemeData.dark(),
+          lightTheme: ThemeData.light(),
+          darkThemeName: 'Grey Law',
+          lightThemeName: 'Grey Law',
         );
 
-        final copy = original.copyWith(themeMode: ThemeMode.light);
+        final newDarkTheme = ThemeData.dark();
+        final newLightTheme = ThemeData.light();
 
-        expect(copy.themeMode, ThemeMode.light);
-        expect(copy.lightTheme, same(original.lightTheme));
-        expect(copy.darkTheme, same(original.darkTheme));
-      });
-    });
-
-    group('enableTooltipsProvider', () {
-      test('initial value is loading', () {
-        final state = container.read(enableTooltipsProvider);
-        expect(state, const AsyncValue<bool>.loading());
-      });
-
-      test('emits values from the underlying config flag stream', () {
-        fakeAsync((async) {
-          final emitted = <AsyncValue<bool>>[];
-          container.listen(
-            enableTooltipsProvider,
-            (_, next) => emitted.add(next),
-            fireImmediately: true,
-          );
-
-          tooltipController.add(true);
-          async.flushMicrotasks();
-          tooltipController.add(false);
-          async.flushMicrotasks();
-
-          expect(emitted.last.value, isFalse);
-        });
-      });
-
-      test('surfaces stream errors as AsyncError', () async {
-        final errorReceived = Completer<void>();
-        container.listen(enableTooltipsProvider, (_, next) {
-          if (next.hasError && !errorReceived.isCompleted) {
-            errorReceived.complete();
-          }
-        });
-
-        tooltipController.addError(Exception('flag stream blew up'));
-
-        await errorReceived.future.timeout(
-          const Duration(milliseconds: 100),
+        final copy = original.copyWith(
+          darkTheme: newDarkTheme,
+          lightTheme: newLightTheme,
         );
 
-        expect(container.read(enableTooltipsProvider).hasError, isTrue);
+        expect(copy.darkTheme, equals(newDarkTheme));
+        expect(copy.lightTheme, equals(newLightTheme));
+        expect(copy.darkThemeName, equals('Grey Law'));
+        expect(copy.lightThemeName, equals('Grey Law'));
       });
     });
   });

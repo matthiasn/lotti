@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
@@ -33,12 +34,13 @@ class TaskExpandableAppBar extends StatelessWidget {
         final expandedHeight = availableWidth * 9 / 16;
 
         return SliverAppBar(
+          backgroundColor: context.designTokens.colors.background.level01,
           expandedHeight: expandedHeight,
           leadingWidth: 48,
           titleSpacing: 0,
           toolbarHeight: 40,
           scrolledUnderElevation: 0,
-          elevation: 10,
+          elevation: 0,
           leading: const Padding(
             padding: EdgeInsets.only(left: 8),
             child: GlassBackButton(),
