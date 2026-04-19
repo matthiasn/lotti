@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.963" date="2026-04-19">
+      <description>
+          <p>Agent suggestion panel now surfaces the reasoning behind resolved proposals without cluttering the list. A collapsed "Recent activity" strip shows the three most recent ledger entries (newest-first) with verdict icons — check for confirmed, X for rejected, undo for agent-retracted — and when a rejection or retraction carries a reason it lives behind an info icon whose tooltip reveals the text on tap or hover. The strip stays hidden entirely when there is no resolved activity. A "Confirm all" action sits next to the pending badge whenever more than one open suggestion is pending.</p>
+          <p>Initial-language auto-apply: set_task_language now bypasses the deferred-confirmation flow when the task has no language set yet, so the agent can pick the language silently on first use. Re-tagging a task that already has a language continues to flow through the standard change-set approval path.</p>
+          <p>Suggestion rows no longer display the raw snake_case tool key beneath the human summary — the tool name was developer-facing noise.</p>
+      </description>
+    </release>
     <release version="0.9.962" date="2026-04-19">
       <description>
           <p>Task agent: the mandatory update_report tool call at the end of every wake is now a hard guarantee instead of a prompt-only request. When the model stops without calling it — a routine failure mode for weaker local models such as Qwen 3.6 served via mlx-vlm — the workflow now issues one additional inference pass with tool_choice pinned to update_report and a direct reminder message, forcing the final report. ConversationRepository.sendMessage and the underlying inference layer gained a threaded toolChoice parameter that overrides the default auto selection policy; the override is currently honored on the OpenAI-compatible path and silently ignored by the Gemini/Ollama/Mistral sub-repositories, which still benefit from the retry's pointed user message. The task-agent scaffold and the seeded report directive also now lead with a non-negotiable "final step" instruction so compliant models need no retry at all.</p>

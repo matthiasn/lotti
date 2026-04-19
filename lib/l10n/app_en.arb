@@ -489,6 +489,29 @@
   },
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
+  "agentSuggestionsActivityCountTotal": "{total} total",
+  "@agentSuggestionsActivityCountTotal": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSuggestionsActivityCountVisible": "{visible} of {total}",
+  "@agentSuggestionsActivityCountVisible": {
+    "placeholders": {
+      "visible": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSuggestionsActivityTitle": "Recent activity",
+  "agentSuggestionsActivityVerdictConfirmed": "Confirmed",
+  "agentSuggestionsActivityVerdictRejected": "Rejected",
+  "agentSuggestionsActivityVerdictRetracted": "Retracted by agent",
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",

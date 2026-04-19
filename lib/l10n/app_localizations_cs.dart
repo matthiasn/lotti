@@ -890,6 +890,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Celkem za 7 dní';
 
   @override
+  String agentSuggestionsActivityCountTotal(int total) {
+    return '$total celkem';
+  }
+
+  @override
+  String agentSuggestionsActivityCountVisible(int visible, int total) {
+    return '$visible z $total';
+  }
+
+  @override
+  String get agentSuggestionsActivityTitle => 'Nedávná aktivita';
+
+  @override
+  String get agentSuggestionsActivityVerdictConfirmed => 'Potvrzeno';
+
+  @override
+  String get agentSuggestionsActivityVerdictRejected => 'Zamítnuto';
+
+  @override
+  String get agentSuggestionsActivityVerdictRetracted => 'Staženo agentem';
+
+  @override
   String get agentTabActivity => 'Aktivita';
 
   @override

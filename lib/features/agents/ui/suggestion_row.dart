@@ -117,12 +117,6 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
         _suggestion.item.humanSummary,
         style: context.textTheme.bodyMedium,
       ),
-      subtitle: Text(
-        _suggestion.item.toolName,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      ),
       trailing: _busy
           ? const SizedBox(
               width: 20,

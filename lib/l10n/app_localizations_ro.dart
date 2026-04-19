@@ -901,6 +901,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 zile';
 
   @override
+  String agentSuggestionsActivityCountTotal(int total) {
+    return '$total în total';
+  }
+
+  @override
+  String agentSuggestionsActivityCountVisible(int visible, int total) {
+    return '$visible din $total';
+  }
+
+  @override
+  String get agentSuggestionsActivityTitle => 'Activitate recentă';
+
+  @override
+  String get agentSuggestionsActivityVerdictConfirmed => 'Confirmată';
+
+  @override
+  String get agentSuggestionsActivityVerdictRejected => 'Respinsă';
+
+  @override
+  String get agentSuggestionsActivityVerdictRetracted => 'Retrasă de agent';
+
+  @override
   String get agentTabActivity => 'Activitate';
 
   @override

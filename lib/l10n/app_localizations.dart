@@ -1620,6 +1620,42 @@ abstract class AppLocalizations {
   /// **'7-Day Total'**
   String get agentStatsWeekTotalLabel;
 
+  /// No description provided for @agentSuggestionsActivityCountTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} total'**
+  String agentSuggestionsActivityCountTotal(int total);
+
+  /// No description provided for @agentSuggestionsActivityCountVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'{visible} of {total}'**
+  String agentSuggestionsActivityCountVisible(int visible, int total);
+
+  /// No description provided for @agentSuggestionsActivityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get agentSuggestionsActivityTitle;
+
+  /// No description provided for @agentSuggestionsActivityVerdictConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get agentSuggestionsActivityVerdictConfirmed;
+
+  /// No description provided for @agentSuggestionsActivityVerdictRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get agentSuggestionsActivityVerdictRejected;
+
+  /// No description provided for @agentSuggestionsActivityVerdictRetracted.
+  ///
+  /// In en, this message translates to:
+  /// **'Retracted by agent'**
+  String get agentSuggestionsActivityVerdictRetracted;
+
   /// No description provided for @agentTabActivity.
   ///
   /// In en, this message translates to:

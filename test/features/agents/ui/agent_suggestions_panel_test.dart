@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -63,6 +65,39 @@ void main() {
       itemIndex: itemIndex,
       item: item,
       fingerprint: ChangeItem.fingerprintFromParts(toolName, args),
+    );
+  }
+
+  LedgerEntry ledgerEntry({
+    required ChangeItemStatus status,
+    required String humanSummary,
+    required DateTime createdAt,
+    String? reason,
+    String toolName = 'set_task_priority',
+    Map<String, dynamic> args = const {'priority': 'P1'},
+    String changeSetId = 'cs-history',
+    int itemIndex = 0,
+  }) {
+    return LedgerEntry(
+      changeSetId: changeSetId,
+      itemIndex: itemIndex,
+      toolName: toolName,
+      args: args,
+      humanSummary: humanSummary,
+      fingerprint: ChangeItem.fingerprintFromParts(toolName, args),
+      status: status,
+      createdAt: createdAt,
+      resolvedAt: createdAt,
+      verdict: switch (status) {
+        ChangeItemStatus.confirmed => ChangeDecisionVerdict.confirmed,
+        ChangeItemStatus.rejected => ChangeDecisionVerdict.rejected,
+        ChangeItemStatus.retracted => ChangeDecisionVerdict.retracted,
+        _ => null,
+      },
+      resolvedBy: status == ChangeItemStatus.retracted
+          ? DecisionActor.agent
+          : DecisionActor.user,
+      reason: reason,
     );
   }
 
@@ -421,6 +456,419 @@ void main() {
         await _pumpUi(tester);
 
         expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'raw snake_case tool keys are not rendered in open suggestion rows',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'add_checklist_item',
+          args: const {'title': 'Buy milk'},
+          humanSummary: 'Add checklist item: Buy milk',
+          changeSetId: 'cs-declutter',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Add checklist item: Buy milk'), findsOneWidget);
+        // The raw snake_case tool key must not leak into the tile.
+        expect(find.text('add_checklist_item'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Accept all confirms every distinct change set once and surfaces a '
+      'success snackbar',
+      (tester) async {
+        final suggestion1 = pendingSuggestion(
+          toolName: 'update_task_priority',
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          changeSetId: 'cs-multi-a',
+        );
+        final suggestion2 = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Fix bug'},
+          humanSummary: 'Rename task to "Fix bug"',
+          changeSetId: 'cs-multi-b',
+        );
+        when(() => mockConfirmation.confirmAll(any())).thenAnswer(
+          (_) async => const [
+            ToolExecutionResult(
+              success: true,
+              output: 'ok',
+              mutatedEntityId: taskId,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion1, suggestion2],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Confirm all'), findsOneWidget);
+
+        await tester.tap(find.text('Confirm all'));
+        await _pumpUi(tester);
+
+        final captured = verify(
+          () => mockConfirmation.confirmAll(captureAny()),
+        ).captured;
+        // One call per distinct change set.
+        expect(captured, hasLength(2));
+        expect(
+          captured.map((cs) => (cs as ChangeSetEntity).id).toSet(),
+          {'cs-multi-a', 'cs-multi-b'},
+        );
+        verify(() => mockUpdates.notify(any())).called(1);
+        expect(find.text('Change applied'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Accept all is hidden when only one open suggestion is pending',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Fix bug'},
+          humanSummary: 'Rename task to "Fix bug"',
+          changeSetId: 'cs-single',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Confirm all'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Accept all surfaces the error snackbar when any confirmAll fails',
+      (tester) async {
+        final suggestion1 = pendingSuggestion(
+          toolName: 'update_task_priority',
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          changeSetId: 'cs-fail-a',
+        );
+        final suggestion2 = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Fix bug'},
+          humanSummary: 'Rename task to "Fix bug"',
+          changeSetId: 'cs-fail-b',
+        );
+        when(() => mockConfirmation.confirmAll(any())).thenAnswer(
+          (_) async => const [
+            ToolExecutionResult(
+              success: false,
+              output: 'nope',
+              errorMessage: 'boom',
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion1, suggestion2],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.tap(find.text('Confirm all'));
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Accept all that throws surfaces the error snackbar and re-enables',
+      (tester) async {
+        final suggestion1 = pendingSuggestion(
+          toolName: 'update_task_priority',
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          changeSetId: 'cs-throw-a',
+        );
+        final suggestion2 = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Fix bug'},
+          humanSummary: 'Rename task to "Fix bug"',
+          changeSetId: 'cs-throw-b',
+        );
+        when(() => mockConfirmation.confirmAll(any())).thenThrow(
+          StateError('boom'),
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion1, suggestion2],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        await tester.tap(find.text('Confirm all'));
+        await _pumpUi(tester);
+
+        expect(find.text('Failed to apply change'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'activity strip is hidden entirely when the activity list is empty',
+      (tester) async {
+        final suggestion = pendingSuggestion(
+          toolName: 'set_task_title',
+          args: const {'title': 'Fix bug'},
+          humanSummary: 'Rename task to "Fix bug"',
+          changeSetId: 'cs-only-open',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: [suggestion],
+              activity: const [],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Recent activity'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'activity strip renders a single retracted entry with the reason '
+      'tooltip exposed via the info icon',
+      (tester) async {
+        final retracted = ledgerEntry(
+          status: ChangeItemStatus.retracted,
+          humanSummary: 'Withdraw add_checklist_item for "Buy milk"',
+          createdAt: DateTime(2026, 4, 17, 9),
+          reason: 'Duplicate of an existing checklist item',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: const [],
+              activity: [retracted],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Recent activity'), findsOneWidget);
+        expect(
+          find.text('Withdraw add_checklist_item for "Buy milk"'),
+          findsOneWidget,
+        );
+        // The reason is not displayed as text — it lives behind the i-icon.
+        expect(
+          find.text('Duplicate of an existing checklist item'),
+          findsNothing,
+        );
+        // The undo verdict icon is present for retracted entries.
+        expect(find.byIcon(Icons.undo), findsOneWidget);
+        // The info icon opens the reason tooltip on tap.
+        final infoIcon = find.byIcon(Icons.info_outline);
+        expect(infoIcon, findsOneWidget);
+
+        await tester.tap(infoIcon);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          find.text('Duplicate of an existing checklist item'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'activity strip renders verdict icons for confirmed and rejected '
+      'entries and omits the info icon when no reason is attached',
+      (tester) async {
+        final confirmed = ledgerEntry(
+          status: ChangeItemStatus.confirmed,
+          humanSummary: 'Confirmed: Set priority to P1',
+          createdAt: DateTime(2026, 4, 17, 12),
+        );
+        final rejected = ledgerEntry(
+          status: ChangeItemStatus.rejected,
+          humanSummary: 'Rejected: Rename task',
+          createdAt: DateTime(2026, 4, 17, 11),
+          reason: 'Keep original title',
+        );
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(
+              open: const [],
+              activity: [confirmed, rejected],
+            ),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(find.byIcon(Icons.close), findsOneWidget);
+        // Only the rejected row carries a reason, so exactly one i-icon.
+        expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'activity strip preserves newest-first order and caps at three rows '
+      'when collapsed',
+      (tester) async {
+        final entries = [
+          ledgerEntry(
+            status: ChangeItemStatus.confirmed,
+            humanSummary: 'Newest entry',
+            createdAt: DateTime(2026, 4, 17, 15),
+          ),
+          ledgerEntry(
+            status: ChangeItemStatus.rejected,
+            humanSummary: 'Middle entry',
+            createdAt: DateTime(2026, 4, 17, 14),
+          ),
+          ledgerEntry(
+            status: ChangeItemStatus.retracted,
+            humanSummary: 'Third entry',
+            createdAt: DateTime(2026, 4, 17, 13),
+          ),
+          ledgerEntry(
+            status: ChangeItemStatus.confirmed,
+            humanSummary: 'Oldest entry (must be hidden when collapsed)',
+            createdAt: DateTime(2026, 4, 17, 12),
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(open: const [], activity: entries),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.text('Newest entry'), findsOneWidget);
+        expect(find.text('Middle entry'), findsOneWidget);
+        expect(find.text('Third entry'), findsOneWidget);
+        // Fourth entry is hidden behind the collapse.
+        expect(
+          find.text('Oldest entry (must be hidden when collapsed)'),
+          findsNothing,
+        );
+
+        // Display order matches source order (newest-first).
+        final newestY = tester.getTopLeft(find.text('Newest entry')).dy;
+        final middleY = tester.getTopLeft(find.text('Middle entry')).dy;
+        final thirdY = tester.getTopLeft(find.text('Third entry')).dy;
+        expect(newestY, lessThan(middleY));
+        expect(middleY, lessThan(thirdY));
+      },
+    );
+
+    testWidgets(
+      'activity strip expands to reveal every entry and collapses back',
+      (tester) async {
+        final entries = [
+          for (var i = 0; i < 5; i++)
+            ledgerEntry(
+              status: ChangeItemStatus.confirmed,
+              humanSummary: 'Entry $i',
+              createdAt: DateTime(2026, 4, 17, 15 - i),
+            ),
+        ];
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(open: const [], activity: entries),
+          ),
+        );
+        await _pumpUi(tester);
+
+        // Collapsed state: three visible, remainder hidden, chevron down.
+        expect(find.text('Entry 0'), findsOneWidget);
+        expect(find.text('Entry 1'), findsOneWidget);
+        expect(find.text('Entry 2'), findsOneWidget);
+        expect(find.text('Entry 3'), findsNothing);
+        expect(find.text('Entry 4'), findsNothing);
+        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.expand_less), findsNothing);
+        // Collapsed header shows visible/total counter.
+        expect(find.text('3 of 5'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await _pumpUi(tester);
+
+        // Expanded state: every entry visible, chevron flips, counter
+        // switches to total.
+        expect(find.text('Entry 3'), findsOneWidget);
+        expect(find.text('Entry 4'), findsOneWidget);
+        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.text('5 total'), findsOneWidget);
+
+        // Tapping again collapses back to three.
+        await tester.tap(find.byIcon(Icons.expand_less));
+        await _pumpUi(tester);
+        expect(find.text('Entry 3'), findsNothing);
+        expect(find.text('Entry 4'), findsNothing);
+        expect(find.text('3 of 5'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'activity strip hides the expand toggle when there are at most three '
+      'entries',
+      (tester) async {
+        final entries = [
+          for (var i = 0; i < 3; i++)
+            ledgerEntry(
+              status: ChangeItemStatus.confirmed,
+              humanSummary: 'Entry $i',
+              createdAt: DateTime(2026, 4, 17, 15 - i),
+            ),
+        ];
+
+        await tester.pumpWidget(
+          buildPanel(
+            list: UnifiedSuggestionList(open: const [], activity: entries),
+          ),
+        );
+        await _pumpUi(tester);
+
+        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(Icons.expand_less), findsNothing);
       },
     );
   });
