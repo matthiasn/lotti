@@ -471,7 +471,14 @@ class SyncSequenceLogService {
                 ? startCounter
                 : math.max(startCounter, previousBound + 1);
             final effectiveSize = endCounter - effectiveStart + 1;
-            final isIncrementalExtension = previousBound != null;
+            // Only treat this as an "incremental extension" when the current
+            // gap actually overlaps the previously materialised range
+            // (`startCounter <= previousBound`). A disjoint new large gap on
+            // the same host — e.g. after the host recovered and regressed
+            // again — must re-emit the log and re-nudge backfill instead of
+            // being silently rolled into the prior range's bookkeeping.
+            final isIncrementalExtension =
+                previousBound != null && startCounter <= previousBound;
             gaps.addRange(
               hostId: hostId,
               startCounter: effectiveStart,
@@ -500,12 +507,12 @@ class SyncSequenceLogService {
             // is the max — no `math.max` needed.
             _materializedUpperBound[hostId] = endCounter;
             if (insertedCount > 0) {
-              // Only flag new-missing state when we actually recorded rows the
-              // caller has not already nudged backfill for. Incremental
-              // extensions of a pre-history gap repeat the same backfill ask.
-              if (!isIncrementalExtension) {
-                newMissingDetected = true;
-              }
+              // Any newly inserted missing rows must drive a backfill nudge,
+              // including the incremental-extension case where the observed
+              // counter jumps past `previousBound` by more than one. Only the
+              // noisy `sequence.gapDetected` trace is suppressed for the
+              // one-counter-at-a-time incremental case.
+              newMissingDetected = true;
               if (!isIncrementalExtension) {
                 _trace(
                   'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '

@@ -8,6 +8,19 @@ This document captures the root causes of three symptoms seen on this startup
 and proposes concrete fixes that should also carry into the Single User Model
 migration.
 
+> **Status (PR #2976, 2026-04-19):** the behaviours and code pointers described
+> under *Symptom 1*, *Symptom 2*, and *Symptom 3* below describe the
+> **pre-fix** state of the tree. The concurrency hazards, per-event
+> gap-detection log, `start.catchUpRetry` redundancy, and connectivity
+> bootstrap duplication were all fixed by PR #2976. `_attachCatchUp()` now
+> owns `_catchUpInFlight` and the deferred-live-scan flush; `forceRescan`,
+> `runInitialCatchUpIfReady`, `runGuardedCatchUp`,
+> `_scheduleInitialCatchUpRetry`, `startWakeCatchUp`, and `_startCatchupNow`
+> all delegate to it rather than managing the flag themselves. The file
+> pointers below still indicate where each class lives, but the assertions
+> about "does not acquire `_catchUpInFlight`" apply to the tree *before* the
+> PR.
+
 ## Symptom 1 — 400 KB of sync logs with no new mobile activity
 
 ### What the log actually shows
@@ -90,30 +103,37 @@ calls `_handleMessage` for sync-payload events. Each event therefore logs
 
 ### Recommendations
 
+> **Applied in PR #2976.** Recommendations 1 and parts of 2 have landed; see
+> the *Status* note at the top of this document. The remaining items
+> (processOrdered batch dedup, per-event log demotion) are follow-ups.
+
 1. **Acquire `_catchUpInFlight` once for the whole external catch-up run.**
-   Make `_attachCatchUp()` itself set and clear `_catchUpInFlight` through
-   a private helper, and require every external call site (force-rescan,
-   `runInitialCatchUpIfReady`, `runGuardedCatchUp`, `startWakeCatchUp`,
-   `_scheduleInitialCatchUpRetry`) to go through that helper. If the flag
-   is already set, return early and let the current run complete — the
-   caller should `await` the completer the in-flight run publishes.
-2. **Collapse the startup-time triggers.** Today the sequence is
+   *(Applied in PR #2976.)* `_attachCatchUp()` now sets and clears
+   `_catchUpInFlight` and calls `_flushDeferredLiveScan`; every external
+   call site (`forceRescan`, `runInitialCatchUpIfReady`,
+   `runGuardedCatchUp`, `startWakeCatchUp`, `_scheduleInitialCatchUpRetry`,
+   `_startCatchupNow`) delegates to it. If the flag is already set, the
+   method short-circuits with a `catchup.skipped (in flight)` log and
+   returns `false` so the caller can reschedule.
+2. **Collapse the startup-time triggers.** *(Applied in PR #2976 for 2.2
+   and 2.3; 2.1 retained — see note.)* Today the sequence is
    *connectivity-bootstrap → unawaited 300 ms → consumer.start →
-   signals.start 150 ms*. Three of those four end up invoking catch-up.
-   Pick one canonical entry point and let the others observe its state:
+   signals.start 150 ms*. Three of those four used to end up invoking
+   catch-up; after PR #2976 only one actual catch-up runs:
    - The unawaited `Future.delayed(300 ms)` in `matrix_service.dart:149`
-     should be removed; the consumer's own
-     `runInitialCatchUpIfReady()` is enough.
-   - The connectivity listener in `matrix_service.dart:219` should skip
-     emission of the bootstrap state (e.g. via
-     `.skip(1)` or guard with `_bootstrapped`) so the very first
-     "regained" event does not duplicate the startup flow.
+     is **retained** as a belt-and-suspenders trigger in case the consumer
+     starts before the room is ready; since `_attachCatchUp()` now
+     self-guards, a concurrent run just no-ops instead of racing.
+   - The connectivity listener in `matrix_service.dart` now swallows the
+     first emission (`service.forceRescan.connectivity.bootstrapSkipped`)
+     regardless of whether the device starts online or offline, so the
+     initial `connectivity_plus` snapshot does not duplicate the startup
+     flow.
    - The 150 ms `runGuardedCatchUp('start.catchUpRetry')` in
-     `matrix_stream_signals.dart:129` should only fire if the initial
-     catch-up observed **no events at all** (i.e. the room was empty when
-     the consumer started). Today it runs unconditionally and, if it
-     coincides with any live-timeline backlog, kicks a second full
-     catch-up.
+     `matrix_stream_signals.dart` now only fires when the initial
+     catch-up has not yet completed. Once `catchup.initial.completed`
+     fires, the retry is skipped instead of kicking a second full
+     `_waitForSyncCompletion` + event-replay pass.
 3. **De-duplicate `processOrdered` at the batch level.** In
    `matrix_stream_processor.dart:335`, hash the ordered slice
    `(firstEventId, lastEventId, length)` and, when a waiting caller
@@ -268,25 +288,40 @@ room. The migration should adopt, before cutover:
 
 ## File pointers
 
+Line numbers below refer to the tree **before PR #2976**. After the PR the
+affected behaviours have moved or been removed as indicated; the files
+themselves still exist at the same paths.
+
 - `lib/features/sync/matrix/matrix_service.dart:149` — startup
-  unawaited forceRescan.
+  unawaited forceRescan *(retained; safe under the new self-guard)*.
 - `lib/features/sync/matrix/matrix_service.dart:219` — connectivity
-  listener emits bootstrap state.
+  listener used to emit the bootstrap state; now skipped on first
+  emission regardless of online/offline status.
 - `lib/features/sync/matrix/pipeline/matrix_stream_catch_up.dart:605` —
-  `forceRescan()` does not acquire `_catchUpInFlight`.
+  `forceRescan()` *used to* not acquire `_catchUpInFlight`; now delegates
+  to the self-guarded `_attachCatchUp()`.
 - `lib/features/sync/matrix/pipeline/matrix_stream_catch_up.dart:158` —
-  `runInitialCatchUpIfReady()` calls `_attachCatchUp()` unguarded.
+  `runInitialCatchUpIfReady()` *used to* call `_attachCatchUp()`
+  unguarded; now the guard lives inside `_attachCatchUp()`.
 - `lib/features/sync/matrix/pipeline/matrix_stream_consumer.dart:258` —
-  consumer start racing with force-rescan.
+  consumer start *used to* race with force-rescan; now serialised via
+  the shared guard.
 - `lib/features/sync/matrix/pipeline/matrix_stream_signals.dart:129` —
-  unconditional `start.catchUpRetry` guarded catch-up.
+  unconditional `start.catchUpRetry` guarded catch-up; now conditional
+  on `!_catchUp.initialCatchUpReady`.
 - `lib/features/sync/matrix/pipeline/matrix_stream_processor.dart:335` —
-  `processOrdered` serialisation (no batch-level dedup).
+  `processOrdered` serialisation (no batch-level dedup). *Still
+  outstanding — see follow-ups.*
 - `lib/features/sync/matrix/pipeline/matrix_stream_live_scan.dart:98`,
-  `:141` — deferred live-scan gates tied to `_isCatchUpInFlight`.
+  `:141` — deferred live-scan gates tied to `_isCatchUpInFlight`. Now
+  reliably flushed because `_attachCatchUp()` itself invokes
+  `_flushDeferredLiveScan` on exit.
 - `lib/features/sync/sequence/sync_sequence_log_service.dart:443–498` —
-  `largeGapDetected` / `gapDetectedRange` emitted even when
-  `_materializedUpperBound` already covers the range.
+  `largeGapDetected` / `gapDetectedRange` *used to* fire even when
+  `_materializedUpperBound` already covered the range. After PR #2976
+  incremental extensions stay silent and `gaps` only contains the newly
+  materialised subrange; `newMissingDetected` still fires when the
+  materialise pass actually inserts rows.
 - `lib/database/sync_db.dart:404` — `getLastCounterForHost` returns the
   contiguous-prefix watermark (by design), which explains the pinned
-  `lastSeen=81982`.
+  `lastSeen=81982`. *Unchanged.*

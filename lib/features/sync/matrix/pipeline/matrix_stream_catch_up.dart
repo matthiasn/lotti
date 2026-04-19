@@ -213,14 +213,21 @@ class MatrixStreamCatchUpCoordinator {
 
   /// Runs catch-up. The in-flight guard and deferred-live-scan flush are owned
   /// by `_attachCatchUp()` itself, so this wrapper only emits the
-  /// `source`-annotated start log for observability.
+  /// `source`-annotated start log and ensures a guarded request is not
+  /// silently lost when another catch-up is already running: if the attach
+  /// skipped (`_attachCatchUp` returned false) and the initial catch-up has
+  /// not yet converged, reschedule a retry so recovery paths such as
+  /// `pendingSyncListener` still get a post-sync catch-up.
   Future<void> runGuardedCatchUp(String source) async {
     _loggingService.captureEvent(
       '$source: starting guarded catch-up',
       domain: syncLoggingDomain,
       subDomain: 'catchup.guarded',
     );
-    await _attachCatchUp();
+    final ran = await _attachCatchUp();
+    if (!ran && !_initialCatchUpReady) {
+      _scheduleInitialCatchUpRetry();
+    }
   }
 
   String _catchupSignalSummary() {
