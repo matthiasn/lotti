@@ -94,12 +94,15 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
-// Covers `getLastSentCounterForEntry`: the trailing `counter` column makes
-// the MAX/ORDER BY + LIMIT 1 form an index-only scan with early terminate,
-// turning the observed 40–600 ms main-isolate block into sub-millisecond.
+// Covers `getLastSentCounterForEntry`. Placing `counter DESC` before
+// `status` lets SQLite satisfy `ORDER BY counter DESC LIMIT 1` by walking
+// the index behind the `(host_id, entry_id)` equality prefix in reverse
+// counter order and applying the `status IN (?, ?)` predicate in-index,
+// terminating on the first match. With `status` trailing `counter`, the
+// engine would have to merge two status partitions via a temp B-tree.
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter '
-  'ON sync_sequence_log (host_id, entry_id, status, counter) '
+  'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '
   'WHERE entry_id IS NOT NULL',
 )
 class SyncSequenceLog extends Table {
@@ -1072,16 +1075,20 @@ class SyncDatabase extends _$SyncDatabase {
         }
         if (from < 11) {
           // Replace the v10 prefix index with a covering one that includes
-          // `counter`. Without it, `getLastSentCounterForEntry` pulled every
-          // matching row from the heap to compute MAX(counter), blocking the
-          // UI isolate for 40–600 ms per outbox enqueue on hot entry_ids.
+          // `counter` (and orders it descending ahead of `status`). Without
+          // this, `getLastSentCounterForEntry` pulled every matching row
+          // from the heap to compute MAX(counter), blocking the UI isolate
+          // for 40–600 ms per outbox enqueue on hot entry_ids. The column
+          // order lets `ORDER BY counter DESC LIMIT 1` terminate early in
+          // the index itself instead of building a temp B-tree to merge
+          // the two `status IN (?, ?)` partitions.
           await customStatement(
             'DROP INDEX IF EXISTS idx_sync_sequence_log_host_entry_status',
           );
           await customStatement(
             'CREATE INDEX IF NOT EXISTS '
             'idx_sync_sequence_log_host_entry_status_counter '
-            'ON sync_sequence_log (host_id, entry_id, status, counter) '
+            'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '
             'WHERE entry_id IS NOT NULL',
           );
         }

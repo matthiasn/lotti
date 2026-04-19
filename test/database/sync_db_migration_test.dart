@@ -567,6 +567,13 @@ void main() {
         expect(indexSql, contains('status'));
         expect(indexSql, contains('counter'));
         expect(indexSql, contains('WHERE'));
+        // Column order matters for the `ORDER BY counter DESC LIMIT 1` plan
+        // used by `getLastSentCounterForEntry`: counter must sit between the
+        // `(host_id, entry_id)` equality prefix and the `status` filter.
+        expect(
+          indexSql,
+          contains('host_id, entry_id, counter DESC, status'),
+        );
 
         await db.close();
       },
@@ -668,6 +675,10 @@ void main() {
         final indexSql = coveringIndex.first.readNullable<String>('sql');
         expect(indexSql, isNotNull);
         expect(indexSql, contains('counter'));
+        expect(
+          indexSql,
+          contains('host_id, entry_id, counter DESC, status'),
+        );
 
         await db.close();
       },

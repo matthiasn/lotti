@@ -1619,7 +1619,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   );
   late final Index idxSyncSequenceLogHostEntryStatusCounter = Index(
     'idx_sync_sequence_log_host_entry_status_counter',
-    'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter ON sync_sequence_log (host_id, entry_id, status, counter) WHERE entry_id IS NOT NULL',
+    'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter ON sync_sequence_log (host_id, entry_id, counter DESC, status) WHERE entry_id IS NOT NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
