@@ -13,9 +13,10 @@ import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Single consolidated section on the task detail page: the running-state
 /// header and narrative report (via [TaskAgentReportSection]) plus the
@@ -73,7 +74,7 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
     final open = widget.open;
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: ModernBaseCard(
+      child: TaskDetailSectionCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -88,9 +89,16 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
                 Expanded(
                   child: Text(
                     context.messages.changeSetCardTitle,
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: context
+                        .designTokens
+                        .typography
+                        .styles
+                        .subtitle
+                        .subtitle2
+                        .copyWith(
+                          color: TaskShowcasePalette.highText(context),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
                 _PendingBadge(count: open.length),
@@ -231,8 +239,8 @@ class _PendingBadge extends StatelessWidget {
 /// [_CollapsedActivityRow]: a history icon, the localized "Recent
 /// proposal activity" label, and a trailing count pill — no card chrome,
 /// so the strip occupies one row of height when idle. Tapping expands
-/// inline into [_ExpandedActivityCard], a [ModernBaseCard] holding the
-/// full, newest-first list of [LedgerEntry] rows (each with its verdict
+/// inline into [_ExpandedActivityCard], a [TaskDetailSectionCard] holding
+/// the full, newest-first list of [LedgerEntry] rows (each with its verdict
 /// icon and `humanSummary`). The transition between the two states runs
 /// through [AnimatedSize] so the surrounding layout doesn't jump.
 ///
@@ -359,7 +367,7 @@ class _ExpandedActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ModernBaseCard(
+    return TaskDetailSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -379,9 +387,16 @@ class _ExpandedActivityCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       context.messages.agentSuggestionsActivityTitle,
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: context
+                          .designTokens
+                          .typography
+                          .styles
+                          .subtitle
+                          .subtitle2
+                          .copyWith(
+                            color: TaskShowcasePalette.highText(context),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
                   _ActivityCountPill(count: activity.length),

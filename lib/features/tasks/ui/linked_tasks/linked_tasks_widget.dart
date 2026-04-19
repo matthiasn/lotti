@@ -6,7 +6,7 @@ import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_header.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_to_section.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 
 /// Widget displaying linked tasks in the task detail view.
 ///
@@ -64,7 +64,7 @@ class LinkedTasksWidget extends ConsumerWidget {
           taskId: taskId,
           hasLinkedTasks: hasIncoming || hasOutgoing,
         ),
-        ModernBaseCard(
+        TaskDetailSectionCard(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

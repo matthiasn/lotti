@@ -136,8 +136,7 @@ Checklist content is modeled separately through checklist entities and linked ch
 `TaskDetailsPage` is the main task surface. It composes:
 
 - `TaskSliverAppBar`
-- `TaskTitleHeader`
-- `TaskForm`
+- `TaskForm` (which begins with the `DesktopTaskHeaderConnector`)
 - linked entries with timer-aware highlighting
 - reverse linked-from entries
 - AI-running animation overlay
@@ -145,12 +144,14 @@ Checklist content is modeled separately through checklist entities and linked ch
 ```mermaid
 flowchart TD
   Open["Open task detail page"] --> Load["entryControllerProvider(taskId)"]
-  Load --> Header["Task app bar + title header"]
+  Load --> AppBar["TaskSliverAppBar (cover image + back / AI / overflow)"]
   Load --> Form["TaskForm"]
-  Load --> Linked["LinkedEntriesWithTimer"]
-  Load --> LinkedFrom["LinkedFromEntriesWidget"]
-  Linked --> Focus["HighlightScrollMixin + TaskFocusController"]
-  Form --> HeaderControls["Status / priority / labels / project / due date"]
+  Form --> Header["DesktopTaskHeaderConnector → DesktopTaskHeader"]
+  Form --> Labels["TaskLabelsWrapper (Add Label + Estimate)"]
+  Form --> Agents["AgentSuggestionsPanel + TaskAgentReportSection"]
+  Form --> Linked["LinkedTasksWidget"]
+  Form --> Checklists["ChecklistsWidget"]
+  Load --> Focus["HighlightScrollMixin + TaskFocusController"]
   Open --> Drop["Desktop drag-and-drop media import"]
   Drop --> ImageAnalysis["Optional automatic image analysis trigger"]
 ```
@@ -159,12 +160,37 @@ This page is not just "show task fields." It is the task workspace where task me
 
 Inside `TaskForm`, the composition is also fairly opinionated:
 
-- `TaskHeaderMetaCard` for status/priority/category/project/language plus created-at and due-date chips
-- `TaskLabelsWrapper` for label assignment and estimate editing/progress
+- `DesktopTaskHeaderConnector` for the interactive header: inline title edit, priority badge, project reference, work-category chip, due-date chip, assigned label chips, status dropdown, and `more_vert` action menu. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`, `ExtendedHeaderModal`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
+- `TaskLabelsWrapper` for the secondary row: "Add Label" and the estimate chip / progress bar
 - an `EditorWidget` only for legacy tasks that already have non-empty entry text
-- `TaskAgentReportSection` and `ChangeSetSummaryCard` for agent output that belongs on the task page but is owned elsewhere
+- `AgentSuggestionsPanel` which embeds `TaskAgentReportSection` plus the unified open-proposal list
 - `LinkedTasksWidget`
 - `ChecklistsWidget`
+
+### Visual surface
+
+Section cards on the task detail page (AI Task Summary, Task description, Linked Tasks, Checklists, expanded activity) render on `TaskDetailSectionCard` — solid `background.level02`, `radii.l`, subtle `decorative.level01` border, no gradient, no drop shadow. This matches the `task_browse_list_item` surface in the task list, so the detail page reads as part of the same system. The section is encapsulated by `TaskShowcasePalette` and the design-system tokens — no ad-hoc hex values.
+
+### DesktopTaskHeader visual states
+
+The header has three interactive title states driven by `MouseRegion` + local editing state, all sharing the same 28px capsule (`surface.hover` fill, `radii.s` corners):
+
+```mermaid
+stateDiagram-v2
+  [*] --> Default
+  Default --> Hover: mouse enter
+  Hover --> Default: mouse leave
+  Hover --> Editing: tap pencil / title
+  Default --> Editing: tap title
+  Editing --> Default: Enter or check → onTitleSaved
+  Editing --> Default: Esc or close → revert
+```
+
+- Default: title only, transparent background.
+- Hover: capsule fill reveals, pencil fades in.
+- Editing: capsule fill + `interactive.enabled` teal border, title becomes an inline `TextField`, pencil is replaced by check (save) and close (cancel).
+
+The header is exercised in isolation under Widgetbook → Tasks → Desktop task header with Default / Hover / Editing / Playground use cases. The Playground drives priority, status, category, due date, labels and the hover / editing initial flags via in-page controls — no Riverpod is needed because the presentational `DesktopTaskHeader` takes a plain `DesktopTaskHeaderData` and emits callbacks.
 
 ## Checklist Subsystem
 
@@ -353,24 +379,26 @@ The redesigned browse page also preserves the existing non-filter runtime behavi
 
 ## Header Controls and Metadata
 
-The task detail metadata band is split between `TaskHeaderMetaCard` and `TaskLabelsWrapper`. Together they provide interactive controls for:
+The task detail metadata band is concentrated in `DesktopTaskHeaderConnector` plus `TaskLabelsWrapper`. Together they provide interactive controls for:
 
+- title (inline capsule edit)
 - status
-- category
-- language
 - priority
+- category (work)
 - project
 - due date
 - estimate
 - labels
+- ellipsis actions (share, extended actions, speech modal) via `ExtendedHeaderModal`
 
 Notable behavior already implemented:
 
 - `TaskSliverAppBar` switches between compact and expandable variants based on whether the task has `coverArtId`
+- the header is desktop-first and the same component serves mobile — chips wrap onto the next line on narrow widths
 - due dates on the detail page use urgency styling, while relative/absolute date display is a list-level concern owned by the shared page state
 - labels are category-aware, but still allow out-of-scope assigned labels to be removed
-- language changes are explicitly marked as user-originated
 - project selection integrates with the project health layer without making the task feature own project analysis itself
+- language is currently not surfaced in the new header — it is handled through the ellipsis extended actions menu
 
 ## AI and Media Integrations
 

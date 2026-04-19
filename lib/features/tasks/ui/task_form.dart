@@ -5,7 +5,7 @@ import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
-import 'package:lotti/features/tasks/ui/header/task_header_meta_card.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 
@@ -33,9 +33,11 @@ class TaskForm extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TaskHeaderMetaCard(taskId: taskId),
+        DesktopTaskHeaderConnector(taskId: taskId),
         const SizedBox(height: 12),
-        // Row 3 & 4: Secondary Actions + Labels
+        // Secondary row — Add Label + Estimate (chips + progress). The desktop
+        // header already renders assigned label chips inline, so the label
+        // wrapper only handles adding/editing from here on.
         TaskLabelsWrapper(taskId: taskId),
         const SizedBox(height: 16),
         if (entryState?.entry?.entryText != null && plainText.isNotEmpty) ...[

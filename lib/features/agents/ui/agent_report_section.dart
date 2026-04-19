@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
-import 'package:lotti/widgets/cards/index.dart';
 
 /// Displays the contents of an agent report with an expandable TLDR section.
 ///
@@ -125,7 +125,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
 
     final parsed = _parseContent();
 
-    return ModernBaseCard(
+    return TaskDetailSectionCard(
       child: Stack(
         children: [
           Padding(

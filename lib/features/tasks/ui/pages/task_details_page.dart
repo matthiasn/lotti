@@ -14,7 +14,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
-import 'package:lotti/features/tasks/ui/header/task_title_header.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -132,9 +131,6 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
               controller: _scrollController,
               slivers: [
                 TaskSliverAppBar(taskId: widget.taskId),
-                PinnedHeaderSliver(
-                  child: TaskTitleHeader(taskId: widget.taskId),
-                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(

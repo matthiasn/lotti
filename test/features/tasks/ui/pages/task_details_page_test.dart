@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -142,12 +141,6 @@ void main() {
 
       // TODO: test that entry text is rendered
 
-      // test entry displays expected date (date only, no time)
-      expect(
-        find.text(DateFormat.yMMMd().format(testTask.meta.dateFrom)),
-        findsOneWidget,
-      );
-
       // test task displays progress bar (now in Labels row)
       final progressBarFinder = find.byType(LinearProgressIndicator);
       if (progressBarFinder.evaluate().isNotEmpty) {
@@ -157,8 +150,8 @@ void main() {
         expect(progressBar.value, 0.25);
       }
 
-      // test task title is displayed
-      expect(find.text(testTask.data.title), findsNWidgets(2));
+      // test task title is displayed once (inside the new desktop header).
+      expect(find.text(testTask.data.title), findsOneWidget);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,

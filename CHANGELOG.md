@@ -47,6 +47,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recording the connectivity signal for metrics.
 
 ## [0.9.965] - 2026-04-19
+### Changed
+- Task detail header rebuilt against the desktop Figma as a scoped
+  migration. The pinned title sliver and legacy `TaskHeaderMetaCard`
+  are replaced by a new `DesktopTaskHeader` that ships an inline,
+  capsule-style title editor (Heading 3 bold, pencil-on-hover, check /
+  cancel on edit), the Figma priority / status / project / due-date /
+  work-category / label chips, and a `more_vert` ellipsis that opens
+  the existing entry action modal. The presentational widget is
+  Riverpod-free and exercised end-to-end in Widgetbook (Default, Hover,
+  Editing, Playground), with a thin `DesktopTaskHeaderConnector` that
+  wires the existing status / priority / category / project / due-date
+  / label pickers and `EntryController` mutations. AI Task Summary,
+  Task description (agent report), Linked Tasks and Checklist cards on
+  the task detail page now render on the flat `TaskDetailSectionCard`
+  surface — solid `background.level02`, `radii.l`, subtle
+  `decorative.level01` border, no gradient, no drop shadow — so they
+  visually match the task list. Section titles inside the touched
+  cards now use the design-system `subtitle2` token instead of Material
+  `textTheme.titleSmall`. The obsolete `TaskTitleHeader`,
+  `TaskHeaderMetaCard` and the per-chip `*_wrapper.dart` /
+  `*_widget.dart` files that only existed to feed the old header are
+  deleted; the shared modal content widgets
+  (`TaskStatusModalContent`, `showDueDatePicker`,
+  `CategorySelectionModalContent`,
+  `ProjectSelectionModalContent`) are retained and reused by the new
+  connector.
+
 ### Fixed
 - DailyOS mobile page no longer surfaces "Failed to load timeline" and
   "Failed to load budgets" on devices where the v39 migration's partial
