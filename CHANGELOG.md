@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.963] - 2026-04-19
+### Added
+- Agent suggestion panel now surfaces the reasoning behind resolved
+  proposals without cluttering the list. A collapsed "Recent activity"
+  strip shows the three most recent ledger entries (newest-first) with
+  verdict icons — check for confirmed, X for rejected, undo for
+  agent-retracted — and when a rejection or retraction carries a reason
+  it lives behind an info icon whose tooltip reveals the text on tap or
+  hover. The strip stays hidden entirely when there is no resolved
+  activity to show. A "Confirm all" action sits next to the pending
+  badge whenever more than one open suggestion is pending, fanning out
+  to `ChangeSetConfirmationService.confirmAll` per distinct change set.
+- Initial-language auto-apply: `set_task_language` now bypasses the
+  deferred-confirmation flow when the task has no language set yet, so
+  the agent can pick the language silently on first use. Re-tagging a
+  task that already has a language continues to flow through the
+  standard change-set approval path, and the same single-use guard that
+  protects the title carve-out prevents a second call in the same wake
+  from silently overwriting the freshly-applied language.
+
+### Changed
+- Suggestion rows no longer display the raw snake_case tool key beneath
+  the human summary. The tool name was developer-facing noise that did
+  not help the user decide whether to confirm or reject a proposal.
+
 ## [0.9.962] - 2026-04-19
 ### Changed
 - Task agent: the mandatory `update_report` tool call at the end of every

@@ -335,5 +335,109 @@ void main() {
       expect(result.activity.single.verdict, ChangeDecisionVerdict.confirmed);
       expect(result.activity.single.resolvedBy, DecisionActor.user);
     });
+
+    test(
+      'dedupes activity entries by fingerprint, keeping the newest decision',
+      () async {
+        // Repository ledger is newest-first and may emit multiple
+        // decision entries for the same `(toolName, args)` fingerprint
+        // (e.g. the same proposal confirmed across two separate change
+        // sets). The UI strip must collapse those to one row.
+        final agent = makeTestIdentity();
+        LedgerEntry entry({
+          required String changeSetId,
+          required DateTime resolvedAt,
+        }) => LedgerEntry(
+          changeSetId: changeSetId,
+          itemIndex: 0,
+          toolName: 'update_checklist_item',
+          args: const {'id': 'chk-1', 'isChecked': true},
+          humanSummary: 'Check off: "Buy milk"',
+          fingerprint: 'update_checklist_item:chk-1',
+          status: ChangeItemStatus.confirmed,
+          createdAt: resolvedAt,
+          resolvedAt: resolvedAt,
+          resolvedBy: DecisionActor.user,
+          verdict: ChangeDecisionVerdict.confirmed,
+        );
+
+        // Newest-first, as the repository produces them.
+        final newest = entry(
+          changeSetId: 'cs-new',
+          resolvedAt: DateTime(2026, 4, 19, 10),
+        );
+        final older = entry(
+          changeSetId: 'cs-old',
+          resolvedAt: DateTime(2026, 4, 17),
+        );
+
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: [newest, older],
+          ),
+        );
+        final sub = container.listen(
+          unifiedSuggestionListProvider('task-abc'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          unifiedSuggestionListProvider('task-abc').future,
+        );
+
+        expect(result.activity, hasLength(1));
+        expect(result.activity.single.changeSetId, 'cs-new');
+      },
+    );
+
+    test(
+      'preserves activity entries with distinct fingerprints even when '
+      'they share a human summary',
+      () async {
+        // Two decisions whose `humanSummary` happens to read identically
+        // (e.g. checking off two different checklist items that share a
+        // title) must not collapse — the fingerprints differ.
+        final agent = makeTestIdentity();
+        LedgerEntry entry({required String itemId, required String fp}) =>
+            LedgerEntry(
+              changeSetId: 'cs-shared',
+              itemIndex: 0,
+              toolName: 'update_checklist_item',
+              args: {'id': itemId, 'isChecked': true},
+              humanSummary: 'Check off: "Same title"',
+              fingerprint: fp,
+              status: ChangeItemStatus.confirmed,
+              createdAt: DateTime(2026, 4, 19),
+              resolvedAt: DateTime(2026, 4, 19, 1),
+              resolvedBy: DecisionActor.user,
+              verdict: ChangeDecisionVerdict.confirmed,
+            );
+
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: [
+              entry(itemId: 'chk-a', fp: 'fp-a'),
+              entry(itemId: 'chk-b', fp: 'fp-b'),
+            ],
+          ),
+        );
+        final sub = container.listen(
+          unifiedSuggestionListProvider('task-abc'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          unifiedSuggestionListProvider('task-abc').future,
+        );
+
+        expect(result.activity, hasLength(2));
+      },
+    );
   });
 }

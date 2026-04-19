@@ -121,6 +121,74 @@ void main() {
     });
 
     test(
+      'dedupes identical update_checklist_item elements within the same '
+      'batch by fingerprint',
+      () async {
+        // LLM occasionally repeats the exact same `{id, isChecked}`
+        // element multiple times in a single tool call. The builder
+        // must keep only one so the user does not see N duplicate rows.
+        final result = await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true, 'title': 'Ship it'},
+              {'id': 'item-1', 'isChecked': true, 'title': 'Ship it'},
+              {'id': 'item-1', 'isChecked': true, 'title': 'Ship it'},
+            ],
+          },
+          summaryPrefix: 'Checklist update',
+        );
+
+        expect(result.added, 1);
+        expect(result.redundant, 2);
+        expect(builder.items, hasLength(1));
+        expect(
+          result.redundantDetails.every(
+            (d) => d.contains('already queued in this wake'),
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'dedupes batch elements whose fingerprint already matches an item '
+      'queued by an earlier addBatchItem call in the same wake',
+      () async {
+        await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true, 'title': 'Ship it'},
+            ],
+          },
+          summaryPrefix: 'Checklist update',
+        );
+
+        final secondResult = await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'isChecked': true, 'title': 'Ship it'},
+              {'id': 'item-2', 'isChecked': true, 'title': 'Ship the other'},
+            ],
+          },
+          summaryPrefix: 'Checklist update',
+        );
+
+        // The first element was already queued by the earlier call —
+        // only the genuinely new element survives.
+        expect(secondResult.added, 1);
+        expect(secondResult.redundant, 1);
+        expect(builder.items, hasLength(2));
+        expect(
+          builder.items.map((i) => i.args['id']).toList(),
+          ['item-1', 'item-2'],
+        );
+      },
+    );
+
+    test(
       'handles check-only update (no title) by ID with truncated ID',
       () async {
         await builder.addBatchItem(

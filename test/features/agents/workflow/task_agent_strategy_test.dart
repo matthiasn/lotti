@@ -2344,6 +2344,255 @@ void main() {
         },
       );
 
+      test(
+        'set_task_language auto-applies when current language is null',
+        () async {
+          const emptyLanguageSnapshot =
+              (
+                    title: 'Buy groceries',
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: null,
+                  )
+                  as TaskMetadataSnapshot;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => emptyLanguageSnapshot,
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Language applied immediately.',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-initial-lang',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskLanguage,
+                arguments: jsonEncode({'languageCode': 'en'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            builder.hasItems,
+            isFalse,
+            reason: 'initial language should bypass the change-set builder',
+          );
+          final executed = verify(
+            () => mockExecutor.execute(
+              toolName: captureAny(named: 'toolName'),
+              args: captureAny(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).captured;
+          expect(executed[0], TaskAgentToolNames.setTaskLanguage);
+          expect(executed[1], equals(const {'languageCode': 'en'}));
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-initial-lang',
+              response: 'Language applied immediately.',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'set_task_language stays deferred when a language is already present',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-relang',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskLanguage,
+                arguments: jsonEncode({'languageCode': 'de'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          expect(
+            builder.items.single.toolName,
+            TaskAgentToolNames.setTaskLanguage,
+          );
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'set_task_language cannot auto-apply twice in the same wake',
+        () async {
+          // Regression guard mirroring the title double-apply case: two
+          // back-to-back set_task_language calls must only auto-apply
+          // once, with the second either observing the freshly-populated
+          // language on a forced re-read or hitting the single-use
+          // deferred guard.
+          var autoApplied = 0;
+          var currentLanguage = '';
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async {
+              return (
+                    title: 'Buy groceries',
+                    status: 'IN PROGRESS',
+                    priority: 'P1',
+                    estimateMinutes: 120,
+                    dueDate: '2026-03-15',
+                    languageCode: currentLanguage.isEmpty
+                        ? null
+                        : currentLanguage,
+                  )
+                  as TaskMetadataSnapshot;
+            },
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer((invocation) async {
+            autoApplied += 1;
+            final args =
+                invocation.namedArguments[const Symbol('args')]!
+                    as Map<String, dynamic>;
+            currentLanguage = args['languageCode']! as String;
+            return const ToolExecutionResult(
+              success: true,
+              output: 'applied',
+              mutatedEntityId: 'task-001',
+            );
+          });
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-lang-first',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskLanguage,
+                arguments: jsonEncode({'languageCode': 'en'}),
+              ),
+            ),
+            ChatCompletionMessageToolCall(
+              id: 'call-lang-second',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskLanguage,
+                arguments: jsonEncode({'languageCode': 'de'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(
+            autoApplied,
+            1,
+            reason: 'only the first language call must auto-apply',
+          );
+          expect(
+            currentLanguage,
+            'en',
+            reason:
+                'the second call must not silently overwrite the first '
+                'via the stale-cache path',
+          );
+        },
+      );
+
+      test(
+        'set_task_language stays deferred when resolveTaskMetadata throws',
+        () async {
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async => throw Exception('resolver down'),
+          );
+
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-lang-throws',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: TaskAgentToolNames.setTaskLanguage,
+                arguments: jsonEncode({'languageCode': 'en'}),
+              ),
+            ),
+          ];
+
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(builder.hasItems, isTrue);
+          verifyNever(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+        },
+      );
+
       test('keeps tool when resolver throws (conservative)', () async {
         final (:strategy, :builder) = _createStrategyWithMetadata(
           executor: mockExecutor,

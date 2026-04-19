@@ -489,6 +489,37 @@
   },
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
+  "agentSuggestionsActivityAgentFallback": "the agent",
+  "agentSuggestionsActivityCountTotal": "{total} total",
+  "@agentSuggestionsActivityCountTotal": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSuggestionsActivityCountVisible": "{visible} of {total}",
+  "@agentSuggestionsActivityCountVisible": {
+    "placeholders": {
+      "visible": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentSuggestionsActivityTitle": "Recent proposal activity",
+  "agentSuggestionsActivityVerdictConfirmed": "Confirmed",
+  "agentSuggestionsActivityVerdictRejected": "Rejected",
+  "agentSuggestionsActivityVerdictRetracted": "Retracted by {agentName}",
+  "@agentSuggestionsActivityVerdictRetracted": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",

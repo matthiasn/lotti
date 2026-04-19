@@ -231,8 +231,17 @@ class TaskAgentStrategy extends ConversationStrategy {
       // renames on existing tasks still flow through the deferred path
       // below (existing redundancy filters in ChangeProposalFilter also
       // still apply once a title is present).
-      if (toolName == TaskAgentToolNames.setTaskTitle &&
-          await _shouldAutoApplyInitialTitle()) {
+      //
+      // The language carve-out mirrors the same logic: the very first
+      // `set_task_language` on a task with no language yet is applied
+      // immediately, while language changes on tasks that already have
+      // one continue to require user confirmation.
+      final autoApplyInitial =
+          (toolName == TaskAgentToolNames.setTaskTitle &&
+              await _shouldAutoApplyInitialField((s) => s.title)) ||
+          (toolName == TaskAgentToolNames.setTaskLanguage &&
+              await _shouldAutoApplyInitialField((s) => s.languageCode));
+      if (autoApplyInitial) {
         await _recordActionMessage(toolName: toolName, args: args);
         final result = await executor.execute(
           toolName: toolName,
@@ -244,10 +253,11 @@ class TaskAgentStrategy extends ConversationStrategy {
         );
         manager.addToolResponse(toolCallId: call.id, response: result.output);
         if (result.success) {
-          // The task now has a title. Prevent a repeat `set_task_title`
-          // in the same wake from auto-applying over it (smaller models
-          // frequently emit duplicate tool calls), and invalidate the
-          // cached metadata so later redundancy checks see fresh state.
+          // The field is now populated. Prevent a repeat call to the
+          // same tool in the same wake from auto-applying over it
+          // (smaller models frequently emit duplicate tool calls), and
+          // invalidate the cached metadata so later redundancy checks
+          // see fresh state.
           _usedDeferredTools.add(toolName);
           _taskMetadataResolved = false;
           _cachedTaskMetadata = null;
@@ -975,25 +985,24 @@ class TaskAgentStrategy extends ConversationStrategy {
     );
   }
 
-  /// Returns true when the current task has no title yet, meaning
-  /// `set_task_title` should apply immediately instead of waiting for
-  /// user confirmation. Reuses the cached [TaskMetadataSnapshot]
-  /// populated by [_checkTaskMetadataRedundancy] so a single LLM turn
-  /// that proposes multiple deferred tools pays at most one resolver
-  /// round-trip.
+  /// Returns true when the named scalar field on the current task is
+  /// empty, meaning the corresponding deferred tool (e.g.
+  /// `set_task_title`, `set_task_language`) should apply immediately
+  /// instead of waiting for user confirmation.
+  ///
+  /// Always re-resolves: the auto-apply path is the only write that
+  /// bypasses user confirmation, so it must see the freshest snapshot.
+  /// A stale cached snapshot would let a follow-up call overwrite a
+  /// value the user or a previous auto-apply just populated.
   ///
   /// When the resolver is unavailable or throws, returns false so the
   /// deferred-approval path is used conservatively.
-  Future<bool> _shouldAutoApplyInitialTitle() async {
+  Future<bool> _shouldAutoApplyInitialField(
+    String? Function(TaskMetadataSnapshot snapshot) read,
+  ) async {
     final resolver = resolveTaskMetadata;
     if (resolver == null) return false;
 
-    // Always re-resolve: the auto-apply path is the only write that
-    // bypasses the user confirmation flow, so it must see the freshest
-    // possible snapshot. If a user typed a title between an earlier
-    // redundancy check and this decision (or a previous auto-apply in
-    // this same wake populated it), the cached snapshot would green-
-    // light the dispatch against a populated title.
     TaskMetadataSnapshot? snapshot;
     try {
       snapshot = await resolver();
@@ -1003,11 +1012,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     _cachedTaskMetadata = snapshot;
     _taskMetadataResolved = true;
 
-    // Conservative: if we could not resolve the snapshot (resolver threw
-    // or the target entity is not a Task) fall back to the deferred path
-    // rather than assuming the title is empty.
     if (snapshot == null) return false;
-    final current = snapshot.title?.trim();
+    final current = read(snapshot)?.trim();
     return current == null || current.isEmpty;
   }
 

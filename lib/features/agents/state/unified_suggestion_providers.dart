@@ -39,12 +39,22 @@ class UnifiedSuggestionList {
   const UnifiedSuggestionList({
     required this.open,
     required this.activity,
+    this.agentName,
   });
 
-  const UnifiedSuggestionList.empty() : open = const [], activity = const [];
+  const UnifiedSuggestionList.empty()
+    : open = const [],
+      activity = const [],
+      agentName = null;
 
   final List<PendingSuggestion> open;
   final List<LedgerEntry> activity;
+
+  /// The task agent's display name. Surfaced in the activity strip so
+  /// the retracted-verdict tooltip can name the agent that withdrew a
+  /// proposal instead of a generic "by agent". `null` when no agent is
+  /// attached to the task.
+  final String? agentName;
 
   bool get isEmpty => open.isEmpty && activity.isEmpty;
 }
@@ -94,5 +104,22 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   }
   open.sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
 
-  return UnifiedSuggestionList(open: open, activity: ledger.resolved);
+  // Dedupe the activity strip by fingerprint — the repository ledger
+  // deliberately emits one entry per decision event so the LLM prompt
+  // can see the full decision history, but the UI should show each
+  // unique proposal at most once. `ledger.resolved` is already sorted
+  // newest-first, so the first occurrence of each fingerprint is the
+  // most recent decision for that proposal.
+  final seenActivityFingerprints = <String>{};
+  final activity = <LedgerEntry>[];
+  for (final entry in ledger.resolved) {
+    if (!seenActivityFingerprints.add(entry.fingerprint)) continue;
+    activity.add(entry);
+  }
+
+  return UnifiedSuggestionList(
+    open: open,
+    activity: activity,
+    agentName: agent.displayName,
+  );
 }

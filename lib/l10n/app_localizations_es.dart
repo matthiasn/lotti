@@ -899,6 +899,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 días';
 
   @override
+  String get agentSuggestionsActivityAgentFallback => 'el agente';
+
+  @override
+  String agentSuggestionsActivityCountTotal(int total) {
+    return '$total en total';
+  }
+
+  @override
+  String agentSuggestionsActivityCountVisible(int visible, int total) {
+    return '$visible de $total';
+  }
+
+  @override
+  String get agentSuggestionsActivityTitle => 'Propuestas recientes del agente';
+
+  @override
+  String get agentSuggestionsActivityVerdictConfirmed => 'Confirmada';
+
+  @override
+  String get agentSuggestionsActivityVerdictRejected => 'Rechazada';
+
+  @override
+  String agentSuggestionsActivityVerdictRetracted(String agentName) {
+    return 'Retirada por $agentName';
+  }
+
+  @override
   String get agentTabActivity => 'Actividad';
 
   @override
