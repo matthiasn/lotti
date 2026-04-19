@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.966] - 2026-04-19
+### Fixed
+- Sync startup no longer does every step twice. The connectivity-driven
+  `forceRescan` and the consumer's `runInitialCatchUpIfReady` used to race
+  into `_attachCatchUp()` concurrently because neither acquired
+  `_catchUpInFlight` for its run, producing two `catchup.waitForSync`
+  passes, two `backfill.start events=610` fetches, and two ordered
+  replays of the same 89-event slice (visible in logs as paired
+  `processor.resolve` / `processor.apply` / `sequence.recordReceived`
+  lines). `_attachCatchUp()` is now the single owner of
+  `_catchUpInFlight` and the deferred-live-scan flush: it short-circuits
+  with `catchup.skipped (in flight)` when another run is already in
+  progress, and every other entry point (`forceRescan`,
+  `runInitialCatchUpIfReady`, `runGuardedCatchUp`,
+  `_scheduleInitialCatchUpRetry`, `startWakeCatchUp`, `_startCatchupNow`)
+  defers to it rather than managing the flag themselves. The obsolete
+  `bypassCatchUpInFlightCheck` parameter and `forceRescan.skippedCatchUp`
+  log are removed.
+- Pre-history gap handling no longer logs per incoming event. Hosts that
+  carry a permanent unresolved prefix (e.g. `lastSeen=81982` stuck while
+  the VC counter keeps climbing) used to re-emit `largeGapDetected
+  gapSize=7344`, `gapDetectedRange`, `recordReceivedEntry detected N
+  gaps`, and `apply.agentEntity.gapsDetected count=7344` for every single
+  catch-up event, dominating the desktop sync log. The sequence service
+  now suppresses those lines on incremental extensions of an already
+  materialised range and returns only the newly materialised subrange in
+  its `gaps` result, so the caller-side `apply.*.gapsDetected` log is
+  driven by actual new signal. A fresh idle restart now logs on the order
+  of tens of lines instead of 400 KB.
+- Redundant `start.catchUpRetry` catch-up on every startup. The signal
+  binder's 150 ms follow-up `runGuardedCatchUp('start.catchUpRetry')` now
+  only runs when the initial catch-up has not yet completed. Once the
+  consumer reports `catchup.initial.completed`, the retry is skipped
+  instead of kicking a second full `_waitForSyncCompletion` +
+  event-replay pass.
+- Connectivity bootstrap no longer duplicates the startup rescan.
+  `connectivity_plus` emits the current state synchronously on subscribe,
+  which used to schedule a `forceRescan` that raced the dedicated startup
+  rescan. The listener now swallows the first emission
+  (`service.forceRescan.connectivity.bootstrapSkipped`) while still
+  recording the connectivity signal for metrics.
+
 ## [0.9.965] - 2026-04-19
 ### Fixed
 - DailyOS mobile page no longer surfaces "Failed to load timeline" and

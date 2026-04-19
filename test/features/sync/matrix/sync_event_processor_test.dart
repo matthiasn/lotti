@@ -514,6 +514,51 @@ void main() {
     },
   );
 
+  test(
+    'decodes oversized sync payloads via the compute offload path',
+    () async {
+      // SyncEventProcessor.process() uses compute() to move large sync
+      // message decoding (base64 + utf8 + json) off the UI isolate. The
+      // threshold is 4 KB of base64 body. Pad the message id so the
+      // encoded body comfortably exceeds the threshold and forces the
+      // offload branch. A small message goes inline; this one must not.
+      final paddedId = 'entity-${'x' * 6000}';
+      final message = SyncMessage.journalEntity(
+        id: paddedId,
+        jsonPath: '/entity.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
+      final encoded = encodeMessage(message);
+      expect(
+        encoded.length,
+        greaterThan(4 * 1024),
+        reason:
+            'test prerequisite: padded body must cross the offload '
+            'threshold so the compute() branch runs',
+      );
+      when(
+        () => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        ),
+      ).thenAnswer((_) async => fallbackJournalEntity);
+      when(() => event.text).thenReturn(encoded);
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // Behaviour must be identical to the inline path: loader still
+      // runs, DB update still fires, notifications still dispatch.
+      verify(
+        () => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+        ),
+      ).called(1);
+      verify(
+        () => journalDb.updateJournalEntity(fallbackJournalEntity),
+      ).called(1);
+    },
+  );
+
   test('skips duplicate journal entity with same vector clock', () async {
     final entryId = fallbackJournalEntity.meta.id;
     final vc = fallbackJournalEntity.meta.vectorClock!;

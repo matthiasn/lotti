@@ -376,6 +376,148 @@ void main() {
       );
 
       test(
+        'commits slices larger than processOrderedChunkSize as multiple '
+        'chunks so the writer lock releases between them',
+        () async {
+          // processOrderedChunkSize = 20; drive 45 events to force 3 chunks
+          // (20 + 20 + 5). The test mainly asserts chunk count because that
+          // drives the write-lock-release behaviour end users feel as
+          // "entry saving works during catch-up".
+          final txn = _stubCommonProcessOrdered(
+            roomManager: roomManager,
+            sentEventRegistry: sentEventRegistry,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            eventProcessor: eventProcessor,
+          );
+
+          const total = 45;
+          final events = List<Event>.generate(
+            total,
+            (i) => _createMockSyncEvent(
+              r'$chunkEv'
+              '${i + 1}',
+              1000 + i,
+              content: <String, dynamic>{'msgtype': syncMessageType},
+            ),
+          );
+
+          final processor = createProcessor();
+          await processor.processOrdered(events);
+
+          expect(
+            txn.transactionInvocations,
+            3,
+            reason:
+                '45 events must commit in 3 chunks (20 + 20 + 5) so user '
+                'writes can interleave between chunks',
+          );
+          expect(
+            txn.processCallsInsideTransaction,
+            total,
+            reason: 'every per-event apply must run inside some chunk txn',
+          );
+          expect(
+            txn.processCallsOutsideTransaction,
+            0,
+            reason: 'no apply may fall outside a transaction',
+          );
+          // Completion bookkeeping must cover every event across chunks,
+          // not just the last chunk. This guards against a regression where
+          // completedSyncIds is scoped per-chunk without being merged across.
+          for (var i = 1; i <= total; i++) {
+            expect(
+              processor.wasCompletedSync('\$chunkEv$i'),
+              isTrue,
+              reason: 'event $i must be marked completed after its chunk',
+            );
+          }
+        },
+      );
+
+      test(
+        'records chunk completion progressively so an error on a later '
+        'chunk does not discard earlier chunks',
+        () async {
+          // processOrderedChunkSize = 20. If we let chunk 1 commit and fail
+          // chunk 2, the events from chunk 1 must stay flagged as completed
+          // (their DB writes are already durable), while chunk-2 events must
+          // stay un-flagged so a retry path can re-apply them.
+          registerFallbackValue(_MockEvent());
+          registerFallbackValue(_MockJournalDb());
+
+          final mockRoom = _MockRoom();
+          when(() => roomManager.currentRoom).thenReturn(mockRoom);
+          when(sentEventRegistry.prune).thenReturn(null);
+          when(
+            () => sentEventRegistry.consume(any<String>()),
+          ).thenReturn(false);
+          when(
+            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => eventProcessor.process(
+              event: any<Event>(named: 'event'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {});
+
+          var txnCalls = 0;
+          when(
+            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+          ).thenAnswer((invocation) async {
+            txnCalls += 1;
+            final action =
+                invocation.positionalArguments.first as Future<void> Function();
+            await action();
+            // Second chunk's commit throws; the processor must propagate.
+            if (txnCalls == 2) {
+              throw StateError('simulated commit failure on chunk 2');
+            }
+          });
+
+          final processor = createProcessor();
+          final events = List<Event>.generate(
+            30,
+            (i) => _createMockSyncEvent(
+              r'$progEv'
+              '${i + 1}',
+              2000 + i,
+              content: <String, dynamic>{'msgtype': syncMessageType},
+            ),
+          );
+
+          await expectLater(
+            () => processor.processOrdered(events),
+            throwsA(isA<StateError>()),
+          );
+
+          expect(txnCalls, 2, reason: 'must reach the failing chunk');
+
+          // Chunk 1 (events 1..20) committed successfully and must be
+          // marked completed.
+          for (var i = 1; i <= 20; i++) {
+            expect(
+              processor.wasCompletedSync('\$progEv$i'),
+              isTrue,
+              reason: 'chunk-1 event $i must be durable after its commit',
+            );
+          }
+          // Chunk 2 (events 21..30) rolled back; they must NOT be marked
+          // completed, otherwise the retry path would skip them.
+          for (var i = 21; i <= 30; i++) {
+            expect(
+              processor.wasCompletedSync('\$progEv$i'),
+              isFalse,
+              reason:
+                  'rolled-back chunk event $i must stay un-flagged so retry '
+                  'can re-apply',
+            );
+          }
+        },
+      );
+
+      test(
         'suppresses events the registry marks as our own sends',
         () async {
           registerFallbackValue(_MockEvent());

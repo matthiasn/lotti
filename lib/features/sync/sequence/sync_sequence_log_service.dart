@@ -443,14 +443,17 @@ class SyncSequenceLogService {
       final gapBaseline = shouldDetectGaps ? (lastSeen ?? 0) : null;
 
       if (gapBaseline != null && counter > gapBaseline + 1) {
-        // Gap detected! Mark missing counters for this host
+        // Gap detected! Mark missing counters for this host.
+        //
+        // The returned `gaps` list is only consumed by callers for logging
+        // (`apply.*.gapsDetected`). Adding the full `startCounter..counter-1`
+        // range every time causes that log line to re-fire on every event
+        // for a permanent pre-history gap (we saw `count=7344` per event in
+        // production). Push the actual range-add down into the branches
+        // below so an incremental extension contributes only the newly
+        // materialised sub-range.
         final gapSize = counter - gapBaseline - 1;
         final startCounter = gapBaseline + 1;
-        gaps.addRange(
-          hostId: hostId,
-          startCounter: startCounter,
-          endCounter: counter - 1,
-        );
 
         if (gapSize > SyncTuning.maxGapSize) {
           // Skip re-materialization when the observed range is fully covered
@@ -464,38 +467,75 @@ class SyncSequenceLogService {
           final alreadyMaterialized =
               previousBound != null && previousBound >= endCounter;
           if (!alreadyMaterialized) {
-            _trace(
-              'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
-              subDomain: 'sequence.largeGap',
-            );
             final effectiveStart = previousBound == null
                 ? startCounter
                 : math.max(startCounter, previousBound + 1);
+            final effectiveSize = endCounter - effectiveStart + 1;
+            // Only treat this as an "incremental extension" when the current
+            // gap actually overlaps the previously materialised range
+            // (`startCounter <= previousBound`). A disjoint new large gap on
+            // the same host — e.g. after the host recovered and regressed
+            // again — must re-emit the log and re-nudge backfill instead of
+            // being silently rolled into the prior range's bookkeeping.
+            final isIncrementalExtension =
+                previousBound != null && startCounter <= previousBound;
+            gaps.addRange(
+              hostId: hostId,
+              startCounter: effectiveStart,
+              endCounter: endCounter,
+            );
+            // On a permanent pre-history gap, every new event advances the
+            // bound by one counter. Logging the 7000+ "gap size" every time
+            // dominates desktop log volume and says nothing new. Only log the
+            // first materialisation of the range; subsequent incremental
+            // extensions stay silent.
+            if (!isIncrementalExtension) {
+              _trace(
+                'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
+                subDomain: 'sequence.largeGap',
+              );
+            }
             final insertedCount = await _materializeLargeGap(
               hostId: hostId,
               startCounter: effectiveStart,
               endCounter: endCounter,
-              gapSize: endCounter - effectiveStart + 1,
+              gapSize: effectiveSize,
               originatingHostId: originatingHostId,
               now: now,
             );
-            if (insertedCount > 0) {
-              newMissingDetected = true;
-            }
             // `previousBound < endCounter` on this branch, so direct assignment
             // is the max — no `math.max` needed.
             _materializedUpperBound[hostId] = endCounter;
-
-            _trace(
-              'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
-              'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-              subDomain: 'sequence.gapDetected',
-            );
+            if (insertedCount > 0) {
+              // Any newly inserted missing rows must drive a backfill nudge,
+              // including the incremental-extension case where the observed
+              // counter jumps past `previousBound` by more than one. Only the
+              // noisy `sequence.gapDetected` trace is suppressed for the
+              // one-counter-at-a-time incremental case.
+              newMissingDetected = true;
+              if (!isIncrementalExtension) {
+                _trace(
+                  'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
+                  'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+                  subDomain: 'sequence.gapDetected',
+                );
+              }
+            }
           }
           // Fall through to the originator/other-host record block below so
           // the incoming `(hostId, counter)` row is still upserted; skipping
           // it would itself block the watermark from ever advancing.
         } else {
+          // Small gap (≤ SyncTuning.maxGapSize). Report the full VC-implied
+          // range via `gaps` so the caller's `apply.*.gapsDetected` log is
+          // consistent with the historical contract; the per-counter log
+          // below still only fires for actually-missing counters, and the
+          // batch insert only contains new rows.
+          gaps.addRange(
+            hostId: hostId,
+            startCounter: startCounter,
+            endCounter: counter - 1,
+          );
           final existingCounters = await _syncDatabase
               .getCountersForHostInRange(
                 hostId,
@@ -642,7 +682,10 @@ class SyncSequenceLogService {
       _invalidateCacheForHost(hostId);
     }
 
-    if (gaps.isNotEmpty) {
+    // Only log the gap summary when we actually recorded new missing rows.
+    // A permanent pre-history gap keeps `gaps` non-empty on every event, so
+    // an unconditional log line fires thousands of times for no new signal.
+    if (gaps.isNotEmpty && newMissingDetected) {
       _trace(
         'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
         subDomain: 'sequence.recordReceived',

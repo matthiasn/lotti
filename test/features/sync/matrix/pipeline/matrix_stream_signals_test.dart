@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_catch_up.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_live_scan.dart';
@@ -19,7 +20,15 @@ class _MockCatchUp extends Mock implements MatrixStreamCatchUpCoordinator {}
 
 class _MockLiveScan extends Mock implements MatrixStreamLiveScanController {}
 
+class _MockRoom extends Mock implements Room {}
+
+class _MockTimeline extends Mock implements Timeline {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   late _MockSessionManager sessionManager;
   late _MockRoomManager roomManager;
   late LoggingService loggingService;
@@ -104,6 +113,156 @@ void main() {
         // When catch-up handles the signal, live scan should NOT be called
         verifyNever(() => liveScan.scheduleLiveScan());
       });
+    });
+
+    group('start.catchUpRetry', () {
+      test(
+        'schedules the 150ms follow-up when a marker exists and initial '
+        'catch-up has not converged',
+        () async {
+          fakeAsync((async) {
+            final controller = StreamController<Event>.broadcast();
+            addTearDown(controller.close);
+
+            final room = _MockRoom();
+            final timeline = _MockTimeline();
+            when(
+              () => sessionManager.timelineEvents,
+            ).thenAnswer((_) => controller.stream);
+            when(() => roomManager.currentRoomId).thenReturn('!room:s');
+            when(() => roomManager.currentRoom).thenReturn(room);
+            when(
+              () => room.getTimeline(
+                onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+                onInsert: any<void Function(int)?>(named: 'onInsert'),
+                onChange: any<void Function(int)?>(named: 'onChange'),
+                onRemove: any<void Function(int)?>(named: 'onRemove'),
+                onUpdate: any<void Function()?>(named: 'onUpdate'),
+              ),
+            ).thenAnswer((_) async => timeline);
+            when(timeline.cancelSubscriptions).thenAnswer((_) {});
+            when(
+              () => liveScan.scheduleRescan(any<Duration>()),
+            ).thenReturn(null);
+            // Initial catch-up has not converged when start() runs AND when
+            // the 150ms timer fires; the retry must run.
+            when(() => catchUp.initialCatchUpReady).thenReturn(false);
+            when(
+              () => catchUp.runGuardedCatchUp(any<String>()),
+            ).thenAnswer((_) async {});
+
+            unawaited(binder.start(lastProcessedEventId: r'$marker'));
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(milliseconds: 200))
+              ..flushMicrotasks();
+
+            verify(
+              () => catchUp.runGuardedCatchUp('start.catchUpRetry'),
+            ).called(1);
+
+            unawaited(binder.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'does not schedule the retry at all when initial catch-up is '
+        'already ready at start() time',
+        () async {
+          fakeAsync((async) {
+            final controller = StreamController<Event>.broadcast();
+            addTearDown(controller.close);
+
+            final room = _MockRoom();
+            final timeline = _MockTimeline();
+            when(
+              () => sessionManager.timelineEvents,
+            ).thenAnswer((_) => controller.stream);
+            when(() => roomManager.currentRoomId).thenReturn('!room:s');
+            when(() => roomManager.currentRoom).thenReturn(room);
+            when(
+              () => room.getTimeline(
+                onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+                onInsert: any<void Function(int)?>(named: 'onInsert'),
+                onChange: any<void Function(int)?>(named: 'onChange'),
+                onRemove: any<void Function(int)?>(named: 'onRemove'),
+                onUpdate: any<void Function()?>(named: 'onUpdate'),
+              ),
+            ).thenAnswer((_) async => timeline);
+            when(timeline.cancelSubscriptions).thenAnswer((_) {});
+            when(
+              () => liveScan.scheduleRescan(any<Duration>()),
+            ).thenReturn(null);
+            when(() => catchUp.initialCatchUpReady).thenReturn(true);
+
+            unawaited(binder.start(lastProcessedEventId: r'$marker'));
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(milliseconds: 200))
+              ..flushMicrotasks();
+
+            verifyNever(() => catchUp.runGuardedCatchUp(any<String>()));
+
+            unawaited(binder.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'inner guard skips the delayed runGuardedCatchUp when the initial '
+        'catch-up converges during the 150ms window',
+        () async {
+          fakeAsync((async) {
+            final controller = StreamController<Event>.broadcast();
+            addTearDown(controller.close);
+
+            final room = _MockRoom();
+            final timeline = _MockTimeline();
+            when(
+              () => sessionManager.timelineEvents,
+            ).thenAnswer((_) => controller.stream);
+            when(() => roomManager.currentRoomId).thenReturn('!room:s');
+            when(() => roomManager.currentRoom).thenReturn(room);
+            when(
+              () => room.getTimeline(
+                onNewEvent: any<void Function()?>(named: 'onNewEvent'),
+                onInsert: any<void Function(int)?>(named: 'onInsert'),
+                onChange: any<void Function(int)?>(named: 'onChange'),
+                onRemove: any<void Function(int)?>(named: 'onRemove'),
+                onUpdate: any<void Function()?>(named: 'onUpdate'),
+              ),
+            ).thenAnswer((_) async => timeline);
+            when(timeline.cancelSubscriptions).thenAnswer((_) {});
+            when(
+              () => liveScan.scheduleRescan(any<Duration>()),
+            ).thenReturn(null);
+            // Sequence: false at start() (schedules the 150ms retry) then
+            // true when the delayed callback fires (inner guard bails).
+            var readyCalls = 0;
+            when(() => catchUp.initialCatchUpReady).thenAnswer((_) {
+              readyCalls += 1;
+              return readyCalls > 1;
+            });
+
+            unawaited(binder.start(lastProcessedEventId: r'$marker'));
+            async
+              ..flushMicrotasks()
+              ..elapse(const Duration(milliseconds: 200))
+              ..flushMicrotasks();
+
+            // initialCatchUpReady is consulted once at scheduling time and
+            // once inside the delayed callback; if either short-circuits,
+            // runGuardedCatchUp must not fire.
+            verifyNever(() => catchUp.runGuardedCatchUp(any<String>()));
+
+            unawaited(binder.dispose());
+            async.flushMicrotasks();
+          });
+        },
+      );
     });
 
     test('dispose cancels subscription', () async {

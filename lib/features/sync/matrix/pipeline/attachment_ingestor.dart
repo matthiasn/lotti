@@ -398,7 +398,7 @@ class AttachmentIngestor {
         return false;
       }
 
-      final bytes = decodeAttachmentBytes(
+      final bytes = await decodeAttachmentBytes(
         event: event,
         downloadedBytes: downloadedBytes,
         relativePath: relativePath,

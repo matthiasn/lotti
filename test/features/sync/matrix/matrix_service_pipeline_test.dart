@@ -250,7 +250,26 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        // Emit connectivity regain
+        // First emission is the synthetic bootstrap snapshot from
+        // `connectivity_plus`. The service records the connectivity signal
+        // (metrics) but intentionally swallows the `forceRescan` so it does
+        // not duplicate the dedicated startup rescan.
+        connectivityController.add([ConnectivityResult.wifi]);
+        async.elapse(const Duration(milliseconds: 10));
+
+        verify(() => pipeline.recordConnectivitySignal()).called(1);
+        verifyNever(
+          () => pipeline.forceRescan(
+            includeCatchUp: any(named: 'includeCatchUp'),
+          ),
+        );
+
+        // Reset interactions so the follow-up `verifyInOrder` only sees the
+        // calls caused by the second (genuine) regain event.
+        clearInteractions(pipeline);
+
+        // Second emission represents a genuine regain event; it must record
+        // the signal and then drive forceRescan, in that order.
         connectivityController.add([ConnectivityResult.wifi]);
         async.elapse(const Duration(milliseconds: 10));
 

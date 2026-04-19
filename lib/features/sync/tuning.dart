@@ -117,6 +117,16 @@ class SyncTuning {
   // gap for correctness; this only improves observability.
   static const int extremeGapWarningSize = 10000;
 
+  // Upper bound on events committed together in a single
+  // `_journalDb.transaction` inside `MatrixStreamProcessor._processOrderedInternal`.
+  // Holding one transaction for the full ordered slice lets Drift coalesce
+  // stream emissions but also holds the writer lock, so a 87-event catch-up
+  // blocks user-driven entry writes for the whole slice. Committing in
+  // chunks lets user writes interleave between chunks while still coalescing
+  // per chunk. Tune together with the attachment download concurrency —
+  // commits are expected to take roughly chunkSize × per-event cost.
+  static const int processOrderedChunkSize = 20;
+
   // Maximum entries to process from an incoming backfill request.
   // Prevents a single large request from flooding the outbox.
   static const int maxBackfillResponseBatchSize = 100;

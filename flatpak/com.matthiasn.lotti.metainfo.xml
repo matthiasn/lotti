@@ -31,6 +31,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.966" date="2026-04-19">
+      <description>
+          <p>Sync startup no longer does every step twice. The connectivity-driven forceRescan and the consumer's runInitialCatchUpIfReady used to race into _attachCatchUp() concurrently because neither acquired _catchUpInFlight for its run, producing two catchup.waitForSync passes, two backfill.start fetches, and two ordered replays of the same event slice. _attachCatchUp() is now the single owner of _catchUpInFlight and the deferred-live-scan flush, short-circuiting concurrent runs with a catchup.skipped (in flight) log. All other entry points now defer to it instead of managing the flag themselves; the obsolete bypassCatchUpInFlightCheck parameter is removed.</p>
+          <p>Pre-history gap handling no longer logs per incoming event. Hosts carrying a permanent unresolved prefix used to re-emit largeGapDetected, gapDetectedRange, recordReceivedEntry detected N gaps, and apply.*.gapsDetected for every catch-up event, dominating the desktop sync log. The sequence service now suppresses those lines on incremental extensions of an already materialised range and returns only the newly materialised subrange to callers. A fresh idle restart now logs tens of lines instead of 400 KB.</p>
+          <p>Removed the redundant start.catchUpRetry catch-up on every startup: the signal binder's 150 ms follow-up runGuardedCatchUp only runs when the initial catch-up has not yet completed. Once catchup.initial.completed fires, the retry is skipped instead of kicking a second full _waitForSyncCompletion + event-replay pass.</p>
+          <p>Connectivity bootstrap no longer duplicates the startup rescan. connectivity_plus emits the current state synchronously on subscribe, which used to schedule a forceRescan racing the dedicated startup rescan. The listener now swallows the first emission while still recording the connectivity signal for metrics.</p>
+      </description>
+    </release>
     <release version="0.9.965" date="2026-04-19">
       <description>
           <p>DailyOS mobile fix: the DailyOS page no longer surfaces "Failed to load timeline" and "Failed to load budgets" on devices where the v39 migration's partial expression index idx_journal_tasks_due_open is missing or cannot satisfy SQLite's INDEXED BY clause. The open-task due-date query now catches SQLITE_ERROR from the pinned fast path and retries once without the pin, so DailyOS data still loads even when the planner cannot prove the partial's WHERE. beforeOpen also recreates idx_journal_tasks_due_open and idx_journal_task_status_private as CREATE INDEX IF NOT EXISTS on every launch, so devices that landed at user_version = 39 with a missing index self-heal on next open.</p>

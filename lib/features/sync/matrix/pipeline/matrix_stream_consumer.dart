@@ -292,14 +292,8 @@ class MatrixStreamConsumer implements SyncPipeline {
   Map<String, String> diagnosticsStrings() => _processor.diagnosticsStrings();
 
   // Force a rescan and optional catch-up to recover from potential gaps.
-  Future<void> forceRescan({
-    bool includeCatchUp = true,
-    bool bypassCatchUpInFlightCheck = false,
-  }) async {
-    await _catchUp.forceRescan(
-      includeCatchUp: includeCatchUp,
-      bypassCatchUpInFlightCheck: bypassCatchUpInFlightCheck,
-    );
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
+    await _catchUp.forceRescan(includeCatchUp: includeCatchUp);
   }
 
   // Force all pending retries to be immediately due and trigger a scan.
