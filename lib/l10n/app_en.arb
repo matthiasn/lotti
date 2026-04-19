@@ -489,6 +489,7 @@
   },
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
+  "agentSuggestionsActivityAgentFallback": "the agent",
   "agentSuggestionsActivityCountTotal": "{total} total",
   "@agentSuggestionsActivityCountTotal": {
     "placeholders": {
@@ -511,7 +512,14 @@
   "agentSuggestionsActivityTitle": "Recent proposal activity",
   "agentSuggestionsActivityVerdictConfirmed": "Confirmed",
   "agentSuggestionsActivityVerdictRejected": "Rejected",
-  "agentSuggestionsActivityVerdictRetracted": "Retracted by agent",
+  "agentSuggestionsActivityVerdictRetracted": "Retracted by {agentName}",
+  "@agentSuggestionsActivityVerdictRetracted": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
   "agentTabObservations": "Observations",

@@ -1620,6 +1620,12 @@ abstract class AppLocalizations {
   /// **'7-Day Total'**
   String get agentStatsWeekTotalLabel;
 
+  /// No description provided for @agentSuggestionsActivityAgentFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'the agent'**
+  String get agentSuggestionsActivityAgentFallback;
+
   /// No description provided for @agentSuggestionsActivityCountTotal.
   ///
   /// In en, this message translates to:
@@ -1653,8 +1659,8 @@ abstract class AppLocalizations {
   /// No description provided for @agentSuggestionsActivityVerdictRetracted.
   ///
   /// In en, this message translates to:
-  /// **'Retracted by agent'**
-  String get agentSuggestionsActivityVerdictRetracted;
+  /// **'Retracted by {agentName}'**
+  String agentSuggestionsActivityVerdictRetracted(String agentName);
 
   /// No description provided for @agentTabActivity.
   ///

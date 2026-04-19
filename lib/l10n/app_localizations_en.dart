@@ -887,6 +887,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentStatsWeekTotalLabel => '7-Day Total';
 
   @override
+  String get agentSuggestionsActivityAgentFallback => 'the agent';
+
+  @override
   String agentSuggestionsActivityCountTotal(int total) {
     return '$total total';
   }
@@ -906,7 +909,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSuggestionsActivityVerdictRejected => 'Rejected';
 
   @override
-  String get agentSuggestionsActivityVerdictRetracted => 'Retracted by agent';
+  String agentSuggestionsActivityVerdictRetracted(String agentName) {
+    return 'Retracted by $agentName';
+  }
 
   @override
   String get agentTabActivity => 'Activity';

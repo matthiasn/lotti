@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -40,7 +41,10 @@ class AgentSuggestionsPanel extends ConsumerWidget {
             children: [
               if (list.open.isNotEmpty) _OpenSuggestionsList(open: list.open),
               if (list.activity.isNotEmpty)
-                _RecentActivityStrip(activity: list.activity),
+                _RecentActivityStrip(
+                  activity: list.activity,
+                  agentName: list.agentName,
+                ),
             ],
           ),
           error: (_, _) => const SizedBox.shrink(),
@@ -232,12 +236,26 @@ class _PendingBadge extends StatelessWidget {
 /// collapses to the top three with a "Show all" toggle to reveal the
 /// full history; a long ledger stays readable without pushing the rest
 /// of the task detail off-screen.
+/// Single-row entry point for the agent's resolved proposal history.
+///
+/// Collapsed (default) state is a compact tappable row: history icon +
+/// "Recent proposal activity" label + a trailing count pill + chevron.
+/// No card chrome is drawn, so the strip occupies only one row of
+/// height when idle. Tapping expands inline into a [ModernBaseCard]
+/// holding the full, newest-first list of [LedgerEntry] rows — each
+/// with its verdict icon and `humanSummary` — via [AnimatedSize] so the
+/// transition does not jump the surrounding layout.
+///
+/// `activity` comes from [unifiedSuggestionListProvider] as the ledger's
+/// `resolved` list, which is already newest-first.
 class _RecentActivityStrip extends StatefulWidget {
-  const _RecentActivityStrip({required this.activity});
+  const _RecentActivityStrip({required this.activity, required this.agentName});
 
   final List<LedgerEntry> activity;
 
-  static const int collapsedRowLimit = 3;
+  /// The agent's display name. Forwarded into the retracted-verdict
+  /// tooltip so it can name the agent that withdrew a proposal.
+  final String? agentName;
 
   @override
   State<_RecentActivityStrip> createState() => _RecentActivityStripState();
@@ -246,73 +264,67 @@ class _RecentActivityStrip extends StatefulWidget {
 class _RecentActivityStripState extends State<_RecentActivityStrip> {
   bool _expanded = false;
 
+  void _toggle() => setState(() => _expanded = !_expanded);
+
   @override
   Widget build(BuildContext context) {
-    final activity = widget.activity;
-    final total = activity.length;
-    final canExpand = total > _RecentActivityStrip.collapsedRowLimit;
-    final visible = _expanded
-        ? activity
-        : activity
-              .take(_RecentActivityStrip.collapsedRowLimit)
-              .toList(growable: false);
-
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: ModernBaseCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(top: 8),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _expanded
+            ? _ExpandedActivityCard(
+                activity: widget.activity,
+                agentName: widget.agentName,
+                onCollapse: _toggle,
+              )
+            : _CollapsedActivityRow(
+                total: widget.activity.length,
+                onExpand: _toggle,
+              ),
+      ),
+    );
+  }
+}
+
+class _CollapsedActivityRow extends StatelessWidget {
+  const _CollapsedActivityRow({required this.total, required this.onExpand});
+
+  final int total;
+  final VoidCallback onExpand;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onExpand,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
           children: [
-            InkWell(
-              onTap: canExpand
-                  ? () => setState(() => _expanded = !_expanded)
-                  : null,
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.history,
-                      size: 20,
-                      color: context.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        context.messages.agentSuggestionsActivityTitle,
-                        style: context.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (canExpand) ...[
-                      Text(
-                        _expanded
-                            ? context.messages
-                                  .agentSuggestionsActivityCountTotal(total)
-                            : context.messages
-                                  .agentSuggestionsActivityCountVisible(
-                                    _RecentActivityStrip.collapsedRowLimit,
-                                    total,
-                                  ),
-                        style: context.textTheme.labelSmall?.copyWith(
-                          color: context.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
-                        size: 20,
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ],
+            Icon(
+              Icons.history,
+              size: 18,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.messages.agentSuggestionsActivityTitle,
+                style: context.textTheme.labelLarge?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            for (final entry in visible) _ActivityRow(entry: entry),
+            _ActivityCountPill(count: total),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.expand_more,
+              size: 20,
+              color: context.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -320,10 +332,93 @@ class _RecentActivityStripState extends State<_RecentActivityStrip> {
   }
 }
 
+class _ActivityCountPill extends StatelessWidget {
+  const _ActivityCountPill({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$count',
+        style: context.textTheme.labelSmall?.copyWith(
+          color: context.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandedActivityCard extends StatelessWidget {
+  const _ExpandedActivityCard({
+    required this.activity,
+    required this.agentName,
+    required this.onCollapse,
+  });
+
+  final List<LedgerEntry> activity;
+  final String? agentName;
+  final VoidCallback onCollapse;
+
+  @override
+  Widget build(BuildContext context) {
+    return ModernBaseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onCollapse,
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 20,
+                    color: context.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.messages.agentSuggestionsActivityTitle,
+                      style: context.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _ActivityCountPill(count: activity.length),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.expand_less,
+                    size: 20,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          for (final entry in activity)
+            _ActivityRow(entry: entry, agentName: agentName),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.entry});
+  const _ActivityRow({required this.entry, required this.agentName});
 
   final LedgerEntry entry;
+  final String? agentName;
 
   @override
   Widget build(BuildContext context) {
@@ -331,14 +426,20 @@ class _ActivityRow extends StatelessWidget {
     final hasReason = reason != null && reason.isNotEmpty;
     final verdictIcon = _verdictIcon(entry.status);
     final verdictColor = _verdictColor(context, entry.status);
-    final verdictTooltip = _verdictTooltip(context, entry.status);
+    final verdictLabel = _verdictLabel(context, entry.status, agentName);
+    // Prefer resolvedAt (when the verdict was recorded) over createdAt so
+    // the tooltip dates the decision, not the original proposal.
+    final verdictTimestamp = entry.resolvedAt ?? entry.createdAt;
+    final verdictTooltip = verdictLabel.isEmpty
+        ? formatAgentDateTime(verdictTimestamp)
+        : '$verdictLabel · ${formatAgentDateTime(verdictTimestamp)}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Tooltip(
+          _LeftAnchoredTooltip(
             message: verdictTooltip,
             child: Icon(verdictIcon, size: 18, color: verdictColor),
           ),
@@ -351,10 +452,9 @@ class _ActivityRow extends StatelessWidget {
           ),
           if (hasReason) ...[
             const SizedBox(width: 8),
-            Tooltip(
+            _LeftAnchoredTooltip(
               message: reason,
               triggerMode: TooltipTriggerMode.tap,
-              showDuration: const Duration(seconds: 4),
               child: Icon(
                 Icons.info_outline,
                 size: 16,
@@ -383,16 +483,143 @@ class _ActivityRow extends StatelessWidget {
         _ => context.colorScheme.onSurfaceVariant,
       };
 
-  static String _verdictTooltip(
+  static String _verdictLabel(
     BuildContext context,
     ChangeItemStatus status,
-  ) => switch (status) {
-    ChangeItemStatus.confirmed =>
-      context.messages.agentSuggestionsActivityVerdictConfirmed,
-    ChangeItemStatus.rejected =>
-      context.messages.agentSuggestionsActivityVerdictRejected,
-    ChangeItemStatus.retracted =>
-      context.messages.agentSuggestionsActivityVerdictRetracted,
-    _ => '',
-  };
+    String? agentName,
+  ) {
+    final name = (agentName != null && agentName.trim().isNotEmpty)
+        ? agentName.trim()
+        // Fallback when the agent has been detached: the generic noun
+        // keeps the sentence grammatical instead of leaving a bare "by".
+        : context.messages.agentSuggestionsActivityAgentFallback;
+    return switch (status) {
+      ChangeItemStatus.confirmed =>
+        context.messages.agentSuggestionsActivityVerdictConfirmed,
+      ChangeItemStatus.rejected =>
+        context.messages.agentSuggestionsActivityVerdictRejected,
+      ChangeItemStatus.retracted =>
+        context.messages.agentSuggestionsActivityVerdictRetracted(name),
+      _ => '',
+    };
+  }
+}
+
+/// Tooltip that starts at its child's left edge and extends to the right,
+/// instead of the default Material `Tooltip` behaviour of centring on the
+/// child. Used in the activity strip so the verdict/reason labels don't
+/// drift off toward the middle of the screen away from the tiny icon
+/// they're describing.
+///
+/// Implemented with [OverlayPortal] + [CompositedTransformFollower] so
+/// the tooltip rides with the icon during scroll and resize. Hover on
+/// desktop opens it; on touch, pass [TooltipTriggerMode.tap].
+class _LeftAnchoredTooltip extends StatefulWidget {
+  const _LeftAnchoredTooltip({
+    required this.message,
+    required this.child,
+    this.triggerMode = TooltipTriggerMode.longPress,
+  });
+
+  final String message;
+  final Widget child;
+  final TooltipTriggerMode triggerMode;
+
+  @override
+  State<_LeftAnchoredTooltip> createState() => _LeftAnchoredTooltipState();
+}
+
+class _LeftAnchoredTooltipState extends State<_LeftAnchoredTooltip> {
+  final OverlayPortalController _controller = OverlayPortalController();
+  final LayerLink _link = LayerLink();
+
+  void _show() {
+    if (!_controller.isShowing) _controller.show();
+  }
+
+  void _hide() {
+    if (_controller.isShowing) _controller.hide();
+  }
+
+  void _toggle() => _controller.isShowing ? _hide() : _show();
+
+  @override
+  Widget build(BuildContext context) {
+    final isHoverTrigger = widget.triggerMode == TooltipTriggerMode.longPress;
+    final isTapTrigger = widget.triggerMode == TooltipTriggerMode.tap;
+
+    return CompositedTransformTarget(
+      link: _link,
+      child: MouseRegion(
+        onEnter: isHoverTrigger ? (_) => _show() : null,
+        onExit: isHoverTrigger ? (_) => _hide() : null,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: isTapTrigger ? _toggle : null,
+          onLongPress: isHoverTrigger ? _show : null,
+          child: OverlayPortal(
+            controller: _controller,
+            overlayChildBuilder: (_) => _overlay(context),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _overlay(BuildContext context) {
+    return Positioned(
+      left: 0,
+      top: 0,
+      child: CompositedTransformFollower(
+        link: _link,
+        showWhenUnlinked: false,
+        // Anchor the tooltip's top-left to the child's bottom-left so it
+        // starts at the icon and grows to the right.
+        targetAnchor: Alignment.bottomLeft,
+        offset: const Offset(0, 6),
+        child: _TooltipBubble(
+          message: widget.message,
+          onTapOutside: isHoverOrTap ? _hide : null,
+        ),
+      ),
+    );
+  }
+
+  bool get isHoverOrTap =>
+      widget.triggerMode == TooltipTriggerMode.tap ||
+      widget.triggerMode == TooltipTriggerMode.longPress;
+}
+
+class _TooltipBubble extends StatelessWidget {
+  const _TooltipBubble({required this.message, required this.onTapOutside});
+
+  final String message;
+  final VoidCallback? onTapOutside;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: TapRegion(
+        onTapOutside: onTapOutside == null ? null : (_) => onTapOutside!(),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: context.colorScheme.inverseSurface,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              message,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onInverseSurface,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

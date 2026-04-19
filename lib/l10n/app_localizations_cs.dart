@@ -890,6 +890,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Celkem za 7 dní';
 
   @override
+  String get agentSuggestionsActivityAgentFallback => 'agentem';
+
+  @override
   String agentSuggestionsActivityCountTotal(int total) {
     return '$total celkem';
   }
@@ -909,7 +912,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSuggestionsActivityVerdictRejected => 'Zamítnuto';
 
   @override
-  String get agentSuggestionsActivityVerdictRetracted => 'Staženo agentem';
+  String agentSuggestionsActivityVerdictRetracted(String agentName) {
+    return 'Staženo $agentName';
+  }
 
   @override
   String get agentTabActivity => 'Aktivita';
