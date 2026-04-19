@@ -226,6 +226,16 @@ class ChangeSetBuilder {
         ? args['targetTaskId']
         : null;
 
+    // Seed a within-wake fingerprint set from items already queued in this
+    // builder — the batch path must dedupe identical `(toolName, args)`
+    // elements that slip past title/state/label redundancy checks (e.g.
+    // the LLM repeating the same `update_checklist_item` three times, or
+    // two back-to-back batch calls carrying the same element). Without
+    // this guard the item list gets duplicate rows that downstream UI
+    // dedup cannot collapse, because each row stays a distinct
+    // ChangeItem at the persistence layer.
+    final queuedFingerprints = _items.map(ChangeItem.fingerprint).toSet();
+
     var added = 0;
     var skipped = 0;
     var redundant = 0;
@@ -280,6 +290,24 @@ class ChangeSetBuilder {
         if (redundancyDetail != null) {
           redundant++;
           redundantDetails.add(redundancyDetail);
+          continue;
+        }
+
+        // Structural fingerprint dedup: drop elements whose `(toolName,
+        // args)` already matches a queued item. Catches identical LLM
+        // repeats that survived the title/state/label guards above —
+        // e.g. a second check-off of the same item id in the same
+        // batch, or the same `assign_task_labels` array element twice.
+        final fingerprint = ChangeItem.fingerprintFromParts(
+          singularToolName,
+          element,
+        );
+        if (!queuedFingerprints.add(fingerprint)) {
+          redundant++;
+          redundantDetails.add(
+            'identical $singularToolName proposal already queued in this '
+            'wake — skipped.',
+          );
           continue;
         }
 
