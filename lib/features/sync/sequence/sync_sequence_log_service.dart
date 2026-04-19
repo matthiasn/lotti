@@ -1081,6 +1081,33 @@ class SyncSequenceLogService {
     return count;
   }
 
+  /// Flip missing/requested rows that have been asked for more than
+  /// [maxRequestCount] times to `unresolvable` so the contiguous-prefix
+  /// watermark can advance past them. Without this step, a permanent
+  /// pre-history gap keeps `getLastCounterForHost` stuck, which then
+  /// forces every incoming entry on that host to re-enter the gap
+  /// materialization pass (see `_materializeLargeGap`). Invalidates the
+  /// per-host watermark and materialized-bound caches so the next event
+  /// sees the updated state.
+  Future<int> retireExhaustedRequestedEntries({
+    int maxRequestCount = 10,
+  }) async {
+    final count = await _syncDatabase.retireExhaustedRequestedEntries(
+      maxRequestCount: maxRequestCount,
+    );
+
+    if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
+      _trace(
+        'retireExhaustedRequestedEntries: retired $count entries to unresolvable',
+        subDomain: 'sequence.retireExhausted',
+      );
+    }
+
+    return count;
+  }
+
   /// Get entry by host ID and counter (for responding to backfill requests).
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,

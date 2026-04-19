@@ -237,6 +237,16 @@ class BackfillRequestService {
     _isProcessing = true;
 
     try {
+      // Retire missing/requested rows that have hit the request-count cap.
+      // Without this, rows for counters that can never be resolved (e.g.
+      // pre-history entries, purged payloads, permanently VC-behind
+      // mappings) stay in `missing` forever and block the contiguous
+      // watermark in `getLastCounterForHost`, which in turn forces every
+      // incoming event on the same host to re-enter gap detection.
+      await _sequenceLogService.retireExhaustedRequestedEntries(
+        maxRequestCount: _maxRequestCount,
+      );
+
       final missing = await _loadNextUnqueuedMissingBatch(useLimits: useLimits);
 
       if (missing.isEmpty) {

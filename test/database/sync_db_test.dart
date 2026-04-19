@@ -3505,6 +3505,164 @@ void main() {
     });
   });
 
+  group('retireExhaustedRequestedEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'retires missing and requested rows at or above the request-count cap '
+      'and leaves other statuses untouched',
+      () async {
+        final now = DateTime(2024, 3, 15);
+
+        // Missing at the cap — should retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(10),
+          ),
+        );
+
+        // Requested above the cap — should retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            entryId: const Value('hint-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(15),
+          ),
+        );
+
+        // Missing but below the cap — must stay missing.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(3),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(4),
+          ),
+        );
+
+        // Received row at/above the cap — must not be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(4),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(20),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries();
+
+        expect(retired, 2);
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 1))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 2))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 3))!.status,
+          SyncSequenceStatus.missing.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 4))!.status,
+          SyncSequenceStatus.received.index,
+        );
+      },
+    );
+
+    test(
+      'advances the contiguous watermark by retiring pre-history gaps',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        const hostId = 'host-b';
+
+        // Contiguous resolved prefix: counters 1..10 all received.
+        for (var i = 1; i <= 10; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              entryId: Value('entry-$i'),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+        // Permanently stuck missing range 11..15, each at the request cap.
+        for (var i = 11; i <= 15; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.missing.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              requestCount: const Value(10),
+            ),
+          );
+        }
+        // Row beyond the gap, received.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(16),
+            entryId: const Value('entry-16'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+
+        expect(await database.getLastCounterForHost(hostId), 10);
+
+        final retired = await database.retireExhaustedRequestedEntries();
+        expect(retired, 5);
+
+        // With the stuck missing range flipped to `unresolvable` (a terminal
+        // status included in the contiguous-prefix computation), the watermark
+        // should now advance all the way past the retired range.
+        expect(await database.getLastCounterForHost(hostId), 16);
+      },
+    );
+
+    test('returns 0 when there is nothing to retire', () async {
+      final retired = await database.retireExhaustedRequestedEntries();
+      expect(retired, 0);
+    });
+  });
+
   group('getLastSentCounterForEntry', () {
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);

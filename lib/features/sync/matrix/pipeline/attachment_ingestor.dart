@@ -465,8 +465,7 @@ class AttachmentIngestor {
   void _recordCacheEvictedEvent(String eventId) {
     if (_cacheEvictedEventIds.add(eventId)) {
       _cacheEvictedEventOrder.addLast(eventId);
-      while (_cacheEvictedEventOrder.length >
-          _handledAttachmentEventCapacity) {
+      while (_cacheEvictedEventOrder.length > _handledAttachmentEventCapacity) {
         final oldest = _cacheEvictedEventOrder.removeFirst();
         _cacheEvictedEventIds.remove(oldest);
       }

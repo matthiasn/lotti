@@ -3654,6 +3654,105 @@ void main() {
     });
   });
 
+  group('retireExhaustedRequestedEntries', () {
+    test(
+      'delegates to syncDatabase with maxRequestCount and returns count',
+      () async {
+        when(
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: 7,
+          ),
+        ).thenAnswer((_) async => 3);
+
+        final count = await service.retireExhaustedRequestedEntries(
+          maxRequestCount: 7,
+        );
+
+        expect(count, 3);
+        verify(
+          () => mockDb.retireExhaustedRequestedEntries(maxRequestCount: 7),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs and clears the watermark cache when entries are retired so the '
+      'next incoming event sees the advanced watermark',
+      () async {
+        // Prime the watermark cache for alice.
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 10);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        const vc = VectorClock({aliceHostId: 11});
+        await service.recordReceivedEntry(
+          entryId: 'priming-entry',
+          vectorClock: vc,
+          originatingHostId: aliceHostId,
+        );
+
+        when(
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: any(named: 'maxRequestCount'),
+          ),
+        ).thenAnswer((_) async => 12);
+
+        final count = await service.retireExhaustedRequestedEntries();
+
+        expect(count, 12);
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('retired 12 entries')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.retireExhausted',
+          ),
+        ).called(1);
+
+        // After a retirement, the next read must re-query the DB (the cache
+        // was cleared), so the advanced watermark is picked up immediately.
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 42);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        const vc2 = VectorClock({aliceHostId: 43});
+        await service.recordReceivedEntry(
+          entryId: 'after-retire',
+          vectorClock: vc2,
+          originatingHostId: aliceHostId,
+        );
+        // Called once before retirement, once after - so 2 DB hits total.
+        verify(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).called(2);
+      },
+    );
+
+    test('does not log when no entries retired', () async {
+      when(
+        () => mockDb.retireExhaustedRequestedEntries(
+          maxRequestCount: any(named: 'maxRequestCount'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await service.retireExhaustedRequestedEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.retireExhausted',
+        ),
+      );
+    });
+  });
+
   group('host activity cache', () {
     test(
       'caches getHostLastSeen and reuses on subsequent calls',

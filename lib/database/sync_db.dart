@@ -785,6 +785,37 @@ class SyncDatabase extends _$SyncDatabase {
     return entries.skip(offset).take(limit).toList();
   }
 
+  /// Retire missing/requested rows whose request_count has reached the cap
+  /// by flipping their status to `unresolvable`. Rows in `missing`/`requested`
+  /// block the contiguous-prefix watermark in [getLastCounterForHost]; once
+  /// a row has been asked for more than [maxRequestCount] times without
+  /// resolving, the counter it points to is almost certainly unobtainable
+  /// (pre-history entry, purged payload, or permanently VC-behind mapping).
+  /// Promoting it to the terminal `unresolvable` state lets the watermark
+  /// advance and stops every incoming event from paying the gap-detection
+  /// cost for the same stuck range.
+  ///
+  /// Returns the number of rows retired.
+  Future<int> retireExhaustedRequestedEntries({int maxRequestCount = 10}) {
+    final missing = SyncSequenceStatus.missing.index;
+    final requested = SyncSequenceStatus.requested.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, updated_at = ? '
+      'WHERE (status = ? OR status = ?) '
+      '  AND request_count >= ?',
+      variables: [
+        Variable.withInt(unresolvable),
+        Variable.withDateTime(DateTime.now()),
+        Variable.withInt(missing),
+        Variable.withInt(requested),
+        Variable.withInt(maxRequestCount),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
   /// Reset entries that were incorrectly marked as unresolvable back to
   /// "missing" so they can be re-requested. Only resets entries that have
   /// a known payload (entryId IS NOT NULL), meaning repopulation found them.
