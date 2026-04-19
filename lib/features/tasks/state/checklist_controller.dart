@@ -64,6 +64,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
       if (!ref.mounted) return;
       final latest = await _fetch();
       if (!ref.mounted) return;
+      subscribedIds
+        ..clear()
+        ..add(id);
       if (latest != null) {
         subscribedIds.addAll(latest.data.linkedChecklistItems);
       }
