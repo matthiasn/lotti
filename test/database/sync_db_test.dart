@@ -3166,8 +3166,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 10', () {
-      expect(db.schemaVersion, 10);
+    test('schema version is 11', () {
+      expect(db.schemaVersion, 11);
     });
   });
 
@@ -3505,6 +3505,305 @@ void main() {
     });
   });
 
+  group('retireExhaustedRequestedEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'retires missing and requested rows at or above the request-count cap '
+      'whose last backfill request is older than the grace window, and '
+      'leaves other statuses untouched',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        final longAgo = now.subtract(const Duration(hours: 1));
+
+        // Missing at the cap, last request comfortably past the grace
+        // window — should retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(10),
+            lastRequestedAt: Value(longAgo),
+          ),
+        );
+
+        // Requested above the cap — should retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            entryId: const Value('hint-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(15),
+            lastRequestedAt: Value(longAgo),
+          ),
+        );
+
+        // Missing but below the cap — must stay missing.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(3),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(4),
+            lastRequestedAt: Value(longAgo),
+          ),
+        );
+
+        // Received row at/above the cap — must not be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(4),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(20),
+            lastRequestedAt: Value(longAgo),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+
+        expect(retired, 2);
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 1))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 2))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 3))!.status,
+          SyncSequenceStatus.missing.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 4))!.status,
+          SyncSequenceStatus.received.index,
+        );
+      },
+    );
+
+    test(
+      'does not retire a row whose last backfill request is still within '
+      'the grace window — the in-flight response deserves a chance to land',
+      () async {
+        final now = DateTime(2024, 3, 15);
+
+        // At the cap but requested 30s ago, well inside the 5-minute grace.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-grace'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(10),
+            lastRequestedAt: Value(
+              now.subtract(const Duration(seconds: 30)),
+            ),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+
+        expect(retired, 0);
+        expect(
+          (await database.getEntryByHostAndCounter('host-grace', 1))!.status,
+          SyncSequenceStatus.requested.index,
+        );
+      },
+    );
+
+    test(
+      'retires rows whose last_requested_at was set by '
+      'batchIncrementRequestCounts (end-to-end timestamp-encoding regression)',
+      () async {
+        // Regression for the ms/seconds encoding mismatch:
+        // `batchIncrementRequestCounts` used to write raw
+        // `millisecondsSinceEpoch`, while `retireExhaustedRequestedEntries`
+        // compares against Drift's default seconds-encoded DateTime. The two
+        // silently disagreed by a factor of 1000, so rows requested via the
+        // real production path could never qualify for retirement regardless
+        // of how old they were.
+        const hostId = 'host-ms-regression';
+        const counter = 1;
+        // Seed a missing row that we then drive through the real request
+        // path `batchIncrementRequestCounts` exactly as the backfill service
+        // does.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(counter),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2020)),
+            updatedAt: Value(DateTime(2020)),
+            requestCount: const Value(9),
+          ),
+        );
+
+        // Bump to request_count == 10 via the production path and stamp
+        // last_requested_at with DateTime.now() (the method's own clock).
+        await database.batchIncrementRequestCounts([
+          (hostId: hostId, counter: counter),
+        ]);
+
+        final afterIncrement = await database.getEntryByHostAndCounter(
+          hostId,
+          counter,
+        );
+        expect(afterIncrement!.requestCount, 10);
+        expect(afterIncrement.status, SyncSequenceStatus.requested.index);
+        expect(afterIncrement.lastRequestedAt, isNotNull);
+        // The roundtripped value must be readable as a sane 2020-or-later
+        // DateTime — if encoding was in ms, Drift's seconds-decoded column
+        // would report a year ~53700.
+        expect(
+          afterIncrement.lastRequestedAt!.year,
+          inInclusiveRange(2020, 2100),
+        );
+
+        // Advance the caller's clock past the grace window and run retire.
+        final futureNow = afterIncrement.lastRequestedAt!.add(
+          const Duration(hours: 2),
+        );
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: futureNow,
+        );
+        expect(retired, 1);
+        expect(
+          (await database.getEntryByHostAndCounter(hostId, counter))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+      },
+    );
+
+    test(
+      'does not retire a row with no recorded last_requested_at — we have '
+      'no evidence a request ever reached the outbox',
+      () async {
+        final now = DateTime(2024, 3, 15);
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-null'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(12),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+        expect(retired, 0);
+        expect(
+          (await database.getEntryByHostAndCounter('host-null', 1))!.status,
+          SyncSequenceStatus.missing.index,
+        );
+      },
+    );
+
+    test(
+      'advances the contiguous watermark by retiring pre-history gaps',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        const hostId = 'host-b';
+
+        // Contiguous resolved prefix: counters 1..10 all received.
+        for (var i = 1; i <= 10; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              entryId: Value('entry-$i'),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+        // Permanently stuck missing range 11..15, each at the request cap
+        // and with a `lastRequestedAt` older than the grace window.
+        final longAgo = now.subtract(const Duration(hours: 1));
+        for (var i = 11; i <= 15; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.missing.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              requestCount: const Value(10),
+              lastRequestedAt: Value(longAgo),
+            ),
+          );
+        }
+        // Row beyond the gap, received.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(16),
+            entryId: const Value('entry-16'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+
+        expect(await database.getLastCounterForHost(hostId), 10);
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+        expect(retired, 5);
+
+        // With the stuck missing range flipped to `unresolvable` (a terminal
+        // status included in the contiguous-prefix computation), the watermark
+        // should now advance all the way past the retired range.
+        expect(await database.getLastCounterForHost(hostId), 16);
+      },
+    );
+
+    test('returns 0 when there is nothing to retire', () async {
+      final retired = await database.retireExhaustedRequestedEntries();
+      expect(retired, 0);
+    });
+  });
+
   group('getLastSentCounterForEntry', () {
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);
@@ -3668,5 +3967,44 @@ void main() {
       );
       expect(resultB, 50);
     });
+
+    test(
+      'returns the highest counter even when intervening rows are not '
+      'ordered by insertion, exercising the ORDER BY DESC LIMIT 1 path',
+      () async {
+        final database = db!;
+        const hostId = 'host-shuffle';
+        const entryId = 'entry-shuffle';
+
+        // Insert out-of-order counters for the same (host, entry) with mixed
+        // statuses. The rewritten query must still return the max received
+        // counter (33), not the max overall (77 is missing and must not win).
+        final rows = <({int counter, SyncSequenceStatus status})>[
+          (counter: 12, status: SyncSequenceStatus.received),
+          (counter: 33, status: SyncSequenceStatus.backfilled),
+          (counter: 5, status: SyncSequenceStatus.received),
+          (counter: 77, status: SyncSequenceStatus.missing),
+          (counter: 21, status: SyncSequenceStatus.received),
+          (counter: 100, status: SyncSequenceStatus.requested),
+        ];
+        for (final row in rows) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(row.counter),
+              entryId: const Value(entryId),
+              status: Value(row.status.index),
+              createdAt: Value(DateTime(2024, 6, 1)),
+              updatedAt: Value(DateTime(2024, 6, 1)),
+            ),
+          );
+        }
+
+        expect(
+          await database.getLastSentCounterForEntry(hostId, entryId),
+          33,
+        );
+      },
+    );
   });
 }

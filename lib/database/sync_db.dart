@@ -94,9 +94,15 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
+// Covers `getLastSentCounterForEntry`. Placing `counter DESC` before
+// `status` lets SQLite satisfy `ORDER BY counter DESC LIMIT 1` by walking
+// the index behind the `(host_id, entry_id)` equality prefix in reverse
+// counter order and applying the `status IN (?, ?)` predicate in-index,
+// terminating on the first match. With `status` trailing `counter`, the
+// engine would have to merge two status partitions via a temp B-tree.
 @TableIndex.sql(
-  'CREATE INDEX idx_sync_sequence_log_host_entry_status '
-  'ON sync_sequence_log (host_id, entry_id, status) '
+  'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter '
+  'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '
   'WHERE entry_id IS NOT NULL',
 )
 class SyncSequenceLog extends Table {
@@ -488,7 +494,13 @@ class SyncDatabase extends _$SyncDatabase {
     if (entries.isEmpty) return;
 
     final now = DateTime.now();
-    final nowMs = now.millisecondsSinceEpoch;
+    // Drift's default `dateTime()` column encodes values as Unix seconds
+    // (see the `store_date_time_values_as_text` guide). Anything written
+    // via raw `customStatement` bindings must match that encoding, or
+    // later comparisons like `retireExhaustedRequestedEntries`' cutoff
+    // (bound via `Variable.withDateTime(...)`) will compare milliseconds
+    // against seconds and silently never match.
+    final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
     await batch((b) {
       for (final entry in entries) {
         b.customStatement(
@@ -500,8 +512,8 @@ class SyncDatabase extends _$SyncDatabase {
           'WHERE host_id = ? AND counter = ?',
           [
             SyncSequenceStatus.requested.index,
-            nowMs,
-            nowMs,
+            nowSeconds,
+            nowSeconds,
             entry.hostId,
             entry.counter,
           ],
@@ -553,13 +565,19 @@ class SyncDatabase extends _$SyncDatabase {
   Future<int?> getLastSentCounterForEntry(String hostId, String entryId) async {
     final received = SyncSequenceStatus.received.index;
     final backfilled = SyncSequenceStatus.backfilled.index;
+    // ORDER BY counter DESC LIMIT 1 resolves as an index-only scan against
+    // `idx_sync_sequence_log_host_entry_status_counter` with early
+    // termination on the first match, instead of scanning every row that
+    // matches the prefix just to compute MAX(counter).
     final query = customSelect(
       '''
-      SELECT MAX(counter) AS last_counter
+      SELECT counter AS last_counter
       FROM sync_sequence_log
       WHERE host_id = ?
         AND entry_id = ?
         AND status IN (?, ?)
+      ORDER BY counter DESC
+      LIMIT 1
       ''',
       variables: [
         Variable.withString(hostId),
@@ -569,8 +587,8 @@ class SyncDatabase extends _$SyncDatabase {
       ],
       readsFrom: {syncSequenceLog},
     );
-    final result = await query.getSingle();
-    return result.readNullable<int>('last_counter');
+    final result = await query.getSingleOrNull();
+    return result?.readNullable<int>('last_counter');
   }
 
   /// Get all pending (missing/requested) sequence log entries for a given payload.
@@ -785,6 +803,52 @@ class SyncDatabase extends _$SyncDatabase {
     return entries.skip(offset).take(limit).toList();
   }
 
+  /// Retire missing/requested rows whose request_count has reached the cap
+  /// by flipping their status to `unresolvable`. Rows in `missing`/`requested`
+  /// block the contiguous-prefix watermark in [getLastCounterForHost]; once
+  /// a row has been asked for more than [maxRequestCount] times without
+  /// resolving, the counter it points to is almost certainly unobtainable
+  /// (pre-history entry, purged payload, or permanently VC-behind mapping).
+  /// Promoting it to the terminal `unresolvable` state lets the watermark
+  /// advance and stops every incoming event from paying the gap-detection
+  /// cost for the same stuck range.
+  ///
+  /// A row is only retired when its most-recent request is older than
+  /// [now] minus [grace], so a backfill request still queued in the outbox
+  /// or in flight to a peer gets a fair chance to resolve before we flip
+  /// the row terminal. Rows without a recorded `last_requested_at` (never
+  /// requested, yet still past the count cap — unusual) are not retired.
+  ///
+  /// Returns the number of rows retired.
+  Future<int> retireExhaustedRequestedEntries({
+    int maxRequestCount = 10,
+    Duration grace = const Duration(minutes: 5),
+    DateTime? now,
+  }) {
+    final missing = SyncSequenceStatus.missing.index;
+    final requested = SyncSequenceStatus.requested.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(grace);
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, updated_at = ? '
+      'WHERE (status = ? OR status = ?) '
+      '  AND request_count >= ? '
+      '  AND last_requested_at IS NOT NULL '
+      '  AND last_requested_at < ?',
+      variables: [
+        Variable.withInt(unresolvable),
+        Variable.withDateTime(effectiveNow),
+        Variable.withInt(missing),
+        Variable.withInt(requested),
+        Variable.withInt(maxRequestCount),
+        Variable.withDateTime(cutoff),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
   /// Reset entries that were incorrectly marked as unresolvable back to
   /// "missing" so they can be re-requested. Only resets entries that have
   /// a known payload (entryId IS NOT NULL), meaning repopulation found them.
@@ -935,7 +999,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -1012,6 +1076,25 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_sync_sequence_log_host_entry_status '
             'ON sync_sequence_log (host_id, entry_id, status) '
+            'WHERE entry_id IS NOT NULL',
+          );
+        }
+        if (from < 11) {
+          // Replace the v10 prefix index with a covering one that includes
+          // `counter` (and orders it descending ahead of `status`). Without
+          // this, `getLastSentCounterForEntry` pulled every matching row
+          // from the heap to compute MAX(counter), blocking the UI isolate
+          // for 40–600 ms per outbox enqueue on hot entry_ids. The column
+          // order lets `ORDER BY counter DESC LIMIT 1` terminate early in
+          // the index itself instead of building a temp B-tree to merge
+          // the two `status IN (?, ?)` partitions.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_sync_sequence_log_host_entry_status',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_host_entry_status_counter '
+            'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '
             'WHERE entry_id IS NOT NULL',
           );
         }

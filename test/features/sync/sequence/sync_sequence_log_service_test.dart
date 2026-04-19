@@ -39,6 +39,7 @@ void main() {
     );
     registerFallbackValue(SyncSequenceStatus.received);
     registerFallbackValue(SyncSequencePayloadType.journalEntity);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -822,6 +823,294 @@ void main() {
         ),
       );
     });
+
+    test(
+      'materializes only the incremental delta when the observed counter '
+      'advances past a previously materialized range',
+      () async {
+        // Scenario: stuck watermark at 10, first entry observes alice at
+        // (lastSeen + maxGapSize + 2) → whole range materializes, bound
+        // recorded. Second entry is one counter higher — the short-circuit
+        // must only materialize the single-counter delta, not re-scan the
+        // previously materialized prefix.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const vc1 = VectorClock({aliceHostId: observedCounter});
+        const vc2 = VectorClock({aliceHostId: observedCounter + 1});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vc1,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        // Re-stub after clearInteractions.
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vc2,
+          originatingHostId: aliceHostId,
+        );
+
+        // The previously materialized prefix (lastSeen+1 .. observedCounter-1)
+        // must not be re-scanned — only the single-counter delta
+        // (observedCounter .. observedCounter) should hit the DB.
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            lastSeen + 1,
+            any(that: lessThanOrEqualTo(observedCounter - 1)),
+          ),
+        );
+        // The incremental delta IS materialized, so the largeGap log still
+        // fires once for the new range.
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('largeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.largeGap',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'suppresses log and DB work entirely when an identical gap is observed '
+      'again from a later entry',
+      () async {
+        // Simulates the stuck-watermark hot path: lastSeen never moves, and
+        // every incoming entry observes exactly the same counter value for
+        // the gapped host. After the first materialization, subsequent
+        // entries must produce zero DB reads for the gap range and zero
+        // verbose gap logs.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const vectorClock = VectorClock({aliceHostId: observedCounter});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        );
+        verifyNever(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('largeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.largeGap',
+          ),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('extremeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.extremeGap',
+          ),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('gapDetectedRange')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.gapDetected',
+          ),
+        );
+
+        // Critical: the short-circuit must NOT skip recording the originator
+        // counter itself — otherwise the row for `(alice, observedCounter)`
+        // never lands in the sequence log, the watermark cannot advance past
+        // it, and the next incoming entry re-enters the same stuck state.
+        final recorded =
+            verify(
+                  () => mockDb.recordSequenceEntry(captureAny()),
+                ).captured
+                .map((c) => c as SyncSequenceLogCompanion)
+                .where((c) => c.entryId.value == 'entry-second')
+                .toList();
+        expect(
+          recorded,
+          isNotEmpty,
+          reason:
+              'originator counter must be upserted even when the '
+              'materialization short-circuit fires',
+        );
+        expect(recorded.first.counter.value, observedCounter);
+      },
+    );
+
+    test(
+      'materializes only the incremental range when the watermark is stuck '
+      'but the observed counter advances',
+      () async {
+        const lastSeen = 10;
+        const firstObserved = lastSeen + SyncTuning.maxGapSize + 2;
+        const secondObserved = firstObserved + 5;
+        const vc1 = VectorClock({aliceHostId: firstObserved});
+        const vc2 = VectorClock({aliceHostId: secondObserved});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vc1,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vc2,
+          originatingHostId: aliceHostId,
+        );
+
+        // Must scan only the NEW range (firstObserved .. secondObserved - 1),
+        // never rescan the earlier (lastSeen+1 .. firstObserved - 1) segment.
+        verify(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            firstObserved,
+            secondObserved - 1,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            lastSeen + 1,
+            any(that: lessThan(firstObserved)),
+          ),
+        );
+      },
+    );
   });
 
   group('gap detection for offline hosts', () {
@@ -3383,6 +3672,196 @@ void main() {
     });
   });
 
+  group('retireExhaustedRequestedEntries', () {
+    test(
+      'delegates to syncDatabase with maxRequestCount and grace and returns '
+      'count',
+      () async {
+        const grace = Duration(seconds: 30);
+        when(
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: 7,
+            grace: grace,
+          ),
+        ).thenAnswer((_) async => 3);
+
+        final count = await service.retireExhaustedRequestedEntries(
+          maxRequestCount: 7,
+          grace: grace,
+        );
+
+        expect(count, 3);
+        verify(
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: 7,
+            grace: grace,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs and clears the materialized-bound cache when entries are retired '
+      'so a stuck gap can be rescanned once the retirement advances the '
+      'watermark',
+      () async {
+        // Prime the materialized-bound cache by running a large-gap
+        // materialization. Unlike `_lastCounterCache` (invalidated on every
+        // `recordSequenceEntry`), `_materializedUpperBound` only clears on
+        // TTL expiry or retirement — so a repeat-scan assertion against it
+        // actually proves retirement did the clearing work.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const primingVc = VectorClock({aliceHostId: observedCounter});
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        await service.recordReceivedEntry(
+          entryId: 'priming-entry',
+          vectorClock: primingVc,
+          originatingHostId: aliceHostId,
+        );
+
+        // Sanity check: a second identical-counter record hits the cached
+        // bound and does NOT rescan the range.
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+        await service.recordReceivedEntry(
+          entryId: 'pre-retire-check',
+          vectorClock: primingVc,
+          originatingHostId: aliceHostId,
+        );
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        );
+
+        // Retire: this must clear the materialized-bound cache.
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: any(named: 'maxRequestCount'),
+            grace: any(named: 'grace'),
+          ),
+        ).thenAnswer((_) async => 12);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final count = await service.retireExhaustedRequestedEntries();
+
+        expect(count, 12);
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('retired 12 entries')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.retireExhausted',
+          ),
+        ).called(1);
+
+        // After retirement, the same identical-counter scenario must now
+        // rescan the range — the bound was cleared. This is the assertion
+        // that can ONLY pass if retirement actually invalidated
+        // `_materializedUpperBound`, since `_lastCounterCache` is already
+        // invalidated by any concurrent `recordSequenceEntry` path.
+        clearInteractions(mockDb);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+
+        await service.recordReceivedEntry(
+          entryId: 'post-retire',
+          vectorClock: primingVc,
+          originatingHostId: aliceHostId,
+        );
+        verify(
+          () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test('does not log when no entries retired', () async {
+      when(
+        () => mockDb.retireExhaustedRequestedEntries(
+          maxRequestCount: any(named: 'maxRequestCount'),
+          grace: any(named: 'grace'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await service.retireExhaustedRequestedEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.retireExhausted',
+        ),
+      );
+    });
+  });
+
   group('host activity cache', () {
     test(
       'caches getHostLastSeen and reuses on subsequent calls',
@@ -3572,6 +4051,129 @@ void main() {
       expect(result, isNotNull);
       expect(result!.vclock, {myHostId: 42});
     });
+
+    test(
+      'caches the DB result so repeat lookups for the same entry do not '
+      're-query sync.sqlite',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-42'),
+        ).thenAnswer((_) async => 99);
+
+        final first = await service.getLastSentVectorClockForEntry('entry-42');
+        final second = await service.getLastSentVectorClockForEntry('entry-42');
+        final third = await service.getLastSentVectorClockForEntry('entry-42');
+
+        expect(first!.vclock, {myHostId: 99});
+        expect(second!.vclock, {myHostId: 99});
+        expect(third!.vclock, {myHostId: 99});
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-42'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'caches a null result so entries that have never been sent do not '
+      'thrash the DB on every outbox enqueue',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'never-sent'),
+        ).thenAnswer((_) async => null);
+
+        await service.getLastSentVectorClockForEntry('never-sent');
+        await service.getLastSentVectorClockForEntry('never-sent');
+
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'never-sent'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'recordSentEntry refreshes the cache so a follow-up outbox lookup '
+      'reflects the just-sent counter without a DB round-trip',
+      () async {
+        // First lookup: seed the cache at 50.
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-seed'),
+        ).thenAnswer((_) async => 50);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        final seeded = await service.getLastSentVectorClockForEntry(
+          'entry-seed',
+        );
+        expect(seeded!.vclock, {myHostId: 50});
+
+        // Record a newer sent counter.
+        await service.recordSentEntry(
+          entryId: 'entry-seed',
+          vectorClock: const VectorClock({myHostId: 57}),
+        );
+
+        // Subsequent lookup must see 57 from the cache — no extra DB call.
+        final refreshed = await service.getLastSentVectorClockForEntry(
+          'entry-seed',
+        );
+        expect(refreshed!.vclock, {myHostId: 57});
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-seed'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'cache honors the TTL window shared with the other host caches',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-ttl'),
+        ).thenAnswer((_) async => 7);
+
+        await service.getLastSentVectorClockForEntry('entry-ttl');
+        service.expireCacheForTesting();
+        await service.getLastSentVectorClockForEntry('entry-ttl');
+
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-ttl'),
+        ).called(2);
+      },
+    );
+
+    test(
+      'recordSentEntry does not downgrade the cached counter when a lower '
+      'counter is re-recorded (superseded by a newer send in flight)',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-nodown'),
+        ).thenAnswer((_) async => 100);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Seed the cache at 100.
+        final seeded = await service.getLastSentVectorClockForEntry(
+          'entry-nodown',
+        );
+        expect(seeded!.vclock[myHostId], 100);
+
+        // Record a LOWER counter — must not downgrade the cache.
+        await service.recordSentEntry(
+          entryId: 'entry-nodown',
+          vectorClock: const VectorClock({myHostId: 50}),
+        );
+
+        final afterLower = await service.getLastSentVectorClockForEntry(
+          'entry-nodown',
+        );
+        expect(afterLower!.vclock[myHostId], 100);
+        // Still only the one DB call from the initial seed.
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-nodown'),
+        ).called(1);
+      },
+    );
   });
 
   group('cache invalidation after marking covered counters', () {

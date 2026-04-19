@@ -156,11 +156,29 @@ class OutboxService {
       unawaited(
         enqueueNextSendRequest(delay: SyncTuning.outboxDbNudgeDebounce),
       );
-      _loggingService.captureEvent(
-        'dbNudge count=$count → enqueue',
-        domain: 'OUTBOX',
-        subDomain: 'dbNudge',
-      );
+      // Coalesce: log only when the count crosses to a new magnitude bucket
+      // or a quiet period has elapsed. The enqueue behavior is unchanged;
+      // only the log cardinality drops from ~one-per-enqueue to a handful
+      // per minute on busy periods.
+      final now = DateTime.now();
+      final lastAt = _lastLoggedDbNudgeAt;
+      final last = _lastLoggedDbNudgeCount;
+      final elapsedOk =
+          lastAt == null || now.difference(lastAt) >= _coalescedLogMinInterval;
+      final crossedThreshold =
+          last == null ||
+          (count == 1 && last != 1) ||
+          (count >= 10 && last < 10) ||
+          (count >= 100 && last < 100);
+      if (elapsedOk || crossedThreshold) {
+        _lastLoggedDbNudgeCount = count;
+        _lastLoggedDbNudgeAt = now;
+        _loggingService.captureEvent(
+          'dbNudge count=$count → enqueue',
+          domain: 'OUTBOX',
+          subDomain: 'dbNudge',
+        );
+      }
     });
   }
 
@@ -197,6 +215,17 @@ class OutboxService {
   Timer? _watchdogTimer;
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
+
+  // Coalesce repetitive observability logs. Both `sendNext.state` and
+  // `dbNudge` are invoked on every event-loop tick of the outbox, and their
+  // diagnostic value is in detecting transitions, not individual firings.
+  // Without coalescing, together they contribute roughly 17k lines/day on a
+  // quiet desktop — pure noise that drowns out real signal.
+  String? _lastLoggedSendNextState;
+  DateTime? _lastLoggedSendNextStateAt;
+  int? _lastLoggedDbNudgeCount;
+  DateTime? _lastLoggedDbNudgeAt;
+  static const Duration _coalescedLogMinInterval = Duration(seconds: 30);
 
   void _syncLog(String message, {String? subDomain}) {
     _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
@@ -465,18 +494,41 @@ class OutboxService {
         return;
       }
 
-      // State snapshot to aid debugging of stuck outbox scenarios.
+      // State snapshot to aid debugging of stuck outbox scenarios. Only
+      // log when the tuple changes (transitions matter, steady state does
+      // not), or after a long quiet period so the line does not disappear
+      // entirely when the state is stable. The `pending` probe is a DB
+      // query, so skip it entirely on ticks where the cheaper
+      // (loggedIn, canProc) pair is unchanged and the quiet window has
+      // not elapsed.
       try {
-        final loggedIn = _matrixService?.isLoggedIn() ?? false;
+        // When no Matrix service is wired (a custom `messageSender` was
+        // injected instead), `sendNext` can still deliver, so treat the
+        // absence as "logged in" for this diagnostic line. The actual
+        // login-gate short-circuit below still uses the strict check.
+        final loggedIn = _matrixService?.isLoggedIn() ?? true;
         final canProc = _activityGate.canProcess;
-        final hasPending = (await _repository.fetchPending(
-          limit: 1,
-        )).isNotEmpty;
-        _loggingService.captureEvent(
-          'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
-          domain: 'OUTBOX',
-          subDomain: 'sendNext',
-        );
+        final partialKey = 'li=$loggedIn cp=$canProc';
+        final now = DateTime.now();
+        final lastAt = _lastLoggedSendNextStateAt;
+        final lastState = _lastLoggedSendNextState;
+        final partialChanged =
+            lastState == null || !lastState.startsWith('$partialKey ');
+        final elapsedOk =
+            lastAt == null ||
+            now.difference(lastAt) >= _coalescedLogMinInterval;
+        if (partialChanged || elapsedOk) {
+          final hasPending = (await _repository.fetchPending(
+            limit: 1,
+          )).isNotEmpty;
+          _lastLoggedSendNextState = '$partialKey p=$hasPending';
+          _lastLoggedSendNextStateAt = now;
+          _loggingService.captureEvent(
+            'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
+            domain: 'OUTBOX',
+            subDomain: 'sendNext',
+          );
+        }
       } catch (_) {
         // best-effort only
       }

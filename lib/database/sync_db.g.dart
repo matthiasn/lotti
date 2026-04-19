@@ -1617,9 +1617,9 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_sync_sequence_log_payload_resolution',
     'CREATE INDEX idx_sync_sequence_log_payload_resolution ON sync_sequence_log (entry_id, payload_type, status) WHERE entry_id IS NOT NULL',
   );
-  late final Index idxSyncSequenceLogHostEntryStatus = Index(
-    'idx_sync_sequence_log_host_entry_status',
-    'CREATE INDEX idx_sync_sequence_log_host_entry_status ON sync_sequence_log (host_id, entry_id, status) WHERE entry_id IS NOT NULL',
+  late final Index idxSyncSequenceLogHostEntryStatusCounter = Index(
+    'idx_sync_sequence_log_host_entry_status_counter',
+    'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter ON sync_sequence_log (host_id, entry_id, counter DESC, status) WHERE entry_id IS NOT NULL',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1632,7 +1632,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxOutboxStatusPriorityCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogPayloadResolution,
-    idxSyncSequenceLogHostEntryStatus,
+    idxSyncSequenceLogHostEntryStatusCounter,
   ];
 }
 

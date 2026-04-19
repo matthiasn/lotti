@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 10);
+        expect(db.schemaVersion, 11);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
+      expect(versionResult.first.read<int>('user_version'), 11);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -165,7 +165,7 @@ void main() {
             "'idx_outbox_status_priority_created_at', "
             "'idx_sync_sequence_log_actionable_status_created_at', "
             "'idx_sync_sequence_log_payload_resolution', "
-            "'idx_sync_sequence_log_host_entry_status')",
+            "'idx_sync_sequence_log_host_entry_status_counter')",
           )
           .get();
       final indexNames = indexResults
@@ -177,7 +177,7 @@ void main() {
           'idx_outbox_status_priority_created_at',
           'idx_sync_sequence_log_actionable_status_created_at',
           'idx_sync_sequence_log_payload_resolution',
-          'idx_sync_sequence_log_host_entry_status',
+          'idx_sync_sequence_log_host_entry_status_counter',
         }),
       );
 
@@ -290,7 +290,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
+      expect(versionResult.first.read<int>('user_version'), 11);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -369,7 +369,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
+      expect(versionResult.first.read<int>('user_version'), 11);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -447,7 +447,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
+      expect(versionResult.first.read<int>('user_version'), 11);
 
       final indexResults = await db
           .customSelect(
@@ -472,87 +472,216 @@ void main() {
       await db.close();
     });
 
-    test('v10 migration adds host_entry_status index', () async {
-      final dbFile = File(path.join(testDirectory!.path, 'test_sync_v10.db'));
-      final sqlite = sqlite3.open(dbFile.path);
+    test(
+      'v10 migration adds host_entry_status index when stepping v9 → v10 '
+      'before the v11 swap',
+      () async {
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v10.db'));
+        final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT,
-          outbox_entry_id TEXT,
-          payload_size INTEGER,
-          priority INTEGER NOT NULL DEFAULT 2
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS sync_sequence_log (
-          host_id TEXT NOT NULL,
-          counter INTEGER NOT NULL,
-          entry_id TEXT,
-          payload_type INTEGER NOT NULL DEFAULT 0,
-          originating_host_id TEXT,
-          status INTEGER NOT NULL DEFAULT 0,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          request_count INTEGER NOT NULL DEFAULT 0,
-          last_requested_at INTEGER,
-          json_path TEXT,
-          PRIMARY KEY (host_id, counter)
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS host_activity (
-          host_id TEXT NOT NULL PRIMARY KEY,
-          last_seen_at INTEGER NOT NULL
-        )
-      ''');
-      // Pre-existing indices from v8/v9
-      sqlite.execute(
-        'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
-        'ON sync_sequence_log (status, created_at) '
-        'WHERE status IN (1, 2)',
-      );
-      sqlite.execute(
-        'CREATE INDEX idx_sync_sequence_log_payload_resolution '
-        'ON sync_sequence_log (entry_id, payload_type, status) '
-        'WHERE entry_id IS NOT NULL',
-      );
-      sqlite.execute(
-        'CREATE INDEX idx_outbox_status_priority_created_at '
-        'ON outbox (status, priority, created_at)',
-      );
-      sqlite.execute('PRAGMA user_version = 9');
-      sqlite.dispose();
-
-      final db = SyncDatabase(overriddenFilename: 'test_sync_v10.db');
-
-      final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 10);
-
-      final indexResults = await db
-          .customSelect(
-            "SELECT name, sql FROM sqlite_master WHERE type='index' "
-            "AND name = 'idx_sync_sequence_log_host_entry_status'",
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT,
+            outbox_entry_id TEXT,
+            payload_size INTEGER,
+            priority INTEGER NOT NULL DEFAULT 2
           )
-          .get();
-      expect(indexResults, hasLength(1));
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            payload_type INTEGER NOT NULL DEFAULT 0,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            json_path TEXT,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS host_activity (
+            host_id TEXT NOT NULL PRIMARY KEY,
+            last_seen_at INTEGER NOT NULL
+          )
+        ''');
+        // Pre-existing indices from v8/v9
+        sqlite.execute(
+          'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
+          'ON sync_sequence_log (status, created_at) '
+          'WHERE status IN (1, 2)',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_sync_sequence_log_payload_resolution '
+          'ON sync_sequence_log (entry_id, payload_type, status) '
+          'WHERE entry_id IS NOT NULL',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_outbox_status_priority_created_at '
+          'ON outbox (status, priority, created_at)',
+        );
+        sqlite.execute('PRAGMA user_version = 9');
+        sqlite.dispose();
 
-      // Verify the index SQL includes the WHERE clause
-      final indexSql = indexResults.first.readNullable<String>('sql');
-      expect(indexSql, isNotNull);
-      expect(indexSql, contains('host_id'));
-      expect(indexSql, contains('entry_id'));
-      expect(indexSql, contains('status'));
-      expect(indexSql, contains('WHERE'));
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v10.db');
 
-      await db.close();
-    });
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 11);
+
+        // v11 replaces the v10 index with the covering variant; when the
+        // migration steps v9 → v11 in one run, the v10 index must no longer
+        // exist (dropped by the v11 step) and the v11 covering index must
+        // be present instead.
+        final oldIndex = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_host_entry_status'",
+            )
+            .get();
+        expect(oldIndex, isEmpty);
+
+        final coveringIndex = await db
+            .customSelect(
+              "SELECT name, sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_host_entry_status_counter'",
+            )
+            .get();
+        expect(coveringIndex, hasLength(1));
+        final indexSql = coveringIndex.first.readNullable<String>('sql');
+        expect(indexSql, isNotNull);
+        expect(indexSql, contains('host_id'));
+        expect(indexSql, contains('entry_id'));
+        expect(indexSql, contains('status'));
+        expect(indexSql, contains('counter'));
+        expect(indexSql, contains('WHERE'));
+        // Column order matters for the `ORDER BY counter DESC LIMIT 1` plan
+        // used by `getLastSentCounterForEntry`: counter must sit between the
+        // `(host_id, entry_id)` equality prefix and the `status` filter.
+        expect(
+          indexSql,
+          contains('host_id, entry_id, counter DESC, status'),
+        );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v11 migration drops the v10 prefix index and adds the covering '
+      'counter index',
+      () async {
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v11.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT,
+            outbox_entry_id TEXT,
+            payload_size INTEGER,
+            priority INTEGER NOT NULL DEFAULT 2
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            payload_type INTEGER NOT NULL DEFAULT 0,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            json_path TEXT,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS host_activity (
+            host_id TEXT NOT NULL PRIMARY KEY,
+            last_seen_at INTEGER NOT NULL
+          )
+        ''');
+        // Full v10 index set
+        sqlite.execute(
+          'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
+          'ON sync_sequence_log (status, created_at) '
+          'WHERE status IN (1, 2)',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_sync_sequence_log_payload_resolution '
+          'ON sync_sequence_log (entry_id, payload_type, status) '
+          'WHERE entry_id IS NOT NULL',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_outbox_status_priority_created_at '
+          'ON outbox (status, priority, created_at)',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_sync_sequence_log_host_entry_status '
+          'ON sync_sequence_log (host_id, entry_id, status) '
+          'WHERE entry_id IS NOT NULL',
+        );
+        sqlite.execute('PRAGMA user_version = 10');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v11.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 11);
+
+        final oldIndex = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_host_entry_status'",
+            )
+            .get();
+        expect(
+          oldIndex,
+          isEmpty,
+          reason: 'v11 migration must DROP the v10 prefix index',
+        );
+
+        final coveringIndex = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_host_entry_status_counter'",
+            )
+            .get();
+        expect(coveringIndex, hasLength(1));
+        final indexSql = coveringIndex.first.readNullable<String>('sql');
+        expect(indexSql, isNotNull);
+        expect(indexSql, contains('counter'));
+        expect(
+          indexSql,
+          contains('host_id, entry_id, counter DESC, status'),
+        );
+
+        await db.close();
+      },
+    );
   });
 }

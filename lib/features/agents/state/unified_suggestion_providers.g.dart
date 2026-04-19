@@ -89,7 +89,7 @@ final class UnifiedSuggestionListProvider
 }
 
 String _$unifiedSuggestionListHash() =>
-    r'7739a74b6a26b9f85557a4b630e9d82cfc7c87a8';
+    r'c351c4a8d543154ac26b1c49a5bf30dfa6842c9a';
 
 /// Builds a [UnifiedSuggestionList] for a task.
 ///

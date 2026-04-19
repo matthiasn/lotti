@@ -51,10 +51,22 @@ class AttachmentIngestor {
   final Queue<String> _downloadQueue = Queue<String>();
   final Map<String, _DownloadRequest> _pendingDownloads =
       <String, _DownloadRequest>{};
+  // Bounded insertion-ordered LRU of recently handled attachment event ids.
+  // Dart's default `Set` is a `LinkedHashSet`, so a single structure can
+  // back both the presence check and the oldest-first eviction order.
   final Set<String> _handledAttachmentEventIds = <String>{};
-  final Queue<String> _handledAttachmentEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
+
+  // Matrix Event ids whose cached file entry was evicted from the SDK's
+  // local store. The desktop stack traces show `Event._getCachedFile`
+  // raising a bare `Exception("Can not try to send again. File is no
+  // longer cached.")` during our `downloadAndDecryptAttachment()` call
+  // chain; subsequent attempts for the same event id will throw the same
+  // exception immediately, so by recording the id here we skip the SDK
+  // round-trip, stack-trace generation, and error-log emission entirely.
+  // Bounded by the same LRU window as `_handledAttachmentEventIds`.
+  final Set<String> _cacheEvictedEventIds = <String>{};
 
   /// Tracks paths with an in-flight immediate (non-queued) save to prevent
   /// concurrent `_saveAttachment()` calls for the same file from `process()`.
@@ -180,7 +192,7 @@ class AttachmentIngestor {
     _downloadQueue.clear();
     _pendingDownloads.clear();
     _handledAttachmentEventIds.clear();
-    _handledAttachmentEventOrder.clear();
+    _cacheEvictedEventIds.clear();
     _queuedKeys.clear();
     _inFlightSavePaths.clear();
     _idleCompleter?.complete();
@@ -263,11 +275,9 @@ class AttachmentIngestor {
 
   void _recordHandledAttachmentEvent(String eventId) {
     if (_handledAttachmentEventIds.add(eventId)) {
-      _handledAttachmentEventOrder.addLast(eventId);
-      while (_handledAttachmentEventOrder.length >
+      while (_handledAttachmentEventIds.length >
           _handledAttachmentEventCapacity) {
-        final oldest = _handledAttachmentEventOrder.removeFirst();
-        _handledAttachmentEventIds.remove(oldest);
+        _handledAttachmentEventIds.remove(_handledAttachmentEventIds.first);
       }
     }
   }
@@ -328,6 +338,13 @@ class AttachmentIngestor {
 
     final attachmentMimetype = event.attachmentMimetype;
     if (attachmentMimetype.isEmpty) {
+      return false;
+    }
+
+    // Cheap negative cache: we already observed the matrix SDK evict this
+    // event's encrypted blob. Every subsequent attempt would throw the same
+    // "File is no longer cached" error with no real work done, just noise.
+    if (_cacheEvictedEventIds.contains(event.eventId)) {
       return false;
     }
 
@@ -402,6 +419,22 @@ class AttachmentIngestor {
       );
       return true;
     } catch (e, st) {
+      // Matrix SDK's `Event._getCachedFile` throws with this message when
+      // the event's cached file entry has been evicted. Record the event
+      // id so we don't keep paying the exception-plus-stacktrace cost for
+      // the rest of the replay wave. Downgrade to a plain info event —
+      // the underlying condition is not actionable and self-recovers once
+      // a newer event for the same path arrives.
+      if (_isCacheEvictedError(e)) {
+        _recordCacheEvictedEvent(event.eventId);
+        logging.captureEvent(
+          'cacheEvicted path=$relativePath eventId=${event.eventId}',
+          domain: syncLoggingDomain,
+          subDomain: 'attachment.save.cacheEvicted',
+        );
+        return false;
+      }
+
       // Log but don't throw - SmartJournalEntityLoader can retry later
       if (e is FileSystemException && e.osError?.errorCode == 24) {
         final limits = readFileDescriptorLimits();
@@ -420,6 +453,19 @@ class AttachmentIngestor {
         stackTrace: st,
       );
       return false;
+    }
+  }
+
+  static bool _isCacheEvictedError(Object e) {
+    final message = e.toString();
+    return message.contains('File is no longer cached');
+  }
+
+  void _recordCacheEvictedEvent(String eventId) {
+    if (_cacheEvictedEventIds.add(eventId)) {
+      while (_cacheEvictedEventIds.length > _handledAttachmentEventCapacity) {
+        _cacheEvictedEventIds.remove(_cacheEvictedEventIds.first);
+      }
     }
   }
 }

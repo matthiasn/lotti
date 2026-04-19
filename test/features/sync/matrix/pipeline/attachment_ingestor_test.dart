@@ -566,6 +566,205 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'downgrades "File is no longer cached" to a cacheEvicted info event '
+      'and suppresses subsequent retries for the same event id',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_cache_evict');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evicted-1');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/evicted/file.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(ev.downloadAndDecryptAttachment).thenThrow(
+          Exception('Can not try to send again. File is no longer cached.'),
+        );
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/evicted/file.json'),
+        ).thenReturn(false);
+
+        // A fresh ingestor so `_handledAttachmentEventIds` is empty — the
+        // repair branch normally requires a prior handle, but the inbound
+        // path still runs for new events. We invoke `process` twice: the
+        // second call hits the `_cacheEvictedEventIds` short-circuit.
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        // Force the local file to be absent so the repair branch would
+        // trigger on a subsequent pass.
+        final firstResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        expect(firstResult, isFalse);
+
+        // First failure: downgraded to info event, NOT captureException.
+        verify(
+          () => logging.captureEvent(
+            any<String>(that: contains('cacheEvicted')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.save.cacheEvicted',
+          ),
+        ).called(1);
+        verifyNever(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.save',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        );
+
+        // Re-delete local file so the repair branch would re-enter _saveAttachment.
+        final repaired = File('${tmp.path}/evicted/file.json');
+        if (repaired.existsSync()) repaired.deleteSync();
+
+        // Second pass: the negative cache must short-circuit BEFORE the SDK
+        // round-trip. That means downloadAndDecryptAttachment is NOT called
+        // a second time.
+        clearInteractions(ev);
+        when(() => ev.eventId).thenReturn('evicted-1');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/evicted/file.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(ev.downloadAndDecryptAttachment).thenThrow(
+          Exception('Can not try to send again. File is no longer cached.'),
+        );
+
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        verifyNever(ev.downloadAndDecryptAttachment);
+      },
+    );
+
+    test(
+      '_cacheEvictedEventIds LRU evicts the oldest entry when capacity is '
+      'exceeded',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_evict_lru');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        // Capacity of 2 → the 3rd eviction bumps the 1st out.
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tmp,
+          handledEventCapacity: 2,
+        );
+
+        Future<void> triggerEviction(String eventId, String relPath) async {
+          final ev = MockEvent();
+          when(() => ev.eventId).thenReturn(eventId);
+          when(() => ev.content).thenReturn({
+            'relativePath': relPath,
+            'msgtype': 'm.file',
+          });
+          when(() => ev.attachmentMimetype).thenReturn('application/json');
+          when(() => ev.senderId).thenReturn('@other:u');
+          when(ev.downloadAndDecryptAttachment).thenThrow(
+            Exception('Can not try to send again. File is no longer cached.'),
+          );
+
+          final desc = MockDescriptorCatchUpManager();
+          when(() => desc.removeIfPresent(relPath)).thenReturn(false);
+
+          await ingestor.process(
+            event: ev,
+            logging: logging,
+            attachmentIndex: AttachmentIndex(logging: logging),
+            descriptorCatchUp: desc,
+            scheduleLiveScan: () {},
+            retryNow: () async {},
+          );
+        }
+
+        await triggerEviction('ev-1', '/e/1.json');
+        await triggerEviction('ev-2', '/e/2.json');
+        await triggerEviction('ev-3', '/e/3.json');
+
+        // ev-1 should have been evicted from the cache; a re-arrival would
+        // now pay the full SDK + captureEvent path again. We assert that by
+        // driving a fourth pass for ev-1 and checking `downloadAndDecryptAttachment`
+        // IS called (cache miss = re-attempted).
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('ev-1');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/e/1.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(ev.downloadAndDecryptAttachment).thenThrow(
+          Exception('Can not try to send again. File is no longer cached.'),
+        );
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/e/1.json')).thenReturn(false);
+
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: AttachmentIndex(logging: logging),
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        verify(ev.downloadAndDecryptAttachment).called(1);
+      },
+    );
+
     test('handles download exception gracefully', () async {
       final logging = MockLoggingService();
       when(

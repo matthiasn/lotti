@@ -40,6 +40,7 @@ void main() {
       ),
     );
     registerFallbackValue(<({String hostId, int counter})>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -57,6 +58,14 @@ void main() {
     when(
       () => mockSyncDatabase.getPendingBackfillEntries(),
     ).thenAnswer((_) async => {});
+    // Default: nothing to retire on each cycle. The request service calls
+    // this at the top of every `_processBackfillRequests` pass to let the
+    // contiguous-prefix watermark advance past permanently stuck counters.
+    when(
+      () => mockSequenceService.retireExhaustedRequestedEntries(
+        maxRequestCount: any(named: 'maxRequestCount'),
+      ),
+    ).thenAnswer((_) async => 0);
     when(
       () => mockLogging.captureEvent(
         any<String>(),
@@ -75,6 +84,47 @@ void main() {
   });
 
   group('BackfillRequestService', () {
+    test(
+      'retires exhausted requested entries before loading the missing batch '
+      'so a permanently stuck gap does not block the watermark indefinitely',
+      () async {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+        );
+        addTearDown(service.dispose);
+
+        // `processFullBackfill` runs with `useLimits: false`, which calls
+        // `getMissingEntries` (not the `WithLimits` variant); stub the
+        // right selector and assert the retirement fires *before* the
+        // batch load so an exhausted row is flipped to `unresolvable`
+        // before a new backfill cycle picks it up.
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.processFullBackfill();
+
+        verifyInOrder([
+          () => mockSequenceService.retireExhaustedRequestedEntries(
+            maxRequestCount: any(named: 'maxRequestCount'),
+          ),
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ]);
+      },
+    );
+
     test('timer fires at configured interval', () {
       fakeAsync((async) {
         final service = BackfillRequestService(
