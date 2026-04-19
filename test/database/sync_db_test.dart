@@ -3642,6 +3642,70 @@ void main() {
     );
 
     test(
+      'retires rows whose last_requested_at was set by '
+      'batchIncrementRequestCounts (end-to-end timestamp-encoding regression)',
+      () async {
+        // Regression for the ms/seconds encoding mismatch:
+        // `batchIncrementRequestCounts` used to write raw
+        // `millisecondsSinceEpoch`, while `retireExhaustedRequestedEntries`
+        // compares against Drift's default seconds-encoded DateTime. The two
+        // silently disagreed by a factor of 1000, so rows requested via the
+        // real production path could never qualify for retirement regardless
+        // of how old they were.
+        const hostId = 'host-ms-regression';
+        const counter = 1;
+        // Seed a missing row that we then drive through the real request
+        // path `batchIncrementRequestCounts` exactly as the backfill service
+        // does.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(counter),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2020)),
+            updatedAt: Value(DateTime(2020)),
+            requestCount: const Value(9),
+          ),
+        );
+
+        // Bump to request_count == 10 via the production path and stamp
+        // last_requested_at with DateTime.now() (the method's own clock).
+        await database.batchIncrementRequestCounts([
+          (hostId: hostId, counter: counter),
+        ]);
+
+        final afterIncrement = await database.getEntryByHostAndCounter(
+          hostId,
+          counter,
+        );
+        expect(afterIncrement!.requestCount, 10);
+        expect(afterIncrement.status, SyncSequenceStatus.requested.index);
+        expect(afterIncrement.lastRequestedAt, isNotNull);
+        // The roundtripped value must be readable as a sane 2020-or-later
+        // DateTime — if encoding was in ms, Drift's seconds-decoded column
+        // would report a year ~53700.
+        expect(
+          afterIncrement.lastRequestedAt!.year,
+          inInclusiveRange(2020, 2100),
+        );
+
+        // Advance the caller's clock past the grace window and run retire.
+        final futureNow = afterIncrement.lastRequestedAt!.add(
+          const Duration(hours: 2),
+        );
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: futureNow,
+        );
+        expect(retired, 1);
+        expect(
+          (await database.getEntryByHostAndCounter(hostId, counter))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+      },
+    );
+
+    test(
       'does not retire a row with no recorded last_requested_at — we have '
       'no evidence a request ever reached the outbox',
       () async {

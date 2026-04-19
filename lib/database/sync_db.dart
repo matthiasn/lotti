@@ -494,7 +494,13 @@ class SyncDatabase extends _$SyncDatabase {
     if (entries.isEmpty) return;
 
     final now = DateTime.now();
-    final nowMs = now.millisecondsSinceEpoch;
+    // Drift's default `dateTime()` column encodes values as Unix seconds
+    // (see the `store_date_time_values_as_text` guide). Anything written
+    // via raw `customStatement` bindings must match that encoding, or
+    // later comparisons like `retireExhaustedRequestedEntries`' cutoff
+    // (bound via `Variable.withDateTime(...)`) will compare milliseconds
+    // against seconds and silently never match.
+    final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
     await batch((b) {
       for (final entry in entries) {
         b.customStatement(
@@ -506,8 +512,8 @@ class SyncDatabase extends _$SyncDatabase {
           'WHERE host_id = ? AND counter = ?',
           [
             SyncSequenceStatus.requested.index,
-            nowMs,
-            nowMs,
+            nowSeconds,
+            nowSeconds,
             entry.hostId,
             entry.counter,
           ],

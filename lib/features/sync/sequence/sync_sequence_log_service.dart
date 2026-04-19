@@ -1117,7 +1117,7 @@ class SyncSequenceLogService {
     return count;
   }
 
-  /// Flip missing/requested rows that have been asked for more than
+  /// Flip missing/requested rows that have been asked for at least
   /// [maxRequestCount] times to `unresolvable` so the contiguous-prefix
   /// watermark can advance past them. Without this step, a permanent
   /// pre-history gap keeps `getLastCounterForHost` stuck, which then
