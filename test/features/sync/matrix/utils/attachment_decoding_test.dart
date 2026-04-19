@@ -19,13 +19,13 @@ void main() {
   group('decodeAttachmentBytes', () {
     test(
       'returns bytes verbatim when no encoding header is present',
-      () {
+      () async {
         final logging = MockLoggingService();
         final event = _MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{});
 
         final payload = Uint8List.fromList([1, 2, 3, 4, 5]);
-        final decoded = decodeAttachmentBytes(
+        final decoded = await decodeAttachmentBytes(
           event: event,
           downloadedBytes: payload,
           relativePath: '/foo.json',
@@ -45,7 +45,7 @@ void main() {
 
     test(
       'returns bytes verbatim for unknown encoding values',
-      () {
+      () async {
         // Forward-compat: a future sender might add a new encoding; older
         // receivers must pass the bytes through untouched rather than
         // panic or corrupt the file.
@@ -56,7 +56,7 @@ void main() {
         });
 
         final payload = Uint8List.fromList([9, 8, 7]);
-        final decoded = decodeAttachmentBytes(
+        final decoded = await decodeAttachmentBytes(
           event: event,
           downloadedBytes: payload,
           relativePath: '/bar.json',
@@ -69,7 +69,7 @@ void main() {
 
     test(
       'decompresses a gzipped payload when encoding=gzip and logs ratio',
-      () {
+      () async {
         final logging = MockLoggingService();
         when(
           () => logging.captureEvent(
@@ -91,7 +91,7 @@ void main() {
         ).join().codeUnits;
         final compressed = Uint8List.fromList(gzip.encode(original));
 
-        final decoded = decodeAttachmentBytes(
+        final decoded = await decodeAttachmentBytes(
           event: event,
           downloadedBytes: compressed,
           relativePath: '/agent_entities/foo.json',
@@ -119,7 +119,7 @@ void main() {
 
     test(
       'regression: gzipped JSON no longer explodes a downstream utf8.decode',
-      () {
+      () async {
         // This is the exact shape of the production bug that this helper
         // exists to prevent. Pre-fix, a caller would receive the raw gzip
         // bytes (0x1f 0x8b ...) and feed them to utf8.decode, which throws
@@ -142,7 +142,7 @@ void main() {
           gzip.encode(originalJson.codeUnits),
         );
 
-        final decoded = decodeAttachmentBytes(
+        final decoded = await decodeAttachmentBytes(
           event: event,
           downloadedBytes: compressed,
           relativePath: '/agent_entities/x.json',

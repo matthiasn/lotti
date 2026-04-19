@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -438,84 +440,64 @@ class MatrixStreamProcessor {
     var syncPayloadsApplied = 0;
     var syncPayloadsSkippedCompleted = 0;
 
-    // Wrap the per-event apply loop in a single JournalDb transaction so
-    // that Drift coalesces the stream emissions produced by per-event
-    // writes into one notification per slice. Without this, a slice of N
-    // events fires N separate writer commits, each of which wakes every
-    // journal watcher/controller and queues up readers behind the writer
-    // lock. Per-event errors are already caught inside
-    // `_processSyncPayloadEvent`, so the transaction only sees an
-    // uncaught throw if commit itself fails — in which case rolling back
-    // the slice is the correct behaviour.
+    // Wrap the per-event apply loop in JournalDb transactions so that Drift
+    // coalesces the stream emissions produced by per-event writes. A single
+    // transaction over the whole ordered slice holds the writer lock for the
+    // full duration, which blocks user-driven journal writes (entry saves)
+    // until catch-up finishes — on slices of 80+ events that is several
+    // seconds where the app feels frozen. Commit in bounded chunks so the
+    // writer lock releases between chunks and a concurrent user write can
+    // interleave, while still coalescing stream emissions per chunk.
+    // Per-event errors are already caught inside `_processSyncPayloadEvent`,
+    // so a chunk rolls back only when the underlying commit itself fails —
+    // the unaffected chunks before it stay committed, which is the desired
+    // recovery behaviour (we make forward progress on the tail once the
+    // failing chunk's retry path catches up).
     //
-    // IDs to record as completed *after* the transaction commits. Recording
-    // inside the transaction would leave these in `_completedSyncIds` even
-    // if the commit rolls back, causing later ingestion paths to skip
+    // `completedSyncIds` collects per-chunk IDs and the `_recordCompletedSync`
+    // call is deferred until after each chunk's transaction commits.
+    // Recording inside the transaction would leave IDs in `_completedSyncIds`
+    // even if the commit rolled back, causing later ingestion paths to skip
     // events whose DB writes never persisted.
     final completedSyncIds = <String>[];
-    await _journalDb.transaction(() async {
-      for (final e in ordered) {
-        final ts = TimelineEventOrdering.timestamp(e);
-        final id = e.eventId;
-        final content = e.content;
-        var processedOk = true;
-        var treatAsHandled =
-            false; // allow advancement even if skipped by retry cap
-        var isSyncPayloadEvent = false;
+    const chunkSize = SyncTuning.processOrderedChunkSize;
+    for (
+      var chunkStart = 0;
+      chunkStart < ordered.length;
+      chunkStart += chunkSize
+    ) {
+      final chunkEnd = math.min(chunkStart + chunkSize, ordered.length);
+      final chunkCompletedIds = <String>[];
+      await _journalDb.transaction(() async {
+        for (var i = chunkStart; i < chunkEnd; i++) {
+          final e = ordered[i];
+          final ts = TimelineEventOrdering.timestamp(e);
+          final id = e.eventId;
+          final content = e.content;
+          var processedOk = true;
+          var treatAsHandled =
+              false; // allow advancement even if skipped by retry cap
+          var isSyncPayloadEvent = false;
 
-        // If this looks like a sync payload and another ingestion path is already
-        // processing it, skip to avoid duplicate applies.
-        final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(e);
-        final wasSuppressed = suppressedIds.contains(id);
-        if (!wasSuppressed &&
-            isPotentialSync &&
-            _inFlightSyncIds.contains(id)) {
-          // Defer; the completing path will record completion and advancement.
-          continue;
-        }
+          // If this looks like a sync payload and another ingestion path is already
+          // processing it, skip to avoid duplicate applies.
+          final isPotentialSync = ec.MatrixEventClassifier.isSyncPayloadEvent(
+            e,
+          );
+          final wasSuppressed = suppressedIds.contains(id);
+          if (!wasSuppressed &&
+              isPotentialSync &&
+              _inFlightSyncIds.contains(id)) {
+            // Defer; the completing path will record completion and advancement.
+            continue;
+          }
 
-        if (wasSuppressed) {
-          isSyncPayloadEvent = isPotentialSync;
-          processedOk = true;
-          treatAsHandled = true;
-        } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-            content['msgtype'] == syncMessageType) {
-          // Skip already-completed sync events to avoid redundant logging
-          // and DB checks.
-          if (wasCompletedSync(id)) {
-            isSyncPayloadEvent = true;
+          if (wasSuppressed) {
+            isSyncPayloadEvent = isPotentialSync;
             processedOk = true;
             treatAsHandled = true;
-            syncPayloadsSkippedCompleted++;
-          } else {
-            isSyncPayloadEvent = true;
-            syncPayloadEventsSeen++;
-            _inFlightSyncIds.add(id);
-            try {
-              final outcome = await _processSyncPayloadEvent(e);
-              processedOk = outcome.processedOk;
-              treatAsHandled = outcome.treatAsHandled;
-              if (processedOk) syncPayloadsApplied++;
-              if (outcome.hadFailure) hadFailure = true;
-              if (outcome.failureDelta > 0) {
-                batchFailures += outcome.failureDelta;
-              }
-              final due = outcome.nextDue;
-              final prev = earliestNextDue;
-              if (due != null && (prev == null || due.isBefore(prev))) {
-                earliestNextDue = due;
-              }
-            } finally {
-              _inFlightSyncIds.remove(id);
-            }
-          }
-        } else {
-          // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
-          final validFallback =
-              ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
-              content['msgtype'] != syncMessageType;
-
-          if (validFallback) {
+          } else if (ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+              content['msgtype'] == syncMessageType) {
             // Skip already-completed sync events to avoid redundant logging
             // and DB checks.
             if (wasCompletedSync(id)) {
@@ -528,10 +510,7 @@ class MatrixStreamProcessor {
               syncPayloadEventsSeen++;
               _inFlightSyncIds.add(id);
               try {
-                final outcome = await _processSyncPayloadEvent(
-                  e,
-                  dropSuffix: ' (no-msgtype)',
-                );
+                final outcome = await _processSyncPayloadEvent(e);
                 processedOk = outcome.processedOk;
                 treatAsHandled = outcome.treatAsHandled;
                 if (processedOk) syncPayloadsApplied++;
@@ -544,49 +523,96 @@ class MatrixStreamProcessor {
                 if (due != null && (prev == null || due.isBefore(prev))) {
                   earliestNextDue = due;
                 }
-                if (processedOk && _collectMetrics) {
-                  _loggingService.captureEvent(
-                    'processed via no-msgtype fallback: $id',
-                    domain: syncLoggingDomain,
-                    subDomain: 'fallback',
-                  );
-                }
               } finally {
                 _inFlightSyncIds.remove(id);
               }
             }
           } else {
-            // Do not count attachment events as "skipped" - they are part of
-            // the sync flow.
-            if (!ec.MatrixEventClassifier.isAttachment(e)) {
-              if (_collectMetrics) _metrics.incSkipped();
+            // Fallback: attempt to decode base64 JSON and detect a SyncMessage.
+            final validFallback =
+                ec.MatrixEventClassifier.isSyncPayloadEvent(e) &&
+                content['msgtype'] != syncMessageType;
+
+            if (validFallback) {
+              // Skip already-completed sync events to avoid redundant logging
+              // and DB checks.
+              if (wasCompletedSync(id)) {
+                isSyncPayloadEvent = true;
+                processedOk = true;
+                treatAsHandled = true;
+                syncPayloadsSkippedCompleted++;
+              } else {
+                isSyncPayloadEvent = true;
+                syncPayloadEventsSeen++;
+                _inFlightSyncIds.add(id);
+                try {
+                  final outcome = await _processSyncPayloadEvent(
+                    e,
+                    dropSuffix: ' (no-msgtype)',
+                  );
+                  processedOk = outcome.processedOk;
+                  treatAsHandled = outcome.treatAsHandled;
+                  if (processedOk) syncPayloadsApplied++;
+                  if (outcome.hadFailure) hadFailure = true;
+                  if (outcome.failureDelta > 0) {
+                    batchFailures += outcome.failureDelta;
+                  }
+                  final due = outcome.nextDue;
+                  final prev = earliestNextDue;
+                  if (due != null && (prev == null || due.isBefore(prev))) {
+                    earliestNextDue = due;
+                  }
+                  if (processedOk && _collectMetrics) {
+                    _loggingService.captureEvent(
+                      'processed via no-msgtype fallback: $id',
+                      domain: syncLoggingDomain,
+                      subDomain: 'fallback',
+                    );
+                  }
+                } finally {
+                  _inFlightSyncIds.remove(id);
+                }
+              }
+            } else {
+              // Do not count attachment events as "skipped" - they are part of
+              // the sync flow.
+              if (!ec.MatrixEventClassifier.isAttachment(e)) {
+                if (_collectMetrics) _metrics.incSkipped();
+              }
             }
           }
+          if (!processedOk && !treatAsHandled) {
+            blockedByFailure = true;
+          }
+          if (!blockedByFailure &&
+              (processedOk || treatAsHandled) &&
+              isSyncPayloadEvent &&
+              TimelineEventOrdering.isNewer(
+                candidateTimestamp: ts,
+                candidateEventId: id,
+                latestTimestamp: latestTs,
+                latestEventId: latestEventId,
+              )) {
+            latestTs = ts;
+            latestEventId = id;
+          }
+          // Defer the completion bookkeeping until the chunk's transaction
+          // commits — see the comment above the chunked loop.
+          if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
+            chunkCompletedIds.add(id);
+          }
         }
-        if (!processedOk && !treatAsHandled) {
-          blockedByFailure = true;
-        }
-        if (!blockedByFailure &&
-            (processedOk || treatAsHandled) &&
-            isSyncPayloadEvent &&
-            TimelineEventOrdering.isNewer(
-              candidateTimestamp: ts,
-              candidateEventId: id,
-              latestTimestamp: latestTs,
-              latestEventId: latestEventId,
-            )) {
-          latestTs = ts;
-          latestEventId = id;
-        }
-        // Defer the completion bookkeeping until the transaction commits —
-        // see the comment above the transaction block.
-        if ((processedOk || treatAsHandled) && isSyncPayloadEvent) {
-          completedSyncIds.add(id);
-        }
+      });
+      completedSyncIds.addAll(chunkCompletedIds);
+      chunkCompletedIds.forEach(_recordCompletedSync);
+      // Yield a microtask tick between chunks so any user-driven journal
+      // write waiting on Drift's writer lock gets a chance to run before we
+      // re-enter `_journalDb.transaction`. Without this, very fast chunks
+      // can starve the interleaving we chunked for.
+      if (chunkEnd < ordered.length) {
+        await Future<void>.delayed(Duration.zero);
       }
-    });
-
-    completedSyncIds.forEach(_recordCompletedSync);
+    }
 
     // Log batch processing summary for diagnostics
     _loggingService.captureEvent(

@@ -250,7 +250,13 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        // Emit connectivity regain
+        // First emission is the synthetic bootstrap snapshot from
+        // `connectivity_plus` and is intentionally swallowed by the service
+        // so it does not duplicate the dedicated startup `forceRescan`.
+        connectivityController.add([ConnectivityResult.wifi]);
+        async.elapse(const Duration(milliseconds: 10));
+        // Second emission represents a genuine regain event; it must record
+        // the signal and then drive forceRescan, in that order.
         connectivityController.add([ConnectivityResult.wifi]);
         async.elapse(const Duration(milliseconds: 10));
 

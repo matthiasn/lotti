@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:enum_to_string/enum_to_string.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart'
     show CheckedFromJsonException;
@@ -145,7 +146,7 @@ class DescriptorDownloader {
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
-      final bytes = decodeAttachmentBytes(
+      final bytes = await decodeAttachmentBytes(
         event: descriptorEvent,
         downloadedBytes: downloadedBytes,
         relativePath: jsonPath,
@@ -399,7 +400,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           if (downloadedBytes.isEmpty) {
             throw const FileSystemException('empty attachment bytes');
           }
-          final bytes = decodeAttachmentBytes(
+          final bytes = await decodeAttachmentBytes(
             event: eventForPath,
             downloadedBytes: downloadedBytes,
             relativePath: jsonPath,
@@ -494,7 +495,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
-      final bytes = decodeAttachmentBytes(
+      final bytes = await decodeAttachmentBytes(
         event: ev,
         downloadedBytes: downloadedBytes,
         relativePath: rp,
@@ -516,6 +517,22 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       _onMissingDescriptorPath?.call(descriptorKey);
     }
   }
+}
+
+/// Sync message bodies below this base64 length are decoded inline; anything
+/// longer hands off to a worker isolate via `compute`. The break-even point
+/// covers the `compute` spin-up cost on typical desktop hardware — small
+/// pointer-style payloads (attachment descriptors) stay fast inline, while
+/// large embedded-entity payloads (journal entries with linked entries,
+/// long transcripts) decode off the UI isolate.
+const int _inlineSyncDecodeThreshold = 4 * 1024;
+
+/// Worker entry point for `compute`. Must be a top-level function so the
+/// runtime can hand it to a background isolate. Decodes a base64-encoded
+/// Matrix sync message body into its JSON map representation.
+Map<String, dynamic> _decodeSyncEventPayload(String raw) {
+  final decoded = utf8.decode(base64.decode(raw));
+  return json.decode(decoded) as Map<String, dynamic>;
 }
 
 /// Decodes timeline events from Matrix and persists them locally.
@@ -620,8 +637,20 @@ class SyncEventProcessor {
   }) async {
     try {
       final raw = event.text;
-      final decoded = utf8.decode(base64.decode(raw));
-      final messageJson = json.decode(decoded) as Map<String, dynamic>;
+      // Base64-decoding + utf8-decoding + JSON parsing a large sync payload is
+      // synchronous CPU work. A catch-up slice routinely carries dozens of
+      // these events in one transaction; done inline they drop UI frames and
+      // extend the writer-lock hold time. Offload to a worker isolate when
+      // the base64 body is large enough that the compute overhead is paid
+      // back by the saved main-isolate time. Small payloads (attachment
+      // pointers, short messages) stay inline.
+      final Map<String, dynamic> messageJson;
+      if (raw.length >= _inlineSyncDecodeThreshold) {
+        messageJson = await compute(_decodeSyncEventPayload, raw);
+      } else {
+        final decoded = utf8.decode(base64.decode(raw));
+        messageJson = json.decode(decoded) as Map<String, dynamic>;
+      }
       final SyncMessage syncMessage;
       try {
         syncMessage = SyncMessage.fromJson(messageJson);
@@ -1217,7 +1246,7 @@ class SyncEventProcessor {
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
-      final bytes = decodeAttachmentBytes(
+      final bytes = await decodeAttachmentBytes(
         event: descriptorEvent,
         downloadedBytes: downloadedBytes,
         relativePath: jsonPath,

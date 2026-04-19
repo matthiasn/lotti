@@ -1,9 +1,18 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+
+/// Payloads smaller than this are decoded inline — the fixed cost of spawning
+/// a one-shot isolate for `compute` dominates the actual `gzip.decode` cost
+/// for tiny payloads, and attachments in this range show up in bursts during
+/// catch-up. Values above the threshold (agent entities ~500 B – 145 KB in
+/// production, task payloads up to several KB) hand off to the worker so the
+/// UI isolate keeps ticking while the decode runs.
+const int _inlineGzipThreshold = 2 * 1024;
 
 /// Decodes the raw downloaded attachment bytes according to any encoding
 /// declared in the Matrix event content. Currently only gzip is recognized.
@@ -12,19 +21,30 @@ import 'package:matrix/matrix.dart';
 /// so the decoder is a safe no-op on non-encoded attachments and on every
 /// attachment produced by senders that predate this feature.
 ///
+/// Larger gzip payloads are decoded on a worker isolate via `compute` so that
+/// `gzip.decode` — which is synchronous and CPU-bound — does not stall the UI
+/// isolate during a catch-up slice. Small payloads stay inline to avoid the
+/// one-shot isolate spin-up cost dominating their decode time.
+///
 /// Must wrap every caller of `event.downloadAndDecryptAttachment()` that
 /// treats the bytes as a concrete payload (JSON, media file, etc.), otherwise
 /// a gzipped `.json` attachment reaches `utf8.decode` as `0x1f 0x8b ...` and
 /// explodes with `FormatException: Unexpected extension byte`.
-Uint8List decodeAttachmentBytes({
+Future<Uint8List> decodeAttachmentBytes({
   required Event event,
   required Uint8List downloadedBytes,
   required String relativePath,
   required LoggingService logging,
-}) {
+}) async {
   final encoding = event.content[attachmentEncodingKey];
   if (encoding != attachmentEncodingGzip) return downloadedBytes;
-  final decoded = gzip.decode(downloadedBytes);
+  final Uint8List decoded;
+  if (downloadedBytes.length < _inlineGzipThreshold) {
+    final result = gzip.decode(downloadedBytes);
+    decoded = result is Uint8List ? result : Uint8List.fromList(result);
+  } else {
+    decoded = await compute(_gzipDecodeWorker, downloadedBytes);
+  }
   logging.captureEvent(
     'gzipDecoded path=$relativePath '
     'compressed=${downloadedBytes.length} decoded=${decoded.length} '
@@ -32,7 +52,14 @@ Uint8List decodeAttachmentBytes({
     domain: syncLoggingDomain,
     subDomain: 'attachment.decode',
   );
-  return decoded is Uint8List ? decoded : Uint8List.fromList(decoded);
+  return decoded;
+}
+
+/// Worker entry point for `compute`. Must be a top-level function so the
+/// runtime can hand it to a background isolate.
+Uint8List _gzipDecodeWorker(Uint8List bytes) {
+  final result = gzip.decode(bytes);
+  return result is Uint8List ? result : Uint8List.fromList(result);
 }
 
 /// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
