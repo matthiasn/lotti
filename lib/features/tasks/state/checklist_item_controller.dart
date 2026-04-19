@@ -1,6 +1,7 @@
 // ignore_for_file: specify_nonobvious_property_types
 
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -49,12 +50,19 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
       affectedIds,
     ) async {
-      if (affectedIds.contains(id)) {
-        final latest = await _fetch();
-        if (latest != state.value) {
-          state = AsyncData(latest);
-        }
-      }
+      if (!affectedIds.contains(id)) return;
+      developer.log(
+        'notify received id=$id affected=$affectedIds',
+        name: 'ChecklistItemController',
+      );
+      if (!ref.mounted) return;
+      final latest = await _fetch();
+      if (!ref.mounted) return;
+      developer.log(
+        'state updated id=$id isChecked=${latest?.data.isChecked}',
+        name: 'ChecklistItemController',
+      );
+      state = AsyncData(latest);
     });
   }
 
