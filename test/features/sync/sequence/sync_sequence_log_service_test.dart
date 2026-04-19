@@ -39,6 +39,7 @@ void main() {
     );
     registerFallbackValue(SyncSequenceStatus.received);
     registerFallbackValue(SyncSequencePayloadType.journalEntity);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -824,13 +825,14 @@ void main() {
     });
 
     test(
-      'skips large-gap re-materialization when the observed end counter is '
-      'already covered by a previous materialization',
+      'materializes only the incremental delta when the observed counter '
+      'advances past a previously materialized range',
       () async {
-        // Scenario: stuck watermark at 10, then two consecutive entries both
-        // observing alice at counter (lastSeen + maxGapSize + 2). The first
-        // run should materialize the entire gap; the second run must not
-        // re-scan or re-log it.
+        // Scenario: stuck watermark at 10, first entry observes alice at
+        // (lastSeen + maxGapSize + 2) → whole range materializes, bound
+        // recorded. Second entry is one counter higher — the short-circuit
+        // must only materialize the single-counter delta, not re-scan the
+        // previously materialized prefix.
         const lastSeen = 10;
         const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
         const vc1 = VectorClock({aliceHostId: observedCounter});
@@ -890,13 +892,9 @@ void main() {
           originatingHostId: aliceHostId,
         );
 
-        // The second call observed endCounter = observedCounter, which is
-        // less-than-or-equal to the bound recorded by the first call
-        // (endCounter_1 = observedCounter - 1 + ... wait, endCounter = counter
-        // - 1). Second call's endCounter = observedCounter, first's was
-        // observedCounter - 1. So second call SHOULD materialize just the
-        // single new counter delta, not the whole gap again.
-        // Assert: no redundant scan of the already-materialized prefix.
+        // The previously materialized prefix (lastSeen+1 .. observedCounter-1)
+        // must not be re-scanned — only the single-counter delta
+        // (observedCounter .. observedCounter) should hit the DB.
         verifyNever(
           () => mockDb.getCountersForHostInRange(
             aliceHostId,
@@ -904,8 +902,8 @@ void main() {
             any(that: lessThanOrEqualTo(observedCounter - 1)),
           ),
         );
-        // And the verbose largeGap/gapDetected logs only fire for the
-        // incremental delta, not the full pre-existing range.
+        // The incremental delta IS materialized, so the largeGap log still
+        // fires once for the new range.
         verify(
           () => mockLogging.captureEvent(
             any<String>(that: contains('largeGapDetected')),
@@ -3676,51 +3674,117 @@ void main() {
 
   group('retireExhaustedRequestedEntries', () {
     test(
-      'delegates to syncDatabase with maxRequestCount and returns count',
+      'delegates to syncDatabase with maxRequestCount and grace and returns '
+      'count',
       () async {
+        const grace = Duration(seconds: 30);
         when(
           () => mockDb.retireExhaustedRequestedEntries(
             maxRequestCount: 7,
+            grace: grace,
           ),
         ).thenAnswer((_) async => 3);
 
         final count = await service.retireExhaustedRequestedEntries(
           maxRequestCount: 7,
+          grace: grace,
         );
 
         expect(count, 3);
         verify(
-          () => mockDb.retireExhaustedRequestedEntries(maxRequestCount: 7),
+          () => mockDb.retireExhaustedRequestedEntries(
+            maxRequestCount: 7,
+            grace: grace,
+          ),
         ).called(1);
       },
     );
 
     test(
-      'logs and clears the watermark cache when entries are retired so the '
-      'next incoming event sees the advanced watermark',
+      'logs and clears the materialized-bound cache when entries are retired '
+      'so a stuck gap can be rescanned once the retirement advances the '
+      'watermark',
       () async {
-        // Prime the watermark cache for alice.
+        // Prime the materialized-bound cache by running a large-gap
+        // materialization. Unlike `_lastCounterCache` (invalidated on every
+        // `recordSequenceEntry`), `_materializedUpperBound` only clears on
+        // TTL expiry or retirement — so a repeat-scan assertion against it
+        // actually proves retirement did the clearing work.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const primingVc = VectorClock({aliceHostId: observedCounter});
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
-        ).thenAnswer((_) async => 10);
+        ).thenAnswer((_) async => lastSeen);
         when(
           () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
         ).thenAnswer((_) async => null);
         when(
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
-        const vc = VectorClock({aliceHostId: 11});
         await service.recordReceivedEntry(
           entryId: 'priming-entry',
-          vectorClock: vc,
+          vectorClock: primingVc,
           originatingHostId: aliceHostId,
         );
 
+        // Sanity check: a second identical-counter record hits the cached
+        // bound and does NOT rescan the range.
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+        await service.recordReceivedEntry(
+          entryId: 'pre-retire-check',
+          vectorClock: primingVc,
+          originatingHostId: aliceHostId,
+        );
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        );
+
+        // Retire: this must clear the materialized-bound cache.
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
         when(
           () => mockDb.retireExhaustedRequestedEntries(
             maxRequestCount: any(named: 'maxRequestCount'),
+            grace: any(named: 'grace'),
           ),
         ).thenAnswer((_) async => 12);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
 
         final count = await service.retireExhaustedRequestedEntries();
 
@@ -3733,24 +3797,48 @@ void main() {
           ),
         ).called(1);
 
-        // After a retirement, the next read must re-query the DB (the cache
-        // was cleared), so the advanced watermark is picked up immediately.
+        // After retirement, the same identical-counter scenario must now
+        // rescan the range — the bound was cleared. This is the assertion
+        // that can ONLY pass if retirement actually invalidated
+        // `_materializedUpperBound`, since `_lastCounterCache` is already
+        // invalidated by any concurrent `recordSequenceEntry` path.
+        clearInteractions(mockDb);
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
-        ).thenAnswer((_) async => 42);
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
         when(
           () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
         ).thenAnswer((_) async => null);
-        const vc2 = VectorClock({aliceHostId: 43});
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+
         await service.recordReceivedEntry(
-          entryId: 'after-retire',
-          vectorClock: vc2,
+          entryId: 'post-retire',
+          vectorClock: primingVc,
           originatingHostId: aliceHostId,
         );
-        // Called once before retirement, once after - so 2 DB hits total.
         verify(
-          () => mockDb.getLastCounterForHost(aliceHostId),
-        ).called(2);
+          () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+        ).called(greaterThanOrEqualTo(1));
       },
     );
 
@@ -3758,6 +3846,7 @@ void main() {
       when(
         () => mockDb.retireExhaustedRequestedEntries(
           maxRequestCount: any(named: 'maxRequestCount'),
+          grace: any(named: 'grace'),
         ),
       ).thenAnswer((_) async => 0);
 

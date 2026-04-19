@@ -40,6 +40,7 @@ void main() {
       ),
     );
     registerFallbackValue(<({String hostId, int counter})>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -96,23 +97,31 @@ void main() {
         );
         addTearDown(service.dispose);
 
+        // `processFullBackfill` runs with `useLimits: false`, which calls
+        // `getMissingEntries` (not the `WithLimits` variant); stub the
+        // right selector and assert the retirement fires *before* the
+        // batch load so an exhausted row is flipped to `unresolvable`
+        // before a new backfill cycle picks it up.
         when(
-          () => mockSequenceService.getMissingEntriesWithLimits(
+          () => mockSequenceService.getMissingEntries(
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
-            maxAge: any(named: 'maxAge'),
-            maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => []);
 
         await service.processFullBackfill();
 
-        verify(
+        verifyInOrder([
           () => mockSequenceService.retireExhaustedRequestedEntries(
             maxRequestCount: any(named: 'maxRequestCount'),
           ),
-        ).called(1);
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ]);
       },
     );
 

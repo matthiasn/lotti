@@ -3518,11 +3518,14 @@ void main() {
 
     test(
       'retires missing and requested rows at or above the request-count cap '
-      'and leaves other statuses untouched',
+      'whose last backfill request is older than the grace window, and '
+      'leaves other statuses untouched',
       () async {
         final now = DateTime(2024, 3, 15);
+        final longAgo = now.subtract(const Duration(hours: 1));
 
-        // Missing at the cap — should retire.
+        // Missing at the cap, last request comfortably past the grace
+        // window — should retire.
         await database.recordSequenceEntry(
           SyncSequenceLogCompanion(
             hostId: const Value('host-a'),
@@ -3532,6 +3535,7 @@ void main() {
             createdAt: Value(now),
             updatedAt: Value(now),
             requestCount: const Value(10),
+            lastRequestedAt: Value(longAgo),
           ),
         );
 
@@ -3546,6 +3550,7 @@ void main() {
             createdAt: Value(now),
             updatedAt: Value(now),
             requestCount: const Value(15),
+            lastRequestedAt: Value(longAgo),
           ),
         );
 
@@ -3559,6 +3564,7 @@ void main() {
             createdAt: Value(now),
             updatedAt: Value(now),
             requestCount: const Value(4),
+            lastRequestedAt: Value(longAgo),
           ),
         );
 
@@ -3573,10 +3579,13 @@ void main() {
             createdAt: Value(now),
             updatedAt: Value(now),
             requestCount: const Value(20),
+            lastRequestedAt: Value(longAgo),
           ),
         );
 
-        final retired = await database.retireExhaustedRequestedEntries();
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
 
         expect(retired, 2);
         expect(
@@ -3594,6 +3603,69 @@ void main() {
         expect(
           (await database.getEntryByHostAndCounter('host-a', 4))!.status,
           SyncSequenceStatus.received.index,
+        );
+      },
+    );
+
+    test(
+      'does not retire a row whose last backfill request is still within '
+      'the grace window — the in-flight response deserves a chance to land',
+      () async {
+        final now = DateTime(2024, 3, 15);
+
+        // At the cap but requested 30s ago, well inside the 5-minute grace.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-grace'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(10),
+            lastRequestedAt: Value(
+              now.subtract(const Duration(seconds: 30)),
+            ),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+
+        expect(retired, 0);
+        expect(
+          (await database.getEntryByHostAndCounter('host-grace', 1))!.status,
+          SyncSequenceStatus.requested.index,
+        );
+      },
+    );
+
+    test(
+      'does not retire a row with no recorded last_requested_at — we have '
+      'no evidence a request ever reached the outbox',
+      () async {
+        final now = DateTime(2024, 3, 15);
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-null'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            requestCount: const Value(12),
+          ),
+        );
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
+        expect(retired, 0);
+        expect(
+          (await database.getEntryByHostAndCounter('host-null', 1))!.status,
+          SyncSequenceStatus.missing.index,
         );
       },
     );
@@ -3618,7 +3690,9 @@ void main() {
             ),
           );
         }
-        // Permanently stuck missing range 11..15, each at the request cap.
+        // Permanently stuck missing range 11..15, each at the request cap
+        // and with a `lastRequestedAt` older than the grace window.
+        final longAgo = now.subtract(const Duration(hours: 1));
         for (var i = 11; i <= 15; i++) {
           await database.recordSequenceEntry(
             SyncSequenceLogCompanion(
@@ -3629,6 +3703,7 @@ void main() {
               createdAt: Value(now),
               updatedAt: Value(now),
               requestCount: const Value(10),
+              lastRequestedAt: Value(longAgo),
             ),
           );
         }
@@ -3647,7 +3722,9 @@ void main() {
 
         expect(await database.getLastCounterForHost(hostId), 10);
 
-        final retired = await database.retireExhaustedRequestedEntries();
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+        );
         expect(retired, 5);
 
         // With the stuck missing range flipped to `unresolvable` (a terminal

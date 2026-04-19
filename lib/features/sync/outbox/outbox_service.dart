@@ -502,7 +502,11 @@ class OutboxService {
       // (loggedIn, canProc) pair is unchanged and the quiet window has
       // not elapsed.
       try {
-        final loggedIn = _matrixService?.isLoggedIn() ?? false;
+        // When no Matrix service is wired (a custom `messageSender` was
+        // injected instead), `sendNext` can still deliver, so treat the
+        // absence as "logged in" for this diagnostic line. The actual
+        // login-gate short-circuit below still uses the strict check.
+        final loggedIn = _matrixService?.isLoggedIn() ?? true;
         final canProc = _activityGate.canProcess;
         final partialKey = 'li=$loggedIn cp=$canProc';
         final now = DateTime.now();

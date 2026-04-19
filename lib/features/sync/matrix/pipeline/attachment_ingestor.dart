@@ -51,8 +51,10 @@ class AttachmentIngestor {
   final Queue<String> _downloadQueue = Queue<String>();
   final Map<String, _DownloadRequest> _pendingDownloads =
       <String, _DownloadRequest>{};
+  // Bounded insertion-ordered LRU of recently handled attachment event ids.
+  // Dart's default `Set` is a `LinkedHashSet`, so a single structure can
+  // back both the presence check and the oldest-first eviction order.
   final Set<String> _handledAttachmentEventIds = <String>{};
-  final Queue<String> _handledAttachmentEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
 
@@ -65,7 +67,6 @@ class AttachmentIngestor {
   // round-trip, stack-trace generation, and error-log emission entirely.
   // Bounded by the same LRU window as `_handledAttachmentEventIds`.
   final Set<String> _cacheEvictedEventIds = <String>{};
-  final Queue<String> _cacheEvictedEventOrder = Queue<String>();
 
   /// Tracks paths with an in-flight immediate (non-queued) save to prevent
   /// concurrent `_saveAttachment()` calls for the same file from `process()`.
@@ -191,9 +192,7 @@ class AttachmentIngestor {
     _downloadQueue.clear();
     _pendingDownloads.clear();
     _handledAttachmentEventIds.clear();
-    _handledAttachmentEventOrder.clear();
     _cacheEvictedEventIds.clear();
-    _cacheEvictedEventOrder.clear();
     _queuedKeys.clear();
     _inFlightSavePaths.clear();
     _idleCompleter?.complete();
@@ -276,11 +275,9 @@ class AttachmentIngestor {
 
   void _recordHandledAttachmentEvent(String eventId) {
     if (_handledAttachmentEventIds.add(eventId)) {
-      _handledAttachmentEventOrder.addLast(eventId);
-      while (_handledAttachmentEventOrder.length >
+      while (_handledAttachmentEventIds.length >
           _handledAttachmentEventCapacity) {
-        final oldest = _handledAttachmentEventOrder.removeFirst();
-        _handledAttachmentEventIds.remove(oldest);
+        _handledAttachmentEventIds.remove(_handledAttachmentEventIds.first);
       }
     }
   }
@@ -466,10 +463,8 @@ class AttachmentIngestor {
 
   void _recordCacheEvictedEvent(String eventId) {
     if (_cacheEvictedEventIds.add(eventId)) {
-      _cacheEvictedEventOrder.addLast(eventId);
-      while (_cacheEvictedEventOrder.length > _handledAttachmentEventCapacity) {
-        final oldest = _cacheEvictedEventOrder.removeFirst();
-        _cacheEvictedEventIds.remove(oldest);
+      while (_cacheEvictedEventIds.length > _handledAttachmentEventCapacity) {
+        _cacheEvictedEventIds.remove(_cacheEvictedEventIds.first);
       }
     }
   }

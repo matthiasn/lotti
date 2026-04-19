@@ -804,22 +804,37 @@ class SyncDatabase extends _$SyncDatabase {
   /// advance and stops every incoming event from paying the gap-detection
   /// cost for the same stuck range.
   ///
+  /// A row is only retired when its most-recent request is older than
+  /// [now] minus [grace], so a backfill request still queued in the outbox
+  /// or in flight to a peer gets a fair chance to resolve before we flip
+  /// the row terminal. Rows without a recorded `last_requested_at` (never
+  /// requested, yet still past the count cap — unusual) are not retired.
+  ///
   /// Returns the number of rows retired.
-  Future<int> retireExhaustedRequestedEntries({int maxRequestCount = 10}) {
+  Future<int> retireExhaustedRequestedEntries({
+    int maxRequestCount = 10,
+    Duration grace = const Duration(minutes: 5),
+    DateTime? now,
+  }) {
     final missing = SyncSequenceStatus.missing.index;
     final requested = SyncSequenceStatus.requested.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(grace);
     return customUpdate(
       'UPDATE sync_sequence_log '
       'SET status = ?, updated_at = ? '
       'WHERE (status = ? OR status = ?) '
-      '  AND request_count >= ?',
+      '  AND request_count >= ? '
+      '  AND last_requested_at IS NOT NULL '
+      '  AND last_requested_at < ?',
       variables: [
         Variable.withInt(unresolvable),
-        Variable.withDateTime(DateTime.now()),
+        Variable.withDateTime(effectiveNow),
         Variable.withInt(missing),
         Variable.withInt(requested),
         Variable.withInt(maxRequestCount),
+        Variable.withDateTime(cutoff),
       ],
       updates: {syncSequenceLog},
     );

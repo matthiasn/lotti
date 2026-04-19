@@ -1125,11 +1125,18 @@ class SyncSequenceLogService {
   /// materialization pass (see `_materializeLargeGap`). Invalidates the
   /// per-host watermark and materialized-bound caches so the next event
   /// sees the updated state.
+  ///
+  /// The [grace] window gives a backfill request still queued in the
+  /// outbox or in flight to a peer time to land before the row is
+  /// promoted terminal; tests may pass a smaller value to bypass the
+  /// wait.
   Future<int> retireExhaustedRequestedEntries({
     int maxRequestCount = 10,
+    Duration grace = const Duration(minutes: 5),
   }) async {
     final count = await _syncDatabase.retireExhaustedRequestedEntries(
       maxRequestCount: maxRequestCount,
+      grace: grace,
     );
 
     if (count > 0) {
