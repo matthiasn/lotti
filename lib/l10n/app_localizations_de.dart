@@ -919,7 +919,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentSuggestionsActivityVerdictRetracted =>
-      'Vom Agent zurückgenommen';
+      'Vom Agenten zurückgenommen';
 
   @override
   String get agentTabActivity => 'Aktivität';

@@ -430,7 +430,7 @@
   "agentSuggestionsActivityTitle": "Zuletzt entschieden",
   "agentSuggestionsActivityVerdictConfirmed": "Bestätigt",
   "agentSuggestionsActivityVerdictRejected": "Abgelehnt",
-  "agentSuggestionsActivityVerdictRetracted": "Vom Agent zurückgenommen",
+  "agentSuggestionsActivityVerdictRetracted": "Vom Agenten zurückgenommen",
   "agentTabActivity": "Aktivität",
   "agentTabConversations": "Konversationen",
   "agentTabObservations": "Beobachtungen",

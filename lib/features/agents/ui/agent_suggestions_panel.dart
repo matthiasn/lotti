@@ -10,6 +10,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -139,7 +141,6 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
         final results = await service.confirmAll(cs);
         if (results.any((r) => !r.success)) anyFailed = true;
       }
-      notifier.notify(agentIds);
 
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -154,8 +155,13 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
             ),
           );
       }
-    } catch (e) {
-      developer.log('confirmAll failed: $e', name: 'AgentSuggestionsPanel');
+    } catch (e, stackTrace) {
+      developer.log(
+        'confirmAll failed',
+        name: 'AgentSuggestionsPanel',
+        error: e,
+        stackTrace: stackTrace,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
@@ -166,6 +172,9 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
           );
       }
     } finally {
+      // Always refresh — a later set can throw after earlier sets already
+      // persisted, so skipping the notify would leave the UI stale.
+      notifier.notify(agentIds);
       if (mounted) setState(() => _confirmAllBusy = false);
     }
   }
@@ -179,22 +188,11 @@ class _ConfirmAllButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        minimumSize: const Size(0, 32),
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      icon: busy
-          ? const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.done_all, size: 16),
-      label: Text(context.messages.changeSetConfirmAll),
+    return DesignSystemButton(
+      label: context.messages.changeSetConfirmAll,
+      onPressed: busy ? null : onPressed,
+      variant: DesignSystemButtonVariant.tertiary,
+      leadingIcon: Icons.done_all,
     );
   }
 }
@@ -378,7 +376,8 @@ class _ActivityRow extends StatelessWidget {
 
   static Color _verdictColor(BuildContext context, ChangeItemStatus status) =>
       switch (status) {
-        ChangeItemStatus.confirmed => Colors.green.shade700,
+        ChangeItemStatus.confirmed =>
+          context.designTokens.colors.alert.success.defaultColor,
         ChangeItemStatus.rejected => context.colorScheme.error,
         ChangeItemStatus.retracted => context.colorScheme.primary,
         _ => context.colorScheme.onSurfaceVariant,

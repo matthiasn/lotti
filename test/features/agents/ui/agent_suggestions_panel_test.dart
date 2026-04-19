@@ -607,7 +607,8 @@ void main() {
     );
 
     testWidgets(
-      'Accept all that throws surfaces the error snackbar and re-enables',
+      'Accept all that throws surfaces the error snackbar and still '
+      'notifies so UI refreshes any partially-persisted sets',
       (tester) async {
         final suggestion1 = pendingSuggestion(
           toolName: 'update_task_priority',
@@ -621,9 +622,9 @@ void main() {
           humanSummary: 'Rename task to "Fix bug"',
           changeSetId: 'cs-throw-b',
         );
-        when(() => mockConfirmation.confirmAll(any())).thenThrow(
-          StateError('boom'),
-        );
+        when(
+          () => mockConfirmation.confirmAll(any()),
+        ).thenThrow(StateError('boom'));
 
         await tester.pumpWidget(
           buildPanel(
@@ -639,6 +640,9 @@ void main() {
         await _pumpUi(tester);
 
         expect(find.text('Failed to apply change'), findsOneWidget);
+        // Notify must fire even on throw so already-persisted change sets
+        // don't linger in the open list after a partial success.
+        verify(() => mockUpdates.notify(any())).called(1);
       },
     );
 
