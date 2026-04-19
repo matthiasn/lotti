@@ -225,29 +225,19 @@ class _PendingBadge extends StatelessWidget {
   }
 }
 
-/// Collapsed strip that shows the most recent resolved ledger entries so
-/// the user can see what the agent has already confirmed, rejected, or
-/// retracted without leaving the task detail.
-///
-/// Source order is authoritative: `activity` is produced by
-/// [unifiedSuggestionListProvider] as the ledger's `resolved` list, which
-/// is already newest-first — so the first three entries are the most
-/// recent. When there are more than three resolved entries the strip
-/// collapses to the top three with a "Show all" toggle to reveal the
-/// full history; a long ledger stays readable without pushing the rest
-/// of the task detail off-screen.
 /// Single-row entry point for the agent's resolved proposal history.
 ///
-/// Collapsed (default) state is a compact tappable row: history icon +
-/// "Recent proposal activity" label + a trailing count pill + chevron.
-/// No card chrome is drawn, so the strip occupies only one row of
-/// height when idle. Tapping expands inline into a [ModernBaseCard]
-/// holding the full, newest-first list of [LedgerEntry] rows — each
-/// with its verdict icon and `humanSummary` — via [AnimatedSize] so the
-/// transition does not jump the surrounding layout.
+/// Collapsed (default) state is a compact tappable row drawn by
+/// [_CollapsedActivityRow]: a history icon, the localized "Recent
+/// proposal activity" label, and a trailing count pill — no card chrome,
+/// so the strip occupies one row of height when idle. Tapping expands
+/// inline into [_ExpandedActivityCard], a [ModernBaseCard] holding the
+/// full, newest-first list of [LedgerEntry] rows (each with its verdict
+/// icon and `humanSummary`). The transition between the two states runs
+/// through [AnimatedSize] so the surrounding layout doesn't jump.
 ///
 /// `activity` comes from [unifiedSuggestionListProvider] as the ledger's
-/// `resolved` list, which is already newest-first.
+/// `resolved` list and is already newest-first.
 class _RecentActivityStrip extends StatefulWidget {
   const _RecentActivityStrip({required this.activity, required this.agentName});
 

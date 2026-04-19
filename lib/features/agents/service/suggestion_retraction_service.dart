@@ -101,12 +101,8 @@ class SuggestionRetractionService {
     final retractedThisCall = <String>{};
 
     for (final request in requests) {
-      final locator = _locate(
-        pendingSets,
-        request.fingerprint,
-        retractedThisCall,
-      );
-      if (locator == null) {
+      final matches = _locateAll(pendingSets, request.fingerprint);
+      if (matches.isEmpty) {
         results.add(
           RetractionResult(
             fingerprint: request.fingerprint,
@@ -116,34 +112,68 @@ class SuggestionRetractionService {
         continue;
       }
 
-      if (locator.item.status != ChangeItemStatus.pending) {
+      // If we already retracted this fingerprint earlier in the same
+      // call, the second pass is a no-op. The first pass swept every
+      // pending sibling; anything still matching this fingerprint is
+      // either already `retracted` or caught by the in-`_applyRetraction`
+      // bounds/status check.
+      if (retractedThisCall.contains(request.fingerprint)) {
+        final first = matches.first;
         results.add(
           RetractionResult(
             fingerprint: request.fingerprint,
             outcome: RetractionOutcome.notOpen,
-            toolName: locator.item.toolName,
-            humanSummary: locator.item.humanSummary,
+            toolName: first.item.toolName,
+            humanSummary: first.item.humanSummary,
           ),
         );
         continue;
       }
 
-      await _applyRetraction(
-        changeSet: locator.changeSet,
-        itemIndex: locator.itemIndex,
-        item: locator.item,
-        agentId: agentId,
-        taskId: taskId,
-        reason: request.reason,
-      );
+      final pendingMatches = matches
+          .where((m) => m.item.status == ChangeItemStatus.pending)
+          .toList();
+      if (pendingMatches.isEmpty) {
+        // Every match is already resolved — report the first so the
+        // LLM sees the item exists but is no longer actionable.
+        final first = matches.first;
+        results.add(
+          RetractionResult(
+            fingerprint: request.fingerprint,
+            outcome: RetractionOutcome.notOpen,
+            toolName: first.item.toolName,
+            humanSummary: first.item.humanSummary,
+          ),
+        );
+        continue;
+      }
+
+      // Sibling sweep: retract every pending duplicate, not just the
+      // first. Multiple items can share a fingerprint when consecutive
+      // wakes wrote separate change sets before cross-set dedup caught
+      // them, and a single agent retraction intent should clear every
+      // open copy so the user doesn't keep seeing ghosts in the UI.
+      for (final match in pendingMatches) {
+        await _applyRetraction(
+          changeSet: match.changeSet,
+          itemIndex: match.itemIndex,
+          item: match.item,
+          agentId: agentId,
+          taskId: taskId,
+          reason: request.reason,
+        );
+      }
       retractedThisCall.add(request.fingerprint);
 
+      // toolName / humanSummary are identical across matches (same
+      // fingerprint) — use the first for the LLM response payload.
+      final first = pendingMatches.first;
       results.add(
         RetractionResult(
           fingerprint: request.fingerprint,
           outcome: RetractionOutcome.retracted,
-          toolName: locator.item.toolName,
-          humanSummary: locator.item.humanSummary,
+          toolName: first.item.toolName,
+          humanSummary: first.item.humanSummary,
         ),
       );
     }
@@ -151,25 +181,22 @@ class SuggestionRetractionService {
     return results;
   }
 
-  ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})? _locate(
-    List<ChangeSetEntity> pendingSets,
-    String fingerprint,
-    Set<String> alreadyRetractedInThisCall,
-  ) {
+  /// Return every `(changeSet, itemIndex, item)` tuple whose item matches
+  /// [fingerprint]. Duplicates can exist across change sets when
+  /// consecutive wakes wrote separate sets before cross-set dedup caught
+  /// them; the caller sweeps the full list so no sibling copy survives.
+  List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>
+  _locateAll(List<ChangeSetEntity> pendingSets, String fingerprint) {
+    final matches =
+        <({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>[];
     for (final cs in pendingSets) {
       for (var i = 0; i < cs.items.length; i++) {
         final item = cs.items[i];
         if (ChangeItem.fingerprint(item) != fingerprint) continue;
-        // If this fingerprint was already retracted earlier in the same
-        // call, surface it as `notOpen` — the on-disk state is in flux
-        // and a second retraction would double-write the decision.
-        final effectiveItem = alreadyRetractedInThisCall.contains(fingerprint)
-            ? item.copyWith(status: ChangeItemStatus.retracted)
-            : item;
-        return (changeSet: cs, itemIndex: i, item: effectiveItem);
+        matches.add((changeSet: cs, itemIndex: i, item: item));
       }
     }
-    return null;
+    return matches;
   }
 
   Future<void> _applyRetraction({
