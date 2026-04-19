@@ -19,10 +19,32 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
 part 'database.g.dart';
 
 const journalDbFileName = 'db.sqlite';
+
+// v39 partial indexes. Declared as top-level constants so the `onUpgrade`
+// migration, `beforeOpen` self-heal, and the migration tests all share one
+// SQL definition. The strings start with `CREATE INDEX ` so both call sites
+// can prefix `IF NOT EXISTS` via a single replaceFirst.
+const String _createIdxJournalTasksDueOpenSql =
+    'CREATE INDEX idx_journal_tasks_due_open '
+    r"ON journal(json_extract(serialized, '$.data.due') ASC) "
+    "WHERE type = 'Task' "
+    'AND task = 1 '
+    'AND deleted = FALSE '
+    "AND task_status NOT IN ('DONE', 'REJECTED')";
+
+const String _createIdxJournalTaskStatusPrivateSql =
+    'CREATE INDEX idx_journal_task_status_private '
+    'ON journal(task_status COLLATE BINARY ASC, '
+    'private COLLATE BINARY ASC) '
+    "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
+
+String _asIfNotExists(String createIndexSql) =>
+    createIndexSql.replaceFirst('CREATE INDEX ', 'CREATE INDEX IF NOT EXISTS ');
 
 enum ConflictStatus {
   unresolved,
@@ -100,6 +122,19 @@ class JournalDb extends _$JournalDb {
     return MigrationStrategy(
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
+        // Self-heal the v39 partial indexes on every open. Devices that
+        // failed the v39 migration (e.g. aborted mid-upgrade) could otherwise
+        // land with `user_version = 39` but no index, breaking every DailyOS
+        // query that pins the index via INDEXED BY. Guarded on `journal`
+        // existing because minimal migration-test schemas omit it.
+        if (await _tableExists('journal')) {
+          await customStatement(
+            _asIfNotExists(_createIdxJournalTasksDueOpenSql),
+          );
+          await customStatement(
+            _asIfNotExists(_createIdxJournalTaskStatusPrivateSql),
+          );
+        }
       },
       onCreate: (Migrator m) async {
         return m.createAll();
@@ -449,23 +484,11 @@ class JournalDb extends _$JournalDb {
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_tasks_due_open',
             );
-            await customStatement(
-              'CREATE INDEX idx_journal_tasks_due_open '
-              r"ON journal(json_extract(serialized, '$.data.due') ASC) "
-              "WHERE type = 'Task' "
-              'AND task = 1 '
-              'AND deleted = FALSE '
-              "AND task_status NOT IN ('DONE', 'REJECTED')",
-            );
+            await customStatement(_createIdxJournalTasksDueOpenSql);
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_task_status_private',
             );
-            await customStatement(
-              'CREATE INDEX idx_journal_task_status_private '
-              'ON journal(task_status COLLATE BINARY ASC, '
-              'private COLLATE BINARY ASC) '
-              "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
-            );
+            await customStatement(_createIdxJournalTaskStatusPrivateSql);
           }();
         }
       },
@@ -2301,18 +2324,65 @@ class JournalDb extends _$JournalDb {
   }
 
   // Drift SQL doesn't support `INDEXED BY`, so keep the due-date hot path in
-  // raw SQL to force the dedicated expression index on large journal tables.
-  // Uses the partial `idx_journal_tasks_due_open` so the ORDER BY streams
-  // from the index without an external sort. The WHERE clause must match
-  // the partial's predicates verbatim for SQLite to resolve INDEXED BY.
+  // raw SQL to force the partial `idx_journal_tasks_due_open` on large journal
+  // tables. If SQLite can't prove the pin on a given device (observed in
+  // mobile TestFlight builds as `SqliteException(1): no query solution`), we
+  // fall back to the unpinned query so DailyOS never hard-fails.
   Future<List<JournalDbEntity>> _selectTasksDue({
     required String endIso,
     required List<bool> privateStatuses,
     String? startIso,
+  }) async {
+    Future<List<JournalDbEntity>> runQuery(String? indexedBy) {
+      final variables = <Variable<Object>>[];
+      final query = _buildSelectTasksDue(
+        endIso: endIso,
+        privateStatuses: privateStatuses,
+        startIso: startIso,
+        variables: variables,
+        indexedBy: indexedBy,
+      );
+      return customSelect(
+        query,
+        variables: variables,
+        readsFrom: {journal},
+      ).asyncMap(journal.mapFromRow).get();
+    }
+
+    try {
+      return await runQuery('idx_journal_tasks_due_open');
+    } catch (e, stack) {
+      // Fall back on any SQLITE_ERROR from the pinned query. Covers both
+      // "no query solution" (pin can't be proven) and "no such index"
+      // (partial missing). Drift may wrap `SqliteException` when running in
+      // a background isolate, so match on the printed message as well as the
+      // type. `beforeOpen` self-heals the partial index on next launch.
+      final isSqliteError =
+          (e is SqliteException && e.resultCode == 1) ||
+          e.toString().contains('SqliteException(1)');
+      if (!isSqliteError) rethrow;
+      DevLogger.error(
+        name: 'JournalDb',
+        message:
+            '_selectTasksDue INDEXED BY rejected by SQLite — falling back '
+            'to unpinned query',
+        error: e,
+        stackTrace: stack,
+      );
+      return runQuery(null);
+    }
+  }
+
+  String _buildSelectTasksDue({
+    required String endIso,
+    required List<bool> privateStatuses,
+    required List<Variable<Object>> variables,
+    required String? indexedBy,
+    String? startIso,
   }) {
-    final variables = <Variable<Object>>[];
     final buffer = StringBuffer()
-      ..write('SELECT * FROM journal INDEXED BY idx_journal_tasks_due_open ')
+      ..write('SELECT * FROM journal ')
+      ..write(indexedBy != null ? 'INDEXED BY $indexedBy ' : '')
       ..write("WHERE type = 'Task' ")
       ..write('AND task = 1 ')
       ..write('AND deleted = FALSE ')
@@ -2347,11 +2417,7 @@ class JournalDb extends _$JournalDb {
       ..write(') ')
       ..write(r"ORDER BY json_extract(serialized, '$.data.due') ASC");
 
-    return customSelect(
-      buffer.toString(),
-      variables: variables,
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow).get();
+    return buffer.toString();
   }
 
   /// Find existing rating entity for a target entry and catalog

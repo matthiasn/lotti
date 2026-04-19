@@ -261,5 +261,66 @@ void main() {
         expect(detail, contains('idx_journal_tasks_due_open'));
       },
     );
+
+    test(
+      'beforeOpen self-heals idx_journal_tasks_due_open when missing on v39',
+      () async {
+        // Simulate a device that landed at user_version = 39 but is missing
+        // `idx_journal_tasks_due_open` (migration failed mid-way in prod —
+        // the symptom observed in the TestFlight crash logs).
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v39_self_heal.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        createV38Schema(sqlite);
+        sqlite.execute('PRAGMA user_version = 39');
+        sqlite.dispose();
+
+        final db = JournalDb(overriddenFilename: 'test_v39_self_heal.db');
+        addTearDown(db.close);
+
+        // beforeOpen must have created both v39 partial indexes even though
+        // the onUpgrade block didn't run (user_version already at 39).
+        final dueOpenSql = await indexSql(db, 'idx_journal_tasks_due_open');
+        expect(dueOpenSql, contains(r"json_extract(serialized, '$.data.due')"));
+        expect(dueOpenSql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
+
+        final statusPrivateSql = await indexSql(
+          db,
+          'idx_journal_task_status_private',
+        );
+        expect(statusPrivateSql, contains('task_status COLLATE BINARY ASC'));
+      },
+    );
+
+    test(
+      'getTasksDueOnOrBefore falls back when INDEXED BY is rejected',
+      () async {
+        // Simulate a device where the partial index cannot be pinned (the
+        // "no query solution" failure mode from production): drop the index
+        // after beforeOpen has re-created it, then confirm the high-level
+        // API still returns rows instead of throwing.
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v39_fallback.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        createV38Schema(sqlite);
+        sqlite.execute('PRAGMA user_version = 39');
+        sqlite.dispose();
+
+        final db = JournalDb(overriddenFilename: 'test_v39_fallback.db');
+        addTearDown(db.close);
+
+        await db.customStatement(
+          'DROP INDEX IF EXISTS idx_journal_tasks_due_open',
+        );
+
+        // Must not throw SqliteException('no query solution').
+        final tasks = await db.getTasksDueOnOrBefore(
+          DateTime.utc(2026, 12, 31),
+        );
+        expect(tasks, isEmpty);
+      },
+    );
   });
 }

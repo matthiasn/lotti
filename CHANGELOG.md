@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.965] - 2026-04-19
+### Fixed
+- DailyOS mobile page no longer surfaces "Failed to load timeline" and
+  "Failed to load budgets" on devices where the v39 migration's partial
+  expression index `idx_journal_tasks_due_open` is missing or cannot
+  satisfy SQLite's `INDEXED BY` clause. `JournalDb._selectTasksDue` now
+  catches `SQLITE_ERROR` from the pinned fast path and retries once
+  without the pin, so the open-task due-date query still returns rows
+  when the planner cannot prove the partial's WHERE. In addition,
+  `beforeOpen` recreates `idx_journal_tasks_due_open` and
+  `idx_journal_task_status_private` as `CREATE INDEX IF NOT EXISTS` on
+  every launch (guarded on the `journal` table existing), so devices
+  that landed at `user_version = 39` with a missing index self-heal on
+  next open. The CREATE statements now live in a single pair of private
+  top-level constants reused by `onUpgrade`, `beforeOpen`, and the
+  migration tests. Regression tests cover both the self-heal path and
+  the unpinned fallback in
+  `test/database/task_indexes_v39_migration_test.dart`.
+
 ## [0.9.964] - 2026-04-19
 ### Changed
 - Outbox / sync DB: removed a 40–600 ms main-isolate blocking query that
