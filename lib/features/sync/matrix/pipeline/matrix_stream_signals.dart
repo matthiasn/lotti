@@ -116,11 +116,14 @@ class MatrixStreamSignalBinder {
           subDomain: 'start.liveScan',
         );
         _liveScan.scheduleRescan(const Duration(milliseconds: 80));
-        // If we had a stored lastProcessed marker, ensure we run catch-up once
-        // more shortly after the room is ready. This covers the case where the
-        // room snapshot became available only after start(), and the first
-        // catch-up attempt had no active room.
-        if (lastProcessedEventId != null) {
+        // If we had a stored lastProcessed marker AND the initial catch-up has
+        // not yet completed, schedule one follow-up run. This covers the case
+        // where the room snapshot became available only after start() and the
+        // first catch-up attempt had no active room. When the initial catch-up
+        // already succeeded (common steady state) there is nothing to retry,
+        // and running another full catch-up here caused a redundant
+        // `_waitForSyncCompletion` + re-ingest pass on every startup.
+        if (lastProcessedEventId != null && !_catchUp.initialCatchUpReady) {
           _loggingService.captureEvent(
             _withInstance('start: scheduling catchUp retry'),
             domain: syncLoggingDomain,
@@ -129,7 +132,12 @@ class MatrixStreamSignalBinder {
           unawaited(
             Future<void>.delayed(
               const Duration(milliseconds: 150),
-            ).then((_) => _catchUp.runGuardedCatchUp('start.catchUpRetry')),
+            ).then((_) {
+              if (!_catchUp.initialCatchUpReady) {
+                return _catchUp.runGuardedCatchUp('start.catchUpRetry');
+              }
+              return Future<void>.value();
+            }),
           );
         }
       } catch (e, st) {

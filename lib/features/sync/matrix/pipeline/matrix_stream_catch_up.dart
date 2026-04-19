@@ -158,7 +158,6 @@ class MatrixStreamCatchUpCoordinator {
   Future<void> runInitialCatchUpIfReady() async {
     if (_roomManager.currentRoom != null) {
       await _attachCatchUp();
-      _flushDeferredLiveScan('start');
     }
     if (!_initialCatchUpReady) {
       _scheduleInitialCatchUpRetry();
@@ -170,17 +169,13 @@ class MatrixStreamCatchUpCoordinator {
       _deferredCatchup = true;
       return;
     }
-    _catchUpInFlight = true;
-    // New burst: emit start once for the first run only; defer 'done' until the
-    // last run in this coalesced burst (after any trailing catch-up completes).
+    // `_attachCatchUp()` (invoked transitively by `forceRescan`) now owns the
+    // `_catchUpInFlight` flag and `_flushDeferredLiveScan` call. This wrapper
+    // only drives the coalesced burst logging and trailing-catchup scheduling.
     _catchupLogStartPending = true;
     _catchupDoneLoggedThisBurst = false;
     unawaited(
-      forceRescan(
-        bypassCatchUpInFlightCheck: true,
-      ).whenComplete(() {
-        _catchUpInFlight = false;
-        _flushDeferredLiveScan('startCatchupNow');
+      forceRescan().whenComplete(() {
         _lastCatchupAt = clock.now();
         if (_deferredCatchup) {
           _deferredCatchup = false;
@@ -216,29 +211,16 @@ class MatrixStreamCatchUpCoordinator {
     );
   }
 
-  /// Runs catch-up with proper in-flight guard to prevent concurrent live scans.
-  /// This ensures in-order event processing.
+  /// Runs catch-up. The in-flight guard and deferred-live-scan flush are owned
+  /// by `_attachCatchUp()` itself, so this wrapper only emits the
+  /// `source`-annotated start log for observability.
   Future<void> runGuardedCatchUp(String source) async {
-    if (_catchUpInFlight) {
-      _loggingService.captureEvent(
-        '$source: skipped (catch-up already in flight)',
-        domain: syncLoggingDomain,
-        subDomain: 'catchup.guarded',
-      );
-      return;
-    }
-    _catchUpInFlight = true;
     _loggingService.captureEvent(
       '$source: starting guarded catch-up',
       domain: syncLoggingDomain,
       subDomain: 'catchup.guarded',
     );
-    try {
-      await _attachCatchUp();
-    } finally {
-      _catchUpInFlight = false;
-      _flushDeferredLiveScan('runGuardedCatchUp');
-    }
+    await _attachCatchUp();
   }
 
   String _catchupSignalSummary() {
@@ -281,7 +263,6 @@ class MatrixStreamCatchUpCoordinator {
         _scheduleInitialCatchUpRetry();
         return;
       }
-      _catchUpInFlight = true;
       _loggingService.captureEvent(
         _withInstance('catchup.retry.attempt'),
         domain: syncLoggingDomain,
@@ -289,10 +270,6 @@ class MatrixStreamCatchUpCoordinator {
       );
       unawaited(
         _attachCatchUp()
-            .whenComplete(() {
-              _catchUpInFlight = false;
-              _flushDeferredLiveScan('catchUpRetry');
-            })
             .then((_) {
               if (!_initialCatchUpReady) {
                 _loggingService.captureEvent(
@@ -366,7 +343,24 @@ class MatrixStreamCatchUpCoordinator {
   }
 
   /// Runs catch-up and returns true on success, false on failure.
+  ///
+  /// Self-guards against concurrent execution: if another `_attachCatchUp()`
+  /// is already running, this returns `false` immediately after logging
+  /// `catchup.skipped (in flight)`. This is the single source of truth for
+  /// `_catchUpInFlight` so every external entry point (`forceRescan`,
+  /// `runInitialCatchUpIfReady`, `runGuardedCatchUp`,
+  /// `_scheduleInitialCatchUpRetry`, `startWakeCatchUp`) can call through
+  /// here without coordinating the flag themselves.
   Future<bool> _attachCatchUp() async {
+    if (_catchUpInFlight) {
+      _loggingService.captureEvent(
+        _withInstance('catchup.skipped (in flight)'),
+        domain: syncLoggingDomain,
+        subDomain: 'catchup',
+      );
+      return false;
+    }
+    _catchUpInFlight = true;
     try {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null) {
@@ -532,6 +526,9 @@ class MatrixStreamCatchUpCoordinator {
         stackTrace: st,
       );
       return false; // Failure
+    } finally {
+      _catchUpInFlight = false;
+      _flushDeferredLiveScan('attachCatchUp');
     }
   }
 
@@ -555,7 +552,6 @@ class MatrixStreamCatchUpCoordinator {
       return;
     }
 
-    _catchUpInFlight = true;
     _loggingService.captureEvent(
       'wake.catchup.start',
       domain: syncLoggingDomain,
@@ -564,8 +560,6 @@ class MatrixStreamCatchUpCoordinator {
 
     unawaited(
       _attachCatchUp().then((success) {
-        _catchUpInFlight = false;
-        _flushDeferredLiveScan('wakeCatchUp');
         if (success) {
           _wakeCatchUpPending = false;
           _loggingService.captureEvent(
@@ -592,22 +586,11 @@ class MatrixStreamCatchUpCoordinator {
   }
 
   // Force a rescan and optional catch-up to recover from potential gaps.
-  // Guards against concurrent execution at two levels:
-  // 1. _forceRescanCompleter: Serializes forceRescan calls (e.g., connectivity +
-  //    startup from MatrixService) so later callers await the in-flight run.
-  // 2. _catchUpInFlight: Skips catch-up if one is already running from
-  //    runGuardedCatchUp (e.g., catchUpRetry signal), preventing concurrent
-  //    attachCatchUp calls that cause processOrdered timeout failures.
-  //    Use bypassCatchUpInFlightCheck=true when the caller has already set
-  //    _catchUpInFlight (e.g., _startCatchupNow).
-  // Live scans are deferred until the initial catch-up completes to avoid
-  // recording newer events before older ones are processed.
-  Future<void> forceRescan({
-    bool includeCatchUp = true,
-    bool bypassCatchUpInFlightCheck = false,
-  }) async {
-    // Prevent concurrent forceRescan calls from external sources.
-    // This is separate from _catchUpInFlight which is managed by _startCatchupNow.
+  // `_forceRescanCompleter` serialises external forceRescan calls (connectivity
+  // + startup from MatrixService) so later callers await the in-flight run.
+  // `_attachCatchUp()` owns `_catchUpInFlight` and the deferred-live-scan
+  // flush, so this method never has to touch either.
+  Future<void> forceRescan({bool includeCatchUp = true}) async {
     final pending = _forceRescanCompleter;
     if (pending != null) {
       _loggingService.captureEvent(
@@ -627,19 +610,7 @@ class MatrixStreamCatchUpCoordinator {
         subDomain: 'forceRescan',
       );
       if (includeCatchUp) {
-        // Skip catch-up if one is already running from runGuardedCatchUp.
-        // This prevents concurrent attachCatchUp calls which cause
-        // processOrdered timeout failures.
-        // Bypass check when caller (e.g., _startCatchupNow) has already set the flag.
-        if (!bypassCatchUpInFlightCheck && _catchUpInFlight) {
-          _loggingService.captureEvent(
-            _withInstance('forceRescan.skippedCatchUp (catchUpInFlight)'),
-            domain: syncLoggingDomain,
-            subDomain: 'forceRescan',
-          );
-        } else {
-          await _attachCatchUp();
-        }
+        await _attachCatchUp();
       }
       final scan = scanLiveTimeline;
       if (scan != null) {

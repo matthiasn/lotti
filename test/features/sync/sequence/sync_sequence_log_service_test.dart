@@ -902,15 +902,17 @@ void main() {
             any(that: lessThanOrEqualTo(observedCounter - 1)),
           ),
         );
-        // The incremental delta IS materialized, so the largeGap log still
-        // fires once for the new range.
-        verify(
+        // Incremental extensions of a previously-materialized large gap
+        // deliberately do NOT re-log `largeGapDetected`. Logging it once per
+        // incoming event dominated desktop log volume on hosts with a
+        // permanent pre-history gap without adding new signal.
+        verifyNever(
           () => mockLogging.captureEvent(
             any<String>(that: contains('largeGapDetected')),
             domain: LogDomains.sync,
             subDomain: 'sequence.largeGap',
           ),
-        ).called(1);
+        );
       },
     );
 

@@ -215,7 +215,11 @@ class MatrixService {
         incomingKeyVerificationRunnerController.stream;
 
     // On connectivity regain, nudge the pipeline with a catch-up + scan and
-    // record this as a signal for observability.
+    // record this as a signal for observability. Skip the very first emission
+    // because `connectivity_plus` surfaces the current state synchronously on
+    // subscribe, which would duplicate the dedicated startup-time
+    // `forceRescan` kicked off just below this listener.
+    var bootstrapEmissionSeen = false;
     _connectivitySubscription =
         (connectivityStream ?? Connectivity().onConnectivityChanged).listen((
           List<ConnectivityResult> result,
@@ -227,6 +231,16 @@ class MatrixService {
           }.intersection(result.toSet()).isNotEmpty) {
             // Record connectivity as a signal for metrics/observability.
             _pipeline?.recordConnectivitySignal();
+
+            if (!bootstrapEmissionSeen) {
+              bootstrapEmissionSeen = true;
+              _loggingService.captureEvent(
+                'service.forceRescan.connectivity.bootstrapSkipped',
+                domain: 'MATRIX_SERVICE',
+                subDomain: 'forceRescan',
+              );
+              return;
+            }
 
             // Coalesce repeated connectivity events: only trigger a rescan when
             // there isn't one in-flight and we haven't just run one.
