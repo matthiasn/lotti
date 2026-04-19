@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.964] - 2026-04-19
 ### Changed
+- Outbox / sync DB: removed a 40–600 ms main-isolate blocking query that
+  was triggered on every outbox enqueue (including each image paste or
+  drag-and-drop). `getLastSentCounterForEntry` used to compute
+  `MAX(counter)` against an index that did not include `counter`, forcing
+  SQLite to read every matching row from the heap for hot entry_ids. The
+  v11 schema replaces `idx_sync_sequence_log_host_entry_status` with a
+  covering `idx_sync_sequence_log_host_entry_status_counter`, the query
+  is rewritten as `ORDER BY counter DESC LIMIT 1` (index-only scan with
+  early terminate), and the sequence service now caches the last-sent
+  counter per `(hostId, entryId)` with LRU capacity 2048. Follow-up
+  lookups for the same entry hit the cache and skip the DB entirely; the
+  cache is kept consistent by refreshing it on `recordSentEntry`. Under
+  the same load as 2026-04-19 (3092 invocations, p50 43 ms, peak 618 ms)
+  this collapses to a single sub-millisecond index probe per distinct
+  entry per TTL window. Removes the multi-second UI freeze observed when
+  pasting/dragging images.
 - Sync: eliminated the dominant source of redundant work on devices that
   carry a permanent pre-history gap in the sequence log. Previously,
   every incoming event on such a host re-ran a multi-chunk scan of the

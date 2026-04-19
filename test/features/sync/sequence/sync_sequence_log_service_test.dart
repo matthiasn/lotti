@@ -3962,6 +3962,95 @@ void main() {
       expect(result, isNotNull);
       expect(result!.vclock, {myHostId: 42});
     });
+
+    test(
+      'caches the DB result so repeat lookups for the same entry do not '
+      're-query sync.sqlite',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-42'),
+        ).thenAnswer((_) async => 99);
+
+        final first = await service.getLastSentVectorClockForEntry('entry-42');
+        final second = await service.getLastSentVectorClockForEntry('entry-42');
+        final third = await service.getLastSentVectorClockForEntry('entry-42');
+
+        expect(first!.vclock, {myHostId: 99});
+        expect(second!.vclock, {myHostId: 99});
+        expect(third!.vclock, {myHostId: 99});
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-42'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'caches a null result so entries that have never been sent do not '
+      'thrash the DB on every outbox enqueue',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'never-sent'),
+        ).thenAnswer((_) async => null);
+
+        await service.getLastSentVectorClockForEntry('never-sent');
+        await service.getLastSentVectorClockForEntry('never-sent');
+
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'never-sent'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'recordSentEntry refreshes the cache so a follow-up outbox lookup '
+      'reflects the just-sent counter without a DB round-trip',
+      () async {
+        // First lookup: seed the cache at 50.
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-seed'),
+        ).thenAnswer((_) async => 50);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        final seeded = await service.getLastSentVectorClockForEntry(
+          'entry-seed',
+        );
+        expect(seeded!.vclock, {myHostId: 50});
+
+        // Record a newer sent counter.
+        await service.recordSentEntry(
+          entryId: 'entry-seed',
+          vectorClock: const VectorClock({myHostId: 57}),
+        );
+
+        // Subsequent lookup must see 57 from the cache — no extra DB call.
+        final refreshed = await service.getLastSentVectorClockForEntry(
+          'entry-seed',
+        );
+        expect(refreshed!.vclock, {myHostId: 57});
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-seed'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'cache honors the TTL window shared with the other host caches',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-ttl'),
+        ).thenAnswer((_) async => 7);
+
+        await service.getLastSentVectorClockForEntry('entry-ttl');
+        service.expireCacheForTesting();
+        await service.getLastSentVectorClockForEntry('entry-ttl');
+
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-ttl'),
+        ).called(2);
+      },
+    );
   });
 
   group('cache invalidation after marking covered counters', () {

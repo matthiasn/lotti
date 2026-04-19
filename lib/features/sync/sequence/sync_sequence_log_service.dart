@@ -184,6 +184,18 @@ class SyncSequenceLogService {
   // rows just to produce `inserted=0`. Skipping it removes the dominant
   // redundant DB cost on hosts that carry a pre-history gap.
   final _materializedUpperBound = <String, int>{};
+
+  // Last-sent counter per (myHost, entryId). The outbox calls
+  // `getLastSentVectorClockForEntry` on every enqueue to build covered
+  // vector clocks; without this cache each call hit the UI isolate with a
+  // `SELECT ... FROM sync_sequence_log` that, on a 329k-row table with hot
+  // entry_ids, routinely took 40–600 ms and dominated the image-paste
+  // freeze. LRU-bounded; entries are added on lookup and refreshed on
+  // `recordSentEntry` so the cached value cannot lag a concurrent write.
+  final LinkedHashMap<String, int?> _lastSentCounterByEntry =
+      LinkedHashMap<String, int?>();
+  static const int _lastSentCounterCacheCapacity = 2048;
+
   DateTime? _cacheExpiry;
   static const _cacheTtl = Duration(minutes: 5);
 
@@ -193,7 +205,20 @@ class SyncSequenceLogService {
       _hostActivityCache.clear();
       _lastCounterCache.clear();
       _materializedUpperBound.clear();
+      _lastSentCounterByEntry.clear();
       _cacheExpiry = null;
+    }
+  }
+
+  String _lastSentCacheKey(String hostId, String entryId) =>
+      '$hostId::$entryId';
+
+  void _touchLastSentCache(String key, int? value) {
+    _lastSentCounterByEntry
+      ..remove(key)
+      ..[key] = value;
+    while (_lastSentCounterByEntry.length > _lastSentCounterCacheCapacity) {
+      _lastSentCounterByEntry.remove(_lastSentCounterByEntry.keys.first);
     }
   }
 
@@ -268,6 +293,15 @@ class SyncSequenceLogService {
         ),
       );
 
+      // Keep the cache consistent with the write we just issued so a
+      // subsequent `getLastSentVectorClockForEntry` does not race back to
+      // the DB for a value we already know.
+      final cacheKey = _lastSentCacheKey(hostId, entryId);
+      final previous = _lastSentCounterByEntry[cacheKey];
+      if (previous == null || counter > previous) {
+        _touchLastSentCache(cacheKey, counter);
+      }
+
       _trace(
         'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
         subDomain: 'sequence.recordSent',
@@ -292,10 +326,21 @@ class SyncSequenceLogService {
   Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
     final myHost = await _vectorClockService.getHost();
     if (myHost == null) return null;
-    final counter = await _syncDatabase.getLastSentCounterForEntry(
-      myHost,
-      entryId,
-    );
+    _invalidateCacheIfExpired();
+    _ensureCacheWindow();
+    final cacheKey = _lastSentCacheKey(myHost, entryId);
+    int? counter;
+    if (_lastSentCounterByEntry.containsKey(cacheKey)) {
+      counter = _lastSentCounterByEntry[cacheKey];
+      // Refresh LRU position on hit so active entries stay resident.
+      _touchLastSentCache(cacheKey, counter);
+    } else {
+      counter = await _syncDatabase.getLastSentCounterForEntry(
+        myHost,
+        entryId,
+      );
+      _touchLastSentCache(cacheKey, counter);
+    }
     if (counter == null) return null;
     return VectorClock({myHost: counter});
   }

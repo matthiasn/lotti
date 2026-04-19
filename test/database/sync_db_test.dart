@@ -3166,8 +3166,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 10', () {
-      expect(db.schemaVersion, 10);
+    test('schema version is 11', () {
+      expect(db.schemaVersion, 11);
     });
   });
 
@@ -3826,5 +3826,44 @@ void main() {
       );
       expect(resultB, 50);
     });
+
+    test(
+      'returns the highest counter even when intervening rows are not '
+      'ordered by insertion, exercising the ORDER BY DESC LIMIT 1 path',
+      () async {
+        final database = db!;
+        const hostId = 'host-shuffle';
+        const entryId = 'entry-shuffle';
+
+        // Insert out-of-order counters for the same (host, entry) with mixed
+        // statuses. The rewritten query must still return the max received
+        // counter (33), not the max overall (77 is missing and must not win).
+        final rows = <({int counter, SyncSequenceStatus status})>[
+          (counter: 12, status: SyncSequenceStatus.received),
+          (counter: 33, status: SyncSequenceStatus.backfilled),
+          (counter: 5, status: SyncSequenceStatus.received),
+          (counter: 77, status: SyncSequenceStatus.missing),
+          (counter: 21, status: SyncSequenceStatus.received),
+          (counter: 100, status: SyncSequenceStatus.requested),
+        ];
+        for (final row in rows) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(row.counter),
+              entryId: const Value(entryId),
+              status: Value(row.status.index),
+              createdAt: Value(DateTime(2024, 6, 1)),
+              updatedAt: Value(DateTime(2024, 6, 1)),
+            ),
+          );
+        }
+
+        expect(
+          await database.getLastSentCounterForEntry(hostId, entryId),
+          33,
+        );
+      },
+    );
   });
 }

@@ -94,9 +94,12 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
+// Covers `getLastSentCounterForEntry`: the trailing `counter` column makes
+// the MAX/ORDER BY + LIMIT 1 form an index-only scan with early terminate,
+// turning the observed 40–600 ms main-isolate block into sub-millisecond.
 @TableIndex.sql(
-  'CREATE INDEX idx_sync_sequence_log_host_entry_status '
-  'ON sync_sequence_log (host_id, entry_id, status) '
+  'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter '
+  'ON sync_sequence_log (host_id, entry_id, status, counter) '
   'WHERE entry_id IS NOT NULL',
 )
 class SyncSequenceLog extends Table {
@@ -553,13 +556,19 @@ class SyncDatabase extends _$SyncDatabase {
   Future<int?> getLastSentCounterForEntry(String hostId, String entryId) async {
     final received = SyncSequenceStatus.received.index;
     final backfilled = SyncSequenceStatus.backfilled.index;
+    // ORDER BY counter DESC LIMIT 1 resolves as an index-only scan against
+    // `idx_sync_sequence_log_host_entry_status_counter` with early
+    // termination on the first match, instead of scanning every row that
+    // matches the prefix just to compute MAX(counter).
     final query = customSelect(
       '''
-      SELECT MAX(counter) AS last_counter
+      SELECT counter AS last_counter
       FROM sync_sequence_log
       WHERE host_id = ?
         AND entry_id = ?
         AND status IN (?, ?)
+      ORDER BY counter DESC
+      LIMIT 1
       ''',
       variables: [
         Variable.withString(hostId),
@@ -569,8 +578,8 @@ class SyncDatabase extends _$SyncDatabase {
       ],
       readsFrom: {syncSequenceLog},
     );
-    final result = await query.getSingle();
-    return result.readNullable<int>('last_counter');
+    final result = await query.getSingleOrNull();
+    return result?.readNullable<int>('last_counter');
   }
 
   /// Get all pending (missing/requested) sequence log entries for a given payload.
@@ -966,7 +975,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -1043,6 +1052,21 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_sync_sequence_log_host_entry_status '
             'ON sync_sequence_log (host_id, entry_id, status) '
+            'WHERE entry_id IS NOT NULL',
+          );
+        }
+        if (from < 11) {
+          // Replace the v10 prefix index with a covering one that includes
+          // `counter`. Without it, `getLastSentCounterForEntry` pulled every
+          // matching row from the heap to compute MAX(counter), blocking the
+          // UI isolate for 40–600 ms per outbox enqueue on hot entry_ids.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_sync_sequence_log_host_entry_status',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_host_entry_status_counter '
+            'ON sync_sequence_log (host_id, entry_id, status, counter) '
             'WHERE entry_id IS NOT NULL',
           );
         }
