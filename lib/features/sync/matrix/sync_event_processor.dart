@@ -553,6 +553,15 @@ class SyncEventProcessor {
   final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
       LinkedHashMap<String, String>();
 
+  // Dedupe concurrent descriptor fetches for the same attachment event.
+  // Two text events that reference the same `jsonPath` during a single
+  // catch-up or live-scan wave would otherwise each launch an independent
+  // download/decrypt/decode for the identical Matrix attachment. Keyed by
+  // `(indexKey, descriptorEventId)` so a newer descriptor for the same
+  // path still gets its own fetch.
+  final Map<String, Future<String?>> _inFlightDescriptorFetches =
+      <String, Future<String?>>{};
+
   /// Backfill response handler, injected after construction
   /// to resolve circular dependency in DI setup.
   BackfillResponseHandler? backfillResponseHandler;
@@ -1178,6 +1187,35 @@ class SyncEventProcessor {
       return null;
     }
 
+    final dedupeKey = '$indexKey@${descriptorEvent.eventId}';
+    final existing = _inFlightDescriptorFetches[dedupeKey];
+    if (existing != null) {
+      return existing;
+    }
+
+    final future = _runDescriptorFetch(
+      jsonPath: jsonPath,
+      targetFile: targetFile,
+      typeName: typeName,
+      descriptorEvent: descriptorEvent,
+    );
+    _inFlightDescriptorFetches[dedupeKey] = future;
+    try {
+      return await future;
+    } finally {
+      // Drop the cached future; the value was already awaited above, so the
+      // returned Future from Map.remove() does not need its own await.
+      // ignore: unawaited_futures
+      _inFlightDescriptorFetches.remove(dedupeKey);
+    }
+  }
+
+  Future<String?> _runDescriptorFetch({
+    required String jsonPath,
+    required File targetFile,
+    required String typeName,
+    required Event descriptorEvent,
+  }) async {
     try {
       final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
       final downloadedBytes = matrixFile.bytes;

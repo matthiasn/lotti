@@ -822,6 +822,277 @@ void main() {
         ),
       );
     });
+
+    test(
+      'skips large-gap re-materialization when the observed end counter is '
+      'already covered by a previous materialization',
+      () async {
+        // Scenario: stuck watermark at 10, then two consecutive entries both
+        // observing alice at counter (lastSeen + maxGapSize + 2). The first
+        // run should materialize the entire gap; the second run must not
+        // re-scan or re-log it.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const vc1 = VectorClock({aliceHostId: observedCounter});
+        const vc2 = VectorClock({aliceHostId: observedCounter + 1});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vc1,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        // Re-stub after clearInteractions.
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vc2,
+          originatingHostId: aliceHostId,
+        );
+
+        // The second call observed endCounter = observedCounter, which is
+        // less-than-or-equal to the bound recorded by the first call
+        // (endCounter_1 = observedCounter - 1 + ... wait, endCounter = counter
+        // - 1). Second call's endCounter = observedCounter, first's was
+        // observedCounter - 1. So second call SHOULD materialize just the
+        // single new counter delta, not the whole gap again.
+        // Assert: no redundant scan of the already-materialized prefix.
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            lastSeen + 1,
+            any(that: lessThanOrEqualTo(observedCounter - 1)),
+          ),
+        );
+        // And the verbose largeGap/gapDetected logs only fire for the
+        // incremental delta, not the full pre-existing range.
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('largeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.largeGap',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'suppresses log and DB work entirely when an identical gap is observed '
+      'again from a later entry',
+      () async {
+        // Simulates the stuck-watermark hot path: lastSeen never moves, and
+        // every incoming entry observes exactly the same counter value for
+        // the gapped host. After the first materialization, subsequent
+        // entries must produce zero DB reads for the gap range and zero
+        // verbose gap logs.
+        const lastSeen = 10;
+        const observedCounter = lastSeen + SyncTuning.maxGapSize + 2;
+        const vectorClock = VectorClock({aliceHostId: observedCounter});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        );
+        verifyNever(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('largeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.largeGap',
+          ),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('extremeGapDetected')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.extremeGap',
+          ),
+        );
+        verifyNever(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('gapDetectedRange')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.gapDetected',
+          ),
+        );
+      },
+    );
+
+    test(
+      'materializes only the incremental range when the watermark is stuck '
+      'but the observed counter advances',
+      () async {
+        const lastSeen = 10;
+        const firstObserved = lastSeen + SyncTuning.maxGapSize + 2;
+        const secondObserved = firstObserved + 5;
+        const vc1 = VectorClock({aliceHostId: firstObserved});
+        const vc2 = VectorClock({aliceHostId: secondObserved});
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-first',
+          vectorClock: vc1,
+          originatingHostId: aliceHostId,
+        );
+
+        clearInteractions(mockDb);
+        clearInteractions(mockLogging);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => lastSeen);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-second',
+          vectorClock: vc2,
+          originatingHostId: aliceHostId,
+        );
+
+        // Must scan only the NEW range (firstObserved .. secondObserved - 1),
+        // never rescan the earlier (lastSeen+1 .. firstObserved - 1) segment.
+        verify(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            firstObserved,
+            secondObserved - 1,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(
+            aliceHostId,
+            lastSeen + 1,
+            any(that: lessThan(firstObserved)),
+          ),
+        );
+      },
+    );
   });
 
   group('gap detection for offline hosts', () {

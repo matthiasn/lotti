@@ -179,6 +179,15 @@ class SyncSequenceLogService {
   DateTime? _cacheExpiry;
   static const _cacheTtl = Duration(minutes: 5);
 
+  // Highest counter per host for which we have already materialized the
+  // `(gapBaseline + 1 .. counter - 1)` missing range into the sequence log.
+  // Each incoming entry whose observed counter is not strictly greater than
+  // this bound describes a gap that is already recorded, so the full
+  // `getCountersForHostInRange` + batch-insert pass would scan thousands of
+  // rows just to produce `inserted=0`. Skipping it removes the dominant
+  // redundant DB cost on hosts that carry a pre-history gap.
+  final _materializedUpperBound = <String, int>{};
+
   void _invalidateCacheIfExpired() {
     final now = DateTime.now();
     if (_cacheExpiry != null && now.isAfter(_cacheExpiry!)) {
@@ -227,6 +236,14 @@ class SyncSequenceLogService {
   void expireCacheForTesting() {
     // Set expiry to the past so the next cache access triggers invalidation.
     _cacheExpiry = DateTime.now().subtract(const Duration(seconds: 1));
+  }
+
+  /// Drop the materialized-gap memoization. Used in tests that want to
+  /// exercise the first materialization path after already driving state
+  /// through the service.
+  @visibleForTesting
+  void clearMaterializedBoundsForTesting() {
+    _materializedUpperBound.clear();
   }
 
   /// Record an entry being sent by this device.
@@ -399,24 +416,46 @@ class SyncSequenceLogService {
         );
 
         if (gapSize > SyncTuning.maxGapSize) {
+          // Skip re-materialization when the observed range is fully covered
+          // by a previously materialized one for this host. Without this
+          // guard, every incoming event on a host that carries a permanent
+          // pre-history gap re-runs a multi-chunk scan of the sequence log
+          // just to discover `inserted=0`, which dominates the mobile sync
+          // cost and the desktop log volume.
+          final previousBound = _materializedUpperBound[hostId];
+          final endCounter = counter - 1;
+          if (previousBound != null && previousBound >= endCounter) {
+            // No new work to do. Intentionally silent: the ~4 INFO lines per
+            // incoming event on a stuck-watermark host are the largest single
+            // contributor to the 17-18 MB daily sync log; emitting them again
+            // here would defeat the purpose of this short-circuit.
+            continue;
+          }
+
           _trace(
             'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
             subDomain: 'sequence.largeGap',
           );
+          final effectiveStart = previousBound == null
+              ? startCounter
+              : math.max(startCounter, previousBound + 1);
           final insertedCount = await _materializeLargeGap(
             hostId: hostId,
-            startCounter: startCounter,
-            endCounter: counter - 1,
-            gapSize: gapSize,
+            startCounter: effectiveStart,
+            endCounter: endCounter,
+            gapSize: endCounter - effectiveStart + 1,
             originatingHostId: originatingHostId,
             now: now,
           );
           if (insertedCount > 0) {
             newMissingDetected = true;
           }
+          _materializedUpperBound[hostId] = previousBound == null
+              ? endCounter
+              : math.max(previousBound, endCounter);
 
           _trace(
-            'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
+            'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
             'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
             subDomain: 'sequence.gapDetected',
           );
