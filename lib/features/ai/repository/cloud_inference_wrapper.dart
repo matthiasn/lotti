@@ -44,6 +44,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       maxCompletionTokens: maxCompletionTokens,
       provider: provider,
       tools: tools,
+      toolChoice: toolChoice,
     );
   }
 

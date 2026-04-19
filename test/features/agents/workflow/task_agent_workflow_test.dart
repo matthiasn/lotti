@@ -1398,6 +1398,58 @@ void main() {
       );
 
       test(
+        'accumulates token usage across the main call and the forced retry',
+        () async {
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  // First call returns usage; retry (forced tool choice)
+                  // returns more usage. Both must be merged and persisted.
+                  if (toolChoice == null) {
+                    return const InferenceUsage(
+                      inputTokens: 100,
+                      outputTokens: 40,
+                    );
+                  }
+                  return const InferenceUsage(
+                    inputTokens: 25,
+                    outputTokens: 15,
+                  );
+                };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final tokenUsageEntities = capturedTokenUsageEntities(captured);
+
+          expect(tokenUsageEntities, hasLength(1));
+          final entity = tokenUsageEntities.first;
+          expect(entity.inputTokens, 125);
+          expect(entity.outputTokens, 55);
+        },
+      );
+
+      test(
         'does NOT issue a retry when the strategy already published a report',
         () async {
           var callCount = 0;

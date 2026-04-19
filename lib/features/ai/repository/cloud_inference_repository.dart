@@ -133,6 +133,7 @@ class CloudInferenceRepository {
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with:\n'
@@ -223,6 +224,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
       ),
     );
 

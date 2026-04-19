@@ -486,7 +486,7 @@ void main() {
       );
     });
 
-    test('omits section when version predates entries by one day', () {
+    test('omits section when version postdates entries by one day', () {
       // Version created the day after every task-agent changelog entry so
       // no updates should be surfaced. Bump this forward whenever a new
       // entry is added to `seedDirectiveChangelog`.
