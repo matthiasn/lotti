@@ -911,7 +911,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get agentSuggestionsActivityTitle => 'Activitate recentă';
+  String get agentSuggestionsActivityTitle => 'Propuneri recente ale agentului';
 
   @override
   String get agentSuggestionsActivityVerdictConfirmed => 'Confirmată';

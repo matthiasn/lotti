@@ -282,7 +282,7 @@
   "agentStatsWeekTotalLabel": "Celkem za 7 dní",
   "agentSuggestionsActivityCountTotal": "{total} celkem",
   "agentSuggestionsActivityCountVisible": "{visible} z {total}",
-  "agentSuggestionsActivityTitle": "Nedávná aktivita",
+  "agentSuggestionsActivityTitle": "Nedávné návrhy agenta",
   "agentSuggestionsActivityVerdictConfirmed": "Potvrzeno",
   "agentSuggestionsActivityVerdictRejected": "Zamítnuto",
   "agentSuggestionsActivityVerdictRetracted": "Staženo agentem",

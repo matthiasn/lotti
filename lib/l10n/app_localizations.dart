@@ -1635,7 +1635,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentSuggestionsActivityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Recent activity'**
+  /// **'Recent proposal activity'**
   String get agentSuggestionsActivityTitle;
 
   /// No description provided for @agentSuggestionsActivityVerdictConfirmed.

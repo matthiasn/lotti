@@ -900,7 +900,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get agentSuggestionsActivityTitle => 'Nedávná aktivita';
+  String get agentSuggestionsActivityTitle => 'Nedávné návrhy agenta';
 
   @override
   String get agentSuggestionsActivityVerdictConfirmed => 'Potvrzeno';

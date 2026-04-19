@@ -666,7 +666,7 @@ void main() {
         );
         await _pumpUi(tester);
 
-        expect(find.text('Recent activity'), findsNothing);
+        expect(find.text('Recent proposal activity'), findsNothing);
       },
     );
 
@@ -691,7 +691,7 @@ void main() {
         );
         await _pumpUi(tester);
 
-        expect(find.text('Recent activity'), findsOneWidget);
+        expect(find.text('Recent proposal activity'), findsOneWidget);
         expect(
           find.text('Withdraw add_checklist_item for "Buy milk"'),
           findsOneWidget,

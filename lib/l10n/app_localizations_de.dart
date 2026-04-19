@@ -909,7 +909,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get agentSuggestionsActivityTitle => 'Zuletzt entschieden';
+  String get agentSuggestionsActivityTitle => 'Zuletzt entschiedene Vorschläge';
 
   @override
   String get agentSuggestionsActivityVerdictConfirmed => 'Bestätigt';

@@ -427,7 +427,7 @@
   "agentStatsWeekTotalLabel": "Total 7 zile",
   "agentSuggestionsActivityCountTotal": "{total} în total",
   "agentSuggestionsActivityCountVisible": "{visible} din {total}",
-  "agentSuggestionsActivityTitle": "Activitate recentă",
+  "agentSuggestionsActivityTitle": "Propuneri recente ale agentului",
   "agentSuggestionsActivityVerdictConfirmed": "Confirmată",
   "agentSuggestionsActivityVerdictRejected": "Respinsă",
   "agentSuggestionsActivityVerdictRetracted": "Retrasă de agent",

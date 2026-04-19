@@ -508,7 +508,7 @@
       }
     }
   },
-  "agentSuggestionsActivityTitle": "Recent activity",
+  "agentSuggestionsActivityTitle": "Recent proposal activity",
   "agentSuggestionsActivityVerdictConfirmed": "Confirmed",
   "agentSuggestionsActivityVerdictRejected": "Rejected",
   "agentSuggestionsActivityVerdictRetracted": "Retracted by agent",

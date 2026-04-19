@@ -427,7 +427,7 @@
   "agentStatsWeekTotalLabel": "Total 7 jours",
   "agentSuggestionsActivityCountTotal": "{total} au total",
   "agentSuggestionsActivityCountVisible": "{visible} sur {total}",
-  "agentSuggestionsActivityTitle": "Activité récente",
+  "agentSuggestionsActivityTitle": "Propositions récentes de l'agent",
   "agentSuggestionsActivityVerdictConfirmed": "Confirmée",
   "agentSuggestionsActivityVerdictRejected": "Rejetée",
   "agentSuggestionsActivityVerdictRetracted": "Retirée par l'agent",
