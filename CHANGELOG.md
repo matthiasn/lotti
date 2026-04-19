@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.964] - 2026-04-19
+### Changed
+- Sync: eliminated the dominant source of redundant work on devices that
+  carry a permanent pre-history gap in the sequence log. Previously,
+  every incoming event on such a host re-ran a multi-chunk scan of the
+  `sync_sequence_log` table plus a batch-insert pass over thousands of
+  already-materialized rows, and emitted four INFO log lines per event.
+  The sequence log now memoizes the highest counter already materialized
+  as a missing range per host and short-circuits the entire pass when
+  the observed range is already covered. When the observed counter does
+  advance, only the incremental delta is scanned and logged. This
+  removes the main cause of severe mobile UI blocking on slow sync
+  queries and the bulk of the daily sync-log volume on desktop.
+- Sync: missing or requested rows whose backfill request count reaches
+  the per-entry cap are now retired to the terminal `unresolvable`
+  status automatically at the start of each backfill cycle. Without
+  this, a permanently unresolvable counter — a pre-history entry, a
+  purged payload, or a mapping whose payload vector clock is
+  permanently behind the requested counter — kept the contiguous-prefix
+  watermark in `getLastCounterForHost` stuck forever, which in turn
+  forced gap detection to re-enter on every subsequent event for the
+  same host. The watermark now advances past these rows and gap
+  detection stays quiet.
+- Sync attachments: the matrix SDK's "File is no longer cached" error
+  used to be emitted as a full exception with stack trace on every
+  replay of an evicted attachment event, with zero recovery value. The
+  ingestor now records the event id the first time this happens and
+  short-circuits subsequent attempts immediately, collapsing bursts of
+  hundreds of error entries per day to one info line per eviction.
+- Sync: duplicate in-flight descriptor fetches for the same attachment
+  event are now deduplicated. Two text events referencing the same
+  `jsonPath` within a single catch-up or live-scan wave previously each
+  launched an independent download, decrypt, and decode; they now
+  share a single future keyed by the index key and descriptor event id.
+- Outbox: the `sendNext.state` and `dbNudge count=...` observability
+  lines are now coalesced. They emit on state transitions and at a
+  30-second minimum interval instead of once per tick, removing the
+  majority of steady-state outbox log lines without changing enqueue
+  or send behavior.
+
 ## [0.9.963] - 2026-04-19
 ### Added
 - Agent suggestion panel now surfaces the reasoning behind resolved
