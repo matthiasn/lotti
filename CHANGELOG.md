@@ -51,24 +51,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task detail header rebuilt against the desktop Figma as a scoped
   migration. The pinned title sliver and legacy `TaskHeaderMetaCard`
   are replaced by a new `DesktopTaskHeader` that ships an inline,
-  capsule-style title editor (Heading 3 bold, pencil-on-hover, check /
-  cancel on edit), the Figma priority / status / project / due-date /
-  work-category / label chips, and a `more_vert` ellipsis that opens
-  the existing entry action modal. The presentational widget is
-  Riverpod-free and exercised end-to-end in Widgetbook (Default, Hover,
-  Editing, Playground), with a thin `DesktopTaskHeaderConnector` that
-  wires the existing status / priority / category / project / due-date
-  / label pickers and `EntryController` mutations. AI Task Summary,
-  Task description (agent report), Linked Tasks and Checklist cards on
-  the task detail page now render on the flat `TaskDetailSectionCard`
-  surface — solid `background.level02`, `radii.l`, subtle
-  `decorative.level01` border, no gradient, no drop shadow — so they
-  visually match the task list. Section titles inside the touched
-  cards now use the design-system `subtitle2` token instead of Material
-  `textTheme.titleSmall`. The obsolete `TaskTitleHeader`,
-  `TaskHeaderMetaCard` and the per-chip `*_wrapper.dart` /
-  `*_widget.dart` files that only existed to feed the old header are
-  deleted; the shared modal content widgets
+  capsule-style multi-line title editor (Heading 3 bold,
+  pencil-on-hover, check/cancel on edit — the title wraps onto
+  additional lines for long strings on both mobile and desktop), the
+  Figma priority / status / project / due-date / work-category chips,
+  the existing estimate chip (progress bar + overtime styling)
+  surfaced inside the header chip row, assigned-label chips rendered
+  as outlined pills with a leading color dot and high-emphasis primary
+  text for legibility, and subdued placeholder chips for every empty
+  state ("No project", "unassigned" category, "No due date",
+  "Add Label") that open the corresponding picker when tapped.
+  Long-press on a label chip still opens its description dialog when
+  one is set. The header body is laid out as three explicit lines:
+  title → classification (category, project, labels) →
+  metadata (due date, estimate, priority, status); each row wraps on
+  narrow widths. The in-header `more_vert` ellipsis is removed —
+  entry actions stay accessible from the pinned app bar. That app bar
+  now additionally surfaces the task title in `subtitle2` matching
+  the task list card typography, fading in once the task header
+  scrolls out of view so context persists while scrolling through the
+  detail page. The presentational
+  widget is Riverpod-free and exercised end-to-end in Widgetbook
+  (Default, Hover, Editing, Long title, No project, Playground), with
+  a thin `DesktopTaskHeaderConnector` that wires the existing
+  status / priority / category / project / due-date / label pickers
+  and `EntryController` mutations. `TaskLabelsWrapper` is removed
+  entirely — the estimate chip, assigned-label chips and the Add
+  Label affordance it used to render are all inside the header now. AI Task Summary, Task description (agent report), Linked
+  Tasks and Checklist cards on the task detail page now render on the
+  flat `TaskDetailSectionCard` surface — solid `background.level02`,
+  `radii.l`, subtle `decorative.level01` border, no gradient, no drop
+  shadow — so they visually match the task list. Section titles
+  inside the touched cards now use the design-system `subtitle2`
+  token instead of Material `textTheme.titleSmall`. The obsolete
+  `TaskTitleHeader`, `TaskHeaderMetaCard` and the per-chip
+  `*_wrapper.dart` / `*_widget.dart` files that only existed to feed
+  the old header are deleted; the shared modal content widgets
   (`TaskStatusModalContent`, `showDueDatePicker`,
   `CategorySelectionModalContent`,
   `ProjectSelectionModalContent`) are retained and reused by the new

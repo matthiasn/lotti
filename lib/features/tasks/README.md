@@ -147,7 +147,6 @@ flowchart TD
   Load --> AppBar["TaskSliverAppBar (cover image + back / AI / overflow)"]
   Load --> Form["TaskForm"]
   Form --> Header["DesktopTaskHeaderConnector → DesktopTaskHeader"]
-  Form --> Labels["TaskLabelsWrapper (Add Label + Estimate)"]
   Form --> Agents["AgentSuggestionsPanel + TaskAgentReportSection"]
   Form --> Linked["LinkedTasksWidget"]
   Form --> Checklists["ChecklistsWidget"]
@@ -160,8 +159,7 @@ This page is not just "show task fields." It is the task workspace where task me
 
 Inside `TaskForm`, the composition is also fairly opinionated:
 
-- `DesktopTaskHeaderConnector` for the interactive header: inline title edit, priority badge, project reference, work-category chip, due-date chip, assigned label chips, status dropdown, and `more_vert` action menu. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`, `ExtendedHeaderModal`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
-- `TaskLabelsWrapper` for the secondary row: "Add Label" and the estimate chip / progress bar
+- `DesktopTaskHeaderConnector` for the interactive header: inline multi-line title edit, priority badge, project reference (with a "No project" placeholder when none is linked), work-category chip (or "unassigned" placeholder), due-date chip (or "No due date" placeholder), estimate chip (with progress bar when set), assigned label chips (or "Add Label" placeholder), status dropdown, and `more_vert` action menu. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `showEstimatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`, `ExtendedHeaderModal`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
 - an `EditorWidget` only for legacy tasks that already have non-empty entry text
 - `AgentSuggestionsPanel` which embeds `TaskAgentReportSection` plus the unified open-proposal list
 - `LinkedTasksWidget`
@@ -177,20 +175,24 @@ The header has three interactive title states driven by `MouseRegion` + local ed
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Default
-  Default --> Hover: mouse enter
-  Hover --> Default: mouse leave
-  Hover --> Editing: tap pencil / title
-  Default --> Editing: tap title
-  Editing --> Default: Enter or check → onTitleSaved
-  Editing --> Default: Esc or close → revert
+  [*] --> ReadOnly
+  ReadOnly --> Editing: tap title
+  Editing --> ReadOnly: check button / ⌘+Enter → onTitleSaved
+  Editing --> ReadOnly: close button / Esc → revert
 ```
 
-- Default: title only, transparent background.
-- Hover: capsule fill reveals, pencil fades in.
-- Editing: capsule fill + `interactive.enabled` teal border, title becomes an inline `TextField`, pencil is replaced by check (save) and close (cancel).
+- ReadOnly: the title renders as plain `Text` in Heading 3 Bold, wrapping onto multiple lines for long strings.
+- Editing: the title becomes a capsule-shaped inline `TextField` with a teal `interactive.enabled` border and external check (save) and close (cancel) buttons. Enter inserts a newline; ⌘/Ctrl+Enter or tapping the check saves.
 
-The header is exercised in isolation under Widgetbook → Tasks → Desktop task header with Default / Hover / Editing / Playground use cases. The Playground drives priority, status, category, due date, labels and the hover / editing initial flags via in-page controls — no Riverpod is needed because the presentational `DesktopTaskHeader` takes a plain `DesktopTaskHeaderData` and emits callbacks.
+The header body is three explicit lines:
+
+1. **Title** — tap to edit.
+2. **Classification** — `Wrap` of `[category | unassigned placeholder] → [project | No project placeholder] → [label chips | Add Label placeholder]`.
+3. **Metadata** — `Wrap` of `[due date | No due date placeholder] → [estimate chip] → [priority badge] → [status dropdown]`.
+
+There is no ellipsis inside the header — entry actions live on the pinned app bar. `TaskCompactAppBar` and `TaskExpandableAppBar` also surface the task title in `subtitle2` once the detail scroll offset passes a threshold, so the title stays visible as the header scrolls out of view.
+
+The header is exercised in isolation under Widgetbook → Tasks → Desktop task header with Default / Editing / Long title / Empty classification + metadata / Playground use cases. The Playground drives priority, status, category, due date, labels and the editing initial flag via in-page controls — no Riverpod is needed because the presentational `DesktopTaskHeader` takes a plain `DesktopTaskHeaderData` and emits callbacks.
 
 ## Checklist Subsystem
 
@@ -379,7 +381,7 @@ The redesigned browse page also preserves the existing non-filter runtime behavi
 
 ## Header Controls and Metadata
 
-The task detail metadata band is concentrated in `DesktopTaskHeaderConnector` plus `TaskLabelsWrapper`. Together they provide interactive controls for:
+The task detail metadata band is concentrated entirely inside `DesktopTaskHeaderConnector`. It provides interactive controls for:
 
 - title (inline capsule edit)
 - status

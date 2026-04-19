@@ -13,7 +13,6 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
-import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/get_it.dart';
@@ -148,7 +147,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
-      expect(find.byType(TaskLabelsWrapper), findsOneWidget);
       // AgentSuggestionsPanel composes TaskAgentReportSection internally,
       // so both should be found in the tree after the consolidation.
       expect(find.byType(AgentSuggestionsPanel), findsOneWidget);

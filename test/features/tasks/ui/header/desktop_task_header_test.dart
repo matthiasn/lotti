@@ -1,8 +1,8 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -37,13 +37,31 @@ Future<void> _pumpDesktop(
   await tester.pump();
 }
 
+LabelDefinition _label({
+  required String id,
+  required String name,
+  required String color,
+  String? description,
+}) {
+  final ts = DateTime.utc(2026);
+  return LabelDefinition(
+    id: id,
+    createdAt: ts,
+    updatedAt: ts,
+    name: name,
+    color: color,
+    vectorClock: null,
+    description: description,
+  );
+}
+
 DesktopTaskHeaderData _fixture({
   String title = 'Payment confirmation',
   TaskPriority priority = TaskPriority.p1High,
   DesktopTaskHeaderProject? project,
   DesktopTaskHeaderCategory? category,
   DesktopTaskHeaderDueDate? dueDate,
-  List<DesktopTaskHeaderLabel> labels = const [],
+  List<LabelDefinition> labels = const [],
 }) {
   final createdAt = DateTime.utc(2026);
   return DesktopTaskHeaderData(
@@ -74,29 +92,20 @@ const _categoryFixture = DesktopTaskHeaderCategory(
 
 const _dueFixture = DesktopTaskHeaderDueDate(label: 'Due: Apr 1, 2026');
 
-const _labelFixtures = [
-  DesktopTaskHeaderLabel(
+final _labelFixtures = <LabelDefinition>[
+  _label(
     id: 'bug-fix',
-    label: 'Bug fix',
-    color: Color(0xFF1CA3E3),
+    name: 'Bug fix',
+    color: '#1CA3E3',
+    description: 'Fixes a defect, not new behaviour.',
   ),
-  DesktopTaskHeaderLabel(
-    id: 'release-blocker',
-    label: 'Release blocker',
-    color: Color(0xFFFA8C05),
-  ),
+  _label(id: 'release-blocker', name: 'Release blocker', color: '#FA8C05'),
 ];
 
-Finder _pencilOpacity() => find.ancestor(
-  of: find.byIcon(Icons.edit_outlined),
-  matching: find.byType(AnimatedOpacity),
-);
-
 void main() {
-  group('DesktopTaskHeader — content', () {
+  group('DesktopTaskHeader — content + layout', () {
     testWidgets(
-      'renders title, priority short, project, category, due, labels, '
-      'status and ellipsis',
+      'renders title, classification line, metadata line and no ellipsis',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -108,26 +117,68 @@ void main() {
               labels: _labelFixtures,
             ),
             onTitleSaved: (_) {},
-            onEllipsisTap: () {},
+            estimateSlot: const Text('1h / 2h'),
           ),
         );
 
         expect(find.text('Payment confirmation'), findsOneWidget);
-        expect(find.text('P1'), findsOneWidget);
+        // Classification row
+        expect(find.text('Work'), findsOneWidget);
         expect(
           find.text('Device Sync - Lotti Mobile App Implementation'),
           findsOneWidget,
         );
-        expect(find.text('Work'), findsOneWidget);
-        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
         expect(find.text('Bug fix'), findsOneWidget);
         expect(find.text('Release blocker'), findsOneWidget);
+        // Metadata row
+        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
+        expect(find.text('1h / 2h'), findsOneWidget);
+        expect(find.text('P1'), findsOneWidget);
         expect(find.text('Open'), findsOneWidget);
-        expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+        // No ellipsis in the header — lives in the app bar.
+        expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+        expect(find.byIcon(Icons.more_horiz), findsNothing);
       },
     );
 
-    testWidgets('omits optional groups when not supplied', (tester) async {
+    testWidgets(
+      'renders placeholder chips when classification/metadata are empty',
+      (tester) async {
+        var category = 0;
+        var project = 0;
+        var addLabel = 0;
+        var due = 0;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+            onCategoryTap: () => category++,
+            onProjectTap: () => project++,
+            onAddLabelTap: () => addLabel++,
+            onDueDateTap: () => due++,
+          ),
+        );
+        expect(find.text('unassigned'), findsOneWidget);
+        expect(find.text('No project'), findsOneWidget);
+        expect(find.text('Add Label'), findsOneWidget);
+        expect(find.text('No due date'), findsOneWidget);
+
+        await tester.tap(find.text('unassigned'));
+        await tester.tap(find.text('No project'));
+        await tester.tap(find.text('Add Label'));
+        await tester.tap(find.text('No due date'));
+        await tester.pump();
+        expect(category, 1);
+        expect(project, 1);
+        expect(addLabel, 1);
+        expect(due, 1);
+      },
+    );
+  });
+
+  group('DesktopTaskHeader — title editing', () {
+    testWidgets('tap read-only title transitions to editor', (tester) async {
       await _pumpDesktop(
         tester,
         DesktopTaskHeader(
@@ -135,194 +186,131 @@ void main() {
           onTitleSaved: (_) {},
         ),
       );
-      expect(find.byIcon(Icons.folder_outlined), findsNothing);
-      expect(find.text('Work'), findsNothing);
-      expect(find.text('Due: Apr 1, 2026'), findsNothing);
-      expect(find.text('Bug fix'), findsNothing);
-      // No ellipsis when no handler.
-      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text('Payment confirmation'));
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    });
+
+    testWidgets('commit saves new value and returns to read-only', (
+      tester,
+    ) async {
+      String? saved;
+      await _pumpDesktop(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) {
+            return DesktopTaskHeader(
+              data: _fixture(title: saved ?? 'Payment confirmation'),
+              onTitleSaved: (v) => setState(() => saved = v),
+              initialEditing: true,
+            );
+          },
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.tap(find.byIcon(Icons.check_rounded));
+      await tester.pump();
+
+      expect(saved, 'Payment flow');
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Payment flow'), findsOneWidget);
+    });
+
+    testWidgets('cancel discards edits and restores original title', (
+      tester,
+    ) async {
+      var saves = 0;
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) => saves++,
+          initialEditing: true,
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'Different title');
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+
+      expect(saves, 0);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Payment confirmation'), findsOneWidget);
     });
   });
 
-  group('DesktopTaskHeader — hover affordance', () {
-    testWidgets(
-      'pencil icon is hidden in default state and visible when hovered',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) {},
-          ),
-        );
-
-        // Present in the tree (AnimatedOpacity + IgnorePointer), but opacity 0.
-        expect(
-          tester.widget<AnimatedOpacity>(_pencilOpacity()).opacity,
-          0,
-        );
-
-        final titleCenter = tester.getCenter(find.text('Payment confirmation'));
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        addTearDown(gesture.removePointer);
-        await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(titleCenter);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 150));
-
-        expect(
-          tester.widget<AnimatedOpacity>(_pencilOpacity()).opacity,
-          1,
-        );
-      },
-    );
-
-    testWidgets(
-      'initialHover flag surfaces the pencil immediately',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) {},
-            initialHover: true,
-          ),
-        );
-        expect(
-          tester.widget<AnimatedOpacity>(_pencilOpacity()).opacity,
-          1,
-        );
-      },
-    );
-  });
-
-  group('DesktopTaskHeader — editing', () {
-    testWidgets(
-      'tapping the title opens edit mode with check/close',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) {},
-          ),
-        );
-        await tester.tap(find.text('Payment confirmation'));
-        await tester.pump();
-
-        expect(find.byType(TextField), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.edit_outlined), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'commit fires onTitleSaved with the edited value',
-      (tester) async {
-        String? saved;
-        await _pumpDesktop(
-          tester,
-          StatefulBuilder(
-            builder: (context, setState) {
-              return DesktopTaskHeader(
-                data: _fixture(title: saved ?? 'Payment confirmation'),
-                onTitleSaved: (v) => setState(() => saved = v),
-                initialEditing: true,
-              );
-            },
-          ),
-        );
-        await tester.enterText(find.byType(TextField), 'Payment flow');
-        await tester.tap(find.byIcon(Icons.check_rounded));
-        await tester.pump();
-
-        expect(saved, 'Payment flow');
-        expect(find.byType(TextField), findsNothing);
-        expect(find.text('Payment flow'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'cancel reverts to the original title without calling save',
-      (tester) async {
-        var saveCalls = 0;
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) => saveCalls++,
-            initialEditing: true,
-          ),
-        );
-        await tester.enterText(find.byType(TextField), 'Different title');
-        await tester.tap(find.byIcon(Icons.close_rounded));
-        await tester.pump();
-
-        expect(saveCalls, 0);
-        expect(find.byType(TextField), findsNothing);
-        expect(find.text('Payment confirmation'), findsOneWidget);
-      },
-    );
-  });
-
   group('DesktopTaskHeader — callbacks', () {
-    testWidgets(
-      'tapping priority / status / ellipsis fires the callbacks',
-      (tester) async {
-        var priority = 0;
-        var status = 0;
-        var ellipsis = 0;
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) {},
-            onPriorityTap: () => priority++,
-            onStatusTap: () => status++,
-            onEllipsisTap: () => ellipsis++,
-          ),
-        );
-        await tester.tap(find.text('P1'));
-        await tester.tap(find.text('Open'));
-        await tester.tap(find.byIcon(Icons.more_vert_rounded));
-        await tester.pump();
-        expect(priority, 1);
-        expect(status, 1);
-        expect(ellipsis, 1);
-      },
-    );
+    testWidgets('tapping priority / status fires callbacks', (tester) async {
+      var priority = 0;
+      var status = 0;
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          onPriorityTap: () => priority++,
+          onStatusTap: () => status++,
+        ),
+      );
+      await tester.tap(find.text('P1'));
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+      expect(priority, 1);
+      expect(status, 1);
+    });
 
     testWidgets(
-      'tapping category / due / label fires their callbacks',
+      'tapping category / project / due / label fires each callback',
       (tester) async {
         String? tappedLabel;
         var categoryTaps = 0;
+        var projectTaps = 0;
         var dueTaps = 0;
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
             data: _fixture(
+              project: _projectFixture,
               category: _categoryFixture,
               dueDate: _dueFixture,
               labels: _labelFixtures,
             ),
             onTitleSaved: (_) {},
             onCategoryTap: () => categoryTaps++,
+            onProjectTap: () => projectTaps++,
             onDueDateTap: () => dueTaps++,
             onLabelTap: (l) => tappedLabel = l.id,
           ),
         );
         await tester.tap(find.text('Work'));
+        await tester.tap(
+          find.text('Device Sync - Lotti Mobile App Implementation'),
+        );
         await tester.tap(find.text('Due: Apr 1, 2026'));
         await tester.tap(find.text('Release blocker'));
         await tester.pump();
         expect(categoryTaps, 1);
+        expect(projectTaps, 1);
         expect(dueTaps, 1);
         expect(tappedLabel, 'release-blocker');
       },
     );
+
+    testWidgets('long-press on label with description opens dialog', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(labels: _labelFixtures),
+          onTitleSaved: (_) {},
+        ),
+      );
+      await tester.longPress(find.text('Bug fix'));
+      await tester.pumpAndSettle();
+      expect(find.text('Fixes a defect, not new behaviour.'), findsOneWidget);
+    });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
@@ -20,22 +21,38 @@ WidgetbookComponent buildDesktopTaskHeaderWidgetbookComponent() {
         ),
       ),
       WidgetbookUseCase(
-        name: 'Hover',
-        builder: (_) => _HeaderFrame(
-          child: DesktopTaskHeader(
-            data: _fixtureData(),
-            onTitleSaved: _noop,
-            initialHover: true,
-          ),
-        ),
-      ),
-      WidgetbookUseCase(
         name: 'Editing',
         builder: (_) => _HeaderFrame(
           child: DesktopTaskHeader(
             data: _fixtureData(),
             onTitleSaved: _noop,
             initialEditing: true,
+          ),
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Long title (wraps)',
+        builder: (_) => _HeaderFrame(
+          child: DesktopTaskHeader(
+            data: _fixtureData(
+              title:
+                  'Payment confirmation across all platforms including deep integration with the Lotti mobile release and the downstream QA pipeline',
+            ),
+            onTitleSaved: _noop,
+          ),
+        ),
+      ),
+      WidgetbookUseCase(
+        name: 'Empty classification + metadata',
+        builder: (_) => _HeaderFrame(
+          child: DesktopTaskHeader(
+            data: _fixtureData(
+              showProject: false,
+              showCategory: false,
+              showDueDate: false,
+              showLabels: false,
+            ),
+            onTitleSaved: _noop,
           ),
         ),
       ),
@@ -83,6 +100,21 @@ TaskStatus _statusDone() => TaskStatus.done(
   utcOffset: 0,
 );
 
+LabelDefinition _label({
+  required String id,
+  required String name,
+  required String color,
+}) {
+  return LabelDefinition(
+    id: id,
+    createdAt: _fixtureCreatedAt,
+    updatedAt: _fixtureCreatedAt,
+    name: name,
+    color: color,
+    vectorClock: null,
+  );
+}
+
 DesktopTaskHeaderData _fixtureData({
   String title = 'Payment confirmation',
   TaskPriority priority = TaskPriority.p1High,
@@ -90,7 +122,7 @@ DesktopTaskHeaderData _fixtureData({
   bool showProject = true,
   bool showCategory = true,
   bool showDueDate = true,
-  bool urgentDueDate = false,
+  DesktopTaskHeaderDueUrgency dueUrgency = DesktopTaskHeaderDueUrgency.normal,
   bool showLabels = true,
 }) {
   return DesktopTaskHeaderData(
@@ -113,20 +145,16 @@ DesktopTaskHeaderData _fixtureData({
     dueDate: showDueDate
         ? DesktopTaskHeaderDueDate(
             label: 'Due: Apr 1, 2026',
-            isUrgent: urgentDueDate,
+            urgency: dueUrgency,
           )
         : null,
     labels: showLabels
-        ? const [
-            DesktopTaskHeaderLabel(
-              id: 'bug-fix',
-              label: 'Bug fix',
-              color: Color(0xFF1CA3E3),
-            ),
-            DesktopTaskHeaderLabel(
+        ? [
+            _label(id: 'bug-fix', name: 'Bug fix', color: '#1CA3E3'),
+            _label(
               id: 'release-blocker',
-              label: 'Release blocker',
-              color: Color(0xFFFA8C05),
+              name: 'Release blocker',
+              color: '#FA8C05',
             ),
           ]
         : const [],
@@ -181,8 +209,7 @@ class _HeaderPlaygroundState extends State<_HeaderPlayground> {
   bool _showCategory = true;
   bool _showDueDate = true;
   bool _showLabels = true;
-  bool _urgentDueDate = false;
-  bool _startHover = false;
+  DesktopTaskHeaderDueUrgency _dueUrgency = DesktopTaskHeaderDueUrgency.normal;
   bool _startEditing = false;
 
   TaskStatus _statusFor(int index) {
@@ -211,7 +238,7 @@ class _HeaderPlaygroundState extends State<_HeaderPlayground> {
       showProject: _showProject,
       showCategory: _showCategory,
       showDueDate: _showDueDate,
-      urgentDueDate: _urgentDueDate,
+      dueUrgency: _dueUrgency,
       showLabels: _showLabels,
     );
 
@@ -234,12 +261,10 @@ class _HeaderPlaygroundState extends State<_HeaderPlayground> {
               onShowCategoryChanged: (v) => setState(() => _showCategory = v),
               showDueDate: _showDueDate,
               onShowDueDateChanged: (v) => setState(() => _showDueDate = v),
-              urgentDueDate: _urgentDueDate,
-              onUrgentDueDateChanged: (v) => setState(() => _urgentDueDate = v),
+              dueUrgency: _dueUrgency,
+              onDueUrgencyChanged: (v) => setState(() => _dueUrgency = v),
               showLabels: _showLabels,
               onShowLabelsChanged: (v) => setState(() => _showLabels = v),
-              startHover: _startHover,
-              onStartHoverChanged: (v) => setState(() => _startHover = v),
               startEditing: _startEditing,
               onStartEditingChanged: (v) => setState(() => _startEditing = v),
             ),
@@ -253,10 +278,9 @@ class _HeaderPlaygroundState extends State<_HeaderPlayground> {
                 ),
                 child: DesktopTaskHeader(
                   // Rebuild whenever a knob forces a fresh initial state.
-                  key: ValueKey('$_startHover:$_startEditing'),
+                  key: ValueKey('editing:$_startEditing'),
                   data: data,
                   onTitleSaved: (next) => setState(() => _title = next),
-                  initialHover: _startHover,
                   initialEditing: _startEditing,
                 ),
               ),
@@ -281,12 +305,10 @@ class _Controls extends StatelessWidget {
     required this.onShowCategoryChanged,
     required this.showDueDate,
     required this.onShowDueDateChanged,
-    required this.urgentDueDate,
-    required this.onUrgentDueDateChanged,
+    required this.dueUrgency,
+    required this.onDueUrgencyChanged,
     required this.showLabels,
     required this.onShowLabelsChanged,
-    required this.startHover,
-    required this.onStartHoverChanged,
     required this.startEditing,
     required this.onStartEditingChanged,
   });
@@ -302,12 +324,10 @@ class _Controls extends StatelessWidget {
   final ValueChanged<bool> onShowCategoryChanged;
   final bool showDueDate;
   final ValueChanged<bool> onShowDueDateChanged;
-  final bool urgentDueDate;
-  final ValueChanged<bool> onUrgentDueDateChanged;
+  final DesktopTaskHeaderDueUrgency dueUrgency;
+  final ValueChanged<DesktopTaskHeaderDueUrgency> onDueUrgencyChanged;
   final bool showLabels;
   final ValueChanged<bool> onShowLabelsChanged;
-  final bool startHover;
-  final ValueChanged<bool> onStartHoverChanged;
   final bool startEditing;
   final ValueChanged<bool> onStartEditingChanged;
 
@@ -355,20 +375,31 @@ class _Controls extends StatelessWidget {
           value: showDueDate,
           onChanged: onShowDueDateChanged,
         ),
-        _Toggle(
-          label: 'Urgent due',
-          value: urgentDueDate,
-          onChanged: onUrgentDueDateChanged,
+        _Dropdown<DesktopTaskHeaderDueUrgency>(
+          label: 'Due urgency',
+          value: dueUrgency,
+          items: const [
+            DropdownMenuItem(
+              value: DesktopTaskHeaderDueUrgency.normal,
+              child: Text('Normal'),
+            ),
+            DropdownMenuItem(
+              value: DesktopTaskHeaderDueUrgency.today,
+              child: Text('Today (orange)'),
+            ),
+            DropdownMenuItem(
+              value: DesktopTaskHeaderDueUrgency.overdue,
+              child: Text('Overdue (red)'),
+            ),
+          ],
+          onChanged: (v) {
+            if (v != null) onDueUrgencyChanged(v);
+          },
         ),
         _Toggle(
           label: 'Show labels',
           value: showLabels,
           onChanged: onShowLabelsChanged,
-        ),
-        _Toggle(
-          label: 'Start hover',
-          value: startHover,
-          onChanged: onStartHoverChanged,
         ),
         _Toggle(
           label: 'Start editing',
