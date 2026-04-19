@@ -32,10 +32,23 @@ class MockConversationRepository extends ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature,
     ConversationStrategy? strategy,
   })?
   sendMessageDelegate;
+
+  /// Number of times [sendMessage] has actually forwarded to
+  /// [sendMessageDelegate]. Incremented each time the gate is open.
+  int sendMessageDelegateCallCount = 0;
+
+  /// Upper bound on delegate invocations (`1` by default). The production
+  /// workflow now fires a forced-`update_report` retry whenever the strategy
+  /// ended without a report, so without this gate most test delegates would
+  /// be invoked twice and cause duplicate side effects. Tests that want to
+  /// exercise both the primary call and the retry can set this to `2` (or
+  /// higher).
+  int maxDelegateCalls = 1;
 
   @override
   void build() {
@@ -68,10 +81,13 @@ class MockConversationRepository extends ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {
-    if (sendMessageDelegate != null) {
+    if (sendMessageDelegate != null &&
+        sendMessageDelegateCallCount < maxDelegateCalls) {
+      sendMessageDelegateCallCount++;
       return sendMessageDelegate!(
         conversationId: conversationId,
         message: message,
@@ -79,6 +95,7 @@ class MockConversationRepository extends ConversationRepository {
         provider: provider,
         inferenceRepo: inferenceRepo,
         tools: tools,
+        toolChoice: toolChoice,
         temperature: temperature,
         strategy: strategy,
       );

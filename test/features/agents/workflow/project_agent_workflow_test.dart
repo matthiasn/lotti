@@ -43,6 +43,7 @@ class _MockConversationRepository extends ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature,
     ConversationStrategy? strategy,
   })?
@@ -75,6 +76,7 @@ class _MockConversationRepository extends ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {
@@ -86,6 +88,7 @@ class _MockConversationRepository extends ConversationRepository {
         provider: provider,
         inferenceRepo: inferenceRepo,
         tools: tools,
+        toolChoice: toolChoice,
         temperature: temperature,
         strategy: strategy,
       );
@@ -764,6 +767,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async =>
@@ -822,6 +826,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -851,6 +856,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -908,6 +914,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -984,6 +991,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1038,6 +1046,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1082,6 +1091,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1108,6 +1118,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1224,6 +1235,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1325,6 +1337,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1358,6 +1371,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1434,6 +1448,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1470,6 +1485,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1545,6 +1561,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1710,6 +1727,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1775,6 +1793,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1865,6 +1884,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1908,6 +1928,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1953,6 +1974,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2030,6 +2052,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2096,6 +2119,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2124,6 +2148,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2182,6 +2207,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2220,6 +2246,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2361,6 +2388,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -2442,6 +2470,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -2475,6 +2504,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {

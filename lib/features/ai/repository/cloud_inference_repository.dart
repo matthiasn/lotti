@@ -57,8 +57,20 @@ class CloudInferenceRepository {
     int? maxCompletionTokens,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     bool stream = true,
   }) {
+    final ChatCompletionToolChoiceOption? effectiveToolChoice;
+    if (toolChoice != null) {
+      effectiveToolChoice = toolChoice;
+    } else if (tools != null && tools.isNotEmpty) {
+      effectiveToolChoice = const ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.auto,
+      );
+    } else {
+      effectiveToolChoice = null;
+    }
+
     return CreateChatCompletionRequest(
       messages: messages,
       model: ChatCompletionModel.modelId(model),
@@ -67,11 +79,7 @@ class CloudInferenceRepository {
       maxTokens: maxTokens,
       stream: stream,
       tools: tools,
-      toolChoice: tools != null && tools.isNotEmpty
-          ? const ChatCompletionToolChoiceOption.mode(
-              ChatCompletionToolChoiceMode.auto,
-            )
-          : null,
+      toolChoice: effectiveToolChoice,
     );
   }
 
@@ -451,6 +459,11 @@ class CloudInferenceRepository {
   /// - [temperature]: Sampling temperature
   /// - [provider]: Provider configuration
   /// - [tools]: Optional function declarations
+  /// - [toolChoice]: Optional override of the tool-selection policy. When
+  ///   provided, it replaces the default `auto` behavior — useful for forcing
+  ///   a terminal tool call (e.g. `update_report`) when a weaker model failed
+  ///   to emit it on its own. Currently honored only on the OpenAI-compatible
+  ///   branch; the Gemini/Ollama/Mistral sub-repositories ignore it.
   /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
   /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
   /// - [turnIndex]: Current turn number for unique tool call ID generation
@@ -461,6 +474,7 @@ class CloudInferenceRepository {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -552,6 +566,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
       ),
     );
 

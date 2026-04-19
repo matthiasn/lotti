@@ -61,6 +61,13 @@ class ConversationRepository extends _$ConversationRepository {
 
   /// Send a message in a conversation.
   ///
+  /// When [toolChoice] is supplied it overrides the provider default (`auto`)
+  /// for every inference call this `sendMessage` makes. This is the hook the
+  /// Task Agent uses to force a terminal `update_report` call when a weaker
+  /// model stopped early without publishing its report. Currently honored
+  /// only on the OpenAI-compatible inference path — Gemini/Ollama/Mistral
+  /// sub-repositories silently ignore it.
+  ///
   /// Returns the accumulated [InferenceUsage] across all turns, or `null`
   /// if no usage data was reported by the inference provider.
   Future<InferenceUsage?> sendMessage({
@@ -70,6 +77,7 @@ class ConversationRepository extends _$ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {
@@ -117,6 +125,7 @@ class ConversationRepository extends _$ConversationRepository {
           model: model,
           provider: provider,
           tools: tools,
+          toolChoice: toolChoice,
           temperature: effectiveTemperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,

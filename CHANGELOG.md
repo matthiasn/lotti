@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.962] - 2026-04-19
+### Changed
+- Task agent: the mandatory `update_report` tool call at the end of every
+  wake is now a hard guarantee instead of a prompt-only request. When the
+  model stops without calling it — a routine failure mode for weaker
+  local models such as Qwen 3.6 served via `mlx-vlm` — the workflow now
+  issues one additional inference pass with `tool_choice` pinned to
+  `update_report` and a direct reminder message, forcing the final
+  report. `ConversationRepository.sendMessage` and the underlying
+  inference layer (`CloudInferenceRepository`, `CloudInferenceWrapper`,
+  `InferenceRepositoryInterface`, `OllamaInferenceRepository`) gained a
+  threaded `toolChoice` parameter that overrides the default `auto`
+  selection policy; the override is currently honored on the OpenAI-
+  compatible path and silently ignored by the Gemini/Ollama/Mistral
+  sub-repositories, which still benefit from the retry's pointed user
+  message. The task-agent scaffold and the seeded report directive also
+  now lead with a non-negotiable "final step" instruction so compliant
+  models need no retry at all.
+
 ### Added
 - Initial-title auto-apply: when the task agent calls `set_task_title` on
   a task whose title is still null or empty, the title is applied
