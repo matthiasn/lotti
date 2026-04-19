@@ -2762,6 +2762,83 @@ void main() {
       });
     });
 
+    test(
+      'coalesces repeat counts within the quiet window: logs once per '
+      'magnitude-bucket transition, not once per stream event',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final gate = createGate();
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
+
+        final countController = StreamController<int>.broadcast();
+        addTearDown(countController.close);
+        when(
+          () => syncDatabase.watchOutboxCount(),
+        ).thenAnswer((_) => countController.stream);
+
+        fakeAsync((async) {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+          );
+
+          // First tick at count=1 crosses the "first-seen" / count=1 bucket.
+          countController.add(1);
+          async
+            ..elapse(const Duration(milliseconds: 60))
+            ..flushMicrotasks();
+          // Same-bucket tick shortly after: must not log again.
+          countController.add(2);
+          async
+            ..elapse(const Duration(milliseconds: 60))
+            ..flushMicrotasks();
+          countController.add(3);
+          async
+            ..elapse(const Duration(milliseconds: 60))
+            ..flushMicrotasks();
+          // Crossing into the >=10 bucket: must log.
+          countController.add(12);
+          async
+            ..elapse(const Duration(milliseconds: 60))
+            ..flushMicrotasks();
+
+          final logged = verify(
+            () => loggingService.captureEvent(
+              captureAny<String>(that: startsWith('dbNudge count=')),
+              domain: 'OUTBOX',
+              subDomain: 'dbNudge',
+            ),
+          ).captured;
+          expect(
+            logged,
+            equals(<String>[
+              'dbNudge count=1 → enqueue',
+              'dbNudge count=12 → enqueue',
+            ]),
+            reason:
+                'Only bucket transitions (first-seen, crossing >=10) '
+                'should log within the coalesce window',
+          );
+
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
+
     test('ignores count <= 0', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),

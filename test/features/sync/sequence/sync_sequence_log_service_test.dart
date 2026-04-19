@@ -4140,6 +4140,40 @@ void main() {
         ).called(2);
       },
     );
+
+    test(
+      'recordSentEntry does not downgrade the cached counter when a lower '
+      'counter is re-recorded (superseded by a newer send in flight)',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-nodown'),
+        ).thenAnswer((_) async => 100);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Seed the cache at 100.
+        final seeded = await service.getLastSentVectorClockForEntry(
+          'entry-nodown',
+        );
+        expect(seeded!.vclock[myHostId], 100);
+
+        // Record a LOWER counter — must not downgrade the cache.
+        await service.recordSentEntry(
+          entryId: 'entry-nodown',
+          vectorClock: const VectorClock({myHostId: 50}),
+        );
+
+        final afterLower = await service.getLastSentVectorClockForEntry(
+          'entry-nodown',
+        );
+        expect(afterLower!.vclock[myHostId], 100);
+        // Still only the one DB call from the initial seed.
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-nodown'),
+        ).called(1);
+      },
+    );
   });
 
   group('cache invalidation after marking covered counters', () {

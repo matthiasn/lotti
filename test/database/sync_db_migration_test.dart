@@ -652,8 +652,11 @@ void main() {
               "AND name = 'idx_sync_sequence_log_host_entry_status'",
             )
             .get();
-        expect(oldIndex, isEmpty,
-            reason: 'v11 migration must DROP the v10 prefix index');
+        expect(
+          oldIndex,
+          isEmpty,
+          reason: 'v11 migration must DROP the v10 prefix index',
+        );
 
         final coveringIndex = await db
             .customSelect(
