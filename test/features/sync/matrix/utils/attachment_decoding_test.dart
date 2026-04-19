@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -114,6 +115,64 @@ void main() {
         expect(line, contains('compressed=${compressed.length}'));
         expect(line, contains('decoded=${original.length}'));
         expect(line, contains('ratio='));
+      },
+    );
+
+    test(
+      'offloads large gzipped payloads via compute and round-trips bytes',
+      () async {
+        // The decoder gates on payload length: anything >= 2 KB hands off
+        // to a worker isolate via `compute`. Feed it a payload well past the
+        // threshold so that the offload branch runs end-to-end. The test
+        // checks correctness (round-trip) and that the log line still fires
+        // from the main isolate after the worker returns.
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final event = _MockEvent();
+        when(() => event.content).thenReturn(<String, dynamic>{
+          attachmentEncodingKey: attachmentEncodingGzip,
+        });
+
+        // Deterministic but gzip-incompressible bytes (fixed seed for
+        // reproducibility). Repetitive or low-entropy content compresses
+        // below the 2 KB inline threshold and skips the offload branch
+        // this test exists to exercise.
+        final rng = Random(0x5EED);
+        final original = List<int>.generate(32 * 1024, (_) => rng.nextInt(256));
+        final compressed = Uint8List.fromList(gzip.encode(original));
+        expect(
+          compressed.length,
+          greaterThan(2 * 1024),
+          reason: 'compressed payload must cross the inline threshold',
+        );
+
+        final decoded = await decodeAttachmentBytes(
+          event: event,
+          downloadedBytes: compressed,
+          relativePath: '/agent_entities/large.json',
+          logging: logging,
+        );
+
+        expect(decoded, equals(original));
+
+        final captured = verify(
+          () => logging.captureEvent(
+            captureAny<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.decode',
+          ),
+        ).captured;
+        expect(captured, hasLength(1));
+        final line = captured.single as String;
+        expect(line, contains('gzipDecoded'));
+        expect(line, contains('decoded=${original.length}'));
       },
     );
 
