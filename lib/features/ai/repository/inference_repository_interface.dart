@@ -16,6 +16,11 @@ abstract class InferenceRepositoryInterface {
   /// - [provider]: Provider configuration
   /// - [maxCompletionTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
+  /// - [toolChoice]: Optional override of tool selection policy. When `null`
+  ///   the provider defaults to `auto` (or `none` when no tools are provided).
+  ///   Pass `ChatCompletionToolChoiceOption.tool(...)` to force the model to
+  ///   call a specific function — currently honored only on the
+  ///   OpenAI-compatible path.
   /// - [thoughtSignatures]: Previous thought signatures for multi-turn (Gemini 3)
   /// - [signatureCollector]: Collector for capturing new signatures from response
   /// - [turnIndex]: Current turn number for unique tool call ID generation
@@ -26,6 +31,7 @@ abstract class InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -40,6 +46,7 @@ abstract class InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) {
     // Default implementation converts simple prompt to messages format
     final messages = <ChatCompletionMessage>[];
@@ -59,6 +66,7 @@ abstract class InferenceRepositoryInterface {
       provider: provider,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
     );
   }
 }

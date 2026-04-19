@@ -28,6 +28,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -435,7 +436,7 @@ class TaskAgentWorkflow {
       }
 
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
-      final usage = await conversationRepository.sendMessage(
+      var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
         model: modelId,
@@ -445,6 +446,21 @@ class TaskAgentWorkflow {
         temperature: 0.3,
         strategy: strategy,
       );
+
+      // 7b. Forced-report retry (see [_forceUpdateReportIfMissing]).
+      if (strategy.extractReportContent().isEmpty) {
+        final retryUsage = await _forceUpdateReportIfMissing(
+          conversationId: conversationId,
+          modelId: modelId,
+          provider: provider,
+          inferenceRepo: inferenceRepo,
+          tools: tools,
+          strategy: strategy,
+        );
+        if (retryUsage != null) {
+          usage = usage == null ? retryUsage : usage.merge(retryUsage);
+        }
+      }
 
       // Persist token usage as a synced entity (non-fatal on failure).
       await _persistTokenUsage(
@@ -675,6 +691,82 @@ class TaskAgentWorkflow {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────
+
+  /// Issues a second, forced inference pass to recover a missing report.
+  ///
+  /// Weaker local models (e.g. Qwen 3.6 via `mlx-vlm`) routinely stop
+  /// generating before emitting the mandatory `update_report` tool call,
+  /// which leaves the UI with nothing to display. This helper is invoked
+  /// when the main wake loop returns without a published report: it sends
+  /// one more `sendMessage` with `toolChoice` pinned to `update_report`
+  /// and a blunt reminder message. On OpenAI-compatible endpoints this
+  /// guarantees a final tool call; on providers that silently ignore
+  /// `toolChoice` (Gemini / Ollama / Mistral sub-repos) the directive
+  /// message alone still nudges most models into compliance.
+  ///
+  /// The tool list is restricted to only the report tool — the forced
+  /// `toolChoice` is defense in depth, but on providers that drop the
+  /// option the model would otherwise see the full tool surface again and
+  /// could issue a duplicate metadata or checklist call. Narrowing the
+  /// list guarantees that even a misbehaving provider can only emit the
+  /// tool we actually want.
+  ///
+  /// Any failure inside the retry (network error, parser error on a
+  /// truncated response, etc.) is caught and logged — the wake must still
+  /// persist observations and metadata work collected in the main pass.
+  ///
+  /// Returns the retry's token usage (if any) so the caller can merge it
+  /// into the wake's accumulated total.
+  Future<InferenceUsage?> _forceUpdateReportIfMissing({
+    required String conversationId,
+    required String modelId,
+    required AiConfigInferenceProvider provider,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required TaskAgentStrategy strategy,
+  }) async {
+    _log(
+      'no report published — retrying with forced update_report',
+      subDomain: 'execute',
+    );
+    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
+      ChatCompletionNamedToolChoice(
+        type: ChatCompletionNamedToolChoiceType.function,
+        function: ChatCompletionFunctionCallOption(
+          name: TaskAgentStrategy.reportToolName,
+        ),
+      ),
+    );
+    final reportOnlyTools = tools
+        .where((tool) => tool.function.name == TaskAgentStrategy.reportToolName)
+        .toList(growable: false);
+
+    try {
+      return await conversationRepository.sendMessage(
+        conversationId: conversationId,
+        message:
+            'You did not call `update_report` before stopping. Call it '
+            'now. You MUST supply a concise `oneLiner`, a 1-3 sentence '
+            '`tldr`, and the full markdown `content`. This is the final '
+            'step of the wake and is mandatory — do not respond with '
+            'anything else.',
+        model: modelId,
+        provider: provider,
+        inferenceRepo: inferenceRepo,
+        tools: reportOnlyTools,
+        toolChoice: forcedToolChoice,
+        temperature: 0.3,
+        strategy: strategy,
+      );
+    } catch (e, s) {
+      _logError(
+        'forced update_report retry failed — persisting partial wake',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
 
   /// Persist token usage from a wake cycle as a synced entity.
   ///
@@ -912,13 +1004,32 @@ class TaskAgentWorkflow {
   /// Core scaffold: role description and job responsibilities.
   static const taskAgentScaffoldCore = '''
 You are a Task Agent — a persistent assistant that maintains a summary report
-for a single task. Your job is to:
+for a single task.
+
+## Non-Negotiable Final Step
+
+EVERY wake MUST end with a single `update_report` tool call. This is mandatory,
+not optional. No other tool replaces it. If you have nothing new to say, still
+call `update_report` — reuse the prior report's content and refresh the
+one-liner and tldr as needed. Do NOT end your turn with a plain text message.
+Do NOT stop after calling metadata or checklist tools. The wake is only
+complete when `update_report` has been called with `oneLiner`, `tldr`, and
+`content`.
+
+Your job each wake is to:
 
 1. Analyze the current task state and any changes since your last wake.
 2. Call tools when appropriate to update task metadata (estimates, due dates,
    priorities, checklist items, title, labels).
-3. Publish an updated report via the `update_report` tool.
-4. Record observations worth remembering for future wakes.''';
+3. Call `record_observations` for ANYTHING private: your own reasoning,
+   things you noticed, patterns across wakes, blockers you hit (including
+   tool failures such as a denied category or a rejected proposal), and any
+   self-reflection that does NOT belong in the user-facing report. If it
+   starts with "I noticed...", "I tried...", "I decided...", or describes a
+   tool failure — it is an observation, not report content. Skipping this
+   tool means that context is lost forever on the next wake.
+4. FINAL STEP — publish an updated report via the `update_report` tool. Always
+   do this last; never skip it.''';
 
   /// Default report section of the scaffold, used when the template version
   /// does not provide its own `reportDirective`.

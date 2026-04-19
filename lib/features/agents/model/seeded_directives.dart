@@ -72,6 +72,18 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'yes/no, either/or, or pick-one prompts. Avoid abstract phrasing '
         'about what the user is "signaling".',
   ),
+  SeedDirectiveChange(
+    date: '2026-04-19',
+    kind: AgentTemplateKind.taskAgent,
+    description:
+        'Report tool is non-negotiable: `update_report` MUST be the final '
+        'tool call of every wake, even when nothing new needs saying '
+        '(reuse prior `content`, refresh `oneLiner` / `tldr`). Weaker '
+        'models stopping before the report leaves the UI empty — the '
+        'wake now forces a retry with `tool_choice` if the tool was '
+        'missed, and the directive is reinforced at the top of the '
+        'prompt.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
@@ -120,8 +132,14 @@ rather than assume.''';
 /// Defines the report structure including the Links section that mirrors
 /// the proven task summary prompt approach.
 const taskAgentReportDirective = '''
-You MUST call `update_report` exactly once at the end of every wake.
-Provide `oneLiner`, `tldr`, and `content` arguments.
+## MANDATORY FINAL TOOL CALL
+
+You MUST call `update_report` exactly once at the end of every wake, with
+`oneLiner`, `tldr`, and `content`. This is non-negotiable. Do not end your
+turn with a plain text message. Do not stop after calling metadata or
+checklist tools. The wake is only complete once `update_report` has been
+invoked. If nothing new needs saying, reuse the previous report's `content`
+and refresh `oneLiner` / `tldr` as appropriate — but still call the tool.
 
 ## One-Liner (the `oneLiner` argument)
 

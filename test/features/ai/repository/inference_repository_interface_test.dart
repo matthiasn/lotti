@@ -27,6 +27,9 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   /// The tools passed to the last call.
   List<ChatCompletionTool>? lastTools;
 
+  /// The toolChoice passed to the last call.
+  ChatCompletionToolChoiceOption? lastToolChoice;
+
   /// The thoughtSignatures passed to the last call.
   Map<String, String>? lastThoughtSignatures;
 
@@ -48,6 +51,7 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -58,6 +62,7 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
     lastProvider = provider;
     lastMaxCompletionTokens = maxCompletionTokens;
     lastTools = tools;
+    lastToolChoice = toolChoice;
     lastThoughtSignatures = thoughtSignatures;
     lastSignatureCollector = signatureCollector;
     lastTurnIndex = turnIndex;

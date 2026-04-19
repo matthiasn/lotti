@@ -51,6 +51,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
   }) {
     // Validate inputs
     _validateOllamaRequest(
@@ -84,6 +85,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
     Map<String, String>? thoughtSignatures, // Ignored for Ollama
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
     int? turnIndex, // Ignored for Ollama

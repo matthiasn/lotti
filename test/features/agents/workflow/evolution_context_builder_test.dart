@@ -486,13 +486,14 @@ void main() {
       );
     });
 
-    test('omits section when version predates entries by one day', () {
-      // Version created the day after all changelog entries — no entries
-      // should be shown.
+    test('omits section when version postdates entries by one day', () {
+      // Version created the day after every task-agent changelog entry so
+      // no updates should be surfaced. Bump this forward whenever a new
+      // entry is added to `seedDirectiveChangelog`.
       final ctx = builder.build(
         template: makeTestTemplate(displayName: 'Laura'),
         currentVersion: makeTestTemplateVersion(
-          createdAt: DateTime(2026, 3, 10),
+          createdAt: DateTime(2026, 4, 20),
         ),
         recentVersions: [makeTestTemplateVersion()],
         instanceReports: const [],

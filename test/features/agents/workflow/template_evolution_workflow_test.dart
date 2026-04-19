@@ -77,6 +77,7 @@ class _TestConversationRepository extends ConversationRepository {
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {

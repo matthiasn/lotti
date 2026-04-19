@@ -868,6 +868,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async =>
@@ -975,6 +976,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1030,6 +1032,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1093,6 +1096,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1162,6 +1166,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1196,6 +1201,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1245,6 +1251,255 @@ void main() {
       });
     });
 
+    group('forced update_report retry', () {
+      setUp(() {
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+      });
+
+      test(
+        'issues a second sendMessage with toolChoice forced to update_report '
+        'when the strategy ended without a report',
+        () async {
+          final calls =
+              <
+                ({
+                  String message,
+                  ChatCompletionToolChoiceOption? toolChoice,
+                })
+              >[];
+
+          // Allow the delegate to run for both the primary call and the retry
+          // so the test can observe both invocations.
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  calls.add((message: message, toolChoice: toolChoice));
+                  return null;
+                };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(calls, hasLength(2));
+
+          // First call: normal wake, no forced tool choice.
+          expect(calls[0].toolChoice, isNull);
+
+          // Second call: forced update_report.
+          final retryToolChoice = calls[1].toolChoice;
+          expect(retryToolChoice, isNotNull);
+          retryToolChoice!.map(
+            mode: (_) => fail('Expected named tool choice, got mode.'),
+            tool: (named) {
+              expect(
+                named.value.function.name,
+                TaskAgentStrategy.reportToolName,
+              );
+            },
+          );
+          expect(
+            calls[1].message,
+            contains('You did not call `update_report`'),
+          );
+        },
+      );
+
+      test(
+        'swallows retry failures so the main-pass observations and metadata '
+        'still reach the transaction',
+        () async {
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  // First call: record an observation via the real strategy
+                  // so the wake has something meaningful to persist.
+                  if (toolChoice == null) {
+                    if (strategy is TaskAgentStrategy) {
+                      await strategy.processToolCalls(
+                        toolCalls: const [
+                          ChatCompletionMessageToolCall(
+                            id: 'obs-1',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: 'record_observations',
+                              arguments:
+                                  '{"observations":["important finding"]}',
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                    }
+                    return null;
+                  }
+                  // Second call (retry): blow up. The workflow must catch
+                  // this and still persist the observation recorded above.
+                  throw Exception('simulated retry failure');
+                };
+
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          // The wake must NOT fail because of the retry exception.
+          expect(result.success, isTrue);
+
+          // The observation recorded before the retry threw must be persisted.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final observationPayloads = capturedPayloadEntities(
+            captured,
+          ).where((p) => p.content['text'] == 'important finding').toList();
+          expect(observationPayloads, hasLength(1));
+        },
+      );
+
+      test(
+        'accumulates token usage across the main call and the forced retry',
+        () async {
+          mockConversationRepository
+            ..maxDelegateCalls = 2
+            ..sendMessageDelegate =
+                ({
+                  required conversationId,
+                  required message,
+                  required model,
+                  required provider,
+                  required inferenceRepo,
+                  tools,
+                  toolChoice,
+                  temperature = 0.7,
+                  strategy,
+                }) async {
+                  // First call returns usage; retry (forced tool choice)
+                  // returns more usage. Both must be merged and persisted.
+                  if (toolChoice == null) {
+                    return const InferenceUsage(
+                      inputTokens: 100,
+                      outputTokens: 40,
+                    );
+                  }
+                  return const InferenceUsage(
+                    inputTokens: 25,
+                    outputTokens: 15,
+                  );
+                };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final tokenUsageEntities = capturedTokenUsageEntities(captured);
+
+          expect(tokenUsageEntities, hasLength(1));
+          final entity = tokenUsageEntities.first;
+          expect(entity.inputTokens, 125);
+          expect(entity.outputTokens, 55);
+        },
+      );
+
+      test(
+        'does NOT issue a retry when the strategy already published a report',
+        () async {
+          var callCount = 0;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                callCount++;
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: const [
+                      ChatCompletionMessageToolCall(
+                        id: 'report-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              '{"oneLiner":"one","tldr":"tldr","content":"body"}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(callCount, 1);
+        },
+      );
+    });
+
     group('failed execute', () {
       test('increments consecutiveFailureCount on exception', () async {
         stubPreExecuteDefaults(
@@ -1269,6 +1524,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1402,6 +1658,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1469,6 +1726,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1580,6 +1838,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1709,6 +1968,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -1787,6 +2047,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -1896,6 +2157,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -2011,6 +2273,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -3189,6 +3452,13 @@ void main() {
           ),
         ).thenReturn(null);
 
+        // Dispatch the tool call on the first sendMessage only. The workflow
+        // issues a second, forced-`update_report` retry whenever the strategy
+        // finishes without a report — which is every deferred-tool test here
+        // because the mock never produces one. Re-dispatching the same tool
+        // on retry would double-count `addToolResponse` calls; the retry is
+        // fine as a no-op for these tests.
+        var dispatched = false;
         mockConversationRepository.sendMessageDelegate =
             ({
               required conversationId,
@@ -3197,9 +3467,12 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
+              if (dispatched) return null;
+              dispatched = true;
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
@@ -3742,6 +4015,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {
@@ -3947,6 +4221,7 @@ void main() {
               required provider,
               required inferenceRepo,
               tools,
+              toolChoice,
               temperature = 0.7,
               strategy,
             }) async {
@@ -4082,6 +4357,7 @@ void main() {
                 required provider,
                 required inferenceRepo,
                 tools,
+                toolChoice,
                 temperature = 0.7,
                 strategy,
               }) async {

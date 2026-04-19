@@ -31,6 +31,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) {
     // Delegate to the cloud repository
     return cloudRepository.generate(
@@ -43,6 +44,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       maxCompletionTokens: maxCompletionTokens,
       provider: provider,
       tools: tools,
+      toolChoice: toolChoice,
     );
   }
 
@@ -54,6 +56,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -62,7 +65,8 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       'CloudInferenceWrapper: Processing ${messages.length} messages for '
       'cloud provider ${provider.inferenceProviderType}, '
       'hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}, '
-      'turnIndex: $turnIndex',
+      'turnIndex: $turnIndex, '
+      'forcedToolChoice: ${toolChoice != null}',
       name: 'CloudInferenceWrapper',
     );
 
@@ -75,6 +79,7 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
       provider: provider,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
       thoughtSignatures: thoughtSignatures,
       signatureCollector: signatureCollector,
       turnIndex: turnIndex,
