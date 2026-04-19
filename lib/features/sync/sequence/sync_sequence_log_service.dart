@@ -176,9 +176,6 @@ class SyncSequenceLogService {
 
   final _hostActivityCache = <String, DateTime?>{};
   final _lastCounterCache = <String, int?>{};
-  DateTime? _cacheExpiry;
-  static const _cacheTtl = Duration(minutes: 5);
-
   // Highest counter per host for which we have already materialized the
   // `(gapBaseline + 1 .. counter - 1)` missing range into the sequence log.
   // Each incoming entry whose observed counter is not strictly greater than
@@ -187,12 +184,15 @@ class SyncSequenceLogService {
   // rows just to produce `inserted=0`. Skipping it removes the dominant
   // redundant DB cost on hosts that carry a pre-history gap.
   final _materializedUpperBound = <String, int>{};
+  DateTime? _cacheExpiry;
+  static const _cacheTtl = Duration(minutes: 5);
 
   void _invalidateCacheIfExpired() {
     final now = DateTime.now();
     if (_cacheExpiry != null && now.isAfter(_cacheExpiry!)) {
       _hostActivityCache.clear();
       _lastCounterCache.clear();
+      _materializedUpperBound.clear();
       _cacheExpiry = null;
     }
   }
@@ -236,14 +236,6 @@ class SyncSequenceLogService {
   void expireCacheForTesting() {
     // Set expiry to the past so the next cache access triggers invalidation.
     _cacheExpiry = DateTime.now().subtract(const Duration(seconds: 1));
-  }
-
-  /// Drop the materialized-gap memoization. Used in tests that want to
-  /// exercise the first materialization path after already driving state
-  /// through the service.
-  @visibleForTesting
-  void clearMaterializedBoundsForTesting() {
-    _materializedUpperBound.clear();
   }
 
   /// Record an entry being sent by this device.
@@ -424,41 +416,40 @@ class SyncSequenceLogService {
           // cost and the desktop log volume.
           final previousBound = _materializedUpperBound[hostId];
           final endCounter = counter - 1;
-          if (previousBound != null && previousBound >= endCounter) {
-            // No new work to do. Intentionally silent: the ~4 INFO lines per
-            // incoming event on a stuck-watermark host are the largest single
-            // contributor to the 17-18 MB daily sync log; emitting them again
-            // here would defeat the purpose of this short-circuit.
-            continue;
-          }
+          final alreadyMaterialized =
+              previousBound != null && previousBound >= endCounter;
+          if (!alreadyMaterialized) {
+            _trace(
+              'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
+              subDomain: 'sequence.largeGap',
+            );
+            final effectiveStart = previousBound == null
+                ? startCounter
+                : math.max(startCounter, previousBound + 1);
+            final insertedCount = await _materializeLargeGap(
+              hostId: hostId,
+              startCounter: effectiveStart,
+              endCounter: endCounter,
+              gapSize: endCounter - effectiveStart + 1,
+              originatingHostId: originatingHostId,
+              now: now,
+            );
+            if (insertedCount > 0) {
+              newMissingDetected = true;
+            }
+            // `previousBound < endCounter` on this branch, so direct assignment
+            // is the max — no `math.max` needed.
+            _materializedUpperBound[hostId] = endCounter;
 
-          _trace(
-            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
-            subDomain: 'sequence.largeGap',
-          );
-          final effectiveStart = previousBound == null
-              ? startCounter
-              : math.max(startCounter, previousBound + 1);
-          final insertedCount = await _materializeLargeGap(
-            hostId: hostId,
-            startCounter: effectiveStart,
-            endCounter: endCounter,
-            gapSize: endCounter - effectiveStart + 1,
-            originatingHostId: originatingHostId,
-            now: now,
-          );
-          if (insertedCount > 0) {
-            newMissingDetected = true;
+            _trace(
+              'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
+              'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+              subDomain: 'sequence.gapDetected',
+            );
           }
-          _materializedUpperBound[hostId] = previousBound == null
-              ? endCounter
-              : math.max(previousBound, endCounter);
-
-          _trace(
-            'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
-            'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-            subDomain: 'sequence.gapDetected',
-          );
+          // Fall through to the originator/other-host record block below so
+          // the incoming `(hostId, counter)` row is still upserted; skipping
+          // it would itself block the watermark from ever advancing.
         } else {
           final existingCounters = await _syncDatabase
               .getCountersForHostInRange(

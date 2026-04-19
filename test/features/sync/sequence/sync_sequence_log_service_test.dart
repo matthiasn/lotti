@@ -1009,6 +1009,26 @@ void main() {
             subDomain: 'sequence.gapDetected',
           ),
         );
+
+        // Critical: the short-circuit must NOT skip recording the originator
+        // counter itself — otherwise the row for `(alice, observedCounter)`
+        // never lands in the sequence log, the watermark cannot advance past
+        // it, and the next incoming entry re-enters the same stuck state.
+        final recorded =
+            verify(
+                  () => mockDb.recordSequenceEntry(captureAny()),
+                ).captured
+                .map((c) => c as SyncSequenceLogCompanion)
+                .where((c) => c.entryId.value == 'entry-second')
+                .toList();
+        expect(
+          recorded,
+          isNotEmpty,
+          reason:
+              'originator counter must be upserted even when the '
+              'materialization short-circuit fires',
+        );
+        expect(recorded.first.counter.value, observedCounter);
       },
     );
 

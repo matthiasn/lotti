@@ -1200,14 +1200,9 @@ class SyncEventProcessor {
       descriptorEvent: descriptorEvent,
     );
     _inFlightDescriptorFetches[dedupeKey] = future;
-    try {
-      return await future;
-    } finally {
-      // Drop the cached future; the value was already awaited above, so the
-      // returned Future from Map.remove() does not need its own await.
-      // ignore: unawaited_futures
+    return future.whenComplete(() {
       _inFlightDescriptorFetches.remove(dedupeKey);
-    }
+    });
   }
 
   Future<String?> _runDescriptorFetch({

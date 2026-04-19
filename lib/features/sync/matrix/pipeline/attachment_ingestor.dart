@@ -56,12 +56,14 @@ class AttachmentIngestor {
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
 
-  // Matrix Event ids whose encrypted blob cache was already evicted by the
-  // matrix SDK. Subsequent `downloadAndDecryptAttachment()` calls for the
-  // same event will throw the same "File is no longer cached" exception
-  // immediately; by recording the id here we avoid the SDK round-trip,
-  // stack-trace generation, and error-log emission entirely. Bounded by
-  // the same LRU window as `_handledAttachmentEventIds`.
+  // Matrix Event ids whose cached file entry was evicted from the SDK's
+  // local store. The desktop stack traces show `Event._getCachedFile`
+  // raising a bare `Exception("Can not try to send again. File is no
+  // longer cached.")` during our `downloadAndDecryptAttachment()` call
+  // chain; subsequent attempts for the same event id will throw the same
+  // exception immediately, so by recording the id here we skip the SDK
+  // round-trip, stack-trace generation, and error-log emission entirely.
+  // Bounded by the same LRU window as `_handledAttachmentEventIds`.
   final Set<String> _cacheEvictedEventIds = <String>{};
   final Queue<String> _cacheEvictedEventOrder = Queue<String>();
 
@@ -420,12 +422,12 @@ class AttachmentIngestor {
       );
       return true;
     } catch (e, st) {
-      // Matrix SDK emits this when the Event's encrypted blob was evicted
-      // before we got to re-download. Record the event id so we don't keep
-      // paying the exception-plus-stacktrace cost for the rest of the
-      // replay wave. Downgrade to a plain info event — the underlying
-      // condition is not actionable and self-recovers once a newer event
-      // for the same path arrives.
+      // Matrix SDK's `Event._getCachedFile` throws with this message when
+      // the event's cached file entry has been evicted. Record the event
+      // id so we don't keep paying the exception-plus-stacktrace cost for
+      // the rest of the replay wave. Downgrade to a plain info event —
+      // the underlying condition is not actionable and self-recovers once
+      // a newer event for the same path arrives.
       if (_isCacheEvictedError(e)) {
         _recordCacheEvictedEvent(event.eventId);
         logging.captureEvent(

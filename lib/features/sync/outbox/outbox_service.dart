@@ -497,22 +497,27 @@ class OutboxService {
       // State snapshot to aid debugging of stuck outbox scenarios. Only
       // log when the tuple changes (transitions matter, steady state does
       // not), or after a long quiet period so the line does not disappear
-      // entirely when the state is stable.
+      // entirely when the state is stable. The `pending` probe is a DB
+      // query, so skip it entirely on ticks where the cheaper
+      // (loggedIn, canProc) pair is unchanged and the quiet window has
+      // not elapsed.
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? false;
         final canProc = _activityGate.canProcess;
-        final hasPending = (await _repository.fetchPending(
-          limit: 1,
-        )).isNotEmpty;
-        final stateKey = 'li=$loggedIn cp=$canProc p=$hasPending';
+        final partialKey = 'li=$loggedIn cp=$canProc';
         final now = DateTime.now();
         final lastAt = _lastLoggedSendNextStateAt;
-        final changed = stateKey != _lastLoggedSendNextState;
+        final lastState = _lastLoggedSendNextState;
+        final partialChanged =
+            lastState == null || !lastState.startsWith('$partialKey ');
         final elapsedOk =
             lastAt == null ||
             now.difference(lastAt) >= _coalescedLogMinInterval;
-        if (changed || elapsedOk) {
-          _lastLoggedSendNextState = stateKey;
+        if (partialChanged || elapsedOk) {
+          final hasPending = (await _repository.fetchPending(
+            limit: 1,
+          )).isNotEmpty;
+          _lastLoggedSendNextState = '$partialKey p=$hasPending';
           _lastLoggedSendNextStateAt = now;
           _loggingService.captureEvent(
             'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
