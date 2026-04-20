@@ -185,7 +185,14 @@ class BridgeCoordinator {
     }
     final lastEventId = await _getLastReadEventId();
     final lastTs = await _getLastReadTs();
-    if (lastEventId == null || lastTs == null) {
+    // CatchUpStrategy.collectEventsForCatchUp treats lastEventId as
+    // legacy/debug context — its real anchor is the timestamp. The
+    // processor intentionally leaves `lastReadMatrixEventId` null after
+    // applying a placeholder/non-durable event while still advancing
+    // `lastReadMatrixEventTs`, so gating on lastEventId would skip
+    // bridge catch-up for a reconnect in that legitimate state. Only
+    // the timestamp is a hard requirement.
+    if (lastTs == null) {
       _logging.captureEvent(
         'queue.bridge.skip reason=noMarker',
         domain: _logDomain,

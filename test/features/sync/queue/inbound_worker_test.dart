@@ -456,6 +456,89 @@ void main() {
     );
 
     test(
+      'loop wakes up near the soonest retry nextDueAt instead of sleeping '
+      'for the full idleTick (P1 — decryptionPending/missingBase/noRoom '
+      'retries were previously rounded up to idleTick)',
+      () async {
+        var attempt = 0;
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (_, _) async {
+            attempt++;
+            return attempt == 1
+                ? ApplyOutcome.decryptionPending
+                : ApplyOutcome.applied;
+          },
+          logging: logging,
+          initialBackoff: const Duration(milliseconds: 10),
+          // idleTick is deliberately long so a regression (idleTick
+          // wins the race) would show up as a hard test timeout; the
+          // ready-timestamp path must steer the loop well under it.
+          idleTick: const Duration(seconds: 30),
+        );
+        await worker.start();
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$wake',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < 500; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          if ((await queue.stats()).total == 0) break;
+        }
+        stopwatch.stop();
+        await worker.stop();
+        expect((await queue.stats()).total, 0);
+        // decryptionPending base backoff is 250ms. The loop must wake
+        // near that deadline; anything close to the 30s idleTick would
+        // be a regression back to the rounded-up sleep.
+        expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+      },
+    );
+
+    test(
+      'enqueue that lands during peek is seen by the depthChanges '
+      'subscription that was attached before peek (no missed signal)',
+      () async {
+        final applied = <String>[];
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (entry, _) async {
+            applied.add(entry.eventId);
+            return ApplyOutcome.applied;
+          },
+          logging: logging,
+          idleTick: const Duration(seconds: 30),
+        );
+        await worker.start();
+        // Without a pre-peek subscription, an enqueue landing between a
+        // peek-empty result and a post-peek listen would only be
+        // noticed after idleTick. Enqueue immediately — the loop must
+        // observe it promptly.
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$race',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        for (var i = 0; i < 200; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          if (applied.isNotEmpty) break;
+        }
+        await worker.stop();
+        expect(applied, [r'$race']);
+      },
+    );
+
+    test(
       'activity gate is awaited on every loop iteration via '
       '_waitUntilIdleOrStopped',
       () async {

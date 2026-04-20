@@ -1030,6 +1030,162 @@ void main() {
       },
     );
   });
+
+  group('collectHistoryForBootstrap', () {
+    Event buildEvent(String id, int tsMs) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(id);
+      when(
+        () => e.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(tsMs));
+      return e;
+    }
+
+    test(
+      'emits each event exactly once without an ever-growing seen-set '
+      '(memory bounded by page size, not total history depth)',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // The SDK stores events in a single mutable list that grows as
+        // `requestHistory()` loads older pages — simulate that by
+        // starting with the newest 3 events and prepending older ones
+        // on each call.
+        final events = <Event>[
+          buildEvent('e3', 300),
+          buildEvent('e4', 400),
+          buildEvent('e5', 500),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => requests < 2);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          if (requests == 1) {
+            events
+              ..insert(0, buildEvent('e1', 100))
+              ..insert(0, buildEvent('e2', 200));
+          } else {
+            events.insert(0, buildEvent('e0', 50));
+          }
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <List<String>>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.add([for (final e in page) e.eventId]);
+          }),
+          pageSize: 3,
+        );
+
+        // Every event id appears across the emitted pages exactly once
+        // — proving the anchor-based dedup. The earlier implementation
+        // would have carried a seen-set growing with total history.
+        final flat = <String>[
+          for (final page in collected) ...page,
+        ];
+        expect(flat.toSet(), hasLength(flat.length));
+        expect(flat, containsAll(['e0', 'e1', 'e2', 'e3', 'e4', 'e5']));
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(result.totalEvents, flat.length);
+      },
+    );
+
+    test(
+      'timestamp ties between pages are resolved by eventId so a later '
+      'page cannot re-emit an already-emitted event at the same ts',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // First page: two events at ts=100 with ids ordered 'b','a'
+        // (lex-descending). The anchor after page 0 should lock to the
+        // earliest (ts, eventId) = (100, 'a'). When page 1 adds
+        // another ts=100 event with id='c' (lex > 'a'), the strict
+        // (ts, id) older-than test must filter it out.
+        final events = <Event>[
+          buildEvent('a', 100),
+          buildEvent('b', 100),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => requests == 0);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          events.add(buildEvent('c', 100));
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <String>[];
+        await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((e) => e.eventId));
+          }),
+          pageSize: 3,
+        );
+        // 'c' has the same timestamp but sorts AFTER 'a', so it is not
+        // strictly older than the anchor and must not be re-emitted.
+        // Equally, 'a' and 'b' are emitted only once from the first
+        // iteration.
+        expect(collected, ['a', 'b']);
+      },
+    );
+
+    test('sink cancellation halts paging before the next requestHistory', () async {
+      final room = MockRoom();
+      final log = MockLoggingService();
+      final tl = MockTimeline();
+      final events = <Event>[buildEvent('x', 1)];
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
+      when(() => tl.events).thenAnswer((_) => events);
+      when(() => tl.canRequestHistory).thenReturn(true);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final result = await CatchUpStrategy.collectHistoryForBootstrap(
+        room: room,
+        logging: log,
+        sink: _CollectingBootstrapSink((_) {}, continueAfterPage: false),
+        pageSize: 1,
+      );
+      expect(result.stopReason, BootstrapStopReason.sinkCancelled);
+      verifyNever(
+        () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+      );
+    });
+  });
 }
 
 class MockEvent extends Mock implements Event {}
+
+class _CollectingBootstrapSink implements BootstrapSink {
+  _CollectingBootstrapSink(this._onPage, {this.continueAfterPage = true});
+
+  final void Function(List<Event> page) _onPage;
+  final bool continueAfterPage;
+
+  @override
+  Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
+    _onPage(events);
+    return continueAfterPage;
+  }
+}

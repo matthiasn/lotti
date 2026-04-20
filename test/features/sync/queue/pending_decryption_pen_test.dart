@@ -273,17 +273,18 @@ void main() {
     'startSweeping fires the periodic flush and stop() awaits the '
     'in-flight sweep before returning',
     () async {
-      final pen = PendingDecryptionPen(
-        logging: logging,
-        sweepInterval: const Duration(milliseconds: 10),
-      )..hold(
-        _buildEvent(
-          eventId: r'$sweep',
-          roomId: roomId,
-          originTsMs: 1,
-          type: EventTypes.Encrypted,
-        ),
-      );
+      final pen =
+          PendingDecryptionPen(
+            logging: logging,
+            sweepInterval: const Duration(milliseconds: 10),
+          )..hold(
+            _buildEvent(
+              eventId: r'$sweep',
+              roomId: roomId,
+              originTsMs: 1,
+              type: EventTypes.Encrypted,
+            ),
+          );
       final decrypted = _buildEvent(
         eventId: r'$sweep',
         roomId: roomId,

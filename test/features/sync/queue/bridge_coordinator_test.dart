@@ -151,10 +151,9 @@ void main() {
   );
 
   test(
-    'no marker stored yields queue.bridge.skip reason=noMarker',
+    'missing timestamp yields queue.bridge.skip reason=noMarker',
     () async {
       final coordinator = buildCoordinator(
-        markerEventId: null,
         markerTs: null,
         resolveRoom: () async => _MockRoom(),
       )..start();
@@ -168,6 +167,55 @@ void main() {
         ),
       ).called(1);
       await coordinator.stop();
+    },
+  );
+
+  test(
+    'timestamp-only marker (lastEventId == null) still triggers bridge '
+    'catch-up — CatchUpStrategy uses the timestamp as the anchor',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      var collectorCalls = 0;
+      String? observedLastEventId = 'not-captured';
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
+        resolveRoom: () async => room,
+        queue: queue,
+        // No durable event id stored (e.g. last applied event was a
+        // placeholder) but the timestamp marker is intact.
+        getLastReadEventId: () async => null,
+        getLastReadTs: () async => 1000,
+        logging: logging,
+        catchUpCollector:
+            ({
+              required Room room,
+              required String? lastEventId,
+              required BackfillFn backfill,
+              required LoggingService logging,
+              required num preContextSinceTs,
+              required int preContextCount,
+              required int maxLookback,
+            }) async {
+              collectorCalls++;
+              observedLastEventId = lastEventId;
+              return const CatchUpCollection.complete(
+                events: [],
+                snapshotSize: 0,
+              );
+            },
+      );
+      await coordinator.bridgeNow();
+      expect(collectorCalls, 1);
+      expect(observedLastEventId, isNull);
+      verifyNever(
+        () => logging.captureEvent(
+          any<String>(that: contains('queue.bridge.skip reason=noMarker')),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      );
     },
   );
 

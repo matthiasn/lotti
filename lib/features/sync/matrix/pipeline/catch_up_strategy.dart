@@ -287,6 +287,23 @@ class CatchUpStrategy {
     }
   }
 
+  /// Returns true when [event] is strictly older than the supplied
+  /// anchor under lexicographic `(ts, eventId)` ordering. When the
+  /// anchor is null (first-pass bootstrap), every event is considered
+  /// older so the initial page is emitted in full.
+  static bool _isStrictlyOlder(
+    Event event, {
+    required num? anchorTs,
+    required String? anchorEventId,
+  }) {
+    if (anchorTs == null) return true;
+    final ts = TimelineEventOrdering.timestamp(event);
+    if (ts < anchorTs) return true;
+    if (ts > anchorTs) return false;
+    if (anchorEventId == null) return false;
+    return event.eventId.compareTo(anchorEventId) < 0;
+  }
+
   static int _startIndexForTimestampBoundary(
     List<Event> events, {
     required num preContextSinceTs,
@@ -317,8 +334,16 @@ class CatchUpStrategy {
   /// - The SDK's timeline reports no more history.
   /// - [overallTimeout] elapses.
   ///
-  /// No events are accumulated across pages; the sink is the only
-  /// consumer, so memory usage stays O(pageSize) regardless of the
+  /// Our bookkeeping stays O(1) across pages: we dedup via a single
+  /// `(oldest emitted timestamp, oldest emitted event id)` anchor
+  /// rather than an ever-growing seen-set of every event id. The
+  /// anchor advances monotonically — older pages can only deliver
+  /// events strictly older than it — which matches what
+  /// `requestHistory()` guarantees. Note: the underlying
+  /// `timeline.events` list is owned by the Matrix SDK and keeps
+  /// growing as more history loads; bounding that is out of our hands
+  /// without a Timeline API that we do not have in 7.0.0. What we
+  /// control — our own per-run state — stays constant regardless of
   /// total history depth.
   static Future<BootstrapResult> collectHistoryForBootstrap({
     required Room room,
@@ -329,10 +354,10 @@ class CatchUpStrategy {
   }) async {
     final start = DateTime.now();
     final timeline = await room.getTimeline(limit: pageSize);
-    final seen = <String>{};
     var pageIndex = 0;
     var totalEventsSoFar = 0;
     num? oldestTsSoFar;
+    String? oldestEventIdSoFar;
     var stopReason = BootstrapStopReason.serverExhausted;
 
     try {
@@ -346,9 +371,21 @@ class CatchUpStrategy {
         final sorted = TimelineEventOrdering.sortStableByTimestamp(
           timeline.events,
         );
+        // Build the page by filtering to events strictly older than
+        // the anchor. On the first pass the anchor is null so every
+        // event is included; on subsequent passes only the rows that
+        // `requestHistory()` just loaded (which must be older than the
+        // previous oldest) pass the predicate. This replaces the old
+        // per-event seen-set.
         final page = <Event>[];
         for (final event in sorted) {
-          if (seen.add(event.eventId)) page.add(event);
+          if (_isStrictlyOlder(
+            event,
+            anchorTs: oldestTsSoFar,
+            anchorEventId: oldestEventIdSoFar,
+          )) {
+            page.add(event);
+          }
         }
 
         if (page.isNotEmpty) {
@@ -356,6 +393,15 @@ class CatchUpStrategy {
           final firstTs = TimelineEventOrdering.timestamp(page.first);
           if (oldestTsSoFar == null || firstTs < oldestTsSoFar) {
             oldestTsSoFar = firstTs;
+            oldestEventIdSoFar = page.first.eventId;
+          } else if (firstTs == oldestTsSoFar) {
+            // Timestamps tied but the first event advanced — keep the
+            // earliest (ts, eventId) pair as the anchor.
+            final firstId = page.first.eventId;
+            if (oldestEventIdSoFar == null ||
+                firstId.compareTo(oldestEventIdSoFar) < 0) {
+              oldestEventIdSoFar = firstId;
+            }
           }
           final info = BootstrapPageInfo(
             pageIndex: pageIndex,

@@ -559,6 +559,26 @@ class InboundQueue {
     );
   }
 
+  /// Returns the earliest wall-clock instant (ms since epoch) at which
+  /// any queued row will become ready for `peekBatchReady`, or `null`
+  /// when the queue is empty. "Ready" requires both `nextDueAt <= now`
+  /// and `leaseUntil <= now`, so this returns the minimum across rows
+  /// of `max(nextDueAt, leaseUntil)`. The worker uses this to compute
+  /// an exact sleep duration instead of rounding every retry up to its
+  /// `idleTick`.
+  Future<int?> earliestReadyAt() async {
+    final row = await _db
+        .customSelect(
+          'SELECT MIN(CASE WHEN next_due_at > lease_until '
+          'THEN next_due_at ELSE lease_until END) AS ready_at '
+          'FROM inbound_event_queue',
+        )
+        .getSingleOrNull();
+    if (row == null) return null;
+    final value = row.data['ready_at'];
+    return value is int ? value : null;
+  }
+
   Future<int> _countTotal() async {
     final count = _db.inboundEventQueue.queueId.count();
     final row = await (_db.selectOnly(

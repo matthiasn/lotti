@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -135,11 +136,25 @@ class InboundWorker {
           }
         }
 
+        // Subscribe to depthChanges BEFORE peeking so an enqueue that
+        // lands during the peek cannot be missed: if the subscription
+        // were attached after a peek-empty outcome, the signal for an
+        // enqueue in that gap would land on a dead stream.
+        final depthTrigger = Completer<void>();
+        final depthSub = _queue.depthChanges.listen((_) {
+          if (!depthTrigger.isCompleted) depthTrigger.complete();
+        });
+
         final batch = await _queue.peekBatchReady();
         if (batch.isEmpty) {
-          await _waitForWork();
+          try {
+            await _waitForWork(depthTrigger.future);
+          } finally {
+            await depthSub.cancel();
+          }
           continue;
         }
+        await depthSub.cancel();
         await _runBatch(batch);
       }
     } catch (error, stackTrace) {
@@ -282,10 +297,29 @@ class InboundWorker {
     return Duration(milliseconds: capped);
   }
 
-  Future<void> _waitForWork() async {
+  /// Races stop, a depthChanges signal, and a delay that matches the
+  /// queue's earliest ready timestamp. Without the ready-aware delay,
+  /// a queue that only contains rows with a future `nextDueAt` (every
+  /// retry path — retriable, missingBase, decryptionPending, noRoom)
+  /// would round its intended 250 ms / 500 ms / 2 s backoff up to
+  /// `_idleTick` (5 s by default), delaying recovery and starving the
+  /// bootstrap back-pressure contract.
+  Future<void> _waitForWork(Future<void> depthFuture) async {
     final stopFuture = _stopRequested?.future ?? Future<void>.value();
-    final depthFuture = _queue.depthChanges.first.then<void>((_) {});
-    final tickFuture = Future<void>.delayed(_idleTick);
+    final readyAt = await _queue.earliestReadyAt();
+    final nowMs = clock.now().millisecondsSinceEpoch;
+    final Duration delay;
+    if (readyAt == null) {
+      // Queue is empty — sleep until either stop or a new depth
+      // signal. The tick bound is a safety net, not the primary exit.
+      delay = _idleTick;
+    } else {
+      final deltaMs = readyAt - nowMs;
+      delay = deltaMs <= 0
+          ? const Duration(milliseconds: 1)
+          : Duration(milliseconds: deltaMs);
+    }
+    final tickFuture = Future<void>.delayed(delay);
     await Future.any<void>([stopFuture, depthFuture, tickFuture]);
   }
 }
