@@ -2351,6 +2351,8 @@
   "settingThemingDark": "Tema oscuro",
   "settingThemingLight": "Tema claro",
   "showCompleted": "Mostrar completadas",
+  "sidebarToggleCollapseLabel": "Contraer barra lateral",
+  "sidebarToggleExpandLabel": "Expandir barra lateral",
   "skillsSectionTitle": "Habilidades",
   "speechDictionaryHelper": "Términos separados por punto y coma (máx. 50 caracteres) para mejor reconocimiento de voz",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

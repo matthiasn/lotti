@@ -5615,6 +5615,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get showCompleted => 'Abgeschlossene anzeigen';
 
   @override
+  String get sidebarToggleCollapseLabel => 'Seitenleiste einklappen';
+
+  @override
+  String get sidebarToggleExpandLabel => 'Seitenleiste ausklappen';
+
+  @override
   String get skillsSectionTitle => 'Skills';
 
   @override

@@ -13,6 +13,7 @@ void main() {
   Widget buildTestWidget({
     required ValueChanged<double> onDrag,
     double hitTargetWidth = 8,
+    bool enabled = true,
   }) {
     return makeTestableWidgetNoScroll(
       Row(
@@ -21,6 +22,7 @@ void main() {
           ResizableDivider(
             onDrag: onDrag,
             hitTargetWidth: hitTargetWidth,
+            enabled: enabled,
           ),
           const Expanded(child: SizedBox()),
         ],
@@ -248,6 +250,119 @@ void main() {
       expect(animatedContainer.constraints, isNotNull);
       expect(animatedContainer.constraints!.maxWidth, 1);
     });
+  });
+
+  group('ResizableDivider disabled state', () {
+    testWidgets('does not expose a resize cursor when disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(onDrag: (_) {}, enabled: false),
+      );
+
+      final mouseRegions = tester.widgetList<MouseRegion>(
+        find.descendant(
+          of: find.byType(ResizableDivider),
+          matching: find.byType(MouseRegion),
+        ),
+      );
+      // No MouseRegion attached by ResizableDivider itself while disabled.
+      // Flutter inserts framework MouseRegions for hit-testing in some
+      // branches — those all carry `defer` as their cursor, never
+      // resizeColumn. Guard against regressions by checking none of them
+      // request the resize cursor.
+      for (final region in mouseRegions) {
+        expect(region.cursor, isNot(SystemMouseCursors.resizeColumn));
+      }
+    });
+
+    testWidgets('does not call onDrag when disabled', (tester) async {
+      final deltas = <double>[];
+      await tester.pumpWidget(
+        buildTestWidget(onDrag: deltas.add, enabled: false),
+      );
+
+      final center = tester.getCenter(find.byType(ResizableDivider));
+      await tester.timedDragFrom(
+        center,
+        const Offset(50, 0),
+        const Duration(milliseconds: 200),
+      );
+
+      expect(deltas, isEmpty);
+    });
+
+    testWidgets(
+      'still reserves 3px of layout width so adjacent panes do not shift '
+      'when the sidebar transitions to collapsed',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onDrag: (_) {}, enabled: false),
+        );
+
+        final sizedBox = tester.widget<SizedBox>(
+          find.descendant(
+            of: find.byType(ResizableDivider),
+            matching: find.byType(SizedBox),
+          ),
+        );
+        expect(sizedBox.width, 3);
+      },
+    );
+
+    testWidgets(
+      'clears hover/drag state when transitioning from enabled to disabled '
+      'so a later re-enable does not resurrect the stale active line',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(onDrag: (_) {}),
+        );
+
+        // Start a drag to set the internal dragging flag.
+        final center = tester.getCenter(find.byType(ResizableDivider));
+        final gesture = await tester.startGesture(center);
+        await gesture.moveBy(const Offset(10, 0));
+        await tester.pump();
+
+        AnimatedContainer readLine() => tester.widget<AnimatedContainer>(
+          find.descendant(
+            of: find.byType(ResizableDivider),
+            matching: find.byType(AnimatedContainer),
+          ),
+        );
+
+        // Active line is 3px.
+        expect(readLine().constraints!.maxWidth, 3);
+
+        // Swap to disabled while the drag is still active. This is the
+        // scenario `didUpdateWidget` cleanup is designed for — cancelling
+        // before the rebuild would clear `_isDragging` via the gesture
+        // callback and let the test pass even if cleanup were removed.
+        await tester.pumpWidget(
+          buildTestWidget(onDrag: (_) {}, enabled: false),
+        );
+        await tester.pump();
+
+        // The `widget.enabled && …` guard in `build()` already masks the
+        // active line visually while disabled, so a hairline here is not
+        // sufficient proof that `didUpdateWidget` ran.
+        expect(readLine().constraints!.maxWidth, 1);
+
+        // Cancel the gesture so it does not dangle across the next rebuild.
+        await gesture.cancel();
+
+        // Re-enable without any new pointer activity. If `didUpdateWidget`
+        // had not cleared `_isDragging`, the active-line guard would flip
+        // back on and paint the 3 px line — which is the regression this
+        // test protects against.
+        await tester.pumpWidget(
+          buildTestWidget(onDrag: (_) {}),
+        );
+        await tester.pump();
+
+        expect(readLine().constraints!.maxWidth, 1);
+      },
+    );
   });
 
   group('ResizableDivider visual line width', () {

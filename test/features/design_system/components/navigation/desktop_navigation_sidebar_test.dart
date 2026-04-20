@@ -145,6 +145,50 @@ void main() {
       expect(settingsTapped, isTrue);
     });
 
+    testWidgets(
+      'renders the active-variant icon for the active destination',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 1, // Tasks
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Tasks is active -> filled icon; Journal/Habits stay outlined.
+        expect(find.byIcon(Icons.task_alt), findsOneWidget);
+        expect(find.byIcon(Icons.task_alt_outlined), findsNothing);
+        expect(find.byIcon(Icons.book_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Settings destination renders the active-variant icon when active',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: buildSettingsDestination(),
+              onSettingsSelected: () {},
+              isSettingsActive: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.settings), findsOneWidget);
+        expect(find.byIcon(Icons.settings_outlined), findsNothing);
+      },
+    );
+
     testWidgets('active destination has active surface color', (tester) async {
       await tester.pumpWidget(
         wrap(
@@ -431,5 +475,223 @@ void main() {
       expect(find.text('New'), findsNothing);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
     });
+
+    testWidgets('toggle icon is tappable and fires onToggleCollapsed', (
+      tester,
+    ) async {
+      var toggleCount = 0;
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            onToggleCollapsed: () => toggleCount++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(desktopSidebarToggleKey));
+      await tester.pump();
+
+      expect(toggleCount, 1);
+    });
+  });
+
+  group('DesktopNavigationSidebar collapsed', () {
+    testWidgets('renders at collapsedWidth and hides destination labels', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            collapsed: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(DesktopNavigationSidebar),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(container.constraints?.maxWidth, 72);
+
+      // Labels are hidden; icons still render. Journal is active (index 0)
+      // so it renders the filled variant; the others render outlined.
+      expect(find.text('Journal'), findsNothing);
+      expect(find.text('Tasks'), findsNothing);
+      expect(find.text('Habits'), findsNothing);
+      expect(find.byIcon(Icons.book), findsOneWidget);
+      expect(find.byIcon(Icons.task_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      'collapsed mode renders the active-variant icon for the active '
+      'destination',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 1, // Tasks
+              onDestinationSelected: (_) {},
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Tasks is active -> filled icon; Journal/Habits stay outlined.
+        expect(find.byIcon(Icons.task_alt), findsOneWidget);
+        expect(find.byIcon(Icons.book_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.repeat_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.task_alt_outlined), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'hides the brand logo when collapsed so only the toggle icon remains',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(DesignSystemBrandLogo), findsNothing);
+        expect(find.byKey(desktopSidebarToggleKey), findsOneWidget);
+      },
+    );
+
+    testWidgets('collapsed destinations remain tappable by icon', (
+      tester,
+    ) async {
+      final selected = <int>[];
+
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: selected.add,
+            collapsed: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.task_alt_outlined));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.repeat_outlined));
+      await tester.pump();
+
+      expect(selected, [1, 2]);
+    });
+
+    testWidgets(
+      'collapsed Settings entry renders as an icon-only tile with tooltip',
+      (tester) async {
+        var settingsTapped = false;
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: buildSettingsDestination(),
+              onSettingsSelected: () => settingsTapped = true,
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Settings'), findsNothing);
+        expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+
+        // Each collapsed destination wraps its content in a Tooltip keyed to
+        // the label so the user can discover the name on hover.
+        final tooltipMessages = tester
+            .widgetList<Tooltip>(
+              find.descendant(
+                of: find.byType(DesktopNavigationSidebar),
+                matching: find.byType(Tooltip),
+              ),
+            )
+            .map((t) => t.message ?? t.richMessage?.toPlainText() ?? '')
+            .toSet();
+        expect(tooltipMessages, contains('Settings'));
+        expect(tooltipMessages, contains('Journal'));
+
+        await tester.tap(find.byIcon(Icons.settings_outlined));
+        await tester.pump();
+        expect(settingsTapped, isTrue);
+      },
+    );
+
+    testWidgets('toggle icon fires onToggleCollapsed when collapsed', (
+      tester,
+    ) async {
+      var toggleCount = 0;
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            collapsed: true,
+            onToggleCollapsed: () => toggleCount++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(desktopSidebarToggleKey));
+      await tester.pump();
+
+      expect(toggleCount, 1);
+    });
+
+    testWidgets(
+      'active destination still has surface.active fill in collapsed mode',
+      (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 1,
+              onDestinationSelected: (_) {},
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const tokens = dsTokensDark;
+        final inkWidgets = tester.widgetList<Ink>(find.byType(Ink)).toList();
+        final activeInks = inkWidgets.where((ink) {
+          final decoration = ink.decoration;
+          return decoration is BoxDecoration &&
+              decoration.color == tokens.colors.surface.active;
+        });
+        expect(activeInks.length, 1);
+      },
+    );
   });
 }

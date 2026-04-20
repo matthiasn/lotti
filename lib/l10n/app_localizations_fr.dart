@@ -5720,6 +5720,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get showCompleted => 'Afficher les terminées';
 
   @override
+  String get sidebarToggleCollapseLabel => 'Réduire la barre latérale';
+
+  @override
+  String get sidebarToggleExpandLabel => 'Développer la barre latérale';
+
+  @override
   String get skillsSectionTitle => 'Compétences';
 
   @override
