@@ -42,6 +42,7 @@
               <li>Task title now persists in the app bar in subtitle2 once the header scrolls out of view.</li>
               <li>AI Task Summary, Task description, Linked Tasks, and Checklist cards render on a flat TaskDetailSectionCard surface so they visually match the task list.</li>
               <li>TaskLabelsWrapper and the per-chip wrappers that fed the old meta card are removed; shared modal content widgets (status, priority, category, project, due date, labels) are retained and reused.</li>
+              <li>Task language selection moves from a flag pill in the header to a "Set language" entry in the pinned app bar's triple-dot menu; the currently selected language's flag renders inline next to the action and opens the same language selection modal as before.</li>
           </ul>
       </description>
     </release>

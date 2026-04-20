@@ -6018,6 +6018,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLanguageSerbian => 'Sârbă';
 
   @override
+  String get taskLanguageSetAction => 'Setați limba';
+
+  @override
   String get taskLanguageSlovak => 'Slovacă';
 
   @override

@@ -37,6 +37,7 @@ class TaskDetailSectionCard extends StatelessWidget {
       child: Material(
         type: MaterialType.transparency,
         borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
         child: onTap == null
             ? Padding(padding: effectivePadding, child: child)
             : InkWell(

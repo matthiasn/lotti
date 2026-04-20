@@ -72,6 +72,10 @@ class InitialModalPageContent extends ConsumerWidget {
       // Labels - only for non-task entries
       if (!isTask && entry != null) ModernLabelsItem(entryId: entryId),
 
+      // Language selection - only for tasks (tasks carry a per-entity
+      // language code that drives AI / transcription behavior)
+      if (isTask) ModernSetTaskLanguageItem(entryId: entryId),
+
       // Copy text - only if entry has text
       if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: false),
       if (hasText) ModernCopyEntryTextItem(entryId: entryId, markdown: true),

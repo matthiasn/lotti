@@ -5,8 +5,9 @@ import 'package:delta_markdown/delta_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -310,6 +311,26 @@ class EntryController extends _$EntryController {
 
     // Haptic feedback
     await HapticFeedback.heavyImpact();
+  }
+
+  Future<void> updateTaskLanguage(String? languageCode) async {
+    final entry = state.value?.entry;
+    if (entry is! Task) return;
+
+    if (entry.data.languageCode == languageCode) return;
+
+    final optimistic = entry.copyWith(
+      data: entry.data.copyWith(
+        languageCode: languageCode,
+        languageSource: ChangeSource.user,
+      ),
+    );
+    state = AsyncData(state.value?.copyWith(entry: optimistic));
+
+    final _ = await _persistenceLogic.updateTask(
+      journalEntityId: id,
+      taskData: optimistic.data,
+    );
   }
 
   Future<void> updateRating(double stars) async {

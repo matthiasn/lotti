@@ -5993,6 +5993,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskLanguageSerbian => 'Serbisch';
 
   @override
+  String get taskLanguageSetAction => 'Sprache festlegen';
+
+  @override
   String get taskLanguageSlovak => 'Slowakisch';
 
   @override

@@ -10549,6 +10549,12 @@ abstract class AppLocalizations {
   /// **'Serbian'**
   String get taskLanguageSerbian;
 
+  /// No description provided for @taskLanguageSetAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Set language'**
+  String get taskLanguageSetAction;
+
   /// No description provided for @taskLanguageSlovak.
   ///
   /// In en, this message translates to:

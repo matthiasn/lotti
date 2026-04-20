@@ -32,10 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     on the pinned app bar. That app bar now also surfaces the task
     title in `subtitle2` once the header scrolls out of view.
   - Presentational widget is Riverpod-free and exercised in
-    Widgetbook (Default, Editing, Long title, No project,
-    Playground). A thin `DesktopTaskHeaderConnector` wires the
-    existing status / priority / category / project / due-date /
-    label pickers and `EntryController` mutations.
+    Widgetbook (Default, Editing, Long title (wraps), Empty
+    classification + metadata, Playground). A thin
+    `DesktopTaskHeaderConnector` wires the existing status / priority
+    / category / project / due-date / label pickers and
+    `EntryController` mutations.
   - `TaskLabelsWrapper` is removed entirely — the estimate chip,
     assigned-label chips, and the Add Label affordance it used to
     render are all inside the header now.
@@ -53,6 +54,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `CategorySelectionModalContent`,
     `ProjectSelectionModalContent`) are retained and reused by the
     new connector.
+  - Task language selection — previously a flag-shaped pill inside
+    the header — moves into the pinned app bar's triple-dot menu as a
+    standard list item (`ModernSetTaskLanguageItem`). The currently
+    selected language's flag renders inline next to a "Set language"
+    label (falling back to `Icons.language` when unset); tapping the
+    row opens the existing `LanguageSelectionModalContent` modal and
+    persists the selection via the journal repository.
+  - `ActionMenuListItem` now accepts an optional `leading` widget in
+    addition to its existing `icon`, so entries like the language
+    action can render a flag at its natural 4:3 aspect without
+    re-skinning the menu row.
 
 ## [0.9.966] - 2026-04-19
 ### Fixed

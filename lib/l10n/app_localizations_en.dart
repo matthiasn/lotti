@@ -5907,6 +5907,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskLanguageSerbian => 'Serbian';
 
   @override
+  String get taskLanguageSetAction => 'Set language';
+
+  @override
   String get taskLanguageSlovak => 'Slovak';
 
   @override

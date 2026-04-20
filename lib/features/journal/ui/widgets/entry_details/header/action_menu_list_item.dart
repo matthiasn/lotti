@@ -11,17 +11,25 @@ import 'package:lotti/themes/theme.dart';
 /// - Designed to be used in a list with dividers between items
 class ActionMenuListItem extends StatelessWidget {
   const ActionMenuListItem({
-    required this.icon,
     required this.title,
     required this.onTap,
+    this.icon,
+    this.leading,
     this.subtitle,
     this.iconColor,
     this.isDestructive = false,
     this.isDisabled = false,
     super.key,
-  });
+  }) : assert(
+         icon != null || leading != null,
+         'Either icon or leading must be provided',
+       );
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Optional custom leading widget. Replaces [icon] when provided — used
+  /// for items that need a non-Material leading visual (e.g. a country flag).
+  final Widget? leading;
   final String title;
   final VoidCallback onTap;
   final String? subtitle;
@@ -65,12 +73,15 @@ class ActionMenuListItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Leading icon - clean, no container
-              Icon(
-                icon,
-                size: AppTheme.listItemIconSize,
-                color: effectiveIconColor,
-              ),
+              // Leading icon - clean, no container. A custom [leading] widget
+              // takes precedence when provided (e.g. a country flag whose
+              // natural 4:3 aspect wouldn't fit a square icon footprint).
+              leading ??
+                  Icon(
+                    icon,
+                    size: AppTheme.listItemIconSize,
+                    color: effectiveIconColor,
+                  ),
               const SizedBox(width: AppTheme.modalChevronSpacerWidth),
 
               // Title and optional subtitle

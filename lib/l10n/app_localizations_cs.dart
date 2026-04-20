@@ -5981,6 +5981,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskLanguageSerbian => 'Srbština';
 
   @override
+  String get taskLanguageSetAction => 'Nastavit jazyk';
+
+  @override
   String get taskLanguageSlovak => 'Slovenština';
 
   @override

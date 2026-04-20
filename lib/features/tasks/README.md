@@ -159,7 +159,7 @@ This page is not just "show task fields." It is the task workspace where task me
 
 Inside `TaskForm`, the composition is also fairly opinionated:
 
-- `DesktopTaskHeaderConnector` for the interactive header: inline multi-line title edit, priority badge, project reference (with a "No project" placeholder when none is linked), work-category chip (or "unassigned" placeholder), due-date chip (or "No due date" placeholder), estimate chip (with progress bar when set), assigned label chips (or "Add Label" placeholder), status dropdown, and `more_vert` action menu. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `showEstimatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`, `ExtendedHeaderModal`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
+- `DesktopTaskHeaderConnector` for the interactive header: inline multi-line title edit, priority badge, project reference (with a "No project" placeholder when none is linked), work-category chip (or "unassigned" placeholder), due-date chip (or "No due date" placeholder), estimate chip (with progress bar when set), assigned label chips (or "Add Label" placeholder), and status dropdown. Extended actions (share, speech modal, etc.) are owned by the pinned app bar's `more_vert` button, not the header itself. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `showEstimatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
 - an `EditorWidget` only for legacy tasks that already have non-empty entry text
 - `AgentSuggestionsPanel` which embeds `TaskAgentReportSection` plus the unified open-proposal list
 - `LinkedTasksWidget`
@@ -400,7 +400,7 @@ Notable behavior already implemented:
 - due dates on the detail page use urgency styling, while relative/absolute date display is a list-level concern owned by the shared page state
 - labels are category-aware, but still allow out-of-scope assigned labels to be removed
 - project selection integrates with the project health layer without making the task feature own project analysis itself
-- language is currently not surfaced in the new header — it is handled through the ellipsis extended actions menu
+- language is not surfaced in the new header itself — it is reachable through the pinned app bar's triple-dot menu, which shows a "Set language" action (`ModernSetTaskLanguageItem`). The action renders the currently selected language's flag inline when one is set, falls back to `Icons.language` otherwise, and opens the same `LanguageSelectionModalContent` modal used by the category editor. Selection is persisted via `journalRepositoryProvider.updateJournalEntity` with `ChangeSource.user` on `TaskData.languageSource`.
 
 ## AI and Media Integrations
 

@@ -6087,6 +6087,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLanguageSerbian => 'Serbio';
 
   @override
+  String get taskLanguageSetAction => 'Establecer idioma';
+
+  @override
   String get taskLanguageSlovak => 'Eslovaco';
 
   @override

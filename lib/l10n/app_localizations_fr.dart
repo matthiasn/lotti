@@ -6099,6 +6099,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskLanguageSerbian => 'Serbe';
 
   @override
+  String get taskLanguageSetAction => 'Définir la langue';
+
+  @override
   String get taskLanguageSlovak => 'Slovaque';
 
   @override
