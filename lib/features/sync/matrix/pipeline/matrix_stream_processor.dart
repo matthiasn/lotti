@@ -45,6 +45,25 @@ class _ProcessOutcome {
   final DateTime? nextDue; // earliest next due time if blocked/retried
 }
 
+/// Carries a pre-resolved [PreparedSyncEvent] (or the error produced while
+/// resolving it) from the pre-transaction prepare pass into the
+/// transaction-scoped apply pass.
+class _PrepareSlot {
+  _PrepareSlot.prepared(this.prepared) : error = null, errorStack = null;
+  _PrepareSlot.error(Object this.error, StackTrace this.errorStack)
+    : prepared = null;
+
+  /// Non-null on successful prepare; null when the prepare step returned null
+  /// (e.g. undeserialisable envelope) — treated as a silent skip by apply.
+  final PreparedSyncEvent? prepared;
+
+  /// Populated when prepare threw. Apply rethrows this under the existing
+  /// retry/tracker machinery so error handling stays identical to the
+  /// pre-split pipeline.
+  final Object? error;
+  final StackTrace? errorStack;
+}
+
 class MatrixStreamProcessor {
   MatrixStreamProcessor({
     required SyncRoomManager roomManager,
@@ -230,6 +249,7 @@ class MatrixStreamProcessor {
   Future<_ProcessOutcome> _processSyncPayloadEvent(
     Event e, {
     String dropSuffix = '',
+    _PrepareSlot? prepareSlot,
   }) async {
     var processedOk = true;
     const treatAsHandled = false;
@@ -266,7 +286,26 @@ class MatrixStreamProcessor {
       if (_collectMetrics) _metrics.incRetriesScheduled();
     } else if (processedOk) {
       try {
-        await _eventProcessor.process(event: e, journalDb: _journalDb);
+        if (prepareSlot == null) {
+          // Fallback for callers that did not pre-resolve outside the
+          // transaction (e.g. undeserialisable envelopes where the pre-pass
+          // left no slot, and mocktail-based tests that stub only `process`).
+          // This keeps behaviour identical to the pre-split pipeline at the
+          // cost of holding the writer lock across attachment I/O.
+          await _eventProcessor.process(event: e, journalDb: _journalDb);
+        } else if (prepareSlot.error != null) {
+          Error.throwWithStackTrace(
+            prepareSlot.error!,
+            prepareSlot.errorStack ?? StackTrace.current,
+          );
+        } else {
+          // `prepared` is non-null by construction in the pre-pass — an empty
+          // slot would have been left unset.
+          await _eventProcessor.apply(
+            prepared: prepareSlot.prepared!,
+            journalDb: _journalDb,
+          );
+        }
         // If apply observer flagged this as "missing base" then treat it as a
         // retryable failure (do not count as processed, do not advance, and
         // schedule a retry soon).
@@ -468,6 +507,43 @@ class MatrixStreamProcessor {
     ) {
       final chunkEnd = math.min(chunkStart + chunkSize, ordered.length);
       final chunkCompletedIds = <String>[];
+
+      // Pre-pass: resolve file-backed payloads (journal entity JSON, agent
+      // descriptors) OUTSIDE the writer transaction. Attachment download,
+      // gzip decode, and disk reads all happen here, so the SQLite writer
+      // lock is never held across network or CPU-heavy I/O during apply.
+      final chunkPrepared = <int, _PrepareSlot>{};
+      for (var i = chunkStart; i < chunkEnd; i++) {
+        final e = ordered[i];
+        final id = e.eventId;
+        // Match the apply-pass skip predicates: we only need to prepare
+        // events that will actually hit `_processSyncPayloadEvent`.
+        if (suppressedIds.contains(id)) continue;
+        if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) continue;
+        if (_inFlightSyncIds.contains(id)) continue;
+        if (wasCompletedSync(id)) continue;
+        // Honour the retry tracker here too so we do not spend I/O preparing
+        // events the apply pass will immediately shelve.
+        if (_retryTracker.blockedUntil(id, clock.now()) != null) continue;
+        if (_retryTracker.attempts(id) >= _maxRetriesPerEvent) continue;
+        try {
+          final p = await _eventProcessor.prepare(event: e);
+          // A null return from a real `SyncEventProcessor.prepare` only
+          // happens for undeserialisable envelopes; apply has nothing to do
+          // and the legacy fallback below would just re-decode and return.
+          // Tests that stub `process` but not `prepare` also see null here
+          // (mocktail default), and must hit the back-compat path below.
+          // Both cases want the same behaviour: leave the slot absent so
+          // `_processSyncPayloadEvent` treats this event via `process`
+          // inside the transaction exactly as it did pre-split.
+          if (p != null) {
+            chunkPrepared[i] = _PrepareSlot.prepared(p);
+          }
+        } catch (err, st) {
+          chunkPrepared[i] = _PrepareSlot.error(err, st);
+        }
+      }
+
       await _journalDb.transaction(() async {
         for (var i = chunkStart; i < chunkEnd; i++) {
           final e = ordered[i];
@@ -510,7 +586,10 @@ class MatrixStreamProcessor {
               syncPayloadEventsSeen++;
               _inFlightSyncIds.add(id);
               try {
-                final outcome = await _processSyncPayloadEvent(e);
+                final outcome = await _processSyncPayloadEvent(
+                  e,
+                  prepareSlot: chunkPrepared[i],
+                );
                 processedOk = outcome.processedOk;
                 treatAsHandled = outcome.treatAsHandled;
                 if (processedOk) syncPayloadsApplied++;
@@ -549,6 +628,7 @@ class MatrixStreamProcessor {
                   final outcome = await _processSyncPayloadEvent(
                     e,
                     dropSuffix: ' (no-msgtype)',
+                    prepareSlot: chunkPrepared[i],
                   );
                   processedOk = outcome.processedOk;
                   treatAsHandled = outcome.treatAsHandled;

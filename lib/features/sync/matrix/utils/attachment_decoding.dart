@@ -62,6 +62,28 @@ Uint8List _gzipDecodeWorker(Uint8List bytes) {
   return result is Uint8List ? result : Uint8List.fromList(result);
 }
 
+/// Gzip-encodes [bytes], offloading to a worker isolate above
+/// [_inlineGzipThreshold] so a multi-KB JSON attachment does not stall the
+/// UI isolate inside the outbox send path.
+///
+/// The threshold matches [decodeAttachmentBytes] so both directions pay the
+/// one-shot isolate spin-up cost only when the saved main-isolate time is
+/// larger than it. Senders below the threshold encode inline.
+Future<Uint8List> gzipEncodeBytes(Uint8List bytes) async {
+  if (bytes.length < _inlineGzipThreshold) {
+    final result = gzip.encode(bytes);
+    return result is Uint8List ? result : Uint8List.fromList(result);
+  }
+  return compute(_gzipEncodeWorker, bytes);
+}
+
+/// Worker entry point for `compute`. Must be a top-level function so the
+/// runtime can hand it to a background isolate.
+Uint8List _gzipEncodeWorker(Uint8List bytes) {
+  final result = gzip.encode(bytes);
+  return result is Uint8List ? result : Uint8List.fromList(result);
+}
+
 /// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
 ///
 /// Rendered identically on both ends of a sync (sender and receiver) so that

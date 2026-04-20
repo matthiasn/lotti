@@ -24,8 +24,6 @@ class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
 class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
-class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
-
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class MockClient extends Mock implements Client {}
