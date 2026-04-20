@@ -218,7 +218,13 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
   );
   // Shared in-memory index of latest attachment events keyed by relativePath.
-  final attachmentIndex = AttachmentIndex(logging: loggingService);
+  // Verbose per-event logging is off in production; SDK pagination bursts
+  // would otherwise produce thousands of `attachmentIndex.*` lines in a
+  // single second. The wrapping `batch.summary` carries the aggregate.
+  final attachmentIndex = AttachmentIndex(
+    logging: loggingService,
+    verboseLogging: false,
+  );
   final readMarkerService = SyncReadMarkerService(
     settingsDb: settingsDb,
     loggingService: loggingService,

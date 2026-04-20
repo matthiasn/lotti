@@ -50,6 +50,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     int? maxRetriesPerEvent,
     Duration circuitCooldown = const Duration(seconds: 30),
     bool dropOldPayloadsInLiveScan = true,
+    bool verboseAttachmentLogging = true,
     // Test seam: skip sync wait in tests to avoid needing to mock client.onSync
     bool skipSyncWait = false,
     Future<bool> Function({
@@ -79,7 +80,8 @@ class MatrixStreamConsumer implements SyncPipeline {
        _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
        _sentEventRegistry = sentEventRegistry,
        _backfill = backfill,
-       _documentsDirectory = documentsDirectory {
+       _documentsDirectory = documentsDirectory,
+       _verboseAttachmentLogging = verboseAttachmentLogging {
     _processor = MatrixStreamProcessor(
       roomManager: _roomManager,
       loggingService: _loggingService,
@@ -97,6 +99,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       maxRetriesPerEvent: _maxRetriesPerEvent,
       circuitCooldown: _circuitCooldown,
       documentsDirectory: _documentsDirectory,
+      verboseAttachmentLogging: _verboseAttachmentLogging,
     );
     _catchUp = MatrixStreamCatchUpCoordinator(
       sessionManager: _sessionManager,
@@ -172,6 +175,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   })?
   _backfill;
   final Directory? _documentsDirectory;
+  final bool _verboseAttachmentLogging;
 
   late final MatrixStreamProcessor _processor;
   late final MatrixStreamCatchUpCoordinator _catchUp;

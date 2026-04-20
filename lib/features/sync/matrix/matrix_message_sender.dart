@@ -141,15 +141,6 @@ class MatrixMessageSender {
       return false;
     }
 
-    _loggingService.captureEvent(
-      'Sending message - using roomId: $roomId, '
-      'syncRoomId: ${context.syncRoomId}, '
-      'syncRoom.id: ${context.syncRoom?.id}, '
-      'messageType: ${message.runtimeType}',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'sendMatrixMsg',
-    );
-
     try {
       // For journal entity messages, upload JSON (and attachments) first so
       // descriptors are available before the text event is processed.
@@ -218,12 +209,6 @@ class MatrixMessageSender {
         return false;
       }
 
-      _loggingService.captureEvent(
-        'sent text message to $room with event ID $eventId',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-
       _sentEventRegistry.register(
         eventId,
         source: SentEventSource.text,
@@ -281,12 +266,6 @@ class MatrixMessageSender {
         return true;
       }
 
-      _loggingService.captureEvent(
-        'trying to send $relativePath file message to $room',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
-
       final fileBytes = bytes ?? await file.readAsBytes();
 
       final shouldCompress =
@@ -320,17 +299,6 @@ class MatrixMessageSender {
         );
         return false;
       }
-
-      _loggingService.captureEvent(
-        shouldCompress
-            ? 'sent $relativePath file message (gzip '
-                  '${fileBytes.length}→${uploadBytes.length} bytes, '
-                  'ratio=${formatCompressionRatio(raw: fileBytes.length, compressed: uploadBytes.length)}) '
-                  'to $room, event ID $eventId'
-            : 'sent $relativePath file message to $room, event ID $eventId',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg',
-      );
 
       _sentEventRegistry.register(
         eventId,

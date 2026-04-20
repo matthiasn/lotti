@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Regression test guards the invariant that every `prepare` completes
   before the writer transaction opens.
 
+### Changed
+- Sync log volume reduced by ~40% at info level. The outbox send path used
+  to emit ~10 info lines per successful send across four subdomains
+  (`sendMatrixMsg`, `sendNext()`, `outbox.send`, `OUTBOX queue`); a single
+  capture at the outbox processor now summarises the send with `type`,
+  `subject`, `retries`, elapsed `ms`, and remaining `pending` queue depth.
+  Per-event `attachment.observe` and `attachmentIndex.record` lines are
+  now gated behind a `verboseLogging` flag on `AttachmentIngestor` /
+  `AttachmentIndex`; production wiring passes `false` so the
+  steady-state and pagination-burst line counts drop, while tests keep
+  the flag on to preserve existing per-event assertions. Failure, retry,
+  and circuit-breaker diagnostics are unchanged.
+
 ## [0.9.967] - 2026-04-20
 ### Changed
 - Task detail header rebuilt against the desktop Figma as a scoped

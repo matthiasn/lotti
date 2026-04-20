@@ -75,35 +75,19 @@ class OutboxProcessor {
 
     final nextItem = pendingItems.first;
     try {
-      _loggingService.captureEvent(
-        'pending=${pendingItems.length} head=${nextItem.subject}',
-        domain: 'OUTBOX',
-        subDomain: 'queue',
-      );
-    } catch (_) {
-      // best-effort logging only
-    }
-    _loggingService.captureEvent(
-      'trying ${nextItem.subject} ',
-      domain: 'OUTBOX',
-      subDomain: 'sendNext()',
-    );
-
-    try {
       // Re-read item to get the latest message after any merges that may
       // have occurred since fetchPending(). This ensures coveredVectorClocks
       // accumulated during the processing delay are included.
       final refreshedItem = await _repository.refreshItem(nextItem);
       if (refreshedItem == null) {
-        // Item was deleted or status changed during processing
-        try {
-          _loggingService.captureEvent(
-            'skip ${nextItem.subject} - item no longer pending',
-            domain: 'OUTBOX',
-            subDomain: 'sendNext()',
-          );
-        } catch (_) {}
-        // Continue to next item immediately
+        // Item was deleted or status changed during processing. Keep the
+        // legacy "item no longer pending" fragment so downstream diagnostics
+        // (and tests) can still spot the skip.
+        _loggingService.captureEvent(
+          'skip subject=${nextItem.subject} - item no longer pending',
+          domain: 'OUTBOX',
+          subDomain: 'outbox.send',
+        );
         final hasMore = pendingItems.length > 1;
         return hasMore
             ? OutboxProcessingResult.schedule(Duration.zero)
@@ -111,20 +95,7 @@ class OutboxProcessor {
       }
 
       final syncMessage = _decodeMessage(refreshedItem);
-      // Log the decoded message type to improve visibility, especially for links
-      try {
-        _loggingService.captureEvent(
-          'sending type=${syncMessage.runtimeType} subject=${refreshedItem.subject}',
-          domain: 'OUTBOX',
-          subDomain: 'sendNext()',
-        );
-      } catch (_) {
-        // best-effort logging only
-      }
-      _syncLog(
-        'send type=${syncMessage.runtimeType} subject=${refreshedItem.subject}',
-        subDomain: 'outbox.send',
-      );
+      final sendStart = DateTime.now();
       var timedOut = false;
       final success = await _messageSender
           .send(syncMessage)
@@ -172,14 +143,13 @@ class OutboxProcessor {
       }
 
       await _repository.markSent(refreshedItem);
-      _syncLog(
-        'sent subject=${refreshedItem.subject}',
-        subDomain: 'outbox.send',
-      );
+      final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       _loggingService.captureEvent(
-        '${refreshedItem.subject} done',
+        'sent type=${syncMessage.runtimeType} subject=${refreshedItem.subject} '
+        'retries=${refreshedItem.retries} ms=$elapsedMs '
+        'pending=${pendingItems.length}',
         domain: 'OUTBOX',
-        subDomain: 'sendNext()',
+        subDomain: 'outbox.send',
       );
       // Reset repeat tracker on success for this subject.
       if (_lastFailedSubject == refreshedItem.subject) {
@@ -188,17 +158,9 @@ class OutboxProcessor {
       }
 
       final hasMore = pendingItems.length > 1;
-      if (hasMore) {
-        try {
-          _loggingService.captureEvent(
-            'scheduleNext immediate (hasMore)',
-            domain: 'OUTBOX',
-            subDomain: 'queue',
-          );
-        } catch (_) {}
-        return OutboxProcessingResult.schedule(Duration.zero);
-      }
-      return OutboxProcessingResult.none;
+      return hasMore
+          ? OutboxProcessingResult.schedule(Duration.zero)
+          : OutboxProcessingResult.none;
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,

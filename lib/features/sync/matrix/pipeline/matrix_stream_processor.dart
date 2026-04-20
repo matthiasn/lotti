@@ -82,6 +82,7 @@ class MatrixStreamProcessor {
     int? maxRetriesPerEvent,
     Duration circuitCooldown = const Duration(seconds: 30),
     Directory? documentsDirectory,
+    bool verboseAttachmentLogging = true,
   }) : _roomManager = roomManager,
        _loggingService = loggingService,
        _journalDb = journalDb,
@@ -100,7 +101,10 @@ class MatrixStreamProcessor {
        _retryMaxEntries = 2000,
        _circuitFailureThreshold = 50,
        _circuitCooldown = circuitCooldown,
-       _ingestor = AttachmentIngestor(documentsDirectory: documentsDirectory) {
+       _ingestor = AttachmentIngestor(
+         documentsDirectory: documentsDirectory,
+         verboseLogging: verboseAttachmentLogging,
+       ) {
     _retryTracker = rc.RetryTracker(
       ttl: _retryTtl,
       maxEntries: _retryMaxEntries,
