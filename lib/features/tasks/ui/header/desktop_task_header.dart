@@ -285,15 +285,12 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 
   Widget _buildMetadataLine(BuildContext context) {
     final tokens = context.designTokens;
-    // Two semantic groups, each packed tightly with `step2` spacing:
-    //   [ Due · Priority ]  ...  [ Estimate · Status ]
-    // Outer Wrap uses `alignment: spaceBetween` so the groups sit at the
-    // two ends on a wide row, and break onto their own lines on narrow
-    // ones — the second group wraps beneath the first.
-    final leftGroup = Wrap(
-      spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step2,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    // Two semantic groups. Each group is a `Row(mainAxisSize: min)` so the
+    // chips inside it always stay on the same line — only the outer
+    // LayoutBuilder branch below decides whether the two groups share one
+    // row or stack vertically.
+    final leftGroup = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.data.dueDate != null)
           _DueDateChip(
@@ -306,18 +303,20 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             label: context.messages.taskNoDueDateLabel,
             onTap: widget.onDueDateTap,
           ),
+        SizedBox(width: tokens.spacing.step2),
         _PriorityBadge(
           priority: widget.data.priority,
           onTap: widget.onPriorityTap,
         ),
       ],
     );
-    final rightGroup = Wrap(
-      spacing: tokens.spacing.step2,
-      runSpacing: tokens.spacing.step2,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    final rightGroup = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ?widget.estimateSlot,
+        if (widget.estimateSlot != null) ...[
+          widget.estimateSlot!,
+          SizedBox(width: tokens.spacing.step4),
+        ],
         _StatusDropdown(
           status: widget.data.status,
           onTap: widget.onStatusTap,
@@ -325,15 +324,17 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
       ],
     );
     // `Wrap(alignment: spaceBetween)` doesn't actually space the two
-    // groups apart — Wrap shrink-wraps its own main-axis size, so there's
-    // never any free space to distribute. Instead we branch on the
-    // available width: above a breakpoint both groups fit side-by-side
-    // with a horizontal Row, below it they stack into a Column so narrow
-    // desktop split-panes and mobile break cleanly onto two rows.
-    const stackBreakpoint = 480.0;
+    // groups apart because Wrap shrink-wraps its main-axis size. Instead
+    // we branch on available width: above the breakpoint both groups fit
+    // side-by-side in a Row(spaceBetween); below it they stack into a
+    // Column. The breakpoint scales with the text scaler so accessibility
+    // text sizes break into two rows at wider viewports rather than
+    // overflowing.
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= stackBreakpoint) {
+        final scale = MediaQuery.textScalerOf(context).scale(1);
+        final breakpoint = 520.0 * scale;
+        if (constraints.maxWidth >= breakpoint) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [leftGroup, rightGroup],
@@ -352,8 +353,8 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   }
 }
 
-/// Subtle middle-dot character used between classification groups
-/// (category · project · labels). Shrink-wrapped to its glyph width so it
+/// Subtle low-emphasis vertical rule between classification groups
+/// (category | project | labels). Shrink-wrapped to its glyph width so it
 /// participates in the outer `Wrap` as a narrow child rather than taking
 /// the full row.
 class _GroupSeparator extends StatelessWidget {

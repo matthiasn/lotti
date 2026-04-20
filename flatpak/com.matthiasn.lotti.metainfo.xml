@@ -31,6 +31,20 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.967" date="2026-04-20">
+      <description>
+          <p>Task detail header rebuilt against the desktop Figma:</p>
+          <ul>
+              <li>New DesktopTaskHeader replaces the pinned title sliver and legacy TaskHeaderMetaCard, with an inline capsule-style multi-line title editor and three explicit rows for title, classification, and metadata.</li>
+              <li>Figma priority / status / project / due-date / work-category chips; estimate chip with live progress bar and overtime styling; assigned-label chips with a leading color dot.</li>
+              <li>Subdued placeholder chips for every empty state ("No project", "unassigned" category, "No due date", "Add Label") open the corresponding picker when tapped.</li>
+              <li>Due-date urgency is tri-state: orange today, red overdue, subdued otherwise.</li>
+              <li>Task title now persists in the app bar in subtitle2 once the header scrolls out of view.</li>
+              <li>AI Task Summary, Task description, Linked Tasks, and Checklist cards render on a flat TaskDetailSectionCard surface so they visually match the task list.</li>
+              <li>TaskLabelsWrapper and the per-chip wrappers that fed the old meta card are removed; shared modal content widgets (status, priority, category, project, due date, labels) are retained and reused.</li>
+          </ul>
+      </description>
+    </release>
     <release version="0.9.966" date="2026-04-19">
       <description>
           <p>Sync startup no longer does every step twice. The connectivity-driven forceRescan and the consumer's runInitialCatchUpIfReady used to race into _attachCatchUp() concurrently because neither acquired _catchUpInFlight for its run, producing two catchup.waitForSync passes, two backfill.start fetches, and two ordered replays of the same event slice. _attachCatchUp() is now the single owner of _catchUpInFlight and the deferred-live-scan flush, short-circuiting concurrent runs with a catchup.skipped (in flight) log. All other entry points now defer to it instead of managing the flag themselves; the obsolete bypassCatchUpInFlightCheck parameter is removed.</p>
@@ -41,9 +55,7 @@
     </release>
     <release version="0.9.965" date="2026-04-19">
       <description>
-          <p>Task detail header rebuilt against the desktop Figma as a scoped migration. The pinned title sliver and legacy TaskHeaderMetaCard are replaced by a new DesktopTaskHeader that ships an inline, capsule-style title editor (Heading 3 bold, pencil-on-hover, check/cancel on edit), the priority / status / project / due-date / work-category / label chips, and a more_vert ellipsis opening the existing entry action modal. The presentational widget is Riverpod-free and exercised in Widgetbook with Default, Hover, Editing and Playground use cases; a thin connector wires the existing modal pickers (status, priority, category, project, due date, labels) and EntryController mutations.</p>
-          <p>AI Task Summary, Task description, Linked Tasks and Checklist cards on the task detail page now use a flat TaskDetailSectionCard surface — solid background.level02, radii.l, subtle decorative.level01 border, no gradient and no drop shadow — so they visually match the task list. Section titles inside the touched cards now use the design-system subtitle2 token. The obsolete header widgets (TaskTitleHeader, TaskHeaderMetaCard and the per-chip wrappers that only fed the old meta card) are deleted; shared modal content widgets (TaskStatusModalContent, showDueDatePicker, CategorySelectionModalContent, ProjectSelectionModalContent) are retained and reused by the new connector.</p>
-          <p>DailyOS mobile fix: the DailyOS page no longer surfaces "Failed to load timeline" and "Failed to load budgets" on devices where the v39 migration's partial expression index idx_journal_tasks_due_open is missing or cannot satisfy SQLite's INDEXED BY clause. The open-task due-date query now catches SQLITE_ERROR from the pinned fast path and retries once without the pin, so DailyOS data still loads even when the planner cannot prove the partial's WHERE. beforeOpen also recreates idx_journal_tasks_due_open and idx_journal_task_status_private as CREATE INDEX IF NOT EXISTS on every launch, so devices that landed at user_version = 39 with a missing index self-heal on next open.</p>
+          <p>DailyOS mobile fix: the DailyOS page no longer surfaces "Failed to load timeline" and "Failed to load budgets" on devices where the v39 migration's partial expression index is missing. The open-task due-date query retries once without the index pin, and beforeOpen recreates the missing indexes on every launch so affected devices self-heal.</p>
       </description>
     </release>
     <release version="0.9.964" date="2026-04-19">
