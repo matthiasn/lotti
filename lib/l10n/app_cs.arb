@@ -1838,6 +1838,44 @@
   "provisionedSyncSummaryUser": "Uživatel",
   "provisionedSyncTitle": "Provizní synchronizace",
   "provisionedSyncVerifyDevicesTitle": "Ověření zařízení",
+  "queueDepthCardEmpty": "Fronta je prázdná — worker je aktuální.",
+  "queueDepthCardLoading": "Čtení hloubky fronty…",
+  "queueDepthCardTitle": "Vstupní fronta",
+  "queueFetchAllHistoryButton": "Načíst celou historii",
+  "queueFetchAllHistoryCancel": "Zrušit",
+  "queueFetchAllHistoryClose": "Zavřít",
+  "queueFetchAllHistoryDescription": "Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.",
+  "queueFetchAllHistoryDone": "Načteno {events} událostí na {pages} stránkách.",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Načítání zastaveno: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryProgress": "Strana {pages}  ·  {events} událostí načteno",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Načítání historie",
   "referenceImageContinue": "Pokračovat",
   "referenceImageContinueWithCount": "Pokračovat ({count})",
   "@referenceImageContinueWithCount": {

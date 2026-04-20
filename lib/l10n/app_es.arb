@@ -2085,6 +2085,44 @@
   "provisionedSyncSummaryUser": "Usuario",
   "provisionedSyncTitle": "Sincronización provisionada",
   "provisionedSyncVerifyDevicesTitle": "Verificación de dispositivos",
+  "queueDepthCardEmpty": "Cola vacía — el worker está al día.",
+  "queueDepthCardLoading": "Leyendo profundidad de la cola…",
+  "queueDepthCardTitle": "Cola de entrada",
+  "queueFetchAllHistoryButton": "Obtener todo el historial",
+  "queueFetchAllHistoryCancel": "Cancelar",
+  "queueFetchAllHistoryClose": "Cerrar",
+  "queueFetchAllHistoryDescription": "Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.",
+  "queueFetchAllHistoryDone": "{events} eventos obtenidos en {pages} páginas.",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Obtención detenida: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryProgress": "Página {pages}  ·  {events} eventos obtenidos",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Obteniendo historial",
   "referenceImageContinue": "Continuar",
   "referenceImageContinueWithCount": "Continuar ({count})",
   "@referenceImageContinueWithCount": {

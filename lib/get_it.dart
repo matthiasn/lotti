@@ -34,10 +34,13 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -270,6 +273,35 @@ Future<void> registerSingletons() async {
     discoveryService: discoveryService,
   );
 
+  // Session manager is ordinarily created inside MatrixService, but
+  // Phase 2 needs it at hand to build the QueuePipelineCoordinator
+  // before MatrixService so both end up sharing the same instance.
+  final sessionManager = MatrixSessionManager(
+    gateway: matrixGateway,
+    roomManager: roomManager,
+    loggingService: loggingService,
+  );
+
+  // Phase-2 queue pipeline: when the feature flag is on, construct the
+  // coordinator eagerly, share it with MatrixService, and instruct the
+  // legacy pipeline to stay dormant. Reading the flag here (before
+  // MatrixService construction) makes the decision synchronous to the
+  // rest of the service wiring.
+  final useQueuePipeline = await readUseInboundEventQueueFlag(settingsDb);
+  final queuePipelineCoordinator = useQueuePipeline
+      ? QueuePipelineCoordinator(
+          syncDb: syncDatabase,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: syncEventProcessor,
+          sequenceLogService: syncSequenceLogService,
+          activityGate: userActivityGate,
+          logging: loggingService,
+        )
+      : null;
+
   final matrixService = MatrixService(
     gateway: matrixGateway,
     loggingService: loggingService,
@@ -283,6 +315,9 @@ Future<void> registerSingletons() async {
     collectSyncMetrics: collectSyncMetrics,
     attachmentIndex: attachmentIndex,
     roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queuePipelineCoordinator,
+    suppressLegacyPipeline: useQueuePipeline,
   );
 
   getIt

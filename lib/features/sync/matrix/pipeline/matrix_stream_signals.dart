@@ -19,6 +19,7 @@ class MatrixStreamSignalBinder {
     required MatrixStreamCatchUpCoordinator catchUpCoordinator,
     required MatrixStreamLiveScanController liveScanController,
     required String Function(String message) withInstance,
+    bool suppressLiveIngestion = false,
   }) : _sessionManager = sessionManager,
        _roomManager = roomManager,
        _loggingService = loggingService,
@@ -26,7 +27,8 @@ class MatrixStreamSignalBinder {
        _collectMetrics = collectMetrics,
        _catchUp = catchUpCoordinator,
        _liveScan = liveScanController,
-       _withInstance = withInstance;
+       _withInstance = withInstance,
+       _suppressLiveIngestion = suppressLiveIngestion;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
@@ -36,6 +38,11 @@ class MatrixStreamSignalBinder {
   final MatrixStreamCatchUpCoordinator _catchUp;
   final MatrixStreamLiveScanController _liveScan;
   final String Function(String message) _withInstance;
+  final bool _suppressLiveIngestion;
+
+  /// Exposed for tests: true when Phase-2's queue pipeline owns live
+  /// ingestion and this binder must not schedule scans.
+  bool get suppressLiveIngestion => _suppressLiveIngestion;
 
   StreamSubscription<Event>? _sub;
   StreamSubscription<SyncUpdate>? _syncSub;
@@ -144,6 +151,21 @@ class MatrixStreamSignalBinder {
         );
       },
     );
+
+    // Phase-2 flag-on path: the queue pipeline owns live ingestion,
+    // so this binder must not subscribe to timelineEvents or wire
+    // room timeline callbacks — otherwise the same events would be
+    // applied twice (once via the queue worker, once via the legacy
+    // live-scan path). The Phase-0 diagnostic `_syncSub` above stays
+    // attached because it is observational and useful in both modes.
+    if (_suppressLiveIngestion) {
+      _loggingService.captureEvent(
+        _withInstance('start: suppressed (queue pipeline active)'),
+        domain: syncLoggingDomain,
+        subDomain: 'start.suppressed',
+      );
+      return;
+    }
 
     // Client-level session stream -> signal-driven catch-up.
     // Filter by current room; the very first event also triggers a catch-up

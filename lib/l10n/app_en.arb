@@ -2328,6 +2328,44 @@
   "provisionedSyncSummaryUser": "User",
   "provisionedSyncTitle": "Provisioned Sync",
   "provisionedSyncVerifyDevicesTitle": "Device Verification",
+  "queueDepthCardEmpty": "Queue empty — worker is caught up.",
+  "queueDepthCardLoading": "Reading queue depth…",
+  "queueDepthCardTitle": "Inbound queue",
+  "queueFetchAllHistoryButton": "Fetch all history",
+  "queueFetchAllHistoryCancel": "Cancel",
+  "queueFetchAllHistoryClose": "Close",
+  "queueFetchAllHistoryDescription": "Walks the room's entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.",
+  "queueFetchAllHistoryDone": "Fetched {events} events across {pages} pages.",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Fetch stopped: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryProgress": "Page {pages}  ·  {events} events fetched",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Fetching history",
   "referenceImageContinue": "Continue",
   "referenceImageContinueWithCount": "Continue ({count})",
   "@referenceImageContinueWithCount": {

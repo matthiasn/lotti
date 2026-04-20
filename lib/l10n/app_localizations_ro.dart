@@ -4865,6 +4865,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Verificarea dispozitivelor';
 
   @override
+  String get queueDepthCardEmpty => 'Coadă goală — worker-ul este actualizat.';
+
+  @override
+  String get queueDepthCardLoading => 'Se citește adâncimea cozii…';
+
+  @override
+  String get queueDepthCardTitle => 'Coadă de intrare';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Obțineți întregul istoric';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Anulați';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Închideți';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return '$events evenimente obținute pe $pages pagini.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Obținere oprită: $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Pagina $pages  ·  $events evenimente obținute';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Se obține istoricul';
+
+  @override
   String get referenceImageContinue => 'Continuă';
 
   @override

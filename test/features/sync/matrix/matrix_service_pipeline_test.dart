@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:matrix/matrix.dart';
@@ -48,6 +50,9 @@ class _MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
 class _MockUserActivityGate extends Mock implements UserActivityGate {}
 
 class _MockMatrixStreamConsumer extends Mock implements MatrixStreamConsumer {}
+
+class _MockQueuePipelineCoordinator extends Mock
+    implements QueuePipelineCoordinator {}
 
 class _MockClient extends Mock implements Client {}
 
@@ -95,6 +100,8 @@ void main() {
     Stream<List<ConnectivityResult>>? connectivity,
     Map<String, int> metricsSnapshot = const {'dbApplied': 4},
     Map<String, String> diagnostics = const {'nextRetry': 'soon'},
+    QueuePipelineCoordinator? queueCoordinator,
+    bool suppressLegacyPipeline = false,
   }) {
     final connectivityStream =
         connectivity ?? const Stream<List<ConnectivityResult>>.empty();
@@ -132,6 +139,8 @@ void main() {
       pipelineOverride: pipeline,
       attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
+      queueCoordinator: queueCoordinator,
+      suppressLegacyPipeline: suppressLegacyPipeline,
     );
   }
 
@@ -315,6 +324,95 @@ void main() {
 
     verify(() => sessionManager.dispose()).called(1);
     verify(() => roomManager.dispose()).called(1);
+  });
+
+  group('queue pipeline flag', () {
+    test(
+      'init starts the coordinator when the flag is on',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'true');
+
+        final service = createService(
+          queueCoordinator: coordinator,
+          suppressLegacyPipeline: true,
+        );
+
+        // Short-circuit the rest of init: we don't want loadConfig /
+        // connect to run their full flows, but we do want
+        // _maybeStartQueuePipeline to fire. Call it directly via the
+        // visible hook instead of init().
+        await service.debugMaybeStartQueuePipelineForTest();
+
+        verify(coordinator.start).called(1);
+      },
+    );
+
+    test(
+      'init does not start the coordinator when the flag is off',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(false);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'false');
+
+        final service = createService(queueCoordinator: coordinator);
+        await service.debugMaybeStartQueuePipelineForTest();
+
+        verifyNever(coordinator.start);
+      },
+    );
+
+    test(
+      'dispose drains the coordinator first (F7)',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+
+        await service.dispose();
+        verify(() => coordinator.stop(drainFirst: true)).called(1);
+      },
+    );
+
+    test(
+      'isLegacyPipelineSuppressed mirrors the constructor argument',
+      () {
+        fakeAsync((async) {
+          final service = createService(suppressLegacyPipeline: true);
+          settleServiceStartup(async);
+          expect(service.isLegacyPipelineSuppressed, isTrue);
+
+          final other = createService();
+          settleServiceStartup(async);
+          expect(other.isLegacyPipelineSuppressed, isFalse);
+        });
+      },
+    );
   });
 
   test('discoverExistingSyncRooms delegates to room manager', () {

@@ -4838,6 +4838,46 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
 
   @override
+  String get queueDepthCardEmpty => 'Fronta je prázdná — worker je aktuální.';
+
+  @override
+  String get queueDepthCardLoading => 'Čtení hloubky fronty…';
+
+  @override
+  String get queueDepthCardTitle => 'Vstupní fronta';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Načíst celou historii';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Zrušit';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Zavřít';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return 'Načteno $events událostí na $pages stránkách.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Načítání zastaveno: $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Strana $pages  ·  $events událostí načteno';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Načítání historie';
+
+  @override
   String get referenceImageContinue => 'Pokračovat';
 
   @override

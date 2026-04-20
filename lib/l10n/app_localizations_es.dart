@@ -4930,6 +4930,46 @@ class AppLocalizationsEs extends AppLocalizations {
       'Verificación de dispositivos';
 
   @override
+  String get queueDepthCardEmpty => 'Cola vacía — el worker está al día.';
+
+  @override
+  String get queueDepthCardLoading => 'Leyendo profundidad de la cola…';
+
+  @override
+  String get queueDepthCardTitle => 'Cola de entrada';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Obtener todo el historial';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Cancelar';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Cerrar';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return '$events eventos obtenidos en $pages páginas.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Obtención detenida: $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Página $pages  ·  $events eventos obtenidos';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Obteniendo historial';
+
+  @override
   String get referenceImageContinue => 'Continuar';
 
   @override

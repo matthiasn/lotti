@@ -4777,6 +4777,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
 
   @override
+  String get queueDepthCardEmpty => 'Queue empty — worker is caught up.';
+
+  @override
+  String get queueDepthCardLoading => 'Reading queue depth…';
+
+  @override
+  String get queueDepthCardTitle => 'Inbound queue';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Fetch all history';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Cancel';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Close';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return 'Fetched $events events across $pages pages.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Fetch stopped: $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Page $pages  ·  $events events fetched';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Fetching history';
+
+  @override
   String get referenceImageContinue => 'Continue';
 
   @override

@@ -63,7 +63,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     })?
     backfill,
     Directory? documentsDirectory,
+    // Phase-2 flag. When true the signal binder does not subscribe
+    // to timelineEvents, so the legacy live-scan path is dormant and
+    // the InboundEventQueue pipeline owns live ingestion.
+    bool suppressLiveIngestion = false,
   }) : _skipSyncWait = skipSyncWait,
+       _suppressLiveIngestion = suppressLiveIngestion,
        _sessionManager = sessionManager,
        _roomManager = roomManager,
        _loggingService = loggingService,
@@ -141,6 +146,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       catchUpCoordinator: _catchUp,
       liveScanController: _liveScan,
       withInstance: _withInstance,
+      suppressLiveIngestion: _suppressLiveIngestion,
     );
   }
 
@@ -150,6 +156,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   String _withInstance(String message) => '$message inst=$_instanceId';
 
   final bool _skipSyncWait;
+  final bool _suppressLiveIngestion;
+
+  /// True when Phase 2's queue pipeline owns live ingestion and this
+  /// consumer's scan/catch-up wiring is dormant. Test-visible.
+  bool get suppressLiveIngestion => _suppressLiveIngestion;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;

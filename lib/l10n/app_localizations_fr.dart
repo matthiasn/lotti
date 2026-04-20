@@ -4938,6 +4938,46 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Vérification des appareils';
 
   @override
+  String get queueDepthCardEmpty => 'File vide — le worker est à jour.';
+
+  @override
+  String get queueDepthCardLoading => 'Lecture de la profondeur de la file…';
+
+  @override
+  String get queueDepthCardTitle => 'File d\'entrée';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Récupérer tout l\'historique';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Annuler';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Fermer';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Parcourt tout l\'historique visible de la salle dans la file. Tu peux annuler à tout moment ; une nouvelle exécution reprend là où la pagination s\'est arrêtée.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return '$events événements récupérés sur $pages pages.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Récupération arrêtée : $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Page $pages  ·  $events événements récupérés';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Récupération de l\'historique';
+
+  @override
   String get referenceImageContinue => 'Continuer';
 
   @override

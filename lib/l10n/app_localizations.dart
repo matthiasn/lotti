@@ -8518,6 +8518,72 @@ abstract class AppLocalizations {
   /// **'Device Verification'**
   String get provisionedSyncVerifyDevicesTitle;
 
+  /// No description provided for @queueDepthCardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue empty — worker is caught up.'**
+  String get queueDepthCardEmpty;
+
+  /// No description provided for @queueDepthCardLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading queue depth…'**
+  String get queueDepthCardLoading;
+
+  /// No description provided for @queueDepthCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound queue'**
+  String get queueDepthCardTitle;
+
+  /// No description provided for @queueFetchAllHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch all history'**
+  String get queueFetchAllHistoryButton;
+
+  /// No description provided for @queueFetchAllHistoryCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get queueFetchAllHistoryCancel;
+
+  /// No description provided for @queueFetchAllHistoryClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get queueFetchAllHistoryClose;
+
+  /// No description provided for @queueFetchAllHistoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.'**
+  String get queueFetchAllHistoryDescription;
+
+  /// No description provided for @queueFetchAllHistoryDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetched {events} events across {pages} pages.'**
+  String queueFetchAllHistoryDone(int events, int pages);
+
+  /// No description provided for @queueFetchAllHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch stopped: {reason}'**
+  String queueFetchAllHistoryError(String reason);
+
+  /// No description provided for @queueFetchAllHistoryProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {pages}  ·  {events} events fetched'**
+  String queueFetchAllHistoryProgress(int events, int pages);
+
+  /// No description provided for @queueFetchAllHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching history'**
+  String get queueFetchAllHistoryTitle;
+
   /// No description provided for @referenceImageContinue.
   ///
   /// In en, this message translates to:

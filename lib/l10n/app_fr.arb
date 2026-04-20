@@ -2085,6 +2085,44 @@
   "provisionedSyncSummaryUser": "Utilisateur",
   "provisionedSyncTitle": "Synchronisation provisionnée",
   "provisionedSyncVerifyDevicesTitle": "Vérification des appareils",
+  "queueDepthCardEmpty": "File vide — le worker est à jour.",
+  "queueDepthCardLoading": "Lecture de la profondeur de la file…",
+  "queueDepthCardTitle": "File d'entrée",
+  "queueFetchAllHistoryButton": "Récupérer tout l'historique",
+  "queueFetchAllHistoryCancel": "Annuler",
+  "queueFetchAllHistoryClose": "Fermer",
+  "queueFetchAllHistoryDescription": "Parcourt tout l'historique visible de la salle dans la file. Tu peux annuler à tout moment ; une nouvelle exécution reprend là où la pagination s'est arrêtée.",
+  "queueFetchAllHistoryDone": "{events} événements récupérés sur {pages} pages.",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Récupération arrêtée : {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryProgress": "Page {pages}  ·  {events} événements récupérés",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Récupération de l'historique",
   "referenceImageContinue": "Continuer",
   "referenceImageContinueWithCount": "Continuer ({count})",
   "@referenceImageContinueWithCount": {

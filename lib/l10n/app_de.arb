@@ -2085,6 +2085,44 @@
   "provisionedSyncSummaryUser": "Benutzer",
   "provisionedSyncTitle": "Provisionierte Synchronisierung",
   "provisionedSyncVerifyDevicesTitle": "Geräteverifizierung",
+  "queueDepthCardEmpty": "Warteschlange leer — Worker ist aktuell.",
+  "queueDepthCardLoading": "Warteschlangenfüllung wird gelesen…",
+  "queueDepthCardTitle": "Eingangs-Warteschlange",
+  "queueFetchAllHistoryButton": "Gesamten Verlauf holen",
+  "queueFetchAllHistoryCancel": "Abbrechen",
+  "queueFetchAllHistoryClose": "Schließen",
+  "queueFetchAllHistoryDescription": "Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.",
+  "queueFetchAllHistoryDone": "{events} Ereignisse über {pages} Seiten abgerufen.",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Abruf gestoppt: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryProgress": "Seite {pages}  ·  {events} Ereignisse abgerufen",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Verlauf wird geholt",
   "referenceImageContinue": "Weiter",
   "referenceImageContinueWithCount": "Weiter ({count})",
   "@referenceImageContinueWithCount": {

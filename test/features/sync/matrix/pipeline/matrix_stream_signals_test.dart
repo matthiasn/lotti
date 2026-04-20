@@ -698,6 +698,97 @@ void main() {
         },
       );
     });
+
+    group('suppressLiveIngestion (Phase-2 queue pipeline active)', () {
+      test(
+        'does not subscribe to timelineEvents or schedule scans',
+        () async {
+          final suppressed = MatrixStreamSignalBinder(
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            loggingService: loggingService,
+            metrics: metrics,
+            collectMetrics: true,
+            catchUpCoordinator: catchUp,
+            liveScanController: liveScan,
+            withInstance: (msg) => 'inst: $msg',
+            suppressLiveIngestion: true,
+          );
+
+          final controller = StreamController<Event>.broadcast();
+          addTearDown(controller.close);
+          when(
+            () => sessionManager.timelineEvents,
+          ).thenAnswer((_) => controller.stream);
+          when(() => roomManager.currentRoomId).thenReturn('!room:server');
+          when(() => roomManager.currentRoom).thenReturn(_MockRoom());
+
+          expect(suppressed.suppressLiveIngestion, isTrue);
+          await suppressed.start(lastProcessedEventId: r'$x');
+
+          // Emit a live event — it must NOT reach scheduleLiveScan,
+          // handleClientStreamSignal, or handleFirstStreamEvent because
+          // the queue pipeline owns live ingestion in this mode.
+          controller.add(_createMockEvent('!room:server'));
+          await Future<void>.delayed(Duration.zero);
+
+          verifyNever(() => liveScan.scheduleLiveScan());
+          verifyNever(() => catchUp.handleClientStreamSignal());
+          verifyNever(() => catchUp.handleFirstStreamEvent());
+        },
+      );
+
+      test(
+        'still attaches the onSync limited=true diagnostic (Phase-0)',
+        () async {
+          final suppressed = MatrixStreamSignalBinder(
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            loggingService: loggingService,
+            metrics: metrics,
+            collectMetrics: true,
+            catchUpCoordinator: catchUp,
+            liveScanController: liveScan,
+            withInstance: (msg) => 'inst: $msg',
+            suppressLiveIngestion: true,
+          );
+
+          when(() => roomManager.currentRoomId).thenReturn('!room:server');
+          when(
+            () => sessionManager.timelineEvents,
+          ).thenAnswer((_) => const Stream.empty());
+
+          await suppressed.start(lastProcessedEventId: null);
+
+          // Feed one limited=true sync — the diagnostic must still emit.
+          final limited = SyncUpdate(
+            nextBatch: 'next',
+            rooms: RoomsUpdate(
+              join: {
+                '!room:server': JoinedRoomUpdate(
+                  timeline: TimelineUpdate(
+                    limited: true,
+                    prevBatch: 'pb',
+                    events: const <MatrixEvent>[],
+                  ),
+                ),
+              },
+            ),
+          );
+          onSyncController.add(limited);
+          await Future<void>.delayed(Duration.zero);
+
+          final limitedCalls = verify(
+            () => loggingService.captureEvent(
+              captureAny<String>(that: contains('sync.limited')),
+              domain: any(named: 'domain'),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).captured;
+          expect(limitedCalls, isNotEmpty);
+        },
+      );
+    });
   });
 }
 

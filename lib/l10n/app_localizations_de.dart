@@ -4844,6 +4844,46 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Geräteverifizierung';
 
   @override
+  String get queueDepthCardEmpty => 'Warteschlange leer — Worker ist aktuell.';
+
+  @override
+  String get queueDepthCardLoading => 'Warteschlangenfüllung wird gelesen…';
+
+  @override
+  String get queueDepthCardTitle => 'Eingangs-Warteschlange';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Gesamten Verlauf holen';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Abbrechen';
+
+  @override
+  String get queueFetchAllHistoryClose => 'Schließen';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    return '$events Ereignisse über $pages Seiten abgerufen.';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Abruf gestoppt: $reason';
+  }
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    return 'Seite $pages  ·  $events Ereignisse abgerufen';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Verlauf wird geholt';
+
+  @override
   String get referenceImageContinue => 'Weiter';
 
   @override
