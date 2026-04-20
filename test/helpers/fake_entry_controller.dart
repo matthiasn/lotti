@@ -1,8 +1,16 @@
+// Helper file — no test cases of its own. `main()` below satisfies
+// `flutter test` when the path is passed directly (e.g. via a CI glob that
+// walks `test/` rather than `test/**/*_test.dart`). The helpers in this
+// file are exported and consumed by sibling `_test.dart` files, so the
+// analyzer's `unreachable_from_main` check doesn't apply here.
+// ignore_for_file: unreachable_from_main
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 // ignore: unused_import
 import 'package:lotti/classes/task.dart';
@@ -18,6 +26,11 @@ class ToggleCallTracker {
   final List<String> togglePrivateCalls = [];
   final List<String> toggleFlaggedCalls = [];
   final List<String> toggleMapVisibleCalls = [];
+  final List<String?> updateTaskLanguageCalls = [];
+  final List<String> updateTaskStatusCalls = [];
+  final List<String> updateTaskPriorityCalls = [];
+  final List<String?> updateCategoryIdCalls = [];
+  final List<Map<String, Object?>> saveCalls = [];
 }
 
 /// Fake EntryController that returns a fixed entity state.
@@ -68,6 +81,46 @@ class FakeEntryController extends EntryController {
   @override
   void toggleMapVisible() {
     _tracker?.toggleMapVisibleCalls.add(_entity.id);
+  }
+
+  @override
+  Future<void> updateTaskLanguage(String? languageCode) async {
+    _tracker?.updateTaskLanguageCalls.add(languageCode);
+  }
+
+  @override
+  Future<void> updateTaskStatus(String? status) async {
+    if (status != null) {
+      _tracker?.updateTaskStatusCalls.add(status);
+    }
+  }
+
+  @override
+  Future<void> updateTaskPriority(String code) async {
+    _tracker?.updateTaskPriorityCalls.add(code);
+  }
+
+  @override
+  Future<bool> updateCategoryId(String? categoryId) async {
+    _tracker?.updateCategoryIdCalls.add(categoryId);
+    return true;
+  }
+
+  @override
+  Future<void> save({
+    Duration? estimate,
+    String? title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    bool stopRecording = false,
+  }) async {
+    _tracker?.saveCalls.add({
+      'estimate': estimate,
+      'title': title,
+      'dueDate': dueDate,
+      'clearDueDate': clearDueDate,
+      'stopRecording': stopRecording,
+    });
   }
 }
 
@@ -140,4 +193,11 @@ class TrackingFakeEntryController extends FakeEntryController {
     () => TrackingFakeEntryController(entity, tracker),
   );
   return (override, tracker);
+}
+
+void main() {
+  // This file is a test helper, not a test suite. A trivial placeholder
+  // keeps `flutter test <this file>` exiting cleanly when the path is
+  // passed directly (e.g. by a CI glob that walks `test/`).
+  test('fake_entry_controller is a helper, not a test suite', () {});
 }

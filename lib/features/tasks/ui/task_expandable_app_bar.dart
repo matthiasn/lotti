@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
+import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
 /// Expandable app bar for tasks with cover art.
 ///
 /// Displays a SliverAppBar with a 16:9 aspect ratio cover image,
-/// glass-styled back button and action buttons.
-class TaskExpandableAppBar extends StatelessWidget {
+/// glass-styled back button and action buttons. Once the cover has
+/// scrolled past the pinned toolbar, the bar surfaces the task title in
+/// `subtitle2` so it stays on screen — matching the title typography used
+/// by the task list cards.
+class TaskExpandableAppBar extends ConsumerWidget {
   const TaskExpandableAppBar({
     required this.task,
     required this.coverArtId,
@@ -22,7 +28,9 @@ class TaskExpandableAppBar extends StatelessWidget {
   final String coverArtId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offset =
+        ref.watch(taskAppBarControllerProvider(id: task.id)).value ?? 0;
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         // Use the actual available width (not MediaQuery) so that in
@@ -32,6 +40,10 @@ class TaskExpandableAppBar extends StatelessWidget {
             ? constraints.crossAxisExtent
             : MediaQuery.of(context).size.width;
         final expandedHeight = availableWidth * 9 / 16;
+        // Show the title once the cover is mostly out of view — ~85% of
+        // the expanded height — so it appears as the compact collapsed
+        // toolbar takes over.
+        final showTitle = offset >= expandedHeight * 0.85;
 
         return SliverAppBar(
           backgroundColor: context.designTokens.colors.background.level01,
@@ -44,6 +56,16 @@ class TaskExpandableAppBar extends StatelessWidget {
           leading: const Padding(
             padding: EdgeInsets.only(left: 8),
             child: GlassBackButton(),
+          ),
+          centerTitle: true,
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: showTitle
+                ? _ExpandableCompactTitle(
+                    key: const ValueKey('expandable-title'),
+                    task: task,
+                  )
+                : const SizedBox.shrink(key: ValueKey('no-title')),
           ),
           actions: _buildGlassActions(context),
           pinned: true,
@@ -80,5 +102,28 @@ class TaskExpandableAppBar extends StatelessWidget {
       ),
       const SizedBox(width: 10),
     ];
+  }
+}
+
+class _ExpandableCompactTitle extends StatelessWidget {
+  const _ExpandableCompactTitle({required this.task, super.key});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+      child: Text(
+        task.data.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+          color: TaskShowcasePalette.highText(context),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 }

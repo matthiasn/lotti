@@ -8,23 +8,29 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 class MockTimeService extends Mock implements TimeService {}
 
 void main() {
   late MockTimeService mockTimeService;
 
-  setUp(() {
+  setUp(() async {
     mockTimeService = MockTimeService();
-    getIt.registerSingleton<TimeService>(mockTimeService);
 
     when(
       () => mockTimeService.getStream(),
     ).thenAnswer((_) => Stream<JournalEntity?>.fromIterable([]));
     when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<TimeService>(mockTimeService);
+      },
+    );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   testWidgets(
     'showEstimatePicker does not call callback when duration unchanged',

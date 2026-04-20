@@ -258,7 +258,7 @@ The main pieces are:
 - `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces
 - `LabelSelectionModalUtils` for opening the shared modal shell and sticky action bar
 - `LabelSelectionSliverContent` in `features/tasks` for the actual selectable list
-- `TaskLabelsWrapper` in `features/tasks` for the task-specific "Add Label" surface
+- `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as outlined chips with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
 
 `LabelChip` itself is intentionally modest: neutral chip chrome, a colored dot, and a tooltip that prefers the description over the bare name.
 

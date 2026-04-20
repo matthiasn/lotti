@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
 import 'package:lotti/get_it.dart';
@@ -82,8 +83,18 @@ void main() {
     );
   }
 
-  Widget buildTestWidget(Task task, String coverArtId) {
+  Widget buildTestWidget(
+    Task task,
+    String coverArtId, {
+    double? initialOffset,
+  }) {
     return ProviderScope(
+      overrides: [
+        if (initialOffset != null)
+          taskAppBarControllerProvider(id: task.id).overrideWith(
+            () => _FixedOffsetTaskAppBarController(initialOffset),
+          ),
+      ],
       child: MaterialApp(
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -253,5 +264,68 @@ void main() {
       final icon = tester.widget<Icon>(find.byIcon(Icons.more_horiz));
       expect(icon.color, Colors.white);
     });
+
+    testWidgets(
+      'hides the compact title when the cover has not yet scrolled out',
+      (tester) async {
+        final task = buildTask();
+
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          buildTestWidget(task, 'image-1', initialOffset: 0),
+        );
+        await tester.pumpAndSettle();
+
+        // Test Task title is never shown in the app bar toolbar while the
+        // cover is still in view.
+        expect(find.text('Test Task'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'surfaces the compact title once offset passes 85% of expandedHeight',
+      (tester) async {
+        final task = buildTask();
+
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // expandedHeight = 400 * 9/16 = 225 → threshold = 225 * 0.85 ≈ 191.25
+        await tester.pumpWidget(
+          buildTestWidget(task, 'image-1', initialOffset: 200),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Test Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the more menu opens the extended header modal',
+      (tester) async {
+        final task = buildTask();
+
+        await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.more_horiz));
+        await tester.pumpAndSettle();
+
+        // The modal surfaces the shared "entryActions" title — find it to
+        // prove the modal opened without asserting on internal item wiring.
+        expect(find.text('Actions'), findsOneWidget);
+      },
+    );
   });
+}
+
+class _FixedOffsetTaskAppBarController extends TaskAppBarController {
+  _FixedOffsetTaskAppBarController(this._offset);
+
+  final double _offset;
+
+  @override
+  Future<double> build({required String id}) async => _offset;
 }

@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// Wires a checklist entity to its [ChecklistCard] and handles all
@@ -138,7 +138,7 @@ class ChecklistCardWrapper extends ConsumerWidget {
           await notifier.dropChecklistItem(localData, categoryId: categoryId);
         }
       },
-      child: ModernBaseCard(
+      child: TaskDetailSectionCard(
         margin: const EdgeInsets.only(bottom: AppTheme.cardSpacing),
         padding: EdgeInsets.zero,
         child: ChecklistCard(

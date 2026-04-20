@@ -143,6 +143,30 @@ void main() {
     );
   }
 
+  Task buildTaskEntry({String id = 'task-1', String? languageCode}) {
+    return Task(
+      meta: Metadata(
+        id: id,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: now,
+          utcOffset: now.timeZoneOffset.inMinutes,
+        ),
+        dateFrom: now,
+        dateTo: now,
+        statusHistory: [],
+        title: 'Test Task',
+        languageCode: languageCode,
+      ),
+    );
+  }
+
   JournalEntry buildTextEntryWithGeolocation({String id = 'geo-entry-1'}) {
     return JournalEntry(
       meta: Metadata(
@@ -841,6 +865,121 @@ void main() {
 
       expect(tracker.toggleMapVisibleCalls, contains('geo-entry-1'));
     });
+  });
+
+  group('ModernSetTaskLanguageItem', () {
+    testWidgets('renders nothing for non-task entries', (tester) async {
+      final entry = buildTextEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernSetTaskLanguageItem(entryId: 'entry-1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets(
+      'renders a generic language icon when the task has no language code',
+      (tester) async {
+        final task = buildTaskEntry();
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [createEntryControllerOverride(task)],
+            child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byIcon(Icons.language), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders a country flag when a language code is set',
+      (tester) async {
+        final task = buildTaskEntry(languageCode: 'de');
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [createEntryControllerOverride(task)],
+            child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('action-flag-de')), findsOneWidget);
+        expect(find.byIcon(Icons.language), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the row opens the language selection modal and persists the choice',
+      (tester) async {
+        final task = buildTaskEntry();
+        final (override, tracker) = createEntryControllerOverrideWithTracker(
+          task,
+        );
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [override],
+            child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        // Language modal is open. Arabic sorts first alphabetically when no
+        // language is currently selected, so it's visible without scrolling.
+        final arabic = find.text('Arabic');
+        expect(arabic, findsOneWidget);
+        await tester.tap(arabic);
+        await tester.pumpAndSettle();
+
+        expect(tracker.updateTaskLanguageCalls, equals(['ar']));
+      },
+    );
+
+    testWidgets(
+      'tapping Clear in the modal persists null',
+      (tester) async {
+        final task = buildTaskEntry(languageCode: 'de');
+        final (override, tracker) = createEntryControllerOverrideWithTracker(
+          task,
+        );
+
+        // Use a large test surface so the Clear row at the bottom of the
+        // modal is not clipped off-screen and we don't have to drive the
+        // scrollable to reach it.
+        await tester.binding.setSurfaceSize(const Size(800, 4000));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          _buildWithRoute(
+            overrides: [override],
+            child: const ModernSetTaskLanguageItem(entryId: 'task-1'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(ActionMenuListItem));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Clear'), findsOneWidget);
+        await tester.tap(find.text('Clear'));
+        await tester.pumpAndSettle();
+
+        expect(tracker.updateTaskLanguageCalls, equals([null]));
+      },
+    );
   });
 }
 

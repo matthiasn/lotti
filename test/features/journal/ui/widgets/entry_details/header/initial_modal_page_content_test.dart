@@ -57,7 +57,7 @@ JournalEntity textEntry({List<String>? labelIds}) {
   );
 }
 
-JournalEntity taskEntry({List<String>? labelIds}) {
+JournalEntity taskEntry({List<String>? labelIds, String? languageCode}) {
   final now = DateTime(2023);
   return JournalEntity.task(
     meta: Metadata(
@@ -78,6 +78,7 @@ JournalEntity taskEntry({List<String>? labelIds}) {
       dateTo: now,
       statusHistory: [],
       title: 'Test Task',
+      languageCode: languageCode,
     ),
   );
 }
@@ -167,6 +168,37 @@ void main() {
       await tester.pumpWidget(buildWrapper(null));
       await tester.pumpAndSettle();
       expect(find.byIcon(MdiIcons.labelOutline), findsNothing);
+    });
+  });
+
+  group('InitialModalPageContent ModernSetTaskLanguageItem integration', () {
+    testWidgets('shows Set language action for tasks', (tester) async {
+      await tester.pumpWidget(buildWrapper(taskEntry()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set language'), findsOneWidget);
+      expect(find.byIcon(Icons.language), findsOneWidget);
+    });
+
+    testWidgets(
+      'renders a country flag when task has a language code set',
+      (tester) async {
+        await tester.pumpWidget(buildWrapper(taskEntry(languageCode: 'en')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Set language'), findsOneWidget);
+        expect(find.byKey(const ValueKey('action-flag-en')), findsOneWidget);
+        expect(find.byIcon(Icons.language), findsNothing);
+      },
+    );
+
+    testWidgets('hides Set language action for non-task entries', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWrapper(textEntry()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Set language'), findsNothing);
     });
   });
 

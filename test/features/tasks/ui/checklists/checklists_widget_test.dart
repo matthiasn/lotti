@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -25,7 +26,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -242,8 +242,9 @@ void main() {
       // Debug: Print widget tree
       await tester.pump();
 
-      // Two checklists -> two ModernBaseCard checklist cards, one per checklist
-      expect(find.byType(ModernBaseCard), findsNWidgets(2));
+      // Two checklists -> two TaskDetailSectionCard checklist cards, one per
+      // checklist (post-migration from ModernBaseCard).
+      expect(find.byType(TaskDetailSectionCard), findsNWidgets(2));
       expect(find.byType(ChecklistCardWrapper), findsNWidgets(2));
       expect(find.text('Checklist 1'), findsOneWidget);
       expect(find.text('Checklist 2'), findsOneWidget);
@@ -293,7 +294,7 @@ void main() {
       );
 
       expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(ModernBaseCard), findsNothing);
+      expect(find.byType(TaskDetailSectionCard), findsNothing);
     });
 
     testWidgets('returns SizedBox.shrink when entry is not a Task', (
@@ -331,7 +332,7 @@ void main() {
       );
 
       expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(ModernBaseCard), findsNothing);
+      expect(find.byType(TaskDetailSectionCard), findsNothing);
     });
 
     testWidgets('calls createChecklist when add button is pressed', (

@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+
+/// Test-only TaskAppBarController that emits a pinned scroll offset so the
+/// persistent-title threshold check can be exercised deterministically.
+class _FixedOffsetController extends TaskAppBarController {
+  _FixedOffsetController(this._offset);
+
+  final double _offset;
+
+  @override
+  Future<double> build({required String id}) async => _offset;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,8 +47,12 @@ void main() {
     );
   }
 
-  Widget buildTestWidget(Task task) {
+  Widget buildTestWidget(
+    Task task, {
+    List<Override> overrides = const [],
+  }) {
     return ProviderScope(
+      overrides: overrides,
       child: MaterialApp(
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -44,6 +61,7 @@ void main() {
           body: CustomScrollView(
             slivers: [
               TaskCompactAppBar(task: task),
+              const SliverToBoxAdapter(child: SizedBox(height: 1200)),
             ],
           ),
         ),
@@ -128,5 +146,42 @@ void main() {
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.expandedHeight, isNull);
     });
+
+    testWidgets('hides the persistent title when scroll offset is near 0', (
+      tester,
+    ) async {
+      final task = buildTask();
+      await tester.pumpWidget(
+        buildTestWidget(
+          task,
+          overrides: [
+            taskAppBarControllerProvider(id: task.id).overrideWith(
+              () => _FixedOffsetController(0),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Test Task'), findsNothing);
+    });
+
+    testWidgets(
+      'shows the task title once scroll offset passes the threshold',
+      (tester) async {
+        final task = buildTask();
+        await tester.pumpWidget(
+          buildTestWidget(
+            task,
+            overrides: [
+              taskAppBarControllerProvider(id: task.id).overrideWith(
+                () => _FixedOffsetController(200),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Test Task'), findsOneWidget);
+      },
+    );
   });
 }

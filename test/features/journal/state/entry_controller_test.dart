@@ -1753,6 +1753,172 @@ void main() {
     });
   });
 
+  group('updateTaskLanguage method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('persists a new language code with ChangeSource.user', () async {
+      final container = makeProviderContainer();
+      final entryId = testTask.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: entryId,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateTaskLanguage('en');
+
+      final captured =
+          verify(
+                () => mockPersistenceLogic.updateTask(
+                  journalEntityId: entryId,
+                  taskData: captureAny(named: 'taskData'),
+                ),
+              ).captured.single
+              as TaskData;
+      expect(captured.languageCode, 'en');
+      expect(captured.languageSource, ChangeSource.user);
+    });
+
+    test(
+      'persists user override even when language code matches a default source',
+      () async {
+        // Seed a task whose current language came from an agent / default
+        // source, not an explicit user pick.
+        final seeded = testTask.copyWith(
+          data: testTask.data.copyWith(
+            languageCode: 'en',
+            languageSource: ChangeSource.agent,
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(seeded.meta.id),
+        ).thenAnswer((_) async => seeded);
+
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(id: seeded.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        when(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: seeded.meta.id,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await notifier.updateTaskLanguage('en');
+
+        final captured =
+            verify(
+                  () => mockPersistenceLogic.updateTask(
+                    journalEntityId: seeded.meta.id,
+                    taskData: captureAny(named: 'taskData'),
+                  ),
+                ).captured.single
+                as TaskData;
+        expect(captured.languageCode, 'en');
+        expect(captured.languageSource, ChangeSource.user);
+      },
+    );
+
+    test(
+      'skips the write when code and source are already user-set',
+      () async {
+        final seeded = testTask.copyWith(
+          data: testTask.data.copyWith(
+            languageCode: 'en',
+            languageSource: ChangeSource.user,
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(seeded.meta.id),
+        ).thenAnswer((_) async => seeded);
+
+        final container = makeProviderContainer();
+        final provider = entryControllerProvider(id: seeded.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        await notifier.updateTaskLanguage('en');
+
+        verifyNever(
+          () => mockPersistenceLogic.updateTask(
+            journalEntityId: any(named: 'journalEntityId'),
+            taskData: any(named: 'taskData'),
+          ),
+        );
+      },
+    );
+
+    test('clearing the language code (null) is persisted', () async {
+      final seeded = testTask.copyWith(
+        data: testTask.data.copyWith(
+          languageCode: 'en',
+          languageSource: ChangeSource.user,
+        ),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(seeded.meta.id),
+      ).thenAnswer((_) async => seeded);
+
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: seeded.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: seeded.meta.id,
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateTaskLanguage(null);
+
+      final captured =
+          verify(
+                () => mockPersistenceLogic.updateTask(
+                  journalEntityId: seeded.meta.id,
+                  taskData: captureAny(named: 'taskData'),
+                ),
+              ).captured.single
+              as TaskData;
+      expect(captured.languageCode, isNull);
+      expect(captured.languageSource, ChangeSource.user);
+    });
+
+    test('does nothing when entry is not a task', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateTaskLanguage('en');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      );
+    });
+  });
+
   group('updateRating method', () {
     setUp(() {
       reset(mockPersistenceLogic);

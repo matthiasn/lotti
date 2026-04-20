@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/ai/util/skill_seeding_service.dart';
@@ -11,14 +12,18 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_me
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
+import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/flags/language_flag.dart';
+import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -484,6 +489,111 @@ class ModernLabelsItem extends ConsumerWidget {
       initialLabelIds: entry.meta.labelIds ?? <String>[],
       categoryId: entry.meta.categoryId,
     );
+  }
+}
+
+/// Modern styled set-language action item for tasks.
+///
+/// Renders the currently selected language's flag (or a generic language
+/// glyph when none is set) next to the action text, and opens the same
+/// language selection modal used elsewhere in the app. On selection, the
+/// task's `languageCode` is updated via the journal repository.
+class ModernSetTaskLanguageItem extends ConsumerWidget {
+  const ModernSetTaskLanguageItem({
+    required this.entryId,
+    super.key,
+  });
+
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entry = ref.watch(provider).value?.entry;
+
+    if (entry is! Task) {
+      return const SizedBox.shrink();
+    }
+
+    final task = entry;
+    final languageCode = task.data.languageCode;
+    final language = languageCode != null
+        ? SupportedLanguage.fromCode(languageCode)
+        : null;
+
+    final leading = language != null
+        ? SizedBox(
+            width: 32,
+            height: 24,
+            child: buildLanguageFlag(
+              languageCode: language.code,
+              height: 24,
+              width: 32,
+              key: ValueKey('action-flag-${language.code}'),
+            ),
+          )
+        : Icon(
+            Icons.language,
+            size: AppTheme.listItemIconSize,
+            color: context.colorScheme.onSurface,
+          );
+
+    // Bind the update callback to the notifier while `ref` is still valid —
+    // the Actions modal will be popped (unmounting this item) before the
+    // language modal callback fires.
+    final notifier = ref.read(entryControllerProvider(id: entryId).notifier);
+
+    return ActionMenuListItem(
+      leading: leading,
+      title: context.messages.taskLanguageSetAction,
+      onTap: () async {
+        Navigator.of(context).pop();
+        if (!context.mounted) return;
+        await _openLanguageSelector(
+          context: context,
+          initialLanguageCode: task.data.languageCode,
+          onLanguageChanged: notifier.updateTaskLanguage,
+        );
+      },
+    );
+  }
+
+  Future<void> _openLanguageSelector({
+    required BuildContext context,
+    required String? initialLanguageCode,
+    required Future<void> Function(String?) onLanguageChanged,
+  }) async {
+    final searchQuery = ValueNotifier<String>('');
+    final searchController = TextEditingController();
+
+    try {
+      await ModalUtils.showSinglePageModal<void>(
+        context: context,
+        titleWidget: Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10),
+          child: LanguageSelectionModalContent.buildHeader(
+            context: context,
+            controller: searchController,
+            queryNotifier: searchQuery,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        builder: (BuildContext modalContext) {
+          return LanguageSelectionModalContent(
+            initialLanguageCode: initialLanguageCode,
+            searchQuery: searchQuery,
+            onLanguageSelected: (SupportedLanguage? language) async {
+              await onLanguageChanged(language?.code);
+              if (!modalContext.mounted) return;
+              Navigator.pop(modalContext);
+            },
+          );
+        },
+      );
+    } finally {
+      searchController.dispose();
+      searchQuery.dispose();
+    }
   }
 }
 

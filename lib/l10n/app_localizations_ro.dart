@@ -5910,6 +5910,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskDueYesterday => 'Scadent ieri';
 
   @override
+  String get taskEditTitleLabel => 'Editați titlul sarcinii';
+
+  @override
   String get taskEstimateLabel => 'Timp Estimat:';
 
   @override
@@ -6016,6 +6019,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskLanguageSerbian => 'Sârbă';
+
+  @override
+  String get taskLanguageSetAction => 'Setați limba';
 
   @override
   String get taskLanguageSlovak => 'Slovacă';

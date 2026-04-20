@@ -19,7 +19,7 @@ class ProjectSelectionModalContent extends ConsumerWidget {
   });
 
   final String categoryId;
-  final void Function(ProjectEntry? project) onProjectSelected;
+  final Future<void> Function(ProjectEntry? project) onProjectSelected;
   final String? currentProjectId;
 
   @override
@@ -62,8 +62,9 @@ class ProjectSelectionModalContent extends ConsumerWidget {
                         ? currentProjectId == null
                         : items[i].project!.meta.id == currentProjectId,
                     messages: messages,
-                    onTap: () {
-                      onProjectSelected(items[i].project);
+                    onTap: () async {
+                      await onProjectSelected(items[i].project);
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                     },
                   ),

@@ -5979,6 +5979,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskDueYesterday => 'Venció ayer';
 
   @override
+  String get taskEditTitleLabel => 'Editar título de la tarea';
+
+  @override
   String get taskEstimateLabel => 'Estimación:';
 
   @override
@@ -6085,6 +6088,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskLanguageSerbian => 'Serbio';
+
+  @override
+  String get taskLanguageSetAction => 'Establecer idioma';
 
   @override
   String get taskLanguageSlovak => 'Eslovaco';

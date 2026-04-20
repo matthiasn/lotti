@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.967] - 2026-04-20
+### Changed
+- Task detail header rebuilt against the desktop Figma as a scoped
+  migration. Replaces the pinned title sliver + legacy
+  `TaskHeaderMetaCard` with a new `DesktopTaskHeader`:
+  - Three explicit lines: title → classification (category, project,
+    labels) → metadata (due date, estimate, priority, status); each
+    row wraps on narrow widths.
+  - Inline capsule-style multi-line title editor (Heading 3 bold,
+    pencil-on-hover, check / cancel on edit). ⌘S / Ctrl+S / ⌘-Enter
+    commit; Esc cancels.
+  - Figma priority / status / project / due-date / work-category
+    chips; estimate chip with progress bar and overtime styling;
+    assigned-label chips as outlined pills with a leading color dot
+    and high-emphasis primary text.
+  - Subdued placeholder chips for every empty state ("No project",
+    "unassigned" category, "No due date", "Add Label") that open the
+    corresponding picker when tapped. Long-press on a label chip
+    still reveals its description dialog.
+  - Due-date urgency is now tri-state: orange for due today, red for
+    overdue, subdued otherwise.
+  - Metadata row uses a text-scale-aware breakpoint: both groups sit
+    side-by-side (space-between) on wide viewports and stack cleanly
+    on narrow ones / with accessibility text scale.
+  - The in-header `more_vert` ellipsis is gone — entry actions stay
+    on the pinned app bar. That app bar now also surfaces the task
+    title in `subtitle2` once the header scrolls out of view.
+  - Presentational widget is Riverpod-free and exercised in
+    Widgetbook (Default, Editing, Long title (wraps), Empty
+    classification + metadata, Playground). A thin
+    `DesktopTaskHeaderConnector` wires the existing status / priority
+    / category / project / due-date / label pickers and
+    `EntryController` mutations.
+  - `TaskLabelsWrapper` is removed entirely — the estimate chip,
+    assigned-label chips, and the Add Label affordance it used to
+    render are all inside the header now.
+  - AI Task Summary, Task description (agent report), Linked Tasks
+    and Checklist cards on the task detail page now render on a flat
+    `TaskDetailSectionCard` surface (solid `background.level02`,
+    `radii.l`, subtle `decorative.level01` border, no gradient, no
+    drop shadow) matching the task list. Section titles inside the
+    touched cards use the design-system `subtitle2` token instead of
+    Material `textTheme.titleSmall`.
+  - Deleted: `TaskTitleHeader`, `TaskHeaderMetaCard`, and the
+    per-chip `*_wrapper.dart` / `*_widget.dart` files that only fed
+    the old header. Shared modal content widgets
+    (`TaskStatusModalContent`, `showDueDatePicker`,
+    `CategorySelectionModalContent`,
+    `ProjectSelectionModalContent`) are retained and reused by the
+    new connector.
+  - Task language selection — previously a flag-shaped pill inside
+    the header — moves into the pinned app bar's triple-dot menu as a
+    standard list item (`ModernSetTaskLanguageItem`). The currently
+    selected language's flag renders inline next to a "Set language"
+    label (falling back to `Icons.language` when unset); tapping the
+    row opens the existing `LanguageSelectionModalContent` modal and
+    persists the selection via the journal repository.
+  - `ActionMenuListItem` now accepts an optional `leading` widget in
+    addition to its existing `icon`, so entries like the language
+    action can render a flag at its natural 4:3 aspect without
+    re-skinning the menu row.
+
 ## [0.9.966] - 2026-04-19
 ### Fixed
 - Sync startup no longer does every step twice. The connectivity-driven

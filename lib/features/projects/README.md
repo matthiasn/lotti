@@ -294,7 +294,7 @@ re-enter the page.
 Projects surface in:
 
 - category details via `CategoryProjectsSection`
-- task metadata via `TaskProjectWrapper` and `TaskProjectWidget`
+- task metadata via the `DesktopTaskHeaderConnector` project row, which opens `ProjectSelectionModalContent` through `ModalUtils.showSinglePageModal`
 - the tasks page via `ProjectHealthHeader`
 
 ## When the Project Agent Actually Wakes
