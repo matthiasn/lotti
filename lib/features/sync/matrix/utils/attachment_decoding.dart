@@ -80,27 +80,71 @@ Uint8List _gzipEncodeWorker(Uint8List bytes) =>
 Uint8List _asUint8List(List<int> result) =>
     result is Uint8List ? result : Uint8List.fromList(result);
 
-/// Downloads + decrypts [event]'s attachment with a bounded wait. A hang on
-/// the underlying HTTP call used to stall the entire apply pipeline — the
-/// live-scan guard never released, and every subsequent timeline signal
-/// was silently coalesced. Converting the hang into a
+/// Deduplicates concurrent `downloadAttachmentWithTimeout` calls for the
+/// same Matrix event. Without this, the retry tracker (which reschedules
+/// a failed prepare with exponential backoff) could stack multiple
+/// orphaned SDK downloads on top of an earlier one that has already
+/// timed out locally but is still running server-side — each retry
+/// spawning a fresh socket/FD. Keyed by `event.eventId`; the future
+/// removes itself from the map once it settles.
+final Map<String, Future<MatrixFile>> _inFlightAttachmentDownloads =
+    <String, Future<MatrixFile>>{};
+
+/// Downloads + decrypts [event]'s attachment with a bounded wait. A hang
+/// on the underlying HTTP call used to stall the entire apply pipeline —
+/// the live-scan guard never released, and every subsequent timeline
+/// signal was silently coalesced. Converting the hang into a
 /// `FileSystemException` lets the retry tracker reschedule with backoff
-/// and frees the pipeline for other events. [pathForError] is included
-/// in the `FileSystemException` path slot so diagnostics can tell which
-/// attachment timed out.
+/// and frees the pipeline for other events.
+///
+/// Dart's `Future.timeout` completes the wrapper but cannot cancel the
+/// underlying SDK call, so concurrent retries for the same event are
+/// deduplicated via [_inFlightAttachmentDownloads]: callers share the
+/// first in-flight download instead of each spawning a fresh one.
+/// [pathForError] is included in the `FileSystemException` path slot so
+/// diagnostics can tell which attachment timed out.
 Future<MatrixFile> downloadAttachmentWithTimeout(
   Event event, {
   String? pathForError,
   Duration? timeout,
 }) async {
   final effective = timeout ?? SyncTuning.attachmentDownloadTimeout;
+  // `event.eventId` is typed non-nullable but mocks can still return null
+  // and the in-memory event list has had intermittent empty-id entries
+  // historically. Guard defensively; an absent key falls back to
+  // non-dedup'd download behaviour.
+  final key = _safeEventId(event);
+  final existing = key == null ? null : _inFlightAttachmentDownloads[key];
+  final download =
+      existing ??
+      () {
+        final future = event.downloadAndDecryptAttachment();
+        if (key != null) {
+          _inFlightAttachmentDownloads[key] = future;
+          future.whenComplete(() {
+            if (identical(_inFlightAttachmentDownloads[key], future)) {
+              _inFlightAttachmentDownloads.remove(key);
+            }
+          });
+        }
+        return future;
+      }();
   try {
-    return await event.downloadAndDecryptAttachment().timeout(effective);
+    return await download.timeout(effective);
   } on TimeoutException {
     throw FileSystemException(
       'attachment download timed out after ${effective.inSeconds}s',
-      pathForError ?? event.eventId,
+      pathForError ?? key ?? 'unknown',
     );
+  }
+}
+
+String? _safeEventId(Event event) {
+  try {
+    final id = event.eventId;
+    return id.isEmpty ? null : id;
+  } catch (_) {
+    return null;
   }
 }
 

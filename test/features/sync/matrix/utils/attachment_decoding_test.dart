@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -229,5 +230,102 @@ void main() {
       expect(formatCompressionRatio(raw: 0, compressed: 10), '-');
       expect(formatCompressionRatio(raw: -1, compressed: 10), '-');
     });
+  });
+
+  group('downloadAttachmentWithTimeout single-flight', () {
+    test(
+      'deduplicates concurrent downloads for the same eventId so the SDK '
+      'is only hit once even under retry storms',
+      () async {
+        // Under retries, multiple prepare calls for the same Matrix
+        // event must share one in-flight SDK download rather than each
+        // spawning a fresh one (which would stack orphaned downloads
+        // behind a hung peer).
+        var downloadCalls = 0;
+        final completer = Completer<MatrixFile>();
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn(r'$same-event-id');
+        // ignore: unnecessary_lambdas
+        when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) {
+          downloadCalls++;
+          return completer.future;
+        });
+
+        final first = downloadAttachmentWithTimeout(
+          event,
+          timeout: const Duration(seconds: 10),
+        );
+        final second = downloadAttachmentWithTimeout(
+          event,
+          timeout: const Duration(seconds: 10),
+        );
+
+        final payload = Uint8List.fromList([1, 2, 3]);
+        completer.complete(MatrixFile(bytes: payload, name: 'f'));
+
+        final results = await Future.wait([first, second]);
+        expect(
+          downloadCalls,
+          1,
+          reason:
+              'concurrent calls for the same eventId must share one '
+              'underlying SDK download',
+        );
+        expect(results[0].bytes, payload);
+        expect(results[1].bytes, payload);
+      },
+    );
+
+    test(
+      'releases the single-flight slot after completion so a later '
+      'attempt triggers a fresh download',
+      () async {
+        var downloadCalls = 0;
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn(r'$release-test');
+        // ignore: unnecessary_lambdas
+        when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
+          downloadCalls++;
+          return MatrixFile(
+            bytes: Uint8List.fromList([downloadCalls]),
+            name: 'f',
+          );
+        });
+
+        await downloadAttachmentWithTimeout(event);
+        await downloadAttachmentWithTimeout(event);
+        expect(
+          downloadCalls,
+          2,
+          reason: 'sequential calls after completion must each hit the SDK',
+        );
+      },
+    );
+
+    test(
+      'maps a timeout into FileSystemException carrying the supplied '
+      'path for diagnostics',
+      () async {
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn(r'$timeout-test');
+        // ignore: unnecessary_lambdas
+        when(
+          () => event.downloadAndDecryptAttachment(),
+        ).thenAnswer((_) => Completer<MatrixFile>().future);
+
+        await expectLater(
+          () => downloadAttachmentWithTimeout(
+            event,
+            pathForError: '/entries/stuck.json',
+            timeout: const Duration(milliseconds: 50),
+          ),
+          throwsA(
+            isA<FileSystemException>()
+                .having((e) => e.message, 'message', contains('timed out'))
+                .having((e) => e.path, 'path', '/entries/stuck.json'),
+          ),
+        );
+      },
+    );
   });
 }
