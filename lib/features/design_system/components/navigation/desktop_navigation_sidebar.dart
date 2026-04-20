@@ -250,7 +250,11 @@ class _SidebarToggleTile extends StatelessWidget {
       button: true,
       enabled: enabled,
       label: tooltip,
-      child: Tooltip(message: tooltip, child: tile),
+      child: Tooltip(
+        message: tooltip,
+        excludeFromSemantics: true,
+        child: tile,
+      ),
     );
   }
 }
