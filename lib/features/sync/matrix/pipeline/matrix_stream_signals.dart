@@ -38,6 +38,19 @@ class MatrixStreamSignalBinder {
   final String Function(String message) _withInstance;
 
   StreamSubscription<Event>? _sub;
+  StreamSubscription<SyncUpdate>? _syncSub;
+
+  // Phase 0 diagnostic state — InboundEventQueue design validation.
+  // Tracks last successful sync response to correlate limited=true events
+  // with the gap since the previous sync for the current sync room.
+  DateTime? _lastSyncAt;
+  // Tracks originServerTs ordering of events delivered by onTimelineEvent
+  // for the current sync room to measure intra-sync reordering.
+  int? _lastTimelineEventTsMs;
+  int _timelineEventsSinceSummary = 0;
+  int _timelineReorderingsSinceSummary = 0;
+  int _timelineSameTsSinceSummary = 0;
+  static const int _timelineOrderingSummaryEvery = 100;
 
   void _recordTimelineSignal(String kind) {
     if (!_collectMetrics) return;
@@ -49,9 +62,88 @@ class MatrixStreamSignalBinder {
     }
   }
 
+  // Phase 0 diagnostic: measures whether events arriving on
+  // onTimelineEvent land in originServerTs-ascending order within the
+  // current sync room. Summary log every N events reports the count of
+  // strict reorderings (ts < prev) and same-ts ties. A healthy baseline
+  // is reorderings=0 with occasional sameTs; large reordering counts
+  // would mean the InboundEventQueue's drain-time sort is load-bearing.
+  void _recordTimelineOrdering(Event event) {
+    final ts = event.originServerTs.millisecondsSinceEpoch;
+    final prev = _lastTimelineEventTsMs;
+    if (prev != null) {
+      if (ts < prev) {
+        _timelineReorderingsSinceSummary++;
+      } else if (ts == prev) {
+        _timelineSameTsSinceSummary++;
+      }
+    }
+    _lastTimelineEventTsMs = ts;
+    _timelineEventsSinceSummary++;
+    if (_timelineEventsSinceSummary >= _timelineOrderingSummaryEvery) {
+      _loggingService.captureEvent(
+        'onTimelineEvent.ordering '
+        'events=$_timelineEventsSinceSummary '
+        'reorderings=$_timelineReorderingsSinceSummary '
+        'sameTs=$_timelineSameTsSinceSummary',
+        domain: syncLoggingDomain,
+        subDomain: 'onTimelineEvent.ordering',
+      );
+      _timelineEventsSinceSummary = 0;
+      _timelineReorderingsSinceSummary = 0;
+      _timelineSameTsSinceSummary = 0;
+    }
+  }
+
   Future<void> start({required String? lastProcessedEventId}) async {
     await _sub?.cancel();
     _sub = null;
+    await _syncSub?.cancel();
+    _syncSub = null;
+
+    _lastSyncAt = null;
+    _lastTimelineEventTsMs = null;
+    _timelineEventsSinceSummary = 0;
+    _timelineReorderingsSinceSummary = 0;
+    _timelineSameTsSinceSummary = 0;
+
+    // Phase 0 diagnostic: detect `timeline.limited == true` for the current
+    // sync room. A limited sync means the SDK truncated local timeline state
+    // and delivered only the tail via onTimelineEvent; events before the
+    // limited boundary are silently dropped unless we bridge them via
+    // /messages. The log line + sinceMs gap informs whether a limited=true
+    // bridge is the right primary trigger for the planned InboundEventQueue.
+    _syncSub = _sessionManager.client.onSync.stream.listen(
+      (update) {
+        final roomId = _roomManager.currentRoomId;
+        final now = DateTime.now();
+        final prev = _lastSyncAt;
+        _lastSyncAt = now;
+        if (roomId == null) return;
+        final joined = update.rooms?.join?[roomId];
+        final timeline = joined?.timeline;
+        if (timeline == null || timeline.limited != true) return;
+        final sinceMs = prev == null
+            ? 'initial'
+            : '${now.difference(prev).inMilliseconds}';
+        _loggingService.captureEvent(
+          'sync.limited roomId=$roomId '
+          'prevBatch=${timeline.prevBatch} '
+          'eventCount=${timeline.events?.length ?? 0} '
+          'sinceMs=$sinceMs',
+          domain: syncLoggingDomain,
+          subDomain: 'sync.limited',
+        );
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: syncLoggingDomain,
+          subDomain: 'sync.limited.stream',
+          stackTrace: stackTrace,
+        );
+      },
+    );
 
     // Client-level session stream -> signal-driven catch-up.
     // Filter by current room; the very first event also triggers a catch-up
@@ -59,6 +151,7 @@ class MatrixStreamSignalBinder {
     _sub = _sessionManager.timelineEvents.listen((event) {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
+      _recordTimelineOrdering(event);
       _catchUp.handleFirstStreamEvent();
       if (_collectMetrics) _metrics.incSignalClientStream();
       // Conditional processing: expensive catch-up during startup, cheap scan in
@@ -149,5 +242,7 @@ class MatrixStreamSignalBinder {
   Future<void> dispose() async {
     await _sub?.cancel();
     _sub = null;
+    await _syncSub?.cancel();
+    _syncSub = null;
   }
 }
