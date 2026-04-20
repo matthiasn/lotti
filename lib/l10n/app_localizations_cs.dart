@@ -5873,6 +5873,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskDueYesterday => 'Včera splatné';
 
   @override
+  String get taskEditTitleLabel => 'Upravit název úkolu';
+
+  @override
   String get taskEstimateLabel => 'Odhad:';
 
   @override
@@ -6015,9 +6018,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskLanguageYoruba => 'Jorubština';
-
-  @override
-  String get taskEditTitleLabel => 'Upravit název úkolu';
 
   @override
   String get taskNameHint => 'Zadejte název úkolu';

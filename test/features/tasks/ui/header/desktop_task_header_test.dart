@@ -200,6 +200,69 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
+    testWidgets(
+      'read-only title exposes an accessible button via Semantics',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        // The Semantics(label: ...) node merges with the Text below it, so
+        // both strings appear in the rendered semantic label. The important
+        // part is that the a11y label is present and the node is a button.
+        final node = tester.getSemantics(find.text('Payment confirmation'));
+        expect(node.label, contains('Edit task title'));
+        expect(node.label, contains('Payment confirmation'));
+        expect(
+          node.flagsCollection.isButton,
+          isTrue,
+          reason: 'read-only title should expose a button role for a11y',
+        );
+
+        handle.dispose();
+      },
+    );
+
+    testWidgets(
+      'keyboard activation on the read-only title opens the editor',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        expect(find.byType(TextField), findsNothing);
+
+        // Focus the title, then dispatch the platform activate intent
+        // (the same intent Enter/Space produce via default shortcuts).
+        final focusableFinder = find.descendant(
+          of: find.byType(FocusableActionDetector),
+          matching: find.text('Payment confirmation'),
+        );
+        expect(focusableFinder, findsOneWidget);
+
+        Focus.of(tester.element(focusableFinder)).requestFocus();
+        await tester.pump();
+
+        Actions.maybeInvoke<ActivateIntent>(
+          tester.element(focusableFinder),
+          const ActivateIntent(),
+        );
+        await tester.pump();
+
+        expect(find.byType(TextField), findsOneWidget);
+      },
+    );
+
     testWidgets('commit saves new value and returns to read-only', (
       tester,
     ) async {

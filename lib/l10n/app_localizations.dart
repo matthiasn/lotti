@@ -10333,6 +10333,12 @@ abstract class AppLocalizations {
   /// **'Due Yesterday'**
   String get taskDueYesterday;
 
+  /// No description provided for @taskEditTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task title'**
+  String get taskEditTitleLabel;
+
   /// No description provided for @taskEstimateLabel.
   ///
   /// In en, this message translates to:
@@ -10620,12 +10626,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yoruba'**
   String get taskLanguageYoruba;
-
-  /// No description provided for @taskEditTitleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit task title'**
-  String get taskEditTitleLabel;
 
   /// No description provided for @taskNameHint.
   ///
