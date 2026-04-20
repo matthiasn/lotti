@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -33,7 +34,12 @@ Future<void> _pumpDesktop(
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  await tester.pumpWidget(_desktopHost(child));
+  // The header's space-between metadata row relies on its SizedBox getting
+  // a bounded max-width. Align shrink-wraps, so the tests pin the header
+  // to the surface width explicitly.
+  await tester.pumpWidget(
+    _desktopHost(SizedBox(width: size.width, child: child)),
+  );
   await tester.pump();
 }
 
@@ -239,6 +245,104 @@ void main() {
       expect(find.byType(TextField), findsNothing);
       expect(find.text('Payment confirmation'), findsOneWidget);
     });
+
+    testWidgets('⌘S saves while the title editor is focused', (tester) async {
+      String? saved;
+      await _pumpDesktop(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) {
+            return DesktopTaskHeader(
+              data: _fixture(title: saved ?? 'Payment confirmation'),
+              onTitleSaved: (v) => setState(() => saved = v),
+              initialEditing: true,
+            );
+          },
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+      await tester.pump();
+
+      expect(saved, 'Payment flow');
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Payment flow'), findsOneWidget);
+    });
+
+    testWidgets('Ctrl+S saves while the title editor is focused', (
+      tester,
+    ) async {
+      String? saved;
+      await _pumpDesktop(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) {
+            return DesktopTaskHeader(
+              data: _fixture(title: saved ?? 'Payment confirmation'),
+              onTitleSaved: (v) => setState(() => saved = v),
+              initialEditing: true,
+            );
+          },
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+      await tester.pump();
+
+      expect(saved, 'Payment flow');
+    });
+  });
+
+  group('DesktopTaskHeader — metadata layout', () {
+    testWidgets('wide viewport: right group sits far right of left group', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(dueDate: _dueFixture),
+          onTitleSaved: (_) {},
+          estimateSlot: const Text('0h / 1h'),
+        ),
+      );
+      final dueLeft = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dx;
+      final statusLeft = tester.getTopLeft(find.text('Open')).dx;
+      expect(
+        statusLeft > dueLeft + 300,
+        isTrue,
+        reason:
+            'Status should be well to the right of Due (space-between pushes '
+            'groups to opposite ends on a wide row)',
+      );
+    });
+
+    testWidgets(
+      'narrow viewport: the right group wraps onto its own row below',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('0h / 1h'),
+          ),
+          size: const Size(360, 800),
+        );
+        final dueTop = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
+        final statusTop = tester.getTopLeft(find.text('Open')).dy;
+        expect(
+          statusTop > dueTop + 10,
+          isTrue,
+          reason:
+              'On a narrow viewport the right group should wrap to its own '
+              'row, sitting below the left group',
+        );
+      },
+    );
   });
 
   group('DesktopTaskHeader — callbacks', () {

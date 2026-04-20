@@ -285,45 +285,69 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 
   Widget _buildMetadataLine(BuildContext context) {
     final tokens = context.designTokens;
-    final leading = <Widget>[
-      if (widget.data.dueDate != null)
-        _DueDateChip(dueDate: widget.data.dueDate!, onTap: widget.onDueDateTap)
-      else
-        _PlaceholderChip(
-          icon: Icons.alarm_rounded,
-          label: context.messages.taskNoDueDateLabel,
-          onTap: widget.onDueDateTap,
-        ),
-      ?widget.estimateSlot,
-    ];
-
-    return Row(
+    // Two semantic groups, each packed tightly with `step2` spacing:
+    //   [ Due · Priority ]  ...  [ Estimate · Status ]
+    // Outer Wrap uses `alignment: spaceBetween` so the groups sit at the
+    // two ends on a wide row, and break onto their own lines on narrow
+    // ones — the second group wraps beneath the first.
+    final leftGroup = Wrap(
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Expanded(
-          child: Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: leading,
+        if (widget.data.dueDate != null)
+          _DueDateChip(
+            dueDate: widget.data.dueDate!,
+            onTap: widget.onDueDateTap,
+          )
+        else
+          _PlaceholderChip(
+            icon: Icons.alarm_rounded,
+            label: context.messages.taskNoDueDateLabel,
+            onTap: widget.onDueDateTap,
           ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step2,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _PriorityBadge(
-              priority: widget.data.priority,
-              onTap: widget.onPriorityTap,
-            ),
-            _StatusDropdown(
-              status: widget.data.status,
-              onTap: widget.onStatusTap,
-            ),
-          ],
+        _PriorityBadge(
+          priority: widget.data.priority,
+          onTap: widget.onPriorityTap,
         ),
       ],
+    );
+    final rightGroup = Wrap(
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ?widget.estimateSlot,
+        _StatusDropdown(
+          status: widget.data.status,
+          onTap: widget.onStatusTap,
+        ),
+      ],
+    );
+    // `Wrap(alignment: spaceBetween)` doesn't actually space the two
+    // groups apart — Wrap shrink-wraps its own main-axis size, so there's
+    // never any free space to distribute. Instead we branch on the
+    // available width: above a breakpoint both groups fit side-by-side
+    // with a horizontal Row, below it they stack into a Column so narrow
+    // desktop split-panes and mobile break cleanly onto two rows.
+    const stackBreakpoint = 480.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= stackBreakpoint) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [leftGroup, rightGroup],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            leftGroup,
+            SizedBox(height: tokens.spacing.step2),
+            rightGroup,
+          ],
+        );
+      },
     );
   }
 }
@@ -416,6 +440,15 @@ class _TitleEditor extends StatelessWidget {
                   LogicalKeyboardKey.enter,
                   control: true,
                 ): _CommitIntent(),
+                // ⌘S / Ctrl+S — standard save shortcut while editing.
+                SingleActivator(
+                  LogicalKeyboardKey.keyS,
+                  meta: true,
+                ): _CommitIntent(),
+                SingleActivator(
+                  LogicalKeyboardKey.keyS,
+                  control: true,
+                ): _CommitIntent(),
               },
               child: Actions(
                 actions: <Type, Action<Intent>>{
@@ -442,7 +475,14 @@ class _TitleEditor extends StatelessWidget {
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   decoration: const InputDecoration(
+                    // Disable every variant so the focused state doesn't
+                    // paint a second ring inside the capsule's outer border.
                     border: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
                     isDense: true,
                     isCollapsed: true,
                     contentPadding: EdgeInsets.zero,
