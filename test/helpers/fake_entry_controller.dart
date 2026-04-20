@@ -27,6 +27,10 @@ class ToggleCallTracker {
   final List<String> toggleFlaggedCalls = [];
   final List<String> toggleMapVisibleCalls = [];
   final List<String?> updateTaskLanguageCalls = [];
+  final List<String> updateTaskStatusCalls = [];
+  final List<String> updateTaskPriorityCalls = [];
+  final List<String?> updateCategoryIdCalls = [];
+  final List<Map<String, Object?>> saveCalls = [];
 }
 
 /// Fake EntryController that returns a fixed entity state.
@@ -82,6 +86,41 @@ class FakeEntryController extends EntryController {
   @override
   Future<void> updateTaskLanguage(String? languageCode) async {
     _tracker?.updateTaskLanguageCalls.add(languageCode);
+  }
+
+  @override
+  Future<void> updateTaskStatus(String? status) async {
+    if (status != null) {
+      _tracker?.updateTaskStatusCalls.add(status);
+    }
+  }
+
+  @override
+  Future<void> updateTaskPriority(String code) async {
+    _tracker?.updateTaskPriorityCalls.add(code);
+  }
+
+  @override
+  Future<bool> updateCategoryId(String? categoryId) async {
+    _tracker?.updateCategoryIdCalls.add(categoryId);
+    return true;
+  }
+
+  @override
+  Future<void> save({
+    Duration? estimate,
+    String? title,
+    DateTime? dueDate,
+    bool clearDueDate = false,
+    bool stopRecording = false,
+  }) async {
+    _tracker?.saveCalls.add({
+      'estimate': estimate,
+      'title': title,
+      'dueDate': dueDate,
+      'clearDueDate': clearDueDate,
+      'stopRecording': stopRecording,
+    });
   }
 }
 
