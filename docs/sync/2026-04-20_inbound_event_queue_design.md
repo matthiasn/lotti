@@ -90,9 +90,14 @@ load-bearing pieces.
    live peer still holds its payload, a correct client must eventually
    observe it. "Eventually" is unbounded for the user-cancelled
    bootstrap case; "promptly" for the normal live case.
-2. **Exactly-once apply per `eventId`.** The queue's uniqueness
-   constraint is load-bearing. Duplicate arrivals from overlapping
-   producers must be silently rejected, not re-applied.
+2. **Effectively-once apply per `eventId`.** The queue's
+   `UNIQUE(event_id)` constraint dedupes in-queue duplicates from
+   overlapping producers. Post-apply dedup (an event re-arriving
+   after its queue row was committed-and-deleted, e.g. after a
+   bridge re-fetch on restart) is owned by
+   `SyncEventProcessor.apply`, which is already idempotent against
+   vector-clock comparison. Together the two layers guarantee no
+   duplicate journal writes. See §6.5 for the cross-DB details.
 3. **In-order apply.** Events must hit `SyncEventProcessor.apply`
    ordered by `originServerTs` ascending (with `eventId` as tie-break,
    matching `TimelineEventOrdering.isNewer`). Cross-producer
@@ -158,7 +163,7 @@ events if we don't treat it as a first-class trigger.
 
 ### 5.1 Two-layer model
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                      LAYER 1: INGESTION                         │
 │                                                                 │
@@ -246,7 +251,7 @@ CREATE TABLE inbound_event_queue (
   next_due_at   INTEGER NOT NULL DEFAULT 0       -- retry backoff (ms since epoch)
 );
 
-CREATE INDEX idx_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id);
+CREATE INDEX idx_queue_ready ON inbound_event_queue (next_due_at, origin_ts, event_id);
 CREATE INDEX idx_queue_room   ON inbound_event_queue (room_id, origin_ts);
 ```
 
@@ -255,9 +260,11 @@ CREATE INDEX idx_queue_room   ON inbound_event_queue (room_id, origin_ts);
 - `event_id UNIQUE`: primary deduplication mechanism. Duplicate
   inserts are silently rejected at the DB level — no application-level
   check required.
-- `origin_ts + queue_id` as the drain order: `origin_ts` for causal
-  order, `queue_id` as a tie-break (insertion order for
-  same-timestamp events, preserving producer ordering).
+- `origin_ts + event_id` as the drain order: `origin_ts` for causal
+  order, `event_id` as the deterministic tie-break — matches
+  `TimelineEventOrdering.isNewer`'s existing semantics so the queue
+  and the current in-memory ordering agree for same-timestamp
+  events. `queue_id` remains only as the primary key.
 - `raw_json` stores the SDK's serialised event. The worker deserialises
   via `Event.fromJson(room, json)` at drain time; the in-memory
   `Event` object is not persisted (it holds back-references to
@@ -340,7 +347,7 @@ class InboundQueueEntry {
 
 The worker drain loop:
 
-```
+```text
 repeat:
   entry := peekNextReady()
   if entry is null:
@@ -361,7 +368,7 @@ repeat:
 ```
 
 `peekNextReady()` returns the oldest entry (by `next_due_at ≤ now`,
-then `origin_ts`, then `queue_id`) that is not currently leased.
+then `origin_ts`, then `event_id`) that is not currently leased.
 Cross-producer ordering is restored here: an event enqueued by the
 live stream with `origin_ts = 100` and another by a bridge with
 `origin_ts = 90` both queued — the bridge's event applies first.
@@ -392,14 +399,16 @@ live stream with `origin_ts = 100` and another by a bridge with
 The read marker is the durable bridge between queue state and "how
 far we've caught up".
 
-```
-commitApplied(entry) := { in one DB batch:
+```text
+commitApplied(entry) := { ordered, not atomic across DBs:
+  // 1. sync_db transaction
   DELETE FROM inbound_event_queue WHERE queue_id = entry.queueId;
+  // 2. settings_db write (separate SQLite file, not in same txn)
   IF entry.event_id starts with '$':
     settings_db.set('lastReadMatrixEventId', entry.event_id);
   settings_db.set('lastReadMatrixEventTs', entry.origin_ts);
-  // Matrix read-marker push is scheduled via the existing
-  // ReadMarkerManager debounce.
+  // 3. Matrix read-marker push is scheduled via the existing
+  //    ReadMarkerManager debounce.
 }
 ```
 
@@ -407,15 +416,45 @@ This preserves the existing `isServerAssignedMatrixEventId` gate
 (only `$`-prefixed IDs are durable across restart) and the existing
 debounced push to the Matrix server.
 
-**Crash recovery:**
-- On restart, queue entries that were leased to the worker but not
-  committed are re-peeked (no lease persists to disk). They re-apply;
-  exactly-once still holds because the apply path is idempotent
-  against vector-clock comparison.
-- `lastReadMatrixEventTs` survives — it's in `settings_db`. Bridge
-  call on restart paginates `/messages` from that timestamp forward,
-  and the queue's UNIQUE constraint drops any events that already
-  applied.
+**Cross-DB durability model.** `inbound_event_queue` lives in
+`sync_db` and the markers live in `settings_db` — two separate
+SQLite files that cannot share a single transaction. The
+"DB batch" wording above is loose; the correct invariant is an
+*ordered* write: queue delete in `sync_db` first, marker update in
+`settings_db` second. If the process crashes between the two, the
+marker will lag. That case is safe, not a durability bug:
+
+1. On restart, the bridge runs from the persisted
+   `lastReadMatrixEventTs` and re-fetches the missing range via
+   `/messages`. Already-applied events re-enter the queue.
+2. The queue's `UNIQUE(event_id)` constraint drops the re-inserted
+   duplicates before they reach the apply path.
+3. Any that slip through still apply idempotently because
+   `SyncEventProcessor.apply` is vector-clock-guarded
+   (`TimelineEventOrdering.isNewer`): same-or-older events are
+   ignored and do not advance journal state.
+
+**The "exactly-once" claim is enforced at the apply layer,
+not the queue.** `UNIQUE(event_id)` is a near-term dedup for
+in-queue duplicates from overlapping producers; it does *not*
+dedup events whose queue row has already been committed-and-deleted.
+Post-apply dedup is owned by the existing idempotent apply path.
+A durable "seen" table would be redundant for the correctness
+argument and costs another indexed write per applied event — not
+proposed unless measurement shows vector-clock re-checks are the
+bottleneck.
+
+**Crash recovery (summary):**
+- **Leased, not committed.** Queue entries that the worker was
+  mid-applying but had not yet committed are re-peeked on restart
+  (lease is in-memory only). They re-apply; vector-clock guard
+  prevents duplicate journal writes.
+- **Committed in `sync_db`, marker write lost.** Marker lags by one
+  or more entries. Bridge re-fetches from the persisted marker;
+  re-inserted events dedupe via `UNIQUE(event_id)` or apply
+  idempotently.
+- **Marker persisted, queue not deleted.** Cannot happen in the
+  ordered model above (queue delete precedes marker write).
 
 ### 6.6 Memory and retention
 
@@ -433,7 +472,7 @@ debounced push to the Matrix server.
 
 ### 7.1 Live stream producer
 
-```
+```dart
 sessionManager.timelineEvents.listen((event) {
   if (event.roomId != currentRoomId) return;
   unawaited(queue.enqueueLive(event));
@@ -445,8 +484,8 @@ five overlapping signal paths. Zero flag negotiation.
 
 ### 7.2 Limited-sync bridge producer
 
-```
-sessionManager.client.onSync.listen((sync) async {
+```dart
+sessionManager.client.onSync.stream.listen((sync) async {
   final joined = sync.rooms?.join?[currentRoomId];
   if (joined?.timeline?.limited != true) return;
   await bridgeFromMarker();
@@ -520,7 +559,7 @@ class CatchUpStrategy {
 
 The bootstrap flow:
 
-```
+```dart
 final sink = _QueueBootstrapSink(queue: queue, cancel: cancelSignal);
 final result = await CatchUpStrategy.collectHistoryForBootstrap(
   room: room,

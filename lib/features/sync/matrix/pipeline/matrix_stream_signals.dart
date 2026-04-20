@@ -101,7 +101,7 @@ class MatrixStreamSignalBinder {
     await _syncSub?.cancel();
     _syncSub = null;
 
-    _lastSyncAt = DateTime.now();
+    _lastSyncAt = null;
     _lastTimelineEventTsMs = null;
     _timelineEventsSinceSummary = 0;
     _timelineReorderingsSinceSummary = 0;
@@ -113,27 +113,37 @@ class MatrixStreamSignalBinder {
     // limited boundary are silently dropped unless we bridge them via
     // /messages. The log line + sinceMs gap informs whether a limited=true
     // bridge is the right primary trigger for the planned InboundEventQueue.
-    _syncSub = _sessionManager.client.onSync.stream.listen((update) {
-      final roomId = _roomManager.currentRoomId;
-      final now = DateTime.now();
-      final prev = _lastSyncAt;
-      _lastSyncAt = now;
-      if (roomId == null) return;
-      final joined = update.rooms?.join?[roomId];
-      final timeline = joined?.timeline;
-      if (timeline == null || timeline.limited != true) return;
-      final sinceMs = prev == null
-          ? 'initial'
-          : '${now.difference(prev).inMilliseconds}';
-      _loggingService.captureEvent(
-        'sync.limited roomId=$roomId '
-        'prevBatch=${timeline.prevBatch} '
-        'eventCount=${timeline.events?.length ?? 0} '
-        'sinceMs=$sinceMs',
-        domain: syncLoggingDomain,
-        subDomain: 'sync.limited',
-      );
-    });
+    _syncSub = _sessionManager.client.onSync.stream.listen(
+      (update) {
+        final roomId = _roomManager.currentRoomId;
+        final now = DateTime.now();
+        final prev = _lastSyncAt;
+        _lastSyncAt = now;
+        if (roomId == null) return;
+        final joined = update.rooms?.join?[roomId];
+        final timeline = joined?.timeline;
+        if (timeline == null || timeline.limited != true) return;
+        final sinceMs = prev == null
+            ? 'initial'
+            : '${now.difference(prev).inMilliseconds}';
+        _loggingService.captureEvent(
+          'sync.limited roomId=$roomId '
+          'prevBatch=${timeline.prevBatch} '
+          'eventCount=${timeline.events?.length ?? 0} '
+          'sinceMs=$sinceMs',
+          domain: syncLoggingDomain,
+          subDomain: 'sync.limited',
+        );
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: syncLoggingDomain,
+          subDomain: 'sync.limited.stream',
+          stackTrace: stackTrace,
+        );
+      },
+    );
 
     // Client-level session stream -> signal-driven catch-up.
     // Filter by current room; the very first event also triggers a catch-up
