@@ -140,6 +140,7 @@ class MatrixService {
             collectMetrics: collectSyncMetrics,
             sentEventRegistry: _sentEventRegistry,
             documentsDirectory: getDocumentsDirectory(),
+            verboseAttachmentLogging: false,
           );
       _pipeline = pipeline;
 

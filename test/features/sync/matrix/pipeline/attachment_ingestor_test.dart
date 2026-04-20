@@ -28,6 +28,61 @@ void main() {
 
   group('descriptor-only mode (no documentsDirectory)', () {
     test(
+      'verboseLogging: false suppresses per-event attachment.observe lines',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('ev-quiet');
+        when(
+          () => ev.content,
+        ).thenReturn({'relativePath': '/p/q.bin', 'msgtype': 'm.file'});
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+
+        final index = AttachmentIndex(
+          logging: logging,
+          verboseLogging: false,
+        );
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/p/q.bin')).thenReturn(false);
+
+        await AttachmentIngestor(verboseLogging: false).process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        verifyNever(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.observe',
+          ),
+        );
+        verifyNever(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachmentIndex.record',
+          ),
+        );
+        // Behaviour unchanged: the descriptor is still in the index.
+        expect(index.find('/p/q.bin'), isNotNull);
+      },
+    );
+
+    test(
       'records descriptor, logs observe, updates metrics, and clears pending',
       () async {
         final logging = MockLoggingService();

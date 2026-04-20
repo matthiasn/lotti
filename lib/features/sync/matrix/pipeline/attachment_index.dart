@@ -8,9 +8,15 @@ import 'package:matrix/matrix.dart';
 /// on the path referenced in the text message. Populated passively by the
 /// stream consumer; never triggers rescans.
 class AttachmentIndex {
-  AttachmentIndex({LoggingService? logging}) : _logging = logging;
+  AttachmentIndex({LoggingService? logging, this.verboseLogging = true})
+    : _logging = logging;
 
   final LoggingService? _logging;
+
+  /// When true, emits per-event `attachmentIndex.record`, `attachmentIndex.hit`,
+  /// and `attachmentIndex.miss` lines. Production disables this; tests keep
+  /// it enabled so existing per-event assertions remain valid.
+  final bool verboseLogging;
 
   final Map<String, Event> _byPath = <String, Event>{};
 
@@ -39,11 +45,13 @@ class AttachmentIndex {
         // For robustness, also record a variant without the leading slash in
         // case callers use that form.
         _byPath[noSlash] = e;
-        _logging?.captureEvent(
-          'attachmentIndex.record path=$key mime=$mimetype id=${eventId ?? '?'}',
-          domain: syncLoggingDomain,
-          subDomain: 'attachmentIndex.record',
-        );
+        if (verboseLogging) {
+          _logging?.captureEvent(
+            'attachmentIndex.record path=$key mime=$mimetype id=${eventId ?? '?'}',
+            domain: syncLoggingDomain,
+            subDomain: 'attachmentIndex.record',
+          );
+        }
         return true;
       }
     } catch (err) {
@@ -75,13 +83,15 @@ class AttachmentIndex {
         ? relativePath.substring(1)
         : '/$relativePath';
     final hit = _byPath[key1] ?? _byPath[key2];
-    _logging?.captureEvent(
-      hit == null
-          ? 'attachmentIndex.miss path=$relativePath alt=$key2'
-          : 'attachmentIndex.hit path=$relativePath id=${hit.eventId}',
-      domain: syncLoggingDomain,
-      subDomain: 'attachmentIndex.find',
-    );
+    if (verboseLogging) {
+      _logging?.captureEvent(
+        hit == null
+            ? 'attachmentIndex.miss path=$relativePath alt=$key2'
+            : 'attachmentIndex.hit path=$relativePath id=${hit.eventId}',
+        domain: syncLoggingDomain,
+        subDomain: 'attachmentIndex.find',
+      );
+    }
     return hit;
   }
 }

@@ -31,6 +31,7 @@ class AttachmentIngestor {
     this.documentsDirectory,
     int maxConcurrentDownloads = _defaultMaxConcurrentDownloads,
     int? handledEventCapacity,
+    this.verboseLogging = true,
   }) : _maxConcurrentDownloads = maxConcurrentDownloads < 0
            ? 0
            : maxConcurrentDownloads,
@@ -47,6 +48,13 @@ class AttachmentIngestor {
   final Directory? documentsDirectory;
   final int _maxConcurrentDownloads;
   final int _handledAttachmentEventCapacity;
+
+  /// When true, emits per-event `attachment.observe` lines. Production
+  /// disables this to keep the steady-state log volume down; the wrapping
+  /// `batch.summary` already carries total observed/indexed counts. Tests
+  /// default to verbose so existing assertions on per-event emission stay
+  /// meaningful.
+  final bool verboseLogging;
 
   final Queue<String> _downloadQueue = Queue<String>();
   final Map<String, _DownloadRequest> _pendingDownloads =
@@ -118,24 +126,25 @@ class AttachmentIngestor {
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
-        // Observability log for attachment-like events.
-        try {
-          final mime = event.attachmentMimetype;
-          final content = event.content;
-          final hasUrl =
-              content.containsKey('url') ||
-              content.containsKey('mxc') ||
-              content.containsKey('mxcUrl') ||
-              content.containsKey('uri');
-          final hasEnc = content.containsKey('file');
-          final msgType = content['msgtype'];
-          logging.captureEvent(
-            'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
-            domain: syncLoggingDomain,
-            subDomain: 'attachment.observe',
-          );
-        } catch (_) {
-          // best-effort logging only
+        if (verboseLogging) {
+          try {
+            final mime = event.attachmentMimetype;
+            final content = event.content;
+            final hasUrl =
+                content.containsKey('url') ||
+                content.containsKey('mxc') ||
+                content.containsKey('mxcUrl') ||
+                content.containsKey('uri');
+            final hasEnc = content.containsKey('file');
+            final msgType = content['msgtype'];
+            logging.captureEvent(
+              'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
+              domain: syncLoggingDomain,
+              subDomain: 'attachment.observe',
+            );
+          } catch (_) {
+            // best-effort logging only
+          }
         }
 
         // Download attachments either immediately or via the async queue.

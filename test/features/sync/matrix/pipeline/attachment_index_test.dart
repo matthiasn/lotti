@@ -47,6 +47,29 @@ void main() {
   );
 
   test(
+    'verboseLogging: false suppresses per-event record/find lines without '
+    'changing behaviour',
+    () {
+      final logging = MockLoggingService();
+      final index = AttachmentIndex(logging: logging, verboseLogging: false);
+      final e = makeEvent(eventId: 'ev1', relativePath: 'images/a.jpg');
+
+      expect(index.record(e), isTrue);
+      expect(index.record(e), isFalse);
+      expect(index.find('images/a.jpg'), isNotNull);
+      expect(index.find('images/missing.jpg'), isNull);
+
+      verifyNever(
+        () => logging.captureEvent(
+          any<String>(that: contains('attachmentIndex.')),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      );
+    },
+  );
+
+  test(
     'record does not thrash when multiple events share one relativePath — '
     'each eventId logs exactly once regardless of interleaving',
     () {
