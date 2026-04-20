@@ -38,13 +38,9 @@ Future<Uint8List> decodeAttachmentBytes({
 }) async {
   final encoding = event.content[attachmentEncodingKey];
   if (encoding != attachmentEncodingGzip) return downloadedBytes;
-  final Uint8List decoded;
-  if (downloadedBytes.length < _inlineGzipThreshold) {
-    final result = gzip.decode(downloadedBytes);
-    decoded = result is Uint8List ? result : Uint8List.fromList(result);
-  } else {
-    decoded = await compute(_gzipDecodeWorker, downloadedBytes);
-  }
+  final decoded = downloadedBytes.length < _inlineGzipThreshold
+      ? _asUint8List(gzip.decode(downloadedBytes))
+      : await compute(_gzipDecodeWorker, downloadedBytes);
   logging.captureEvent(
     'gzipDecoded path=$relativePath '
     'compressed=${downloadedBytes.length} decoded=${decoded.length} '
@@ -55,12 +51,8 @@ Future<Uint8List> decodeAttachmentBytes({
   return decoded;
 }
 
-/// Worker entry point for `compute`. Must be a top-level function so the
-/// runtime can hand it to a background isolate.
-Uint8List _gzipDecodeWorker(Uint8List bytes) {
-  final result = gzip.decode(bytes);
-  return result is Uint8List ? result : Uint8List.fromList(result);
-}
+Uint8List _gzipDecodeWorker(Uint8List bytes) =>
+    _asUint8List(gzip.decode(bytes));
 
 /// Gzip-encodes [bytes], offloading to a worker isolate above
 /// [_inlineGzipThreshold] so a multi-KB JSON attachment does not stall the
@@ -71,18 +63,20 @@ Uint8List _gzipDecodeWorker(Uint8List bytes) {
 /// larger than it. Senders below the threshold encode inline.
 Future<Uint8List> gzipEncodeBytes(Uint8List bytes) async {
   if (bytes.length < _inlineGzipThreshold) {
-    final result = gzip.encode(bytes);
-    return result is Uint8List ? result : Uint8List.fromList(result);
+    return _asUint8List(gzip.encode(bytes));
   }
   return compute(_gzipEncodeWorker, bytes);
 }
 
-/// Worker entry point for `compute`. Must be a top-level function so the
-/// runtime can hand it to a background isolate.
-Uint8List _gzipEncodeWorker(Uint8List bytes) {
-  final result = gzip.encode(bytes);
-  return result is Uint8List ? result : Uint8List.fromList(result);
-}
+Uint8List _gzipEncodeWorker(Uint8List bytes) =>
+    _asUint8List(gzip.encode(bytes));
+
+/// `gzip.encode` / `gzip.decode` from `dart:io` return a Uint8List-backed
+/// `List<int>`, so the cast avoids an unnecessary copy via
+/// `Uint8List.fromList`. Falls back to a copy only when the runtime happens
+/// to hand back a non-Uint8List view.
+Uint8List _asUint8List(List<int> result) =>
+    result is Uint8List ? result : Uint8List.fromList(result);
 
 /// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
 ///

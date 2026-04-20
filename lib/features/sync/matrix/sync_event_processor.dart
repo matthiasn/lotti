@@ -702,14 +702,9 @@ class SyncEventProcessor {
         subDomain: 'processor.SyncEventProcessor',
       );
 
-      // Await here so exceptions from prepare flow through the try/catch
-      // below instead of escaping the block unhandled (Dart does not hook
-      // `catch` onto a returned future without an explicit `await`).
-      return await _prepareForMessage(
-        event: event,
-        syncMessage: syncMessage,
-        loader: _journalEntityLoader,
-      );
+      // `await` so exceptions from prepare flow through the `catch` below
+      // (Dart does not hook `catch` onto a returned future without it).
+      return await _prepareForMessage(event: event, syncMessage: syncMessage);
     } catch (error, stackTrace) {
       if (error is! FileSystemException) {
         _loggingService.captureException(
@@ -923,15 +918,10 @@ class SyncEventProcessor {
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
-    required SyncJournalEntityLoader loader,
   }) async {
     switch (syncMessage) {
       case final SyncJournalEntity msg:
-        return _prepareJournalEntity(
-          event: event,
-          syncMessage: msg,
-          loader: loader,
-        );
+        return _prepareJournalEntity(event: event, syncMessage: msg);
       case final SyncAgentEntity msg:
         final resolved = await _resolveAgentEntity(msg);
         return PreparedSyncEvent._(
@@ -947,25 +937,16 @@ class SyncEventProcessor {
           resolvedAgentLink: resolved,
         );
       default:
-        // No file-backed payload to resolve. Apply reads everything it needs
-        // from the envelope (SyncEntryLink, SyncEntityDefinition,
-        // SyncAiConfig/Delete, SyncThemingSelection, SyncBackfillRequest,
-        // SyncBackfillResponse).
         return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
     }
   }
 
-  /// Prepares a [SyncJournalEntity]: checks the duplicate fingerprint and
-  /// otherwise invokes `loader.load` (network / gzip / disk).
-  ///
-  /// [FileSystemException]s thrown by the loader are caught when the error
-  /// indicates a stale descriptor — the caller still needs to run the
-  /// supersession check inside the apply transaction. Any other
-  /// [FileSystemException] is rethrown for retry.
+  /// Stale-descriptor [FileSystemException]s are caught and carried into the
+  /// apply phase: the supersession check needs the writer transaction, so
+  /// apply decides whether to skip the event or rethrow for retry.
   Future<PreparedSyncEvent> _prepareJournalEntity({
     required Event event,
     required SyncJournalEntity syncMessage,
-    required SyncJournalEntityLoader loader,
   }) async {
     if (_isDuplicateJournalEntity(syncMessage.id, syncMessage.vectorClock)) {
       return PreparedSyncEvent._(
@@ -976,7 +957,7 @@ class SyncEventProcessor {
     }
 
     try {
-      final journalEntity = await loader.load(
+      final journalEntity = await _journalEntityLoader.load(
         jsonPath: syncMessage.jsonPath,
         incomingVectorClock: syncMessage.vectorClock,
       );
@@ -996,9 +977,6 @@ class SyncEventProcessor {
           deferredStaleDescriptorError: error,
         );
       }
-      // Non-stale attachment failures log under the `missingAttachment`
-      // subdomain and then rethrow for pipeline retry. Matches the pre-split
-      // behaviour in `_handleMessage`.
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
@@ -1033,9 +1011,7 @@ class SyncEventProcessor {
       if (skipped != null) {
         return skipped;
       }
-      // Not superseded — rethrow so the pipeline retries later. Logging
-      // matches the pre-split behaviour where `process()` logged before
-      // rethrow for any `FileSystemException` from loader.load.
+      // Not superseded — log and rethrow for retry.
       _loggingService.captureException(
         deferredStaleError,
         domain: 'MATRIX_SERVICE',
@@ -1060,9 +1036,8 @@ class SyncEventProcessor {
     );
   }
 
-  /// Duplicate-path handling extracted during the prepare/apply split. The
-  /// duplicate detection itself now happens during prepare; apply only has to
-  /// record the sequence-log entry so hint resolution still runs.
+  /// Records the duplicate in the sequence log so `resolvePendingHints` still
+  /// runs; the duplicate detection itself lives in the prepare phase.
   Future<SyncApplyDiagnostics?> _recordDuplicateJournalEntity({
     required Event event,
     required SyncJournalEntity syncMessage,

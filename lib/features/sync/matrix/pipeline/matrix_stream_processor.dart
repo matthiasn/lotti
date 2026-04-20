@@ -287,11 +287,9 @@ class MatrixStreamProcessor {
     } else if (processedOk) {
       try {
         if (prepareSlot == null) {
-          // Fallback for callers that did not pre-resolve outside the
-          // transaction (e.g. undeserialisable envelopes where the pre-pass
-          // left no slot, and mocktail-based tests that stub only `process`).
-          // This keeps behaviour identical to the pre-split pipeline at the
-          // cost of holding the writer lock across attachment I/O.
+          // No pre-resolved slot: undeserialisable envelope skipped by
+          // prepare, or a mocktail test that stubs only `process`. Fall back
+          // to in-transaction `process` — matches pre-split semantics.
           await _eventProcessor.process(event: e, journalDb: _journalDb);
         } else if (prepareSlot.error != null) {
           Error.throwWithStackTrace(
@@ -299,8 +297,6 @@ class MatrixStreamProcessor {
             prepareSlot.errorStack ?? StackTrace.current,
           );
         } else {
-          // `prepared` is non-null by construction in the pre-pass — an empty
-          // slot would have been left unset.
           await _eventProcessor.apply(
             prepared: prepareSlot.prepared!,
             journalDb: _journalDb,
@@ -408,6 +404,69 @@ class MatrixStreamProcessor {
     }
   }
 
+  /// Bounded concurrency for the prepare pre-pass. Each prepare may download
+  /// and gzip-decode an attachment, so running a full 20-event chunk
+  /// sequentially (~200 ms each) would burn ~4 s of wall time before the
+  /// apply transaction even opens. 4 is enough to hide network latency
+  /// without hammering the Matrix SDK or the local gzip `compute` pool.
+  static const int _maxConcurrentPrepares = 4;
+
+  /// Resolves file-backed payloads for a chunk outside the writer
+  /// transaction. Prepares run in bounded-concurrency batches so attachment
+  /// I/O overlaps. Slots are only installed on the returned map when prepare
+  /// has something apply must consume — a null return (undeserialisable
+  /// envelope, or mocktail default in tests that stub only `process`) leaves
+  /// the slot absent and `_processSyncPayloadEvent` falls back to `process`.
+  Future<Map<int, _PrepareSlot>> _prepareChunk({
+    required List<Event> ordered,
+    required int chunkStart,
+    required int chunkEnd,
+    required Set<String> suppressedIds,
+  }) async {
+    final chunkPrepared = <int, _PrepareSlot>{};
+    final now = clock.now();
+    final toPrepare = <int>[];
+    for (var i = chunkStart; i < chunkEnd; i++) {
+      final e = ordered[i];
+      final id = e.eventId;
+      if (suppressedIds.contains(id)) continue;
+      if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) continue;
+      if (_inFlightSyncIds.contains(id)) continue;
+      if (wasCompletedSync(id)) continue;
+      // Skip retry-blocked or over-cap events: paying I/O for events the
+      // apply pass will immediately shelve is wasted work.
+      if (_retryTracker.blockedUntil(id, now) != null) continue;
+      if (_retryTracker.attempts(id) >= _maxRetriesPerEvent) continue;
+      toPrepare.add(i);
+    }
+
+    for (
+      var batchStart = 0;
+      batchStart < toPrepare.length;
+      batchStart += _maxConcurrentPrepares
+    ) {
+      final batchEnd = math.min(
+        batchStart + _maxConcurrentPrepares,
+        toPrepare.length,
+      );
+      final batch = toPrepare.sublist(batchStart, batchEnd);
+      final results = await Future.wait(
+        batch.map((i) async {
+          try {
+            final p = await _eventProcessor.prepare(event: ordered[i]);
+            return p == null ? null : (i, _PrepareSlot.prepared(p));
+          } catch (err, st) {
+            return (i, _PrepareSlot.error(err, st));
+          }
+        }),
+      );
+      for (final res in results) {
+        if (res != null) chunkPrepared[res.$1] = res.$2;
+      }
+    }
+    return chunkPrepared;
+  }
+
   Future<void> _processOrderedInternal(List<Event> ordered, Room room) async {
     _sentEventRegistry.prune();
     final suppressedIds = <String>{};
@@ -508,41 +567,12 @@ class MatrixStreamProcessor {
       final chunkEnd = math.min(chunkStart + chunkSize, ordered.length);
       final chunkCompletedIds = <String>[];
 
-      // Pre-pass: resolve file-backed payloads (journal entity JSON, agent
-      // descriptors) OUTSIDE the writer transaction. Attachment download,
-      // gzip decode, and disk reads all happen here, so the SQLite writer
-      // lock is never held across network or CPU-heavy I/O during apply.
-      final chunkPrepared = <int, _PrepareSlot>{};
-      for (var i = chunkStart; i < chunkEnd; i++) {
-        final e = ordered[i];
-        final id = e.eventId;
-        // Match the apply-pass skip predicates: we only need to prepare
-        // events that will actually hit `_processSyncPayloadEvent`.
-        if (suppressedIds.contains(id)) continue;
-        if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) continue;
-        if (_inFlightSyncIds.contains(id)) continue;
-        if (wasCompletedSync(id)) continue;
-        // Honour the retry tracker here too so we do not spend I/O preparing
-        // events the apply pass will immediately shelve.
-        if (_retryTracker.blockedUntil(id, clock.now()) != null) continue;
-        if (_retryTracker.attempts(id) >= _maxRetriesPerEvent) continue;
-        try {
-          final p = await _eventProcessor.prepare(event: e);
-          // A null return from a real `SyncEventProcessor.prepare` only
-          // happens for undeserialisable envelopes; apply has nothing to do
-          // and the legacy fallback below would just re-decode and return.
-          // Tests that stub `process` but not `prepare` also see null here
-          // (mocktail default), and must hit the back-compat path below.
-          // Both cases want the same behaviour: leave the slot absent so
-          // `_processSyncPayloadEvent` treats this event via `process`
-          // inside the transaction exactly as it did pre-split.
-          if (p != null) {
-            chunkPrepared[i] = _PrepareSlot.prepared(p);
-          }
-        } catch (err, st) {
-          chunkPrepared[i] = _PrepareSlot.error(err, st);
-        }
-      }
+      final chunkPrepared = await _prepareChunk(
+        ordered: ordered,
+        chunkStart: chunkStart,
+        chunkEnd: chunkEnd,
+        suppressedIds: suppressedIds,
+      );
 
       await _journalDb.transaction(() async {
         for (var i = chunkStart; i < chunkEnd; i++) {

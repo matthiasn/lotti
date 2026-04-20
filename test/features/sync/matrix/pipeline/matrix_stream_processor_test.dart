@@ -32,6 +32,17 @@ class _MockClient extends Mock implements Client {}
 class _MockTimeline extends Mock implements Timeline {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_MockEvent());
+    registerFallbackValue(_MockJournalDb());
+    registerFallbackValue(
+      PreparedSyncEvent.forTesting(
+        event: _MockEvent(),
+        syncMessage: const SyncMessage.aiConfigDelete(id: 'fallback'),
+      ),
+    );
+  });
+
   late _MockRoomManager roomManager;
   late LoggingService loggingService;
   late _MockJournalDb journalDb;
@@ -183,14 +194,6 @@ void main() {
           // has completed for every event in the slice. Apply is stubbed
           // to complete instantly so any future regression that pushes
           // I/O back inside the transaction shows up here.
-          registerFallbackValue(
-            PreparedSyncEvent.forTesting(
-              event: _MockEvent(),
-              syncMessage: const SyncMessage.aiConfigDelete(id: 'fallback'),
-            ),
-          );
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
 
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
@@ -255,31 +258,31 @@ void main() {
           final processor = createProcessor();
           final future = processor.processOrdered(events);
 
-          // Give the pipeline a chance to start its pre-pass.
+          // Pump so the pre-pass can start. Prepares may run concurrently
+          // (bounded concurrency), but the transaction MUST NOT have opened
+          // yet — if it had, the writer lock would be held across our "I/O".
           await Future<void>.delayed(Duration.zero);
-
-          // At this point the first prepare should be pending on its gate
-          // and the transaction MUST NOT have opened yet — if it had, the
-          // writer lock would already be held across our "I/O" delay.
           expect(
-            order,
-            equals(['prepare.begin#0']),
+            order.any((e) => e.startsWith('prepare.begin')),
+            isTrue,
+            reason: 'at least one prepare must start during the pre-pass',
+          );
+          expect(
+            order.any((e) => e.startsWith('txn.')),
+            isFalse,
             reason:
-                'transaction must not open before prepare completes; the '
-                'writer lock would otherwise be held across I/O',
+                'transaction must not open while any prepare is still in '
+                'flight; otherwise the writer lock holds across I/O',
           );
 
-          // Release prepare gates one by one and pump; each release should
-          // start the next prepare call, still with no transaction open.
-          for (var i = 0; i < prepareGates.length; i++) {
-            prepareGates[i].complete();
+          for (final gate in prepareGates) {
+            gate.complete();
             await Future<void>.delayed(Duration.zero);
           }
           await future;
 
-          // After completion the order must be: all prepares finish first,
-          // then a single transaction holds all three applies.
-          expect(order.first, startsWith('prepare.'));
+          // Full order must have every prepare.end before txn.begin so no
+          // I/O ever runs with the writer lock held.
           final txnBegin = order.indexOf('txn.begin');
           expect(
             txnBegin,
@@ -383,9 +386,6 @@ void main() {
       test(
         'does not record completion when the transaction throws',
         () async {
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -585,9 +585,6 @@ void main() {
           // chunk 2, the events from chunk 1 must stay flagged as completed
           // (their DB writes are already durable), while chunk-2 events must
           // stay un-flagged so a retry path can re-apply them.
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -663,9 +660,6 @@ void main() {
       test(
         'suppresses events the registry marks as our own sends',
         () async {
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -778,16 +772,6 @@ _StubbedTransaction _stubCommonProcessOrdered({
   required _MockEventProcessor eventProcessor,
   void Function()? onBeforeCommit,
 }) {
-  registerFallbackValue(_MockEvent());
-  registerFallbackValue(_MockJournalDb());
-
-  registerFallbackValue(
-    PreparedSyncEvent.forTesting(
-      event: _MockEvent(),
-      syncMessage: const SyncMessage.aiConfigDelete(id: 'fallback'),
-    ),
-  );
-
   final handle = _StubbedTransaction();
   var insideTransaction = false;
 
@@ -880,12 +864,6 @@ _StubbedTransaction _stubCommonProcessOrdered({
 /// to `prepare` fails with a mocktail "no matching calls" error and the
 /// event is shelved for retry instead of reaching the in-transaction apply.
 void _stubPrepareApplyPassthrough(_MockEventProcessor eventProcessor) {
-  registerFallbackValue(
-    PreparedSyncEvent.forTesting(
-      event: _MockEvent(),
-      syncMessage: const SyncMessage.aiConfigDelete(id: 'fallback'),
-    ),
-  );
   when(
     () => eventProcessor.prepare(event: any<Event>(named: 'event')),
   ).thenAnswer((invocation) async {

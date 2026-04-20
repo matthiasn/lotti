@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.968] - 2026-04-20
+### Fixed
+- Desktop UI freeze during Matrix sync. The per-event apply loop in
+  `MatrixStreamProcessor` used to hold the SQLite writer lock while
+  awaiting attachment downloads, gzip decodes, and disk reads — on an
+  20-event catch-up slice this blocked user-driven journal saves for
+  seconds at a time. `SyncEventProcessor` now splits into `prepare`
+  (all I/O, no DB writes) and `apply` (pure DB writes); the pipeline
+  runs prepare for a chunk in bounded-concurrency batches (4 at a
+  time) outside the transaction, then opens a single transaction to
+  apply the pre-resolved results. Outbox send-side `gzip.encode` is
+  also offloaded to a worker isolate for payloads above 2 KB.
+- Regression test guards the invariant that every `prepare` completes
+  before the writer transaction opens.
+
 ## [0.9.967] - 2026-04-20
 ### Changed
 - Task detail header rebuilt against the desktop Figma as a scoped

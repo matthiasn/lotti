@@ -426,16 +426,10 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
-  // Default override so tests that stub only `process` still exercise the
-  // back-compat path in `MatrixStreamProcessor`. Returning null here leaves
-  // no prepared slot in the pre-pass, which makes the pipeline fall back to
-  // calling `process` inside the transaction — identical to the pre-split
-  // behaviour these tests were written against.
-  //
-  // Tests that exercise the new prepare/apply split use a local mock class
-  // without this override (see `_MockEventProcessor` in
-  // `matrix_stream_processor_test.dart`) and stub `prepare`/`apply`
-  // explicitly via `when(...)`.
+  // Default null/no-op so tests that stub only `process` keep working: a
+  // null prepare leaves no slot in the pipeline's pre-pass and the
+  // in-transaction fallback calls `process` as before. Tests exercising the
+  // new prepare/apply split use a local mock and stub both via `when(...)`.
   @override
   Future<PreparedSyncEvent?> prepare({required Event event}) async => null;
 
