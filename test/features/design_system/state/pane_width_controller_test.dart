@@ -13,6 +13,7 @@ import '../../../widget_test_utils.dart';
 Future<ProviderContainer> _createContainerWithPersistedWidths({
   String? sidebarWidth,
   String? listPaneWidth,
+  String? sidebarCollapsed,
 }) async {
   await tearDownTestGetIt();
   final mocks = await setUpTestGetIt();
@@ -22,19 +23,23 @@ Future<ProviderContainer> _createContainerWithPersistedWidths({
     (_) async => <String, String?>{
       sidebarWidthKey: sidebarWidth,
       listPaneWidthKey: listPaneWidth,
+      sidebarCollapsedKey: sidebarCollapsed,
     },
   );
   return ProviderContainer();
 }
 
-/// Triggers provider read and flushes microtasks so the async
-/// `_loadPersistedWidths` (which calls the mocked `itemsByKeys`)
-/// completes deterministically.
+/// Triggers provider read and drains pending microtasks so the async
+/// `_loadPersistedWidths` (which calls the mocked `itemsByKeys`) completes
+/// deterministically. A loop here is resilient to future async hops inside
+/// `_loadPersistedWidths` — a single `Future.value()` would only cover the
+/// current implementation's one `await` and silently return the
+/// pre-hydration default if another were added.
 Future<PaneWidths> _awaitHydration(ProviderContainer container) async {
-  // Force provider build, which fires _loadPersistedWidths.
   container.read(paneWidthControllerProvider);
-  // The mock resolves synchronously as a microtask — flush it.
-  await Future<void>.value();
+  for (var i = 0; i < 16; i++) {
+    await Future<void>.value();
+  }
   return container.read(paneWidthControllerProvider);
 }
 
@@ -64,6 +69,7 @@ void main() {
       const widths = PaneWidths();
       expect(widths.sidebarWidth, defaultSidebarWidth);
       expect(widths.listPaneWidth, defaultListPaneWidth);
+      expect(widths.sidebarCollapsed, isFalse);
     });
 
     test('copyWith creates new instance with updated values', () {
@@ -80,12 +86,21 @@ void main() {
       expect(updated.listPaneWidth, 700);
     });
 
-    test('equality compares field values', () {
+    test('copyWith updates collapse flag', () {
+      const widths = PaneWidths();
+      final updated = widths.copyWith(sidebarCollapsed: true);
+      expect(updated.sidebarCollapsed, isTrue);
+      expect(updated.sidebarWidth, defaultSidebarWidth);
+    });
+
+    test('equality compares all field values', () {
       const a = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
       const b = PaneWidths(sidebarWidth: 300, listPaneWidth: 500);
       const c = PaneWidths(sidebarWidth: 300, listPaneWidth: 600);
+      const d = PaneWidths(sidebarWidth: 300, sidebarCollapsed: true);
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
+      expect(a, isNot(equals(d)));
     });
 
     test('hashCode is consistent with equality', () {
@@ -173,6 +188,43 @@ void main() {
       final result = await _awaitHydration(container);
       expect(result.sidebarWidth, defaultSidebarWidth);
       expect(result.listPaneWidth, defaultListPaneWidth);
+      expect(result.sidebarCollapsed, isFalse);
+    });
+
+    test('loads persisted collapse flag', () async {
+      container.dispose();
+      container = await _createContainerWithPersistedWidths(
+        sidebarCollapsed: 'true',
+      );
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarCollapsed, isTrue);
+    });
+
+    test(
+      'loads the persisted sidebarWidth while collapsed so expand restores '
+      'the pre-collapse position',
+      () async {
+        container.dispose();
+        container = await _createContainerWithPersistedWidths(
+          sidebarCollapsed: 'true',
+          sidebarWidth: '260.0',
+        );
+
+        final result = await _awaitHydration(container);
+        expect(result.sidebarCollapsed, isTrue);
+        expect(result.sidebarWidth, 260.0);
+      },
+    );
+
+    test('treats any value other than "true" as not collapsed', () async {
+      container.dispose();
+      container = await _createContainerWithPersistedWidths(
+        sidebarCollapsed: 'nope',
+      );
+
+      final result = await _awaitHydration(container);
+      expect(result.sidebarCollapsed, isFalse);
     });
   });
 
@@ -472,6 +524,164 @@ void main() {
 
       final result = await _awaitHydration(container);
       expect(result.sidebarWidth, defaultSidebarWidth);
+    });
+  });
+
+  group('PaneWidthController collapse/expand', () {
+    test('collapseSidebar sets the flag and preserves the current width', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateSidebarWidth(40) // sidebarWidth = 360
+        ..collapseSidebar();
+
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.sidebarCollapsed, isTrue);
+      // sidebarWidth is frozen while collapsed so it doubles as the
+      // restore target for expand.
+      expect(state.sidebarWidth, defaultSidebarWidth + 40);
+
+      // Second call is a no-op.
+      notifier.collapseSidebar();
+      expect(
+        container.read(paneWidthControllerProvider).sidebarWidth,
+        defaultSidebarWidth + 40,
+      );
+    });
+
+    test('expandSidebar keeps the pre-collapse width and clears the flag', () {
+      container.read(paneWidthControllerProvider.notifier)
+        ..updateSidebarWidth(50) // 370
+        ..collapseSidebar()
+        ..expandSidebar();
+
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.sidebarCollapsed, isFalse);
+      expect(state.sidebarWidth, defaultSidebarWidth + 50);
+    });
+
+    test('expandSidebar is a no-op when not collapsed', () {
+      container.read(paneWidthControllerProvider.notifier).expandSidebar();
+      final state = container.read(paneWidthControllerProvider);
+      expect(state.sidebarCollapsed, isFalse);
+      expect(state.sidebarWidth, defaultSidebarWidth);
+    });
+
+    test('toggleSidebarCollapsed flips the flag', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..toggleSidebarCollapsed();
+      expect(
+        container.read(paneWidthControllerProvider).sidebarCollapsed,
+        isTrue,
+      );
+
+      notifier.toggleSidebarCollapsed();
+      expect(
+        container.read(paneWidthControllerProvider).sidebarCollapsed,
+        isFalse,
+      );
+    });
+
+    test('updateSidebarWidth is ignored while collapsed', () {
+      container.read(paneWidthControllerProvider.notifier)
+        ..collapseSidebar()
+        ..updateSidebarWidth(100);
+
+      final state = container.read(paneWidthControllerProvider);
+      // sidebarWidth is frozen while collapsed — this is the invariant
+      // that lets expand restore the pre-collapse position.
+      expect(state.sidebarWidth, defaultSidebarWidth);
+      expect(state.sidebarCollapsed, isTrue);
+    });
+
+    test('collapseSidebar persists the flag and current width', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(30) // 350
+          ..collapseSidebar();
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarCollapsedKey,
+            'true',
+          ),
+        ).called(1);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '350.0',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('expandSidebar persists flag = false', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..collapseSidebar()
+          ..expandSidebar();
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarCollapsedKey,
+            'false',
+          ),
+        ).called(1);
+      });
+    });
+
+    test(
+      'expand does not re-persist sidebarWidth — the value is unchanged '
+      'because updateSidebarWidth is a no-op while collapsed',
+      () {
+        fakeAsync((async) {
+          container.read(paneWidthControllerProvider.notifier)
+            ..updateSidebarWidth(30) // 350, flushed by collapse below
+            ..collapseSidebar();
+          async
+            ..flushMicrotasks()
+            ..elapse(persistDebounce);
+
+          clearInteractions(getIt<SettingsDb>());
+
+          container.read(paneWidthControllerProvider.notifier).expandSidebar();
+          async
+            ..flushMicrotasks()
+            ..elapse(persistDebounce);
+
+          verifyNever(
+            () => getIt<SettingsDb>().saveSettingsItem(
+              sidebarWidthKey,
+              any(),
+            ),
+          );
+        });
+      },
+    );
+
+    test('collapse flushes pending sidebar-width synchronously', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..updateSidebarWidth(30) // 350, debounce pending
+          ..collapseSidebar();
+        async
+          ..flushMicrotasks()
+          ..elapse(persistDebounce);
+
+        // The debounced write must not fire a second time. Collapse flushes
+        // the current width synchronously so the debounce has nothing left
+        // to do — sidebarWidth is written exactly once with the final value.
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            sidebarWidthKey,
+            '350.0',
+          ),
+        ).called(1);
+      });
     });
   });
 

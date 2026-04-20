@@ -2089,6 +2089,8 @@
   "settingThemingDark": "Tmavé téma",
   "settingThemingLight": "Světlé téma",
   "showCompleted": "Zobrazit dokončené",
+  "sidebarToggleCollapseLabel": "Sbalit postranní panel",
+  "sidebarToggleExpandLabel": "Rozbalit postranní panel",
   "skillsSectionTitle": "Dovednosti",
   "speechDictionaryHelper": "Výrazy oddělené středníkem (max. 50 znaků) pro lepší rozpoznávání řeči",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

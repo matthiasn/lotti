@@ -352,6 +352,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     }
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
+    final isCollapsed = paneWidths.sidebarCollapsed;
 
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
@@ -393,8 +394,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 : null,
             isSettingsActive: isSettingsActive,
             width: paneWidths.sidebarWidth,
+            collapsed: isCollapsed,
+            onToggleCollapsed: () => ref
+                .read(paneWidthControllerProvider.notifier)
+                .toggleSidebarCollapsed(),
           ),
           ResizableDivider(
+            enabled: !isCollapsed,
             onDrag: (delta) => ref
                 .read(paneWidthControllerProvider.notifier)
                 .updateSidebarWidth(delta),

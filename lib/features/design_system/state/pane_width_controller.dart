@@ -11,6 +11,7 @@ part 'pane_width_controller.g.dart';
 /// Settings keys for persisted pane widths.
 const sidebarWidthKey = 'PANE_WIDTH_SIDEBAR';
 const listPaneWidthKey = 'PANE_WIDTH_LIST';
+const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
 
 /// Default and constraint values for pane widths.
 const defaultSidebarWidth = 320.0;
@@ -25,24 +26,34 @@ const maxListPaneWidth = 800.0;
 @visibleForTesting
 const persistDebounce = Duration(milliseconds: 300);
 
-/// State holding the current widths for the sidebar and list pane.
+/// State holding the current widths and collapsed flag for the sidebar, plus
+/// the width for the list pane.
+///
+/// [sidebarWidth] doubles as the restore target for
+/// `PaneWidthController.expandSidebar`: while collapsed the controller
+/// refuses drag input, so the field keeps the pre-collapse value untouched
+/// and there is no need for a separate "lastExpandedSidebarWidth" slot.
 @immutable
 class PaneWidths {
   const PaneWidths({
     this.sidebarWidth = defaultSidebarWidth,
     this.listPaneWidth = defaultListPaneWidth,
+    this.sidebarCollapsed = false,
   });
 
   final double sidebarWidth;
   final double listPaneWidth;
+  final bool sidebarCollapsed;
 
   PaneWidths copyWith({
     double? sidebarWidth,
     double? listPaneWidth,
+    bool? sidebarCollapsed,
   }) {
     return PaneWidths(
       sidebarWidth: sidebarWidth ?? this.sidebarWidth,
       listPaneWidth: listPaneWidth ?? this.listPaneWidth,
+      sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
     );
   }
 
@@ -52,10 +63,15 @@ class PaneWidths {
       other is PaneWidths &&
           runtimeType == other.runtimeType &&
           sidebarWidth == other.sidebarWidth &&
-          listPaneWidth == other.listPaneWidth;
+          listPaneWidth == other.listPaneWidth &&
+          sidebarCollapsed == other.sidebarCollapsed;
 
   @override
-  int get hashCode => Object.hash(sidebarWidth, listPaneWidth);
+  int get hashCode => Object.hash(
+    sidebarWidth,
+    listPaneWidth,
+    sidebarCollapsed,
+  );
 }
 
 @Riverpod(keepAlive: true)
@@ -80,6 +96,7 @@ class PaneWidthController extends _$PaneWidthController {
       final values = await settingsDb.itemsByKeys({
         sidebarWidthKey,
         listPaneWidthKey,
+        sidebarCollapsedKey,
       });
 
       if (_userAdjusted) return;
@@ -96,10 +113,12 @@ class PaneWidthController extends _$PaneWidthController {
         minListPaneWidth,
         maxListPaneWidth,
       );
+      final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
 
       state = PaneWidths(
         sidebarWidth: sidebarWidth,
         listPaneWidth: listPaneWidth,
+        sidebarCollapsed: sidebarCollapsed,
       );
     } catch (error, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -124,6 +143,10 @@ class PaneWidthController extends _$PaneWidthController {
   }
 
   void updateSidebarWidth(double delta) {
+    // Ignore drag deltas while collapsed — dragging is disabled in that mode
+    // to prevent intermediate widths that would clip labels, and collapse
+    // relies on `sidebarWidth` staying put as the restore target for expand.
+    if (state.sidebarCollapsed) return;
     _userAdjusted = true;
     final newWidth = (state.sidebarWidth + delta).clamp(
       minSidebarWidth,
@@ -141,6 +164,45 @@ class PaneWidthController extends _$PaneWidthController {
     );
     state = state.copyWith(listPaneWidth: newWidth);
     _debounceListPanePersist();
+  }
+
+  /// Collapses the sidebar to the widget's fixed narrow layout.
+  ///
+  /// `sidebarWidth` is left as-is and will be the restore target when
+  /// [expandSidebar] is called — this works because `updateSidebarWidth` is
+  /// a no-op while collapsed.
+  ///
+  /// Persistence is best-effort: the pending debounced width write is
+  /// flushed and the new flag is written immediately, but both writes are
+  /// fire-and-forget, so an app close within the write's I/O window may
+  /// still lose the just-toggled state.
+  void collapseSidebar() {
+    if (state.sidebarCollapsed) return;
+    _userAdjusted = true;
+    _sidebarDebounce?.cancel();
+    state = state.copyWith(sidebarCollapsed: true);
+    _persistSidebarWidth();
+    _persistCollapseFlag();
+  }
+
+  /// Restores the sidebar to the expanded layout driven by `sidebarWidth`.
+  ///
+  /// No width mutation is needed — `sidebarWidth` already holds the last
+  /// expanded value because it is frozen while collapsed. Persistence is
+  /// best-effort; see [collapseSidebar].
+  void expandSidebar() {
+    if (!state.sidebarCollapsed) return;
+    _userAdjusted = true;
+    state = state.copyWith(sidebarCollapsed: false);
+    _persistCollapseFlag();
+  }
+
+  void toggleSidebarCollapsed() {
+    if (state.sidebarCollapsed) {
+      expandSidebar();
+    } else {
+      collapseSidebar();
+    }
   }
 
   void _debounceSidebarPersist() {
@@ -161,12 +223,19 @@ class PaneWidthController extends _$PaneWidthController {
     unawaited(_persistWidth(listPaneWidthKey, state.listPaneWidth));
   }
 
+  void _persistCollapseFlag() {
+    unawaited(
+      _persistString(sidebarCollapsedKey, state.sidebarCollapsed.toString()),
+    );
+  }
+
   Future<void> _persistWidth(String key, double width) async {
+    await _persistString(key, width.toStringAsFixed(1));
+  }
+
+  Future<void> _persistString(String key, String value) async {
     try {
-      await getIt<SettingsDb>().saveSettingsItem(
-        key,
-        width.toStringAsFixed(1),
-      );
+      await getIt<SettingsDb>().saveSettingsItem(key, value);
     } catch (error, stackTrace) {
       getIt<LoggingService>().captureException(
         error,
@@ -184,5 +253,6 @@ class PaneWidthController extends _$PaneWidthController {
     state = const PaneWidths();
     _persistSidebarWidth();
     _persistListPaneWidth();
+    _persistCollapseFlag();
   }
 }

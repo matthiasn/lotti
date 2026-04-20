@@ -2351,6 +2351,8 @@
   "settingThemingDark": "Dunkles Design",
   "settingThemingLight": "Helles Design",
   "showCompleted": "Abgeschlossene anzeigen",
+  "sidebarToggleCollapseLabel": "Seitenleiste einklappen",
+  "sidebarToggleExpandLabel": "Seitenleiste ausklappen",
   "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

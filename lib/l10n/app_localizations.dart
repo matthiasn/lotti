@@ -9871,6 +9871,18 @@ abstract class AppLocalizations {
   /// **'Show completed'**
   String get showCompleted;
 
+  /// No description provided for @sidebarToggleCollapseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get sidebarToggleCollapseLabel;
+
+  /// No description provided for @sidebarToggleExpandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get sidebarToggleExpandLabel;
+
   /// No description provided for @skillsSectionTitle.
   ///
   /// In en, this message translates to:

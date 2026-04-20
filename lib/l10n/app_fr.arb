@@ -2351,6 +2351,8 @@
   "settingThemingDark": "Thème sombre",
   "settingThemingLight": "Thème clair",
   "showCompleted": "Afficher les terminées",
+  "sidebarToggleCollapseLabel": "Réduire la barre latérale",
+  "sidebarToggleExpandLabel": "Développer la barre latérale",
   "skillsSectionTitle": "Compétences",
   "speechDictionaryHelper": "Termes séparés par des points-virgules (max 50 caractères) pour une meilleure reconnaissance vocale",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

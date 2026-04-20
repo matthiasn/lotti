@@ -130,6 +130,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     re-skinning the menu row.
 
 ## [0.9.966] - 2026-04-19
+### Added
+- Collapsible desktop navigation sidebar. A new menu icon at the top of
+  the sidebar toggles between the expanded layout and a narrow 72 px
+  icon-only strip. Destination labels are hidden in the narrow state
+  and surface as tooltips on hover, while the brand logo hides to free
+  up horizontal space. Drag-to-resize is disabled while the sidebar is
+  collapsed so labels never end up clipped at intermediate widths; the
+  divider still paints its hairline so adjacent panes do not shift
+  across the transition. The collapse flag and the previously-used
+  expanded width are persisted to `SettingsDb`, so re-expanding
+  restores the exact prior divider position and the state survives
+  restarts.
+
 ### Fixed
 - Priority / status / label pills in the task filter sheet no longer
   "breathe" when toggled. `_TaskFilterChoicePill` used to widen its

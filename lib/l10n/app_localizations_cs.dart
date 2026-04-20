@@ -5604,6 +5604,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get showCompleted => 'Zobrazit dokončené';
 
   @override
+  String get sidebarToggleCollapseLabel => 'Sbalit postranní panel';
+
+  @override
+  String get sidebarToggleExpandLabel => 'Rozbalit postranní panel';
+
+  @override
   String get skillsSectionTitle => 'Dovednosti';
 
   @override

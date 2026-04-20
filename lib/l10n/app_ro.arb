@@ -2351,6 +2351,8 @@
   "settingThemingDark": "Temă întunecată",
   "settingThemingLight": "Temă luminoasă",
   "showCompleted": "Afișează finalizate",
+  "sidebarToggleCollapseLabel": "Restrânge bara laterală",
+  "sidebarToggleExpandLabel": "Extinde bara laterală",
   "skillsSectionTitle": "Competențe",
   "speechDictionaryHelper": "Termeni separați prin punct și virgulă (max 50 caractere) pentru o mai bună recunoaștere vocală",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

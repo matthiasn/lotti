@@ -5640,6 +5640,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get showCompleted => 'Afișează finalizate';
 
   @override
+  String get sidebarToggleCollapseLabel => 'Restrânge bara laterală';
+
+  @override
+  String get sidebarToggleExpandLabel => 'Extinde bara laterală';
+
+  @override
   String get skillsSectionTitle => 'Competențe';
 
   @override

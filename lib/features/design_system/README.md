@@ -178,7 +178,29 @@ Representative composite or feature-shaped components:
 - task list items
 - navigation tab bar, floating bottom-navigation shell, and shell-aware FAB
   clearance wrapper
+- desktop navigation sidebar with a collapsible icon-only state and a
+  resizable divider that disables drag input while the sidebar is
+  collapsed, preserving the previous expanded width so re-expanding
+  restores the exact prior divider position
 - reusable mobile detail back control and header chrome
+
+#### Desktop navigation sidebar collapse state
+
+The sidebar has two runtime states persisted in `SettingsDb`. While
+collapsed, `updateSidebarWidth` is a no-op and the resizable divider
+refuses drag input, so `sidebarWidth` stays frozen at its pre-collapse
+value and doubles as the restore target for expand.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Expanded: hydrate sidebarCollapsed=false
+  [*] --> Collapsed: hydrate sidebarCollapsed=true
+  Expanded --> Collapsed: toggle / flush sidebarWidth, persist flag
+  Collapsed --> Expanded: toggle / persist flag (sidebarWidth unchanged)
+  Expanded --> Expanded: drag divider / debounced persist of sidebarWidth
+```
+
+
 - calendar and time pickers
 - file upload surface
 
