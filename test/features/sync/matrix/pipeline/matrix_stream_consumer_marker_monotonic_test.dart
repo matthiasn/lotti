@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart' as matrix_utils;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -18,13 +19,23 @@ class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class MockSyncReadMarkerService extends Mock implements SyncReadMarkerService {}
 
-class MockClient extends Mock implements Client {}
+class MockClient extends Mock implements Client {
+  MockClient() {
+    when(() => onSync).thenReturn(
+      matrix_utils.CachedStreamController<SyncUpdate>(),
+    );
+  }
+}
 
 class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
 
-class MockEvent extends Mock implements Event {}
+class MockEvent extends Mock implements Event {
+  MockEvent() {
+    when(() => originServerTs).thenReturn(DateTime(2026, 4, 20));
+  }
+}
 
 void main() {
   setUpAll(() {

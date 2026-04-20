@@ -695,6 +695,55 @@ Phased delivery, each phase independently shippable and reversible:
 
 Rollback: the logs are additive; reverting is a no-op.
 
+#### Phase 0 implementation — landed 2026-04-20
+
+Both probes live in `MatrixStreamSignalBinder` (colocated with the
+existing `timelineEvents` subscription so they share the binder's
+`start()` / `dispose()` lifecycle):
+
+- `sync.limited` listener on `_sessionManager.client.onSync.stream`,
+  filtered to `_roomManager.currentRoomId`. Logs one line per
+  limited sync with `roomId`, `prevBatch`, `eventCount`, and
+  `sinceMs` — the gap since the previous sync response from the
+  server. First-ever sync logs `sinceMs=initial`.
+- `_recordTimelineOrdering` inside the existing timeline-event
+  listener, past the room filter. Accumulates strict reorderings
+  (`ts < prev`) and same-ts ties (`ts == prev`), and emits a summary
+  line every 100 events delivered for the current room.
+
+Both log to `syncLoggingDomain` (`MATRIX_SYNC`), which
+`LoggingService.syncFileDomains` routes to the dated `sync-*.log`
+file. No behaviour change: additive state on the binder, no extra
+work on the hot path beyond an integer compare + increment.
+
+After ~48 h of real desktop + mobile use, inspect the `sync-*.log`
+files and look for:
+
+1. **`sync.limited` frequency and cadence.** Healthy for the
+   proposed bridge design: `limited=true` fires occasionally
+   (minutes-to-hours gaps, matching offline / background / server
+   restart), and `sinceMs` correlates with observed dropouts.
+   Concerning: fires on small `sinceMs` (seconds) — would mean the
+   SDK treats brief gaps as limited and the bridge must run far
+   more often than expected. Also: fires never over 48 h on a
+   mobile device that definitely backgrounded — would mean
+   `limited=true` is not the primary signal and the bridge needs a
+   different trigger.
+2. **`onTimelineEvent.ordering` summaries.** Healthy baseline:
+   `reorderings=0 sameTs={small, bursty}` for most summaries.
+   Acceptable: single-digit `reorderings` per 100 on occasional
+   catch-up bursts. Concerning: `reorderings` routinely in the
+   double digits — would mean `TimelineEventOrdering.sortStableByTimestamp`
+   on queue drain is load-bearing for real traffic (still correct,
+   but the sort-benchmark coverage should include realistic burst
+   sizes).
+3. **Cross-correlate.** A `sync.limited` event followed shortly by
+   a burst of `onTimelineEvent.ordering` lines is the expected
+   pattern when the SDK redelivers the tail after purging the local
+   timeline. No burst after a `sync.limited` would be a red flag —
+   it would suggest the SDK redelivered nothing and the bridge
+   really is the only recovery path.
+
 ### Phase 1 — InboundEventQueue + bridge
 
 - Add `inbound_event_queue` table to `sync_db` with migration.

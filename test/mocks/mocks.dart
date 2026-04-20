@@ -170,7 +170,14 @@ class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
 
-class MockEvent extends Mock implements Event {}
+class MockEvent extends Mock implements Event {
+  MockEvent() {
+    // Default stub so tests that don't care about originServerTs still get a
+    // non-null DateTime — MatrixStreamSignalBinder reads it for Phase 0
+    // `onTimelineEvent.ordering` diagnostics on every timeline event.
+    when(() => originServerTs).thenReturn(DateTime(2026, 4, 20));
+  }
+}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override

@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart' as matrix_utils;
 import 'package:mocktail/mocktail.dart';
 
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
@@ -24,6 +25,8 @@ class _MockRoom extends Mock implements Room {}
 
 class _MockTimeline extends Mock implements Timeline {}
 
+class _MockClient extends Mock implements Client {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(Duration.zero);
@@ -36,6 +39,8 @@ void main() {
   late _MockCatchUp catchUp;
   late _MockLiveScan liveScan;
   late MatrixStreamSignalBinder binder;
+  late _MockClient client;
+  late matrix_utils.CachedStreamController<SyncUpdate> onSyncController;
 
   setUp(() {
     sessionManager = _MockSessionManager();
@@ -44,6 +49,10 @@ void main() {
     metrics = MetricsCounters(collect: true);
     catchUp = _MockCatchUp();
     liveScan = _MockLiveScan();
+    client = _MockClient();
+    onSyncController = matrix_utils.CachedStreamController<SyncUpdate>();
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => client.onSync).thenReturn(onSyncController);
 
     binder = MatrixStreamSignalBinder(
       sessionManager: sessionManager,
@@ -55,6 +64,10 @@ void main() {
       liveScanController: liveScan,
       withInstance: (msg) => 'inst: $msg',
     );
+  });
+
+  tearDown(() async {
+    await onSyncController.close();
   });
 
   group('MatrixStreamSignalBinder', () {
@@ -288,9 +301,12 @@ void main() {
   });
 }
 
-Event _createMockEvent(String roomId) {
+Event _createMockEvent(String roomId, {DateTime? originServerTs}) {
   final event = _MockEvent();
   when(() => event.roomId).thenReturn(roomId);
+  when(
+    () => event.originServerTs,
+  ).thenReturn(originServerTs ?? DateTime(2026, 4, 20));
   return event;
 }
 
