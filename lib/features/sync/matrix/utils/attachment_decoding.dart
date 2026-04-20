@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show compute;
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -77,6 +79,30 @@ Uint8List _gzipEncodeWorker(Uint8List bytes) =>
 /// to hand back a non-Uint8List view.
 Uint8List _asUint8List(List<int> result) =>
     result is Uint8List ? result : Uint8List.fromList(result);
+
+/// Downloads + decrypts [event]'s attachment with a bounded wait. A hang on
+/// the underlying HTTP call used to stall the entire apply pipeline — the
+/// live-scan guard never released, and every subsequent timeline signal
+/// was silently coalesced. Converting the hang into a
+/// `FileSystemException` lets the retry tracker reschedule with backoff
+/// and frees the pipeline for other events. [pathForError] is included
+/// in the `FileSystemException` path slot so diagnostics can tell which
+/// attachment timed out.
+Future<MatrixFile> downloadAttachmentWithTimeout(
+  Event event, {
+  String? pathForError,
+  Duration? timeout,
+}) async {
+  final effective = timeout ?? SyncTuning.attachmentDownloadTimeout;
+  try {
+    return await event.downloadAndDecryptAttachment().timeout(effective);
+  } on TimeoutException {
+    throw FileSystemException(
+      'attachment download timed out after ${effective.inSeconds}s',
+      pathForError ?? event.eventId,
+    );
+  }
+}
 
 /// Formats a gzip compression ratio as `compressed / raw` to 3 decimals.
 ///

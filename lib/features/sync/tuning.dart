@@ -90,6 +90,21 @@ class SyncTuning {
   static const Duration minCatchupGap = Duration(seconds: 1);
   static const Duration trailingCatchupDelay = Duration(seconds: 1);
 
+  /// If a live scan has been in flight longer than this, assume the apply
+  /// pipeline is stuck (most likely on an unbounded Matrix SDK call) and
+  /// forcibly release the `_scanInFlight` guard so incoming signals can
+  /// schedule a fresh scan. Paired with [attachmentDownloadTimeout] which
+  /// bounds the known hang point at the source.
+  static const Duration liveScanStuckThreshold = Duration(seconds: 90);
+
+  /// Upper bound on a single Matrix attachment download + decrypt. A hang
+  /// here used to stall the entire apply pipeline — the scan never
+  /// completed, `_scanInFlight` stayed set, and every subsequent timeline
+  /// signal was silently coalesced into `_liveScanDeferred`. Converting
+  /// the hang into a `FileSystemException` lets the retry tracker
+  /// reschedule with backoff and frees the pipeline for other events.
+  static const Duration attachmentDownloadTimeout = Duration(seconds: 45);
+
   // Sync wait timeout for catch-up.
   // Time to wait for Matrix SDK to sync with server before running catch-up.
   // Applies to all catch-up scenarios: initial startup, app resume, wake, reconnect.

@@ -53,6 +53,16 @@ class MatrixStreamLiveScanController {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
+  // Recorded when the outermost scan enters the guarded region; cleared
+  // in the outermost finally. Used by the stuck-scan watchdog to detect
+  // pipelines hung on an unbounded await (e.g. a Matrix attachment
+  // download without a timeout) and release the `_scanInFlight` guard so
+  // live signals keep flowing.
+  DateTime? _scanStartedAt;
+  // Instrumentation counter for stuck-scan releases. Not surfaced in
+  // `metricsSnapshot` to avoid bloating diagnostics; inspect the log
+  // line `liveScan.stuck.released` for occurrences.
+  int _stuckScanReleaseCount = 0;
   // Tracks the last time we received a signal (client stream or timeline)
   // to compute signal->scan latency when the next scan runs.
   DateTime? _lastSignalAt;
@@ -172,17 +182,40 @@ class MatrixStreamLiveScanController {
         subDomain: 'signal',
       );
     }
-    // If a scan is currently running, coalesce this signal.
+    // If a scan is currently running, either coalesce or — when the
+    // in-flight scan has been hanging past the stuck threshold — release
+    // the guard and fall through to schedule a fresh one. The stuck scan
+    // continues running in the background (Dart Futures cannot be
+    // cancelled); its eventual finally is idempotent and safely clears
+    // the already-cleared flag.
     if (_scanInFlight) {
-      if (!_liveScanDeferred) {
-        _liveScanDeferred = true;
-        if (_collectMetrics) {
-          _metrics
-            ..incLiveScanDeferred()
-            ..incSignalLiveScanDeferredInFlight();
+      final start = _scanStartedAt;
+      final stuckFor = start == null ? null : clock.now().difference(start);
+      if (start != null && stuckFor! > SyncTuning.liveScanStuckThreshold) {
+        _stuckScanReleaseCount++;
+        _loggingService.captureEvent(
+          _withInstance(
+            'liveScan.stuck.released stuckMs=${stuckFor.inMilliseconds} '
+            'releaseCount=$_stuckScanReleaseCount',
+          ),
+          domain: syncLoggingDomain,
+          subDomain: 'liveScan.stuck',
+        );
+        _scanInFlight = false;
+        _scanInFlightDepth = 0;
+        _scanStartedAt = null;
+        // Fall through to the normal scheduling path below.
+      } else {
+        if (!_liveScanDeferred) {
+          _liveScanDeferred = true;
+          if (_collectMetrics) {
+            _metrics
+              ..incLiveScanDeferred()
+              ..incSignalLiveScanDeferredInFlight();
+          }
         }
+        return;
       }
-      return;
     }
     // Tight base debounce keeps scans responsive while coalescing bursts, but
     // enforce a minimum gap between consecutive scans to reduce churn.
@@ -228,6 +261,9 @@ class MatrixStreamLiveScanController {
       // Enter scan: increment depth and assert the in-flight guard.
       _scanInFlightDepth++;
       _scanInFlight = true;
+      // Record outermost entry for the stuck-scan watchdog in
+      // `scheduleLiveScan`. Nested entries reuse the original start time.
+      _scanStartedAt ??= clock.now();
       // Test seam: allow tests to invoke scheduling while a scan is in flight
       // to validate coalescing/guarding behavior.
       scanLiveTimelineTestHook?.call(scheduleLiveScan);
@@ -299,6 +335,7 @@ class MatrixStreamLiveScanController {
       if (isOutermost) {
         _scanInFlightDepth = 0;
         _scanInFlight = false;
+        _scanStartedAt = null;
         // Record completion time to bound the rate of subsequent scans.
         _lastLiveScanAt = clock.now();
         var trailingScheduled = false;
