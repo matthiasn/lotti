@@ -35,14 +35,13 @@ class MetricsCounters {
   /// room (after filtering).
   int signalClientStream = 0;
 
-  /// Number of signals received from live timeline callbacks (onNewEvent,
-  /// onInsert, onChange, onRemove, onUpdate).
+  /// Number of signals received from live timeline callbacks. We only
+  /// subscribe to append triggers (`onNewEvent`, `onInsert`) because the
+  /// other timeline callback types (`onChange` / `onRemove` / `onUpdate`)
+  /// have no legitimate driver in a single-user append-only sync model.
   int signalTimelineCallbacks = 0;
   int signalTimelineNewEvent = 0;
   int signalTimelineInsert = 0;
-  int signalTimelineChange = 0;
-  int signalTimelineRemove = 0;
-  int signalTimelineUpdate = 0;
 
   int signalFirstStreamCatchupTriggers = 0;
   int signalCatchupDeferredCount = 0;
@@ -135,21 +134,6 @@ class MetricsCounters {
   void incSignalTimelineInsert() {
     if (!collect) return;
     signalTimelineInsert++;
-  }
-
-  void incSignalTimelineChange() {
-    if (!collect) return;
-    signalTimelineChange++;
-  }
-
-  void incSignalTimelineRemove() {
-    if (!collect) return;
-    signalTimelineRemove++;
-  }
-
-  void incSignalTimelineUpdate() {
-    if (!collect) return;
-    signalTimelineUpdate++;
   }
 
   void incSignalFirstStreamCatchupTriggers() {
@@ -277,9 +261,6 @@ class MetricsCounters {
           )
           ..putIfAbsent('signalTimelineNewEvent', () => signalTimelineNewEvent)
           ..putIfAbsent('signalTimelineInsert', () => signalTimelineInsert)
-          ..putIfAbsent('signalTimelineChange', () => signalTimelineChange)
-          ..putIfAbsent('signalTimelineRemove', () => signalTimelineRemove)
-          ..putIfAbsent('signalTimelineUpdate', () => signalTimelineUpdate)
           ..putIfAbsent(
             'signalFirstStreamCatchupTriggers',
             () => signalFirstStreamCatchupTriggers,

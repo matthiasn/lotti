@@ -36,31 +36,19 @@ void main() {
       final m = MetricsCounters(collect: true)
         ..incSignalTimelineNewEvent()
         ..incSignalTimelineNewEvent()
-        ..incSignalTimelineInsert()
-        ..incSignalTimelineChange()
-        ..incSignalTimelineRemove()
-        ..incSignalTimelineUpdate();
+        ..incSignalTimelineInsert();
       final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
       expect(snap['signalTimelineNewEvent'], 2);
       expect(snap['signalTimelineInsert'], 1);
-      expect(snap['signalTimelineChange'], 1);
-      expect(snap['signalTimelineRemove'], 1);
-      expect(snap['signalTimelineUpdate'], 1);
     });
 
     test('timeline callback subtypes respect collect flag', () {
       final m = MetricsCounters()
         ..incSignalTimelineNewEvent()
-        ..incSignalTimelineInsert()
-        ..incSignalTimelineChange()
-        ..incSignalTimelineRemove()
-        ..incSignalTimelineUpdate();
+        ..incSignalTimelineInsert();
       final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
       expect(snap['signalTimelineNewEvent'], 0);
       expect(snap['signalTimelineInsert'], 0);
-      expect(snap['signalTimelineChange'], 0);
-      expect(snap['signalTimelineRemove'], 0);
-      expect(snap['signalTimelineUpdate'], 0);
     });
 
     test('catchup signal counters increment when collect=true', () {
@@ -154,9 +142,6 @@ void main() {
         ..incSignalTimelineCallbacks()
         ..incSignalTimelineNewEvent()
         ..incSignalTimelineInsert()
-        ..incSignalTimelineChange()
-        ..incSignalTimelineRemove()
-        ..incSignalTimelineUpdate()
         ..incSignalFirstStreamCatchupTriggers()
         ..incSignalCatchupDeferred()
         ..incSignalCatchupCoalesce()
@@ -172,9 +157,9 @@ void main() {
       expect(snap['signalTimelineCallbacks'], 1);
       expect(snap['signalTimelineNewEvent'], 1);
       expect(snap['signalTimelineInsert'], 1);
-      expect(snap['signalTimelineChange'], 1);
-      expect(snap['signalTimelineRemove'], 1);
-      expect(snap['signalTimelineUpdate'], 1);
+      expect(snap.containsKey('signalTimelineChange'), isFalse);
+      expect(snap.containsKey('signalTimelineRemove'), isFalse);
+      expect(snap.containsKey('signalTimelineUpdate'), isFalse);
       expect(snap['signalFirstStreamCatchupTriggers'], 1);
       expect(snap['signalCatchupDeferredCount'], 1);
       expect(snap['signalCatchupCoalesceCount'], 1);

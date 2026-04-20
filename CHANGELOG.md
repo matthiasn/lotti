@@ -31,6 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   steady-state and pagination-burst line counts drop, while tests keep
   the flag on to preserve existing per-event assertions. Failure, retry,
   and circuit-breaker diagnostics are unchanged.
+- Sync signal sources consolidated. The live timeline only subscribes to
+  append triggers (`onNewEvent`, `onInsert`); `onChange`, `onRemove`, and
+  `onUpdate` had no legitimate driver in a single-user append-only sync
+  model and are no longer wired. The `signalTimelineChange` /
+  `signalTimelineRemove` / `signalTimelineUpdate` counters are dropped
+  from `metricsSnapshot` and the `liveScan.summary` breakdown.
+- `AppLifecycleRescanObserver` removed. The 30 s wake detector in
+  `MatrixStreamLiveScanController` and the connectivity-driven rescan
+  already cover resume; the lifecycle observer duplicated those triggers
+  and produced the `forceRescan.skipped (already in flight)` noise
+  (116 of 321 lines in the 2026-04-20 log).
 
 ## [0.9.967] - 2026-04-20
 ### Changed
