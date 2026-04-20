@@ -87,7 +87,7 @@ class AttachmentIndex {
       _logging?.captureEvent(
         hit == null
             ? 'attachmentIndex.miss path=$relativePath alt=$key2'
-            : 'attachmentIndex.hit path=$relativePath id=${hit.eventId}',
+            : 'attachmentIndex.hit path=$relativePath id=${_safeEventId(hit) ?? '?'}',
         domain: syncLoggingDomain,
         subDomain: 'attachmentIndex.find',
       );
