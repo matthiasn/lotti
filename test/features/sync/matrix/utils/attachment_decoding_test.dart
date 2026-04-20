@@ -1,8 +1,10 @@
+// ignore_for_file: unnecessary_lambdas
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
@@ -245,7 +247,6 @@ void main() {
         final completer = Completer<MatrixFile>();
         final event = _MockEvent();
         when(() => event.eventId).thenReturn(r'$same-event-id');
-        // ignore: unnecessary_lambdas
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) {
           downloadCalls++;
           return completer.future;
@@ -283,7 +284,6 @@ void main() {
         var downloadCalls = 0;
         final event = _MockEvent();
         when(() => event.eventId).thenReturn(r'$release-test');
-        // ignore: unnecessary_lambdas
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
           downloadCalls++;
           return MatrixFile(
@@ -303,28 +303,94 @@ void main() {
     );
 
     test(
+      'no dedup when eventId is unavailable so a legacy/unidentified '
+      'event still downloads on its own',
+      () async {
+        // Historically some events have had empty ids (rare) or mocks
+        // that return null. In those cases we fall back to running each
+        // call independently rather than stacking them on a shared key.
+        var downloadCalls = 0;
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn('');
+        when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
+          downloadCalls++;
+          return MatrixFile(
+            bytes: Uint8List.fromList([downloadCalls]),
+            name: 'f',
+          );
+        });
+
+        final first = downloadAttachmentWithTimeout(event);
+        final second = downloadAttachmentWithTimeout(event);
+        await Future.wait([first, second]);
+
+        expect(
+          downloadCalls,
+          2,
+          reason:
+              'empty eventId must skip the shared-future slot so the '
+              'caller retains independent retry semantics',
+        );
+      },
+    );
+
+    test(
+      'no dedup when eventId access throws so a pathological mock does '
+      'not poison the shared map',
+      () async {
+        var downloadCalls = 0;
+        final event = _MockEvent();
+        when(() => event.eventId).thenThrow(StateError('no id'));
+        when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
+          downloadCalls++;
+          return MatrixFile(
+            bytes: Uint8List.fromList([downloadCalls]),
+            name: 'f',
+          );
+        });
+
+        await downloadAttachmentWithTimeout(event);
+        await downloadAttachmentWithTimeout(event);
+        expect(downloadCalls, 2);
+      },
+    );
+
+    test(
       'maps a timeout into FileSystemException carrying the supplied '
       'path for diagnostics',
-      () async {
-        final event = _MockEvent();
-        when(() => event.eventId).thenReturn(r'$timeout-test');
-        // ignore: unnecessary_lambdas
-        when(
-          () => event.downloadAndDecryptAttachment(),
-        ).thenAnswer((_) => Completer<MatrixFile>().future);
+      () {
+        // Runs under fakeAsync so we advance the virtual clock past the
+        // configured timeout rather than awaiting a real Duration.
+        fakeAsync((async) {
+          final event = _MockEvent();
+          when(() => event.eventId).thenReturn(r'$timeout-test');
+          when(
+            () => event.downloadAndDecryptAttachment(),
+          ).thenAnswer((_) => Completer<MatrixFile>().future);
 
-        await expectLater(
-          () => downloadAttachmentWithTimeout(
-            event,
-            pathForError: '/entries/stuck.json',
-            timeout: const Duration(milliseconds: 50),
-          ),
-          throwsA(
-            isA<FileSystemException>()
-                .having((e) => e.message, 'message', contains('timed out'))
-                .having((e) => e.path, 'path', '/entries/stuck.json'),
-          ),
-        );
+          Object? caught;
+          unawaited(
+            downloadAttachmentWithTimeout(
+              event,
+              pathForError: '/entries/stuck.json',
+              timeout: const Duration(seconds: 30),
+            ).catchError((Object err) {
+              caught = err;
+              // Satisfy Future<MatrixFile> return type; the value is
+              // swallowed because we never await this future directly.
+              return MatrixFile(bytes: Uint8List(0), name: 'err');
+            }),
+          );
+
+          // Advance past the timeout so `Future.timeout` fires
+          // deterministically without a real Timer.
+          async.elapse(const Duration(seconds: 31));
+
+          expect(caught, isA<FileSystemException>());
+          final err = caught! as FileSystemException;
+          expect(err.message, contains('timed out'));
+          expect(err.path, '/entries/stuck.json');
+        });
       },
     );
   });
