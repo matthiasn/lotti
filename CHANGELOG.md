@@ -27,6 +27,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reorderings and same-timestamp ties. Both route through the
   `MATRIX_SYNC` log domain into the dated `sync-*.log` file. Data feeds
   the Inbound Event Queue redesign (`docs/sync/2026-04-20_inbound_event_queue_design.md`).
+- Stateful inbound sync queue (Phase 1 + 2), gated on the
+  `USE_INBOUND_EVENT_QUEUE` settings flag (default off). When the flag
+  is on, live events, the `limited=true` bridge, and the new
+  "Fetch all history" / "Catch up now" actions route through an
+  `InboundQueue` (Drift-backed, stored in `sync_db`) + `InboundWorker`
+  with a single drain loop per room. Per-room markers live in a
+  new `queue_markers` table so commit + marker advance is atomic
+  and monotonic via `TimelineEventOrdering.isNewer`. Encrypted events
+  are held in a `PendingDecryptionPen` so pre-decryption ciphertext
+  never lands in `raw_json`. The legacy `MatrixStreamSignalBinder`
+  is suppressed when the flag is on, keeping the two pipelines
+  mutually exclusive. Sync Settings gains a flag-gated queue
+  section with a depth card, a Catch-up-now button, and a
+  Fetch-all-history dialog with per-page progress and cancel.
+  Pipeline-tagged log lines (`pipeline=queue` / `pipeline=legacy`)
+  let the Phase-2 validation gate compare apply rates between the
+  two paths.
 
 ### Fixed
 - Desktop UI freeze during Matrix sync. The per-event apply loop in

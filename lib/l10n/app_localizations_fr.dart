@@ -4938,6 +4938,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Vérification des appareils';
 
   @override
+  String get queueCatchUpNowButton => 'Rattraper maintenant';
+
+  @override
+  String get queueCatchUpNowDone => 'Rattrapage lancé — la file se vide.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Pontage de l\'écart récent…';
+
+  @override
   String get queueDepthCardEmpty => 'File vide — le worker est à jour.';
 
   @override

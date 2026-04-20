@@ -4777,6 +4777,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
 
   @override
+  String get queueCatchUpNowButton => 'Catch up now';
+
+  @override
+  String get queueCatchUpNowDone => 'Catch-up kicked — queue is draining.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Bridging recent gap…';
+
+  @override
   String get queueDepthCardEmpty => 'Queue empty — worker is caught up.';
 
   @override

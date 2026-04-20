@@ -8518,6 +8518,24 @@ abstract class AppLocalizations {
   /// **'Device Verification'**
   String get provisionedSyncVerifyDevicesTitle;
 
+  /// No description provided for @queueCatchUpNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch up now'**
+  String get queueCatchUpNowButton;
+
+  /// No description provided for @queueCatchUpNowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch-up kicked — queue is draining.'**
+  String get queueCatchUpNowDone;
+
+  /// No description provided for @queueCatchUpNowRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Bridging recent gap…'**
+  String get queueCatchUpNowRunning;
+
   /// No description provided for @queueDepthCardEmpty.
   ///
   /// In en, this message translates to:

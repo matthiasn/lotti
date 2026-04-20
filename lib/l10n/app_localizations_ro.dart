@@ -4865,6 +4865,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Verificarea dispozitivelor';
 
   @override
+  String get queueCatchUpNowButton => 'Recuperați acum';
+
+  @override
+  String get queueCatchUpNowDone => 'Recuperare inițiată — coada se golește.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Se acoperă golul recent…';
+
+  @override
   String get queueDepthCardEmpty => 'Coadă goală — worker-ul este actualizat.';
 
   @override

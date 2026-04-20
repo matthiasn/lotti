@@ -4838,6 +4838,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
 
   @override
+  String get queueCatchUpNowButton => 'Dohnat nyní';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Dohánění spuštěno — fronta se vyprazdňuje.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Překlenutí nedávné mezery…';
+
+  @override
   String get queueDepthCardEmpty => 'Fronta je prázdná — worker je aktuální.';
 
   @override

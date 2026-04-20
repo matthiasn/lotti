@@ -4930,6 +4930,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Verificación de dispositivos';
 
   @override
+  String get queueCatchUpNowButton => 'Sincronizar ahora';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Puesta al día iniciada — la cola se está vaciando.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Puenteando la brecha reciente…';
+
+  @override
   String get queueDepthCardEmpty => 'Cola vacía — el worker está al día.';
 
   @override

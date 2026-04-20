@@ -42,6 +42,8 @@ class BackfillSettingsPage extends ConsumerWidget {
                 child: QueueDepthCard(queue: coordinator.queue),
               ),
               const SizedBox(height: 16),
+              _CatchUpNowButton(coordinator: coordinator),
+              const SizedBox(height: 8),
               _FetchAllHistoryButton(coordinator: coordinator),
               const SizedBox(height: 24),
             ],
@@ -115,6 +117,59 @@ class BackfillSettingsPage extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatchUpNowButton extends StatefulWidget {
+  const _CatchUpNowButton({required this.coordinator});
+
+  final QueuePipelineCoordinator coordinator;
+
+  @override
+  State<_CatchUpNowButton> createState() => _CatchUpNowButtonState();
+}
+
+class _CatchUpNowButtonState extends State<_CatchUpNowButton> {
+  bool _running = false;
+
+  Future<void> _kick() async {
+    if (_running) return;
+    setState(() => _running = true);
+    try {
+      await widget.coordinator.triggerBridge();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.messages.queueCatchUpNowDone)),
+      );
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _running ? null : _kick,
+          icon: _running
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.bolt_outlined),
+          label: Text(
+            _running
+                ? messages.queueCatchUpNowRunning
+                : messages.queueCatchUpNowButton,
+          ),
         ),
       ),
     );

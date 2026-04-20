@@ -122,6 +122,12 @@ class QueuePipelineCoordinator {
 
   bool get isRunning => _started;
 
+  /// Manually triggers a bridge pass (equivalent to a `limited=true`
+  /// sync arriving). Exposed so the "Catch up now" action in the Sync
+  /// Settings UI can force a /messages walk back to the stored
+  /// marker without waiting for the next organic `limited=true`.
+  Future<void> triggerBridge() => _bridge.bridgeNow();
+
   Future<void> start() async {
     if (_started) return;
     _started = true;

@@ -4844,6 +4844,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncVerifyDevicesTitle => 'Geräteverifizierung';
 
   @override
+  String get queueCatchUpNowButton => 'Jetzt aufholen';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Aufholen gestartet — die Warteschlange wird abgearbeitet.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Überbrücke kürzliche Lücke…';
+
+  @override
   String get queueDepthCardEmpty => 'Warteschlange leer — Worker ist aktuell.';
 
   @override
