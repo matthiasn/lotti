@@ -37,6 +37,8 @@ class BridgeCoordinator {
     Duration preContextMargin = const Duration(seconds: 1),
     int preContextCount = 20,
     int maxLookback = SyncTuning.catchupMaxLookback,
+    Duration incompleteRetryDelay = const Duration(seconds: 10),
+    int maxIncompleteRetries = 3,
   }) : _client = client,
        _currentRoomId = currentRoomId,
        _resolveRoom = resolveRoom,
@@ -47,7 +49,9 @@ class BridgeCoordinator {
        _backfill = backfill ?? SdkPaginationCompat.backfillUntilContains,
        _preContextMargin = preContextMargin,
        _preContextCount = preContextCount,
-       _maxLookback = maxLookback;
+       _maxLookback = maxLookback,
+       _incompleteRetryDelay = incompleteRetryDelay,
+       _maxIncompleteRetries = maxIncompleteRetries;
 
   final Client _client;
   final String? Function() _currentRoomId;
@@ -60,14 +64,20 @@ class BridgeCoordinator {
   final Duration _preContextMargin;
   final int _preContextCount;
   final int _maxLookback;
+  final Duration _incompleteRetryDelay;
+  final int _maxIncompleteRetries;
 
   StreamSubscription<SyncUpdate>? _sub;
-  bool _inFlight = false;
+  Future<void>? _inFlightBridge;
   bool _pendingRerun = false;
+  bool _stopped = false;
+  int _consecutiveIncomplete = 0;
+  Timer? _incompleteRetryTimer;
 
   bool get isRunning => _sub != null;
 
   void start() {
+    _stopped = false;
     _sub ??= _client.onSync.stream.listen(
       _handle,
       onError: (Object error, StackTrace stackTrace) {
@@ -82,8 +92,23 @@ class BridgeCoordinator {
   }
 
   Future<void> stop() async {
+    _stopped = true;
+    _pendingRerun = false;
+    _incompleteRetryTimer?.cancel();
+    _incompleteRetryTimer = null;
+    _consecutiveIncomplete = 0;
     await _sub?.cancel();
     _sub = null;
+    // Await the in-flight bridge so enqueue/capture calls cannot land
+    // on a disposed queue after the owner considers shutdown complete.
+    final current = _inFlightBridge;
+    if (current != null) {
+      try {
+        await current;
+      } catch (_) {
+        // Already logged inside `_bridge()`.
+      }
+    }
   }
 
   /// Runs a bridge pass explicitly, bypassing the onSync listener.
@@ -92,6 +117,7 @@ class BridgeCoordinator {
   Future<void> bridgeNow() => _bridge();
 
   void _handle(SyncUpdate sync) {
+    if (_stopped) return;
     final roomId = _currentRoomId();
     if (roomId == null) return;
     final joined = sync.rooms?.join?[roomId];
@@ -100,11 +126,13 @@ class BridgeCoordinator {
   }
 
   Future<void> _bridge() async {
-    if (_inFlight) {
+    if (_stopped) return;
+    if (_inFlightBridge != null) {
       _pendingRerun = true;
       return;
     }
-    _inFlight = true;
+    final completer = Completer<void>();
+    _inFlightBridge = completer.future;
     try {
       await _runBridgeOnce();
     } catch (error, stackTrace) {
@@ -115,10 +143,13 @@ class BridgeCoordinator {
         stackTrace: stackTrace,
       );
     } finally {
-      _inFlight = false;
-      if (_pendingRerun) {
+      _inFlightBridge = null;
+      completer.complete();
+      if (_pendingRerun && !_stopped) {
         _pendingRerun = false;
         unawaited(_bridge());
+      } else {
+        _pendingRerun = false;
       }
     }
   }
@@ -179,5 +210,45 @@ class BridgeCoordinator {
       domain: _logDomain,
       subDomain: _logSub,
     );
+
+    _handleIncompleteFollowUp(collection.incomplete);
+  }
+
+  /// Schedules a bounded retry when [CatchUpStrategy] reports an
+  /// incomplete catch-up (the lookback budget was exhausted before the
+  /// timestamp boundary was reached). Without this the only way older
+  /// gap events are picked up is another limited-sync happening to
+  /// arrive, which can leave gaps indefinitely on a quiet room.
+  void _handleIncompleteFollowUp(bool incomplete) {
+    if (_stopped) return;
+    if (!incomplete) {
+      _consecutiveIncomplete = 0;
+      _incompleteRetryTimer?.cancel();
+      _incompleteRetryTimer = null;
+      return;
+    }
+    _consecutiveIncomplete++;
+    if (_consecutiveIncomplete > _maxIncompleteRetries) {
+      _logging.captureEvent(
+        'queue.bridge.incomplete.giveUp '
+        'retries=$_consecutiveIncomplete',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+      _consecutiveIncomplete = 0;
+      return;
+    }
+    _incompleteRetryTimer?.cancel();
+    _incompleteRetryTimer = Timer(_incompleteRetryDelay, () {
+      _incompleteRetryTimer = null;
+      if (_stopped) return;
+      _logging.captureEvent(
+        'queue.bridge.incomplete.retry '
+        'attempt=$_consecutiveIncomplete',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+      unawaited(_bridge());
+    });
   }
 }

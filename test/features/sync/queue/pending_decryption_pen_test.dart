@@ -162,32 +162,61 @@ void main() {
     },
   );
 
-  test('capacity eviction drops the oldest entry', () {
-    final pen = PendingDecryptionPen(logging: logging, capacity: 2)
-      ..hold(
-        _buildEvent(
-          eventId: r'$a',
-          roomId: roomId,
-          originTsMs: 1,
-          type: EventTypes.Encrypted,
-        ),
-      )
-      ..hold(
-        _buildEvent(
-          eventId: r'$b',
-          roomId: roomId,
-          originTsMs: 2,
-          type: EventTypes.Encrypted,
-        ),
-      )
-      ..hold(
-        _buildEvent(
-          eventId: r'$c',
-          roomId: roomId,
-          originTsMs: 3,
-          type: EventTypes.Encrypted,
-        ),
-      );
+  test('capacity eviction drops the oldest entry', () async {
+    final pen = PendingDecryptionPen(logging: logging, capacity: 2);
+    final a = _buildEvent(
+      eventId: r'$a',
+      roomId: roomId,
+      originTsMs: 1,
+      type: EventTypes.Encrypted,
+    );
+    final b = _buildEvent(
+      eventId: r'$b',
+      roomId: roomId,
+      originTsMs: 2,
+      type: EventTypes.Encrypted,
+    );
+    final c = _buildEvent(
+      eventId: r'$c',
+      roomId: roomId,
+      originTsMs: 3,
+      type: EventTypes.Encrypted,
+    );
+    pen
+      ..hold(a)
+      ..hold(b)
+      ..hold(c);
+
+    // Stage decrypted versions for $b and $c; if the pen ever asks for
+    // $a it would have to be an eviction regression, and the flush
+    // would crash on the missing stub.
+    final bDecrypted = _buildEvent(
+      eventId: r'$b',
+      roomId: roomId,
+      originTsMs: 2,
+      type: EventTypes.Message,
+    );
+    final cDecrypted = _buildEvent(
+      eventId: r'$c',
+      roomId: roomId,
+      originTsMs: 3,
+      type: EventTypes.Message,
+    );
+    when(
+      () => room.getEventById(r'$b'),
+    ).thenAnswer((_) async => bDecrypted);
+    when(
+      () => room.getEventById(r'$c'),
+    ).thenAnswer((_) async => cDecrypted);
+
     expect(pen.size, 2);
+
+    final outcome = await pen.flushInto(queue: queue, room: room);
+    expect(outcome.enqueued, 2);
+    expect(pen.size, 0);
+    verifyNever(() => room.getEventById(r'$a'));
+
+    final ready = await queue.peekBatchReady(maxBatch: 10);
+    expect(ready.map((e) => e.eventId).toList(), [r'$b', r'$c']);
   });
 }

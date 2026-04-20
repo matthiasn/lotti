@@ -51,6 +51,7 @@ class PendingDecryptionPen {
       LinkedHashMap<String, _HeldEvent>();
 
   Timer? _timer;
+  Future<void>? _inFlightSweep;
 
   int get size => _held.length;
 
@@ -64,15 +65,35 @@ class PendingDecryptionPen {
     final interval = sweepInterval;
     if (interval == null || _timer != null) return;
     _timer = Timer.periodic(interval, (_) async {
+      // Timer.periodic fires on its cadence regardless of whether the
+      // previous async callback resolved; skip overlapping sweeps so
+      // `_held.attempts` cannot be double-incremented and shutdown can
+      // cleanly await the final in-flight sweep.
+      if (_inFlightSweep != null) return;
       final room = await resolveRoom();
       if (room == null) return;
-      await flushInto(queue: queue, room: room);
+      final future = flushInto(queue: queue, room: room);
+      _inFlightSweep = future.then((_) {}, onError: (_) {});
+      try {
+        await future;
+      } finally {
+        _inFlightSweep = null;
+      }
     });
   }
 
   Future<void> stop() async {
     _timer?.cancel();
     _timer = null;
+    final pending = _inFlightSweep;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {
+        // Errors inside the in-flight sweep are already logged via
+        // `_logging.captureException` on the flush path.
+      }
+    }
   }
 
   /// Hold an encrypted event (or, defensively, any event) in the pen.
@@ -119,9 +140,9 @@ class PendingDecryptionPen {
       );
     }
 
-    var enqueued = 0;
     var stillEncrypted = 0;
     var dropped = 0;
+    final decrypted = <({String id, Event event})>[];
 
     final ids = _held.keys.toList(growable: false);
     for (final id in ids) {
@@ -132,9 +153,10 @@ class PendingDecryptionPen {
       final candidate = latest ?? held.event;
 
       if (candidate.type != EventTypes.Encrypted) {
-        _held.remove(id);
-        await queue.enqueueLive(candidate);
-        enqueued++;
+        // Do not drop from `_held` yet — if `enqueueBatch` throws
+        // later, a removed-and-unqueued event would silently vanish.
+        // Removal only happens after the batch lands.
+        decrypted.add((id: id, event: candidate));
         continue;
       }
 
@@ -153,8 +175,20 @@ class PendingDecryptionPen {
       }
     }
 
+    // Single-transaction enqueue for everything that decrypted this
+    // sweep, so a 10-event wave is one sync_db commit instead of 10.
+    if (decrypted.isNotEmpty) {
+      await queue.enqueueBatch(
+        [for (final d in decrypted) d.event],
+        producer: InboundEventProducer.live,
+      );
+      for (final d in decrypted) {
+        _held.remove(d.id);
+      }
+    }
+
     return PenFlushOutcome(
-      enqueued: enqueued,
+      enqueued: decrypted.length,
       stillEncrypted: stillEncrypted,
       dropped: dropped,
     );

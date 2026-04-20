@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -142,89 +143,107 @@ void main() {
   test(
     'retriable outcome bumps attempts and re-queues with backoff',
     () async {
-      await queue.enqueueLive(
-        _buildSyncEvent(
-          eventId: r'$retry',
-          roomId: roomId,
-          originTsMs: 42,
-        ),
-      );
-      var attempt = 0;
-      final worker = buildWorker(
-        apply: (entry) async {
-          attempt++;
-          return attempt <= 2 ? ApplyOutcome.retriable : ApplyOutcome.applied;
-        },
-      );
+      // Drive the queue's `clock.now()` off a mutable virtual clock so
+      // retry/backoff scheduling can be advanced without real sleeps
+      // (see repo test guideline: no `Future.delayed`/real `Timer` in
+      // tests). Initial backoff is 10ms, so virtual advances of 20ms
+      // and 40ms comfortably cross attempt 2 (20ms) and attempt 3
+      // (40ms) boundaries.
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$retry',
+            roomId: roomId,
+            originTsMs: 42,
+          ),
+        );
+        var attempt = 0;
+        final worker = buildWorker(
+          apply: (entry) async {
+            attempt++;
+            return attempt <= 2 ? ApplyOutcome.retriable : ApplyOutcome.applied;
+          },
+        );
 
-      // Drain once: apply #1 is retriable, queue stays non-empty but
-      // with nextDueAt in the future, so drainToCompletion returns 0.
-      final firstApplied = await worker.drainToCompletion();
-      expect(firstApplied, 0);
+        // Drain once: apply #1 is retriable, queue stays non-empty but
+        // with nextDueAt in the future, so drainToCompletion returns 0.
+        final firstApplied = await worker.drainToCompletion();
+        expect(firstApplied, 0);
 
-      // Wait out the initial backoff window.
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      final secondApplied = await worker.drainToCompletion();
-      expect(secondApplied, 0); // Second attempt still retries.
+        // Cross the first backoff window in virtual time.
+        virtualNow = virtualNow.add(const Duration(milliseconds: 20));
+        final secondApplied = await worker.drainToCompletion();
+        expect(secondApplied, 0); // Second attempt still retries.
 
-      await Future<void>.delayed(const Duration(milliseconds: 40));
-      final thirdApplied = await worker.drainToCompletion();
-      expect(thirdApplied, 1); // Third attempt succeeds.
+        virtualNow = virtualNow.add(const Duration(milliseconds: 40));
+        final thirdApplied = await worker.drainToCompletion();
+        expect(thirdApplied, 1); // Third attempt succeeds.
 
-      final stats = await queue.stats();
-      expect(stats.total, 0);
+        final stats = await queue.stats();
+        expect(stats.total, 0);
+      });
     },
   );
 
   test(
     'maxAttempts exceeds skips the entry permanently',
     () async {
-      await queue.enqueueLive(
-        _buildSyncEvent(
-          eventId: r'$wedge',
-          roomId: roomId,
-          originTsMs: 1,
-        ),
-      );
-      final worker = buildWorker(
-        apply: (entry) async => ApplyOutcome.retriable,
-      );
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$wedge',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        final worker = buildWorker(
+          apply: (entry) async => ApplyOutcome.retriable,
+        );
 
-      // Drain repeatedly; maxAttempts=4 in the test wiring.
-      for (var i = 0; i < 6; i++) {
-        await worker.drainToCompletion();
-        await Future<void>.delayed(const Duration(milliseconds: 120));
-      }
+        // Drain repeatedly; maxAttempts=4 in the test wiring.
+        // Backoff caps at 100ms; advancing 120ms between drains
+        // guarantees every scheduled retry is due.
+        for (var i = 0; i < 6; i++) {
+          await worker.drainToCompletion();
+          virtualNow = virtualNow.add(const Duration(milliseconds: 120));
+        }
 
-      final stats = await queue.stats();
-      expect(stats.total, 0);
+        final stats = await queue.stats();
+        expect(stats.total, 0);
+      });
     },
   );
 
   test(
     'decryptionPending outcome reschedules with shorter backoff',
     () async {
-      await queue.enqueueLive(
-        _buildSyncEvent(
-          eventId: r'$enc',
-          roomId: roomId,
-          originTsMs: 1,
-        ),
-      );
-      var attempt = 0;
-      final worker = buildWorker(
-        apply: (entry) async {
-          attempt++;
-          return attempt == 1
-              ? ApplyOutcome.decryptionPending
-              : ApplyOutcome.applied;
-        },
-      );
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$enc',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        var attempt = 0;
+        final worker = buildWorker(
+          apply: (entry) async {
+            attempt++;
+            return attempt == 1
+                ? ApplyOutcome.decryptionPending
+                : ApplyOutcome.applied;
+          },
+        );
 
-      await worker.drainToCompletion();
-      await Future<void>.delayed(const Duration(milliseconds: 260));
-      final applied = await worker.drainToCompletion();
-      expect(applied, 1);
+        await worker.drainToCompletion();
+        // decryptionPending base backoff is 250ms; 260ms virtual cross.
+        virtualNow = virtualNow.add(const Duration(milliseconds: 260));
+        final applied = await worker.drainToCompletion();
+        expect(applied, 1);
+      });
     },
   );
 

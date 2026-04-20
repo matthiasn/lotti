@@ -103,9 +103,16 @@ class InboundWorker {
     await _loopCompleted?.future;
   }
 
-  /// Drains the queue until it is empty, then returns. Useful for
-  /// flag-off transitions and tests — does not subscribe to
-  /// [InboundQueue.depthChanges].
+  /// Drains every entry that is ready at call time, then returns.
+  ///
+  /// Does not subscribe to [InboundQueue.depthChanges] and does not
+  /// sleep for rows with a future `nextDueAt` or an unexpired lease —
+  /// those are the caller's problem to re-drive. Used by the Phase-1
+  /// worker tests and any future flag-off drain that wants a blocking
+  /// "best effort once" pass. A flag-off transition that needs a true
+  /// wait-until-empty contract should layer that on top of this method
+  /// (repeatedly call after elapsing backoffs), not hide the wait
+  /// inside this primitive.
   Future<int> drainToCompletion() async {
     var applied = 0;
     while (true) {
@@ -118,7 +125,8 @@ class InboundWorker {
   Future<void> _loop() async {
     try {
       while (_running) {
-        await _activityGate?.waitUntilIdle();
+        await _waitUntilIdleOrStopped();
+        if (!_running) break;
         final pen = _decryptionPen;
         if (pen != null) {
           final room = await _resolveRoom();
@@ -142,8 +150,26 @@ class InboundWorker {
         stackTrace: stackTrace,
       );
     } finally {
+      // Clear `_running` even when the loop exits via the catch block
+      // so a later `start()` can relaunch the worker cleanly. Without
+      // this the worker would silently stop processing after any
+      // uncaught error inside the loop body.
+      _running = false;
       _loopCompleted?.complete();
     }
+  }
+
+  /// Awaits whichever of the activity gate or the stop signal resolves
+  /// first. A wedged gate must not prevent `stop()` from returning.
+  Future<void> _waitUntilIdleOrStopped() async {
+    final idleFuture = _activityGate?.waitUntilIdle();
+    if (idleFuture == null) return;
+    final stopFuture = _stopRequested?.future;
+    if (stopFuture == null) {
+      await idleFuture;
+      return;
+    }
+    await Future.any<void>([idleFuture, stopFuture]);
   }
 
   Future<int> _runBatch(List<InboundQueueEntry> batch) async {
@@ -155,35 +181,53 @@ class InboundWorker {
         subDomain: _logSub,
       );
       // Release the lease so another drain cycle can retry once the
-      // room becomes available. Use a short delay to avoid a spin.
-      for (final entry in batch) {
-        await _queue.scheduleRetry(
-          entry,
-          const Duration(seconds: 2),
-          reason: RetryReason.retriable,
-        );
-      }
+      // room becomes available. Batched in a single sync_db
+      // transaction to avoid N round trips for the common wedged-room
+      // path.
+      await _queue.runInTransaction(() async {
+        for (final entry in batch) {
+          await _queue.scheduleRetry(
+            entry,
+            const Duration(seconds: 2),
+            reason: RetryReason.retriable,
+          );
+        }
+      });
       return 0;
     }
 
     var appliedCount = 0;
     await _sequenceLogService.runWithDeferredMissingEntries(() async {
+      // Phase 1: apply each entry outside any sync_db transaction —
+      // apply may write to journal_db and we do not want sync_db
+      // locked while journal_db does I/O. Accumulate outcomes so the
+      // second phase can commit/retry/skip in one sync_db transaction.
+      final outcomes = <_EntryOutcome>[];
       for (final entry in batch) {
         final outcome = await _applyOne(entry, room);
-        switch (outcome) {
-          case ApplyOutcome.applied:
-            await _queue.commitApplied(entry);
-            appliedCount++;
-          case ApplyOutcome.retriable:
-            await _maybeRetry(entry, RetryReason.retriable);
-          case ApplyOutcome.missingBase:
-            await _maybeRetry(entry, RetryReason.missingBase);
-          case ApplyOutcome.decryptionPending:
-            await _maybeRetry(entry, RetryReason.decryptionPending);
-          case ApplyOutcome.permanentSkip:
-            await _queue.markSkipped(entry, reason: 'permanentSkip');
-        }
+        outcomes.add(_EntryOutcome(entry, outcome));
       }
+
+      // Phase 2: coalesce every queue-side write for the batch into a
+      // single sync_db transaction, so a slice of 20 entries performs
+      // one commit instead of up to 20 back-to-back.
+      await _queue.runInTransaction(() async {
+        for (final pair in outcomes) {
+          switch (pair.outcome) {
+            case ApplyOutcome.applied:
+              await _queue.commitApplied(pair.entry);
+              appliedCount++;
+            case ApplyOutcome.retriable:
+              await _maybeRetry(pair.entry, RetryReason.retriable);
+            case ApplyOutcome.missingBase:
+              await _maybeRetry(pair.entry, RetryReason.missingBase);
+            case ApplyOutcome.decryptionPending:
+              await _maybeRetry(pair.entry, RetryReason.decryptionPending);
+            case ApplyOutcome.permanentSkip:
+              await _queue.markSkipped(pair.entry, reason: 'permanentSkip');
+          }
+        }
+      });
     });
     return appliedCount;
   }
@@ -244,4 +288,11 @@ class InboundWorker {
     final tickFuture = Future<void>.delayed(_idleTick);
     await Future.any<void>([stopFuture, depthFuture, tickFuture]);
   }
+}
+
+class _EntryOutcome {
+  const _EntryOutcome(this.entry, this.outcome);
+
+  final InboundQueueEntry entry;
+  final ApplyOutcome outcome;
 }

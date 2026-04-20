@@ -273,6 +273,63 @@ void main() {
     );
   });
 
+  group('markSkipped', () {
+    test(
+      'advances the per-room marker past the skipped event so a poison '
+      'event cannot be refetched indefinitely',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$poison', roomId: roomA, originTsMs: 7000),
+        );
+        final batch = await queue.peekBatchReady();
+        final entry = batch.single;
+
+        await queue.markSkipped(entry, reason: 'permanentSkip');
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingle();
+        expect(marker.lastAppliedEventId, r'$poison');
+        expect(marker.lastAppliedTs, 7000);
+        // Row is gone too.
+        final stats = await queue.stats();
+        expect(stats.total, 0);
+      },
+    );
+
+    test(
+      'does not regress the marker when the skipped event is older than '
+      'the stored marker',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$newer', roomId: roomA, originTsMs: 5000),
+        );
+        final firstBatch = await queue.peekBatchReady();
+        await queue.commitApplied(firstBatch.single);
+
+        await queue.enqueueBatch(
+          [
+            _buildSyncEvent(
+              eventId: r'$old',
+              roomId: roomA,
+              originTsMs: 1000,
+            ),
+          ],
+          producer: InboundEventProducer.bridge,
+        );
+        final secondBatch = await queue.peekBatchReady();
+        await queue.markSkipped(secondBatch.single, reason: 'permanentSkip');
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingle();
+        // Marker must still point at the newer event.
+        expect(marker.lastAppliedEventId, r'$newer');
+        expect(marker.lastAppliedTs, 5000);
+      },
+    );
+  });
+
   group('scheduleRetry', () {
     test(
       'bumps attempts, pushes nextDueAt, releases lease',

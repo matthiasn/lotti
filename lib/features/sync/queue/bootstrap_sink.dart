@@ -27,7 +27,14 @@ class QueueBootstrapSink implements BootstrapSink {
     Future<void>? cancelSignal,
   }) : _queue = queue,
        _logging = logging,
-       _cancelSignal = cancelSignal;
+       _cancelSignal = cancelSignal {
+    // Register the cancel handler eagerly so cancellation that lands
+    // between pages (while `_waitForDrain` is not currently awaiting)
+    // still flips `_cancelled` before the next `onPage` fires.
+    _cancelSignal?.then<void>((_) {
+      _cancelled = true;
+    });
+  }
 
   final InboundQueue _queue;
   final LoggingService _logging;

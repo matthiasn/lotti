@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
-import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -142,6 +141,48 @@ class InboundQueue {
     await _depthCtl.close();
   }
 
+  /// Runs [body] inside a single `sync_db` transaction so a batch of
+  /// `commitApplied` / `scheduleRetry` / `markSkipped` calls coalesce
+  /// into one write transaction instead of one per entry. Drift nests
+  /// internal per-method transactions as savepoints when the outermost
+  /// caller has already opened a transaction — the coalescing happens
+  /// transparently.
+  ///
+  /// While the body runs, intermediate `_emitDepth` calls are held
+  /// back: firing them unawaited inside the transaction zone captures
+  /// the transaction's executor, which is invalid after commit and
+  /// trips drift's "transaction used after being closed" guard. A
+  /// single post-commit emission fires if anything inside the body
+  /// would have emitted.
+  Future<T> runInTransaction<T>(Future<T> Function() body) async {
+    _inBatchMode++;
+    _batchDirty = false;
+    try {
+      return await _db.transaction(body);
+    } finally {
+      _inBatchMode--;
+      final shouldEmit = _batchDirty && _inBatchMode == 0;
+      if (shouldEmit) {
+        _batchDirty = false;
+        // Fire outside the transaction zone so `stats()` uses the
+        // root executor, not the now-closed transaction executor.
+        unawaited(_emitDepth());
+      }
+    }
+  }
+
+  int _inBatchMode = 0;
+  bool _batchDirty = false;
+
+  void _scheduleDepthEmit() {
+    if (_depthCtl.isClosed) return;
+    if (_inBatchMode > 0) {
+      _batchDirty = true;
+      return;
+    }
+    unawaited(_emitDepth());
+  }
+
   // ---------------------------------------------------------------- enqueue
 
   Future<EnqueueResult> enqueueLive(Event event) =>
@@ -161,22 +202,27 @@ class InboundQueue {
     var newest = 0;
     final nowMs = clock.now().millisecondsSinceEpoch;
 
-    final toInsert = <InboundEventQueueCompanion>[];
+    final toInsert = <({InboundEventQueueCompanion row, int ts})>[];
     for (final event in events) {
+      // F3 must run before F4. A real `m.room.encrypted` event has
+      // ciphertext-only content with no visible `msgtype`, so the
+      // classifier would report it as a non-payload event and drop it
+      // as `filteredOutByType` before it ever reaches the pen.
+      // Deferring encrypted events first keeps them in the pen and
+      // lets decryption turn them into a proper payload later.
+      if (event.type == EventTypes.Encrypted) {
+        deferred++;
+        continue;
+      }
       // F4: drop non-payload events at the boundary.
       if (!MatrixEventClassifier.isSyncPayloadEvent(event)) {
         filteredOut++;
         continue;
       }
-      // F3: encrypted events must be held off-queue until decryption.
-      if (event.type == EventTypes.Encrypted) {
-        deferred++;
-        continue;
-      }
 
       final ts = event.originServerTs.millisecondsSinceEpoch;
-      toInsert.add(
-        InboundEventQueueCompanion.insert(
+      toInsert.add((
+        row: InboundEventQueueCompanion.insert(
           eventId: event.eventId,
           roomId: event.roomId ?? '',
           originTs: ts,
@@ -184,21 +230,27 @@ class InboundQueue {
           rawJson: jsonEncode(event.toJson()),
           enqueuedAt: nowMs,
         ),
-      );
-      if (oldest == 0 || ts < oldest) oldest = ts;
-      if (ts > newest) newest = ts;
+        ts: ts,
+      ));
     }
 
     if (toInsert.isNotEmpty) {
       await _db.transaction(() async {
-        for (final row in toInsert) {
+        for (final candidate in toInsert) {
           final inserted = await _db
               .into(_db.inboundEventQueue)
-              .insertReturningOrNull(row, mode: InsertMode.insertOrIgnore);
+              .insertReturningOrNull(
+                candidate.row,
+                mode: InsertMode.insertOrIgnore,
+              );
           if (inserted == null) {
             duplicates++;
           } else {
             accepted++;
+            // Only count bounds for events we actually inserted; duplicate
+            // rows must not inflate the accepted window.
+            if (oldest == 0 || candidate.ts < oldest) oldest = candidate.ts;
+            if (candidate.ts > newest) newest = candidate.ts;
           }
         }
       });
@@ -214,7 +266,7 @@ class InboundQueue {
     );
 
     if (accepted > 0) {
-      unawaited(_emitDepth());
+      _scheduleDepthEmit();
     }
 
     return EnqueueResult(
@@ -237,16 +289,17 @@ class InboundQueue {
   /// against the live [depthChanges] stream; completes immediately if
   /// the current depth already satisfies the condition.
   Future<void> waitForDrainAtMostTo(int depth, {Duration? timeout}) async {
-    final current = await _countTotal();
-    if (current <= depth) return;
+    // Subscribe before counting so a depth signal that lands between the
+    // initial count and the listener attachment cannot be missed.
     final completer = Completer<void>();
-    late final StreamSubscription<QueueDepthSignal> sub;
-    sub = depthChanges.listen((signal) {
+    final sub = depthChanges.listen((signal) {
       if (signal.total <= depth && !completer.isCompleted) {
         completer.complete();
       }
     });
     try {
+      final current = await _countTotal();
+      if (current <= depth) return;
       if (timeout != null) {
         await completer.future.timeout(timeout);
       } else {
@@ -314,48 +367,18 @@ class InboundQueue {
   // ---------------------------------------------------------------- commit
 
   /// Atomically deletes [entry] from the queue and, if the entry's
-  /// timestamp advances the stored marker under
-  /// [TimelineEventOrdering.isNewer], updates `queue_markers` for the
-  /// room. Both operations land in one `sync_db` transaction so a
-  /// crash between them cannot leave the marker pointing past a row
-  /// still in the queue (F2 + F5).
+  /// timestamp strictly advances the stored marker (with the durable
+  /// event id as the tiebreaker on equal timestamps), updates
+  /// `queue_markers` for the room. Both operations land in one
+  /// `sync_db` transaction so a crash between them cannot leave the
+  /// marker pointing past a row still in the queue (F2 + F5).
   Future<void> commitApplied(InboundQueueEntry entry) async {
     var markerAdvanced = false;
     await _db.transaction(() async {
-      final marker = await (_db.select(
-        _db.queueMarkers,
-      )..where((t) => t.roomId.equals(entry.roomId))).getSingleOrNull();
-
-      final shouldAdvance = TimelineEventOrdering.isNewer(
-        candidateTimestamp: entry.originTs,
-        candidateEventId: entry.eventId,
-        latestTimestamp: marker?.lastAppliedTs == 0
-            ? null
-            : marker?.lastAppliedTs,
-        latestEventId: marker?.lastAppliedEventId,
-      );
-
       await (_db.delete(
         _db.inboundEventQueue,
       )..where((t) => t.queueId.equals(entry.queueId))).go();
-
-      if (shouldAdvance) {
-        markerAdvanced = true;
-        final isDurable = entry.eventId.startsWith(r'$');
-        final nextSeq = (marker?.lastAppliedCommitSeq ?? 0) + 1;
-        await _db
-            .into(_db.queueMarkers)
-            .insertOnConflictUpdate(
-              QueueMarkersCompanion.insert(
-                roomId: entry.roomId,
-                lastAppliedEventId: Value(
-                  isDurable ? entry.eventId : marker?.lastAppliedEventId,
-                ),
-                lastAppliedTs: Value(entry.originTs),
-                lastAppliedCommitSeq: Value(nextSeq),
-              ),
-            );
-      }
+      markerAdvanced = await _advanceMarkerIfNewer(entry);
     });
 
     _logging.captureEvent(
@@ -365,7 +388,49 @@ class InboundQueue {
       domain: _logDomain,
       subDomain: _logSubCommit,
     );
-    unawaited(_emitDepth());
+    _scheduleDepthEmit();
+  }
+
+  /// Advances `queue_markers` for [entry]'s room if [entry]'s timestamp
+  /// strictly moves the marker forward. Bypasses
+  /// `TimelineEventOrdering.isNewer` because `isNewer` treats a null
+  /// stored event id as "no marker" — but the marker can legitimately
+  /// carry a non-zero timestamp with a null event id (right after a
+  /// placeholder advance). Guarding on the timestamp directly, with
+  /// the durable event id as a tiebreaker only when both sides are
+  /// durable, prevents a later durable event with an older timestamp
+  /// from regressing `lastAppliedTs` (F2).
+  Future<bool> _advanceMarkerIfNewer(InboundQueueEntry entry) async {
+    final marker = await (_db.select(
+      _db.queueMarkers,
+    )..where((t) => t.roomId.equals(entry.roomId))).getSingleOrNull();
+
+    final storedTs = marker?.lastAppliedTs ?? 0;
+    final storedEventId = marker?.lastAppliedEventId;
+    final shouldAdvance =
+        storedTs == 0 ||
+        entry.originTs > storedTs ||
+        (entry.originTs == storedTs &&
+            (storedEventId == null ||
+                entry.eventId.compareTo(storedEventId) > 0));
+
+    if (!shouldAdvance) return false;
+
+    final isDurable = entry.eventId.startsWith(r'$');
+    final nextSeq = (marker?.lastAppliedCommitSeq ?? 0) + 1;
+    await _db
+        .into(_db.queueMarkers)
+        .insertOnConflictUpdate(
+          QueueMarkersCompanion.insert(
+            roomId: entry.roomId,
+            lastAppliedEventId: Value(
+              isDurable ? entry.eventId : marker?.lastAppliedEventId,
+            ),
+            lastAppliedTs: Value(entry.originTs),
+            lastAppliedCommitSeq: Value(nextSeq),
+          ),
+        );
+    return true;
   }
 
   // ----------------------------------------------------------------- retry
@@ -398,20 +463,29 @@ class InboundQueue {
     );
   }
 
-  /// Permanently drops an entry the worker classifies as unrecoverable.
+  /// Permanently drops an entry the worker classifies as unrecoverable
+  /// and advances the per-room marker past it, so producers that
+  /// resume from the marker do not re-fetch the same poison event
+  /// indefinitely. Advancement uses the same monotonic guard as
+  /// `commitApplied` — older rows cannot regress the marker.
   Future<void> markSkipped(
     InboundQueueEntry entry, {
     String? reason,
   }) async {
-    await (_db.delete(
-      _db.inboundEventQueue,
-    )..where((t) => t.queueId.equals(entry.queueId))).go();
+    var markerAdvanced = false;
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.inboundEventQueue,
+      )..where((t) => t.queueId.equals(entry.queueId))).go();
+      markerAdvanced = await _advanceMarkerIfNewer(entry);
+    });
     _logging.captureEvent(
-      'queue.skip eventId=${entry.eventId} reason=${reason ?? 'unspecified'}',
+      'queue.skip eventId=${entry.eventId} reason=${reason ?? 'unspecified'} '
+      'markerAdvanced=$markerAdvanced',
       domain: _logDomain,
       subDomain: _logSubSkip,
     );
-    unawaited(_emitDepth());
+    _scheduleDepthEmit();
   }
 
   // ---------------------------------------------------------------- prune
@@ -429,7 +503,7 @@ class InboundQueue {
         domain: _logDomain,
         subDomain: _logSubPrune,
       );
-      unawaited(_emitDepth());
+      _scheduleDepthEmit();
     }
     return deleted;
   }
@@ -438,22 +512,47 @@ class InboundQueue {
 
   Future<QueueStats> stats() async {
     final nowMs = clock.now().millisecondsSinceEpoch;
-    final rows = await _db.select(_db.inboundEventQueue).get();
+    final table = _db.inboundEventQueue;
+    final countCol = table.queueId.count();
+    final oldestCol = table.enqueuedAt.min();
+
+    // One aggregate for totals + oldest enqueue timestamp.
+    final totalRow = await (_db.selectOnly(
+      table,
+    )..addColumns([countCol, oldestCol])).getSingle();
+    final total = totalRow.read(countCol) ?? 0;
+    final oldest = totalRow.read(oldestCol);
+
+    // Group-by aggregate for per-producer counts.
     final byProducer = <InboundEventProducer, int>{};
-    var readyNow = 0;
-    int? oldest;
-    for (final row in rows) {
-      final p = _producerFromName(row.producer);
-      byProducer.update(p, (v) => v + 1, ifAbsent: () => 1);
-      if (row.nextDueAt <= nowMs && row.leaseUntil <= nowMs) {
-        readyNow++;
-      }
-      if (oldest == null || row.enqueuedAt < oldest) {
-        oldest = row.enqueuedAt;
+    if (total > 0) {
+      final producerRows =
+          await (_db.selectOnly(table)
+                ..addColumns([table.producer, countCol])
+                ..groupBy([table.producer]))
+              .get();
+      for (final row in producerRows) {
+        final name = row.read(table.producer);
+        final c = row.read(countCol) ?? 0;
+        if (name != null && c > 0) {
+          byProducer[_producerFromName(name)] = c;
+        }
       }
     }
+
+    // Aggregate for the ready-now counter.
+    final readyRow =
+        await (_db.selectOnly(table)
+              ..addColumns([countCol])
+              ..where(
+                table.nextDueAt.isSmallerOrEqualValue(nowMs) &
+                    table.leaseUntil.isSmallerOrEqualValue(nowMs),
+              ))
+            .getSingle();
+    final readyNow = readyRow.read(countCol) ?? 0;
+
     return QueueStats(
-      total: rows.length,
+      total: total,
       byProducer: byProducer,
       readyNow: readyNow,
       oldestEnqueuedAt: oldest,
@@ -469,19 +568,47 @@ class InboundQueue {
   }
 
   Future<void> _emitDepth() async {
+    // Coalesce rapid successive calls so only one stats() scan is in
+    // flight at a time; callers that arrive during the scan simply flip
+    // the "rerun" flag so the final state is eventually emitted.
     if (_depthCtl.isClosed) return;
-    final snapshot = await stats();
-    // Re-check after the async gap — dispose() may have closed the
-    // controller while we were computing stats (common in test
-    // teardown, where the assertion completes before the fire-and-
-    // forget `_emitDepth` that was kicked off from enqueue/commit).
-    if (_depthCtl.isClosed) return;
-    _depthCtl.add(
-      QueueDepthSignal(
-        total: snapshot.total,
-        byProducer: snapshot.byProducer,
-        oldestEnqueuedAt: snapshot.oldestEnqueuedAt,
-      ),
-    );
+    if (_emitInFlight) {
+      _emitPendingRerun = true;
+      return;
+    }
+    _emitInFlight = true;
+    try {
+      do {
+        _emitPendingRerun = false;
+        QueueStats snapshot;
+        try {
+          snapshot = await stats();
+        } catch (_) {
+          // The stats call issues multiple aggregate queries; if
+          // dispose() closes the controller (and the test tears down
+          // the DB) during one of those async gaps, drift throws.
+          // Swallow here because the emission is strictly diagnostic.
+          if (_depthCtl.isClosed) return;
+          rethrow;
+        }
+        // Re-check after the async gap — dispose() may have closed the
+        // controller while we were computing stats (common in test
+        // teardown, where the assertion completes before the fire-and-
+        // forget `_emitDepth` that was kicked off from enqueue/commit).
+        if (_depthCtl.isClosed) return;
+        _depthCtl.add(
+          QueueDepthSignal(
+            total: snapshot.total,
+            byProducer: snapshot.byProducer,
+            oldestEnqueuedAt: snapshot.oldestEnqueuedAt,
+          ),
+        );
+      } while (_emitPendingRerun && !_depthCtl.isClosed);
+    } finally {
+      _emitInFlight = false;
+    }
   }
+
+  bool _emitInFlight = false;
+  bool _emitPendingRerun = false;
 }
