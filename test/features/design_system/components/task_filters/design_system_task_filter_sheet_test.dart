@@ -731,6 +731,189 @@ void main() {
       expect(lastChanged!.projectField!.selectedIds, {'p2'});
     });
   });
+
+  // ── Pill selection must not move neighbouring chips ────────────────────────
+  //
+  // Regression: the priority/status/label pills used to grow their border
+  // width from 1.0 to 1.5 when selected. The 0.5 px-per-edge delta nudged
+  // every sibling in the Wrap on every toggle, producing a visible
+  // "breathing" animation. The fix pins the border width and fades only
+  // the colour alphas — so the outer dimensions of every chip are
+  // identical in all states, and sibling positions never change.
+  //
+  // Priority pills are used as the representative because status, label and
+  // project pills all go through the same `_TaskFilterChoicePill` widget.
+  // One group covers them all; duplicating per filter family would add
+  // noise without adding coverage.
+  group('DesignSystemTaskFilterSheet priority pill stability', () {
+    DesignSystemTaskFilterState buildStateWithPriorities({
+      Set<String> selectedPriorityIds = const <String>{},
+    }) {
+      return DesignSystemTaskFilterState(
+        title: 'Filters',
+        clearAllLabel: 'Clear',
+        applyLabel: 'Apply',
+        priorityLabel: 'Priority',
+        priorityOptions: const [
+          DesignSystemTaskFilterOption(
+            id: DesignSystemTaskFilterState.allPriorityId,
+            label: 'All',
+          ),
+          DesignSystemTaskFilterOption(
+            id: 'p0',
+            label: 'P0',
+            glyph: DesignSystemTaskFilterGlyph.priorityP0,
+          ),
+          DesignSystemTaskFilterOption(
+            id: 'p1',
+            label: 'P1',
+            glyph: DesignSystemTaskFilterGlyph.priorityP1,
+          ),
+          DesignSystemTaskFilterOption(
+            id: 'p2',
+            label: 'P2',
+            glyph: DesignSystemTaskFilterGlyph.priorityP2,
+          ),
+          DesignSystemTaskFilterOption(
+            id: 'p3',
+            label: 'P3',
+            glyph: DesignSystemTaskFilterGlyph.priorityP3,
+          ),
+        ],
+        selectedPriorityIds: selectedPriorityIds,
+      );
+    }
+
+    testWidgets(
+      'toggling P0 leaves every other priority pill at the same offset — '
+      'no horizontal breathing',
+      (tester) async {
+        final state = ValueNotifier<DesignSystemTaskFilterState>(
+          buildStateWithPriorities(),
+        );
+        addTearDown(state.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: ValueListenableBuilder<DesignSystemTaskFilterState>(
+                valueListenable: state,
+                builder: (context, value, _) => SingleChildScrollView(
+                  child: DesignSystemTaskFilterSheet(
+                    state: value,
+                    onChanged: (next) => state.value = next,
+                  ),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+          ),
+        );
+        // Initial frame is enough; the pill animation controller starts at
+        // its resting value (0 or 1) so nothing is in flight yet.
+        await tester.pump();
+
+        Offset readOffset(String id) => tester.getTopLeft(
+          find.byKey(ValueKey('design-system-task-filter-priority-$id')),
+        );
+        Size readSize(String id) => tester.getSize(
+          find.byKey(ValueKey('design-system-task-filter-priority-$id')),
+        );
+
+        final p0OffsetBefore = readOffset('p0');
+        final p1OffsetBefore = readOffset('p1');
+        final p2OffsetBefore = readOffset('p2');
+        final p3OffsetBefore = readOffset('p3');
+        final allSizeBefore = readSize(
+          DesignSystemTaskFilterState.allPriorityId,
+        );
+
+        // Tap P0.
+        await tester.tap(
+          find.byKey(const ValueKey('design-system-task-filter-priority-p0')),
+        );
+        await tester.pump(); // settle input event
+        await tester.pump(); // drive first animation frame
+
+        // Mid-animation: sample positions. None may have shifted.
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(readOffset('p1'), p1OffsetBefore);
+        expect(readOffset('p2'), p2OffsetBefore);
+        expect(readOffset('p3'), p3OffsetBefore);
+        expect(
+          readSize(DesignSystemTaskFilterState.allPriorityId),
+          allSizeBefore,
+        );
+        // And P0 itself: only its colours animate, its outer size is pinned.
+        expect(readOffset('p0'), p0OffsetBefore);
+
+        // Fully settled: pump past the known animation duration (400 ms +
+        // slack) rather than `pumpAndSettle`, so the test can never hang.
+        await tester.pump(const Duration(milliseconds: 450));
+        expect(readOffset('p0'), p0OffsetBefore);
+        expect(readOffset('p1'), p1OffsetBefore);
+        expect(readOffset('p2'), p2OffsetBefore);
+        expect(readOffset('p3'), p3OffsetBefore);
+        expect(
+          readSize(DesignSystemTaskFilterState.allPriorityId),
+          allSizeBefore,
+        );
+      },
+    );
+
+    testWidgets(
+      'toggling from selected to deselected is equally breathing-free',
+      (tester) async {
+        final state = ValueNotifier<DesignSystemTaskFilterState>(
+          buildStateWithPriorities(selectedPriorityIds: {'p0'}),
+        );
+        addTearDown(state.dispose);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: ValueListenableBuilder<DesignSystemTaskFilterState>(
+                valueListenable: state,
+                builder: (context, value, _) => SingleChildScrollView(
+                  child: DesignSystemTaskFilterSheet(
+                    state: value,
+                    onChanged: (next) => state.value = next,
+                  ),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+          ),
+        );
+        await tester.pump();
+
+        Offset readOffset(String id) => tester.getTopLeft(
+          find.byKey(ValueKey('design-system-task-filter-priority-$id')),
+        );
+
+        final p0Before = readOffset('p0');
+        final p1Before = readOffset('p1');
+        final p3Before = readOffset('p3');
+
+        await tester.tap(
+          find.byKey(const ValueKey('design-system-task-filter-priority-p0')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(readOffset('p0'), p0Before);
+        expect(readOffset('p1'), p1Before);
+        expect(readOffset('p3'), p3Before);
+
+        await tester.pump(const Duration(milliseconds: 450));
+        expect(readOffset('p0'), p0Before);
+        expect(readOffset('p1'), p1Before);
+        expect(readOffset('p3'), p3Before);
+      },
+    );
+  });
 }
 
 Future<ValueNotifier<DesignSystemTaskFilterState>> _pumpTaskFilterSheet(
