@@ -18,6 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   also offloaded to a worker isolate for payloads above 2 KB.
 - Regression test guards the invariant that every `prepare` completes
   before the writer transaction opens.
+- Live sync stalling until force-restart. `MatrixStreamLiveScanController`'s
+  `_scanInFlight` guard could remain set indefinitely if the apply pipeline
+  hung on an unbounded `downloadAndDecryptAttachment()` — every subsequent
+  timeline signal then coalesced into `_liveScanDeferred` and dropped. Two
+  complementary fixes: (1) every Matrix attachment download is now wrapped
+  by `downloadAttachmentWithTimeout` (default 45 s,
+  `SyncTuning.attachmentDownloadTimeout`) which converts a hang into a
+  `FileSystemException` routed through the existing retry tracker; (2)
+  `scheduleLiveScan` is now a stuck-scan watchdog: if a scan has been
+  in-flight longer than `SyncTuning.liveScanStuckThreshold` (90 s), the
+  guard is released, `liveScan.stuck.released` is logged, and a fresh
+  scan is scheduled. Both fixes are independent safety nets; together
+  the pipeline recovers on its own rather than requiring a restart.
 
 ### Changed
 - Sync log volume reduced by ~40% at info level. The outbox send path used

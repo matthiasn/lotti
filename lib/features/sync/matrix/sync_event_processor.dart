@@ -141,7 +141,10 @@ class DescriptorDownloader {
     required String jsonPath,
   }) async {
     for (var attempt = 0; attempt < maxDescriptorDownloadAttempts; attempt++) {
-      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final matrixFile = await downloadAttachmentWithTimeout(
+        descriptorEvent,
+        pathForError: jsonPath,
+      );
       final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
@@ -395,7 +398,10 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           );
         }
         try {
-          final matrixFile = await eventForPath.downloadAndDecryptAttachment();
+          final matrixFile = await downloadAttachmentWithTimeout(
+            eventForPath,
+            pathForError: jsonPath,
+          );
           final downloadedBytes = matrixFile.bytes;
           if (downloadedBytes.isEmpty) {
             throw const FileSystemException('empty attachment bytes');
@@ -490,7 +496,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       return;
     }
     try {
-      final file = await ev.downloadAndDecryptAttachment();
+      final file = await downloadAttachmentWithTimeout(ev, pathForError: rp);
       final downloadedBytes = file.bytes;
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
@@ -1406,7 +1412,10 @@ class SyncEventProcessor {
     required Event descriptorEvent,
   }) async {
     try {
-      final matrixFile = await descriptorEvent.downloadAndDecryptAttachment();
+      final matrixFile = await downloadAttachmentWithTimeout(
+        descriptorEvent,
+        pathForError: jsonPath,
+      );
       final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');

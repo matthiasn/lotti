@@ -396,7 +396,10 @@ class AttachmentIngestor {
         subDomain: 'attachment.download',
       );
 
-      final matrixFile = await event.downloadAndDecryptAttachment();
+      final matrixFile = await downloadAttachmentWithTimeout(
+        event,
+        pathForError: relativePath,
+      );
       final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
         logging.captureEvent(

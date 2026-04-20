@@ -53,6 +53,22 @@ class MatrixStreamLiveScanController {
       0; // guards overlapping scans and trailing scheduling
   bool _liveScanDeferred = false;
   DateTime? _lastLiveScanAt;
+  // Recorded when the outermost scan enters the guarded region; cleared
+  // in the outermost finally. Used by the stuck-scan watchdog to detect
+  // pipelines hung on an unbounded await (e.g. a Matrix attachment
+  // download without a timeout) and release the `_scanInFlight` guard so
+  // live signals keep flowing.
+  DateTime? _scanStartedAt;
+  // Epoch counter incremented every time the stuck-scan watchdog releases
+  // the guard. A hung scan that eventually resumes will have captured an
+  // older epoch and its `finally` must be a no-op, otherwise it would
+  // decrement `_scanInFlightDepth` / clear `_scanInFlight` that now belong
+  // to a newer scan. See `scanLiveTimeline` below.
+  int _scanEpoch = 0;
+  // Instrumentation counter for stuck-scan releases. Not surfaced in
+  // `metricsSnapshot` to avoid bloating diagnostics; inspect the log
+  // line `liveScan.stuck.released` for occurrences.
+  int _stuckScanReleaseCount = 0;
   // Tracks the last time we received a signal (client stream or timeline)
   // to compute signal->scan latency when the next scan runs.
   DateTime? _lastSignalAt;
@@ -172,17 +188,47 @@ class MatrixStreamLiveScanController {
         subDomain: 'signal',
       );
     }
-    // If a scan is currently running, coalesce this signal.
+    // If a scan is currently running, either coalesce or — when the
+    // in-flight scan has been hanging past the stuck threshold — release
+    // the guard and fall through to schedule a fresh one. The stuck scan
+    // continues running in the background (Dart Futures cannot be
+    // cancelled). When it eventually resumes, its `finally` checks
+    // `_scanEpoch` against the captured value and becomes a no-op,
+    // leaving the fresh scan's guard intact.
     if (_scanInFlight) {
-      if (!_liveScanDeferred) {
-        _liveScanDeferred = true;
-        if (_collectMetrics) {
-          _metrics
-            ..incLiveScanDeferred()
-            ..incSignalLiveScanDeferredInFlight();
+      final start = _scanStartedAt;
+      if (start != null &&
+          clock.now().difference(start) > SyncTuning.liveScanStuckThreshold) {
+        final stuckFor = clock.now().difference(start);
+        _stuckScanReleaseCount++;
+        _scanEpoch++;
+        _loggingService.captureEvent(
+          _withInstance(
+            'liveScan.stuck.released stuckMs=${stuckFor.inMilliseconds} '
+            'releaseCount=$_stuckScanReleaseCount epoch=$_scanEpoch',
+          ),
+          domain: syncLoggingDomain,
+          subDomain: 'liveScan.stuck',
+        );
+        _scanInFlight = false;
+        _scanInFlightDepth = 0;
+        _scanStartedAt = null;
+        // The fresh scheduled scan below will cover any previously
+        // deferred signals, so clear the flag to avoid scheduling a
+        // redundant trailing scan when that fresh scan completes.
+        _liveScanDeferred = false;
+        // Fall through to the normal scheduling path below.
+      } else {
+        if (!_liveScanDeferred) {
+          _liveScanDeferred = true;
+          if (_collectMetrics) {
+            _metrics
+              ..incLiveScanDeferred()
+              ..incSignalLiveScanDeferredInFlight();
+          }
         }
+        return;
       }
-      return;
     }
     // Tight base debounce keeps scans responsive while coalescing bursts, but
     // enforce a minimum gap between consecutive scans to reduce churn.
@@ -224,10 +270,17 @@ class MatrixStreamLiveScanController {
     }
     final tl = liveTimeline;
     if (tl == null) return;
+    // Capture the epoch for this scan. If the watchdog later releases
+    // the guard (incrementing the epoch), this scan's `finally` becomes
+    // a no-op so it cannot clobber a fresh scan's state.
+    final scanEpoch = _scanEpoch;
     try {
       // Enter scan: increment depth and assert the in-flight guard.
       _scanInFlightDepth++;
       _scanInFlight = true;
+      // Record outermost entry for the stuck-scan watchdog in
+      // `scheduleLiveScan`. Nested entries reuse the original start time.
+      _scanStartedAt ??= clock.now();
       // Test seam: allow tests to invoke scheduling while a scan is in flight
       // to validate coalescing/guarding behavior.
       scanLiveTimelineTestHook?.call(scheduleLiveScan);
@@ -290,45 +343,51 @@ class MatrixStreamLiveScanController {
         stackTrace: st,
       );
     } finally {
-      // Leave scan: decrement depth and only clear the in-flight flag,
-      // record completion, and schedule trailing work when the outermost
-      // scan completes. This prevents the guard from dropping during
-      // nested scans and avoids overlapping scheduling.
-      _scanInFlightDepth = _scanInFlightDepth - 1;
-      final isOutermost = _scanInFlightDepth <= 0;
-      if (isOutermost) {
-        _scanInFlightDepth = 0;
-        _scanInFlight = false;
-        // Record completion time to bound the rate of subsequent scans.
-        _lastLiveScanAt = clock.now();
-        var trailingScheduled = false;
-        if (_liveScanDeferred) {
-          _liveScanDeferred = false;
-          if (_collectMetrics) _metrics.incLiveScanTrailingScheduled();
-          trailingScheduled = true;
-          _loggingService.captureEvent(
-            'trailing.liveScan.scheduled',
-            domain: syncLoggingDomain,
-            subDomain: 'signal',
-          );
-          // Enforce a minimum gap between scans while keeping a small base
-          // debounce to coalesce a final burst of signals.
-          final delay = _calculateNextLiveScanDelay();
-          _liveScanTimer?.cancel();
-          _liveScanTimer = Timer(delay, () {
-            unawaited(scanLiveTimeline());
-          });
-        }
-        if (_collectMetrics) {
-          _loggingService.captureEvent(
-            _withInstance(
-              'liveScan.summary afterSlice=$afterSliceCount deduped=$dedupedCount '
-              'processed=$toProcessCount latest=${latestEventId ?? _processor.lastProcessedEventId ?? 'null'} '
-              '${_liveScanSignalSummary(trailingScheduled: trailingScheduled)}',
-            ),
-            domain: syncLoggingDomain,
-            subDomain: 'liveScan',
-          );
+      // If the watchdog released this scan and a fresh one has taken
+      // over, skip teardown — touching the shared flags now would
+      // corrupt the live scan. Otherwise run the normal teardown:
+      // decrement depth and only clear the in-flight flag, record
+      // completion, and schedule trailing work when the outermost scan
+      // completes. This prevents the guard from dropping during nested
+      // scans and avoids overlapping scheduling.
+      if (scanEpoch == _scanEpoch) {
+        _scanInFlightDepth = _scanInFlightDepth - 1;
+        final isOutermost = _scanInFlightDepth <= 0;
+        if (isOutermost) {
+          _scanInFlightDepth = 0;
+          _scanInFlight = false;
+          _scanStartedAt = null;
+          // Record completion time to bound the rate of subsequent scans.
+          _lastLiveScanAt = clock.now();
+          var trailingScheduled = false;
+          if (_liveScanDeferred) {
+            _liveScanDeferred = false;
+            if (_collectMetrics) _metrics.incLiveScanTrailingScheduled();
+            trailingScheduled = true;
+            _loggingService.captureEvent(
+              'trailing.liveScan.scheduled',
+              domain: syncLoggingDomain,
+              subDomain: 'signal',
+            );
+            // Enforce a minimum gap between scans while keeping a small base
+            // debounce to coalesce a final burst of signals.
+            final delay = _calculateNextLiveScanDelay();
+            _liveScanTimer?.cancel();
+            _liveScanTimer = Timer(delay, () {
+              unawaited(scanLiveTimeline());
+            });
+          }
+          if (_collectMetrics) {
+            _loggingService.captureEvent(
+              _withInstance(
+                'liveScan.summary afterSlice=$afterSliceCount deduped=$dedupedCount '
+                'processed=$toProcessCount latest=${latestEventId ?? _processor.lastProcessedEventId ?? 'null'} '
+                '${_liveScanSignalSummary(trailingScheduled: trailingScheduled)}',
+              ),
+              domain: syncLoggingDomain,
+              subDomain: 'liveScan',
+            );
+          }
         }
       }
     }
