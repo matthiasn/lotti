@@ -153,9 +153,11 @@ void main() {
   test(
     'missing timestamp yields queue.bridge.skip reason=noMarker',
     () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
       final coordinator = buildCoordinator(
         markerTs: null,
-        resolveRoom: () async => _MockRoom(),
+        resolveRoom: () async => room,
       )..start();
       syncCtl.add(_limitedSyncFor(roomId));
       await Future<void>.delayed(Duration.zero);
@@ -232,6 +234,40 @@ void main() {
     );
     await coordinator.stop();
   });
+
+  test(
+    'sync-room change between trigger and resolveRoom causes '
+    'queue.bridge.skip reason=roomChanged — no cross-room catch-up',
+    () async {
+      // `currentRoomId` initially returns roomId. The resolveRoom
+      // callback deliberately returns a DIFFERENT room, simulating a
+      // mid-flight sync room swap. _runBridgeOnce must refuse to
+      // enqueue into that mismatched room.
+      final otherRoom = _MockRoom();
+      when(() => otherRoom.id).thenReturn('!otherRoom:example.org');
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
+        resolveRoom: () async => otherRoom,
+        queue: queue,
+        getLastReadEventId: () async => r'$anchor',
+        getLastReadTs: () async => 1000,
+        logging: logging,
+      );
+      await coordinator.bridgeNow();
+      verify(
+        () => logging.captureEvent(
+          any<String>(
+            that: contains('queue.bridge.skip reason=roomChanged'),
+          ),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      final stats = await queue.stats();
+      expect(stats.total, 0);
+    },
+  );
 
   group('collection outcomes', () {
     late _MockRoom room;

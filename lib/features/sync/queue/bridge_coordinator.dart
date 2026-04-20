@@ -89,6 +89,7 @@ class BridgeCoordinator {
   StreamSubscription<SyncUpdate>? _sub;
   Future<void>? _inFlightBridge;
   bool _pendingRerun = false;
+  String? _pendingRerunRoomId;
   bool _stopped = false;
   int _consecutiveIncomplete = 0;
   Timer? _incompleteRetryTimer;
@@ -133,7 +134,7 @@ class BridgeCoordinator {
   /// Runs a bridge pass explicitly, bypassing the onSync listener.
   /// Used by `MatrixService.forceRescan(includeCatchUp: true)` and by
   /// tests.
-  Future<void> bridgeNow() => _bridge();
+  Future<void> bridgeNow() => _bridge(_currentRoomId());
 
   void _handle(SyncUpdate sync) {
     if (_stopped) return;
@@ -141,19 +142,28 @@ class BridgeCoordinator {
     if (roomId == null) return;
     final joined = sync.rooms?.join?[roomId];
     if (joined?.timeline?.limited != true) return;
-    unawaited(_bridge());
+    // Carry the room id that triggered this limited-sync through the
+    // async bridge pass: if the user switches sync rooms (or a
+    // settings flip changes `_currentRoomId`) between the trigger and
+    // `_runBridgeOnce` resolving a Room, we must not end up running a
+    // catch-up against the wrong room.
+    unawaited(_bridge(roomId));
   }
 
-  Future<void> _bridge() async {
+  Future<void> _bridge(String? expectedRoomId) async {
     if (_stopped) return;
     if (_inFlightBridge != null) {
       _pendingRerun = true;
+      // Remember the room id of the most recent trigger so the rerun
+      // after the in-flight pass completes targets the latest room,
+      // not a stale one captured on an earlier iteration.
+      _pendingRerunRoomId = expectedRoomId;
       return;
     }
     final completer = Completer<void>();
     _inFlightBridge = completer.future;
     try {
-      await _runBridgeOnce();
+      await _runBridgeOnce(expectedRoomId);
     } catch (error, stackTrace) {
       _logging.captureException(
         error,
@@ -166,18 +176,34 @@ class BridgeCoordinator {
       completer.complete();
       if (_pendingRerun && !_stopped) {
         _pendingRerun = false;
-        unawaited(_bridge());
+        final rerunRoomId = _pendingRerunRoomId;
+        _pendingRerunRoomId = null;
+        unawaited(_bridge(rerunRoomId));
       } else {
         _pendingRerun = false;
+        _pendingRerunRoomId = null;
       }
     }
   }
 
-  Future<void> _runBridgeOnce() async {
+  Future<void> _runBridgeOnce(String? expectedRoomId) async {
     final room = await _resolveRoom();
     if (room == null) {
       _logging.captureEvent(
         'queue.bridge.skip reason=noRoom',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+      return;
+    }
+    if (expectedRoomId != null && room.id != expectedRoomId) {
+      // The selected sync room changed between the trigger and now;
+      // abandon this pass rather than running catch-up against a
+      // different room than the one whose `limited=true` sync
+      // scheduled the work.
+      _logging.captureEvent(
+        'queue.bridge.skip reason=roomChanged '
+        'expectedRoomId=$expectedRoomId actualRoomId=${room.id}',
         domain: _logDomain,
         subDomain: _logSub,
       );
@@ -222,7 +248,7 @@ class BridgeCoordinator {
       // collection can surface with empty events when the fallback
       // budget has been exhausted, and those are exactly the cases
       // where a bounded retry matters most.
-      _handleIncompleteFollowUp(collection.incomplete);
+      _handleIncompleteFollowUp(collection.incomplete, expectedRoomId);
       return;
     }
 
@@ -243,7 +269,7 @@ class BridgeCoordinator {
       subDomain: _logSub,
     );
 
-    _handleIncompleteFollowUp(collection.incomplete);
+    _handleIncompleteFollowUp(collection.incomplete, expectedRoomId);
   }
 
   /// Schedules a bounded retry when [CatchUpStrategy] reports an
@@ -251,7 +277,11 @@ class BridgeCoordinator {
   /// timestamp boundary was reached). Without this the only way older
   /// gap events are picked up is another limited-sync happening to
   /// arrive, which can leave gaps indefinitely on a quiet room.
-  void _handleIncompleteFollowUp(bool incomplete) {
+  ///
+  /// The retry targets the room that triggered the original bridge so
+  /// a sync-room change during the retry delay cannot redirect the
+  /// catch-up to a different room.
+  void _handleIncompleteFollowUp(bool incomplete, String? expectedRoomId) {
     if (_stopped) return;
     if (!incomplete) {
       _consecutiveIncomplete = 0;
@@ -280,7 +310,7 @@ class BridgeCoordinator {
         domain: _logDomain,
         subDomain: _logSub,
       );
-      unawaited(_bridge());
+      unawaited(_bridge(expectedRoomId));
     });
   }
 }

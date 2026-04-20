@@ -155,14 +155,20 @@ class InboundQueue {
   /// single post-commit emission fires if anything inside the body
   /// would have emitted.
   Future<T> runInTransaction<T>(Future<T> Function() body) async {
+    // Only the OUTERMOST caller owns the dirty flag. A nested
+    // runInTransaction (enqueueBatch from inside an outer batch, for
+    // example) must not clear a dirty bit the outer batch already set,
+    // or the outer finalizer would skip its post-commit emission.
+    final isOutermost = _inBatchMode == 0;
     _inBatchMode++;
-    _batchDirty = false;
+    if (isOutermost) {
+      _batchDirty = false;
+    }
     try {
       return await _db.transaction(body);
     } finally {
       _inBatchMode--;
-      final shouldEmit = _batchDirty && _inBatchMode == 0;
-      if (shouldEmit) {
+      if (isOutermost && _batchDirty) {
         _batchDirty = false;
         // Fire outside the transaction zone so `stats()` uses the
         // root executor, not the now-closed transaction executor.

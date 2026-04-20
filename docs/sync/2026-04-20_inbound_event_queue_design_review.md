@@ -224,8 +224,8 @@ One-line fix in the design text; big fix to omit.
 ### 3.3 Concern (data loss / decryption race) — `Event.fromJson` round-trip captures ciphertext if serialised pre-decryption
 
 **Issue.** §6.1 stores `Event.toJson()` in `raw_json`; the worker
-reconstructs via `Event.fromJson(room, json)` at peek time. This round-
-trip is **safe only if the Event is fully decrypted at enqueue time.**
+reconstructs via `Event.fromJson(room, json)` at peek time. This round-trip
+is **safe only if the Event is fully decrypted at enqueue time.**
 
 The SDK's decryption pipeline (`client.dart:2909`) runs before
 `onTimelineEvent.add(timelineEvent)` for events whose session keys are

@@ -236,8 +236,10 @@ void main() {
         )..where((t) => t.roomId.equals(roomA))).getSingle();
         expect(marker.lastAppliedEventId, r'$newer');
         expect(marker.lastAppliedTs, 5000);
-        // Commit sequence still bumps for diagnostics, but the marker
-        // did not regress to the older event.
+        // _advanceMarkerIfNewer leaves lastAppliedCommitSeq untouched
+        // when the monotonic guard rejects the candidate, so the
+        // counter reflects only the first (newer) commit.
+        expect(marker.lastAppliedCommitSeq, 1);
       },
     );
 
@@ -377,23 +379,44 @@ void main() {
 
   group('depthChanges', () {
     test(
-      'emits after enqueue, commit, prune',
+      'emits after enqueue, commit, and prune — all three paths hit the '
+      'depth stream so the worker wakes on any queue-level change',
       () async {
         final depths = <int>[];
         final sub = queue.depthChanges.listen((s) => depths.add(s.total));
-        final event = _buildSyncEvent(
-          eventId: r'$depth',
-          roomId: roomA,
-          originTsMs: 1,
+
+        // Enqueue: depth should rise to >= 1.
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$depth',
+            roomId: roomA,
+            originTsMs: 1,
+          ),
         );
-        await queue.enqueueLive(event);
+        // Commit: depth drops back to 0.
         final batch = await queue.peekBatchReady();
         await queue.commitApplied(batch.single);
-        // Pump the event queue so the async depth emissions land.
-        await Future<void>.delayed(Duration.zero);
+
+        // Re-populate with a cross-room entry so prune has something
+        // to delete and the prune-triggered emission is observable.
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$stranded',
+            roomId: roomB,
+            originTsMs: 2,
+          ),
+        );
+        final pruned = await queue.pruneStrandedEntries(roomA);
+        expect(pruned, 1);
+
+        // Pump microtasks so the fire-and-forget `_emitDepth` futures
+        // complete before we inspect the depth history.
+        await pumpEventQueue();
         await sub.cancel();
         expect(depths, isNotEmpty);
         expect(depths.last, 0);
+        // We expect at least three emissions: enqueue, commit, prune.
+        expect(depths.length, greaterThanOrEqualTo(3));
       },
     );
   });
