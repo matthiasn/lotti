@@ -1065,7 +1065,7 @@ class _TaskFilterChoicePill extends StatefulWidget {
 class _TaskFilterChoicePillState extends State<_TaskFilterChoicePill>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _progress;
+  late final CurvedAnimation _progress;
 
   @override
   void initState() {
@@ -1095,6 +1095,7 @@ class _TaskFilterChoicePillState extends State<_TaskFilterChoicePill>
 
   @override
   void dispose() {
+    _progress.dispose();
     _controller.dispose();
     super.dispose();
   }
