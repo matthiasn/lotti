@@ -388,7 +388,8 @@ class InboundQueue {
     });
 
     _logging.captureEvent(
-      'queue.commit eventId=${entry.eventId} '
+      'queue.commit pipeline=queue '
+      'eventId=${entry.eventId} '
       'originTs=${entry.originTs} '
       'markerAdvanced=$markerAdvanced',
       domain: _logDomain,

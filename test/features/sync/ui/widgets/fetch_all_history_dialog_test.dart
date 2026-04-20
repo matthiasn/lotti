@@ -1,0 +1,146 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/ui/widgets/fetch_all_history_dialog.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockCoordinator extends Mock implements QueuePipelineCoordinator {}
+
+void main() {
+  late _MockCoordinator coordinator;
+
+  setUpAll(() {
+    registerFallbackValue(const Duration(seconds: 1));
+  });
+
+  setUp(() {
+    coordinator = _MockCoordinator();
+  });
+
+  Widget wrap(Widget child) => MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(body: child),
+  );
+
+  BootstrapPageInfo pageInfo({required int index, required int total}) =>
+      BootstrapPageInfo(
+        pageIndex: index,
+        totalEventsSoFar: total,
+        oldestTimestampSoFar: null,
+        serverHasMore: true,
+        elapsed: const Duration(milliseconds: 1),
+      );
+
+  testWidgets(
+    'renders progress updates and final done status',
+    (tester) async {
+      // Drive three progress updates then resolve to a successful
+      // BootstrapResult.
+      final progressCompleter = Completer<void>();
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress]
+                as void Function(BootstrapPageInfo)?;
+        onProgress?.call(pageInfo(index: 0, total: 50));
+        onProgress?.call(pageInfo(index: 1, total: 120));
+        progressCompleter.complete();
+        return const BootstrapResult(
+          totalPages: 2,
+          totalEvents: 120,
+          oldestTimestampReached: 1000,
+          stopReason: BootstrapStopReason.serverExhausted,
+        );
+      });
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await progressCompleter.future;
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('120'), findsWidgets);
+      expect(find.textContaining('2'), findsWidgets);
+      // "Close" button appears once the run ends.
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'cancel button completes the cancel signal passed to collectHistory',
+    (tester) async {
+      final capturedCancel = Completer<Future<void>?>();
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedCancel.complete(
+          invocation.namedArguments[#cancelSignal] as Future<void>?,
+        );
+        // Wait until the cancel signal fires, then return a cancelled
+        // BootstrapResult.
+        final cancelFuture =
+            invocation.namedArguments[#cancelSignal] as Future<void>?;
+        await cancelFuture;
+        return const BootstrapResult(
+          totalPages: 0,
+          totalEvents: 0,
+          oldestTimestampReached: null,
+          stopReason: BootstrapStopReason.sinkCancelled,
+        );
+      });
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pump();
+
+      expect(find.text('Cancel'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+
+      final cancelSignal = await capturedCancel.future;
+      expect(cancelSignal, isNotNull);
+      // The cancel signal must resolve — the widget's tap handler
+      // completes the underlying completer.
+      await expectLater(cancelSignal, completes);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Close'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'renders error status when collectHistory throws',
+    (tester) async {
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenThrow(StateError('no current room'));
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('no current room'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+    },
+  );
+}
