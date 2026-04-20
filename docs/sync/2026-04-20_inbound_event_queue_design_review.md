@@ -66,11 +66,11 @@ source (`~/.pub-cache/hosted/pub.dev/matrix-7.0.0/`):
 
 ### 2.2 `sync_db` is the right home
 
-At review time, `lib/database/sync_db.dart` showed `schemaVersion = 11`
-with a well-exercised `onUpgrade` migration at `sync_db.dart:1005–1099`.
-Adding a v12 table for `inbound_event_queue` matches the idiom the file
-already used — 10 additive migrations in place. The design's "default
-sync_db" call is correct. (v12 and the table itself land in this PR.)
+`lib/database/sync_db.dart:1002` shows `schemaVersion = 11` with a well-exercised
+`onUpgrade` migration at `sync_db.dart:1005–1099`. Adding a v12 table
+for `inbound_event_queue` is exactly the idiom the file already uses — 10
+additive migrations in place. The design's "default sync_db" call is
+correct.
 
 ### 2.3 `AppLifecycleRescanObserver` really was deleted in #2983
 
@@ -180,7 +180,7 @@ to allow "applied-but-window-open" transition.
 
 **Issue.** §6.5 says:
 
-```text
+```
 commitApplied(entry) := {
   DELETE FROM inbound_event_queue WHERE queue_id = entry.queueId;
   IF entry.event_id starts with '$':
@@ -224,8 +224,8 @@ One-line fix in the design text; big fix to omit.
 ### 3.3 Concern (data loss / decryption race) — `Event.fromJson` round-trip captures ciphertext if serialised pre-decryption
 
 **Issue.** §6.1 stores `Event.toJson()` in `raw_json`; the worker
-reconstructs via `Event.fromJson(room, json)` at peek time. This round-trip
-is **safe only if the Event is fully decrypted at enqueue time.**
+reconstructs via `Event.fromJson(room, json)` at peek time. This round-
+trip is **safe only if the Event is fully decrypted at enqueue time.**
 
 The SDK's decryption pipeline (`client.dart:2909`) runs before
 `onTimelineEvent.add(timelineEvent)` for events whose session keys are
@@ -590,15 +590,15 @@ size is underestimated.
 
 ### 4.6 Feature flag plumbing not in place
 
-At review time, no `useInboundEventQueue` flag existed in the codebase.
-The design assumed trivial flag plumbing; propagation still needs to
-reach `matrix_stream_consumer`, `MatrixService.init`, the Sync Settings
-UI (for the Fetch-all-history button), and the worker construction
-itself. Three sites minimum, and the flag must be readable synchronously
-at init time (i.e. settings_db fetch before first wiring), not async —
-the design's §12 Phase 1 says "add flag, default false, nothing wired"
-but doesn't spell out where the flag is read. (This PR lands the flag
-itself — see `useInboundEventQueueKey` — but not the wiring.)
+No `useInboundEventQueue` flag exists in the codebase today. The
+design assumes a trivial flag plumbing; flag propagation needs to
+reach `matrix_stream_consumer`, `MatrixService.init`, the Sync
+Settings UI (for the Fetch-all-history button), and the worker
+construction itself. Three sites minimum, and the flag must be
+readable synchronously at init time (i.e. settings_db fetch before
+first wiring), not async — the design's §12 Phase 1 says "add flag,
+default false, nothing wired" but doesn't spell out where the flag
+is read.
 
 ---
 
