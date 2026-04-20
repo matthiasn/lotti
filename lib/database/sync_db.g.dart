@@ -1596,6 +1596,990 @@ class HostActivityCompanion extends UpdateCompanion<HostActivityItem> {
   }
 }
 
+class $InboundEventQueueTable extends InboundEventQueue
+    with TableInfo<$InboundEventQueueTable, InboundEventQueueItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InboundEventQueueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _queueIdMeta = const VerificationMeta(
+    'queueId',
+  );
+  @override
+  late final GeneratedColumn<int> queueId = GeneratedColumn<int>(
+    'queue_id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _eventIdMeta = const VerificationMeta(
+    'eventId',
+  );
+  @override
+  late final GeneratedColumn<String> eventId = GeneratedColumn<String>(
+    'event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originTsMeta = const VerificationMeta(
+    'originTs',
+  );
+  @override
+  late final GeneratedColumn<int> originTs = GeneratedColumn<int>(
+    'origin_ts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _producerMeta = const VerificationMeta(
+    'producer',
+  );
+  @override
+  late final GeneratedColumn<String> producer = GeneratedColumn<String>(
+    'producer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawJsonMeta = const VerificationMeta(
+    'rawJson',
+  );
+  @override
+  late final GeneratedColumn<String> rawJson = GeneratedColumn<String>(
+    'raw_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enqueuedAtMeta = const VerificationMeta(
+    'enqueuedAt',
+  );
+  @override
+  late final GeneratedColumn<int> enqueuedAt = GeneratedColumn<int>(
+    'enqueued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextDueAtMeta = const VerificationMeta(
+    'nextDueAt',
+  );
+  @override
+  late final GeneratedColumn<int> nextDueAt = GeneratedColumn<int>(
+    'next_due_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _leaseUntilMeta = const VerificationMeta(
+    'leaseUntil',
+  );
+  @override
+  late final GeneratedColumn<int> leaseUntil = GeneratedColumn<int>(
+    'lease_until',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    queueId,
+    eventId,
+    roomId,
+    originTs,
+    producer,
+    rawJson,
+    enqueuedAt,
+    attempts,
+    nextDueAt,
+    leaseUntil,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'inbound_event_queue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InboundEventQueueItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('queue_id')) {
+      context.handle(
+        _queueIdMeta,
+        queueId.isAcceptableOrUnknown(data['queue_id']!, _queueIdMeta),
+      );
+    }
+    if (data.containsKey('event_id')) {
+      context.handle(
+        _eventIdMeta,
+        eventId.isAcceptableOrUnknown(data['event_id']!, _eventIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventIdMeta);
+    }
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('origin_ts')) {
+      context.handle(
+        _originTsMeta,
+        originTs.isAcceptableOrUnknown(data['origin_ts']!, _originTsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_originTsMeta);
+    }
+    if (data.containsKey('producer')) {
+      context.handle(
+        _producerMeta,
+        producer.isAcceptableOrUnknown(data['producer']!, _producerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_producerMeta);
+    }
+    if (data.containsKey('raw_json')) {
+      context.handle(
+        _rawJsonMeta,
+        rawJson.isAcceptableOrUnknown(data['raw_json']!, _rawJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rawJsonMeta);
+    }
+    if (data.containsKey('enqueued_at')) {
+      context.handle(
+        _enqueuedAtMeta,
+        enqueuedAt.isAcceptableOrUnknown(data['enqueued_at']!, _enqueuedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_enqueuedAtMeta);
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('next_due_at')) {
+      context.handle(
+        _nextDueAtMeta,
+        nextDueAt.isAcceptableOrUnknown(data['next_due_at']!, _nextDueAtMeta),
+      );
+    }
+    if (data.containsKey('lease_until')) {
+      context.handle(
+        _leaseUntilMeta,
+        leaseUntil.isAcceptableOrUnknown(data['lease_until']!, _leaseUntilMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {queueId};
+  @override
+  InboundEventQueueItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InboundEventQueueItem(
+      queueId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}queue_id'],
+      )!,
+      eventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_id'],
+      )!,
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      )!,
+      originTs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}origin_ts'],
+      )!,
+      producer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}producer'],
+      )!,
+      rawJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}raw_json'],
+      )!,
+      enqueuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}enqueued_at'],
+      )!,
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      nextDueAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_due_at'],
+      )!,
+      leaseUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lease_until'],
+      )!,
+    );
+  }
+
+  @override
+  $InboundEventQueueTable createAlias(String alias) {
+    return $InboundEventQueueTable(attachedDatabase, alias);
+  }
+}
+
+class InboundEventQueueItem extends DataClass
+    implements Insertable<InboundEventQueueItem> {
+  final int queueId;
+
+  /// Matrix event ID. UNIQUE at the DB level; duplicate inserts are
+  /// silently rejected on all ingestion paths.
+  final String eventId;
+
+  /// Matrix room ID the event belongs to.
+  final String roomId;
+
+  /// `originServerTs` in milliseconds since epoch. Drain order is
+  /// ascending on this, then on `queue_id`.
+  final int originTs;
+
+  /// Enqueuing producer. Stored as `InboundEventProducer.name` to
+  /// survive future enum reshuffling.
+  final String producer;
+
+  /// Serialised `Event.toJson()`. Materialised to an `Event` at drain
+  /// time; the queue itself never holds SDK objects.
+  final String rawJson;
+
+  /// Wall-clock enqueue timestamp (ms since epoch).
+  final int enqueuedAt;
+
+  /// Retry counter. Incremented per scheduled retry; capped in
+  /// [InboundWorker] to avoid eternal wedges on a single bad event.
+  final int attempts;
+
+  /// Earliest time (ms since epoch) at which this entry is eligible
+  /// for re-peek. 0 = ready now.
+  final int nextDueAt;
+
+  /// Worker lease expiry (ms since epoch). 0 = not leased; peek stamps
+  /// this to `now + leaseDuration` atomically. Entries with `lease_until
+  /// > now` are not returned by `peekBatchReady`, so crashed-then-
+  /// restarted workers do not double-drain until the lease expires.
+  final int leaseUntil;
+  const InboundEventQueueItem({
+    required this.queueId,
+    required this.eventId,
+    required this.roomId,
+    required this.originTs,
+    required this.producer,
+    required this.rawJson,
+    required this.enqueuedAt,
+    required this.attempts,
+    required this.nextDueAt,
+    required this.leaseUntil,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['queue_id'] = Variable<int>(queueId);
+    map['event_id'] = Variable<String>(eventId);
+    map['room_id'] = Variable<String>(roomId);
+    map['origin_ts'] = Variable<int>(originTs);
+    map['producer'] = Variable<String>(producer);
+    map['raw_json'] = Variable<String>(rawJson);
+    map['enqueued_at'] = Variable<int>(enqueuedAt);
+    map['attempts'] = Variable<int>(attempts);
+    map['next_due_at'] = Variable<int>(nextDueAt);
+    map['lease_until'] = Variable<int>(leaseUntil);
+    return map;
+  }
+
+  InboundEventQueueCompanion toCompanion(bool nullToAbsent) {
+    return InboundEventQueueCompanion(
+      queueId: Value(queueId),
+      eventId: Value(eventId),
+      roomId: Value(roomId),
+      originTs: Value(originTs),
+      producer: Value(producer),
+      rawJson: Value(rawJson),
+      enqueuedAt: Value(enqueuedAt),
+      attempts: Value(attempts),
+      nextDueAt: Value(nextDueAt),
+      leaseUntil: Value(leaseUntil),
+    );
+  }
+
+  factory InboundEventQueueItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InboundEventQueueItem(
+      queueId: serializer.fromJson<int>(json['queueId']),
+      eventId: serializer.fromJson<String>(json['eventId']),
+      roomId: serializer.fromJson<String>(json['roomId']),
+      originTs: serializer.fromJson<int>(json['originTs']),
+      producer: serializer.fromJson<String>(json['producer']),
+      rawJson: serializer.fromJson<String>(json['rawJson']),
+      enqueuedAt: serializer.fromJson<int>(json['enqueuedAt']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      nextDueAt: serializer.fromJson<int>(json['nextDueAt']),
+      leaseUntil: serializer.fromJson<int>(json['leaseUntil']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'queueId': serializer.toJson<int>(queueId),
+      'eventId': serializer.toJson<String>(eventId),
+      'roomId': serializer.toJson<String>(roomId),
+      'originTs': serializer.toJson<int>(originTs),
+      'producer': serializer.toJson<String>(producer),
+      'rawJson': serializer.toJson<String>(rawJson),
+      'enqueuedAt': serializer.toJson<int>(enqueuedAt),
+      'attempts': serializer.toJson<int>(attempts),
+      'nextDueAt': serializer.toJson<int>(nextDueAt),
+      'leaseUntil': serializer.toJson<int>(leaseUntil),
+    };
+  }
+
+  InboundEventQueueItem copyWith({
+    int? queueId,
+    String? eventId,
+    String? roomId,
+    int? originTs,
+    String? producer,
+    String? rawJson,
+    int? enqueuedAt,
+    int? attempts,
+    int? nextDueAt,
+    int? leaseUntil,
+  }) => InboundEventQueueItem(
+    queueId: queueId ?? this.queueId,
+    eventId: eventId ?? this.eventId,
+    roomId: roomId ?? this.roomId,
+    originTs: originTs ?? this.originTs,
+    producer: producer ?? this.producer,
+    rawJson: rawJson ?? this.rawJson,
+    enqueuedAt: enqueuedAt ?? this.enqueuedAt,
+    attempts: attempts ?? this.attempts,
+    nextDueAt: nextDueAt ?? this.nextDueAt,
+    leaseUntil: leaseUntil ?? this.leaseUntil,
+  );
+  InboundEventQueueItem copyWithCompanion(InboundEventQueueCompanion data) {
+    return InboundEventQueueItem(
+      queueId: data.queueId.present ? data.queueId.value : this.queueId,
+      eventId: data.eventId.present ? data.eventId.value : this.eventId,
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      originTs: data.originTs.present ? data.originTs.value : this.originTs,
+      producer: data.producer.present ? data.producer.value : this.producer,
+      rawJson: data.rawJson.present ? data.rawJson.value : this.rawJson,
+      enqueuedAt: data.enqueuedAt.present
+          ? data.enqueuedAt.value
+          : this.enqueuedAt,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      nextDueAt: data.nextDueAt.present ? data.nextDueAt.value : this.nextDueAt,
+      leaseUntil: data.leaseUntil.present
+          ? data.leaseUntil.value
+          : this.leaseUntil,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InboundEventQueueItem(')
+          ..write('queueId: $queueId, ')
+          ..write('eventId: $eventId, ')
+          ..write('roomId: $roomId, ')
+          ..write('originTs: $originTs, ')
+          ..write('producer: $producer, ')
+          ..write('rawJson: $rawJson, ')
+          ..write('enqueuedAt: $enqueuedAt, ')
+          ..write('attempts: $attempts, ')
+          ..write('nextDueAt: $nextDueAt, ')
+          ..write('leaseUntil: $leaseUntil')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    queueId,
+    eventId,
+    roomId,
+    originTs,
+    producer,
+    rawJson,
+    enqueuedAt,
+    attempts,
+    nextDueAt,
+    leaseUntil,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InboundEventQueueItem &&
+          other.queueId == this.queueId &&
+          other.eventId == this.eventId &&
+          other.roomId == this.roomId &&
+          other.originTs == this.originTs &&
+          other.producer == this.producer &&
+          other.rawJson == this.rawJson &&
+          other.enqueuedAt == this.enqueuedAt &&
+          other.attempts == this.attempts &&
+          other.nextDueAt == this.nextDueAt &&
+          other.leaseUntil == this.leaseUntil);
+}
+
+class InboundEventQueueCompanion
+    extends UpdateCompanion<InboundEventQueueItem> {
+  final Value<int> queueId;
+  final Value<String> eventId;
+  final Value<String> roomId;
+  final Value<int> originTs;
+  final Value<String> producer;
+  final Value<String> rawJson;
+  final Value<int> enqueuedAt;
+  final Value<int> attempts;
+  final Value<int> nextDueAt;
+  final Value<int> leaseUntil;
+  const InboundEventQueueCompanion({
+    this.queueId = const Value.absent(),
+    this.eventId = const Value.absent(),
+    this.roomId = const Value.absent(),
+    this.originTs = const Value.absent(),
+    this.producer = const Value.absent(),
+    this.rawJson = const Value.absent(),
+    this.enqueuedAt = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.nextDueAt = const Value.absent(),
+    this.leaseUntil = const Value.absent(),
+  });
+  InboundEventQueueCompanion.insert({
+    this.queueId = const Value.absent(),
+    required String eventId,
+    required String roomId,
+    required int originTs,
+    required String producer,
+    required String rawJson,
+    required int enqueuedAt,
+    this.attempts = const Value.absent(),
+    this.nextDueAt = const Value.absent(),
+    this.leaseUntil = const Value.absent(),
+  }) : eventId = Value(eventId),
+       roomId = Value(roomId),
+       originTs = Value(originTs),
+       producer = Value(producer),
+       rawJson = Value(rawJson),
+       enqueuedAt = Value(enqueuedAt);
+  static Insertable<InboundEventQueueItem> custom({
+    Expression<int>? queueId,
+    Expression<String>? eventId,
+    Expression<String>? roomId,
+    Expression<int>? originTs,
+    Expression<String>? producer,
+    Expression<String>? rawJson,
+    Expression<int>? enqueuedAt,
+    Expression<int>? attempts,
+    Expression<int>? nextDueAt,
+    Expression<int>? leaseUntil,
+  }) {
+    return RawValuesInsertable({
+      if (queueId != null) 'queue_id': queueId,
+      if (eventId != null) 'event_id': eventId,
+      if (roomId != null) 'room_id': roomId,
+      if (originTs != null) 'origin_ts': originTs,
+      if (producer != null) 'producer': producer,
+      if (rawJson != null) 'raw_json': rawJson,
+      if (enqueuedAt != null) 'enqueued_at': enqueuedAt,
+      if (attempts != null) 'attempts': attempts,
+      if (nextDueAt != null) 'next_due_at': nextDueAt,
+      if (leaseUntil != null) 'lease_until': leaseUntil,
+    });
+  }
+
+  InboundEventQueueCompanion copyWith({
+    Value<int>? queueId,
+    Value<String>? eventId,
+    Value<String>? roomId,
+    Value<int>? originTs,
+    Value<String>? producer,
+    Value<String>? rawJson,
+    Value<int>? enqueuedAt,
+    Value<int>? attempts,
+    Value<int>? nextDueAt,
+    Value<int>? leaseUntil,
+  }) {
+    return InboundEventQueueCompanion(
+      queueId: queueId ?? this.queueId,
+      eventId: eventId ?? this.eventId,
+      roomId: roomId ?? this.roomId,
+      originTs: originTs ?? this.originTs,
+      producer: producer ?? this.producer,
+      rawJson: rawJson ?? this.rawJson,
+      enqueuedAt: enqueuedAt ?? this.enqueuedAt,
+      attempts: attempts ?? this.attempts,
+      nextDueAt: nextDueAt ?? this.nextDueAt,
+      leaseUntil: leaseUntil ?? this.leaseUntil,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (queueId.present) {
+      map['queue_id'] = Variable<int>(queueId.value);
+    }
+    if (eventId.present) {
+      map['event_id'] = Variable<String>(eventId.value);
+    }
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (originTs.present) {
+      map['origin_ts'] = Variable<int>(originTs.value);
+    }
+    if (producer.present) {
+      map['producer'] = Variable<String>(producer.value);
+    }
+    if (rawJson.present) {
+      map['raw_json'] = Variable<String>(rawJson.value);
+    }
+    if (enqueuedAt.present) {
+      map['enqueued_at'] = Variable<int>(enqueuedAt.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (nextDueAt.present) {
+      map['next_due_at'] = Variable<int>(nextDueAt.value);
+    }
+    if (leaseUntil.present) {
+      map['lease_until'] = Variable<int>(leaseUntil.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InboundEventQueueCompanion(')
+          ..write('queueId: $queueId, ')
+          ..write('eventId: $eventId, ')
+          ..write('roomId: $roomId, ')
+          ..write('originTs: $originTs, ')
+          ..write('producer: $producer, ')
+          ..write('rawJson: $rawJson, ')
+          ..write('enqueuedAt: $enqueuedAt, ')
+          ..write('attempts: $attempts, ')
+          ..write('nextDueAt: $nextDueAt, ')
+          ..write('leaseUntil: $leaseUntil')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $QueueMarkersTable extends QueueMarkers
+    with TableInfo<$QueueMarkersTable, QueueMarkerItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QueueMarkersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _roomIdMeta = const VerificationMeta('roomId');
+  @override
+  late final GeneratedColumn<String> roomId = GeneratedColumn<String>(
+    'room_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastAppliedEventIdMeta =
+      const VerificationMeta('lastAppliedEventId');
+  @override
+  late final GeneratedColumn<String> lastAppliedEventId =
+      GeneratedColumn<String>(
+        'last_applied_event_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastAppliedTsMeta = const VerificationMeta(
+    'lastAppliedTs',
+  );
+  @override
+  late final GeneratedColumn<int> lastAppliedTs = GeneratedColumn<int>(
+    'last_applied_ts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastAppliedCommitSeqMeta =
+      const VerificationMeta('lastAppliedCommitSeq');
+  @override
+  late final GeneratedColumn<int> lastAppliedCommitSeq = GeneratedColumn<int>(
+    'last_applied_commit_seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    roomId,
+    lastAppliedEventId,
+    lastAppliedTs,
+    lastAppliedCommitSeq,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'queue_markers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<QueueMarkerItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('room_id')) {
+      context.handle(
+        _roomIdMeta,
+        roomId.isAcceptableOrUnknown(data['room_id']!, _roomIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roomIdMeta);
+    }
+    if (data.containsKey('last_applied_event_id')) {
+      context.handle(
+        _lastAppliedEventIdMeta,
+        lastAppliedEventId.isAcceptableOrUnknown(
+          data['last_applied_event_id']!,
+          _lastAppliedEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_applied_ts')) {
+      context.handle(
+        _lastAppliedTsMeta,
+        lastAppliedTs.isAcceptableOrUnknown(
+          data['last_applied_ts']!,
+          _lastAppliedTsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_applied_commit_seq')) {
+      context.handle(
+        _lastAppliedCommitSeqMeta,
+        lastAppliedCommitSeq.isAcceptableOrUnknown(
+          data['last_applied_commit_seq']!,
+          _lastAppliedCommitSeqMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {roomId};
+  @override
+  QueueMarkerItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QueueMarkerItem(
+      roomId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}room_id'],
+      )!,
+      lastAppliedEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_applied_event_id'],
+      ),
+      lastAppliedTs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_applied_ts'],
+      )!,
+      lastAppliedCommitSeq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_applied_commit_seq'],
+      )!,
+    );
+  }
+
+  @override
+  $QueueMarkersTable createAlias(String alias) {
+    return $QueueMarkersTable(attachedDatabase, alias);
+  }
+}
+
+class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
+  final String roomId;
+
+  /// Last `$`-prefixed (server-assigned) event id applied. Nullable
+  /// because early boot has none yet. Placeholder (`lotti-...`) ids
+  /// are never written here; they stay in-memory on the worker.
+  final String? lastAppliedEventId;
+
+  /// Highest `originServerTs` we have applied and committed. Guarded
+  /// by [shouldAdvanceMarker]; writes only accept monotonic
+  /// advancement (F2).
+  final int lastAppliedTs;
+
+  /// Monotonic counter incremented on every successful
+  /// `commitApplied`. Diagnostic use only.
+  final int lastAppliedCommitSeq;
+  const QueueMarkerItem({
+    required this.roomId,
+    this.lastAppliedEventId,
+    required this.lastAppliedTs,
+    required this.lastAppliedCommitSeq,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['room_id'] = Variable<String>(roomId);
+    if (!nullToAbsent || lastAppliedEventId != null) {
+      map['last_applied_event_id'] = Variable<String>(lastAppliedEventId);
+    }
+    map['last_applied_ts'] = Variable<int>(lastAppliedTs);
+    map['last_applied_commit_seq'] = Variable<int>(lastAppliedCommitSeq);
+    return map;
+  }
+
+  QueueMarkersCompanion toCompanion(bool nullToAbsent) {
+    return QueueMarkersCompanion(
+      roomId: Value(roomId),
+      lastAppliedEventId: lastAppliedEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAppliedEventId),
+      lastAppliedTs: Value(lastAppliedTs),
+      lastAppliedCommitSeq: Value(lastAppliedCommitSeq),
+    );
+  }
+
+  factory QueueMarkerItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QueueMarkerItem(
+      roomId: serializer.fromJson<String>(json['roomId']),
+      lastAppliedEventId: serializer.fromJson<String?>(
+        json['lastAppliedEventId'],
+      ),
+      lastAppliedTs: serializer.fromJson<int>(json['lastAppliedTs']),
+      lastAppliedCommitSeq: serializer.fromJson<int>(
+        json['lastAppliedCommitSeq'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'roomId': serializer.toJson<String>(roomId),
+      'lastAppliedEventId': serializer.toJson<String?>(lastAppliedEventId),
+      'lastAppliedTs': serializer.toJson<int>(lastAppliedTs),
+      'lastAppliedCommitSeq': serializer.toJson<int>(lastAppliedCommitSeq),
+    };
+  }
+
+  QueueMarkerItem copyWith({
+    String? roomId,
+    Value<String?> lastAppliedEventId = const Value.absent(),
+    int? lastAppliedTs,
+    int? lastAppliedCommitSeq,
+  }) => QueueMarkerItem(
+    roomId: roomId ?? this.roomId,
+    lastAppliedEventId: lastAppliedEventId.present
+        ? lastAppliedEventId.value
+        : this.lastAppliedEventId,
+    lastAppliedTs: lastAppliedTs ?? this.lastAppliedTs,
+    lastAppliedCommitSeq: lastAppliedCommitSeq ?? this.lastAppliedCommitSeq,
+  );
+  QueueMarkerItem copyWithCompanion(QueueMarkersCompanion data) {
+    return QueueMarkerItem(
+      roomId: data.roomId.present ? data.roomId.value : this.roomId,
+      lastAppliedEventId: data.lastAppliedEventId.present
+          ? data.lastAppliedEventId.value
+          : this.lastAppliedEventId,
+      lastAppliedTs: data.lastAppliedTs.present
+          ? data.lastAppliedTs.value
+          : this.lastAppliedTs,
+      lastAppliedCommitSeq: data.lastAppliedCommitSeq.present
+          ? data.lastAppliedCommitSeq.value
+          : this.lastAppliedCommitSeq,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QueueMarkerItem(')
+          ..write('roomId: $roomId, ')
+          ..write('lastAppliedEventId: $lastAppliedEventId, ')
+          ..write('lastAppliedTs: $lastAppliedTs, ')
+          ..write('lastAppliedCommitSeq: $lastAppliedCommitSeq')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    roomId,
+    lastAppliedEventId,
+    lastAppliedTs,
+    lastAppliedCommitSeq,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QueueMarkerItem &&
+          other.roomId == this.roomId &&
+          other.lastAppliedEventId == this.lastAppliedEventId &&
+          other.lastAppliedTs == this.lastAppliedTs &&
+          other.lastAppliedCommitSeq == this.lastAppliedCommitSeq);
+}
+
+class QueueMarkersCompanion extends UpdateCompanion<QueueMarkerItem> {
+  final Value<String> roomId;
+  final Value<String?> lastAppliedEventId;
+  final Value<int> lastAppliedTs;
+  final Value<int> lastAppliedCommitSeq;
+  final Value<int> rowid;
+  const QueueMarkersCompanion({
+    this.roomId = const Value.absent(),
+    this.lastAppliedEventId = const Value.absent(),
+    this.lastAppliedTs = const Value.absent(),
+    this.lastAppliedCommitSeq = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  QueueMarkersCompanion.insert({
+    required String roomId,
+    this.lastAppliedEventId = const Value.absent(),
+    this.lastAppliedTs = const Value.absent(),
+    this.lastAppliedCommitSeq = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : roomId = Value(roomId);
+  static Insertable<QueueMarkerItem> custom({
+    Expression<String>? roomId,
+    Expression<String>? lastAppliedEventId,
+    Expression<int>? lastAppliedTs,
+    Expression<int>? lastAppliedCommitSeq,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (roomId != null) 'room_id': roomId,
+      if (lastAppliedEventId != null)
+        'last_applied_event_id': lastAppliedEventId,
+      if (lastAppliedTs != null) 'last_applied_ts': lastAppliedTs,
+      if (lastAppliedCommitSeq != null)
+        'last_applied_commit_seq': lastAppliedCommitSeq,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  QueueMarkersCompanion copyWith({
+    Value<String>? roomId,
+    Value<String?>? lastAppliedEventId,
+    Value<int>? lastAppliedTs,
+    Value<int>? lastAppliedCommitSeq,
+    Value<int>? rowid,
+  }) {
+    return QueueMarkersCompanion(
+      roomId: roomId ?? this.roomId,
+      lastAppliedEventId: lastAppliedEventId ?? this.lastAppliedEventId,
+      lastAppliedTs: lastAppliedTs ?? this.lastAppliedTs,
+      lastAppliedCommitSeq: lastAppliedCommitSeq ?? this.lastAppliedCommitSeq,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (roomId.present) {
+      map['room_id'] = Variable<String>(roomId.value);
+    }
+    if (lastAppliedEventId.present) {
+      map['last_applied_event_id'] = Variable<String>(lastAppliedEventId.value);
+    }
+    if (lastAppliedTs.present) {
+      map['last_applied_ts'] = Variable<int>(lastAppliedTs.value);
+    }
+    if (lastAppliedCommitSeq.present) {
+      map['last_applied_commit_seq'] = Variable<int>(
+        lastAppliedCommitSeq.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QueueMarkersCompanion(')
+          ..write('roomId: $roomId, ')
+          ..write('lastAppliedEventId: $lastAppliedEventId, ')
+          ..write('lastAppliedTs: $lastAppliedTs, ')
+          ..write('lastAppliedCommitSeq: $lastAppliedCommitSeq, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$SyncDatabase extends GeneratedDatabase {
   _$SyncDatabase(QueryExecutor e) : super(e);
   _$SyncDatabase.connect(DatabaseConnection c) : super.connect(c);
@@ -1605,6 +2589,9 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     this,
   );
   late final $HostActivityTable hostActivity = $HostActivityTable(this);
+  late final $InboundEventQueueTable inboundEventQueue =
+      $InboundEventQueueTable(this);
+  late final $QueueMarkersTable queueMarkers = $QueueMarkersTable(this);
   late final Index idxOutboxStatusPriorityCreatedAt = Index(
     'idx_outbox_status_priority_created_at',
     'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
@@ -1621,6 +2608,14 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_sync_sequence_log_host_entry_status_counter',
     'CREATE INDEX idx_sync_sequence_log_host_entry_status_counter ON sync_sequence_log (host_id, entry_id, counter DESC, status) WHERE entry_id IS NOT NULL',
   );
+  late final Index idxInboundEventQueueReady = Index(
+    'idx_inbound_event_queue_ready',
+    'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
+  );
+  late final Index idxInboundEventQueueRoom = Index(
+    'idx_inbound_event_queue_room',
+    'CREATE INDEX idx_inbound_event_queue_room ON inbound_event_queue (room_id, origin_ts)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1629,10 +2624,14 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     outbox,
     syncSequenceLog,
     hostActivity,
+    inboundEventQueue,
+    queueMarkers,
     idxOutboxStatusPriorityCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogPayloadResolution,
     idxSyncSequenceLogHostEntryStatusCounter,
+    idxInboundEventQueueReady,
+    idxInboundEventQueueRoom,
   ];
 }
 
@@ -2426,6 +3425,499 @@ typedef $$HostActivityTableProcessedTableManager =
       HostActivityItem,
       PrefetchHooks Function()
     >;
+typedef $$InboundEventQueueTableCreateCompanionBuilder =
+    InboundEventQueueCompanion Function({
+      Value<int> queueId,
+      required String eventId,
+      required String roomId,
+      required int originTs,
+      required String producer,
+      required String rawJson,
+      required int enqueuedAt,
+      Value<int> attempts,
+      Value<int> nextDueAt,
+      Value<int> leaseUntil,
+    });
+typedef $$InboundEventQueueTableUpdateCompanionBuilder =
+    InboundEventQueueCompanion Function({
+      Value<int> queueId,
+      Value<String> eventId,
+      Value<String> roomId,
+      Value<int> originTs,
+      Value<String> producer,
+      Value<String> rawJson,
+      Value<int> enqueuedAt,
+      Value<int> attempts,
+      Value<int> nextDueAt,
+      Value<int> leaseUntil,
+    });
+
+class $$InboundEventQueueTableFilterComposer
+    extends Composer<_$SyncDatabase, $InboundEventQueueTable> {
+  $$InboundEventQueueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get queueId => $composableBuilder(
+    column: $table.queueId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get originTs => $composableBuilder(
+    column: $table.originTs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get producer => $composableBuilder(
+    column: $table.producer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rawJson => $composableBuilder(
+    column: $table.rawJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get enqueuedAt => $composableBuilder(
+    column: $table.enqueuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nextDueAt => $composableBuilder(
+    column: $table.nextDueAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get leaseUntil => $composableBuilder(
+    column: $table.leaseUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$InboundEventQueueTableOrderingComposer
+    extends Composer<_$SyncDatabase, $InboundEventQueueTable> {
+  $$InboundEventQueueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get queueId => $composableBuilder(
+    column: $table.queueId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventId => $composableBuilder(
+    column: $table.eventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get originTs => $composableBuilder(
+    column: $table.originTs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get producer => $composableBuilder(
+    column: $table.producer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rawJson => $composableBuilder(
+    column: $table.rawJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get enqueuedAt => $composableBuilder(
+    column: $table.enqueuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nextDueAt => $composableBuilder(
+    column: $table.nextDueAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get leaseUntil => $composableBuilder(
+    column: $table.leaseUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$InboundEventQueueTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $InboundEventQueueTable> {
+  $$InboundEventQueueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get queueId =>
+      $composableBuilder(column: $table.queueId, builder: (column) => column);
+
+  GeneratedColumn<String> get eventId =>
+      $composableBuilder(column: $table.eventId, builder: (column) => column);
+
+  GeneratedColumn<String> get roomId =>
+      $composableBuilder(column: $table.roomId, builder: (column) => column);
+
+  GeneratedColumn<int> get originTs =>
+      $composableBuilder(column: $table.originTs, builder: (column) => column);
+
+  GeneratedColumn<String> get producer =>
+      $composableBuilder(column: $table.producer, builder: (column) => column);
+
+  GeneratedColumn<String> get rawJson =>
+      $composableBuilder(column: $table.rawJson, builder: (column) => column);
+
+  GeneratedColumn<int> get enqueuedAt => $composableBuilder(
+    column: $table.enqueuedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<int> get nextDueAt =>
+      $composableBuilder(column: $table.nextDueAt, builder: (column) => column);
+
+  GeneratedColumn<int> get leaseUntil => $composableBuilder(
+    column: $table.leaseUntil,
+    builder: (column) => column,
+  );
+}
+
+class $$InboundEventQueueTableTableManager
+    extends
+        RootTableManager<
+          _$SyncDatabase,
+          $InboundEventQueueTable,
+          InboundEventQueueItem,
+          $$InboundEventQueueTableFilterComposer,
+          $$InboundEventQueueTableOrderingComposer,
+          $$InboundEventQueueTableAnnotationComposer,
+          $$InboundEventQueueTableCreateCompanionBuilder,
+          $$InboundEventQueueTableUpdateCompanionBuilder,
+          (
+            InboundEventQueueItem,
+            BaseReferences<
+              _$SyncDatabase,
+              $InboundEventQueueTable,
+              InboundEventQueueItem
+            >,
+          ),
+          InboundEventQueueItem,
+          PrefetchHooks Function()
+        > {
+  $$InboundEventQueueTableTableManager(
+    _$SyncDatabase db,
+    $InboundEventQueueTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InboundEventQueueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$InboundEventQueueTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$InboundEventQueueTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> queueId = const Value.absent(),
+                Value<String> eventId = const Value.absent(),
+                Value<String> roomId = const Value.absent(),
+                Value<int> originTs = const Value.absent(),
+                Value<String> producer = const Value.absent(),
+                Value<String> rawJson = const Value.absent(),
+                Value<int> enqueuedAt = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<int> nextDueAt = const Value.absent(),
+                Value<int> leaseUntil = const Value.absent(),
+              }) => InboundEventQueueCompanion(
+                queueId: queueId,
+                eventId: eventId,
+                roomId: roomId,
+                originTs: originTs,
+                producer: producer,
+                rawJson: rawJson,
+                enqueuedAt: enqueuedAt,
+                attempts: attempts,
+                nextDueAt: nextDueAt,
+                leaseUntil: leaseUntil,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> queueId = const Value.absent(),
+                required String eventId,
+                required String roomId,
+                required int originTs,
+                required String producer,
+                required String rawJson,
+                required int enqueuedAt,
+                Value<int> attempts = const Value.absent(),
+                Value<int> nextDueAt = const Value.absent(),
+                Value<int> leaseUntil = const Value.absent(),
+              }) => InboundEventQueueCompanion.insert(
+                queueId: queueId,
+                eventId: eventId,
+                roomId: roomId,
+                originTs: originTs,
+                producer: producer,
+                rawJson: rawJson,
+                enqueuedAt: enqueuedAt,
+                attempts: attempts,
+                nextDueAt: nextDueAt,
+                leaseUntil: leaseUntil,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$InboundEventQueueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$SyncDatabase,
+      $InboundEventQueueTable,
+      InboundEventQueueItem,
+      $$InboundEventQueueTableFilterComposer,
+      $$InboundEventQueueTableOrderingComposer,
+      $$InboundEventQueueTableAnnotationComposer,
+      $$InboundEventQueueTableCreateCompanionBuilder,
+      $$InboundEventQueueTableUpdateCompanionBuilder,
+      (
+        InboundEventQueueItem,
+        BaseReferences<
+          _$SyncDatabase,
+          $InboundEventQueueTable,
+          InboundEventQueueItem
+        >,
+      ),
+      InboundEventQueueItem,
+      PrefetchHooks Function()
+    >;
+typedef $$QueueMarkersTableCreateCompanionBuilder =
+    QueueMarkersCompanion Function({
+      required String roomId,
+      Value<String?> lastAppliedEventId,
+      Value<int> lastAppliedTs,
+      Value<int> lastAppliedCommitSeq,
+      Value<int> rowid,
+    });
+typedef $$QueueMarkersTableUpdateCompanionBuilder =
+    QueueMarkersCompanion Function({
+      Value<String> roomId,
+      Value<String?> lastAppliedEventId,
+      Value<int> lastAppliedTs,
+      Value<int> lastAppliedCommitSeq,
+      Value<int> rowid,
+    });
+
+class $$QueueMarkersTableFilterComposer
+    extends Composer<_$SyncDatabase, $QueueMarkersTable> {
+  $$QueueMarkersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastAppliedEventId => $composableBuilder(
+    column: $table.lastAppliedEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastAppliedTs => $composableBuilder(
+    column: $table.lastAppliedTs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastAppliedCommitSeq => $composableBuilder(
+    column: $table.lastAppliedCommitSeq,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$QueueMarkersTableOrderingComposer
+    extends Composer<_$SyncDatabase, $QueueMarkersTable> {
+  $$QueueMarkersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get roomId => $composableBuilder(
+    column: $table.roomId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastAppliedEventId => $composableBuilder(
+    column: $table.lastAppliedEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastAppliedTs => $composableBuilder(
+    column: $table.lastAppliedTs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastAppliedCommitSeq => $composableBuilder(
+    column: $table.lastAppliedCommitSeq,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$QueueMarkersTableAnnotationComposer
+    extends Composer<_$SyncDatabase, $QueueMarkersTable> {
+  $$QueueMarkersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get roomId =>
+      $composableBuilder(column: $table.roomId, builder: (column) => column);
+
+  GeneratedColumn<String> get lastAppliedEventId => $composableBuilder(
+    column: $table.lastAppliedEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastAppliedTs => $composableBuilder(
+    column: $table.lastAppliedTs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastAppliedCommitSeq => $composableBuilder(
+    column: $table.lastAppliedCommitSeq,
+    builder: (column) => column,
+  );
+}
+
+class $$QueueMarkersTableTableManager
+    extends
+        RootTableManager<
+          _$SyncDatabase,
+          $QueueMarkersTable,
+          QueueMarkerItem,
+          $$QueueMarkersTableFilterComposer,
+          $$QueueMarkersTableOrderingComposer,
+          $$QueueMarkersTableAnnotationComposer,
+          $$QueueMarkersTableCreateCompanionBuilder,
+          $$QueueMarkersTableUpdateCompanionBuilder,
+          (
+            QueueMarkerItem,
+            BaseReferences<_$SyncDatabase, $QueueMarkersTable, QueueMarkerItem>,
+          ),
+          QueueMarkerItem,
+          PrefetchHooks Function()
+        > {
+  $$QueueMarkersTableTableManager(_$SyncDatabase db, $QueueMarkersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QueueMarkersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QueueMarkersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QueueMarkersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> roomId = const Value.absent(),
+                Value<String?> lastAppliedEventId = const Value.absent(),
+                Value<int> lastAppliedTs = const Value.absent(),
+                Value<int> lastAppliedCommitSeq = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QueueMarkersCompanion(
+                roomId: roomId,
+                lastAppliedEventId: lastAppliedEventId,
+                lastAppliedTs: lastAppliedTs,
+                lastAppliedCommitSeq: lastAppliedCommitSeq,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String roomId,
+                Value<String?> lastAppliedEventId = const Value.absent(),
+                Value<int> lastAppliedTs = const Value.absent(),
+                Value<int> lastAppliedCommitSeq = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedEventId: lastAppliedEventId,
+                lastAppliedTs: lastAppliedTs,
+                lastAppliedCommitSeq: lastAppliedCommitSeq,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$QueueMarkersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$SyncDatabase,
+      $QueueMarkersTable,
+      QueueMarkerItem,
+      $$QueueMarkersTableFilterComposer,
+      $$QueueMarkersTableOrderingComposer,
+      $$QueueMarkersTableAnnotationComposer,
+      $$QueueMarkersTableCreateCompanionBuilder,
+      $$QueueMarkersTableUpdateCompanionBuilder,
+      (
+        QueueMarkerItem,
+        BaseReferences<_$SyncDatabase, $QueueMarkersTable, QueueMarkerItem>,
+      ),
+      QueueMarkerItem,
+      PrefetchHooks Function()
+    >;
 
 class $SyncDatabaseManager {
   final _$SyncDatabase _db;
@@ -2436,4 +3928,8 @@ class $SyncDatabaseManager {
       $$SyncSequenceLogTableTableManager(_db, _db.syncSequenceLog);
   $$HostActivityTableTableManager get hostActivity =>
       $$HostActivityTableTableManager(_db, _db.hostActivity);
+  $$InboundEventQueueTableTableManager get inboundEventQueue =>
+      $$InboundEventQueueTableTableManager(_db, _db.inboundEventQueue);
+  $$QueueMarkersTableTableManager get queueMarkers =>
+      $$QueueMarkersTableTableManager(_db, _db.queueMarkers);
 }

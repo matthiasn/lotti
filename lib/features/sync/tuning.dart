@@ -142,6 +142,23 @@ class SyncTuning {
   // commits are expected to take roughly chunkSize × per-event cost.
   static const int processOrderedChunkSize = 20;
 
+  // Size of the batch the InboundWorker drains in a single
+  // `runWithDeferredMissingEntries` window. Matches
+  // [processOrderedChunkSize] so the one-worker model keeps today's
+  // slice-level coalescing of `_emitMissingEntriesDetected` calls —
+  // the F1 concern from the queue-design review. The worker commits
+  // each entry individually within the window; the window only
+  // governs how many nudges we batch before letting the depth
+  // counter close.
+  static const int inboundWorkerBatchSize = processOrderedChunkSize;
+
+  // Worker lease TTL stamped onto a queue entry by `peekBatchReady`.
+  // Survives crashes: an expired lease makes the entry peekable
+  // again, so a killed worker cannot strand rows indefinitely.
+  // Generously larger than the expected per-entry apply time so
+  // normal apply never hits a self-expiring lease.
+  static const Duration inboundWorkerLeaseDuration = Duration(seconds: 60);
+
   // Maximum entries to process from an incoming backfill request.
   // Prevents a single large request from flooding the outbox.
   static const int maxBackfillResponseBatchSize = 100;

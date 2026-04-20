@@ -14,6 +14,12 @@ const syncDbFileName = 'sync.sqlite';
 
 final int _outboxSendingStatus = OutboxStatus.sending.index;
 
+/// Producer tag for an [InboundEventQueueItem]. Identifies which
+/// ingestion path enqueued the event so diagnostics can break down
+/// queue depth by source and so bootstrap-specific back-pressure can
+/// target the right writer.
+enum InboundEventProducer { live, bridge, bootstrap, backfill }
+
 /// Status for entries in the sync sequence log.
 /// Tracks whether an entry was received, is missing, or has been backfilled.
 enum SyncSequenceStatus {
@@ -168,7 +174,111 @@ class HostActivity extends Table {
   Set<Column> get primaryKey => {hostId};
 }
 
-@DriftDatabase(tables: [Outbox, SyncSequenceLog, HostActivity])
+/// Durable inbound queue for Matrix sync events. Three producers
+/// (live stream, limited-sync bridge, bootstrap pagination) write
+/// here; one `InboundWorker` drains and applies.
+///
+/// - `event_id` UNIQUE is the sole cross-producer dedupe primitive.
+/// - `(next_due_at, origin_ts, queue_id)` index covers the drain
+///   query: "oldest-due-first, origin-ascending, FIFO within the same
+///   origin_ts".
+/// - `lease_until` is a durable lease stamped by `peekBatchReady`;
+///   after a crash, entries whose lease has expired are peekable
+///   again. Exactly-once is guaranteed by the idempotent apply path
+///   (vector-clock comparison), not by the lease itself.
+/// - `raw_json` stores `Event.toJson()` from a *fully decrypted*
+///   Event. The `PendingDecryptionPen` prevents pre-decryption
+///   events from being enqueued.
+@DataClassName('InboundEventQueueItem')
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_ready '
+  'ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
+)
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_room '
+  'ON inbound_event_queue (room_id, origin_ts)',
+)
+class InboundEventQueue extends Table {
+  IntColumn get queueId => integer().autoIncrement().named('queue_id')();
+
+  /// Matrix event ID. UNIQUE at the DB level; duplicate inserts are
+  /// silently rejected on all ingestion paths.
+  TextColumn get eventId => text().named('event_id').unique()();
+
+  /// Matrix room ID the event belongs to.
+  TextColumn get roomId => text().named('room_id')();
+
+  /// `originServerTs` in milliseconds since epoch. Drain order is
+  /// ascending on this, then on `queue_id`.
+  IntColumn get originTs => integer().named('origin_ts')();
+
+  /// Enqueuing producer. Stored as `InboundEventProducer.name` to
+  /// survive future enum reshuffling.
+  TextColumn get producer => text()();
+
+  /// Serialised `Event.toJson()`. Materialised to an `Event` at drain
+  /// time; the queue itself never holds SDK objects.
+  TextColumn get rawJson => text().named('raw_json')();
+
+  /// Wall-clock enqueue timestamp (ms since epoch).
+  IntColumn get enqueuedAt => integer().named('enqueued_at')();
+
+  /// Retry counter. Incremented per scheduled retry; capped in
+  /// `InboundWorker` to avoid eternal wedges on a single bad event.
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+
+  /// Earliest time (ms since epoch) at which this entry is eligible
+  /// for re-peek. 0 = ready now.
+  IntColumn get nextDueAt =>
+      integer().named('next_due_at').withDefault(const Constant(0))();
+
+  /// Worker lease expiry (ms since epoch). 0 = not leased; peek stamps
+  /// this to `now + leaseDuration` atomically. Entries with `lease_until
+  /// > now` are not returned by `peekBatchReady`, so crashed-then-
+  /// restarted workers do not double-drain until the lease expires.
+  IntColumn get leaseUntil =>
+      integer().named('lease_until').withDefault(const Constant(0))();
+}
+
+/// Per-room apply marker. Lives in `sync_db` (not `settings_db`) so
+/// that `commitApplied` can delete the queue row and advance the
+/// marker in the same transaction — closing the cross-DB hole the
+/// review flagged (F5).
+@DataClassName('QueueMarkerItem')
+class QueueMarkers extends Table {
+  TextColumn get roomId => text().named('room_id')();
+
+  /// Last `$`-prefixed (server-assigned) event id applied. Nullable
+  /// because early boot has none yet. Placeholder (`lotti-...`) ids
+  /// are never written here; they stay in-memory on the worker.
+  TextColumn get lastAppliedEventId =>
+      text().named('last_applied_event_id').nullable()();
+
+  /// Highest `originServerTs` we have applied and committed. Guarded
+  /// by `TimelineEventOrdering.isNewer`; writes only accept
+  /// monotonic advancement (F2).
+  IntColumn get lastAppliedTs =>
+      integer().named('last_applied_ts').withDefault(const Constant(0))();
+
+  /// Monotonic counter incremented on every successful
+  /// `commitApplied`. Diagnostic use only.
+  IntColumn get lastAppliedCommitSeq => integer()
+      .named('last_applied_commit_seq')
+      .withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {roomId};
+}
+
+@DriftDatabase(
+  tables: [
+    Outbox,
+    SyncSequenceLog,
+    HostActivity,
+    InboundEventQueue,
+    QueueMarkers,
+  ],
+)
 class SyncDatabase extends _$SyncDatabase {
   SyncDatabase({
     this.inMemoryDatabase = false,
@@ -999,7 +1109,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -1097,6 +1207,19 @@ class SyncDatabase extends _$SyncDatabase {
             'ON sync_sequence_log (host_id, entry_id, counter DESC, status) '
             'WHERE entry_id IS NOT NULL',
           );
+        }
+        if (from < 12) {
+          // Phase 1 of the InboundEventQueue refactor — adds a durable
+          // queue plus a per-room marker table so commitApplied can
+          // delete the queue row and advance the marker atomically.
+          // See docs/sync/2026-04-21_inbound_event_queue_implementation_plan.md.
+          await m.createTable(inboundEventQueue);
+          await m.createTable(queueMarkers);
+          // Back-compat: when the queue is first enabled, Phase 2's
+          // wiring reads the legacy markers from settings_db and seeds
+          // `queue_markers` at that time. The migration itself leaves
+          // the table empty so upgrading users without the flag on see
+          // no behaviour change.
         }
       },
     );
