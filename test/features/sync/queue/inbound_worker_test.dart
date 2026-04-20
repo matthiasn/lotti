@@ -4,7 +4,9 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
+import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +18,8 @@ class _MockEvent extends Mock implements Event {}
 class _MockRoom extends Mock implements Room {}
 
 class _MockVectorClockService extends Mock implements VectorClockService {}
+
+class _MockActivityGate extends Mock implements UserActivityGate {}
 
 /// Spy wrapper around [SyncSequenceLogService] that counts invocations
 /// of `runWithDeferredMissingEntries` so F1 (batch-level coalescing of
@@ -266,5 +270,219 @@ void main() {
     await worker.drainToCompletion();
     final stats = await queue.stats();
     expect(stats.total, 1);
+  });
+
+  test(
+    'permanentSkip outcome deletes the row via markSkipped and advances '
+    'the marker past the poison event',
+    () async {
+      await queue.enqueueLive(
+        _buildSyncEvent(
+          eventId: r'$poison',
+          roomId: roomId,
+          originTsMs: 5000,
+        ),
+      );
+      final worker = buildWorker(
+        apply: (_) async => ApplyOutcome.permanentSkip,
+      );
+      final applied = await worker.drainToCompletion();
+      expect(applied, 0);
+      final stats = await queue.stats();
+      expect(stats.total, 0);
+      final marker = await (db.select(
+        db.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).getSingle();
+      expect(marker.lastAppliedEventId, r'$poison');
+      expect(marker.lastAppliedTs, 5000);
+    },
+  );
+
+  test(
+    'missingBase outcome schedules a retry with the missingBase reason',
+    () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$missing',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        var attempt = 0;
+        final worker = buildWorker(
+          apply: (_) async {
+            attempt++;
+            return attempt == 1
+                ? ApplyOutcome.missingBase
+                : ApplyOutcome.applied;
+          },
+        );
+
+        final first = await worker.drainToCompletion();
+        expect(first, 0);
+        // Same exponential curve as retriable (initialBackoff = 10ms).
+        virtualNow = virtualNow.add(const Duration(milliseconds: 20));
+        final second = await worker.drainToCompletion();
+        expect(second, 1);
+      });
+    },
+  );
+
+  test(
+    'apply callback that throws is captured and treated as retriable',
+    () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$throws',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        var attempt = 0;
+        final worker = buildWorker(
+          apply: (_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw StateError('boom');
+            }
+            return ApplyOutcome.applied;
+          },
+        );
+
+        expect(await worker.drainToCompletion(), 0);
+        virtualNow = virtualNow.add(const Duration(milliseconds: 20));
+        expect(await worker.drainToCompletion(), 1);
+        // The apply throw must be logged so oncall can see it.
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain', that: contains('apply')),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    },
+  );
+
+  group('lifecycle', () {
+    test('stop() returns immediately when worker never started', () async {
+      final worker = buildWorker(apply: (_) async => ApplyOutcome.applied);
+      expect(worker.isRunning, isFalse);
+      await worker.stop();
+      expect(worker.isRunning, isFalse);
+    });
+
+    test('start() is idempotent and stop() completes the loop', () async {
+      final worker = buildWorker(apply: (_) async => ApplyOutcome.applied);
+      await worker.start();
+      // A second start while running is a no-op (no new loop spawned).
+      await worker.start();
+      expect(worker.isRunning, isTrue);
+      await worker.stop();
+      expect(worker.isRunning, isFalse);
+    });
+
+    test(
+      'running loop drains newly enqueued events and stop() awaits '
+      'loop completion',
+      () async {
+        final applied = <String>[];
+        final worker = buildWorker(
+          apply: (entry) async {
+            applied.add(entry.eventId);
+            return ApplyOutcome.applied;
+          },
+        );
+        await worker.start();
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$live', roomId: roomId, originTsMs: 1),
+        );
+        // Give the loop a turn to observe the depth change and drain.
+        for (var i = 0; i < 20; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (applied.isNotEmpty) break;
+        }
+        expect(applied, [r'$live']);
+        await worker.stop();
+        expect(worker.isRunning, isFalse);
+      },
+    );
+
+    test(
+      'loop flushes the decryption pen before peeking the queue each '
+      'iteration',
+      () async {
+        final pen = PendingDecryptionPen(logging: logging);
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (_, _) async => ApplyOutcome.applied,
+          logging: logging,
+          decryptionPen: pen,
+        );
+        final encrypted = _MockEvent();
+        when(() => encrypted.eventId).thenReturn(r'$enc1');
+        when(() => encrypted.roomId).thenReturn(roomId);
+        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+        when(() => encrypted.content).thenReturn(
+          <String, dynamic>{'algorithm': 'm.megolm.v1.aes-sha2'},
+        );
+        pen.hold(encrypted);
+        expect(pen.size, 1);
+
+        final decrypted = _buildSyncEvent(
+          eventId: r'$enc1',
+          roomId: roomId,
+          originTsMs: 42,
+        );
+        when(
+          () => room.getEventById(r'$enc1'),
+        ).thenAnswer((_) async => decrypted);
+
+        await worker.start();
+        for (var i = 0; i < 30; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (pen.size == 0) break;
+        }
+        await worker.stop();
+        expect(pen.size, 0);
+      },
+    );
+
+    test(
+      'activity gate is awaited on every loop iteration via '
+      '_waitUntilIdleOrStopped',
+      () async {
+        final gate = _MockActivityGate();
+        var waitCalls = 0;
+        when(gate.waitUntilIdle).thenAnswer((_) async {
+          waitCalls++;
+        });
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (_, _) async => ApplyOutcome.applied,
+          logging: logging,
+          activityGate: gate,
+        );
+        await worker.start();
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$gated', roomId: roomId, originTsMs: 1),
+        );
+        for (var i = 0; i < 30; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if ((await queue.stats()).total == 0) break;
+        }
+        await worker.stop();
+        expect(waitCalls, greaterThanOrEqualTo(1));
+      },
+    );
   });
 }

@@ -1,11 +1,26 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+
+/// Test seam: lets unit tests substitute `CatchUpStrategy`
+/// deterministically instead of wiring a full room timeline mock.
+@visibleForTesting
+typedef CatchUpCollector =
+    Future<CatchUpCollection> Function({
+      required Room room,
+      required String? lastEventId,
+      required BackfillFn backfill,
+      required LoggingService logging,
+      required num preContextSinceTs,
+      required int preContextCount,
+      required int maxLookback,
+    });
 
 const _logDomain = 'sync';
 const _logSub = 'queue.bridge';
@@ -39,6 +54,7 @@ class BridgeCoordinator {
     int maxLookback = SyncTuning.catchupMaxLookback,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
     int maxIncompleteRetries = 3,
+    @visibleForTesting CatchUpCollector? catchUpCollector,
   }) : _client = client,
        _currentRoomId = currentRoomId,
        _resolveRoom = resolveRoom,
@@ -51,7 +67,9 @@ class BridgeCoordinator {
        _preContextCount = preContextCount,
        _maxLookback = maxLookback,
        _incompleteRetryDelay = incompleteRetryDelay,
-       _maxIncompleteRetries = maxIncompleteRetries;
+       _maxIncompleteRetries = maxIncompleteRetries,
+       _catchUpCollector =
+           catchUpCollector ?? CatchUpStrategy.collectEventsForCatchUp;
 
   final Client _client;
   final String? Function() _currentRoomId;
@@ -66,6 +84,7 @@ class BridgeCoordinator {
   final int _maxLookback;
   final Duration _incompleteRetryDelay;
   final int _maxIncompleteRetries;
+  final CatchUpCollector _catchUpCollector;
 
   StreamSubscription<SyncUpdate>? _sub;
   Future<void>? _inFlightBridge;
@@ -175,7 +194,7 @@ class BridgeCoordinator {
       return;
     }
 
-    final collection = await CatchUpStrategy.collectEventsForCatchUp(
+    final collection = await _catchUpCollector(
       room: room,
       lastEventId: lastEventId,
       backfill: _backfill,
@@ -187,10 +206,16 @@ class BridgeCoordinator {
 
     if (collection.events.isEmpty) {
       _logging.captureEvent(
-        'queue.bridge.empty snapshotSize=${collection.snapshotSize}',
+        'queue.bridge.empty snapshotSize=${collection.snapshotSize} '
+        'incomplete=${collection.incomplete}',
         domain: _logDomain,
         subDomain: _logSub,
       );
+      // Still evaluate the incomplete retry gate: an incomplete
+      // collection can surface with empty events when the fallback
+      // budget has been exhausted, and those are exactly the cases
+      // where a bounded retry matters most.
+      _handleIncompleteFollowUp(collection.incomplete);
       return;
     }
 
