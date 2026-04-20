@@ -2178,6 +2178,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistUpdates => 'Checklisten-Updates';
 
   @override
+  String get checklistViewAll => 'Alle anzeigen';
+
+  @override
+  String get checklistViewAllSearchHint => 'Aufgabe suchen';
+
+  @override
   String get clearButton => 'Löschen';
 
   @override

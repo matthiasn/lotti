@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_full_list_modal.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -181,6 +183,37 @@ class _ChecklistCardState extends State<ChecklistCard> {
     _saveFilterPreference(filter);
   }
 
+  /// Single in-flight create-item path shared by the inline card body and
+  /// the full-list modal. The lock here is the canonical one — both
+  /// surfaces route through it so rapid submits across them cannot
+  /// double-create.
+  ///
+  /// Returns the new item id (forwarded from `widget.onCreateItem`) or null
+  /// when the call is short-circuited by the lock or the parent reports
+  /// failure. The optimistic append to `_itemIds` keeps the inline body in
+  /// sync immediately; the controller-driven prop refresh will reconcile.
+  Future<String?> _createItem(String? title) async {
+    if (_isCreatingItem) return null;
+    setState(() => _isCreatingItem = true);
+    String? id;
+    try {
+      id = await widget.onCreateItem(title);
+    } finally {
+      if (mounted) setState(() => _isCreatingItem = false);
+    }
+    if (!mounted || id == null) return null;
+    setState(() => _itemIds = [..._itemIds, id!]);
+    return id;
+  }
+
+  /// Persists a new item ordering to the parent and optimistically updates
+  /// [_itemIds] so the inline body reflects the change before the
+  /// controller round-trip completes.
+  Future<void> _persistReorder(List<String> ids) async {
+    setState(() => _itemIds = ids);
+    await widget.onReorder(ids);
+  }
+
   @override
   Widget build(BuildContext context) {
     final total = widget.totalCount ?? _itemIds.length;
@@ -250,38 +283,38 @@ class _ChecklistCardState extends State<ChecklistCard> {
               completionRate: widget.completionRate,
               activeTotalCount: total,
               focusNode: _addFocusNode,
+              onViewAll: _itemIds.length > maxVisibleChecklistItems
+                  ? () => ChecklistFullListModal.show(
+                      context: context,
+                      checklistId: widget.id,
+                      taskId: widget.taskId,
+                      title: widget.title,
+                      completedCount: completed,
+                      totalCount: total,
+                      completionRate: widget.completionRate,
+                      initialFilter: _filter,
+                      // Both surfaces share the same guarded creator so a
+                      // rapid succession of submits in the modal can't slip
+                      // past the inline-card's in-flight lock.
+                      onCreateItem: _createItem,
+                      onReorder: _persistReorder,
+                      onFilterChanged: _setFilter,
+                    )
+                  : null,
               onCreateItem: (title) async {
-                if (_isCreatingItem) return;
-                setState(() => _isCreatingItem = true);
-                String? id;
-                try {
-                  id = await widget.onCreateItem(title);
-                } finally {
-                  if (mounted) setState(() => _isCreatingItem = false);
+                final id = await _createItem(title);
+                if (id == null) return false;
+                if (mounted && context.mounted) {
+                  scheduleChecklistAddFieldFocus(context, _addFocusNode);
                 }
-                if (!mounted || id == null) return;
-                setState(() => _itemIds = [..._itemIds, id!]);
-                // Restore keyboard focus on the add field.
-                WidgetsBinding.instance.addPostFrameCallback((_) async {
-                  if (!mounted) return;
-                  _addFocusNode.unfocus();
-                  if (context.mounted) {
-                    FocusScope.of(context).requestFocus(_addFocusNode);
-                  }
-                  try {
-                    await SystemChannels.textInput.invokeMethod(
-                      'TextInput.show',
-                    );
-                  } catch (_) {}
-                });
+                return true;
               },
               onReorder: (oldIndex, newIndex) {
                 final ids = [..._itemIds];
                 final moved = ids.removeAt(oldIndex);
                 final insertAt = newIndex > oldIndex ? newIndex - 1 : newIndex;
                 ids.insert(insertAt, moved);
-                setState(() => _itemIds = ids);
-                widget.onReorder(ids);
+                _persistReorder(ids);
               },
             ),
             secondChild: const SizedBox.shrink(),
@@ -422,9 +455,8 @@ class _Header extends StatelessWidget {
           crossFadeState: isExpanded && totalCount > 0
               ? CrossFadeState.showFirst
               : CrossFadeState.showSecond,
-          firstChild: _FilterStrip(
+          firstChild: ChecklistFilterStrip(
             filter: filter,
-            tokens: tokens,
             onFilterChanged: onFilterChanged,
           ),
           secondChild: const SizedBox.shrink(),
@@ -536,127 +568,6 @@ class _ProgressRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Filter strip — full-width grey background row with Open / All tabs + divider.
-// Matches the Widgetbook design exactly.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _FilterStrip extends StatelessWidget {
-  const _FilterStrip({
-    required this.filter,
-    required this.tokens,
-    required this.onFilterChanged,
-  });
-
-  final ChecklistFilter filter;
-  final DsTokens tokens;
-  final ValueChanged<ChecklistFilter> onFilterChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 40,
-          color: Theme.of(context).colorScheme.onSurface.withValues(
-            alpha: 0.06,
-          ),
-          child: Row(
-            children: [
-              _FilterTab(
-                label: context.messages.taskStatusOpen,
-                isSelected: filter == ChecklistFilter.openOnly,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.openOnly),
-              ),
-              _FilterTab(
-                label: context.messages.taskStatusDone,
-                isSelected: filter == ChecklistFilter.doneOnly,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.doneOnly),
-              ),
-              _FilterTab(
-                label: context.messages.taskStatusAll,
-                isSelected: filter == ChecklistFilter.all,
-                tokens: tokens,
-                onTap: () => onFilterChanged(ChecklistFilter.all),
-              ),
-              const Spacer(),
-            ],
-          ),
-        ),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: tokens.colors.decorative.level01,
-        ),
-      ],
-    );
-  }
-}
-
-class _FilterTab extends StatelessWidget {
-  const _FilterTab({
-    required this.label,
-    required this.isSelected,
-    required this.tokens,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final DsTokens tokens;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = tokens.colors.interactive.enabled;
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: SizedBox(
-        width: 64,
-        child: InkWell(
-          onTap: onTap,
-          child: Column(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? accentColor.withValues(alpha: 0.24)
-                        : Colors.transparent,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: isSelected
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.text.lowEmphasis,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 64,
-                height: 3,
-                color: isSelected ? accentColor : Colors.transparent,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -826,6 +737,7 @@ class _Body extends StatelessWidget {
     required this.focusNode,
     required this.onCreateItem,
     required this.onReorder,
+    required this.onViewAll,
   });
 
   final List<String> itemIds;
@@ -839,8 +751,17 @@ class _Body extends StatelessWidget {
   /// done at the row level.
   final int activeTotalCount;
   final FocusNode focusNode;
-  final Future<void> Function(String?) onCreateItem;
+
+  /// Submits a new item title (already non-empty + trimmed). Resolves to
+  /// `true` when the create persisted, `false` when it was short-circuited
+  /// — the [ChecklistAddItemField] uses this to decide whether to clear
+  /// its controller, so dropping the bool would silently lose typed text.
+  final Future<bool> Function(String) onCreateItem;
   final void Function(int oldIndex, int newIndex) onReorder;
+
+  /// Opens the full-list modal bottom sheet. Null when the checklist is
+  /// short enough to render inline (≤ [maxVisibleChecklistItems]).
+  final VoidCallback? onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -856,6 +777,10 @@ class _Body extends StatelessWidget {
         activeTotalCount > 0 &&
         completionRate == 0 &&
         itemIds.isNotEmpty;
+
+    final visibleIds = itemIds.length > maxVisibleChecklistItems
+        ? itemIds.sublist(0, maxVisibleChecklistItems)
+        : itemIds;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,7 +803,7 @@ class _Body extends StatelessWidget {
               ),
             ),
           )
-        else
+        else ...[
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -894,9 +819,9 @@ class _Body extends StatelessWidget {
               child: child,
             ),
             onReorder: onReorder,
-            itemCount: itemIds.length,
+            itemCount: visibleIds.length,
             itemBuilder: (context, index) {
-              final itemId = itemIds[index];
+              final itemId = visibleIds[index];
               return ChecklistItemRow(
                 key: ValueKey('row-$checklistId-$itemId'),
                 itemId: itemId,
@@ -905,10 +830,12 @@ class _Body extends StatelessWidget {
                 index: index,
                 hideIfChecked: hideChecked,
                 hideIfUnchecked: hideUnchecked,
-                showDivider: index < itemIds.length - 1,
+                showDivider: index < visibleIds.length - 1,
               );
             },
           ),
+          if (onViewAll != null) _ViewAllButton(onPressed: onViewAll!),
+        ],
 
         Divider(
           height: 1,
@@ -918,7 +845,7 @@ class _Body extends StatelessWidget {
         SizedBox(height: tokens.spacing.step3),
 
         // Add item field — clean pill input matching the Widgetbook design.
-        _AddItemField(
+        ChecklistAddItemField(
           key: ValueKey('add-input-$checklistId'),
           focusNode: focusNode,
           onSubmitted: onCreateItem,
@@ -928,77 +855,28 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Add item field — minimal pill-shaped TextField matching the Widgetbook design.
-// Manages its own controller; clears on submit and fires the callback.
-// ─────────────────────────────────────────────────────────────────────────────
+/// Teal "View all" pill shown at the bottom of a truncated checklist body.
+/// Tapping it opens [ChecklistFullListModal] so the user can see and edit
+/// every item in the checklist.
+class _ViewAllButton extends StatelessWidget {
+  const _ViewAllButton({required this.onPressed});
 
-class _AddItemField extends StatefulWidget {
-  const _AddItemField({
-    required this.focusNode,
-    required this.onSubmitted,
-    super.key,
-  });
-
-  final FocusNode focusNode;
-  final Future<void> Function(String?) onSubmitted;
-
-  @override
-  State<_AddItemField> createState() => _AddItemFieldState();
-}
-
-class _AddItemFieldState extends State<_AddItemField> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return;
-    _controller.clear();
-    widget.onSubmitted(trimmed);
-  }
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.only(
-        left: tokens.spacing.step3,
-        right: tokens.spacing.step3,
-        bottom: tokens.spacing.step4,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step3,
       ),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 36),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: tokens.colors.decorative.level01),
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step3,
-        ),
-        child: TextField(
-          controller: _controller,
-          focusNode: widget.focusNode,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
-          decoration: InputDecoration(
-            hintText: context.messages.checklistAddItem,
-            hintStyle: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-          onSubmitted: _submit,
-          textInputAction: TextInputAction.done,
+      child: Center(
+        child: DesignSystemButton(
+          label: context.messages.checklistViewAll,
+          variant: DesignSystemButtonVariant.secondary,
+          trailingIcon: Icons.keyboard_arrow_down_rounded,
+          onPressed: onPressed,
         ),
       ),
     );

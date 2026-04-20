@@ -983,6 +983,8 @@
   "checklistSuggestionsRunning": "Se gândește la sugestii netrimise...",
   "checklistSuggestionsTitle": "Sugestii de acțiuni",
   "checklistUpdates": "Actualizări listă de verificare",
+  "checklistViewAll": "Vezi toate",
+  "checklistViewAllSearchHint": "Caută element",
   "clearButton": "Șterge",
   "colorLabel": "Culoare:",
   "colorPickerError": "Culoare Hex invalidă",

@@ -2160,6 +2160,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistUpdates => 'Aktualizace kontrolního seznamu';
 
   @override
+  String get checklistViewAll => 'Zobrazit vše';
+
+  @override
+  String get checklistViewAllSearchHint => 'Hledat úkol';
+
+  @override
   String get clearButton => 'Vymazat';
 
   @override

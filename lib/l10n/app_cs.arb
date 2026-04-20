@@ -754,6 +754,8 @@
   "checklistSuggestionsRunning": "Přemýšlím o nesledovaných návrzích...",
   "checklistSuggestionsTitle": "Navrhované akční položky",
   "checklistUpdates": "Aktualizace kontrolního seznamu",
+  "checklistViewAll": "Zobrazit vše",
+  "checklistViewAllSearchHint": "Hledat úkol",
   "clearButton": "Vymazat",
   "colorLabel": "Barva:",
   "colorPickerError": "Neplatná hexadecimální barva",

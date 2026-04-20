@@ -983,6 +983,8 @@
   "checklistSuggestionsRunning": "Réflexion sur les suggestions non suivies...",
   "checklistSuggestionsTitle": "Suggestions d'actions",
   "checklistUpdates": "Mises à jour de la liste de contrôle",
+  "checklistViewAll": "Tout afficher",
+  "checklistViewAllSearchHint": "Rechercher un élément de la liste de contrôle",
   "clearButton": "Effacer",
   "colorLabel": "Couleur :",
   "colorPickerError": "Couleur hexadécimale invalide",

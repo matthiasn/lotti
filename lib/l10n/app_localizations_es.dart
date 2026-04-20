@@ -2214,6 +2214,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistUpdates => 'Actualizaciones de lista de verificación';
 
   @override
+  String get checklistViewAll => 'Ver todo';
+
+  @override
+  String get checklistViewAllSearchHint => 'Buscar tarea';
+
+  @override
   String get clearButton => 'Borrar';
 
   @override
