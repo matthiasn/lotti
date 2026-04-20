@@ -2466,6 +2466,7 @@
   "taskDueToday": "Heute fällig",
   "taskDueTomorrow": "Morgen fällig",
   "taskDueYesterday": "Gestern fällig",
+  "taskEditTitleLabel": "Aufgabentitel bearbeiten",
   "taskEstimateLabel": "Schätzung:",
   "taskLabelUnassignedLabel": "nicht zugewiesen",
   "taskLanguageArabic": "Arabisch",

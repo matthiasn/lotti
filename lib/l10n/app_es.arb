@@ -2466,6 +2466,7 @@
   "taskDueToday": "Vence hoy",
   "taskDueTomorrow": "Vence mañana",
   "taskDueYesterday": "Venció ayer",
+  "taskEditTitleLabel": "Editar título de la tarea",
   "taskEstimateLabel": "Estimación:",
   "taskLabelUnassignedLabel": "sin asignar",
   "taskLanguageArabic": "Árabe",

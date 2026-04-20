@@ -386,12 +386,25 @@ class _TitleReadOnly extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.text,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Text(title, softWrap: true, style: style),
+    return Semantics(
+      label: context.messages.taskEditTitleLabel,
+      button: true,
+      container: true,
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.text,
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Text(title, softWrap: true, style: style),
+        ),
       ),
     );
   }
@@ -680,11 +693,15 @@ class _CategoryChip extends StatelessWidget {
             ),
             SizedBox(width: tokens.spacing.step1),
           ],
-          Text(
-            category.label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.onInteractiveAlert,
-              height: 1,
+          Flexible(
+            child: Text(
+              category.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.onInteractiveAlert,
+                height: 1,
+              ),
             ),
           ),
         ],
@@ -873,11 +890,15 @@ class _LabelChip extends StatelessWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            label.name,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: TaskShowcasePalette.highText(context),
-              height: 1,
+          Flexible(
+            child: Text(
+              label.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: TaskShowcasePalette.highText(context),
+                height: 1,
+              ),
             ),
           ),
         ],

@@ -317,7 +317,13 @@ class EntryController extends _$EntryController {
     final entry = state.value?.entry;
     if (entry is! Task) return;
 
-    if (entry.data.languageCode == languageCode) return;
+    // Only no-op when both the code and the source are already user-set.
+    // Re-selecting the same code that currently comes from a category/default
+    // source must still be persisted so the user choice overrides the default.
+    if (entry.data.languageCode == languageCode &&
+        entry.data.languageSource == ChangeSource.user) {
+      return;
+    }
 
     final optimistic = entry.copyWith(
       data: entry.data.copyWith(

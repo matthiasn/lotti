@@ -6054,6 +6054,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskEditTitleLabel => 'Editați titlul sarcinii';
+
+  @override
   String get taskNameHint => 'Introduceți un nume pentru sarcină';
 
   @override

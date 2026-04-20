@@ -2730,6 +2730,7 @@
   "taskDueToday": "Due Today",
   "taskDueTomorrow": "Due Tomorrow",
   "taskDueYesterday": "Due Yesterday",
+  "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
   "taskLabelUnassignedLabel": "unassigned",
   "taskLanguageArabic": "Arabic",

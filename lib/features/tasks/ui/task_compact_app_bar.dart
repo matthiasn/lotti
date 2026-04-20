@@ -9,10 +9,17 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
-/// Scroll offset at which the compact app bar stops being transparent
-/// enough to see the header title below it and starts showing its own
-/// subtitle-sized title to keep context. Matches the threshold used by
-/// the expandable variant's collapse.
+/// Scroll offset at which the compact app bar surfaces the task title in
+/// its own toolbar so context stays on screen once the inline header
+/// scrolls out of the pinned app bar's footprint.
+///
+/// The expandable variant can derive this threshold from its own cover
+/// image height (`expandedHeight * 0.85`), but the compact variant has
+/// no cover image and no direct access to the `DesktopTaskHeader`'s
+/// intrinsic height — so it uses a small fixed offset just past the
+/// pinned toolbar. The inline header's title stays visible below the
+/// toolbar until scrolling catches up, so brief overlap at the
+/// transition is acceptable.
 const double _persistentTitleScrollThreshold = 48;
 
 /// Compact app bar for tasks without cover art.

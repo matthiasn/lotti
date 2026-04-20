@@ -2466,6 +2466,7 @@
   "taskDueToday": "Échéance aujourd'hui",
   "taskDueTomorrow": "Échéance demain",
   "taskDueYesterday": "Échéance hier",
+  "taskEditTitleLabel": "Modifier le titre de la tâche",
   "taskEstimateLabel": "Temps estimé :",
   "taskLabelUnassignedLabel": "non attribué",
   "taskLanguageArabic": "Arabe",

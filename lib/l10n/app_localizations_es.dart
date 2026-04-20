@@ -6123,6 +6123,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskEditTitleLabel => 'Editar título de la tarea';
+
+  @override
   String get taskNameHint => 'Introduzca un nombre para la tarea';
 
   @override

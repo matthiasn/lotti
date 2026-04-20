@@ -2203,6 +2203,7 @@
   "taskDueToday": "Dnes splatné",
   "taskDueTomorrow": "Zítra splatné",
   "taskDueYesterday": "Včera splatné",
+  "taskEditTitleLabel": "Upravit název úkolu",
   "taskEstimateLabel": "Odhad:",
   "taskLabelUnassignedLabel": "nepřiřazeno",
   "taskLanguageArabic": "Arabština",

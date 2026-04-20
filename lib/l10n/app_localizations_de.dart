@@ -6029,6 +6029,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskLanguageYoruba => 'Yoruba';
 
   @override
+  String get taskEditTitleLabel => 'Aufgabentitel bearbeiten';
+
+  @override
   String get taskNameHint => 'Gib einen Namen für die Aufgabe ein';
 
   @override

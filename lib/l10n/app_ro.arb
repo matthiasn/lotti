@@ -2466,6 +2466,7 @@
   "taskDueToday": "Scadent astăzi",
   "taskDueTomorrow": "Scadent mâine",
   "taskDueYesterday": "Scadent ieri",
+  "taskEditTitleLabel": "Editați titlul sarcinii",
   "taskEstimateLabel": "Timp Estimat:",
   "taskLabelUnassignedLabel": "neatribuit",
   "taskLanguageArabic": "Arabă",
