@@ -46,12 +46,6 @@ class MatrixStreamSignalBinder {
       _metrics.incSignalTimelineNewEvent();
     } else if (kind == 'insert') {
       _metrics.incSignalTimelineInsert();
-    } else if (kind == 'change') {
-      _metrics.incSignalTimelineChange();
-    } else if (kind == 'remove') {
-      _metrics.incSignalTimelineRemove();
-    } else if (kind == 'update') {
-      _metrics.incSignalTimelineUpdate();
     }
   }
 
@@ -100,12 +94,13 @@ class MatrixStreamSignalBinder {
           }
         }
 
+        // Only subscribe to append callbacks. In a single-user,
+        // append-only sync model, `onChange` / `onRemove` / `onUpdate` have
+        // no legitimate trigger and their per-event metrics dominated the
+        // signalSummary breakdown without ever driving work.
         final tl = await room.getTimeline(
           onNewEvent: () => onTimelineSignal('new'),
           onInsert: (_) => onTimelineSignal('insert'),
-          onChange: (_) => onTimelineSignal('change'),
-          onRemove: (_) => onTimelineSignal('remove'),
-          onUpdate: () => onTimelineSignal('update'),
         );
         _liveScan.liveTimeline = tl;
         // Proactively scan once at startup, now that initial catch-up has run

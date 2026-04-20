@@ -241,23 +241,14 @@ void main() {
 
       void Function()? onNewEvent;
       void Function(int)? onInsert;
-      void Function(int)? onChange;
-      void Function(int)? onRemove;
-      void Function()? onUpdate;
       when(
         () => room.getTimeline(
           onNewEvent: any(named: 'onNewEvent'),
           onInsert: any(named: 'onInsert'),
-          onChange: any(named: 'onChange'),
-          onRemove: any(named: 'onRemove'),
-          onUpdate: any(named: 'onUpdate'),
         ),
       ).thenAnswer((inv) async {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         onInsert = inv.namedArguments[#onInsert] as void Function(int)?;
-        onChange = inv.namedArguments[#onChange] as void Function(int)?;
-        onRemove = inv.namedArguments[#onRemove] as void Function(int)?;
-        onUpdate = inv.namedArguments[#onUpdate] as void Function()?;
         return liveTimeline;
       });
       when(
@@ -288,16 +279,12 @@ void main() {
 
       final beforeSnap = consumer.metricsSnapshot();
       onNewEvent?.call();
-      // Exercise all callback subtypes to cover _recordTimelineSignal branches.
-      onUpdate?.call();
       onInsert?.call(0);
-      onChange?.call(0);
-      onRemove?.call(0);
       async.flushMicrotasks();
       final afterSnap = consumer.metricsSnapshot();
       expect(
         afterSnap['signalTimelineCallbacks'],
-        (beforeSnap['signalTimelineCallbacks'] ?? 0) + 5,
+        (beforeSnap['signalTimelineCallbacks'] ?? 0) + 2,
       );
       expect(
         afterSnap['signalTimelineNewEvent'],
@@ -308,17 +295,14 @@ void main() {
         (beforeSnap['signalTimelineInsert'] ?? 0) + 1,
       );
       expect(
-        afterSnap['signalTimelineChange'],
-        (beforeSnap['signalTimelineChange'] ?? 0) + 1,
+        afterSnap.containsKey('signalTimelineChange'),
+        isFalse,
+        reason:
+            'onChange is no longer subscribed; its counter is removed from '
+            'the snapshot',
       );
-      expect(
-        afterSnap['signalTimelineRemove'],
-        (beforeSnap['signalTimelineRemove'] ?? 0) + 1,
-      );
-      expect(
-        afterSnap['signalTimelineUpdate'],
-        (beforeSnap['signalTimelineUpdate'] ?? 0) + 1,
-      );
+      expect(afterSnap.containsKey('signalTimelineRemove'), isFalse);
+      expect(afterSnap.containsKey('signalTimelineUpdate'), isFalse);
     });
   });
 

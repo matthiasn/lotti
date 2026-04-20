@@ -60,9 +60,6 @@ class MatrixStreamLiveScanController {
   int _lastSummarySignalTimelineCallbacks = 0;
   int _lastSummarySignalTimelineNewEvent = 0;
   int _lastSummarySignalTimelineInsert = 0;
-  int _lastSummarySignalTimelineChange = 0;
-  int _lastSummarySignalTimelineRemove = 0;
-  int _lastSummarySignalTimelineUpdate = 0;
   int _lastSummaryDeferredInitialCatchupIncomplete = 0;
   int _lastSummaryDeferredCatchupInFlight = 0;
   int _lastSummaryDeferredInFlight = 0;
@@ -363,12 +360,6 @@ class MatrixStreamLiveScanController {
         _metrics.signalTimelineNewEvent - _lastSummarySignalTimelineNewEvent;
     final timelineInsert =
         _metrics.signalTimelineInsert - _lastSummarySignalTimelineInsert;
-    final timelineChange =
-        _metrics.signalTimelineChange - _lastSummarySignalTimelineChange;
-    final timelineRemove =
-        _metrics.signalTimelineRemove - _lastSummarySignalTimelineRemove;
-    final timelineUpdate =
-        _metrics.signalTimelineUpdate - _lastSummarySignalTimelineUpdate;
     final deferredInitial =
         _metrics.signalLiveScanDeferredInitialCatchupIncomplete -
         _lastSummaryDeferredInitialCatchupIncomplete;
@@ -387,9 +378,6 @@ class MatrixStreamLiveScanController {
     _lastSummarySignalTimelineCallbacks = _metrics.signalTimelineCallbacks;
     _lastSummarySignalTimelineNewEvent = _metrics.signalTimelineNewEvent;
     _lastSummarySignalTimelineInsert = _metrics.signalTimelineInsert;
-    _lastSummarySignalTimelineChange = _metrics.signalTimelineChange;
-    _lastSummarySignalTimelineRemove = _metrics.signalTimelineRemove;
-    _lastSummarySignalTimelineUpdate = _metrics.signalTimelineUpdate;
     _lastSummaryDeferredInitialCatchupIncomplete =
         _metrics.signalLiveScanDeferredInitialCatchupIncomplete;
     _lastSummaryDeferredCatchupInFlight =
@@ -404,7 +392,7 @@ class MatrixStreamLiveScanController {
       if (clientStream > 0) 'clientStream=$clientStream',
       if (timelineCallbacks > 0) 'timeline=$timelineCallbacks',
       if (timelineCallbacks > 0)
-        'timelineBreakdown=new:$timelineNew,insert:$timelineInsert,change:$timelineChange,remove:$timelineRemove,update:$timelineUpdate',
+        'timelineBreakdown=new:$timelineNew,insert:$timelineInsert',
       if (deferredInitial > 0) 'deferredInitial=$deferredInitial',
       if (deferredCatchup > 0) 'deferredCatchUp=$deferredCatchup',
       if (deferredInFlight > 0) 'deferredInFlight=$deferredInFlight',
