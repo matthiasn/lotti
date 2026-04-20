@@ -2141,6 +2141,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistUpdates => 'Checklist Updates';
 
   @override
+  String get checklistViewAll => 'View all';
+
+  @override
+  String get checklistViewAllSearchHint => 'Search todo item';
+
+  @override
   String get clearButton => 'Clear';
 
   @override

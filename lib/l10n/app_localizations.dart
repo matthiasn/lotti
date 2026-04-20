@@ -3828,6 +3828,18 @@ abstract class AppLocalizations {
   /// **'Checklist Updates'**
   String get checklistUpdates;
 
+  /// No description provided for @checklistViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get checklistViewAll;
+
+  /// No description provided for @checklistViewAllSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search todo item'**
+  String get checklistViewAllSearchHint;
+
   /// No description provided for @clearButton.
   ///
   /// In en, this message translates to:

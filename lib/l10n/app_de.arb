@@ -983,6 +983,8 @@
   "checklistSuggestionsRunning": "Denke über nicht verfolgte Vorschläge nach...",
   "checklistSuggestionsTitle": "Vorgeschlagene Aktionspunkte",
   "checklistUpdates": "Checklisten-Updates",
+  "checklistViewAll": "Alle anzeigen",
+  "checklistViewAllSearchHint": "Aufgabe suchen",
   "clearButton": "Löschen",
   "colorLabel": "Farbe:",
   "colorPickerError": "Ungültige Hex-Farbe",

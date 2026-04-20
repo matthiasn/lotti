@@ -2178,6 +2178,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistUpdates => 'Actualizări listă de verificare';
 
   @override
+  String get checklistViewAll => 'Vezi toate';
+
+  @override
+  String get checklistViewAllSearchHint => 'Caută element';
+
+  @override
   String get clearButton => 'Șterge';
 
   @override

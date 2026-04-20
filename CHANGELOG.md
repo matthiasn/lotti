@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.966] - 2026-04-19
+### Added
+- Long checklists now truncate to the first ten items inline and append
+  a teal "View all" pill with a down-chevron. The threshold is a new
+  hardcoded constant `maxVisibleChecklistItems = 10` — not user-
+  configurable — so the visible stack stays consistent across tasks.
+  Tapping the pill opens a bottom-sheet modal that renders the full
+  reorderable item list, the same Open/Done/All filter strip used in
+  the inline card, a search input that narrows rows by title, and an
+  add-item field pinned above the keyboard. `ChecklistFilterStrip`,
+  `ChecklistFilterTab`, and `ChecklistAddItemField` are extracted into
+  a shared widgets file so the card and modal stay visually identical.
+
 ### Fixed
 - Sync startup no longer does every step twice. The connectivity-driven
   `forceRescan` and the consumer's `runInitialCatchUpIfReady` used to race

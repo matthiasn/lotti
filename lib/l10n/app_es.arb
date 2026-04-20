@@ -983,6 +983,8 @@
   "checklistSuggestionsRunning": "Pensando en sugerencias sin seguimiento...",
   "checklistSuggestionsTitle": "Elementos de acción sugeridos",
   "checklistUpdates": "Actualizaciones de lista de verificación",
+  "checklistViewAll": "Ver todo",
+  "checklistViewAllSearchHint": "Buscar tarea",
   "clearButton": "Borrar",
   "colorLabel": "Color:",
   "colorPickerError": "Color hexadecimal no válido",

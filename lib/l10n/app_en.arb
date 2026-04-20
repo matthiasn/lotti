@@ -1212,6 +1212,8 @@
   "checklistSuggestionsRunning": "Thinking about untracked suggestions...",
   "checklistSuggestionsTitle": "Suggested Action Items",
   "checklistUpdates": "Checklist Updates",
+  "checklistViewAll": "View all",
+  "checklistViewAllSearchHint": "Search todo item",
   "clearButton": "Clear",
   "colorLabel": "Color:",
   "colorPickerError": "Invalid Hex color",

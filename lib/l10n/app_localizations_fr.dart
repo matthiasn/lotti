@@ -2209,6 +2209,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistUpdates => 'Mises à jour de la liste de contrôle';
 
   @override
+  String get checklistViewAll => 'Tout afficher';
+
+  @override
+  String get checklistViewAllSearchHint =>
+      'Rechercher un élément de la liste de contrôle';
+
+  @override
   String get clearButton => 'Effacer';
 
   @override
