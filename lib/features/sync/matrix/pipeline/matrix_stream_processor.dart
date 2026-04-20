@@ -45,6 +45,25 @@ class _ProcessOutcome {
   final DateTime? nextDue; // earliest next due time if blocked/retried
 }
 
+/// Carries a pre-resolved [PreparedSyncEvent] (or the error produced while
+/// resolving it) from the pre-transaction prepare pass into the
+/// transaction-scoped apply pass.
+class _PrepareSlot {
+  _PrepareSlot.prepared(this.prepared) : error = null, errorStack = null;
+  _PrepareSlot.error(Object this.error, StackTrace this.errorStack)
+    : prepared = null;
+
+  /// Non-null on successful prepare; null when the prepare step returned null
+  /// (e.g. undeserialisable envelope) — treated as a silent skip by apply.
+  final PreparedSyncEvent? prepared;
+
+  /// Populated when prepare threw. Apply rethrows this under the existing
+  /// retry/tracker machinery so error handling stays identical to the
+  /// pre-split pipeline.
+  final Object? error;
+  final StackTrace? errorStack;
+}
+
 class MatrixStreamProcessor {
   MatrixStreamProcessor({
     required SyncRoomManager roomManager,
@@ -230,6 +249,7 @@ class MatrixStreamProcessor {
   Future<_ProcessOutcome> _processSyncPayloadEvent(
     Event e, {
     String dropSuffix = '',
+    _PrepareSlot? prepareSlot,
   }) async {
     var processedOk = true;
     const treatAsHandled = false;
@@ -266,7 +286,22 @@ class MatrixStreamProcessor {
       if (_collectMetrics) _metrics.incRetriesScheduled();
     } else if (processedOk) {
       try {
-        await _eventProcessor.process(event: e, journalDb: _journalDb);
+        if (prepareSlot == null) {
+          // No pre-resolved slot: undeserialisable envelope skipped by
+          // prepare, or a mocktail test that stubs only `process`. Fall back
+          // to in-transaction `process` — matches pre-split semantics.
+          await _eventProcessor.process(event: e, journalDb: _journalDb);
+        } else if (prepareSlot.error != null) {
+          Error.throwWithStackTrace(
+            prepareSlot.error!,
+            prepareSlot.errorStack ?? StackTrace.current,
+          );
+        } else {
+          await _eventProcessor.apply(
+            prepared: prepareSlot.prepared!,
+            journalDb: _journalDb,
+          );
+        }
         // If apply observer flagged this as "missing base" then treat it as a
         // retryable failure (do not count as processed, do not advance, and
         // schedule a retry soon).
@@ -369,6 +404,69 @@ class MatrixStreamProcessor {
     }
   }
 
+  /// Bounded concurrency for the prepare pre-pass. Each prepare may download
+  /// and gzip-decode an attachment, so running a full 20-event chunk
+  /// sequentially (~200 ms each) would burn ~4 s of wall time before the
+  /// apply transaction even opens. 4 is enough to hide network latency
+  /// without hammering the Matrix SDK or the local gzip `compute` pool.
+  static const int _maxConcurrentPrepares = 4;
+
+  /// Resolves file-backed payloads for a chunk outside the writer
+  /// transaction. Prepares run in bounded-concurrency batches so attachment
+  /// I/O overlaps. Slots are only installed on the returned map when prepare
+  /// has something apply must consume — a null return (undeserialisable
+  /// envelope, or mocktail default in tests that stub only `process`) leaves
+  /// the slot absent and `_processSyncPayloadEvent` falls back to `process`.
+  Future<Map<int, _PrepareSlot>> _prepareChunk({
+    required List<Event> ordered,
+    required int chunkStart,
+    required int chunkEnd,
+    required Set<String> suppressedIds,
+  }) async {
+    final chunkPrepared = <int, _PrepareSlot>{};
+    final now = clock.now();
+    final toPrepare = <int>[];
+    for (var i = chunkStart; i < chunkEnd; i++) {
+      final e = ordered[i];
+      final id = e.eventId;
+      if (suppressedIds.contains(id)) continue;
+      if (!ec.MatrixEventClassifier.isSyncPayloadEvent(e)) continue;
+      if (_inFlightSyncIds.contains(id)) continue;
+      if (wasCompletedSync(id)) continue;
+      // Skip retry-blocked or over-cap events: paying I/O for events the
+      // apply pass will immediately shelve is wasted work.
+      if (_retryTracker.blockedUntil(id, now) != null) continue;
+      if (_retryTracker.attempts(id) >= _maxRetriesPerEvent) continue;
+      toPrepare.add(i);
+    }
+
+    for (
+      var batchStart = 0;
+      batchStart < toPrepare.length;
+      batchStart += _maxConcurrentPrepares
+    ) {
+      final batchEnd = math.min(
+        batchStart + _maxConcurrentPrepares,
+        toPrepare.length,
+      );
+      final batch = toPrepare.sublist(batchStart, batchEnd);
+      final results = await Future.wait(
+        batch.map((i) async {
+          try {
+            final p = await _eventProcessor.prepare(event: ordered[i]);
+            return p == null ? null : (i, _PrepareSlot.prepared(p));
+          } catch (err, st) {
+            return (i, _PrepareSlot.error(err, st));
+          }
+        }),
+      );
+      for (final res in results) {
+        if (res != null) chunkPrepared[res.$1] = res.$2;
+      }
+    }
+    return chunkPrepared;
+  }
+
   Future<void> _processOrderedInternal(List<Event> ordered, Room room) async {
     _sentEventRegistry.prune();
     final suppressedIds = <String>{};
@@ -468,6 +566,14 @@ class MatrixStreamProcessor {
     ) {
       final chunkEnd = math.min(chunkStart + chunkSize, ordered.length);
       final chunkCompletedIds = <String>[];
+
+      final chunkPrepared = await _prepareChunk(
+        ordered: ordered,
+        chunkStart: chunkStart,
+        chunkEnd: chunkEnd,
+        suppressedIds: suppressedIds,
+      );
+
       await _journalDb.transaction(() async {
         for (var i = chunkStart; i < chunkEnd; i++) {
           final e = ordered[i];
@@ -510,7 +616,10 @@ class MatrixStreamProcessor {
               syncPayloadEventsSeen++;
               _inFlightSyncIds.add(id);
               try {
-                final outcome = await _processSyncPayloadEvent(e);
+                final outcome = await _processSyncPayloadEvent(
+                  e,
+                  prepareSlot: chunkPrepared[i],
+                );
                 processedOk = outcome.processedOk;
                 treatAsHandled = outcome.treatAsHandled;
                 if (processedOk) syncPayloadsApplied++;
@@ -549,6 +658,7 @@ class MatrixStreamProcessor {
                   final outcome = await _processSyncPayloadEvent(
                     e,
                     dropSuffix: ' (no-msgtype)',
+                    prepareSlot: chunkPrepared[i],
                   );
                   processedOk = outcome.processedOk;
                   treatAsHandled = outcome.treatAsHandled;

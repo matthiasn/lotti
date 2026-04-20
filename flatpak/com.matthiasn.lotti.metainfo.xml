@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.968" date="2026-04-20">
+      <description>
+          <p>Fixes the desktop UI freezing during Matrix sync. The per-event apply loop in MatrixStreamProcessor used to hold the SQLite writer lock while awaiting attachment downloads, gzip decodes, and disk reads — on a 20-event catch-up slice this blocked user-driven journal saves for seconds at a time. SyncEventProcessor now splits into prepare (all I/O, no DB writes) and apply (pure DB writes); the pipeline runs prepare for a chunk in bounded-concurrency batches (4 at a time) outside the transaction, then opens a single transaction to apply the pre-resolved results. Outbox send-side gzip encode is also offloaded to a worker isolate for payloads above 2 KB. A regression test guards the invariant that every prepare completes before the writer transaction opens.</p>
+      </description>
+    </release>
     <release version="0.9.967" date="2026-04-20">
       <description>
           <p>Task detail header rebuilt against the desktop Figma:</p>

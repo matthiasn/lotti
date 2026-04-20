@@ -635,6 +635,22 @@ class SyncEventProcessor {
     required Event event,
     required JournalDb journalDb,
   }) async {
+    final prepared = await prepare(event: event);
+    if (prepared == null) return;
+    await apply(prepared: prepared, journalDb: journalDb);
+  }
+
+  /// Phase 1 of the two-phase pipeline: decodes the envelope and resolves any
+  /// file-backed payloads (journal entity JSON, agent entity/link
+  /// descriptors). All network, gzip, and disk I/O happens here so the caller
+  /// can run this phase **outside** a `JournalDb.transaction` and keep the
+  /// SQLite writer lock short-lived during [apply].
+  ///
+  /// Returns `null` when the envelope cannot be decoded into a [SyncMessage]
+  /// (malformed payload, unknown enum). Throws [FileSystemException] for
+  /// retriable attachment failures (not-yet-available, stale-but-not-
+  /// superseded) so the pipeline can schedule a retry.
+  Future<PreparedSyncEvent?> prepare({required Event event}) async {
     try {
       final raw = event.text;
       // Base64-decoding + utf8-decoding + JSON parsing a large sync payload is
@@ -668,7 +684,7 @@ class SyncEventProcessor {
           'eventId=${event.eventId}',
           subDomain: 'processor.skipUnrecoverable',
         );
-        return;
+        return null;
       }
 
       // Old backfill responses are NEVER skipped. The handleBackfillResponse
@@ -686,15 +702,40 @@ class SyncEventProcessor {
         subDomain: 'processor.SyncEventProcessor',
       );
 
-      final diag = await _handleMessage(
-        event: event,
-        syncMessage: syncMessage,
+      // `await` so exceptions from prepare flow through the `catch` below
+      // (Dart does not hook `catch` onto a returned future without it).
+      return await _prepareForMessage(event: event, syncMessage: syncMessage);
+    } catch (error, stackTrace) {
+      if (error is! FileSystemException) {
+        _loggingService.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SyncEventProcessor',
+          stackTrace: stackTrace,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Phase 2 of the two-phase pipeline: applies the already-resolved
+  /// [prepared] event to local stores. This is pure DB work plus in-memory
+  /// notifications — callers run it **inside** a `JournalDb.transaction` so
+  /// per-slice writes coalesce into a single stream emission without holding
+  /// the writer lock for any attachment I/O.
+  Future<SyncApplyDiagnostics?> apply({
+    required PreparedSyncEvent prepared,
+    required JournalDb journalDb,
+  }) async {
+    try {
+      final diag = await _applyMessage(
+        prepared: prepared,
         journalDb: journalDb,
-        loader: _journalEntityLoader,
       );
       if (diag != null) {
         applyObserver?.call(diag);
       }
+      return diag;
     } catch (error, stackTrace) {
       if (error is! FileSystemException) {
         _loggingService.captureException(
@@ -868,67 +909,191 @@ class SyncEventProcessor {
   }
 
   // ---------------------------------------------------------------------------
-  // Per-type message handlers (extracted for readability)
+  // Prepare-phase helpers (I/O only, no DB writes)
   // ---------------------------------------------------------------------------
 
-  /// Handles a SyncJournalEntity message. Throws FileSystemException on
-  /// attachment errors (rethrown for pipeline retry).
-  Future<SyncApplyDiagnostics?> _handleJournalEntity({
+  /// Dispatches the prepare phase per sync message family. Only
+  /// [SyncJournalEntity], [SyncAgentEntity], and [SyncAgentLink] need I/O
+  /// (attachment resolution); every other family is a passthrough.
+  Future<PreparedSyncEvent> _prepareForMessage({
+    required Event event,
+    required SyncMessage syncMessage,
+  }) async {
+    switch (syncMessage) {
+      case final SyncJournalEntity msg:
+        return _prepareJournalEntity(event: event, syncMessage: msg);
+      case final SyncAgentEntity msg:
+        final resolved = await _resolveAgentEntity(msg);
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: msg,
+          resolvedAgentEntity: resolved,
+        );
+      case final SyncAgentLink msg:
+        final resolved = await _resolveAgentLink(msg);
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: msg,
+          resolvedAgentLink: resolved,
+        );
+      default:
+        return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
+    }
+  }
+
+  /// Stale-descriptor [FileSystemException]s are caught and carried into the
+  /// apply phase: the supersession check needs the writer transaction, so
+  /// apply decides whether to skip the event or rethrow for retry.
+  Future<PreparedSyncEvent> _prepareJournalEntity({
     required Event event,
     required SyncJournalEntity syncMessage,
-    required JournalDb journalDb,
-    required SyncJournalEntityLoader loader,
   }) async {
-    final jsonPath = syncMessage.jsonPath;
-    final entryLinks = syncMessage.entryLinks;
-
     if (_isDuplicateJournalEntity(syncMessage.id, syncMessage.vectorClock)) {
-      // Even for duplicates, record in the sequence log so that
-      // resolvePendingHints runs. Without this, backfill hints (from
-      // BackfillResponse messages) are never resolved because the entity
-      // already exists locally with the same VC, but the pending
-      // (hostId, counter) → payloadId mapping was never verified.
-      if (_sequenceLogService != null &&
-          syncMessage.vectorClock != null &&
-          syncMessage.originatingHostId != null) {
-        try {
-          await _sequenceLogService.recordReceivedEntry(
-            entryId: syncMessage.id,
-            vectorClock: syncMessage.vectorClock!,
-            originatingHostId: syncMessage.originatingHostId!,
-            coveredVectorClocks: syncMessage.coveredVectorClocks,
-            jsonPath: syncMessage.jsonPath,
-          );
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'duplicateRecord',
-            stackTrace: st,
-          );
-        }
-      }
-
-      final diag = SyncApplyDiagnostics(
-        eventId: event.eventId,
-        payloadType: 'journalEntity',
-        vectorClock: syncMessage.vectorClock?.toJson(),
-        conflictStatus: VclockStatus.equal.toString(),
-        applied: false,
-        skipReason: JournalUpdateSkipReason.olderOrEqual,
+      return PreparedSyncEvent._(
+        event: event,
+        syncMessage: syncMessage,
+        isDuplicateJournalEntity: true,
       );
-      _trace(
-        'apply journalEntity skipped duplicate eventId=${event.eventId} '
-        'id=${syncMessage.id}',
-        subDomain: 'processor.apply',
-      );
-      return diag;
     }
 
-    final journalEntity = await loader.load(
-      jsonPath: jsonPath,
-      incomingVectorClock: syncMessage.vectorClock,
+    try {
+      final journalEntity = await _journalEntityLoader.load(
+        jsonPath: syncMessage.jsonPath,
+        incomingVectorClock: syncMessage.vectorClock,
+      );
+      return PreparedSyncEvent._(
+        event: event,
+        syncMessage: syncMessage,
+        journalEntity: journalEntity,
+      );
+    } on FileSystemException catch (error, stackTrace) {
+      if (_isStaleDescriptorError(error)) {
+        // Carry the error forward so apply can first check whether the local
+        // version already dominates the incoming one (in which case the
+        // event is skipped) or must be retried later (rethrown from apply).
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: syncMessage,
+          deferredStaleDescriptorError: error,
+        );
+      }
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SyncEventProcessor.missingAttachment',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Apply-phase handlers (pure DB, no attachment I/O)
+  // ---------------------------------------------------------------------------
+
+  /// Applies an already-[PreparedSyncEvent] to local stores. Runs entirely in
+  /// the writer transaction — it must not do attachment I/O.
+  Future<SyncApplyDiagnostics?> _applyJournalEntity({
+    required Event event,
+    required SyncJournalEntity syncMessage,
+    required JournalEntity? preloaded,
+    required bool isDuplicate,
+    required FileSystemException? deferredStaleError,
+    required JournalDb journalDb,
+  }) async {
+    if (deferredStaleError != null) {
+      final skipped = await _maybeSkipSupersededStaleDescriptor(
+        event: event,
+        syncMessage: syncMessage,
+        journalDb: journalDb,
+        entryLinks: syncMessage.entryLinks,
+      );
+      if (skipped != null) {
+        return skipped;
+      }
+      // Not superseded — log and rethrow for retry.
+      _loggingService.captureException(
+        deferredStaleError,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SyncEventProcessor.missingAttachment',
+      );
+      throw deferredStaleError;
+    }
+
+    if (isDuplicate) {
+      return _recordDuplicateJournalEntity(
+        event: event,
+        syncMessage: syncMessage,
+      );
+    }
+
+    // preloaded must be non-null when we reach this branch.
+    return _persistJournalEntity(
+      event: event,
+      syncMessage: syncMessage,
+      journalEntity: preloaded!,
+      journalDb: journalDb,
     );
+  }
+
+  /// Records the duplicate in the sequence log so `resolvePendingHints` still
+  /// runs; the duplicate detection itself lives in the prepare phase.
+  Future<SyncApplyDiagnostics?> _recordDuplicateJournalEntity({
+    required Event event,
+    required SyncJournalEntity syncMessage,
+  }) async {
+    // Even for duplicates, record in the sequence log so that
+    // resolvePendingHints runs. Without this, backfill hints (from
+    // BackfillResponse messages) are never resolved because the entity
+    // already exists locally with the same VC, but the pending
+    // (hostId, counter) → payloadId mapping was never verified.
+    if (_sequenceLogService != null &&
+        syncMessage.vectorClock != null &&
+        syncMessage.originatingHostId != null) {
+      try {
+        await _sequenceLogService.recordReceivedEntry(
+          entryId: syncMessage.id,
+          vectorClock: syncMessage.vectorClock!,
+          originatingHostId: syncMessage.originatingHostId!,
+          coveredVectorClocks: syncMessage.coveredVectorClocks,
+          jsonPath: syncMessage.jsonPath,
+        );
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'duplicateRecord',
+          stackTrace: st,
+        );
+      }
+    }
+
+    final diag = SyncApplyDiagnostics(
+      eventId: event.eventId,
+      payloadType: 'journalEntity',
+      vectorClock: syncMessage.vectorClock?.toJson(),
+      conflictStatus: VclockStatus.equal.toString(),
+      applied: false,
+      skipReason: JournalUpdateSkipReason.olderOrEqual,
+    );
+    _trace(
+      'apply journalEntity skipped duplicate eventId=${event.eventId} '
+      'id=${syncMessage.id}',
+      subDomain: 'processor.apply',
+    );
+    return diag;
+  }
+
+  /// Persists a pre-resolved journal entity and its embedded links. The
+  /// [journalEntity] argument was already loaded by the prepare phase, so
+  /// this runs entirely in the writer transaction.
+  Future<SyncApplyDiagnostics?> _persistJournalEntity({
+    required Event event,
+    required SyncJournalEntity syncMessage,
+    required JournalEntity journalEntity,
+    required JournalDb journalDb,
+  }) async {
+    final entryLinks = syncMessage.entryLinks;
     var predictedStatus = VclockStatus.b_gt_a;
     if (applyObserver != null) {
       try {
@@ -1295,42 +1460,22 @@ class SyncEventProcessor {
         typeName: 'agentLink',
       );
 
-  Future<SyncApplyDiagnostics?> _handleMessage({
-    required Event event,
-    required SyncMessage syncMessage,
+  Future<SyncApplyDiagnostics?> _applyMessage({
+    required PreparedSyncEvent prepared,
     required JournalDb journalDb,
-    required SyncJournalEntityLoader loader,
   }) async {
+    final event = prepared.event;
+    final syncMessage = prepared.syncMessage;
     switch (syncMessage) {
       case final SyncJournalEntity msg:
-        try {
-          return await _handleJournalEntity(
-            event: event,
-            syncMessage: msg,
-            journalDb: journalDb,
-            loader: loader,
-          );
-        } on FileSystemException catch (error, stackTrace) {
-          if (_isStaleDescriptorError(error)) {
-            final skipped = await _maybeSkipSupersededStaleDescriptor(
-              event: event,
-              syncMessage: msg,
-              journalDb: journalDb,
-              entryLinks: msg.entryLinks,
-            );
-            if (skipped != null) {
-              return skipped;
-            }
-          }
-          _loggingService.captureException(
-            error,
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'SyncEventProcessor.missingAttachment',
-            stackTrace: stackTrace,
-          );
-          // Propagate so the pipeline retries and does not advance the marker.
-          rethrow;
-        }
+        return _applyJournalEntity(
+          event: event,
+          syncMessage: msg,
+          preloaded: prepared.journalEntity,
+          isDuplicate: prepared.isDuplicateJournalEntity,
+          deferredStaleError: prepared.deferredStaleDescriptorError,
+          journalDb: journalDb,
+        );
       case final SyncEntryLink msg:
         return _handleEntryLink(
           event: event,
@@ -1468,7 +1613,7 @@ class SyncEventProcessor {
       // concurrent conflicting edits don't arise in practice.
       // Maintenance sync serves as catch-up for missed messages.
       case final SyncAgentEntity msg:
-        final resolvedEntity = await _resolveAgentEntity(msg);
+        final resolvedEntity = prepared.resolvedAgentEntity;
         if (resolvedEntity == null) {
           return null;
         }
@@ -1557,7 +1702,7 @@ class SyncEventProcessor {
         }
         return null;
       case final SyncAgentLink msg:
-        final resolvedLink = await _resolveAgentLink(msg);
+        final resolvedLink = prepared.resolvedAgentLink;
         if (resolvedLink == null) {
           return null;
         }
@@ -1667,4 +1812,58 @@ class SyncApplyDiagnostics {
   final String conflictStatus;
   final bool applied;
   final JournalUpdateSkipReason? skipReason;
+}
+
+/// Output of [SyncEventProcessor.prepare]: the decoded envelope plus any
+/// file-backed payload that was resolved outside the writer transaction.
+/// [SyncEventProcessor.apply] consumes this and runs the DB writes.
+class PreparedSyncEvent {
+  @visibleForTesting
+  PreparedSyncEvent.forTesting({
+    required this.event,
+    required this.syncMessage,
+    this.journalEntity,
+    this.isDuplicateJournalEntity = false,
+    this.deferredStaleDescriptorError,
+    this.resolvedAgentEntity,
+    this.resolvedAgentLink,
+  });
+
+  PreparedSyncEvent._({
+    required this.event,
+    required this.syncMessage,
+    this.journalEntity,
+    this.isDuplicateJournalEntity = false,
+    this.deferredStaleDescriptorError,
+    this.resolvedAgentEntity,
+    this.resolvedAgentLink,
+  });
+
+  final Event event;
+  final SyncMessage syncMessage;
+
+  /// Loaded journal entity when [syncMessage] is a [SyncJournalEntity] that
+  /// was not a duplicate and whose descriptor resolved cleanly. Null for
+  /// duplicates, stale-descriptor deferrals, and every other message family.
+  final JournalEntity? journalEntity;
+
+  /// True when prepare detected a duplicate by (id, vectorClock) fingerprint
+  /// and skipped the loader call. Apply still records the duplicate in the
+  /// sequence log so hint resolution runs.
+  final bool isDuplicateJournalEntity;
+
+  /// Captured stale-descriptor error from the loader. Apply first checks
+  /// whether the local version already supersedes the incoming one; if not,
+  /// this error is rethrown so the pipeline schedules a retry.
+  final FileSystemException? deferredStaleDescriptorError;
+
+  /// Resolved entity when [syncMessage] is a [SyncAgentEntity]. Null means
+  /// the prepare call returned null (inline missing, no jsonPath, invalid
+  /// path, or descriptor-miss without a local file) — apply will treat it as
+  /// a terminal skip.
+  final AgentDomainEntity? resolvedAgentEntity;
+
+  /// Resolved link when [syncMessage] is a [SyncAgentLink]. Same null
+  /// semantics as [resolvedAgentEntity].
+  final AgentLink? resolvedAgentLink;
 }

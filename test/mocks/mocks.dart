@@ -425,7 +425,20 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
 
-class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
+  // Default null/no-op so tests that stub only `process` keep working: a
+  // null prepare leaves no slot in the pipeline's pre-pass and the
+  // in-transaction fallback calls `process` as before. Tests exercising the
+  // new prepare/apply split use a local mock and stub both via `when(...)`.
+  @override
+  Future<PreparedSyncEvent?> prepare({required Event event}) async => null;
+
+  @override
+  Future<SyncApplyDiagnostics?> apply({
+    required PreparedSyncEvent prepared,
+    required JournalDb journalDb,
+  }) async => null;
+}
 
 class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
 

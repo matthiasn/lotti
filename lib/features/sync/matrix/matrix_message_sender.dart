@@ -292,10 +292,8 @@ class MatrixMessageSender {
       final shouldCompress =
           relativePath.toLowerCase().endsWith('.json') &&
           await _journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag);
-      // `gzip.encode` in dart:io returns a Uint8List-backed List<int>, so the
-      // cast avoids an unnecessary copy via Uint8List.fromList.
       final uploadBytes = shouldCompress
-          ? gzip.encode(fileBytes) as Uint8List
+          ? await gzipEncodeBytes(fileBytes)
           : fileBytes;
       final baseName = p.basename(fullPath);
       final uploadName = shouldCompress ? '$baseName.gz' : baseName;

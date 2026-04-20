@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,6 +32,17 @@ class _MockClient extends Mock implements Client {}
 class _MockTimeline extends Mock implements Timeline {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_MockEvent());
+    registerFallbackValue(_MockJournalDb());
+    registerFallbackValue(
+      PreparedSyncEvent.forTesting(
+        event: _MockEvent(),
+        syncMessage: const SyncMessage.aiConfigDelete(id: 'fallback'),
+      ),
+    );
+  });
+
   late _MockRoomManager roomManager;
   late LoggingService loggingService;
   late _MockJournalDb journalDb;
@@ -164,6 +178,136 @@ void main() {
       });
 
       test(
+        'freeze fix: prepare completes outside the transaction so I/O does '
+        'not hold the writer lock',
+        () async {
+          // P1a regression guard. Before the prepare/apply split, the per-
+          // event apply loop awaited network downloads, gzip decodes, and
+          // disk reads inside `JournalDb.transaction`. That holds the
+          // SQLite writer lock across the full I/O round-trip and blocks
+          // user-driven saves — the visible desktop freeze this branch
+          // targets.
+          //
+          // The test stubs `prepare` to await a completer (representing
+          // slow attachment I/O) and asserts that the first
+          // `journalDb.transaction` call is deferred until *after* prepare
+          // has completed for every event in the slice. Apply is stubbed
+          // to complete instantly so any future regression that pushes
+          // I/O back inside the transaction shows up here.
+
+          final mockRoom = _MockRoom();
+          when(() => roomManager.currentRoom).thenReturn(mockRoom);
+          when(sentEventRegistry.prune).thenReturn(null);
+          when(
+            () => sentEventRegistry.consume(any<String>()),
+          ).thenReturn(false);
+          when(
+            () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+          ).thenAnswer((_) async => 1);
+
+          final order = <String>[];
+          final prepareGates = <Completer<void>>[
+            Completer<void>(),
+            Completer<void>(),
+            Completer<void>(),
+          ];
+          var prepareCallIndex = 0;
+
+          when(
+            () => eventProcessor.prepare(event: any<Event>(named: 'event')),
+          ).thenAnswer((invocation) async {
+            final idx = prepareCallIndex++;
+            order.add('prepare.begin#$idx');
+            await prepareGates[idx].future;
+            order.add('prepare.end#$idx');
+            final ev = invocation.namedArguments[#event] as Event;
+            return PreparedSyncEvent.forTesting(
+              event: ev,
+              syncMessage: const SyncMessage.aiConfigDelete(id: 'stub'),
+            );
+          });
+          when(
+            () => eventProcessor.apply(
+              prepared: any<PreparedSyncEvent>(named: 'prepared'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {
+            order.add('apply');
+            return null;
+          });
+          when(
+            () => journalDb.transaction<Null>(any<Future<Null> Function()>()),
+          ).thenAnswer((invocation) async {
+            order.add('txn.begin');
+            final action =
+                invocation.positionalArguments.first as Future<void> Function();
+            await action();
+            order.add('txn.end');
+          });
+
+          final events = List<Event>.generate(
+            3,
+            (i) => _createMockSyncEvent(
+              r'$fz'
+              '${i + 1}',
+              2000 + i,
+              content: <String, dynamic>{'msgtype': syncMessageType},
+            ),
+          );
+
+          final processor = createProcessor();
+          final future = processor.processOrdered(events);
+
+          // Pump so the pre-pass can start. Prepares may run concurrently
+          // (bounded concurrency), but the transaction MUST NOT have opened
+          // yet — if it had, the writer lock would be held across our "I/O".
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            order.any((e) => e.startsWith('prepare.begin')),
+            isTrue,
+            reason: 'at least one prepare must start during the pre-pass',
+          );
+          expect(
+            order.any((e) => e.startsWith('txn.')),
+            isFalse,
+            reason:
+                'transaction must not open while any prepare is still in '
+                'flight; otherwise the writer lock holds across I/O',
+          );
+
+          for (final gate in prepareGates) {
+            gate.complete();
+            await Future<void>.delayed(Duration.zero);
+          }
+          await future;
+
+          // Full order must have every prepare.end before txn.begin so no
+          // I/O ever runs with the writer lock held.
+          final txnBegin = order.indexOf('txn.begin');
+          expect(
+            txnBegin,
+            isPositive,
+            reason: 'transaction must eventually open',
+          );
+          final lastPrepareEnd = order.lastIndexWhere(
+            (e) => e.startsWith('prepare.end'),
+          );
+          expect(
+            lastPrepareEnd,
+            lessThan(txnBegin),
+            reason:
+                'every prepare.end must occur before txn.begin so no I/O '
+                'runs with the writer lock held',
+          );
+          expect(
+            order.where((e) => e == 'apply').length,
+            events.length,
+            reason: 'each prepared event must be applied',
+          );
+        },
+      );
+
+      test(
         'coalesces per-event writes into a single journalDb transaction',
         () async {
           final txn = _stubCommonProcessOrdered(
@@ -242,9 +386,6 @@ void main() {
       test(
         'does not record completion when the transaction throws',
         () async {
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -254,6 +395,7 @@ void main() {
           when(
             () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
           ).thenAnswer((_) async => 1);
+          _stubPrepareApplyPassthrough(eventProcessor);
           when(
             () => eventProcessor.process(
               event: any<Event>(named: 'event'),
@@ -443,9 +585,6 @@ void main() {
           // chunk 2, the events from chunk 1 must stay flagged as completed
           // (their DB writes are already durable), while chunk-2 events must
           // stay un-flagged so a retry path can re-apply them.
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -455,6 +594,7 @@ void main() {
           when(
             () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
           ).thenAnswer((_) async => 1);
+          _stubPrepareApplyPassthrough(eventProcessor);
           when(
             () => eventProcessor.process(
               event: any<Event>(named: 'event'),
@@ -520,9 +660,6 @@ void main() {
       test(
         'suppresses events the registry marks as our own sends',
         () async {
-          registerFallbackValue(_MockEvent());
-          registerFallbackValue(_MockJournalDb());
-
           final mockRoom = _MockRoom();
           when(() => roomManager.currentRoom).thenReturn(mockRoom);
           when(sentEventRegistry.prune).thenReturn(null);
@@ -541,6 +678,7 @@ void main() {
             await action();
           });
 
+          _stubPrepareApplyPassthrough(eventProcessor);
           var processCalls = 0;
           when(
             () => eventProcessor.process(
@@ -549,6 +687,15 @@ void main() {
             ),
           ).thenAnswer((_) async {
             processCalls += 1;
+          });
+          when(
+            () => eventProcessor.apply(
+              prepared: any<PreparedSyncEvent>(named: 'prepared'),
+              journalDb: any<JournalDb>(named: 'journalDb'),
+            ),
+          ).thenAnswer((_) async {
+            processCalls += 1;
+            return null;
           });
 
           final processor = createProcessor();
@@ -594,6 +741,15 @@ class _StubbedTransaction {
   int transactionInvocations = 0;
   int processCallsInsideTransaction = 0;
   int processCallsOutsideTransaction = 0;
+
+  /// `apply` is the new inside-transaction entry point after the
+  /// prepare/apply split. Tests that used to check `processCallsInside…`
+  /// should prefer `applyCallsInsideTransaction`.
+  int applyCallsInsideTransaction = 0;
+  int applyCallsOutsideTransaction = 0;
+
+  int prepareCallsOutsideTransaction = 0;
+  int prepareCallsInsideTransaction = 0;
 }
 
 /// Installs the common `processOrdered` stub set:
@@ -616,9 +772,6 @@ _StubbedTransaction _stubCommonProcessOrdered({
   required _MockEventProcessor eventProcessor,
   void Function()? onBeforeCommit,
 }) {
-  registerFallbackValue(_MockEvent());
-  registerFallbackValue(_MockJournalDb());
-
   final handle = _StubbedTransaction();
   var insideTransaction = false;
 
@@ -648,6 +801,47 @@ _StubbedTransaction _stubCommonProcessOrdered({
     }
   });
 
+  // Post prepare/apply split: the pipeline calls `prepare` OUTSIDE the
+  // transaction and `apply` INSIDE it. Stubbing both lets tests assert the
+  // transaction boundary on the method that actually holds the writer lock
+  // (`apply`) while confirming that I/O (`prepare`) stays outside it.
+  when(
+    () => eventProcessor.prepare(event: any<Event>(named: 'event')),
+  ).thenAnswer((invocation) async {
+    if (insideTransaction) {
+      handle.prepareCallsInsideTransaction += 1;
+    } else {
+      handle.prepareCallsOutsideTransaction += 1;
+    }
+    final event = invocation.namedArguments[#event] as Event;
+    // A minimal SyncMessage is enough — `apply` is stubbed below so the
+    // fake never dispatches on this value.
+    return PreparedSyncEvent.forTesting(
+      event: event,
+      syncMessage: const SyncMessage.aiConfigDelete(id: 'stub'),
+    );
+  });
+
+  when(
+    () => eventProcessor.apply(
+      prepared: any<PreparedSyncEvent>(named: 'prepared'),
+      journalDb: any<JournalDb>(named: 'journalDb'),
+    ),
+  ).thenAnswer((_) async {
+    if (insideTransaction) {
+      handle
+        ..applyCallsInsideTransaction += 1
+        ..processCallsInsideTransaction += 1;
+    } else {
+      handle
+        ..applyCallsOutsideTransaction += 1
+        ..processCallsOutsideTransaction += 1;
+    }
+    return null;
+  });
+
+  // Keep the old `process` stub as a safety net for callers that still hit
+  // the back-compat path (e.g. before/after the split is wired).
   when(
     () => eventProcessor.process(
       event: any<Event>(named: 'event'),
@@ -662,6 +856,29 @@ _StubbedTransaction _stubCommonProcessOrdered({
   });
 
   return handle;
+}
+
+/// Installs minimal pass-through stubs for `prepare` and `apply` on tests
+/// that build their own ad-hoc transaction stub instead of using
+/// [_stubCommonProcessOrdered]. Without these, the pipeline's pre-pass call
+/// to `prepare` fails with a mocktail "no matching calls" error and the
+/// event is shelved for retry instead of reaching the in-transaction apply.
+void _stubPrepareApplyPassthrough(_MockEventProcessor eventProcessor) {
+  when(
+    () => eventProcessor.prepare(event: any<Event>(named: 'event')),
+  ).thenAnswer((invocation) async {
+    final event = invocation.namedArguments[#event] as Event;
+    return PreparedSyncEvent.forTesting(
+      event: event,
+      syncMessage: const SyncMessage.aiConfigDelete(id: 'stub'),
+    );
+  });
+  when(
+    () => eventProcessor.apply(
+      prepared: any<PreparedSyncEvent>(named: 'prepared'),
+      journalDb: any<JournalDb>(named: 'journalDb'),
+    ),
+  ).thenAnswer((_) async => null);
 }
 
 Event _createMockSyncEvent(
