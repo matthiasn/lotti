@@ -1026,7 +1026,21 @@ class _TaskFilterSelectedChip extends StatelessWidget {
   }
 }
 
-class _TaskFilterChoicePill extends StatelessWidget {
+/// Duration used to cross-fade the pill's border and fill colours between
+/// the deselected and selected states. 400 ms — the midpoint of the
+/// 300–500 ms range we trialled — so the transition reads as deliberate
+/// without feeling sluggish.
+const _kPillAnimationDuration = Duration(milliseconds: 400);
+
+/// Pinned border width for every chip state. Previously the unselected
+/// state used `1.0` and the selected state used `1.5`; the 0.5 px delta
+/// compounded on both horizontal edges and nudged every sibling in the
+/// Wrap by 1 px on each toggle, producing the "breathing" neighbours the
+/// task called out. Keeping the width constant and only animating the
+/// colour alphas eliminates it.
+const _kPillBorderWidth = 1.5;
+
+class _TaskFilterChoicePill extends StatefulWidget {
   const _TaskFilterChoicePill({
     required this.label,
     required this.selected,
@@ -1045,40 +1059,109 @@ class _TaskFilterChoicePill extends StatelessWidget {
   final Widget? leading;
 
   @override
+  State<_TaskFilterChoicePill> createState() => _TaskFilterChoicePillState();
+}
+
+class _TaskFilterChoicePillState extends State<_TaskFilterChoicePill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final CurvedAnimation _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: _kPillAnimationDuration,
+      value: widget.selected ? 1.0 : 0.0,
+    );
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _TaskFilterChoicePill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      if (widget.selected) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
-
     final radii = context.designTokens.radii;
+    final borderRadius = BorderRadius.circular(radii.badgesPills);
 
-    return Material(
-      color: Colors.transparent,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: selected ? palette.selectedPillBackground : palette.pillFill,
-          borderRadius: BorderRadius.circular(radii.badgesPills),
-          border: Border.all(
-            color: selected ? palette.accent : Colors.transparent,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(radii.badgesPills),
-          onTap: onTap,
+    // `Material` is hoisted out of the `AnimatedBuilder` so that only the
+    // `Ink` decoration rebuilds per frame. `Ink` + `InkWell` stay inside
+    // because the decoration is what actually depends on the animation
+    // value; the padded content is passed as the static `child` so it is
+    // built exactly once.
+    return RepaintBoundary(
+      child: Material(
+        color: Colors.transparent,
+        child: AnimatedBuilder(
+          animation: _progress,
+          builder: (context, child) {
+            final t = _progress.value;
+            final fillColor = Color.lerp(
+              widget.palette.pillFill,
+              widget.palette.selectedPillBackground,
+              t,
+            )!;
+            // Accent alpha fades 0 → 1. We never swap to `Colors.transparent`
+            // because the sibling border width is constant, so there's no
+            // layout shift.
+            final borderColor = widget.palette.accent.withValues(alpha: t);
+            return Ink(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: borderColor,
+                  width: _kPillBorderWidth,
+                ),
+              ),
+              child: InkWell(
+                borderRadius: borderRadius,
+                onTap: widget.onTap,
+                child: child,
+              ),
+            );
+          },
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: leading != null ? spacing.step4 : spacing.step5,
+              horizontal: widget.leading != null
+                  ? spacing.step4
+                  : spacing.step5,
               vertical: spacing.step3,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (leading != null) ...[
-                  leading!,
+                if (widget.leading != null) ...[
+                  widget.leading!,
                   SizedBox(width: spacing.step2),
                 ],
                 Text(
-                  label,
-                  style: textStyle.copyWith(color: palette.primaryText),
+                  widget.label,
+                  style: widget.textStyle.copyWith(
+                    color: widget.palette.primaryText,
+                  ),
                 ),
               ],
             ),

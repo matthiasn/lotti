@@ -83,6 +83,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.966] - 2026-04-19
 ### Fixed
+- Priority / status / label pills in the task filter sheet no longer
+  "breathe" when toggled. `_TaskFilterChoicePill` used to widen its
+  border from 1.0 → 1.5 px on selection, which nudged every sibling
+  chip in the `Wrap` by 1 px per edge on each toggle. The border width
+  is now pinned at 1.5 px in every state and the pill is stateful with
+  a 400 ms `easeInOut` animation controller that cross-fades the
+  border and fill colour alphas between deselected and selected, so
+  the outer dimensions of every chip are identical at every frame and
+  neighbours never reflow.
 - Sync startup no longer does every step twice. The connectivity-driven
   `forceRescan` and the consumer's `runInitialCatchUpIfReady` used to race
   into `_attachCatchUp()` concurrently because neither acquired
