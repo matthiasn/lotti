@@ -174,4 +174,30 @@ void main() {
     final outcome = await build().bind()(entry, room);
     expect(outcome, ApplyOutcome.retriable);
   });
+
+  test(
+    'generic exception during prepare maps to permanentSkip',
+    () async {
+      final entry = _buildEntry(
+        eventId: r'$preparePermanent',
+        roomId: '!r',
+        originTsMs: 1,
+      );
+      when(
+        () => processor.prepare(event: any(named: 'event')),
+      ).thenThrow(StateError('logic bug'));
+
+      final outcome = await build().bind()(entry, room);
+      expect(outcome, ApplyOutcome.permanentSkip);
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
 }

@@ -424,6 +424,297 @@ void main() {
         });
       },
     );
+
+    test(
+      'init throws StateError when suppressed but flag is off',
+      () async {
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'false');
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(suppressLegacyPipeline: true);
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await expectLater(
+          service.debugMaybeStartQueuePipelineForTest(),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'init throws StateError when suppressed but no coordinator injected',
+      () async {
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'true');
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(suppressLegacyPipeline: true);
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await expectLater(
+          service.debugMaybeStartQueuePipelineForTest(),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'init logs skip when flag on but coordinator not injected and not suppressed',
+      () async {
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'true');
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService();
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await service.debugMaybeStartQueuePipelineForTest();
+
+        verify(
+          () => logging.captureEvent(
+            any<String>(
+              that: contains(
+                'queue.coordinator.skip reason=flagOnButNotInjected',
+              ),
+            ),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'queue.init',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'init rethrows coordinator.start failure when suppressed',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.start).thenThrow(StateError('boom'));
+        when(() => coordinator.isRunning).thenReturn(false);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'true');
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await expectLater(
+          service.debugMaybeStartQueuePipelineForTest(),
+          throwsA(isA<StateError>()),
+        );
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'queue.init',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'init swallows coordinator.start failure when not suppressed',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.start).thenThrow(StateError('transient'));
+        when(() => coordinator.isRunning).thenReturn(false);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(
+          () => settingsDb.itemByKey(useInboundEventQueueKey),
+        ).thenAnswer((_) async => 'true');
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(queueCoordinator: coordinator);
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await service.debugMaybeStartQueuePipelineForTest();
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'queue.init',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('forceRescan under suppressLegacyPipeline', () {
+    test(
+      'returns early when no coordinator is injected',
+      () async {
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(suppressLegacyPipeline: true);
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await service.forceRescan();
+
+        // Legacy pipeline must not be invoked when suppressed.
+        verifyNever(
+          () => pipeline.forceRescan(
+            includeCatchUp: any(named: 'includeCatchUp'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'delegates to coordinator.triggerBridge when includeCatchUp is true',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.triggerBridge).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await service.forceRescan();
+
+        verify(coordinator.triggerBridge).called(1);
+        verifyNever(
+          () => pipeline.forceRescan(
+            includeCatchUp: any(named: 'includeCatchUp'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'skips coordinator when includeCatchUp is false',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.triggerBridge).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        await service.forceRescan(includeCatchUp: false);
+
+        verifyNever(coordinator.triggerBridge);
+      },
+    );
+
+    test(
+      'logs exception when coordinator.triggerBridge throws',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.triggerBridge).thenThrow(StateError('bridge down'));
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        // Should not throw — the service swallows and logs.
+        await service.forceRescan();
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'forceRescan.triggerBridge',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('saveRoom under suppressLegacyPipeline', () {
+    test(
+      'triggers coordinator.triggerBridge instead of pipeline.forceRescan',
+      () {
+        final coordinator = _MockQueuePipelineCoordinator();
+        when(coordinator.triggerBridge).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((async) {
+          final service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+
+          unawaited(service.saveRoom('!room:server'));
+          async.elapse(const Duration(milliseconds: 10));
+
+          verify(() => roomManager.saveRoomId('!room:server')).called(1);
+          verify(() => pipeline.start()).called(1);
+          verify(coordinator.triggerBridge).called(1);
+          verifyNever(
+            () => pipeline.forceRescan(
+              includeCatchUp: any(named: 'includeCatchUp'),
+            ),
+          );
+        });
+      },
+    );
   });
 
   test('discoverExistingSyncRooms delegates to room manager', () {

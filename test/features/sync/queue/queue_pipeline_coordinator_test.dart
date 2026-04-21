@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -40,6 +41,10 @@ class _MockSeeder extends Mock implements QueueMarkerSeeder {}
 class _MockEvent extends Mock implements Event {}
 
 class _MockClient extends Mock implements Client {}
+
+class _MockRoom extends Mock implements Room {}
+
+class _MockTimeline extends Mock implements Timeline {}
 
 void main() {
   late SyncDatabase syncDb;
@@ -214,5 +219,160 @@ void main() {
 
     verifyNever(worker.drainToCompletion);
     verify(() => worker.stop()).called(1);
+  });
+
+  test('triggerBridge delegates to bridge.bridgeNow', () async {
+    when(bridge.bridgeNow).thenAnswer((_) async {});
+    final coordinator = build();
+    await coordinator.triggerBridge();
+    verify(bridge.bridgeNow).called(1);
+  });
+
+  test('start logs noRoom when there is no current room', () async {
+    when(() => roomManager.currentRoomId).thenReturn(null);
+    final coordinator = build();
+    await coordinator.start();
+
+    verifyNever(() => seeder.seedIfAbsent(any()));
+    verify(
+      () => logging.captureEvent(
+        any<String>(that: contains('queue.coordinator.start.noRoom')),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).called(1);
+    expect(coordinator.isRunning, isTrue);
+    await coordinator.stop();
+  });
+
+  test('start swallows seeder errors and continues', () async {
+    when(
+      () => seeder.seedIfAbsent(any()),
+    ).thenThrow(StateError('seed failed'));
+    final coordinator = build();
+    await coordinator.start();
+
+    expect(coordinator.isRunning, isTrue);
+    verify(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(
+          named: 'subDomain',
+          that: contains('start.seed'),
+        ),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    await coordinator.stop();
+  });
+
+  test(
+    'start unwinds when worker.start throws and leaves coordinator stopped',
+    () async {
+      when(worker.start).thenThrow(StateError('worker died'));
+      final coordinator = build();
+
+      await expectLater(coordinator.start(), throwsA(isA<StateError>()));
+      expect(coordinator.isRunning, isFalse);
+      verify(bridge.stop).called(1);
+      verify(() => worker.stop()).called(1);
+    },
+  );
+
+  test('handles onSync signal: postLoad called on partial room', () async {
+    final room = _MockRoom();
+    when(() => room.partial).thenReturn(true);
+    when(room.postLoad).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    final coordinator = build();
+    await coordinator.start();
+
+    syncCtl.add(SyncUpdate(nextBatch: 'x'));
+    // Allow the async listener to fire and the follow-up postLoad future.
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    verify(room.postLoad).called(1);
+    await coordinator.stop();
+  });
+
+  test(
+    'onSync does not call postLoad when room is already non-partial',
+    () async {
+      final room = _MockRoom();
+      when(() => room.partial).thenReturn(false);
+      when(room.postLoad).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(room);
+
+      final coordinator = build();
+      await coordinator.start();
+
+      syncCtl.add(SyncUpdate(nextBatch: 'x'));
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(room.postLoad);
+      await coordinator.stop();
+    },
+  );
+
+  test('safeEnqueue swallows errors from enqueueLive', () async {
+    when(
+      () => queue.enqueueLive(any()),
+    ).thenThrow(StateError('queue closed'));
+    final coordinator = build();
+    await coordinator.start();
+
+    timelineCtl.add(buildEvent(EventTypes.Message));
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    verify(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain', that: contains('enqueue')),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    await coordinator.stop();
+  });
+
+  group('collectHistory', () {
+    test('throws StateError when no current room', () async {
+      when(() => roomManager.currentRoomId).thenReturn(null);
+      final coordinator = build();
+      await expectLater(
+        coordinator.collectHistory(),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test(
+      'exits immediately when the server has no history',
+      () async {
+        final room = _MockRoom();
+        final timeline = _MockTimeline();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final coordinator = build();
+        final infos = <BootstrapPageInfo>[];
+        final result = await coordinator.collectHistory(
+          onProgress: infos.add,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(result.totalEvents, 0);
+        expect(infos, isEmpty);
+        verify(timeline.cancelSubscriptions).called(1);
+      },
+    );
   });
 }

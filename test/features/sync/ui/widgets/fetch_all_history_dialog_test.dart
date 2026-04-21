@@ -148,4 +148,103 @@ void main() {
       expect(find.text('Close'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'renders initial loading status before any progress arrives',
+    (tester) async {
+      final completer = Completer<BootstrapResult>();
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pump();
+
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      completer.complete(
+        const BootstrapResult(
+          totalPages: 1,
+          totalEvents: 0,
+          oldestTimestampReached: null,
+          stopReason: BootstrapStopReason.serverExhausted,
+        ),
+      );
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'boundaryReached stopReason renders the done message',
+    (tester) async {
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async => const BootstrapResult(
+          totalPages: 3,
+          totalEvents: 42,
+          oldestTimestampReached: 500,
+          stopReason: BootstrapStopReason.boundaryReached,
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Fetched 42 events across 3 pages.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'dispose mid-run completes cancel signal without crashing',
+    (tester) async {
+      final cancelFuture = Completer<Future<void>?>();
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer((invocation) async {
+        final signal =
+            invocation.namedArguments[#cancelSignal] as Future<void>?;
+        cancelFuture.complete(signal);
+        await signal;
+        return const BootstrapResult(
+          totalPages: 0,
+          totalEvents: 0,
+          oldestTimestampReached: null,
+          stopReason: BootstrapStopReason.sinkCancelled,
+        );
+      });
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pump();
+
+      // Unmount the dialog mid-run.
+      await tester.pumpWidget(wrap(const SizedBox()));
+
+      final signal = await cancelFuture.future;
+      expect(signal, isNotNull);
+      await expectLater(signal, completes);
+    },
+  );
 }

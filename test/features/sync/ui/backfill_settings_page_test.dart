@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -21,6 +26,9 @@ class MockBackfillRequestService extends Mock
     implements BackfillRequestService {}
 
 class MockUserActivityService extends Mock implements UserActivityService {}
+
+class _MockQueuePipelineCoordinator extends Mock
+    implements QueuePipelineCoordinator {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -730,5 +738,178 @@ void main() {
       // Should display the unresolvable count of 3
       expect(find.text('3'), findsWidgets);
     });
+  });
+
+  group('BackfillSettingsPage queue section (Phase-2 queue pipeline)', () {
+    late MockMatrixService mockMatrixService;
+    late _MockQueuePipelineCoordinator mockCoordinator;
+    late SyncDatabase syncDb;
+    late InboundQueue realQueue;
+    late MockLoggingService loggingService;
+
+    setUp(() async {
+      // Outer setUp already registered a subset of singletons; reset so
+      // the queue-section tests can inject their own wiring (notably
+      // MatrixService with a QueuePipelineCoordinator).
+      await getIt.reset();
+      SharedPreferences.setMockInitialValues({'backfill_enabled': true});
+      mockJournalDb = MockJournalDb();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
+      mockMatrixService = MockMatrixService();
+      mockCoordinator = _MockQueuePipelineCoordinator();
+      syncDb = SyncDatabase(inMemoryDatabase: true);
+      loggingService = MockLoggingService();
+      realQueue = InboundQueue(db: syncDb, logging: loggingService);
+
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockSequenceService.getBackfillStats(),
+      ).thenAnswer((_) async => testStats);
+      when(
+        () => mockBackfillService.processFullBackfill(),
+      ).thenAnswer((_) async => 5);
+      when(() => mockUserActivityService.updateActivity()).thenReturn(null);
+      when(() => mockMatrixService.isLegacyPipelineSuppressed).thenReturn(true);
+      when(
+        () => mockMatrixService.queueCoordinator,
+      ).thenReturn(mockCoordinator);
+      when(() => mockCoordinator.queue).thenReturn(realQueue);
+      when(mockCoordinator.triggerBridge).thenAnswer((_) async {});
+
+      getIt
+        ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+        ..registerSingleton<BackfillRequestService>(mockBackfillService)
+        ..registerSingleton<UserActivityService>(mockUserActivityService)
+        ..registerSingleton<MatrixService>(mockMatrixService);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+      await realQueue.dispose();
+      await syncDb.close();
+    });
+
+    testWidgets('renders queue depth card and catch-up button', (tester) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // The catch-up button uses the bolt icon.
+      expect(find.byIcon(Icons.bolt_outlined), findsOneWidget);
+      // The fetch-all-history button uses download_rounded.
+      expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+    });
+
+    testWidgets('catch-up button invokes coordinator.triggerBridge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.ancestor(
+        of: find.byIcon(Icons.bolt_outlined),
+        matching: find.byType(FilledButton),
+      );
+      await tester.ensureVisible(button);
+      await tester.pump();
+      await tester.tap(button);
+      await tester.pump();
+
+      verify(mockCoordinator.triggerBridge).called(1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'catch-up button shows error SnackBar when triggerBridge throws',
+      (
+        tester,
+      ) async {
+        when(
+          mockCoordinator.triggerBridge,
+        ).thenThrow(StateError('bridge down'));
+
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final button = find.ancestor(
+          of: find.byIcon(Icons.bolt_outlined),
+          matching: find.byType(FilledButton),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        await tester.tap(button);
+        await tester.pump();
+
+        expect(find.byType(SnackBar), findsOneWidget);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('fetch-all-history button opens the dialog', (tester) async {
+      when(
+        () => mockCoordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async => const BootstrapResult(
+          totalPages: 0,
+          totalEvents: 0,
+          oldestTimestampReached: null,
+          stopReason: BootstrapStopReason.serverExhausted,
+        ),
+      );
+
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.ancestor(
+        of: find.byIcon(Icons.download_rounded),
+        matching: find.byType(OutlinedButton),
+      );
+      await tester.ensureVisible(button);
+      await tester.pump();
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      // Dialog renders its close/cancel button and title.
+      expect(find.byType(AlertDialog), findsOneWidget);
+      // Dismiss it to avoid leaking the dialog into teardown.
+      final closeButton = find.widgetWithText(TextButton, 'Close');
+      if (closeButton.evaluate().isNotEmpty) {
+        await tester.tap(closeButton);
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets(
+      'queue section hidden when MatrixService is not suppressed',
+      (tester) async {
+        when(
+          () => mockMatrixService.isLegacyPipelineSuppressed,
+        ).thenReturn(false);
+
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.bolt_outlined), findsNothing);
+        expect(find.byIcon(Icons.download_rounded), findsNothing);
+      },
+    );
   });
 }
