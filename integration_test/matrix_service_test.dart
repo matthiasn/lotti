@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -22,15 +23,21 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -53,6 +60,7 @@ MatrixService _createMatrixService({
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
+  bool useQueuePipeline = true,
 }) {
   final activityGate = UserActivityGate(
     activityService: activityService,
@@ -74,6 +82,47 @@ MatrixService _createMatrixService({
     settingsDb: settingsDb,
   );
 
+  QueuePipelineCoordinator? queueCoordinator;
+  MatrixSessionManager? sessionManager;
+  SyncRoomManager? roomManager;
+
+  if (useQueuePipeline) {
+    unawaited(
+      writeUseInboundEventQueueFlag(settingsDb, enabled: true),
+    );
+    final syncDb = SyncDatabase(
+      overriddenFilename: 'sync_${uuid.v1()}.sqlite',
+      inMemoryDatabase: true,
+    );
+    final vectorClockService = VectorClockService();
+    final sequenceLogService = SyncSequenceLogService(
+      syncDatabase: syncDb,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+    );
+    roomManager = SyncRoomManager(
+      gateway: gateway,
+      settingsDb: settingsDb,
+      loggingService: loggingService,
+    );
+    sessionManager = MatrixSessionManager(
+      gateway: gateway,
+      roomManager: roomManager,
+      loggingService: loggingService,
+    );
+    queueCoordinator = QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: eventProcessor,
+      sequenceLogService: sequenceLogService,
+      activityGate: activityGate,
+      logging: loggingService,
+    );
+  }
+
   return MatrixService(
     matrixConfig: config,
     gateway: gateway,
@@ -90,6 +139,10 @@ MatrixService _createMatrixService({
     attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: true,
+    roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queueCoordinator,
+    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 

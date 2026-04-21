@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
@@ -14,14 +15,20 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:uuid/uuid.dart';
@@ -231,7 +238,15 @@ Future<bool> verifyTestEnvironment() async {
   }
 }
 
-/// Create a MatrixService instance for testing
+/// Create a MatrixService instance for testing.
+///
+/// When [useQueuePipeline] is true, the Phase-2 `InboundQueue`
+/// pipeline is wired up alongside the service (flag written to
+/// settingsDb, dedicated SyncDatabase + SyncSequenceLogService +
+/// MatrixSessionManager + SyncRoomManager built here, coordinator
+/// passed in, legacy live-scan suppressed). Integration tests opt
+/// into the queue pipeline by passing `useQueuePipeline: true`;
+/// default stays `false` so existing tests are unchanged.
 MatrixService createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
@@ -246,6 +261,7 @@ MatrixService createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   bool collectSyncMetrics = true,
+  bool useQueuePipeline = false,
 }) {
   final activityGate = UserActivityGate(
     activityService: activityService,
@@ -267,6 +283,50 @@ MatrixService createMatrixService({
     settingsDb: settingsDb,
   );
 
+  QueuePipelineCoordinator? queueCoordinator;
+  MatrixSessionManager? sessionManager;
+  SyncRoomManager? roomManager;
+
+  if (useQueuePipeline) {
+    // Persist the flag so any code path that re-reads it sees the
+    // test-time configuration.
+    unawaited(
+      writeUseInboundEventQueueFlag(settingsDb, enabled: true),
+    );
+
+    final syncDb = SyncDatabase(
+      overriddenFilename: 'sync_${uuid.v1()}.sqlite',
+      inMemoryDatabase: true,
+    );
+    final vectorClockService = VectorClockService();
+    final sequenceLogService = SyncSequenceLogService(
+      syncDatabase: syncDb,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+    );
+    roomManager = SyncRoomManager(
+      gateway: gateway,
+      settingsDb: settingsDb,
+      loggingService: loggingService,
+    );
+    sessionManager = MatrixSessionManager(
+      gateway: gateway,
+      roomManager: roomManager,
+      loggingService: loggingService,
+    );
+    queueCoordinator = QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: eventProcessor,
+      sequenceLogService: sequenceLogService,
+      activityGate: activityGate,
+      logging: loggingService,
+    );
+  }
+
   return MatrixService(
     matrixConfig: config,
     gateway: gateway,
@@ -283,6 +343,10 @@ MatrixService createMatrixService({
     attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: collectSyncMetrics,
+    roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queueCoordinator,
+    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 

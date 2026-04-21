@@ -242,6 +242,7 @@ void main() {
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
         sentEventRegistry: aliceRegistry,
+        useQueuePipeline: true,
       );
 
       await alice.init();
@@ -279,6 +280,7 @@ void main() {
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
         sentEventRegistry: bobRegistry,
+        useQueuePipeline: true,
       );
 
       await bob.init();
