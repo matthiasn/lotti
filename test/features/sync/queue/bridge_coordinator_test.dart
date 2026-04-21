@@ -153,23 +153,53 @@ void main() {
   );
 
   test(
-    'missing timestamp yields queue.bridge.skip reason=noMarker',
+    'missing timestamp still triggers bridge catch-up using epoch=0 as '
+    'the anchor — CatchUpStrategy drives /messages backfill until the '
+    'full pre-join history is pulled, otherwise a fresh client that '
+    'has no legacy marker to seed from would stall at its initial '
+    'live batch',
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
-      final coordinator = buildCoordinator(
-        markerTs: null,
+      var collectorCalls = 0;
+      num observedPreContextSinceTs = -1;
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
         resolveRoom: () async => room,
+        queue: queue,
+        getLastReadEventId: () async => null,
+        getLastReadTs: () async => null,
+        logging: logging,
+        catchUpCollector:
+            ({
+              required Room room,
+              required String? lastEventId,
+              required BackfillFn backfill,
+              required LoggingService logging,
+              required num preContextSinceTs,
+              required int preContextCount,
+              required int maxLookback,
+            }) async {
+              collectorCalls++;
+              observedPreContextSinceTs = preContextSinceTs;
+              return const CatchUpCollection.complete(
+                events: [],
+                snapshotSize: 0,
+              );
+            },
       )..start();
       syncCtl.add(_limitedSyncFor(roomId));
       await Future<void>.delayed(Duration.zero);
-      verify(
+      expect(collectorCalls, 1);
+      expect(observedPreContextSinceTs, 0);
+      verifyNever(
         () => logging.captureEvent(
           any<String>(that: contains('queue.bridge.skip reason=noMarker')),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
-      ).called(1);
+      );
       await coordinator.stop();
     },
   );

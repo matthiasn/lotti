@@ -618,13 +618,25 @@ class MatrixService {
     // When provisioning saves the room after login, the pipeline may already
     // be active but not yet attached to this room. Re-start bindings and force
     // a catch-up in the background so receiving starts immediately.
+    //
+    // Under `suppressLegacyPipeline`, `pipeline.start()` enters its suppressed
+    // branch (un-partials the room, attaches diagnostic signals only) and
+    // `pipeline.forceRescan()` no-ops. The queue coordinator owns catch-up,
+    // so we trigger its bridge explicitly here.
     final pipeline = _pipeline;
     if (pipeline == null) return;
 
     unawaited(() async {
       try {
         await pipeline.start();
-        await pipeline.forceRescan();
+        if (_suppressLegacyPipeline) {
+          final coordinator = _queueCoordinator;
+          if (coordinator != null) {
+            await coordinator.triggerBridge();
+          }
+        } else {
+          await pipeline.forceRescan();
+        }
       } catch (error, stackTrace) {
         _loggingService.captureException(
           error,
@@ -855,6 +867,39 @@ class MatrixService {
   // Raw map accessor removed in favor of the expanded typed SyncMetrics model.
 
   Future<void> forceRescan({bool includeCatchUp = true}) async {
+    // Phase-2 flag-on: the legacy pipeline is dormant, so driving
+    // `pipeline.forceRescan` would run the legacy catch-up and apply
+    // events via `processOrdered` — exactly the double-apply hazard
+    // `suppressLegacyPipeline` exists to prevent. Route `includeCatchUp`
+    // rescans to the queue coordinator's bridge instead.
+    if (_suppressLegacyPipeline) {
+      final coordinator = _queueCoordinator;
+      if (coordinator == null || !includeCatchUp) {
+        _loggingService.captureEvent(
+          'forceRescan.suppressed includeCatchUp=$includeCatchUp '
+          'coordinator=${coordinator == null ? 'null' : 'present'}',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'forceRescan',
+        );
+        return;
+      }
+      try {
+        await coordinator.triggerBridge();
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'forceRescan.triggerBridge',
+          stackTrace: stackTrace,
+        );
+      }
+      _loggingService.captureEvent(
+        'forceRescan.triggerBridge invoked',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'forceRescan',
+      );
+      return;
+    }
     final p = _pipeline;
     if (p == null) return;
     await p.forceRescan(includeCatchUp: includeCatchUp);

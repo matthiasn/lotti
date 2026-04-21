@@ -216,23 +216,29 @@ class BridgeCoordinator {
     // processor intentionally leaves `lastReadMatrixEventId` null after
     // applying a placeholder/non-durable event while still advancing
     // `lastReadMatrixEventTs`, so gating on lastEventId would skip
-    // bridge catch-up for a reconnect in that legitimate state. Only
-    // the timestamp is a hard requirement.
-    if (lastTs == null) {
-      _logging.captureEvent(
-        'queue.bridge.skip reason=noMarker',
-        domain: _logDomain,
-        subDomain: _logSub,
-      );
-      return;
-    }
+    // bridge catch-up for a reconnect in that legitimate state.
+    //
+    // When the timestamp is also missing (fresh client, no legacy
+    // marker to seed from, e.g. Bob joining a room with a large
+    // backlog), use an epoch sentinel of `0` so the strategy takes
+    // the anchored path that drives `backfill()` / /messages
+    // pagination. The no-anchor branch relies only on local-cache
+    // expansion via `room.getTimeline(limit: ...)`, which does not
+    // trigger server pagination — so the queue bridge would never
+    // pull the pre-join history. Using `0` treats "no marker" as
+    // "catch up to the start of time" and lets the retry/incomplete
+    // machinery handle bounded paging until the snapshot stops
+    // growing.
+    final num preContextSinceTs = lastTs == null
+        ? 0
+        : lastTs - _preContextMargin.inMilliseconds;
 
     final collection = await _catchUpCollector(
       room: room,
       lastEventId: lastEventId,
       backfill: _backfill,
       logging: _logging,
-      preContextSinceTs: lastTs - _preContextMargin.inMilliseconds,
+      preContextSinceTs: preContextSinceTs,
       preContextCount: _preContextCount,
       maxLookback: _maxLookback,
     );

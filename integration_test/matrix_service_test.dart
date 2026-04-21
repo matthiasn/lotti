@@ -622,10 +622,23 @@ void main() {
         // catch-up pagination time for the backlog)
         await Future<void>.delayed(const Duration(seconds: 5));
 
+        Future<String> queueSnapshot() async {
+          final coord = bob.queueCoordinator;
+          if (coord == null) return 'coordinator=null';
+          final stats = await coord.queue.stats();
+          return 'queue[total=${stats.total} ready=${stats.readyNow} '
+              'byProducer=${stats.byProducer} '
+              'oldestEnqueuedAt=${stats.oldestEnqueuedAt}] '
+              'coord.running=${coord.isRunning} '
+              'currentRoomId=${bob.syncRoomId} '
+              'syncRoom=${bob.syncRoom != null}';
+        }
+
         debugPrint(
           'Bob metrics after startup: '
           '${bob.debugPipeline?.metricsSnapshot()}',
         );
+        debugPrint('Bob ${await queueSnapshot()}');
 
         var lastBobCount = -1;
         await waitUntilAsync(
@@ -650,6 +663,7 @@ void main() {
                   'Bob metrics @ ${elapsed}s: '
                   '${bob.debugPipeline?.metricsSnapshot()}',
                 );
+                debugPrint('Bob ${await queueSnapshot()}');
               }
               await Future<void>.delayed(const Duration(seconds: 1));
             }
@@ -803,6 +817,28 @@ Future<void> _performSasVerification({
   required int defaultDelay,
   required void Function(Future<void> Function()) addTearDown,
 }) async {
+  // Diagnostic: print alice + bob device state periodically while
+  // waiting, so a hang here is traceable to which side isn't seeing
+  // the other. Runs for up to 15 s (5 ticks × 3 s); the main
+  // `waitUntil` below still enforces the real 60 s timeout.
+  for (var i = 0; i < 5; i++) {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    final aliceKeys = alice.client.userDeviceKeys;
+    final bobKeys = bob.client.userDeviceKeys;
+    debugPrint(
+      '[sas.poll $i] alice.isLoggedIn=${alice.client.isLogged()} '
+      'alice.userDeviceKeys.users=${aliceKeys.keys.toList()} '
+      'alice.unverified=${alice.getUnverifiedDevices().length} '
+      '| bob.isLoggedIn=${bob.client.isLogged()} '
+      'bob.userDeviceKeys.users=${bobKeys.keys.toList()} '
+      'bob.unverified=${bob.getUnverifiedDevices().length}',
+    );
+    if (alice.getUnverifiedDevices().isNotEmpty &&
+        bob.getUnverifiedDevices().isNotEmpty) {
+      break;
+    }
+  }
+
   // Wait for devices to discover each other
   await waitUntil(
     () => alice.getUnverifiedDevices().isNotEmpty,

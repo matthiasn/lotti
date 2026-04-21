@@ -282,6 +282,33 @@ class MatrixStreamConsumer implements SyncPipeline {
         domain: syncLoggingDomain,
         subDomain: 'start.suppressed',
       );
+      // CRITICAL: call `room.getTimeline()` to un-partial the sync
+      // room. Matrix SDK skips `RoomMember` state events on partial
+      // rooms in `_updateRoomsByEventUpdate`, so a partial room never
+      // has its `_trackedUserIds` extended when a new member joins.
+      // That breaks device-key discovery: `updateUserDeviceKeys` never
+      // queries keys for users the SDK isn't tracking, and SAS
+      // verification / E2EE never sees the other device. The legacy
+      // signal binder did this via its
+      // `room.getTimeline(onNewEvent: …)` call; replicate the bare
+      // un-partial step here without subscribing scan callbacks.
+      final room = _roomManager.currentRoom;
+      if (room != null) {
+        try {
+          final tl = await room.getTimeline();
+          // Cancel the subscription right away — we only needed the
+          // side effect of loading room state. Leaving it attached
+          // would leak SDK timeline buffers we don't consume.
+          tl.cancelSubscriptions();
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: syncLoggingDomain,
+            subDomain: 'start.suppressed.getTimeline',
+            stackTrace: stackTrace,
+          );
+        }
+      }
       // Still call `_signals.start` so the Phase-0 diagnostic
       // `sync.limited` + `onTimelineEvent.ordering` logging keeps
       // emitting; the binder already no-ops its scan-scheduling
@@ -328,12 +355,39 @@ class MatrixStreamConsumer implements SyncPipeline {
   Map<String, String> diagnosticsStrings() => _processor.diagnosticsStrings();
 
   // Force a rescan and optional catch-up to recover from potential gaps.
+  //
+  // Under `suppressLiveIngestion` the queue pipeline owns catch-up via its
+  // bridge coordinator. Running the legacy catch-up would double-apply events
+  // and populate stale legacy metrics (catchupBatches, dbApplied) that make
+  // diagnostics confusing. Callers that bypass `MatrixService.forceRescan`
+  // (e.g. `saveRoom` unawaited bootstrap) still reach this method, so the
+  // guard must live here.
   Future<void> forceRescan({bool includeCatchUp = true}) async {
+    if (_suppressLiveIngestion) {
+      _loggingService.captureEvent(
+        _withInstance(
+          'forceRescan suppressed includeCatchUp=$includeCatchUp',
+        ),
+        domain: syncLoggingDomain,
+        subDomain: 'forceRescan.suppressed',
+      );
+      return;
+    }
     await _catchUp.forceRescan(includeCatchUp: includeCatchUp);
   }
 
   // Force all pending retries to be immediately due and trigger a scan.
-  Future<void> retryNow() async => _processor.retryNow();
+  Future<void> retryNow() async {
+    if (_suppressLiveIngestion) {
+      _loggingService.captureEvent(
+        _withInstance('retryNow suppressed'),
+        domain: syncLoggingDomain,
+        subDomain: 'retryNow.suppressed',
+      );
+      return;
+    }
+    await _processor.retryNow();
+  }
 
   // Record a connectivity-driven signal for observability.
   void recordConnectivitySignal() => _processor.recordConnectivitySignal();

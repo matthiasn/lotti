@@ -115,6 +115,7 @@ class QueuePipelineCoordinator {
   late final BridgeCoordinator _bridge;
 
   StreamSubscription<Event>? _liveSub;
+  StreamSubscription<SyncUpdate>? _syncSub;
   bool _started = false;
 
   /// Tracks in-flight `enqueueLive` calls spawned from the live
@@ -122,6 +123,10 @@ class QueuePipelineCoordinator {
   /// this, a racy shutdown can dispose the queue while a producer is
   /// mid-insert and trip drift's "used after close" guard.
   final Set<Future<void>> _inFlightEnqueues = <Future<void>>{};
+
+  /// Tracks which room ids we have un-partialled via `room.postLoad()`
+  /// so we only pay the DB load cost once per room.
+  final Set<String> _postLoadedRoomIds = <String>{};
 
   InboundQueue get queue => _queue;
   InboundWorker get worker => _worker;
@@ -172,6 +177,26 @@ class QueuePipelineCoordinator {
     // come up before the failure.
     try {
       _liveSub = _sessionManager.timelineEvents.listen(_handleLiveEvent);
+      // Subscribe to onSync so we can un-partial the current room
+      // (via `room.postLoad()`) the first time we see it. Without
+      // this, Matrix SDK skips `RoomMember` state events on partial
+      // rooms — so `_trackedUserIds` never grows to include new
+      // joiners, `updateUserDeviceKeys` never queries their keys,
+      // and SAS / E2EE cannot discover them. The legacy signal
+      // binder relied on `room.getTimeline(onNewEvent: …)` for this
+      // side effect; the queue pipeline replicates the un-partial
+      // step on its own, independent of timeline subscriptions.
+      _syncSub = _sessionManager.client.onSync.stream.listen(
+        (_) => _maybePostLoadCurrentRoom(),
+        onError: (Object error, StackTrace stackTrace) {
+          _logging.captureException(
+            error,
+            domain: _logDomain,
+            subDomain: '$_logSub.syncSub',
+            stackTrace: stackTrace,
+          );
+        },
+      );
       _bridge.start();
       await _worker.start();
       _started = true;
@@ -184,6 +209,8 @@ class QueuePipelineCoordinator {
       );
       await _liveSub?.cancel();
       _liveSub = null;
+      await _syncSub?.cancel();
+      _syncSub = null;
       try {
         await _bridge.stop();
       } catch (_) {
@@ -214,6 +241,8 @@ class QueuePipelineCoordinator {
 
     await _liveSub?.cancel();
     _liveSub = null;
+    await _syncSub?.cancel();
+    _syncSub = null;
     // Wait for fire-and-forget enqueues spawned from the now-cancelled
     // subscription before we tear the queue down.
     if (_inFlightEnqueues.isNotEmpty) {
@@ -248,11 +277,59 @@ class QueuePipelineCoordinator {
   void _handleLiveEvent(Event event) {
     final currentRoomId = _roomManager.currentRoomId;
     if (currentRoomId == null || event.roomId != currentRoomId) return;
+    // Un-partial the Matrix SDK's room — otherwise `RoomMember` state
+    // events arriving via /sync are silently skipped (see
+    // `client.dart:3138` in matrix-7.0.0), which leaves
+    // `_trackedUserIds` empty and breaks device-key discovery / SAS
+    // / E2EE for new joiners. Share the `_maybePostLoadCurrentRoom`
+    // check with the onSync listener so either path triggers it.
+    _maybePostLoadCurrentRoom();
     // F3: encrypted events live in the pen until decryption completes;
     // the worker's decryptionPen flush on every drain iteration picks
     // them up as soon as the SDK has the session key.
     if (_pen.hold(event)) return;
     _trackEnqueue(_safeEnqueue(event));
+  }
+
+  Future<void> _safePostLoad(Room room, String roomId) async {
+    final wasPartial = room.partial;
+    try {
+      await room.postLoad();
+      _logging.captureEvent(
+        'queue.coordinator.postLoad roomId=$roomId '
+        'wasPartial=$wasPartial nowPartial=${room.partial}',
+        domain: _logDomain,
+        subDomain: '$_logSub.postLoad',
+      );
+    } catch (error, stackTrace) {
+      // If the post-load fails, drop the "done" marker so a later
+      // event retries. Device discovery is important enough to retry.
+      _postLoadedRoomIds.remove(roomId);
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.postLoad',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _maybePostLoadCurrentRoom() {
+    final roomId = _roomManager.currentRoomId;
+    if (roomId == null) return;
+    final room = _roomManager.currentRoom;
+    if (room == null) return;
+    // Re-postLoad as long as the room is still partial — once it
+    // flips to non-partial the SDK's `_updateRoomsByEventUpdate` stops
+    // silently dropping `RoomMember` events, and subsequent syncs can
+    // grow `_trackedUserIds`. Using `room.partial` as the sentinel
+    // instead of our own dedupe set means a room that becomes
+    // partial again (e.g. after a rejoin) still gets un-partialed.
+    if (!room.partial) {
+      _postLoadedRoomIds.add(roomId);
+      return;
+    }
+    _trackEnqueue(_safePostLoad(room, roomId));
   }
 
   Future<void> _safeEnqueue(Event event) async {
@@ -273,7 +350,22 @@ class QueuePipelineCoordinator {
     future.whenComplete(() => _inFlightEnqueues.remove(future));
   }
 
-  Future<Room?> _resolveRoom() async => _roomManager.currentRoom;
+  Future<Room?> _resolveRoom() async {
+    // Prefer the cached reference, but fall back to the gateway's live
+    // lookup when it is null. Cold-start timing leaves
+    // `_roomManager.currentRoom` null until the SDK emits a /sync that
+    // contains the room — so a bridge trigger from `saveRoom` or the
+    // first limited-sync can fire before the cache is populated. The
+    // gateway's `getRoomById` resolves off the SDK's room table, which
+    // is updated synchronously inside `handleSync` before `onSync`
+    // fires; checking there rescues the common case where the bridge
+    // would otherwise log `noRoom` and stall.
+    final cached = _roomManager.currentRoom;
+    if (cached != null) return cached;
+    final roomId = _roomManager.currentRoomId;
+    if (roomId == null) return null;
+    return _sessionManager.client.getRoomById(roomId);
+  }
 
   /// Walks the current room's entire visible history into the queue
   /// through a [QueueBootstrapSink], awaiting drain back-pressure
