@@ -18,6 +18,17 @@ const _logSub = 'queue.apply';
 /// current Room, runs prepare outside a write transaction, and runs
 /// apply inside a short `journalDb.transaction` — mirroring the P1
 /// freeze fix the legacy pipeline already shipped (PR #2981).
+///
+/// Per-batch parallel prepare: [bindPrepareBatch] returns a hook that
+/// `InboundWorker._runBatch` calls with the whole batch before its
+/// per-entry apply loop. Prepare is I/O-bound (attachment downloads,
+/// gzip decode, JSON decode) with no shared state, so fanning it out
+/// via `Future.wait` collapses the prepare latency of the slowest
+/// entry down to the batch's critical path. Apply still runs
+/// sequentially inside `journalDb.transaction` to preserve the M1
+/// writer-lock discipline. Prepared results are cached by `eventId`
+/// so the subsequent per-entry apply call reuses them instead of
+/// preparing a second time.
 class QueueApplyAdapter {
   QueueApplyAdapter({
     required SyncEventProcessor processor,
@@ -31,10 +42,63 @@ class QueueApplyAdapter {
   final JournalDb _journalDb;
   final LoggingService _logging;
 
+  /// Cached prepare outcomes keyed by `eventId`, populated by
+  /// [_prepareBatch] and drained one entry at a time by [_applyOne].
+  /// A lingering entry here (e.g. a caller asked prepareBatch but
+  /// never applied the row) does no harm: the next prepareBatch for
+  /// the same eventId simply overwrites it, and apply always
+  /// `remove`s so a cache entry survives at most one apply cycle.
+  final Map<String, _PreparedState> _preparedCache = <String, _PreparedState>{};
+
   /// Returns an [InboundApplyFn] ready to wire into an [InboundWorker].
+  ///
+  /// The function prefers a [_PreparedState] cached by [bindPrepareBatch]
+  /// and only re-runs prepare inline when no cache entry is found —
+  /// which is the right fallback for direct callers (tests, worker
+  /// builds that skip the batch hook) and for the repair path on a
+  /// row that was enqueued after the batch's prepare pass.
   InboundApplyFn bind() => _applyOne;
 
+  /// Returns a batch-level prepare hook suitable for the
+  /// `prepareBatch` parameter on [InboundWorker]. The hook runs prepare
+  /// for every
+  /// entry in parallel via `Future.wait` and stores each result in
+  /// [_preparedCache]. It never throws — per-entry failures are
+  /// captured as a cached terminal [ApplyOutcome] so the subsequent
+  /// per-entry apply call can return that outcome without re-running
+  /// prepare.
+  InboundPrepareBatchFn bindPrepareBatch() => _prepareBatch;
+
+  Future<void> _prepareBatch(
+    List<InboundQueueEntry> entries,
+    Room room,
+  ) async {
+    if (entries.isEmpty) return;
+    await Future.wait(
+      entries.map((entry) async {
+        final state = await _prepareEntry(entry, room);
+        _preparedCache[entry.eventId] = state;
+      }),
+    );
+  }
+
   Future<ApplyOutcome> _applyOne(
+    InboundQueueEntry entry,
+    Room room,
+  ) async {
+    final cached = _preparedCache.remove(entry.eventId);
+    final state = cached ?? await _prepareEntry(entry, room);
+    final terminal = state.terminalOutcome;
+    if (terminal != null) {
+      return terminal;
+    }
+    return _applyPrepared(entry, state.prepared!);
+  }
+
+  /// Deserialises the event and runs prepare. Returns a terminal
+  /// outcome when deserialisation or prepare fails; otherwise returns
+  /// the [PreparedSyncEvent] ready for apply.
+  Future<_PreparedState> _prepareEntry(
     InboundQueueEntry entry,
     Room room,
   ) async {
@@ -53,7 +117,7 @@ class QueueApplyAdapter {
         subDomain: '$_logSub.deserialise',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.permanentSkip;
+      return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
     }
 
     // Step 2 — prepare outside the writer transaction. Downloads,
@@ -85,7 +149,7 @@ class QueueApplyAdapter {
           subDomain: '$_logSub.prepare.pendingAttachment',
           stackTrace: stackTrace,
         );
-        return ApplyOutcome.pendingAttachment;
+        return const _PreparedState.terminal(ApplyOutcome.pendingAttachment);
       }
       _logging.captureException(
         error,
@@ -93,7 +157,7 @@ class QueueApplyAdapter {
         subDomain: '$_logSub.prepare.retriable',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.retriable;
+      return const _PreparedState.terminal(ApplyOutcome.retriable);
     } catch (error, stackTrace) {
       // Unknown error classes (TypeError, StateError, ArgumentError,
       // …) are not transient; retrying them just burns attempts and
@@ -105,7 +169,7 @@ class QueueApplyAdapter {
         subDomain: '$_logSub.prepare.failed',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.permanentSkip;
+      return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
     }
     if (prepared == null) {
       _logging.captureEvent(
@@ -113,9 +177,16 @@ class QueueApplyAdapter {
         domain: _logDomain,
         subDomain: _logSub,
       );
-      return ApplyOutcome.permanentSkip;
+      return const _PreparedState.terminal(ApplyOutcome.permanentSkip);
     }
 
+    return _PreparedState.ready(prepared);
+  }
+
+  Future<ApplyOutcome> _applyPrepared(
+    InboundQueueEntry entry,
+    PreparedSyncEvent prepared,
+  ) async {
     // Step 3 — apply inside the writer transaction. Short by design
     // (pure DB work); attachment I/O already resolved above. Apply-
     // time failures are treated as retriable because the event has
@@ -130,7 +201,7 @@ class QueueApplyAdapter {
     try {
       await _journalDb.transaction(() async {
         await _processor.apply(
-          prepared: prepared!,
+          prepared: prepared,
           journalDb: _journalDb,
         );
       });
@@ -201,4 +272,18 @@ class QueueApplyAdapter {
     }
     return false;
   }
+}
+
+/// Output of the adapter's prepare phase. Either the row has already
+/// been classified (deserialise failed, prepare threw, or prepare
+/// returned null) — in which case [terminalOutcome] is set — or the
+/// row is ready for apply and [prepared] carries the resolved payload.
+class _PreparedState {
+  const _PreparedState.ready(PreparedSyncEvent this.prepared)
+    : terminalOutcome = null;
+  const _PreparedState.terminal(ApplyOutcome this.terminalOutcome)
+    : prepared = null;
+
+  final PreparedSyncEvent? prepared;
+  final ApplyOutcome? terminalOutcome;
 }

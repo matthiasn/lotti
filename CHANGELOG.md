@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.972] - 2026-04-21
+### Changed
+- Queue-pipeline `InboundWorker` now fans the adapter's prepare phase
+  out across the whole batch via `Future.wait`. Prepare is I/O-bound
+  (attachment downloads, gzip decode, JSON decode) with no shared
+  state, so running it in parallel collapses each batch's prepare
+  critical path to the slowest entry instead of the sum. Apply still
+  runs sequentially inside `journalDb.transaction` to preserve the M1
+  writer-lock discipline, and prepared payloads are cached by
+  `eventId` so apply consumes each one exactly once. Directly
+  addresses the cold-start catch-up throughput cliff where every
+  entry waited on its predecessor's attachment download before its
+  own prepare could begin.
+
 ## [0.9.969] - 2026-04-21
 ### Fixed
 - Task title edit affordance restored. The new `DesktopTaskHeader`

@@ -38,6 +38,25 @@ typedef InboundApplyFn =
       Room room,
     );
 
+/// Optional batch-prepare hook. Called once per batch in
+/// [InboundWorker._runBatch] before the per-entry apply loop so the
+/// adapter can fan out the I/O-bound prepare phase via `Future.wait`
+/// and cache the prepared payloads by `eventId`. Apply itself is still
+/// invoked entry-by-entry via [InboundApplyFn] to preserve the
+/// journalDb writer-lock discipline.
+///
+/// Contractual guarantees:
+/// - Must not throw. Per-entry failures must be recorded so the
+///   subsequent apply call for the same entry returns the correct
+///   terminal [ApplyOutcome].
+/// - Wiring is optional. A worker built without this hook prepares
+///   each entry inline inside [InboundApplyFn].
+typedef InboundPrepareBatchFn =
+    Future<void> Function(
+      List<InboundQueueEntry> entries,
+      Room room,
+    );
+
 const _logDomain = 'sync';
 const _logSub = 'queue.worker';
 
@@ -64,6 +83,7 @@ class InboundWorker {
     required Future<Room?> Function() resolveRoom,
     required InboundApplyFn apply,
     required LoggingService logging,
+    InboundPrepareBatchFn? prepareBatch,
     UserActivityGate? activityGate,
     PendingDecryptionPen? decryptionPen,
     Duration idleTick = const Duration(seconds: 5),
@@ -74,6 +94,7 @@ class InboundWorker {
        _sequenceLogService = sequenceLogService,
        _resolveRoom = resolveRoom,
        _apply = apply,
+       _prepareBatch = prepareBatch,
        _logging = logging,
        _activityGate = activityGate,
        _decryptionPen = decryptionPen,
@@ -86,6 +107,7 @@ class InboundWorker {
   final SyncSequenceLogService _sequenceLogService;
   final Future<Room?> Function() _resolveRoom;
   final InboundApplyFn _apply;
+  final InboundPrepareBatchFn? _prepareBatch;
   final LoggingService _logging;
   final UserActivityGate? _activityGate;
   final PendingDecryptionPen? _decryptionPen;
@@ -224,6 +246,31 @@ class InboundWorker {
 
     var appliedCount = 0;
     await _sequenceLogService.runWithDeferredMissingEntries(() async {
+      // Phase 0 (optional): batch-parallel prepare. Prepare is
+      // embarrassingly parallel — no shared state, entirely I/O-bound
+      // (attachment downloads, gzip decode, JSON decode) — so fanning
+      // it out via `Future.wait` collapses the batch-prepare latency
+      // down to the slowest entry's critical path. Apply continues
+      // sequentially so the journalDb writer lock still serialises
+      // the actual DB writes.
+      final batchPrepare = _prepareBatch;
+      if (batchPrepare != null) {
+        try {
+          await batchPrepare(batch, room);
+        } catch (error, stackTrace) {
+          // A broken prepareBatch must not skip the apply phase — the
+          // adapter already classifies prepare failures per entry, so
+          // a throw here is an adapter bug. Log and continue: the
+          // per-entry `_apply` call falls back to inline prepare.
+          _logging.captureException(
+            error,
+            domain: _logDomain,
+            subDomain: '$_logSub.prepareBatch',
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
       // Phase 1: apply each entry outside any sync_db transaction —
       // apply may write to journal_db and we do not want sync_db
       // locked while journal_db does I/O. Accumulate outcomes so the

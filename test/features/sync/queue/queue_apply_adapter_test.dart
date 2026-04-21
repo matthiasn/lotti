@@ -324,4 +324,156 @@ void main() {
       },
     );
   });
+
+  group('batch-parallel prepare', () {
+    test(
+      'prepareBatch fans prepare out via Future.wait so the slowest '
+      'entry — not the sum of all prepares — is the batch critical '
+      'path',
+      () async {
+        final a = _buildEntry(eventId: r'$a', roomId: '!r:x', originTsMs: 1);
+        final b = _buildEntry(eventId: r'$b', roomId: '!r:x', originTsMs: 2);
+        final c = _buildEntry(eventId: r'$c', roomId: '!r:x', originTsMs: 3);
+
+        // Each prepare call holds open for 100 ms. Sequential prepare
+        // would take ~300 ms; parallel prepare caps at ~100 ms plus
+        // tiny scheduling overhead.
+        final prepared = _MockPreparedSyncEvent();
+        when(() => processor.prepare(event: any(named: 'event'))).thenAnswer((
+          _,
+        ) async {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          return prepared;
+        });
+
+        final adapter = build();
+        final stopwatch = Stopwatch()..start();
+        await adapter.bindPrepareBatch()([a, b, c], room);
+        stopwatch.stop();
+
+        // 200 ms window leaves plenty of headroom for CI jitter but
+        // still fails decisively if prepare went sequential (≥300 ms).
+        expect(
+          stopwatch.elapsed,
+          lessThan(const Duration(milliseconds: 200)),
+          reason:
+              'prepare ran sequentially (${stopwatch.elapsedMilliseconds}ms)',
+        );
+        verify(() => processor.prepare(event: any(named: 'event'))).called(3);
+      },
+    );
+
+    test(
+      'apply consumes the cached prepared payload so prepare runs '
+      'exactly once when the caller invoked prepareBatch first',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$cached',
+          roomId: '!r:x',
+          originTsMs: 1,
+        );
+
+        final prepared = _MockPreparedSyncEvent();
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        when(
+          () => processor.apply(prepared: prepared, journalDb: journalDb),
+        ).thenAnswer((_) async => null);
+
+        final adapter = build();
+        await adapter.bindPrepareBatch()([entry], room);
+        final outcome = await adapter.bind()(entry, room);
+
+        expect(outcome, ApplyOutcome.applied);
+        // Exactly one prepare: batched ahead of time. No inline
+        // re-prepare in the apply phase.
+        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
+        verify(
+          () => processor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'apply falls back to inline prepare when the cached entry is '
+      'missing — a prepareBatch that skipped an eventId must not '
+      'silently drop its apply',
+      () async {
+        final batched = _buildEntry(
+          eventId: r'$batched',
+          roomId: '!r:x',
+          originTsMs: 1,
+        );
+        final late = _buildEntry(
+          eventId: r'$late',
+          roomId: '!r:x',
+          originTsMs: 2,
+        );
+
+        final prepared = _MockPreparedSyncEvent();
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        when(
+          () => processor.apply(prepared: prepared, journalDb: journalDb),
+        ).thenAnswer((_) async => null);
+
+        final adapter = build();
+        // prepareBatch only covers `batched` — `late` has no cache
+        // entry when apply runs.
+        await adapter.bindPrepareBatch()([batched], room);
+
+        final first = await adapter.bind()(batched, room);
+        final second = await adapter.bind()(late, room);
+        expect(first, ApplyOutcome.applied);
+        expect(second, ApplyOutcome.applied);
+
+        // Two prepare calls total: one batched, one inline fallback.
+        verify(() => processor.prepare(event: any(named: 'event'))).called(2);
+      },
+    );
+
+    test(
+      'a cached terminal outcome from prepareBatch is surfaced by '
+      'apply without re-preparing — e.g. pendingAttachment caught at '
+      'prepare time must not trigger a second prepare during apply',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$pending',
+          roomId: '!r:x',
+          originTsMs: 1,
+        );
+
+        // Prepare throws the sentinel FileSystemException that the
+        // adapter classifies as pendingAttachment.
+        when(() => processor.prepare(event: any(named: 'event'))).thenThrow(
+          const FileSystemException('attachment descriptor not yet available'),
+        );
+
+        final adapter = build();
+        await adapter.bindPrepareBatch()([entry], room);
+        final outcome = await adapter.bind()(entry, room);
+
+        expect(outcome, ApplyOutcome.pendingAttachment);
+        // Exactly one prepare: the batched one. Apply consumed the
+        // cached terminal outcome instead of re-trying. No apply was
+        // ever attempted — the stubbed `processor.apply` was never
+        // configured, so calling it would have thrown.
+        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
+      },
+    );
+
+    test(
+      'prepareBatch with an empty entry list is a no-op — safe for '
+      'a worker that happens to peek an empty batch',
+      () async {
+        await build().bindPrepareBatch()(const [], room);
+        verifyNever(() => processor.prepare(event: any(named: 'event')));
+      },
+    );
+  });
 }

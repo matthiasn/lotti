@@ -397,6 +397,15 @@ Components (all under `lib/features/sync/queue/`):
 - **`QueueApplyAdapter`** — bridges the worker to
   `SyncEventProcessor.prepare`/`apply`. Prepare runs outside the writer
   transaction, apply inside — preserving the P1 freeze fix (#2981).
+  Per-batch parallel prepare: `bindPrepareBatch()` returns a hook the
+  worker invokes with the whole batch before the per-entry apply loop.
+  Prepare is I/O-bound (attachment downloads, gzip decode, JSON
+  decode) so fanning out via `Future.wait` collapses the critical
+  path to the slowest entry instead of the sum. Prepared payloads are
+  cached by `eventId` and consumed one-at-a-time by the apply phase;
+  terminal outcomes (permanentSkip, pendingAttachment, retriable)
+  caught at prepare time also survive in the cache so apply surfaces
+  them without re-running prepare.
 - **`QueuePipelineCoordinator`** — owns the above plus the live producer
   subscription; exposed on `MatrixService.queueCoordinator`.
 - **`QueueMarkerSeeder`** — one-shot migration copying the legacy
@@ -427,7 +436,8 @@ flowchart TD
     Empty -->|yes| Wait["wait for depthChanges or 5s tick"]
     Wait --> Tick
     Empty -->|no| Window["runWithDeferredMissingEntries →"]
-    Window --> Apply["SyncEventProcessor.prepare + apply per entry"]
+    Window --> PrepareAll["adapter.prepareBatch (Future.wait)"]
+    PrepareAll --> Apply["SyncEventProcessor.apply per entry<br/>(cached prepared payload)"]
     Apply --> Outcome{"outcome"}
     Outcome -->|applied| Commit["queue.commitApplied<br/>(delete + marker advance if monotonic)"]
     Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]

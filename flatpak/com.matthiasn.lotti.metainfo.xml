@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.972" date="2026-04-21">
+      <description>
+          <p>Queue-pipeline InboundWorker now fans the adapter's prepare phase out across the whole batch via Future.wait. Prepare is I/O-bound (attachment downloads, gzip decode, JSON decode) with no shared state, so running it in parallel collapses each batch's prepare critical path to the slowest entry instead of the sum. Apply still runs sequentially inside journalDb.transaction to preserve the writer-lock discipline, and prepared payloads are cached by eventId so apply consumes each one exactly once. Directly addresses the cold-start catch-up throughput cliff where every entry waited on its predecessor's attachment download before its own prepare could begin.</p>
+      </description>
+    </release>
     <release version="0.9.969" date="2026-04-21">
       <description>
           <p>Restores the task title edit affordance in the new DesktopTaskHeader. The read-only title now renders a trailing pencil icon next to the label, and empty titles display a localized "No title" placeholder in the same tappable slot so users have an obvious target to open the inline editor. Task list rows render the existing "(untitled)" label in the design-system error color and italic so missing titles stand out rather than silently collapsing the row.</p>

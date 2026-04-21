@@ -94,6 +94,7 @@ class QueuePipelineCoordinator {
           sequenceLogService: _sequenceLogService,
           resolveRoom: _resolveRoom,
           apply: _applyAdapter.bind(),
+          prepareBatch: _applyAdapter.bindPrepareBatch(),
           logging: _logging,
           activityGate: _activityGate,
           decryptionPen: _pen,
