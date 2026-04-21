@@ -247,4 +247,62 @@ void main() {
       await expectLater(signal, completes);
     },
   );
+
+  testWidgets(
+    'error stopReason with a concrete exception renders the '
+    '"Fetch stopped: {reason}" string — covers the reason-present '
+    'branch of the error status switch',
+    (tester) async {
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenThrow(StateError('boom'));
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Fetch stopped'), findsOneWidget);
+      expect(find.textContaining('boom'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'stopReason=error with _error=null falls back to the localized '
+    '"Fetch stopped unexpectedly" string — covers the nil-error '
+    'branch of the error status switch',
+    (tester) async {
+      // Return a BootstrapResult with stopReason=error so the switch
+      // enters the error branch with a non-null _result but _error
+      // still null (no throw from collectHistory itself).
+      when(
+        () => coordinator.collectHistory(
+          onProgress: any(named: 'onProgress'),
+          cancelSignal: any(named: 'cancelSignal'),
+          overallTimeout: any(named: 'overallTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async => const BootstrapResult(
+          totalPages: 0,
+          totalEvents: 0,
+          oldestTimestampReached: null,
+          stopReason: BootstrapStopReason.error,
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(FetchAllHistoryDialog(coordinator: coordinator)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Fetch stopped unexpectedly.'),
+        findsOneWidget,
+      );
+    },
+  );
 }

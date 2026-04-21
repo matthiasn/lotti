@@ -160,6 +160,147 @@ void main() {
       expect(find.textContaining('live: 4'), findsOneWidget);
     },
   );
+
+  group('skipped events card (abandoned rows)', () {
+    testWidgets(
+      'renders the skipped badge inline with the total and a dedicated '
+      '"Skipped events" card under it when abandoned > 0',
+      (tester) async {
+        final mockQueue = _MockInboundQueue();
+        final depthCtl = StreamController<QueueDepthSignal>.broadcast();
+        addTearDown(depthCtl.close);
+
+        when(() => mockQueue.depthChanges).thenAnswer((_) => depthCtl.stream);
+        // Initial stats load carries the abandoned count so the card
+        // appears on first paint without waiting for a live signal.
+        when(mockQueue.stats).thenAnswer(
+          (_) async => const QueueStats(
+            total: 2,
+            byProducer: {InboundEventProducer.live: 2},
+            readyNow: 2,
+            oldestEnqueuedAt: 1,
+            abandoned: 3,
+          ),
+        );
+
+        await tester.pumpWidget(wrap(QueueDepthCard(queue: mockQueue)));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        // Active queue depth still renders.
+        expect(find.text('2'), findsOneWidget);
+        // Skipped-badge: plural form for count=3.
+        expect(find.text('3 skipped'), findsOneWidget);
+        // Dedicated skipped card header + retry button.
+        expect(find.text('Skipped events'), findsOneWidget);
+        expect(find.text('Retry skipped events'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping Retry invokes resurrectAll and shows a success snackbar',
+      (tester) async {
+        final mockQueue = _MockInboundQueue();
+        final depthCtl = StreamController<QueueDepthSignal>.broadcast();
+        addTearDown(depthCtl.close);
+
+        when(() => mockQueue.depthChanges).thenAnswer((_) => depthCtl.stream);
+        when(mockQueue.stats).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+            abandoned: 2,
+          ),
+        );
+        when(mockQueue.resurrectAll).thenAnswer((_) async => 2);
+
+        await tester.pumpWidget(wrap(QueueDepthCard(queue: mockQueue)));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        await tester.tap(find.text('Retry skipped events'));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        verify(mockQueue.resurrectAll).called(1);
+        // Success snackbar with plural-for-2 form.
+        expect(
+          find.textContaining('2 events queued for retry'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'resurrectAll throwing surfaces an error snackbar and the button '
+      're-enables so the user can try again',
+      (tester) async {
+        final mockQueue = _MockInboundQueue();
+        final depthCtl = StreamController<QueueDepthSignal>.broadcast();
+        addTearDown(depthCtl.close);
+
+        when(() => mockQueue.depthChanges).thenAnswer((_) => depthCtl.stream);
+        when(mockQueue.stats).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+            abandoned: 1,
+          ),
+        );
+        when(
+          mockQueue.resurrectAll,
+        ).thenThrow(StateError('resurrection unavailable'));
+
+        await tester.pumpWidget(wrap(QueueDepthCard(queue: mockQueue)));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        await tester.tap(find.text('Retry skipped events'));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('Retry failed'), findsOneWidget);
+        // Button still present after the error — not permanently
+        // disabled by the `_retryingAll` guard.
+        expect(find.text('Retry skipped events'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the skipped card disappears once a live depth signal reports '
+      'abandoned=0 (e.g. resurrect finished, worker applied them)',
+      (tester) async {
+        final mockQueue = _MockInboundQueue();
+        final depthCtl = StreamController<QueueDepthSignal>.broadcast();
+        addTearDown(depthCtl.close);
+
+        when(() => mockQueue.depthChanges).thenAnswer((_) => depthCtl.stream);
+        when(mockQueue.stats).thenAnswer(
+          (_) async => const QueueStats(
+            total: 0,
+            byProducer: {},
+            readyNow: 0,
+            oldestEnqueuedAt: null,
+            abandoned: 5,
+          ),
+        );
+
+        await tester.pumpWidget(wrap(QueueDepthCard(queue: mockQueue)));
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+        expect(find.text('Skipped events'), findsOneWidget);
+
+        depthCtl.add(
+          const QueueDepthSignal(
+            total: 0,
+            byProducer: {},
+            oldestEnqueuedAt: null,
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(milliseconds: 50));
+        expect(find.text('Skipped events'), findsNothing);
+        expect(find.textContaining('skipped'), findsNothing);
+      },
+    );
+  });
 }
 
 class _MockInboundQueue extends Mock implements InboundQueue {}

@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -49,6 +52,40 @@ class _MockClient extends Mock implements Client {}
 class _MockRoom extends Mock implements Room {}
 
 class _MockTimeline extends Mock implements Timeline {}
+
+/// Test double for [AttachmentIngestor] that records every `process()`
+/// call and optionally throws, without needing mocktail fallbacks for
+/// every named-argument type (Function, LoggingService, nullable refs).
+class _FakeAttachmentIngestor implements AttachmentIngestor {
+  _FakeAttachmentIngestor({this.shouldThrow = false});
+
+  bool shouldThrow;
+  final List<Map<Symbol, Object?>> processCalls = <Map<Symbol, Object?>>[];
+
+  @override
+  Future<bool> process({
+    required Event event,
+    required LoggingService logging,
+    required AttachmentIndex? attachmentIndex,
+    required DescriptorCatchUpManager? descriptorCatchUp,
+    required void Function() scheduleLiveScan,
+    required Future<void> Function() retryNow,
+    bool scheduleDownload = false,
+  }) async {
+    processCalls.add({
+      #event: event,
+      #descriptorCatchUp: descriptorCatchUp,
+      #scheduleDownload: scheduleDownload,
+    });
+    if (shouldThrow) {
+      throw StateError('ingestor boom');
+    }
+    return false;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   late SyncDatabase syncDb;
@@ -1016,6 +1053,100 @@ void main() {
         verify(
           () => queue.resurrectByReason('missingBase'),
         ).called(greaterThanOrEqualTo(1));
+
+        await coordinator.stop();
+      },
+    );
+  });
+
+  group('attachment ingestor hook', () {
+    test(
+      'every live event for the current room is routed through '
+      'AttachmentIngestor.process so descriptor JSONs land on disk '
+      'alongside the queue-pipeline enqueue',
+      () async {
+        final ingestor = _FakeAttachmentIngestor();
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          attachmentIngestor: ingestor,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        timelineCtl.add(buildEvent(EventTypes.Message));
+        await Future<void>.delayed(Duration.zero);
+
+        expect(ingestor.processCalls, hasLength(1));
+        // `scheduleDownload` must be `true` so the coordinator routes
+        // through the async download queue — the legacy in-line save
+        // path would block the live handler under bursty load.
+        expect(ingestor.processCalls.single[#scheduleDownload], isTrue);
+        // `descriptorCatchUp` is hard-coded to `null` in the coordinator —
+        // the queue pipeline uses its own resurrection signal, not the
+        // legacy descriptor catch-up manager.
+        expect(ingestor.processCalls.single[#descriptorCatchUp], isNull);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'when AttachmentIngestor.process throws, the failure is logged '
+      'and the queue enqueue still happens — a broken ingestor must '
+      'not strand incoming sync-payload events',
+      () async {
+        final ingestor = _FakeAttachmentIngestor(shouldThrow: true);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          attachmentIngestor: ingestor,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        timelineCtl.add(buildEvent(EventTypes.Message));
+        // Allow the fire-and-forget `_processAttachment` microtask plus
+        // the enqueue microtask to land.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // The enqueue path still fires despite the ingestor throwing.
+        verify(() => queue.enqueueLive(any())).called(1);
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('attachmentIngestor'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
 
         await coordinator.stop();
       },
