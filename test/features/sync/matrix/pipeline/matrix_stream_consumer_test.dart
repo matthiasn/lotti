@@ -4352,4 +4352,202 @@ void main() {
       async.flushMicrotasks();
     });
   });
+
+  group('suppressLiveIngestion (Phase-2 queue pipeline owns ingestion)', () {
+    Future<MatrixStreamConsumer> buildSuppressedConsumer({
+      required MockMatrixSessionManager session,
+      required MockSyncRoomManager roomManager,
+      required MockLoggingService logger,
+      required MockJournalDb journalDb,
+      required MockSettingsDb settingsDb,
+      required MockSyncEventProcessor processor,
+      required MockSyncReadMarkerService readMarker,
+      Room? roomOverride,
+    }) async {
+      final client = MockClient();
+      when(() => session.client).thenReturn(client);
+      when(() => client.userID).thenReturn('@me:server');
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
+      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(() => roomManager.currentRoom).thenReturn(roomOverride);
+      when(() => roomManager.currentRoomId).thenReturn('!room:server');
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+
+      final consumer = MatrixStreamConsumer(
+        skipSyncWait: true,
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+        eventProcessor: processor,
+        readMarkerService: readMarker,
+        collectMetrics: true,
+        sentEventRegistry: SentEventRegistry(),
+        suppressLiveIngestion: true,
+      );
+      await consumer.initialize();
+      return consumer;
+    }
+
+    test(
+      'suppressLiveIngestion skips catch-up, un-partials room via getTimeline',
+      () async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+
+        stubLoggingService(logger);
+
+        when(() => room.getTimeline()).thenAnswer((_) async => timeline);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
+
+        final consumer = await buildSuppressedConsumer(
+          session: session,
+          roomManager: roomManager,
+          logger: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          processor: processor,
+          readMarker: readMarker,
+          roomOverride: room,
+        );
+        expect(consumer.suppressLiveIngestion, isTrue);
+
+        await consumer.start();
+
+        verify(() => room.getTimeline()).called(1);
+        verify(() => timeline.cancelSubscriptions()).called(1);
+        verify(
+          () => logger.captureEvent(
+            any<String>(
+              that: contains('MatrixStreamConsumer start suppressed'),
+            ),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'start.suppressed',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'suppressed start logs but does not throw when getTimeline fails',
+      () async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final room = MockRoom();
+
+        stubLoggingService(logger);
+
+        when(() => room.getTimeline()).thenThrow(StateError('room gone'));
+
+        final consumer = await buildSuppressedConsumer(
+          session: session,
+          roomManager: roomManager,
+          logger: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          processor: processor,
+          readMarker: readMarker,
+          roomOverride: room,
+        );
+
+        await consumer.start();
+
+        verify(
+          () => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'start.suppressed.getTimeline',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'suppressed forceRescan skips catch-up coordinator',
+      () async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+
+        stubLoggingService(logger);
+
+        final consumer = await buildSuppressedConsumer(
+          session: session,
+          roomManager: roomManager,
+          logger: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          processor: processor,
+          readMarker: readMarker,
+        );
+
+        await consumer.forceRescan();
+
+        verify(
+          () => logger.captureEvent(
+            any<String>(that: contains('forceRescan suppressed')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'forceRescan.suppressed',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'suppressed retryNow logs and returns without delegating',
+      () async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+
+        stubLoggingService(logger);
+
+        final consumer = await buildSuppressedConsumer(
+          session: session,
+          roomManager: roomManager,
+          logger: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          processor: processor,
+          readMarker: readMarker,
+        );
+
+        await consumer.retryNow();
+
+        verify(
+          () => logger.captureEvent(
+            any<String>(that: contains('retryNow suppressed')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'retryNow.suppressed',
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

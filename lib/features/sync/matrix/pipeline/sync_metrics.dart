@@ -28,6 +28,12 @@ class SyncMetrics {
     this.liveScanDeferredCount = 0,
     this.liveScanCoalesceCount = 0,
     this.liveScanTrailingScheduled = 0,
+    // Queue ledger (Phase 3). Populated by MatrixService when the
+    // queue pipeline is active; zero otherwise.
+    this.queueActive = 0,
+    this.queueApplied = 0,
+    this.queueAbandoned = 0,
+    this.queueRetrying = 0,
   });
 
   factory SyncMetrics.fromMap(Map<String, dynamic> map) {
@@ -67,6 +73,10 @@ class SyncMetrics {
       liveScanDeferredCount: (map['liveScanDeferredCount'] ?? 0) as int,
       liveScanCoalesceCount: (map['liveScanCoalesceCount'] ?? 0) as int,
       liveScanTrailingScheduled: (map['liveScanTrailingScheduled'] ?? 0) as int,
+      queueActive: (map['queueActive'] ?? 0) as int,
+      queueApplied: (map['queueApplied'] ?? 0) as int,
+      queueAbandoned: (map['queueAbandoned'] ?? 0) as int,
+      queueRetrying: (map['queueRetrying'] ?? 0) as int,
       processedByType: typed,
       droppedByType: dropped,
     );
@@ -100,6 +110,22 @@ class SyncMetrics {
   final int liveScanDeferredCount;
   final int liveScanCoalesceCount;
   final int liveScanTrailingScheduled;
+
+  /// Count of rows still waiting in the queue (enqueued + leased +
+  /// retrying). Zero when the queue pipeline is disabled.
+  final int queueActive;
+
+  /// Count of `applied` ledger rows — successful commits that the
+  /// queue has retained for traceability.
+  final int queueApplied;
+
+  /// Count of `abandoned` ledger rows — events the worker gave up
+  /// on. A non-zero number here is the signal to surface the
+  /// "Skipped events" UI.
+  final int queueAbandoned;
+
+  /// Count of currently `retrying` rows (subset of `queueActive`).
+  final int queueRetrying;
 
   Map<String, int> toMap() =>
       <String, int>{
@@ -140,5 +166,9 @@ class SyncMetrics {
           MapEntry('liveScanDeferredCount', liveScanDeferredCount),
           MapEntry('liveScanCoalesceCount', liveScanCoalesceCount),
           MapEntry('liveScanTrailingScheduled', liveScanTrailingScheduled),
+          MapEntry('queueActive', queueActive),
+          MapEntry('queueApplied', queueApplied),
+          MapEntry('queueAbandoned', queueAbandoned),
+          MapEntry('queueRetrying', queueRetrying),
         ]);
 }

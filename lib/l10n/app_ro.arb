@@ -1034,6 +1034,8 @@
   "configFlagUseCloudInferenceDescription": "Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.",
   "configFlagUseCompressedJsonAttachments": "Comprimă payload-urile JSON de sincronizare",
   "configFlagUseCompressedJsonAttachmentsDescription": "Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.",
+  "configFlagUseInboundEventQueue": "Folosește coada de evenimente de intrare",
+  "configFlagUseInboundEventQueueDescription": "Direcționează evenimentele de sincronizare prin coada persistentă cu memorie limitată și aplicare progresivă. Necesită repornirea aplicației.",
   "conflictEntityLabel": "Entitate",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Copiază textul din sincronizare",
@@ -2085,6 +2087,62 @@
   "provisionedSyncSummaryUser": "Utilizator",
   "provisionedSyncTitle": "Sincronizare provizionată",
   "provisionedSyncVerifyDevicesTitle": "Verificarea dispozitivelor",
+  "queueCatchUpNowButton": "Recuperați acum",
+  "queueCatchUpNowDone": "Recuperare inițiată — coada se golește.",
+  "queueCatchUpNowRunning": "Se acoperă golul recent…",
+  "queueDepthCardEmpty": "Coadă goală — worker-ul este actualizat.",
+  "queueDepthCardLoading": "Se citește adâncimea cozii…",
+  "queueDepthCardTitle": "Coadă de intrare",
+  "queueFetchAllHistoryButton": "Obțineți întregul istoric",
+  "queueFetchAllHistoryCancel": "Anulați",
+  "queueFetchAllHistoryCancelled": "Anulat — {events, plural, =0{niciun eveniment obținut} =1{1 eveniment obținut} few{{events} evenimente obținute} other{{events} de evenimente obținute}} până acum.",
+  "@queueFetchAllHistoryCancelled": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryClose": "Închideți",
+  "queueFetchAllHistoryDescription": "Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Niciun eveniment obținut.} =1{1 eveniment obținut pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.} few{{events} evenimente obținute pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.} other{{events} de evenimente obținute pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.}}",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Obținere oprită: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryErrorUnknown": "Obținerea s-a oprit neașteptat.",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Pagina {pages}  ·  1 eveniment obținut} few{Pagina {pages}  ·  {events} evenimente obținute} other{Pagina {pages}  ·  {events} de evenimente obținute}}",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Se obține istoricul",
+  "queueSkippedBadge": "{count, plural, =1{1 omis} few{{count} omise} other{{count} de evenimente omise}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 eveniment de sincronizare pe care coada l-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.} few{{count} evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.} other{{count} de evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.}}",
+  "queueSkippedCardTitle": "Evenimente omise",
+  "queueSkippedRetryAll": "Reîncearcă evenimentele omise",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Nu există evenimente omise.} =1{1 eveniment adăugat pentru reîncercare.} few{{count} evenimente adăugate pentru reîncercare.} other{{count} de evenimente adăugate pentru reîncercare.}}",
+  "queueSkippedRetryAllError": "Reîncercarea a eșuat: {reason}",
   "referenceImageContinue": "Continuă",
   "referenceImageContinueWithCount": "Continuă ({count})",
   "@referenceImageContinueWithCount": {

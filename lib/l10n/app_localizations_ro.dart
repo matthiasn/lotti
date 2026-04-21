@@ -2358,6 +2358,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.';
 
   @override
+  String get configFlagUseInboundEventQueue =>
+      'Folosește coada de evenimente de intrare';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Direcționează evenimentele de sincronizare prin coada persistentă cu memorie limitată și aplicare progresivă. Necesită repornirea aplicației.';
+
+  @override
   String get conflictEntityLabel => 'Entitate';
 
   @override
@@ -4863,6 +4871,159 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Verificarea dispozitivelor';
+
+  @override
+  String get queueCatchUpNowButton => 'Recuperați acum';
+
+  @override
+  String get queueCatchUpNowDone => 'Recuperare inițiată — coada se golește.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Se acoperă golul recent…';
+
+  @override
+  String get queueDepthCardEmpty => 'Coadă goală — worker-ul este actualizat.';
+
+  @override
+  String get queueDepthCardLoading => 'Se citește adâncimea cozii…';
+
+  @override
+  String get queueDepthCardTitle => 'Coadă de intrare';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Obțineți întregul istoric';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Anulați';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events de evenimente obținute',
+      few: '$events evenimente obținute',
+      one: '1 eveniment obținut',
+      zero: 'niciun eveniment obținut',
+    );
+    return 'Anulat — $_temp0 până acum.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Închideți';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events de evenimente obținute pe $_temp0.',
+      few: '$events evenimente obținute pe $_temp1.',
+      one: '1 eveniment obținut pe $_temp2.',
+      zero: 'Niciun eveniment obținut.',
+    );
+    return '$_temp3';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Obținere oprită: $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Obținerea s-a oprit neașteptat.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Pagina $pages  ·  $events de evenimente obținute',
+      few: 'Pagina $pages  ·  $events evenimente obținute',
+      one: 'Pagina $pages  ·  1 eveniment obținut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Se obține istoricul';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de evenimente omise',
+      few: '$count omise',
+      one: '1 omis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+      few:
+          '$count evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+      one:
+          '1 eveniment de sincronizare pe care coada l-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Evenimente omise';
+
+  @override
+  String get queueSkippedRetryAll => 'Reîncearcă evenimentele omise';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de evenimente adăugate pentru reîncercare.',
+      few: '$count evenimente adăugate pentru reîncercare.',
+      one: '1 eveniment adăugat pentru reîncercare.',
+      zero: 'Nu există evenimente omise.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Reîncercarea a eșuat: $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Continuă';

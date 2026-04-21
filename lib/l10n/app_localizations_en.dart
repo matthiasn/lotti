@@ -2318,6 +2318,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.';
 
   @override
+  String get configFlagUseInboundEventQueue => 'Use inbound event queue';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Route incoming sync events through the durable queue pipeline with bounded memory and progressive apply. Requires an app restart to take effect.';
+
+  @override
   String get conflictEntityLabel => 'Entity';
 
   @override
@@ -4775,6 +4782,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Device Verification';
+
+  @override
+  String get queueCatchUpNowButton => 'Catch up now';
+
+  @override
+  String get queueCatchUpNowDone => 'Catch-up kicked — queue is draining.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Bridging recent gap…';
+
+  @override
+  String get queueDepthCardEmpty => 'Queue empty — worker is caught up.';
+
+  @override
+  String get queueDepthCardLoading => 'Reading queue depth…';
+
+  @override
+  String get queueDepthCardTitle => 'Inbound queue';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Fetch all history';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Cancel';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events events',
+      one: '1 event',
+      zero: 'no events',
+    );
+    return 'Cancelled — $_temp0 fetched so far.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Close';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Fetched $events events across $_temp0.',
+      one: 'Fetched 1 event across $_temp1.',
+      zero: 'No events fetched.',
+    );
+    return '$_temp2';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Fetch stopped: $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown => 'Fetch stopped unexpectedly.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Page $pages  ·  $events events fetched',
+      one: 'Page $pages  ·  1 event fetched',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Fetching history';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count skipped',
+      one: '1 skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count sync events the queue gave up on. Tap retry to re-attempt.',
+      one: '1 sync event the queue gave up on. Tap retry to re-attempt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Skipped events';
+
+  @override
+  String get queueSkippedRetryAll => 'Retry skipped events';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events queued for retry.',
+      one: '1 event queued for retry.',
+      zero: 'No skipped events to retry.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Retry failed: $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Continue';

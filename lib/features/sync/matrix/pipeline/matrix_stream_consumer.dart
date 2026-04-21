@@ -63,7 +63,12 @@ class MatrixStreamConsumer implements SyncPipeline {
     })?
     backfill,
     Directory? documentsDirectory,
+    // Phase-2 flag. When true the signal binder does not subscribe
+    // to timelineEvents, so the legacy live-scan path is dormant and
+    // the InboundEventQueue pipeline owns live ingestion.
+    bool suppressLiveIngestion = false,
   }) : _skipSyncWait = skipSyncWait,
+       _suppressLiveIngestion = suppressLiveIngestion,
        _sessionManager = sessionManager,
        _roomManager = roomManager,
        _loggingService = loggingService,
@@ -141,6 +146,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       catchUpCoordinator: _catchUp,
       liveScanController: _liveScan,
       withInstance: _withInstance,
+      suppressLiveIngestion: _suppressLiveIngestion,
     );
   }
 
@@ -150,6 +156,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   String _withInstance(String message) => '$message inst=$_instanceId';
 
   final bool _skipSyncWait;
+  final bool _suppressLiveIngestion;
+
+  /// True when Phase 2's queue pipeline owns live ingestion and this
+  /// consumer's scan/catch-up wiring is dormant. Test-visible.
+  bool get suppressLiveIngestion => _suppressLiveIngestion;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
@@ -259,6 +270,56 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
+    if (_suppressLiveIngestion) {
+      // Phase-2 queue pipeline owns ingestion. Skip the initial
+      // catch-up too: `runInitialCatchUpIfReady` drives
+      // `MatrixStreamProcessor.processOrdered`, which would apply
+      // events the queue's own bridge is already pulling — the same
+      // double-apply hazard `suppressLiveIngestion` prevents in the
+      // signal binder.
+      _loggingService.captureEvent(
+        _withInstance('MatrixStreamConsumer start suppressed'),
+        domain: syncLoggingDomain,
+        subDomain: 'start.suppressed',
+      );
+      // CRITICAL: call `room.getTimeline()` to un-partial the sync
+      // room. Matrix SDK skips `RoomMember` state events on partial
+      // rooms in `_updateRoomsByEventUpdate`, so a partial room never
+      // has its `_trackedUserIds` extended when a new member joins.
+      // That breaks device-key discovery: `updateUserDeviceKeys` never
+      // queries keys for users the SDK isn't tracking, and SAS
+      // verification / E2EE never sees the other device. The legacy
+      // signal binder did this via its
+      // `room.getTimeline(onNewEvent: …)` call; replicate the bare
+      // un-partial step here without subscribing scan callbacks.
+      final room = _roomManager.currentRoom;
+      if (room != null) {
+        try {
+          final tl = await room.getTimeline();
+          // Cancel the subscription right away — we only needed the
+          // side effect of loading room state. Leaving it attached
+          // would leak SDK timeline buffers we don't consume.
+          tl.cancelSubscriptions();
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: syncLoggingDomain,
+            subDomain: 'start.suppressed.getTimeline',
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      // Still call `_signals.start` so the Phase-0 `sync.limited`
+      // diagnostic keeps emitting. The signal binder short-circuits
+      // under `suppressLiveIngestion` after wiring only that listener
+      // — `onTimelineEvent.ordering` and scan-scheduling subscriptions
+      // are intentionally skipped in that mode (the queue pipeline
+      // owns live ingestion instead).
+      await _signals.start(
+        lastProcessedEventId: _processor.lastProcessedEventId,
+      );
+      return;
+    }
     await _catchUp.runInitialCatchUpIfReady();
     await _signals.start(lastProcessedEventId: _processor.lastProcessedEventId);
     _loggingService.captureEvent(
@@ -296,12 +357,39 @@ class MatrixStreamConsumer implements SyncPipeline {
   Map<String, String> diagnosticsStrings() => _processor.diagnosticsStrings();
 
   // Force a rescan and optional catch-up to recover from potential gaps.
+  //
+  // Under `suppressLiveIngestion` the queue pipeline owns catch-up via its
+  // bridge coordinator. Running the legacy catch-up would double-apply events
+  // and populate stale legacy metrics (catchupBatches, dbApplied) that make
+  // diagnostics confusing. Callers that bypass `MatrixService.forceRescan`
+  // (e.g. `saveRoom` unawaited bootstrap) still reach this method, so the
+  // guard must live here.
   Future<void> forceRescan({bool includeCatchUp = true}) async {
+    if (_suppressLiveIngestion) {
+      _loggingService.captureEvent(
+        _withInstance(
+          'forceRescan suppressed includeCatchUp=$includeCatchUp',
+        ),
+        domain: syncLoggingDomain,
+        subDomain: 'forceRescan.suppressed',
+      );
+      return;
+    }
     await _catchUp.forceRescan(includeCatchUp: includeCatchUp);
   }
 
   // Force all pending retries to be immediately due and trigger a scan.
-  Future<void> retryNow() async => _processor.retryNow();
+  Future<void> retryNow() async {
+    if (_suppressLiveIngestion) {
+      _loggingService.captureEvent(
+        _withInstance('retryNow suppressed'),
+        domain: syncLoggingDomain,
+        subDomain: 'retryNow.suppressed',
+      );
+      return;
+    }
+    await _processor.retryNow();
+  }
 
   // Record a connectivity-driven signal for observability.
   void recordConnectivitySignal() => _processor.recordConnectivitySignal();

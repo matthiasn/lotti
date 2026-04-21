@@ -117,6 +117,15 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: useInboundEventQueueFlag,
+      description:
+          'Use the queue pipeline for inbound sync (requires restart).',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableAgentsFlag,
       description: 'Enable Agents?',
       status: false,

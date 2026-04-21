@@ -369,6 +369,115 @@ flowchart TD
   Room --> Response["BackfillResponseHandler"]
 ```
 
+## Inbound Event Queue (Phase 2, feature-flagged)
+
+An alternate receive path gated on the `USE_INBOUND_EVENT_QUEUE` settings
+flag. When the flag is on, the legacy `MatrixStreamSignalBinder` does not
+subscribe to `timelineEvents` (see `suppressLiveIngestion`) and the two
+pipelines are mutually exclusive.
+
+Components (all under `lib/features/sync/queue/`):
+
+- **`InboundQueue`** — Drift-backed queue in `sync_db`
+  (`inbound_event_queue` table + `queue_markers` per-room table). `event_id`
+  UNIQUE is the sole cross-producer dedupe primitive; `lease_until` is a
+  durable worker lease that survives crashes.
+- **`InboundWorker`** — per-room drain loop. Wraps each batch in
+  `SyncSequenceLogService.runWithDeferredMissingEntries` so per-slice gap
+  detections coalesce into one `onMissingEntriesDetected` emission — the
+  F1 concern from the design review. Honours `UserActivityGate`.
+- **`BridgeCoordinator`** — subscribes to `Client.onSync` and, on any
+  joined room's `timeline.limited == true`, walks `/messages` back to the
+  stored marker via `CatchUpStrategy.collectEventsForCatchUp`, feeding
+  the result to `enqueueBatch` with `producer=bridge`. Single-flight.
+- **`PendingDecryptionPen`** — LRU holding pen for Megolm-encrypted events
+  that arrive before their session key. The worker re-resolves them via
+  `room.getEventById` on every drain iteration; only fully-decrypted
+  events ever reach `raw_json` (F3).
+- **`QueueApplyAdapter`** — bridges the worker to
+  `SyncEventProcessor.prepare`/`apply`. Prepare runs outside the writer
+  transaction, apply inside — preserving the P1 freeze fix (#2981).
+  Per-batch parallel prepare: `bindPrepareBatch()` returns a hook the
+  worker invokes with the whole batch before the per-entry apply loop.
+  Prepare is I/O-bound (attachment downloads, gzip decode, JSON
+  decode) so fanning out via `Future.wait` collapses the critical
+  path to the slowest entry instead of the sum. Prepared payloads are
+  cached by `eventId` and consumed one-at-a-time by the apply phase;
+  terminal outcomes (permanentSkip, pendingAttachment, retriable)
+  caught at prepare time also survive in the cache so apply surfaces
+  them without re-running prepare.
+- **`QueuePipelineCoordinator`** — owns the above plus the live producer
+  subscription; exposed on `MatrixService.queueCoordinator`.
+- **`QueueMarkerSeeder`** — one-shot migration copying the legacy
+  `lastReadMatrixEventTs`/`Id` into `queue_markers` on first enable.
+  Never overwrites an existing row.
+
+### Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Stopped
+    Stopped --> Starting: coordinator.start()
+    Starting --> Running: marker seeded · stranded rows pruned · worker + bridge started
+    Running --> Running: live event → pen? yes: hold / no: enqueueLive<br/>worker drains K≤20 / batch
+    Running --> Draining: coordinator.stop(drainFirst: true)
+    Draining --> Stopped: worker.drainToCompletion()
+    Running --> Stopped: coordinator.stop(drainFirst: false)
+```
+
+### Worker batch drain (F1 coalescing preserved)
+
+```mermaid
+flowchart TD
+    Tick["Worker tick"] --> Gate["activityGate.waitUntilIdle"]
+    Gate --> Flush["Pen.flushInto(queue, room)"]
+    Flush --> Peek["queue.peekBatchReady(maxBatch=20)"]
+    Peek --> Empty{"batch empty?"}
+    Empty -->|yes| Wait["wait for depthChanges or 5s tick"]
+    Wait --> Tick
+    Empty -->|no| Window["runWithDeferredMissingEntries →"]
+    Window --> PrepareAll["adapter.prepareBatch (Future.wait)"]
+    PrepareAll --> Apply["SyncEventProcessor.apply per entry<br/>(cached prepared payload)"]
+    Apply --> Outcome{"outcome"}
+    Outcome -->|applied| Commit["queue.commitApplied<br/>(delete + marker advance if monotonic)"]
+    Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]
+    Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
+    Outcome -->|permanentSkip| Skip["markSkipped"]
+    Commit --> NextEntry["next entry in batch"]
+    Retry --> NextEntry
+    DecryptRetry --> NextEntry
+    Skip --> NextEntry
+    NextEntry --> WindowClose{"batch drained?"}
+    WindowClose -->|no| Apply
+    WindowClose -->|yes| Emit["window closes → at most one<br/>onMissingEntriesDetected emission"]
+    Emit --> Tick
+```
+
+### Marker advancement is monotonic (F2)
+
+`commitApplied` reads the existing `queue_markers` row and only advances
+`last_applied_ts` / `last_applied_event_id` when
+`TimelineEventOrdering.isNewer` returns true — so an out-of-order apply
+(live event at ts=100 applied first, then a bridge event at ts=60 from
+the same burst) cannot regress the stored marker.
+
+### UI (flag-gated on `backfill_settings_page.dart`)
+
+- `QueueDepthCard` — subscribes to `InboundQueue.depthChanges`, shows
+  total + per-producer breakdown + empty-state message.
+- `FetchAllHistoryDialog` — drives
+  `QueuePipelineCoordinator.collectHistory` with an in-dialog cancel
+  button and page-by-page progress.
+
+### Observability
+
+Pipeline-tagged log lines let a log analyzer compare apply rates:
+
+- Queue pipeline: `queue.commit pipeline=queue eventId=... originTs=... markerAdvanced=...`
+- Legacy pipeline: `marker.local id=... ts=... pipeline=legacy`
+
+The Phase-2 ±15% gate compares event/sec rates between the two.
+
 ## Sequence Log And Backfill
 
 `SyncSequenceLogService` is the causal accounting layer. It records which

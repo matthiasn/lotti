@@ -2388,6 +2388,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Compresse les pièces jointes JSON de synchronisation avec gzip avant l\'envoi. Économise de la bande passante sur les réseaux lents, au prix d\'un léger coût CPU à l\'envoi et à la réception.';
 
   @override
+  String get configFlagUseInboundEventQueue =>
+      'Utiliser la file d\'événements entrants';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Route les événements de synchronisation entrants via la file persistante avec mémoire bornée et application progressive. Nécessite un redémarrage de l\'application.';
+
+  @override
   String get conflictEntityLabel => 'Entité';
 
   @override
@@ -4936,6 +4944,143 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Vérification des appareils';
+
+  @override
+  String get queueCatchUpNowButton => 'Rattraper maintenant';
+
+  @override
+  String get queueCatchUpNowDone => 'Rattrapage lancé — la file se vide.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Pontage de l\'écart récent…';
+
+  @override
+  String get queueDepthCardEmpty => 'File vide — le worker est à jour.';
+
+  @override
+  String get queueDepthCardLoading => 'Lecture de la profondeur de la file…';
+
+  @override
+  String get queueDepthCardTitle => 'File d\'entrée';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Récupérer tout l\'historique';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Annuler';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events événements',
+      one: '1 événement',
+      zero: 'aucun événement',
+    );
+    return 'Annulé — $_temp0 récupéré(s) jusqu\'ici.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Fermer';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Parcourt tout l\'historique visible de la salle dans la file. Tu peux annuler à tout moment ; une nouvelle exécution reprend là où la pagination s\'est arrêtée.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events événements récupérés sur $_temp0.',
+      one: '1 événement récupéré sur $_temp1.',
+      zero: 'Aucun événement récupéré.',
+    );
+    return '$_temp2';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Récupération arrêtée : $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Récupération arrêtée de manière inattendue.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Page $pages  ·  $events événements récupérés',
+      one: 'Page $pages  ·  1 événement récupéré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Récupération de l\'historique';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ignorés',
+      one: '1 ignoré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count événements de synchronisation que la file a abandonnés. Appuie sur réessayer pour les retenter.',
+      one:
+          '1 événement de synchronisation que la file a abandonné. Appuie sur réessayer pour le retenter.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Événements ignorés';
+
+  @override
+  String get queueSkippedRetryAll => 'Réessayer les événements ignorés';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements remis en file pour réessai.',
+      one: '1 événement remis en file pour réessai.',
+      zero: 'Aucun événement ignoré.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Réessai échoué : $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Continuer';

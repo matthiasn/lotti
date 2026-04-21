@@ -805,6 +805,8 @@
   "configFlagUseCloudInferenceDescription": "Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.",
   "configFlagUseCompressedJsonAttachments": "Komprimovat JSON payloady synchronizace",
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
+  "configFlagUseInboundEventQueue": "Použít příchozí frontu událostí",
+  "configFlagUseInboundEventQueueDescription": "Směruje příchozí synchronizační události přes trvalou frontu s omezenou pamětí a postupným použitím. Vyžaduje restart aplikace.",
   "conflictEntityLabel": "Entita",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Kopírovat text ze synchronizace",
@@ -1838,6 +1840,62 @@
   "provisionedSyncSummaryUser": "Uživatel",
   "provisionedSyncTitle": "Provizní synchronizace",
   "provisionedSyncVerifyDevicesTitle": "Ověření zařízení",
+  "queueCatchUpNowButton": "Dohnat nyní",
+  "queueCatchUpNowDone": "Dohánění spuštěno — fronta se vyprazdňuje.",
+  "queueCatchUpNowRunning": "Překlenutí nedávné mezery…",
+  "queueDepthCardEmpty": "Fronta je prázdná — worker je aktuální.",
+  "queueDepthCardLoading": "Čtení hloubky fronty…",
+  "queueDepthCardTitle": "Vstupní fronta",
+  "queueFetchAllHistoryButton": "Načíst celou historii",
+  "queueFetchAllHistoryCancel": "Zrušit",
+  "queueFetchAllHistoryCancelled": "Zrušeno — {events, plural, =0{zatím žádné události} =1{zatím načtena 1 událost} few{zatím načteny {events} události} other{zatím načteno {events} událostí}}.",
+  "@queueFetchAllHistoryCancelled": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryClose": "Zavřít",
+  "queueFetchAllHistoryDescription": "Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Žádné události.} =1{Načtena 1 událost na {pages, plural, =1{1 stránce} few{{pages} stránkách} other{{pages} stránkách}}.} few{Načteny {events} události na {pages, plural, =1{1 stránce} few{{pages} stránkách} other{{pages} stránkách}}.} other{Načteno {events} událostí na {pages, plural, =1{1 stránce} few{{pages} stránkách} other{{pages} stránkách}}.}}",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Načítání zastaveno: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryErrorUnknown": "Načítání se neočekávaně zastavilo.",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Strana {pages}  ·  1 událost načtena} few{Strana {pages}  ·  {events} události načteny} other{Strana {pages}  ·  {events} událostí načteno}}",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Načítání historie",
+  "queueSkippedBadge": "{count, plural, =1{1 přeskočena} few{{count} přeskočeny} other{{count} přeskočeno}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 synchronizační událost, kterou fronta vzdala. Klepni na opakovat pro nový pokus.} few{{count} synchronizační události, které fronta vzdala. Klepni na opakovat pro nový pokus.} other{{count} synchronizačních událostí, které fronta vzdala. Klepni na opakovat pro nový pokus.}}",
+  "queueSkippedCardTitle": "Přeskočené události",
+  "queueSkippedRetryAll": "Opakovat přeskočené události",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Žádné přeskočené události.} =1{1 událost zařazena k opakování.} few{{count} události zařazeny k opakování.} other{{count} událostí zařazeno k opakování.}}",
+  "queueSkippedRetryAllError": "Opakování selhalo: {reason}",
   "referenceImageContinue": "Pokračovat",
   "referenceImageContinueWithCount": "Pokračovat ({count})",
   "@referenceImageContinueWithCount": {

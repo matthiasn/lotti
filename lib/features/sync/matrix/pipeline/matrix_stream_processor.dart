@@ -763,8 +763,8 @@ class MatrixStreamProcessor {
           if (_collectMetrics) {
             _loggingService.captureEvent(
               isDurableMarker
-                  ? 'marker.local id=$advancedEventId ts=${advancedTs.toInt()}'
-                  : 'marker.local.skip(nonServerId) id=$advancedEventId ts=${advancedTs.toInt()}',
+                  ? 'marker.local id=$advancedEventId ts=${advancedTs.toInt()} pipeline=legacy'
+                  : 'marker.local.skip(nonServerId) id=$advancedEventId ts=${advancedTs.toInt()} pipeline=legacy',
               domain: syncLoggingDomain,
               subDomain: 'marker.local',
             );

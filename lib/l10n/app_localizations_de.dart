@@ -2355,6 +2355,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.';
 
   @override
+  String get configFlagUseInboundEventQueue => 'Eingangs-Event-Queue verwenden';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Leitet eingehende Sync-Events über die dauerhafte Queue-Pipeline mit begrenztem Speicher und fortlaufender Anwendung. Neustart erforderlich.';
+
+  @override
   String get conflictEntityLabel => 'Entität';
 
   @override
@@ -4842,6 +4849,143 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Geräteverifizierung';
+
+  @override
+  String get queueCatchUpNowButton => 'Jetzt aufholen';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Aufholen gestartet — die Warteschlange wird abgearbeitet.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Überbrücke kürzliche Lücke…';
+
+  @override
+  String get queueDepthCardEmpty => 'Warteschlange leer — Worker ist aktuell.';
+
+  @override
+  String get queueDepthCardLoading => 'Warteschlangenfüllung wird gelesen…';
+
+  @override
+  String get queueDepthCardTitle => 'Eingangs-Warteschlange';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Gesamten Verlauf holen';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Abbrechen';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events Ereignisse',
+      one: '1 Ereignis',
+      zero: 'keine Ereignisse',
+    );
+    return 'Abgebrochen — bisher $_temp0 abgerufen.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Schließen';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages Seiten',
+      one: '1 Seite',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages Seiten',
+      one: '1 Seite',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events Ereignisse über $_temp0 abgerufen.',
+      one: '1 Ereignis über $_temp1 abgerufen.',
+      zero: 'Keine Ereignisse abgerufen.',
+    );
+    return '$_temp2';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Abruf gestoppt: $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown => 'Abruf unerwartet gestoppt.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Seite $pages  ·  $events Ereignisse abgerufen',
+      one: 'Seite $pages  ·  1 Ereignis abgerufen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Verlauf wird geholt';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count übersprungen',
+      one: '1 übersprungen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Sync-Ereignisse, die die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um sie erneut zu versuchen.',
+      one:
+          '1 Sync-Ereignis, das die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um es erneut zu versuchen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Übersprungene Ereignisse';
+
+  @override
+  String get queueSkippedRetryAll => 'Übersprungene Ereignisse wiederholen';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ereignisse zur Wiederholung eingereiht.',
+      one: '1 Ereignis zur Wiederholung eingereiht.',
+      zero: 'Keine übersprungenen Ereignisse.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Wiederholung fehlgeschlagen: $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Weiter';

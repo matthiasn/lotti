@@ -619,4 +619,93 @@ void main() {
       },
     );
   });
+
+  group('prepareBatch hook', () {
+    test(
+      'prepareBatch is invoked once per batch with every entry, '
+      'before any per-entry apply runs — proves the worker wires the '
+      'batch-parallel prepare path end to end',
+      () async {
+        final events = [
+          _buildSyncEvent(eventId: r'$p1', roomId: roomId, originTsMs: 10),
+          _buildSyncEvent(eventId: r'$p2', roomId: roomId, originTsMs: 20),
+          _buildSyncEvent(eventId: r'$p3', roomId: roomId, originTsMs: 30),
+        ];
+        await queue.enqueueBatch(events, producer: InboundEventProducer.live);
+
+        final prepareInvocations = <List<String>>[];
+        final applyInvocations = <String>[];
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (entry, _) async {
+            applyInvocations.add(entry.eventId);
+            // Applies must observe a fully-populated prepareInvocations
+            // list — prepareBatch ran ahead of the first apply call.
+            expect(prepareInvocations, hasLength(1));
+            return ApplyOutcome.applied;
+          },
+          prepareBatch: (entries, _) async {
+            prepareInvocations.add([for (final e in entries) e.eventId]);
+          },
+          logging: logging,
+          initialBackoff: const Duration(milliseconds: 10),
+          maxBackoff: const Duration(milliseconds: 100),
+          maxAttempts: 4,
+        );
+
+        final appliedCount = await worker.drainToCompletion();
+        expect(appliedCount, 3);
+        expect(prepareInvocations, hasLength(1));
+        expect(prepareInvocations.single, [r'$p1', r'$p2', r'$p3']);
+        expect(applyInvocations, [r'$p1', r'$p2', r'$p3']);
+      },
+    );
+
+    test(
+      'a throw from prepareBatch is logged but does not abort the '
+      'per-entry apply loop — the adapter is expected to classify '
+      'per-entry failures, so a top-level throw is a bug to surface, '
+      'not a reason to strand the batch',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$fail', roomId: roomId, originTsMs: 1),
+        );
+
+        final applied = <String>[];
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async => room,
+          apply: (entry, _) async {
+            applied.add(entry.eventId);
+            return ApplyOutcome.applied;
+          },
+          prepareBatch: (entries, _) async {
+            throw StateError('prepareBatch boom');
+          },
+          logging: logging,
+          initialBackoff: const Duration(milliseconds: 10),
+          maxBackoff: const Duration(milliseconds: 100),
+          maxAttempts: 4,
+        );
+
+        final appliedCount = await worker.drainToCompletion();
+        expect(appliedCount, 1);
+        expect(applied, [r'$fail']);
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('prepareBatch'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

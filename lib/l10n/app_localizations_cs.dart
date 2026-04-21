@@ -2337,6 +2337,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.';
 
   @override
+  String get configFlagUseInboundEventQueue =>
+      'Použít příchozí frontu událostí';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Směruje příchozí synchronizační události přes trvalou frontu s omezenou pamětí a postupným použitím. Vyžaduje restart aplikace.';
+
+  @override
   String get conflictEntityLabel => 'Entita';
 
   @override
@@ -4836,6 +4844,160 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncVerifyDevicesTitle => 'Ověření zařízení';
+
+  @override
+  String get queueCatchUpNowButton => 'Dohnat nyní';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Dohánění spuštěno — fronta se vyprazdňuje.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Překlenutí nedávné mezery…';
+
+  @override
+  String get queueDepthCardEmpty => 'Fronta je prázdná — worker je aktuální.';
+
+  @override
+  String get queueDepthCardLoading => 'Čtení hloubky fronty…';
+
+  @override
+  String get queueDepthCardTitle => 'Vstupní fronta';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Načíst celou historii';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Zrušit';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'zatím načteno $events událostí',
+      few: 'zatím načteny $events události',
+      one: 'zatím načtena 1 událost',
+      zero: 'zatím žádné události',
+    );
+    return 'Zrušeno — $_temp0.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Zavřít';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Načteno $events událostí na $_temp0.',
+      few: 'Načteny $events události na $_temp1.',
+      one: 'Načtena 1 událost na $_temp2.',
+      zero: 'Žádné události.',
+    );
+    return '$_temp3';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Načítání zastaveno: $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Načítání se neočekávaně zastavilo.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Strana $pages  ·  $events událostí načteno',
+      few: 'Strana $pages  ·  $events události načteny',
+      one: 'Strana $pages  ·  1 událost načtena',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Načítání historie';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count přeskočeno',
+      few: '$count přeskočeny',
+      one: '1 přeskočena',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count synchronizačních událostí, které fronta vzdala. Klepni na opakovat pro nový pokus.',
+      few:
+          '$count synchronizační události, které fronta vzdala. Klepni na opakovat pro nový pokus.',
+      one:
+          '1 synchronizační událost, kterou fronta vzdala. Klepni na opakovat pro nový pokus.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Přeskočené události';
+
+  @override
+  String get queueSkippedRetryAll => 'Opakovat přeskočené události';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count událostí zařazeno k opakování.',
+      few: '$count události zařazeny k opakování.',
+      one: '1 událost zařazena k opakování.',
+      zero: 'Žádné přeskočené události.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Opakování selhalo: $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Pokračovat';

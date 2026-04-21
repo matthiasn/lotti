@@ -4134,6 +4134,18 @@ abstract class AppLocalizations {
   /// **'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.'**
   String get configFlagUseCompressedJsonAttachmentsDescription;
 
+  /// No description provided for @configFlagUseInboundEventQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Use inbound event queue'**
+  String get configFlagUseInboundEventQueue;
+
+  /// No description provided for @configFlagUseInboundEventQueueDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Route incoming sync events through the durable queue pipeline with bounded memory and progressive apply. Requires an app restart to take effect.'**
+  String get configFlagUseInboundEventQueueDescription;
+
   /// No description provided for @conflictEntityLabel.
   ///
   /// In en, this message translates to:
@@ -8517,6 +8529,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Device Verification'**
   String get provisionedSyncVerifyDevicesTitle;
+
+  /// No description provided for @queueCatchUpNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch up now'**
+  String get queueCatchUpNowButton;
+
+  /// No description provided for @queueCatchUpNowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch-up kicked — queue is draining.'**
+  String get queueCatchUpNowDone;
+
+  /// No description provided for @queueCatchUpNowRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Bridging recent gap…'**
+  String get queueCatchUpNowRunning;
+
+  /// No description provided for @queueDepthCardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue empty — worker is caught up.'**
+  String get queueDepthCardEmpty;
+
+  /// No description provided for @queueDepthCardLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading queue depth…'**
+  String get queueDepthCardLoading;
+
+  /// No description provided for @queueDepthCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound queue'**
+  String get queueDepthCardTitle;
+
+  /// No description provided for @queueFetchAllHistoryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch all history'**
+  String get queueFetchAllHistoryButton;
+
+  /// No description provided for @queueFetchAllHistoryCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get queueFetchAllHistoryCancel;
+
+  /// No description provided for @queueFetchAllHistoryCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled — {events, plural, =0{no events} =1{1 event} other{{events} events}} fetched so far.'**
+  String queueFetchAllHistoryCancelled(int events);
+
+  /// No description provided for @queueFetchAllHistoryClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get queueFetchAllHistoryClose;
+
+  /// No description provided for @queueFetchAllHistoryDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.'**
+  String get queueFetchAllHistoryDescription;
+
+  /// No description provided for @queueFetchAllHistoryDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages, plural, =1{1 page} other{{pages} pages}}.} other{Fetched {events} events across {pages, plural, =1{1 page} other{{pages} pages}}.}}'**
+  String queueFetchAllHistoryDone(int events, int pages);
+
+  /// No description provided for @queueFetchAllHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch stopped: {reason}'**
+  String queueFetchAllHistoryError(String reason);
+
+  /// No description provided for @queueFetchAllHistoryErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch stopped unexpectedly.'**
+  String get queueFetchAllHistoryErrorUnknown;
+
+  /// No description provided for @queueFetchAllHistoryProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{events, plural, =1{Page {pages}  ·  1 event fetched} other{Page {pages}  ·  {events} events fetched}}'**
+  String queueFetchAllHistoryProgress(int events, int pages);
+
+  /// No description provided for @queueFetchAllHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching history'**
+  String get queueFetchAllHistoryTitle;
+
+  /// No description provided for @queueSkippedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 skipped} other{{count} skipped}}'**
+  String queueSkippedBadge(int count);
+
+  /// No description provided for @queueSkippedCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sync event the queue gave up on. Tap retry to re-attempt.} other{{count} sync events the queue gave up on. Tap retry to re-attempt.}}'**
+  String queueSkippedCardBody(int count);
+
+  /// No description provided for @queueSkippedCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped events'**
+  String get queueSkippedCardTitle;
+
+  /// No description provided for @queueSkippedRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry skipped events'**
+  String get queueSkippedRetryAll;
+
+  /// No description provided for @queueSkippedRetryAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No skipped events to retry.} =1{1 event queued for retry.} other{{count} events queued for retry.}}'**
+  String queueSkippedRetryAllDone(int count);
+
+  /// No description provided for @queueSkippedRetryAllError.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed: {reason}'**
+  String queueSkippedRetryAllError(String reason);
 
   /// No description provided for @referenceImageContinue.
   ///

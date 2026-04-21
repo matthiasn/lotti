@@ -1,48 +1,45 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
-import 'package:mocktail/mocktail.dart';
-
-import '../../../mocks/mocks.dart';
 
 void main() {
-  late MockSettingsDb settingsDb;
+  late JournalDb journalDb;
 
-  setUp(() {
-    settingsDb = MockSettingsDb();
-    when(
-      () => settingsDb.saveSettingsItem(any(), any()),
-    ).thenAnswer((_) async => 1);
+  setUp(() async {
+    journalDb = JournalDb(inMemoryDatabase: true);
+    await initConfigFlags(journalDb, inMemoryDatabase: true);
   });
 
-  test('missing key defaults to false', () async {
-    when(
-      () => settingsDb.itemByKey(useInboundEventQueueKey),
-    ).thenAnswer((_) async => null);
-    final enabled = await readUseInboundEventQueueFlag(settingsDb);
-    expect(enabled, isFalse);
+  tearDown(() async {
+    await journalDb.close();
   });
 
-  test('"true" stored string enables the flag', () async {
-    when(
-      () => settingsDb.itemByKey(useInboundEventQueueKey),
-    ).thenAnswer((_) async => 'true');
-    final enabled = await readUseInboundEventQueueFlag(settingsDb);
-    expect(enabled, isTrue);
-  });
+  test(
+    'missing / default row reads as false — fresh installs keep the '
+    'legacy pipeline until the user flips the Flags-page switch',
+    () async {
+      final enabled = await readUseInboundEventQueueFlag(journalDb);
+      expect(enabled, isFalse);
+    },
+  );
 
-  test('arbitrary stored value reads as false', () async {
-    when(
-      () => settingsDb.itemByKey(useInboundEventQueueKey),
-    ).thenAnswer((_) async => 'maybe');
-    final enabled = await readUseInboundEventQueueFlag(settingsDb);
-    expect(enabled, isFalse);
-  });
+  test(
+    'writeUseInboundEventQueueFlag(enabled: true) flips the flag to '
+    'true and subsequent reads observe it',
+    () async {
+      await writeUseInboundEventQueueFlag(journalDb, enabled: true);
+      expect(await readUseInboundEventQueueFlag(journalDb), isTrue);
+    },
+  );
 
-  test('writeUseInboundEventQueueFlag persists the value', () async {
-    await writeUseInboundEventQueueFlag(settingsDb, enabled: true);
-    verify(
-      () => settingsDb.saveSettingsItem(useInboundEventQueueKey, 'true'),
-    ).called(1);
-  });
+  test(
+    'writeUseInboundEventQueueFlag(enabled: false) is idempotent and '
+    'restores the default',
+    () async {
+      await writeUseInboundEventQueueFlag(journalDb, enabled: true);
+      await writeUseInboundEventQueueFlag(journalDb, enabled: false);
+      expect(await readUseInboundEventQueueFlag(journalDb), isFalse);
+    },
+  );
 }

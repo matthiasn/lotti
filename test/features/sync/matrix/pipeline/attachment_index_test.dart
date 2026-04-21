@@ -124,4 +124,61 @@ void main() {
       ),
     ).called(greaterThanOrEqualTo(1));
   });
+
+  test(
+    'pathRecorded stream emits the canonical (leading-slash) path on '
+    'each first-time record so subscribers — notably the queue '
+    'coordinator — can react the moment an attachment JSON lands',
+    () async {
+      final logging = MockLoggingService();
+      final index = AttachmentIndex(logging: logging);
+      final paths = <String>[];
+      final sub = index.pathRecorded.listen(paths.add);
+
+      final e1 = MockEvent();
+      when(() => e1.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => e1.content).thenReturn({'relativePath': 'images/a.jpg'});
+      when(() => e1.eventId).thenReturn('ev1');
+      index.record(e1);
+
+      // Even when the caller passes a path without a leading slash,
+      // the stream should emit the canonical `/images/a.jpg` form so
+      // subscribers have a single shape to match against.
+      await Future<void>.delayed(Duration.zero);
+      expect(paths, ['/images/a.jpg']);
+
+      // Idempotency guard: re-observing the same event does not
+      // re-emit on the stream. Different event id, same path, only
+      // updates the `_byPath` slot — still a mutation, still a
+      // signal.
+      index.record(e1);
+      final e2 = MockEvent();
+      when(() => e2.attachmentMimetype).thenReturn('image/jpeg');
+      when(() => e2.content).thenReturn({'relativePath': 'images/a.jpg'});
+      when(() => e2.eventId).thenReturn('ev2');
+      index.record(e2);
+
+      await Future<void>.delayed(Duration.zero);
+      expect(paths, ['/images/a.jpg', '/images/a.jpg']);
+
+      await sub.cancel();
+      await index.dispose();
+    },
+  );
+
+  test(
+    'dispose closes the pathRecorded stream so app shutdown / test '
+    'teardown does not leak the broadcast controller',
+    () async {
+      final index = AttachmentIndex(logging: MockLoggingService());
+      var done = false;
+      final sub = index.pathRecorded.listen(
+        (_) {},
+        onDone: () => done = true,
+      );
+      await index.dispose();
+      await sub.cancel();
+      expect(done, isTrue);
+    },
+  );
 }

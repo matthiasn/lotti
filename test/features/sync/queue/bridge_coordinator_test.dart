@@ -2,11 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,33 +13,6 @@ import '../../../mocks/mocks.dart';
 class _MockClient extends Mock implements Client {}
 
 class _MockRoom extends Mock implements Room {}
-
-class _MockEvent extends Mock implements Event {}
-
-Event _buildBridgeEvent({
-  required String eventId,
-  required String roomId,
-  required int originTsMs,
-}) {
-  final event = _MockEvent();
-  final content = <String, dynamic>{'msgtype': syncMessageType};
-  when(() => event.eventId).thenReturn(eventId);
-  when(() => event.roomId).thenReturn(roomId);
-  when(() => event.type).thenReturn(EventTypes.Message);
-  when(() => event.content).thenReturn(content);
-  when(() => event.text).thenReturn('stub');
-  when(
-    () => event.originServerTs,
-  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(originTsMs));
-  when(event.toJson).thenReturn(<String, dynamic>{
-    'event_id': eventId,
-    'room_id': roomId,
-    'origin_server_ts': originTsMs,
-    'type': EventTypes.Message,
-    'content': content,
-  });
-  return event;
-}
 
 SyncUpdate _limitedSyncFor(String roomId, {String prevBatch = 'pb-1'}) {
   return SyncUpdate(
@@ -76,6 +46,36 @@ SyncUpdate _nonLimitedSyncFor(String roomId) {
   );
 }
 
+/// Minimal bootstrap runner that records invocations. Each call is
+/// an awaitable completer so tests can gate a run mid-flight.
+class _RecordingRunner {
+  _RecordingRunner({bool defaultCompleted = true})
+    : _defaultCompleted = defaultCompleted;
+
+  final bool _defaultCompleted;
+  final List<_RunnerCall> calls = <_RunnerCall>[];
+  Future<bool> Function(Room room, num? untilTimestamp)? override;
+
+  BootstrapRunner get runner =>
+      ({
+        required Room room,
+        required num? untilTimestamp,
+      }) async {
+        final call = _RunnerCall(room: room, untilTimestamp: untilTimestamp);
+        calls.add(call);
+        final o = override;
+        if (o != null) return o(room, untilTimestamp);
+        return _defaultCompleted;
+      };
+}
+
+class _RunnerCall {
+  _RunnerCall({required this.room, required this.untilTimestamp});
+
+  final Room room;
+  final num? untilTimestamp;
+}
+
 void main() {
   late SyncDatabase db;
   late MockLoggingService logging;
@@ -104,18 +104,22 @@ void main() {
   });
 
   BridgeCoordinator buildCoordinator({
-    String? markerEventId = r'$anchor',
     int? markerTs = 1000,
     Future<Room?> Function()? resolveRoom,
+    _RecordingRunner? runner,
+    Duration incompleteRetryDelay = const Duration(seconds: 10),
+    int maxIncompleteRetries = 3,
   }) {
+    final recording = runner ?? _RecordingRunner();
     return BridgeCoordinator(
       client: client,
       currentRoomId: () => roomId,
       resolveRoom: resolveRoom ?? () async => null,
-      queue: queue,
-      getLastReadEventId: () async => markerEventId,
       getLastReadTs: () async => markerTs,
+      bootstrapRunner: recording.runner,
       logging: logging,
+      incompleteRetryDelay: incompleteRetryDelay,
+      maxIncompleteRetries: maxIncompleteRetries,
     );
   }
 
@@ -123,7 +127,6 @@ void main() {
     final coordinator = buildCoordinator()..start();
     syncCtl.add(_nonLimitedSyncFor(roomId));
     await Future<void>.delayed(Duration.zero);
-    // No bridge work means no noRoom log line either.
     verifyNever(
       () => logging.captureEvent(
         any<String>(that: contains('queue.bridge.skip reason=noRoom')),
@@ -153,73 +156,89 @@ void main() {
   );
 
   test(
-    'missing timestamp yields queue.bridge.skip reason=noMarker',
+    'missing timestamp invokes the runner with untilTimestamp=null — '
+    'fresh client case walks the full visible history',
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
       final coordinator = buildCoordinator(
         markerTs: null,
         resolveRoom: () async => room,
-      )..start();
-      syncCtl.add(_limitedSyncFor(roomId));
-      await Future<void>.delayed(Duration.zero);
+        runner: runner,
+      );
+      await coordinator.bridgeNow();
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.room, same(room));
+      expect(runner.calls.single.untilTimestamp, isNull);
       verify(
         () => logging.captureEvent(
-          any<String>(that: contains('queue.bridge.skip reason=noMarker')),
+          any<String>(that: contains('queue.bridge.start mode=fresh')),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
-      await coordinator.stop();
     },
   );
 
   test(
-    'timestamp-only marker (lastEventId == null) still triggers bridge '
-    'catch-up — CatchUpStrategy uses the timestamp as the anchor',
+    'timestamp marker subtracts preContextMargin before invoking the '
+    'runner — reconnect anchor is (lastTs - margin) so the boundary '
+    'page includes a small context overlap for queue-side dedup',
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
-      var collectorCalls = 0;
-      String? observedLastEventId = 'not-captured';
+      final runner = _RecordingRunner();
       final coordinator = BridgeCoordinator(
         client: client,
         currentRoomId: () => roomId,
         resolveRoom: () async => room,
-        queue: queue,
-        // No durable event id stored (e.g. last applied event was a
-        // placeholder) but the timestamp marker is intact.
-        getLastReadEventId: () async => null,
-        getLastReadTs: () async => 1000,
+        getLastReadTs: () async => 5000,
+        bootstrapRunner: runner.runner,
         logging: logging,
-        catchUpCollector:
-            ({
-              required Room room,
-              required String? lastEventId,
-              required BackfillFn backfill,
-              required LoggingService logging,
-              required num preContextSinceTs,
-              required int preContextCount,
-              required int maxLookback,
-            }) async {
-              collectorCalls++;
-              observedLastEventId = lastEventId;
-              return const CatchUpCollection.complete(
-                events: [],
-                snapshotSize: 0,
-              );
-            },
+        preContextMargin: const Duration(milliseconds: 750),
       );
       await coordinator.bridgeNow();
-      expect(collectorCalls, 1);
-      expect(observedLastEventId, isNull);
-      verifyNever(
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.untilTimestamp, 5000 - 750);
+      verify(
         () => logging.captureEvent(
-          any<String>(that: contains('queue.bridge.skip reason=noMarker')),
+          any<String>(that: contains('queue.bridge.start mode=reconnect')),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'runner throwing is caught, logged, and counted as incomplete so '
+    'the retry machinery still kicks in',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner()
+        ..override = (Room r, num? until) async {
+          throw StateError('bootstrap boom');
+        };
+      final coordinator = buildCoordinator(
+        resolveRoom: () async => room,
+        runner: runner,
+        incompleteRetryDelay: const Duration(milliseconds: 10),
       );
+      await coordinator.bridgeNow();
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain', that: contains('bootstrap')),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      // Retry timer should have scheduled a second call after 10ms.
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(runner.calls.length, greaterThanOrEqualTo(2));
+      await coordinator.stop();
     },
   );
 
@@ -277,49 +296,33 @@ void main() {
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
+      final firstCallGate = Completer<void>();
+      final runner = _RecordingRunner()
+        ..override = (Room r, num? until) async {
+          if (r.id == roomId && !firstCallGate.isCompleted) {
+            // First call: wait for the gate.
+            // Second and later calls resolve immediately.
+          }
+          return true;
+        };
+      // Override the override: first call gated, subsequent immediate.
       var callCount = 0;
-      // Gate the first collector call so we can fire a second trigger
-      // during the in-flight pass; the second call resolves immediately.
-      final firstCollectorCallGate = Completer<void>();
-      final coordinator = BridgeCoordinator(
-        client: client,
-        currentRoomId: () => roomId,
+      runner.override = (Room r, num? until) async {
+        callCount++;
+        if (callCount == 1) await firstCallGate.future;
+        return true;
+      };
+      final coordinator = buildCoordinator(
         resolveRoom: () async => room,
-        queue: queue,
-        getLastReadEventId: () async => r'$anchor',
-        getLastReadTs: () async => 1000,
-        logging: logging,
-        catchUpCollector:
-            ({
-              required Room room,
-              required String? lastEventId,
-              required BackfillFn backfill,
-              required LoggingService logging,
-              required num preContextSinceTs,
-              required int preContextCount,
-              required int maxLookback,
-            }) async {
-              callCount++;
-              if (callCount == 1) await firstCollectorCallGate.future;
-              return const CatchUpCollection.complete(
-                events: [],
-                snapshotSize: 0,
-              );
-            },
+        runner: runner,
       );
-      // Kick off the first bridge and let it enter the collector.
       final firstBridge = coordinator.bridgeNow();
       await Future<void>.delayed(Duration.zero);
-      // Second trigger arrives while the first pass is still awaiting
-      // the gate. This must flip _pendingRerun, not run a second pass.
       unawaited(coordinator.bridgeNow());
       await Future<void>.delayed(Duration.zero);
       expect(callCount, 1);
-      // Release the first call; the finally block should now fire the
-      // single pending rerun.
-      firstCollectorCallGate.complete();
+      firstCallGate.complete();
       await firstBridge;
-      // Give the scheduled rerun a chance to run.
       for (var i = 0; i < 20; i++) {
         await Future<void>.delayed(Duration.zero);
         if (callCount >= 2) break;
@@ -332,20 +335,12 @@ void main() {
     'sync-room change between trigger and resolveRoom causes '
     'queue.bridge.skip reason=roomChanged — no cross-room catch-up',
     () async {
-      // `currentRoomId` initially returns roomId. The resolveRoom
-      // callback deliberately returns a DIFFERENT room, simulating a
-      // mid-flight sync room swap. _runBridgeOnce must refuse to
-      // enqueue into that mismatched room.
       final otherRoom = _MockRoom();
       when(() => otherRoom.id).thenReturn('!otherRoom:example.org');
-      final coordinator = BridgeCoordinator(
-        client: client,
-        currentRoomId: () => roomId,
+      final runner = _RecordingRunner();
+      final coordinator = buildCoordinator(
         resolveRoom: () async => otherRoom,
-        queue: queue,
-        getLastReadEventId: () async => r'$anchor',
-        getLastReadTs: () async => 1000,
-        logging: logging,
+        runner: runner,
       );
       await coordinator.bridgeNow();
       verify(
@@ -357,12 +352,11 @@ void main() {
           subDomain: any(named: 'subDomain'),
         ),
       ).called(1);
-      final stats = await queue.stats();
-      expect(stats.total, 0);
+      expect(runner.calls, isEmpty);
     },
   );
 
-  group('collection outcomes', () {
+  group('retry outcomes', () {
     late _MockRoom room;
 
     setUp(() {
@@ -370,125 +364,44 @@ void main() {
       when(() => room.id).thenReturn(roomId);
     });
 
-    CatchUpCollector stubCollector(
-      Future<CatchUpCollection> Function() build,
-    ) {
-      return ({
-        required Room room,
-        required String? lastEventId,
-        required BackfillFn backfill,
-        required LoggingService logging,
-        required num preContextSinceTs,
-        required int preContextCount,
-        required int maxLookback,
-      }) => build();
-    }
-
     test(
-      'empty collection logs queue.bridge.empty without enqueuing anything',
+      'completed run clears the retry counter and emits no incomplete log',
       () async {
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
+        final runner = _RecordingRunner();
+        final coordinator = buildCoordinator(
           resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
-          catchUpCollector: stubCollector(
-            () async => const CatchUpCollection.complete(
-              events: [],
-              snapshotSize: 0,
-            ),
-          ),
+          runner: runner,
         );
         await coordinator.bridgeNow();
-        verify(
+        expect(runner.calls, hasLength(1));
+        verifyNever(
           () => logging.captureEvent(
-            any<String>(that: contains('queue.bridge.empty')),
+            any<String>(
+              that: contains('queue.bridge.incomplete'),
+            ),
             domain: any(named: 'domain'),
             subDomain: any(named: 'subDomain'),
           ),
-        ).called(1);
-        expect((await queue.stats()).total, 0);
+        );
       },
     );
 
     test(
-      'non-empty collection enqueues under bridge producer and logs done',
-      () async {
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
-          resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
-          catchUpCollector: stubCollector(
-            () async => CatchUpCollection.timestampAnchored(
-              events: [
-                _buildBridgeEvent(
-                  eventId: r'$b1',
-                  roomId: roomId,
-                  originTsMs: 900,
-                ),
-                _buildBridgeEvent(
-                  eventId: r'$b2',
-                  roomId: roomId,
-                  originTsMs: 950,
-                ),
-              ],
-              snapshotSize: 2,
-            ),
-          ),
-        );
-        await coordinator.bridgeNow();
-        final stats = await queue.stats();
-        expect(stats.total, 2);
-        expect(stats.byProducer[InboundEventProducer.bridge], 2);
-        verify(
-          () => logging.captureEvent(
-            any<String>(that: contains('queue.bridge.done')),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'incomplete collection schedules a bounded retry timer and the retry '
+      'incomplete run schedules a bounded retry timer and the retry '
       'eventually fires _bridge again',
       () async {
         var callCount = 0;
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
-          resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
-          incompleteRetryDelay: const Duration(milliseconds: 10),
-          catchUpCollector: stubCollector(() async {
+        final runner = _RecordingRunner()
+          ..override = (Room r, num? until) async {
             callCount++;
-            if (callCount == 1) {
-              return const CatchUpCollection.incomplete(
-                snapshotSize: 0,
-                visibleTailCount: 0,
-                fallbackLimit: 100,
-                reachedTimestampBoundary: false,
-              );
-            }
-            return const CatchUpCollection.complete(
-              events: [],
-              snapshotSize: 0,
-            );
-          }),
+            return callCount > 1; // first call incomplete, then completes.
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+          incompleteRetryDelay: const Duration(milliseconds: 10),
         );
         await coordinator.bridgeNow();
-        // Allow the 10ms retry timer to fire.
         await Future<void>.delayed(const Duration(milliseconds: 30));
         expect(callCount, greaterThanOrEqualTo(2));
         verify(
@@ -503,29 +416,17 @@ void main() {
 
     test(
       'giving up emits queue.bridge.incomplete.giveUp after '
-      'maxIncompleteRetries consecutive incomplete collections',
+      'maxIncompleteRetries consecutive incomplete runs',
       () async {
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
+        final runner = _RecordingRunner(defaultCompleted: false);
+        final coordinator = buildCoordinator(
           resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
+          runner: runner,
           incompleteRetryDelay: const Duration(milliseconds: 5),
           maxIncompleteRetries: 2,
-          catchUpCollector: stubCollector(
-            () async => const CatchUpCollection.incomplete(
-              snapshotSize: 0,
-              visibleTailCount: 0,
-              fallbackLimit: 100,
-              reachedTimestampBoundary: false,
-            ),
-          ),
         );
         await coordinator.bridgeNow();
-        await Future<void>.delayed(const Duration(milliseconds: 60));
+        await Future<void>.delayed(const Duration(milliseconds: 80));
         verify(
           () => logging.captureEvent(
             any<String>(that: contains('queue.bridge.incomplete.giveUp')),
@@ -541,61 +442,17 @@ void main() {
       'stop() cancels a pending incomplete-retry timer so no bridge fires '
       'after shutdown',
       () async {
-        var callCount = 0;
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
+        final runner = _RecordingRunner(defaultCompleted: false);
+        final coordinator = buildCoordinator(
           resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
+          runner: runner,
           incompleteRetryDelay: const Duration(milliseconds: 50),
-          catchUpCollector: stubCollector(() async {
-            callCount++;
-            return const CatchUpCollection.incomplete(
-              snapshotSize: 0,
-              visibleTailCount: 0,
-              fallbackLimit: 100,
-              reachedTimestampBoundary: false,
-            );
-          }),
         );
         await coordinator.bridgeNow();
-        expect(callCount, 1);
+        final callsAtStop = runner.calls.length;
         await coordinator.stop();
-        // Wait past the retry delay — if the timer was not cancelled we
-        // would see another call.
         await Future<void>.delayed(const Duration(milliseconds: 120));
-        expect(callCount, 1);
-      },
-    );
-
-    test(
-      'coordinator survives a throwing collector by logging and clearing '
-      'pending rerun',
-      () async {
-        final coordinator = BridgeCoordinator(
-          client: client,
-          currentRoomId: () => roomId,
-          resolveRoom: () async => room,
-          queue: queue,
-          getLastReadEventId: () async => r'$anchor',
-          getLastReadTs: () async => 1000,
-          logging: logging,
-          catchUpCollector: stubCollector(
-            () async => throw StateError('boom'),
-          ),
-        );
-        await coordinator.bridgeNow();
-        verify(
-          () => logging.captureException(
-            any<Object>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain', that: contains('run')),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          ),
-        ).called(1);
+        expect(runner.calls.length, callsAtStop);
       },
     );
   });

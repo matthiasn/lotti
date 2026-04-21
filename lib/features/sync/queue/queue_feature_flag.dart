@@ -1,28 +1,30 @@
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/utils/consts.dart';
 
-/// Reads the Phase-1 queue feature flag from [SettingsDb]. The flag is
-/// stored as a string (`'true'` / `'false'`) under
-/// [useInboundEventQueueKey]; missing or malformed values are treated
-/// as `false`. Phase 2 reads this flag once at `MatrixService.init`
-/// and caches the result on the service; flips require a restart, so
-/// a value cached at init time is always authoritative for the
-/// lifetime of the current `MatrixService`.
-Future<bool> readUseInboundEventQueueFlag(SettingsDb settingsDb) async {
-  final raw = await settingsDb.itemByKey(useInboundEventQueueKey);
-  if (raw == null) return false;
-  return raw.trim().toLowerCase() == 'true';
+/// Reads the Phase-2 queue feature flag from [JournalDb]'s
+/// `config_flags` table under [useInboundEventQueueFlag]. Defaults to
+/// `false` when the row is missing, so a fresh install keeps the
+/// legacy pipeline until the user flips the switch on the Flags page.
+/// `MatrixService.init()` reads this once at startup and latches the
+/// result via `_suppressLegacyPipeline` in the ctor — flips require a
+/// restart to take effect.
+Future<bool> readUseInboundEventQueueFlag(JournalDb journalDb) {
+  return journalDb.getConfigFlag(useInboundEventQueueFlag);
 }
 
-/// Writes the Phase-1 queue feature flag. Exposed so a future Sync
-/// Settings UI (or an internal debug menu) can toggle it; the change
-/// takes effect on the next `MatrixService` init.
+/// Writes the Phase-2 queue feature flag. Exposed so tests and the
+/// Flags page can toggle it; the change takes effect on the next
+/// `MatrixService` init.
 Future<void> writeUseInboundEventQueueFlag(
-  SettingsDb settingsDb, {
+  JournalDb journalDb, {
   required bool enabled,
 }) async {
-  await settingsDb.saveSettingsItem(
-    useInboundEventQueueKey,
-    enabled ? 'true' : 'false',
+  await journalDb.upsertConfigFlag(
+    ConfigFlag(
+      name: useInboundEventQueueFlag,
+      description:
+          'Use the queue pipeline for inbound sync (requires restart).',
+      status: enabled,
+    ),
   );
 }

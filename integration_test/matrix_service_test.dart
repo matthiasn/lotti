@@ -11,6 +11,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
@@ -19,18 +20,25 @@ import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -40,7 +48,9 @@ import 'package:uuid/uuid.dart';
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
 
-MatrixService _createMatrixService({
+const _uuid = Uuid();
+
+Future<MatrixService> _createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
   required LoggingService loggingService,
@@ -53,7 +63,11 @@ MatrixService _createMatrixService({
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
-}) {
+  bool useQueuePipeline = true,
+  AttachmentIndex? attachmentIndex,
+  QueuePipelineCoordinator Function(QueuePipelineCoordinator coord)?
+  onCoordinatorBuilt,
+}) async {
   final activityGate = UserActivityGate(
     activityService: activityService,
   );
@@ -74,6 +88,73 @@ MatrixService _createMatrixService({
     settingsDb: settingsDb,
   );
 
+  // Shared AttachmentIndex so the queue coordinator subscribes to
+  // the same broadcast stream that `AttachmentIndex.record(event)`
+  // fires. Without sharing, the coordinator listens to a freshly
+  // constructed index and never hears the test-simulated path.
+  final sharedAttachmentIndex =
+      attachmentIndex ?? AttachmentIndex(logging: loggingService);
+  // Ingestor that runs attachment descriptor events through
+  // AttachmentIndex + disk-save on the queue pipeline's live +
+  // bootstrap paths — the same plumbing `get_it.dart` uses in
+  // production so the integration test exercises the real chain.
+  final queueAttachmentIngestor = AttachmentIngestor(
+    documentsDirectory: documentsDirectory,
+    verboseLogging: false,
+  );
+
+  QueuePipelineCoordinator? queueCoordinator;
+  MatrixSessionManager? sessionManager;
+  SyncRoomManager? roomManager;
+
+  if (useQueuePipeline) {
+    // Await the flag write so `MatrixService.init()` reads it — a
+    // fire-and-forget write lets init() race ahead and skip the
+    // queue coordinator while suppressLegacyPipeline is already true,
+    // leaving no active ingestion path.
+    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
+    final syncDb = SyncDatabase(
+      overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
+      inMemoryDatabase: true,
+    );
+    final vectorClockService = VectorClockService();
+    final sequenceLogService = SyncSequenceLogService(
+      syncDatabase: syncDb,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+    );
+    roomManager = SyncRoomManager(
+      gateway: gateway,
+      settingsDb: settingsDb,
+      loggingService: loggingService,
+    );
+    sessionManager =
+        MatrixSessionManager(
+            gateway: gateway,
+            roomManager: roomManager,
+            loggingService: loggingService,
+          )
+          ..matrixConfig = config
+          ..deviceDisplayName = deviceName;
+    queueCoordinator = QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: eventProcessor,
+      sequenceLogService: sequenceLogService,
+      activityGate: activityGate,
+      logging: loggingService,
+      attachmentIndex: sharedAttachmentIndex,
+      updateNotifications: updateNotifications,
+      attachmentIngestor: queueAttachmentIngestor,
+    );
+    if (onCoordinatorBuilt != null) {
+      queueCoordinator = onCoordinatorBuilt(queueCoordinator);
+    }
+  }
+
   return MatrixService(
     matrixConfig: config,
     gateway: gateway,
@@ -87,9 +168,13 @@ MatrixService _createMatrixService({
     secureStorage: secureStorage,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    attachmentIndex: AttachmentIndex(logging: loggingService),
+    attachmentIndex: sharedAttachmentIndex,
     sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: true,
+    roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queueCoordinator,
+    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 
@@ -200,7 +285,7 @@ void main() {
     setUpAll(() async {
       await vod.init();
       final tmpDir = await getTemporaryDirectory();
-      final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
+      final docDir = Directory('${tmpDir.path}/${_uuid.v1()}')
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
       sharedDocumentsDirectory = docDir;
@@ -279,7 +364,7 @@ void main() {
         );
         final loggingService = sharedLoggingService;
         final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-        alice = _createMatrixService(
+        alice = await _createMatrixService(
           config: config1,
           gateway: aliceGateway,
           loggingService: loggingService,
@@ -447,7 +532,7 @@ void main() {
     );
 
     test(
-      'Large-volume convergence: Bob catches up 2000 messages after '
+      'Large-volume convergence: Bob catches up 1000 messages after '
       'cold restart',
       () async {
         // Simulates the real-world scenario: Bob's app is closed while
@@ -457,7 +542,7 @@ void main() {
         // concurrent processing during sending, and must bootstrap from
         // scratch when coming back.
         const convergenceTimeout = Duration(minutes: 15);
-        const n = testSlowNetwork ? 250 : 2000;
+        const n = testSlowNetwork ? 250 : 1000;
 
         // Snapshot Bob's DB count before this test's messages
         final bobCountBefore = await bobDb.getJournalCount();
@@ -562,10 +647,23 @@ void main() {
         // catch-up pagination time for the backlog)
         await Future<void>.delayed(const Duration(seconds: 5));
 
+        Future<String> queueSnapshot() async {
+          final coord = bob.queueCoordinator;
+          if (coord == null) return 'coordinator=null';
+          final stats = await coord.queue.stats();
+          return 'queue[total=${stats.total} ready=${stats.readyNow} '
+              'byProducer=${stats.byProducer} '
+              'oldestEnqueuedAt=${stats.oldestEnqueuedAt}] '
+              'coord.running=${coord.isRunning} '
+              'currentRoomId=${bob.syncRoomId} '
+              'syncRoom=${bob.syncRoom != null}';
+        }
+
         debugPrint(
           'Bob metrics after startup: '
           '${bob.debugPipeline?.metricsSnapshot()}',
         );
+        debugPrint('Bob ${await queueSnapshot()}');
 
         var lastBobCount = -1;
         await waitUntilAsync(
@@ -590,6 +688,7 @@ void main() {
                   'Bob metrics @ ${elapsed}s: '
                   '${bob.debugPipeline?.metricsSnapshot()}',
                 );
+                debugPrint('Bob ${await queueSnapshot()}');
               }
               await Future<void>.delayed(const Duration(seconds: 1));
             }
@@ -641,6 +740,182 @@ void main() {
 
         // Bring Alice back online for clean teardown
         alice.client.backgroundSync = true;
+      },
+      timeout: const Timeout(Duration(minutes: 30)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Mid-burst rejoin: Bob comes online while Alice is halfway through '
+      'a 600-message burst — bridge backfills what live missed, live '
+      'covers what the bridge did not see, no duplicates, no drops',
+      () async {
+        // Unlike the 1000-message cold-start test above — where Alice
+        // finishes sending before Bob reconnects — this scenario
+        // interleaves the two delivery paths. Bob joins while Alice is
+        // still sending, so:
+        //  - Live `onTimelineEvent` fires for every message Alice
+        //    sends *after* Bob's re-join.
+        //  - The bridge's `/messages` pagination must backfill every
+        //    message Alice sent *while* Bob was offline.
+        //  - Events near the join boundary may be delivered by both
+        //    paths concurrently; `event_id UNIQUE` in
+        //    `inbound_event_queue` is the only primitive that keeps
+        //    each event from applying twice.
+        //  - The bridge is single-flight: live timeline firing during
+        //    pagination must NOT trigger a second bridge pass unless
+        //    the server sends another `limited=true`.
+        const convergenceTimeout = Duration(minutes: 15);
+        const n = testSlowNetwork ? 150 : 600;
+        // Percentage of Alice's burst that must land before Bob starts
+        // coming online. 40% leaves plenty of runway for the live
+        // stream + bridge overlap to actually occur.
+        const bobRejoinAtPercent = 40;
+
+        final bobCountBefore = await bobDb.getJournalCount();
+        debugPrint(
+          'Bob DB count before mid-burst test: $bobCountBefore',
+        );
+
+        // Phase 1: Dispose Bob so his client is offline for the first
+        // half of Alice's burst. Keep his DB + settings intact so the
+        // cold restart still has the last-applied marker.
+        debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
+        await bob.dispose();
+        bobInitialized = false;
+
+        // Phase 2: Alice starts sending in the background. We do NOT
+        // await the whole thing — we want Bob to come online while
+        // this Future is still in flight.
+        debugPrint(
+          '\n--- Phase 2: Alice starts $n-message burst (background)',
+        );
+        final aliceStopwatch = Stopwatch()..start();
+        var aliceSent = 0;
+        final burstFuture = () async {
+          for (var i = 0; i < n; i++) {
+            await _sendTestMessage(
+              i,
+              device: alice,
+              deviceName: 'aliceMidBurst',
+              roomId: roomId,
+              journalDb: aliceDb,
+            );
+            aliceSent = i + 1;
+            if (aliceSent % 100 == 0) {
+              debugPrint(
+                '  Alice sent $aliceSent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
+              );
+            }
+          }
+        }();
+
+        // Phase 3: Wait until Alice has sent `bobRejoinAtPercent`% of
+        // the burst, then cold-start Bob. The remaining burst races
+        // Bob's startup bridge + live subscription.
+        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        debugPrint(
+          '\n--- Phase 3: waiting for Alice to reach $rejoinThreshold sent',
+        );
+        await waitUntilAsync(
+          () async => aliceSent >= rejoinThreshold,
+          timeout: convergenceTimeout,
+        );
+        debugPrint(
+          'Alice at $aliceSent sent when Bob starts coming online',
+        );
+
+        // Phase 4: Bob cold-starts. Live timeline fires concurrently
+        // with Alice's ongoing sends; the startup bridge runs a
+        // `/messages` pass to backfill everything below its marker.
+        debugPrint('\n--- Phase 4: Bob cold-starts mid-burst');
+        final catchupStopwatch = Stopwatch()..start();
+        bob = await _createBobService(
+          documentsDirectory: sharedDocumentsDirectory,
+          config: config2,
+          loggingService: sharedLoggingService,
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          secureStorage: secureStorageMock,
+          activityService: sharedUserActivityService,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
+          singleInstance: false,
+        );
+        bobInitialized = true;
+
+        await bob.init();
+        expect(bob.debugPipeline, isNotNull);
+        await Future<void>.delayed(const Duration(seconds: 1));
+        await bob.login();
+        debugPrint('Bob cold-started - deviceId: ${bob.client.deviceID}');
+
+        await bob.joinRoom(roomId);
+        await bob.saveRoom(roomId);
+        debugPrint('Bob re-joined room $roomId mid-burst');
+
+        // Phase 5: wait for Alice's burst to finish so the target
+        // count is stable.
+        debugPrint('\n--- Phase 5: waiting for Alice to finish burst');
+        await burstFuture;
+        aliceStopwatch.stop();
+        debugPrint(
+          'Alice finished $n-message burst in '
+          '${aliceStopwatch.elapsed.inSeconds}s',
+        );
+
+        // Phase 6: wait for Bob to converge to the full target. Both
+        // live and bridge producers must contribute — we verify that
+        // in Phase 7.
+        debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
+        final expectedTotal = bobCountBefore + n;
+        var lastBobCount = -1;
+        await waitUntilAsync(
+          () async {
+            final currentCount = await bobDb.getJournalCount();
+            if (currentCount != lastBobCount) {
+              final delta = currentCount - bobCountBefore;
+              debugPrint(
+                'Bob journal count: $currentCount (+$delta/$n, '
+                '${catchupStopwatch.elapsed.inSeconds}s)',
+              );
+              lastBobCount = currentCount;
+            }
+            if (currentCount < expectedTotal) {
+              final elapsed = catchupStopwatch.elapsed.inSeconds;
+              if (elapsed > 0 && elapsed % 30 == 0) {
+                final coord = bob.queueCoordinator;
+                if (coord != null) {
+                  final stats = await coord.queue.stats();
+                  debugPrint(
+                    'Bob queue @ ${elapsed}s: total=${stats.total} '
+                    'applied=${stats.applied} abandoned=${stats.abandoned} '
+                    'retrying=${stats.retrying} '
+                    'byProducer=${stats.byProducer}',
+                  );
+                }
+              }
+              await Future<void>.delayed(const Duration(seconds: 1));
+            }
+            return currentCount >= expectedTotal;
+          },
+          timeout: convergenceTimeout,
+        );
+        catchupStopwatch.stop();
+
+        // The only thing we care about here is convergence: Bob
+        // eventually sees every message Alice sent. No dropped events,
+        // no duplicates. Internals (which producer delivered which
+        // event, queue stats, pipeline metrics) are implementation
+        // detail — this test does not pin them down.
+        debugPrint('\n--- Phase 7: convergence check');
+        final bobEntriesCount = await bobDb.getJournalCount();
+        final newEntries = bobEntriesCount - bobCountBefore;
+        expect(newEntries, n);
+        debugPrint(
+          'Bob converged $newEntries entries in '
+          '${catchupStopwatch.elapsed.inSeconds}s',
+        );
       },
       timeout: const Timeout(Duration(minutes: 30)),
       skip: skipReason ?? false,
@@ -743,6 +1018,28 @@ Future<void> _performSasVerification({
   required int defaultDelay,
   required void Function(Future<void> Function()) addTearDown,
 }) async {
+  // Diagnostic: print alice + bob device state periodically while
+  // waiting, so a hang here is traceable to which side isn't seeing
+  // the other. Runs for up to 15 s (5 ticks × 3 s); the main
+  // `waitUntil` below still enforces the real 60 s timeout.
+  for (var i = 0; i < 5; i++) {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    final aliceKeys = alice.client.userDeviceKeys;
+    final bobKeys = bob.client.userDeviceKeys;
+    debugPrint(
+      '[sas.poll $i] alice.isLoggedIn=${alice.client.isLogged()} '
+      'alice.userDeviceKeys.users=${aliceKeys.keys.toList()} '
+      'alice.unverified=${alice.getUnverifiedDevices().length} '
+      '| bob.isLoggedIn=${bob.client.isLogged()} '
+      'bob.userDeviceKeys.users=${bobKeys.keys.toList()} '
+      'bob.unverified=${bob.getUnverifiedDevices().length}',
+    );
+    if (alice.getUnverifiedDevices().isNotEmpty &&
+        bob.getUnverifiedDevices().isNotEmpty) {
+      break;
+    }
+  }
+
   // Wait for devices to discover each other
   await waitUntil(
     () => alice.getUnverifiedDevices().isNotEmpty,

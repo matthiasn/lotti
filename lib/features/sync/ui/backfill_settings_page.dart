@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/ui/widgets/fetch_all_history_dialog.dart';
+import 'package:lotti/features/sync/ui/widgets/queue_depth_card.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class BackfillSettingsPage extends ConsumerWidget {
@@ -15,6 +20,13 @@ class BackfillSettingsPage extends ConsumerWidget {
     final configAsync = ref.watch(backfillConfigControllerProvider);
     final statsState = ref.watch(backfillStatsControllerProvider);
     final theme = Theme.of(context);
+    final matrixService = getIt.isRegistered<MatrixService>()
+        ? getIt<MatrixService>()
+        : null;
+    final coordinator = matrixService?.queueCoordinator;
+    final showQueueSection =
+        (matrixService?.isLegacyPipelineSuppressed ?? false) &&
+        coordinator != null;
 
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
@@ -24,6 +36,18 @@ class BackfillSettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (showQueueSection) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: QueueDepthCard(queue: coordinator.queue),
+              ),
+              const SizedBox(height: 16),
+              _CatchUpNowButton(coordinator: coordinator),
+              const SizedBox(height: 8),
+              _FetchAllHistoryButton(coordinator: coordinator),
+              const SizedBox(height: 24),
+            ],
+
             // Enable/Disable Toggle Card
             _BackfillToggleCard(
               isEnabled: configAsync.value ?? true,
@@ -93,6 +117,91 @@ class BackfillSettingsPage extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatchUpNowButton extends StatefulWidget {
+  const _CatchUpNowButton({required this.coordinator});
+
+  final QueuePipelineCoordinator coordinator;
+
+  @override
+  State<_CatchUpNowButton> createState() => _CatchUpNowButtonState();
+}
+
+class _CatchUpNowButtonState extends State<_CatchUpNowButton> {
+  bool _running = false;
+
+  Future<void> _kick() async {
+    if (_running) return;
+    setState(() => _running = true);
+    try {
+      await widget.coordinator.triggerBridge();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.messages.queueCatchUpNowDone)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.messages.queueFetchAllHistoryError(error.toString()),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _running ? null : _kick,
+          icon: _running
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.bolt_outlined),
+          label: Text(
+            _running
+                ? messages.queueCatchUpNowRunning
+                : messages.queueCatchUpNowButton,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FetchAllHistoryButton extends StatelessWidget {
+  const _FetchAllHistoryButton({required this.coordinator});
+
+  final QueuePipelineCoordinator coordinator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            await FetchAllHistoryDialog.show(context, coordinator);
+          },
+          icon: const Icon(Icons.download_rounded),
+          label: Text(context.messages.queueFetchAllHistoryButton),
         ),
       ),
     );

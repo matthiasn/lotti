@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.972] - 2026-04-21
+### Changed
+- Queue-pipeline `InboundWorker` now fans the adapter's prepare phase
+  out across the whole batch via `Future.wait`. Prepare is I/O-bound
+  (attachment downloads, gzip decode, JSON decode) with no shared
+  state, so running it in parallel collapses each batch's prepare
+  critical path to the slowest entry instead of the sum. Apply still
+  runs sequentially inside `journalDb.transaction` to preserve the M1
+  writer-lock discipline, and prepared payloads are cached by
+  `eventId` so apply consumes each one exactly once. Directly
+  addresses the cold-start catch-up throughput cliff where every
+  entry waited on its predecessor's attachment download before its
+  own prepare could begin.
+
 ## [0.9.969] - 2026-04-21
 ### Fixed
 - Task title edit affordance restored. The new `DesktopTaskHeader`
@@ -17,6 +31,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than silently collapsing the row.
 
 ## [0.9.968] - 2026-04-20
+### Fixed
+- Three Phase-2 queue-pipeline gaps flagged in the design review:
+  (1) when the sync room is picked after `MatrixService.init()` or the
+  user switches rooms, `MatrixService.saveRoom` now calls a new
+  `QueuePipelineCoordinator.onRoomChanged` hook that seeds the new
+  room's `queue_markers` row and prunes rows belonging to previous
+  rooms — otherwise the worker replays stale rows against the new
+  room and the new room never gets a marker. (2) On cold start under
+  the queue flag, `QueuePipelineCoordinator.start()` now fires a
+  background `bridge.bridgeNow()` pass once the worker and bridge are
+  attached, mirroring the 300 ms startup `forceRescan` the legacy
+  pipeline runs — reconnects whose timeline is not flagged `limited`
+  no longer silently drop events delivered during login. (3) The F7
+  `stop(drainFirst: true)` path now uses a new `drainUntilEmpty` loop
+  that flushes the decryption pen, sleeps until each retry lease
+  matures via `InboundQueue.earliestReadyAt`, and re-peeks until the
+  queue is empty or `drainUntilEmptyTimeout` (30 s) elapses — the
+  previous single `drainToCompletion` returned as soon as no rows
+  were ready at call time, stranding retriable / decryption-pending /
+  noRoom rows across a flag-off restart.
+
 ### Added
 - Phase 0 sync diagnostic observability (additive logs only; no behaviour
   change). `MatrixStreamSignalBinder` now records two probes on the sync
@@ -27,6 +62,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reorderings and same-timestamp ties. Both route through the
   `MATRIX_SYNC` log domain into the dated `sync-*.log` file. Data feeds
   the Inbound Event Queue redesign (`docs/sync/2026-04-20_inbound_event_queue_design.md`).
+- Stateful inbound sync queue (Phase 1 + 2), gated on the
+  `USE_INBOUND_EVENT_QUEUE` settings flag (default off). When the flag
+  is on, live events, the `limited=true` bridge, and the new
+  "Fetch all history" / "Catch up now" actions route through an
+  `InboundQueue` (Drift-backed, stored in `sync_db`) + `InboundWorker`
+  with a single drain loop per room. Per-room markers live in a
+  new `queue_markers` table so commit + marker advance is atomic
+  and monotonic via `TimelineEventOrdering.isNewer`. Encrypted events
+  are held in a `PendingDecryptionPen` so pre-decryption ciphertext
+  never lands in `raw_json`. The legacy `MatrixStreamSignalBinder`
+  is suppressed when the flag is on, keeping the two pipelines
+  mutually exclusive. Sync Settings gains a flag-gated queue
+  section with a depth card, a Catch-up-now button, and a
+  Fetch-all-history dialog with per-page progress and cancel.
+  Pipeline-tagged log lines (`pipeline=queue` / `pipeline=legacy`)
+  let the Phase-2 validation gate compare apply rates between the
+  two paths.
 
 ### Fixed
 - Desktop UI freeze during Matrix sync. The per-event apply loop in

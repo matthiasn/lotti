@@ -7,21 +7,29 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:uuid/uuid.dart';
@@ -231,8 +239,16 @@ Future<bool> verifyTestEnvironment() async {
   }
 }
 
-/// Create a MatrixService instance for testing
-MatrixService createMatrixService({
+/// Create a MatrixService instance for testing.
+///
+/// When [useQueuePipeline] is true, the Phase-2 `InboundQueue`
+/// pipeline is wired up alongside the service (flag written to
+/// settingsDb, dedicated SyncDatabase + SyncSequenceLogService +
+/// MatrixSessionManager + SyncRoomManager built here, coordinator
+/// passed in, legacy live-scan suppressed). Integration tests opt
+/// into the queue pipeline by passing `useQueuePipeline: true`;
+/// default stays `false` so existing tests are unchanged.
+Future<MatrixService> createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
   required LoggingService loggingService,
@@ -246,7 +262,9 @@ MatrixService createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   bool collectSyncMetrics = true,
-}) {
+  bool useQueuePipeline = false,
+  AttachmentIndex? attachmentIndex,
+}) async {
   final activityGate = UserActivityGate(
     activityService: activityService,
   );
@@ -267,6 +285,72 @@ MatrixService createMatrixService({
     settingsDb: settingsDb,
   );
 
+  // Share a single AttachmentIndex between MatrixService and the
+  // queue coordinator so `pathRecorded` signals land on the same
+  // subscription the coordinator listens to. Without a shared
+  // instance, resurrection never fires in integration tests.
+  final sharedAttachmentIndex =
+      attachmentIndex ?? AttachmentIndex(logging: loggingService);
+  // A dedicated ingestor for the queue pipeline so the integration
+  // tests exercise the same attachment-processing hook production
+  // runs on-device. `documentsDirectory` is the per-device scratch
+  // dir provided by the caller; the ingestor downloads descriptors
+  // into it before the companion sync events apply.
+  final queueAttachmentIngestor = AttachmentIngestor(
+    documentsDirectory: documentsDirectory,
+    verboseLogging: false,
+  );
+
+  QueuePipelineCoordinator? queueCoordinator;
+  MatrixSessionManager? sessionManager;
+  SyncRoomManager? roomManager;
+
+  if (useQueuePipeline) {
+    // Persist the flag and await the write so `MatrixService.init()`
+    // reads the new value — a fire-and-forget write lets init() race
+    // ahead and skip the queue coordinator while the ctor still
+    // suppresses the legacy pipeline, leaving no active ingestion.
+    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
+
+    final syncDb = SyncDatabase(
+      overriddenFilename: 'sync_${uuid.v1()}.sqlite',
+      inMemoryDatabase: true,
+    );
+    final vectorClockService = VectorClockService();
+    final sequenceLogService = SyncSequenceLogService(
+      syncDatabase: syncDb,
+      vectorClockService: vectorClockService,
+      loggingService: loggingService,
+    );
+    roomManager = SyncRoomManager(
+      gateway: gateway,
+      settingsDb: settingsDb,
+      loggingService: loggingService,
+    );
+    sessionManager =
+        MatrixSessionManager(
+            gateway: gateway,
+            roomManager: roomManager,
+            loggingService: loggingService,
+          )
+          ..matrixConfig = config
+          ..deviceDisplayName = deviceName;
+    queueCoordinator = QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: eventProcessor,
+      sequenceLogService: sequenceLogService,
+      activityGate: activityGate,
+      logging: loggingService,
+      attachmentIndex: sharedAttachmentIndex,
+      updateNotifications: updateNotifications,
+      attachmentIngestor: queueAttachmentIngestor,
+    );
+  }
+
   return MatrixService(
     matrixConfig: config,
     gateway: gateway,
@@ -280,9 +364,13 @@ MatrixService createMatrixService({
     secureStorage: secureStorage,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    attachmentIndex: AttachmentIndex(logging: loggingService),
+    attachmentIndex: sharedAttachmentIndex,
     sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: collectSyncMetrics,
+    roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queueCoordinator,
+    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 

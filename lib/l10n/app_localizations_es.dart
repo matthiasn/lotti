@@ -2393,6 +2393,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Comprime con gzip los archivos adjuntos JSON de sincronización antes de subirlos. Ahorra ancho de banda en redes lentas, a cambio de un pequeño coste de CPU al enviar y recibir.';
 
   @override
+  String get configFlagUseInboundEventQueue => 'Usar cola de eventos entrantes';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Dirige los eventos de sincronización entrantes a través de la cola duradera con memoria acotada y aplicación progresiva. Requiere reiniciar la app.';
+
+  @override
   String get conflictEntityLabel => 'Entidad';
 
   @override
@@ -4928,6 +4935,144 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get provisionedSyncVerifyDevicesTitle =>
       'Verificación de dispositivos';
+
+  @override
+  String get queueCatchUpNowButton => 'Sincronizar ahora';
+
+  @override
+  String get queueCatchUpNowDone =>
+      'Puesta al día iniciada — la cola se está vaciando.';
+
+  @override
+  String get queueCatchUpNowRunning => 'Puenteando la brecha reciente…';
+
+  @override
+  String get queueDepthCardEmpty => 'Cola vacía — el procesador está al día.';
+
+  @override
+  String get queueDepthCardLoading => 'Leyendo profundidad de la cola…';
+
+  @override
+  String get queueDepthCardTitle => 'Cola de entrada';
+
+  @override
+  String get queueFetchAllHistoryButton => 'Obtener todo el historial';
+
+  @override
+  String get queueFetchAllHistoryCancel => 'Cancelar';
+
+  @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events eventos obtenidos',
+      one: '1 evento obtenido',
+      zero: 'ningún evento obtenido',
+    );
+    return 'Cancelado — $_temp0 hasta ahora.';
+  }
+
+  @override
+  String get queueFetchAllHistoryClose => 'Cerrar';
+
+  @override
+  String get queueFetchAllHistoryDescription =>
+      'Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.';
+
+  @override
+  String queueFetchAllHistoryDone(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages páginas',
+      one: '1 página',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages páginas',
+      one: '1 página',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events eventos obtenidos en $_temp0.',
+      one: '1 evento obtenido en $_temp1.',
+      zero: 'Ningún evento obtenido.',
+    );
+    return '$_temp2';
+  }
+
+  @override
+  String queueFetchAllHistoryError(String reason) {
+    return 'Obtención detenida: $reason';
+  }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'La obtención se detuvo inesperadamente.';
+
+  @override
+  String queueFetchAllHistoryProgress(int events, int pages) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Página $pages  ·  $events eventos obtenidos',
+      one: 'Página $pages  ·  1 evento obtenido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueFetchAllHistoryTitle => 'Obteniendo historial';
+
+  @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count omitidos',
+      one: '1 omitido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count eventos de sincronización que la cola descartó. Toca reintentar para volver a intentarlo.',
+      one:
+          '1 evento de sincronización que la cola descartó. Toca reintentar para volver a intentarlo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Eventos omitidos';
+
+  @override
+  String get queueSkippedRetryAll => 'Reintentar eventos omitidos';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eventos en cola para reintento.',
+      one: '1 evento en cola para reintento.',
+      zero: 'No hay eventos omitidos.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Reintento fallido: $reason';
+  }
 
   @override
   String get referenceImageContinue => 'Continuar';

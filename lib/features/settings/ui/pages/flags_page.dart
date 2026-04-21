@@ -28,6 +28,7 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     enableMatrixFlag,
     resendAttachments,
     useCompressedJsonAttachmentsFlag,
+    useInboundEventQueueFlag,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableDailyOsPageFlag,
@@ -60,6 +61,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return Icons.refresh_rounded;
       case useCompressedJsonAttachmentsFlag:
         return Icons.compress_rounded;
+      case useInboundEventQueueFlag:
+        return Icons.inbox_rounded;
       case enableHabitsPageFlag:
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
@@ -106,6 +109,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context
             .messages
             .configFlagUseCompressedJsonAttachmentsDescription;
+      case useInboundEventQueueFlag:
+        return context.messages.configFlagUseInboundEventQueueDescription;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
@@ -150,6 +155,8 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
         return context.messages.configFlagResendAttachments;
       case useCompressedJsonAttachmentsFlag:
         return context.messages.configFlagUseCompressedJsonAttachments;
+      case useInboundEventQueueFlag:
+        return context.messages.configFlagUseInboundEventQueue;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:

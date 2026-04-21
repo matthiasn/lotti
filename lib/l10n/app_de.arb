@@ -1034,6 +1034,8 @@
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
   "configFlagUseCompressedJsonAttachments": "JSON-Sync-Payloads komprimieren",
   "configFlagUseCompressedJsonAttachmentsDescription": "Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.",
+  "configFlagUseInboundEventQueue": "Eingangs-Event-Queue verwenden",
+  "configFlagUseInboundEventQueueDescription": "Leitet eingehende Sync-Events über die dauerhafte Queue-Pipeline mit begrenztem Speicher und fortlaufender Anwendung. Neustart erforderlich.",
   "conflictEntityLabel": "Entität",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Text aus Synchronisierung kopieren",
@@ -2085,6 +2087,62 @@
   "provisionedSyncSummaryUser": "Benutzer",
   "provisionedSyncTitle": "Provisionierte Synchronisierung",
   "provisionedSyncVerifyDevicesTitle": "Geräteverifizierung",
+  "queueCatchUpNowButton": "Jetzt aufholen",
+  "queueCatchUpNowDone": "Aufholen gestartet — die Warteschlange wird abgearbeitet.",
+  "queueCatchUpNowRunning": "Überbrücke kürzliche Lücke…",
+  "queueDepthCardEmpty": "Warteschlange leer — Worker ist aktuell.",
+  "queueDepthCardLoading": "Warteschlangenfüllung wird gelesen…",
+  "queueDepthCardTitle": "Eingangs-Warteschlange",
+  "queueFetchAllHistoryButton": "Gesamten Verlauf holen",
+  "queueFetchAllHistoryCancel": "Abbrechen",
+  "queueFetchAllHistoryCancelled": "Abgebrochen — bisher {events, plural, =0{keine Ereignisse} =1{1 Ereignis} other{{events} Ereignisse}} abgerufen.",
+  "@queueFetchAllHistoryCancelled": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryClose": "Schließen",
+  "queueFetchAllHistoryDescription": "Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Keine Ereignisse abgerufen.} =1{1 Ereignis über {pages, plural, =1{1 Seite} other{{pages} Seiten}} abgerufen.} other{{events} Ereignisse über {pages, plural, =1{1 Seite} other{{pages} Seiten}} abgerufen.}}",
+  "@queueFetchAllHistoryDone": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryError": "Abruf gestoppt: {reason}",
+  "@queueFetchAllHistoryError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "queueFetchAllHistoryErrorUnknown": "Abruf unerwartet gestoppt.",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Seite {pages}  ·  1 Ereignis abgerufen} other{Seite {pages}  ·  {events} Ereignisse abgerufen}}",
+  "@queueFetchAllHistoryProgress": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "queueFetchAllHistoryTitle": "Verlauf wird geholt",
+  "queueSkippedBadge": "{count, plural, =1{1 übersprungen} other{{count} übersprungen}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 Sync-Ereignis, das die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um es erneut zu versuchen.} other{{count} Sync-Ereignisse, die die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um sie erneut zu versuchen.}}",
+  "queueSkippedCardTitle": "Übersprungene Ereignisse",
+  "queueSkippedRetryAll": "Übersprungene Ereignisse wiederholen",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Keine übersprungenen Ereignisse.} =1{1 Ereignis zur Wiederholung eingereiht.} other{{count} Ereignisse zur Wiederholung eingereiht.}}",
+  "queueSkippedRetryAllError": "Wiederholung fehlgeschlagen: {reason}",
   "referenceImageContinue": "Weiter",
   "referenceImageContinueWithCount": "Weiter ({count})",
   "@referenceImageContinueWithCount": {

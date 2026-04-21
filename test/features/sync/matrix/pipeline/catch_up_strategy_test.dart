@@ -1391,6 +1391,103 @@ void main() {
         );
       },
     );
+
+    test(
+      'untilTimestamp stops pagination after the first page whose '
+      'oldest event is at or below the boundary — reconnect catch-up '
+      'does not walk further back than the queue marker',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // Initial snapshot: three events strictly newer than the boundary.
+        final events = <Event>[
+          buildEvent('e3', 300),
+          buildEvent('e4', 400),
+          buildEvent('e5', 500),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => true);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          if (requests == 1) {
+            // This page crosses the boundary (ts=200 == untilTimestamp).
+            events
+              ..insert(0, buildEvent('e1', 100))
+              ..insert(0, buildEvent('e2', 200));
+          } else {
+            events.insert(0, buildEvent('e0', 50));
+          }
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <String>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll([for (final e in page) e.eventId]);
+          }),
+          pageSize: 3,
+          untilTimestamp: 200,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        // Only one requestHistory call: the snapshot alone was all >
+        // boundary, so the first page emits e3/e4/e5 and triggers a
+        // requestHistory that pulls in e1/e2 (boundary-crossing page).
+        // Further pagination is skipped — e0 never makes it out.
+        expect(collected, containsAll(['e1', 'e2', 'e3', 'e4', 'e5']));
+        expect(collected, isNot(contains('e0')));
+      },
+    );
+
+    test(
+      'untilTimestamp does not trigger early stop when the snapshot is '
+      'already entirely older than the boundary — pagination has never '
+      'emitted a fresh page, so the first page is still worth the '
+      'queue seeing (the queue dedups anything older)',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // Whole initial snapshot is at ts=50, already below a
+        // boundary of 100. The first page's page.first.ts is 50 <= 100,
+        // so the boundary check fires immediately after page 0 emits.
+        final events = <Event>[buildEvent('a', 50), buildEvent('b', 60)];
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => true);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <String>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll([for (final e in page) e.eventId]);
+          }),
+          pageSize: 2,
+          untilTimestamp: 100,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        expect(collected, ['a', 'b']);
+        verifyNever(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        );
+      },
+    );
   });
 }
 

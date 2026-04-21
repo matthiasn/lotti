@@ -1,25 +1,25 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
-import 'package:lotti/features/sync/matrix/sdk_pagination_compat.dart';
-import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// Test seam: lets unit tests substitute `CatchUpStrategy`
-/// deterministically instead of wiring a full room timeline mock.
-@visibleForTesting
-typedef CatchUpCollector =
-    Future<CatchUpCollection> Function({
+/// Callback owned by `QueuePipelineCoordinator` that streams the room's
+/// visible history through a `BootstrapSink` with back-pressure.
+///
+/// The bridge calls this for every catch-up trigger — both the fresh-
+/// client case (`untilTimestamp == null`, walk everything) and the
+/// reconnect case (`untilTimestamp = lastAppliedTs - margin`, stop
+/// after the boundary page). Streaming keeps memory bounded and lets
+/// the worker apply events concurrently with pagination.
+///
+/// Returns `true` when the walk completed (server exhausted OR
+/// boundary reached). Returns `false` when it stopped early (error,
+/// back-pressure timeout, user cancelled) — the bridge treats that
+/// as incomplete and schedules a bounded retry.
+typedef BootstrapRunner =
+    Future<bool> Function({
       required Room room,
-      required String? lastEventId,
-      required BackfillFn backfill,
-      required LoggingService logging,
-      required num preContextSinceTs,
-      required int preContextCount,
-      required int maxLookback,
+      required num? untilTimestamp,
     });
 
 const _logDomain = 'sync';
@@ -28,10 +28,8 @@ const _logSub = 'queue.bridge';
 /// Owns the "limited=true" bridge call for the queue-based pipeline.
 /// Subscribes to [Client.onSync], filters to the current room, and
 /// (when the sync response arrives with `timeline.limited == true`)
-/// invokes [CatchUpStrategy.collectEventsForCatchUp] to pull the
-/// gap-span events from the Matrix /messages endpoint, then feeds
-/// them into [InboundQueue.enqueueBatch] under
-/// `InboundEventProducer.bridge`.
+/// invokes the [BootstrapRunner] to stream catch-up events into the
+/// queue via a page-by-page bootstrap sink.
 ///
 /// Single-flight: a second limited-sync that fires while a bridge
 /// call is still in-flight is coalesced. The coordinator remembers
@@ -44,47 +42,31 @@ class BridgeCoordinator {
     required Client client,
     required String? Function() currentRoomId,
     required Future<Room?> Function() resolveRoom,
-    required InboundQueue queue,
-    required Future<String?> Function() getLastReadEventId,
     required Future<int?> Function() getLastReadTs,
+    required BootstrapRunner bootstrapRunner,
     required LoggingService logging,
-    BackfillFn? backfill,
     Duration preContextMargin = const Duration(seconds: 1),
-    int preContextCount = 20,
-    int maxLookback = SyncTuning.catchupMaxLookback,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
     int maxIncompleteRetries = 3,
-    @visibleForTesting CatchUpCollector? catchUpCollector,
   }) : _client = client,
        _currentRoomId = currentRoomId,
        _resolveRoom = resolveRoom,
-       _queue = queue,
-       _getLastReadEventId = getLastReadEventId,
        _getLastReadTs = getLastReadTs,
+       _bootstrapRunner = bootstrapRunner,
        _logging = logging,
-       _backfill = backfill ?? SdkPaginationCompat.backfillUntilContains,
        _preContextMargin = preContextMargin,
-       _preContextCount = preContextCount,
-       _maxLookback = maxLookback,
        _incompleteRetryDelay = incompleteRetryDelay,
-       _maxIncompleteRetries = maxIncompleteRetries,
-       _catchUpCollector =
-           catchUpCollector ?? CatchUpStrategy.collectEventsForCatchUp;
+       _maxIncompleteRetries = maxIncompleteRetries;
 
   final Client _client;
   final String? Function() _currentRoomId;
   final Future<Room?> Function() _resolveRoom;
-  final InboundQueue _queue;
-  final Future<String?> Function() _getLastReadEventId;
   final Future<int?> Function() _getLastReadTs;
+  final BootstrapRunner _bootstrapRunner;
   final LoggingService _logging;
-  final BackfillFn _backfill;
   final Duration _preContextMargin;
-  final int _preContextCount;
-  final int _maxLookback;
   final Duration _incompleteRetryDelay;
   final int _maxIncompleteRetries;
-  final CatchUpCollector _catchUpCollector;
 
   StreamSubscription<SyncUpdate>? _sub;
   Future<void>? _inFlightBridge;
@@ -209,79 +191,65 @@ class BridgeCoordinator {
       );
       return;
     }
-    final lastEventId = await _getLastReadEventId();
     final lastTs = await _getLastReadTs();
-    // CatchUpStrategy.collectEventsForCatchUp treats lastEventId as
-    // legacy/debug context — its real anchor is the timestamp. The
-    // processor intentionally leaves `lastReadMatrixEventId` null after
-    // applying a placeholder/non-durable event while still advancing
-    // `lastReadMatrixEventTs`, so gating on lastEventId would skip
-    // bridge catch-up for a reconnect in that legitimate state. Only
-    // the timestamp is a hard requirement.
-    if (lastTs == null) {
-      _logging.captureEvent(
-        'queue.bridge.skip reason=noMarker',
-        domain: _logDomain,
-        subDomain: _logSub,
-      );
-      return;
-    }
-
-    final collection = await _catchUpCollector(
-      room: room,
-      lastEventId: lastEventId,
-      backfill: _backfill,
-      logging: _logging,
-      preContextSinceTs: lastTs - _preContextMargin.inMilliseconds,
-      preContextCount: _preContextCount,
-      maxLookback: _maxLookback,
-    );
-
-    if (collection.events.isEmpty) {
-      _logging.captureEvent(
-        'queue.bridge.empty snapshotSize=${collection.snapshotSize} '
-        'incomplete=${collection.incomplete}',
-        domain: _logDomain,
-        subDomain: _logSub,
-      );
-      // Still evaluate the incomplete retry gate: an incomplete
-      // collection can surface with empty events when the fallback
-      // budget has been exhausted, and those are exactly the cases
-      // where a bounded retry matters most.
-      _handleIncompleteFollowUp(collection.incomplete, expectedRoomId);
-      return;
-    }
-
-    final result = await _queue.enqueueBatch(
-      collection.events,
-      producer: InboundEventProducer.bridge,
-    );
+    // Reconnect catch-up: stop paging once a page crosses the marker.
+    // A small pre-context margin gives the queue visibility into
+    // events that straddle the boundary so dedup can resolve them.
+    // Fresh client (no marker): untilTimestamp stays null, which
+    // tells the bootstrap runner to walk the entire visible history.
+    final num? untilTimestamp = lastTs == null
+        ? null
+        : lastTs - _preContextMargin.inMilliseconds;
 
     _logging.captureEvent(
-      'queue.bridge.done '
-      'snapshotSize=${collection.snapshotSize} '
-      'accepted=${result.accepted} '
-      'dupes=${result.duplicatesDropped} '
-      'filteredOutByType=${result.filteredOutByType} '
-      'deferredPendingDecryption=${result.deferredPendingDecryption} '
-      'incomplete=${collection.incomplete}',
+      'queue.bridge.start '
+      'mode=${lastTs == null ? 'fresh' : 'reconnect'} '
+      'untilTimestamp=$untilTimestamp',
       domain: _logDomain,
       subDomain: _logSub,
     );
 
-    _handleIncompleteFollowUp(collection.incomplete, expectedRoomId);
+    bool completed;
+    try {
+      completed = await _bootstrapRunner(
+        room: room,
+        untilTimestamp: untilTimestamp,
+      );
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.bootstrap',
+        stackTrace: stackTrace,
+      );
+      completed = false;
+    }
+
+    _logging.captureEvent(
+      'queue.bridge.done completed=$completed',
+      domain: _logDomain,
+      subDomain: _logSub,
+    );
+
+    _handleIncompleteFollowUp(
+      incomplete: !completed,
+      expectedRoomId: expectedRoomId,
+    );
   }
 
-  /// Schedules a bounded retry when [CatchUpStrategy] reports an
-  /// incomplete catch-up (the lookback budget was exhausted before the
-  /// timestamp boundary was reached). Without this the only way older
-  /// gap events are picked up is another limited-sync happening to
-  /// arrive, which can leave gaps indefinitely on a quiet room.
+  /// Schedules a bounded retry when the bootstrap runner reports an
+  /// incomplete walk (error, timeout, back-pressure cancellation).
+  /// Without this, recovery would depend on another limited-sync
+  /// happening to arrive, which can leave gaps indefinitely on a
+  /// quiet room.
   ///
   /// The retry targets the room that triggered the original bridge so
   /// a sync-room change during the retry delay cannot redirect the
   /// catch-up to a different room.
-  void _handleIncompleteFollowUp(bool incomplete, String? expectedRoomId) {
+  void _handleIncompleteFollowUp({
+    required bool incomplete,
+    required String? expectedRoomId,
+  }) {
     if (_stopped) return;
     if (!incomplete) {
       _consecutiveIncomplete = 0;
