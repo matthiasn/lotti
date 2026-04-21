@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -587,4 +588,146 @@ void main() {
       expect(coordinator.isRunning, isFalse);
     },
   );
+
+  group('triggerBridge with real BridgeCoordinator', () {
+    test(
+      'reads queue_markers row and runs bootstrap against empty timeline',
+      () async {
+        // Seed a queue_markers row so _readMarkerTs hits the marker
+        // branch instead of falling back to settingsDb.
+        await syncDb
+            .into(syncDb.queueMarkers)
+            .insert(
+              QueueMarkersCompanion.insert(
+                roomId: roomId,
+                lastAppliedTs: const Value(42),
+              ),
+            );
+
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        final room = _MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = _MockTimeline();
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        // _resolveRoom tries currentRoom first, falls back to
+        // client.getRoomById — exercise the fallback.
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => client.getRoomById(roomId)).thenReturn(room);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        await coordinator.triggerBridge();
+
+        // The bridge should have resolved the room via client.getRoomById
+        // and called getTimeline.
+        verify(() => client.getRoomById(roomId)).called(1);
+        verify(() => room.getTimeline(limit: any(named: 'limit'))).called(1);
+      },
+    );
+
+    test(
+      '_readMarkerTs falls back to settingsDb when no marker row exists',
+      () async {
+        when(
+          () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
+        ).thenAnswer((_) async => '999');
+
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        final room = _MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = _MockTimeline();
+        when(() => timeline.events).thenReturn(<Event>[]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        await coordinator.triggerBridge();
+
+        verify(
+          () => settingsDb.itemByKey('LAST_READ_MATRIX_EVENT_TS'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'bridge logs noRoom when both cache and getRoomById return null',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => client.getRoomById(any())).thenReturn(null);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        await coordinator.triggerBridge();
+
+        verify(
+          () => logging.captureEvent(
+            any<String>(that: contains('queue.bridge.skip reason=noRoom')),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

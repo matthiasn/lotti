@@ -128,8 +128,7 @@ final expectedFlags = <ConfigFlag>{
   ),
   const ConfigFlag(
     name: useInboundEventQueueFlag,
-    description:
-        'Use the queue pipeline for inbound sync (requires restart).',
+    description: 'Use the queue pipeline for inbound sync (requires restart).',
     status: false,
   ),
   const ConfigFlag(
