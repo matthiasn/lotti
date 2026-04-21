@@ -479,7 +479,7 @@ class MatrixService {
       _maybeStartQueuePipeline();
 
   Future<void> _maybeStartQueuePipeline() async {
-    final enabled = await readUseInboundEventQueueFlag(_settingsDb);
+    final enabled = await readUseInboundEventQueueFlag(_journalDb);
     if (!enabled) {
       if (_suppressLegacyPipeline) {
         // The constructor decided to suppress the legacy pipeline

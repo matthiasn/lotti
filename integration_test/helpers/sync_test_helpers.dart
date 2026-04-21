@@ -292,7 +292,7 @@ Future<MatrixService> createMatrixService({
     // reads the new value — a fire-and-forget write lets init() race
     // ahead and skip the queue coordinator while the ctor still
     // suppresses the legacy pipeline, leaving no active ingestion.
-    await writeUseInboundEventQueueFlag(settingsDb, enabled: true);
+    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
 
     final syncDb = SyncDatabase(
       overriddenFilename: 'sync_${uuid.v1()}.sqlite',

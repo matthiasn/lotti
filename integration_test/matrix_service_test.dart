@@ -93,7 +93,7 @@ Future<MatrixService> _createMatrixService({
     // fire-and-forget write lets init() race ahead and skip the
     // queue coordinator while suppressLegacyPipeline is already true,
     // leaving no active ingestion path.
-    await writeUseInboundEventQueueFlag(settingsDb, enabled: true);
+    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
     final syncDb = SyncDatabase(
       overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
       inMemoryDatabase: true,

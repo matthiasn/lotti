@@ -127,6 +127,12 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: useInboundEventQueueFlag,
+    description:
+        'Use the queue pipeline for inbound sync (requires restart).',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableAgentsFlag,
     description: 'Enable Agents?',
     status: false,

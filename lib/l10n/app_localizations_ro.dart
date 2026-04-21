@@ -2358,6 +2358,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.';
 
   @override
+  String get configFlagUseInboundEventQueue =>
+      'Folosește coada de evenimente de intrare';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Direcționează evenimentele de sincronizare prin coada persistentă cu memorie limitată și aplicare progresivă. Necesită repornirea aplicației.';
+
+  @override
   String get conflictEntityLabel => 'Entitate';
 
   @override

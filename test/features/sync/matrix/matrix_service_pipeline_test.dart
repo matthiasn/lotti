@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -23,6 +22,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/utils/consts.dart' show useInboundEventQueueFlag;
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -337,8 +337,8 @@ void main() {
           () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
         ).thenAnswer((_) async {});
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'true');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => true);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -370,8 +370,8 @@ void main() {
           () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
         ).thenAnswer((_) async {});
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'false');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => false);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -429,8 +429,8 @@ void main() {
       'init throws StateError when suppressed but flag is off',
       () async {
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'false');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => false);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -450,8 +450,8 @@ void main() {
       'init throws StateError when suppressed but no coordinator injected',
       () async {
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'true');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => true);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -471,8 +471,8 @@ void main() {
       'init logs skip when flag on but coordinator not injected and not suppressed',
       () async {
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'true');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => true);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -507,8 +507,8 @@ void main() {
           () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
         ).thenAnswer((_) async {});
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'true');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => true);
 
         late MatrixService service;
         fakeAsync((async) {
@@ -545,8 +545,8 @@ void main() {
           () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
         ).thenAnswer((_) async {});
         when(
-          () => settingsDb.itemByKey(useInboundEventQueueKey),
-        ).thenAnswer((_) async => 'true');
+          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
+        ).thenAnswer((_) async => true);
 
         late MatrixService service;
         fakeAsync((async) {

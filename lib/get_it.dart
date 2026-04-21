@@ -287,7 +287,7 @@ Future<void> registerSingletons() async {
   // legacy pipeline to stay dormant. Reading the flag here (before
   // MatrixService construction) makes the decision synchronous to the
   // rest of the service wiring.
-  final useQueuePipeline = await readUseInboundEventQueueFlag(settingsDb);
+  final useQueuePipeline = await readUseInboundEventQueueFlag(journalDb);
   final queuePipelineCoordinator = useQueuePipeline
       ? QueuePipelineCoordinator(
           syncDb: syncDatabase,

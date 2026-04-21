@@ -5,13 +5,6 @@ const String matrixRoomKey = 'MATRIX_ROOM';
 const String lastReadMatrixEventId = 'LAST_READ_MATRIX_EVENT_ID';
 const String lastReadMatrixEventTs = 'LAST_READ_MATRIX_EVENT_TS';
 
-/// Phase-1 feature flag for the inbound-event-queue refactor. When
-/// `true`, Phase-2 wiring will route live events, the limited-sync
-/// bridge, and bootstrap pagination through `InboundEventQueue`
-/// instead of the legacy `MatrixStreamLiveScanController` path.
-/// Default `false`; stored as `'true'`/`'false'` in `settings_db`.
-const String useInboundEventQueueKey = 'USE_INBOUND_EVENT_QUEUE';
-
 const String syncLoggingDomain = 'MATRIX_SYNC';
 
 /// Key in a sync attachment event's content that declares an on-wire encoding

@@ -2318,6 +2318,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.';
 
   @override
+  String get configFlagUseInboundEventQueue => 'Use inbound event queue';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Route incoming sync events through the durable queue pipeline with bounded memory and progressive apply. Requires an app restart to take effect.';
+
+  @override
   String get conflictEntityLabel => 'Entity';
 
   @override

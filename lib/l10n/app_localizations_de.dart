@@ -2355,6 +2355,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.';
 
   @override
+  String get configFlagUseInboundEventQueue => 'Eingangs-Event-Queue verwenden';
+
+  @override
+  String get configFlagUseInboundEventQueueDescription =>
+      'Leitet eingehende Sync-Events über die dauerhafte Queue-Pipeline mit begrenztem Speicher und fortlaufender Anwendung. Neustart erforderlich.';
+
+  @override
   String get conflictEntityLabel => 'Entität';
 
   @override

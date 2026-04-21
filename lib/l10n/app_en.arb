@@ -1263,6 +1263,8 @@
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
   "configFlagUseCompressedJsonAttachments": "Compress JSON sync payloads",
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
+  "configFlagUseInboundEventQueue": "Use inbound event queue",
+  "configFlagUseInboundEventQueueDescription": "Route incoming sync events through the durable queue pipeline with bounded memory and progressive apply. Requires an app restart to take effect.",
   "conflictEntityLabel": "Entity",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Copy Text from Sync",
