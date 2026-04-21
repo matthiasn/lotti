@@ -374,5 +374,217 @@ void main() {
         verify(timeline.cancelSubscriptions).called(1);
       },
     );
+
+    test(
+      'forwards progress info and appends pages to the real queue',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        final room = _MockRoom();
+        final timeline = _MockTimeline();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn(r'$bootstrap');
+        when(() => event.roomId).thenReturn(roomId);
+        when(() => event.type).thenReturn(EventTypes.Message);
+        when(
+          () => event.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(10));
+        when(() => event.content).thenReturn(<String, dynamic>{
+          'msgtype': 'org.matrix.lotti.sync',
+        });
+        when(event.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$bootstrap',
+          'room_id': roomId,
+          'origin_server_ts': 10,
+          'type': EventTypes.Message,
+          'content': {'msgtype': 'org.matrix.lotti.sync'},
+        });
+        when(() => timeline.events).thenReturn(<Event>[event]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final infos = <BootstrapPageInfo>[];
+        final result = await coordinator.collectHistory(
+          onProgress: infos.add,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(infos, hasLength(1));
+        expect(infos.single.totalEventsSoFar, 1);
+      },
+    );
+
+    test(
+      'onProgress exception does not abort the bootstrap',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        final room = _MockRoom();
+        final timeline = _MockTimeline();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final event = _MockEvent();
+        when(() => event.eventId).thenReturn(r'$bootstrap2');
+        when(() => event.roomId).thenReturn(roomId);
+        when(() => event.type).thenReturn(EventTypes.Message);
+        when(
+          () => event.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(20));
+        when(() => event.content).thenReturn(<String, dynamic>{
+          'msgtype': 'org.matrix.lotti.sync',
+        });
+        when(event.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$bootstrap2',
+          'room_id': roomId,
+          'origin_server_ts': 20,
+          'type': EventTypes.Message,
+          'content': {'msgtype': 'org.matrix.lotti.sync'},
+        });
+        when(() => timeline.events).thenReturn(<Event>[event]);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await coordinator.collectHistory(
+          onProgress: (_) => throw StateError('UI unmounted'),
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+      },
+    );
   });
+
+  test('queue + worker getters expose the collaborators', () {
+    final coordinator = build();
+    expect(coordinator.queue, same(queue));
+    expect(coordinator.worker, same(worker));
+  });
+
+  test('postLoad error drops the marker so a later sync retries', () async {
+    final room = _MockRoom();
+    when(() => room.partial).thenReturn(true);
+    when(room.postLoad).thenThrow(StateError('sdk down'));
+    when(() => roomManager.currentRoom).thenReturn(room);
+
+    final coordinator = build();
+    await coordinator.start();
+
+    syncCtl.add(SyncUpdate(nextBatch: 'x'));
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    verify(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain', that: contains('postLoad')),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    await coordinator.stop();
+  });
+
+  test('onSync error handler logs and does not crash', () async {
+    final coordinator = build();
+    await coordinator.start();
+
+    syncCtl.addError(StateError('sync broke'), StackTrace.current);
+    await Future<void>.delayed(Duration.zero);
+
+    verify(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain', that: contains('syncSub')),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    await coordinator.stop();
+  });
+
+  test('stop swallows drainToCompletion errors and still tears down', () async {
+    when(
+      worker.drainToCompletion,
+    ).thenThrow(StateError('drain blew up'));
+    final coordinator = build();
+    await coordinator.start();
+    await coordinator.stop(drainFirst: true);
+
+    verify(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain', that: contains('drain')),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+    verify(() => worker.stop()).called(1);
+    verify(pen.stop).called(1);
+    verify(() => queue.dispose()).called(1);
+  });
+
+  test(
+    'coordinator built without overrides wires default collaborators',
+    () async {
+      when(() => sessionManager.client).thenReturn(client);
+      final coordinator = QueuePipelineCoordinator(
+        syncDb: syncDb,
+        settingsDb: settingsDb,
+        journalDb: journalDb,
+        sessionManager: sessionManager,
+        roomManager: roomManager,
+        eventProcessor: processor,
+        sequenceLogService: sequenceLog,
+        activityGate: null,
+        logging: logging,
+      );
+
+      expect(coordinator.queue, isNotNull);
+      expect(coordinator.worker, isNotNull);
+      expect(coordinator.isRunning, isFalse);
+    },
+  );
 }
