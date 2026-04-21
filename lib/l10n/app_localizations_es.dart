@@ -6386,6 +6386,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskSummaries => 'Resúmenes de tareas';
 
   @override
+  String get taskTitleEmpty => 'Sin título';
+
+  @override
   String get taskUntitled => '(sin título)';
 
   @override

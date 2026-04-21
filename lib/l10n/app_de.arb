@@ -2631,6 +2631,7 @@
   "taskStatusOpen": "Offen",
   "taskStatusRejected": "Abgelehnt",
   "taskSummaries": "Aufgabenzusammenfassungen",
+  "taskTitleEmpty": "Kein Titel",
   "taskUntitled": "(ohne Titel)",
   "thinkingDisclosureCopied": "Begründung kopiert",
   "thinkingDisclosureCopy": "Begründung kopieren",

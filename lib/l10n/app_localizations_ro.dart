@@ -6313,6 +6313,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskSummaries => 'Rezumate sarcini';
 
   @override
+  String get taskTitleEmpty => 'Fără titlu';
+
+  @override
   String get taskUntitled => '(fără titlu)';
 
   @override

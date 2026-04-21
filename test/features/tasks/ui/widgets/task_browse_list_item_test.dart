@@ -15,6 +15,7 @@ import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -909,6 +910,33 @@ void main() {
       expect(find.text('Updated Title'), findsOneWidget);
       expect(find.text('Original Title'), findsNothing);
     });
+
+    testWidgets(
+      'renders localized "(untitled)" warning in red when title is empty',
+      (tester) async {
+        final task = TestTaskFactory.create(
+          id: 'task-empty-title',
+          title: '',
+          dateFrom: DateTime(2026, 4, 8),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(_makeWidget(task)),
+        );
+        await tester.pump();
+
+        final finder = find.text('(untitled)');
+        expect(finder, findsOneWidget);
+
+        final textWidget = tester.widget<Text>(finder);
+        final style = textWidget.style!;
+        expect(style.fontStyle, FontStyle.italic);
+        // Warning color comes from the design-system error token, not from
+        // colorScheme. Assert the same resolution the widget uses.
+        final element = tester.element(finder);
+        expect(style.color, TaskShowcasePalette.error(element));
+      },
+    );
   });
 
   // -------------------------------------------------------------------------

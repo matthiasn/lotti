@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.969" date="2026-04-21">
+      <description>
+          <p>Restores the task title edit affordance in the new DesktopTaskHeader. The read-only title now renders a trailing pencil icon next to the label, and empty titles display a localized "No title" placeholder in the same tappable slot so users have an obvious target to open the inline editor. Task list rows render the existing "(untitled)" label in the design-system error color and italic so missing titles stand out rather than silently collapsing the row.</p>
+      </description>
+    </release>
     <release version="0.9.968" date="2026-04-20">
       <description>
           <p>Adds Phase 0 sync observability for the planned Inbound Event Queue redesign. MatrixStreamSignalBinder now records two additive probes on the sync room: a sync.limited log line with prevBatch, event count, and the time gap since the previous sync response whenever the Matrix server returns timeline.limited == true, and an onTimelineEvent.ordering summary every 100 events tracking strict reorderings and same-timestamp ties. Both route through the MATRIX_SYNC log domain into the dated sync log file. No behaviour change; data from ~48 hours of real use validates the two load-bearing SDK assumptions before the queue refactor starts.</p>

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.969] - 2026-04-21
+### Fixed
+- Task title edit affordance restored. The new `DesktopTaskHeader`
+  rendered the title as plain read-only text and showed nothing when a
+  task had no title, leaving users with no obvious way to tap into the
+  inline editor. The read-only title now renders a trailing pencil
+  (`Icons.edit_outlined`) next to the label, and empty titles display a
+  localized "No title" placeholder in the same tappable slot. Task list
+  rows in turn render the existing `taskUntitled` "(untitled)" label in
+  the design-system error color + italic so missing titles stand out
+  rather than silently collapsing the row.
+
 ## [0.9.968] - 2026-04-20
 ### Added
 - Phase 0 sync diagnostic observability (additive logs only; no behaviour

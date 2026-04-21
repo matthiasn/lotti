@@ -2631,6 +2631,7 @@
   "taskStatusOpen": "DESCHIS",
   "taskStatusRejected": "RESPINS",
   "taskSummaries": "Rezumate sarcini",
+  "taskTitleEmpty": "Fără titlu",
   "taskUntitled": "(fără titlu)",
   "thinkingDisclosureCopied": "Raționament copiat",
   "thinkingDisclosureCopy": "Copiază raționamentul",

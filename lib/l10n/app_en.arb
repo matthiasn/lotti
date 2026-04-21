@@ -2895,6 +2895,7 @@
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
   "taskSummaries": "Task Summaries",
+  "taskTitleEmpty": "No title",
   "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",
