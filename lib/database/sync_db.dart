@@ -190,13 +190,35 @@ class HostActivity extends Table {
 ///   Event. The `PendingDecryptionPen` prevents pre-decryption
 ///   events from being enqueued.
 @DataClassName('InboundEventQueueItem')
+// Drain-path index. Partial on active statuses so the applied ledger
+// (which can grow unbounded over time) is excluded from the index and
+// the worker's peek query scans only the rows it can actually drain.
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_ready '
-  'ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
+  'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
+  '''WHERE status IN ('enqueued', 'retrying')''',
 )
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_room '
   'ON inbound_event_queue (room_id, origin_ts)',
+)
+// Marker-clamp probe: `_advanceMarkerIfNewer` asks for the oldest
+// `origin_ts` across active statuses per room. Partial covers exactly
+// that access pattern so a million applied rows never touch the
+// clamp cost.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_active_room_ts '
+  'ON inbound_event_queue (room_id, origin_ts) '
+  '''WHERE status IN ('enqueued', 'leased', 'retrying')''',
+)
+// Path-based resurrection: `AttachmentIndex.pathRecorded` fires with a
+// path; `resurrectByPath` scans abandoned rows for matching
+// `json_path`. Partial on abandoned so the resurrect path is O(log n)
+// over only the rows eligible to wake.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_abandoned_path '
+  'ON inbound_event_queue (json_path) '
+  '''WHERE status = 'abandoned' ''',
 )
 class InboundEventQueue extends Table {
   IntColumn get queueId => integer().autoIncrement().named('queue_id')();
@@ -238,6 +260,51 @@ class InboundEventQueue extends Table {
   /// restarted workers do not double-drain until the lease expires.
   IntColumn get leaseUntil =>
       integer().named('lease_until').withDefault(const Constant(0))();
+
+  /// Lifecycle state. One of:
+  /// - `enqueued` — just inserted, ready to drain.
+  /// - `leased` — worker picked it up; `lease_until > now` protects
+  ///   against double-drain.
+  /// - `retrying` — apply returned a recoverable failure; `next_due_at`
+  ///   holds the backoff.
+  /// - `applied` — `commitApplied` succeeded. Row is kept as an
+  ///   append-only ledger for traceability; the marker has advanced.
+  /// - `abandoned` — max attempts exceeded. Not drainable, but kept so
+  ///   a resurrection trigger (attachment signal, journal update,
+  ///   user-initiated "retry skipped") can flip it back to
+  ///   `enqueued`.
+  ///
+  /// Stored as text rather than an enum index because the set is
+  /// small, readable, and stable across future reorderings.
+  TextColumn get status => text().withDefault(const Constant('enqueued'))();
+
+  /// Wall-clock ms at which `commitApplied` flipped status to
+  /// `applied`. NULL for non-applied rows.
+  IntColumn get committedAt => integer().named('committed_at').nullable()();
+
+  /// Wall-clock ms at which `markSkipped` flipped status to
+  /// `abandoned`. NULL for non-abandoned rows.
+  IntColumn get abandonedAt => integer().named('abandoned_at').nullable()();
+
+  /// Last retry/skip reason (from `RetryReason.name` or
+  /// `'permanentSkip'` / `'maxAttempts(...)'`). Diagnostics-only;
+  /// resurrection does not gate on this.
+  TextColumn get lastErrorReason =>
+      text().named('last_error_reason').nullable()();
+
+  /// Count of times this row has been flipped from `abandoned` back
+  /// to `enqueued`. Guards against thrash: `resurrectByPath` /
+  /// `resurrectAll` skip rows whose count exceeds the hard cap so a
+  /// truly poison event cannot be resurrected forever.
+  IntColumn get resurrectionCount =>
+      integer().named('resurrection_count').withDefault(const Constant(0))();
+
+  /// Derived from the Lotti sync payload (text message content
+  /// `jsonPath`) when present. Used by
+  /// `AttachmentIndex.pathRecorded` → `resurrectByPath` to wake the
+  /// matching abandoned row as soon as the descriptor lands on disk.
+  /// NULL when the event type does not carry a `jsonPath`.
+  TextColumn get jsonPath => text().named('json_path').nullable()();
 }
 
 /// Per-room apply marker. Lives in `sync_db` (not `settings_db`) so
@@ -1109,7 +1176,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -1220,6 +1287,75 @@ class SyncDatabase extends _$SyncDatabase {
           // `queue_markers` at that time. The migration itself leaves
           // the table empty so upgrading users without the flag on see
           // no behaviour change.
+        }
+        if (from >= 12 && from < 13) {
+          // Phase-3 ledger refactor: rows are no longer deleted on
+          // commit/skip. A `status` column carries the lifecycle,
+          // `commitApplied` → 'applied' (kept for traceability),
+          // `markSkipped` → 'abandoned' (resurrectable). The marker
+          // clamp scans only active statuses so an abandoned poison
+          // row cannot stall forward progress.
+          //
+          // Columns are additive with defaults, so any v12 rows in
+          // flight at upgrade time are treated as `enqueued` and the
+          // worker resumes their drain. Indexes are replaced with
+          // partials that cover the new status-filtered access paths.
+          //
+          // Guarded on `from >= 12` because upgrades that cross v12
+          // (e.g. v1 → v13) hit the `from < 12` branch above, which
+          // calls `m.createTable(inboundEventQueue)`. That helper
+          // uses the CURRENT (v13) schema, so the `status` column
+          // et al. are already present; re-running the ALTERs here
+          // would `duplicate column` out. Upgrades landing precisely
+          // on v12 → v13 still need this step because the v12
+          // createTable only ran in a previous migration invocation
+          // against the older table definition.
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            '''ADD COLUMN status TEXT NOT NULL DEFAULT 'enqueued' ''',
+          );
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            'ADD COLUMN committed_at INTEGER',
+          );
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            'ADD COLUMN abandoned_at INTEGER',
+          );
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            'ADD COLUMN last_error_reason TEXT',
+          );
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            'ADD COLUMN resurrection_count INTEGER NOT NULL DEFAULT 0',
+          );
+          await customStatement(
+            'ALTER TABLE inbound_event_queue '
+            'ADD COLUMN json_path TEXT',
+          );
+          // Replace the drain index with a partial one so the applied
+          // ledger (unbounded over time) never touches the peek path.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_inbound_event_queue_ready',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_inbound_event_queue_ready '
+            'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
+            '''WHERE status IN ('enqueued', 'retrying')''',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_active_room_ts '
+            'ON inbound_event_queue (room_id, origin_ts) '
+            '''WHERE status IN ('enqueued', 'leased', 'retrying')''',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_abandoned_path '
+            'ON inbound_event_queue (json_path) '
+            '''WHERE status = 'abandoned' ''',
+          );
         }
       },
     );

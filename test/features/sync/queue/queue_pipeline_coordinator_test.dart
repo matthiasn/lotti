@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -926,6 +928,96 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
+      },
+    );
+  });
+
+  group('signal-driven resurrection', () {
+    test(
+      'when the AttachmentIndex records a new path, the coordinator '
+      'calls resurrectByPath so any abandoned row waiting on that '
+      'attachment is flipped back to enqueued immediately',
+      () async {
+        final attachmentIndex = AttachmentIndex(logging: logging);
+        addTearDown(attachmentIndex.dispose);
+        when(() => queue.resurrectByPath(any())).thenAnswer((_) async => 1);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          attachmentIndex: attachmentIndex,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        final event = _MockEvent();
+        when(() => event.attachmentMimetype).thenReturn('audio/m4a');
+        when(() => event.content).thenReturn({
+          'relativePath': 'audio/2026-04-21/foo.m4a.json',
+        });
+        when(() => event.eventId).thenReturn(r'$attachmentEvent');
+        attachmentIndex.record(event);
+
+        await Future<void>.delayed(Duration.zero);
+        verify(
+          () => queue.resurrectByPath('/audio/2026-04-21/foo.m4a.json'),
+        ).called(1);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'when UpdateNotifications emits, the coordinator calls '
+      'resurrectByReason(missingBase) so any abandoned row waiting '
+      'on its base journal entry becomes drainable again',
+      () async {
+        final updateNotifications = UpdateNotifications();
+        addTearDown(updateNotifications.dispose);
+        when(
+          () => queue.resurrectByReason(any<String>()),
+        ).thenAnswer((_) async => 1);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          updateNotifications: updateNotifications,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        updateNotifications.notify({'some-entry-id'});
+        // notify() batches over 100 ms — wait past that so the
+        // debounced controller actually emits.
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+
+        verify(
+          () => queue.resurrectByReason('missingBase'),
+        ).called(greaterThanOrEqualTo(1));
+
+        await coordinator.stop();
       },
     );
   });

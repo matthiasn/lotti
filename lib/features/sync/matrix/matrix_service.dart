@@ -861,7 +861,27 @@ class MatrixService {
     try {
       // If metrics collection is disabled, do not attempt to read metrics.
       if (!_collectSyncMetrics) return null;
-      final map = _pipeline!.metricsSnapshot();
+      final map = Map<String, dynamic>.from(_pipeline!.metricsSnapshot());
+      // Overlay queue ledger counts when the Phase-2 coordinator is
+      // active — queueActive/applied/abandoned/retrying surface in
+      // Matrix Stats alongside the legacy pipeline's own counters.
+      final coordinator = _queueCoordinator;
+      if (coordinator != null && coordinator.isRunning) {
+        try {
+          final stats = await coordinator.queue.stats();
+          map['queueActive'] = stats.total;
+          map['queueApplied'] = stats.applied;
+          map['queueAbandoned'] = stats.abandoned;
+          map['queueRetrying'] = stats.retrying;
+        } catch (error, stackTrace) {
+          _loggingService.captureException(
+            error,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'metrics.queueStats',
+            stackTrace: stackTrace,
+          );
+        }
+      }
       return SyncMetrics.fromMap(map);
     } catch (e, st) {
       _loggingService.captureException(

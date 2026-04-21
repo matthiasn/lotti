@@ -4873,6 +4873,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Fetching history';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count skipped',
+      one: '1 skipped',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count sync events the queue gave up on. Tap retry to re-attempt.',
+      one: '1 sync event the queue gave up on. Tap retry to re-attempt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Skipped events';
+
+  @override
+  String get queueSkippedRetryAll => 'Retry skipped events';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count events queued for retry.',
+      one: '1 event queued for retry.',
+      zero: 'No skipped events to retry.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Retry failed: $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Continue';
 
   @override

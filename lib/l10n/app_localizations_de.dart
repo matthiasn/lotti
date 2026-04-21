@@ -4941,6 +4941,53 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Verlauf wird geholt';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count übersprungen',
+      one: '1 übersprungen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Sync-Ereignisse, die die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um sie erneut zu versuchen.',
+      one:
+          '1 Sync-Ereignis, das die Warteschlange aufgegeben hat. Tippe auf Wiederholen, um es erneut zu versuchen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Übersprungene Ereignisse';
+
+  @override
+  String get queueSkippedRetryAll => 'Übersprungene Ereignisse wiederholen';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ereignisse zur Wiederholung eingereiht.',
+      one: '1 Ereignis zur Wiederholung eingereiht.',
+      zero: 'Keine übersprungenen Ereignisse.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Wiederholung fehlgeschlagen: $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Weiter';
 
   @override

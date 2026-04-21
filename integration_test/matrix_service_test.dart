@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -63,6 +64,9 @@ Future<MatrixService> _createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   bool useQueuePipeline = true,
+  AttachmentIndex? attachmentIndex,
+  QueuePipelineCoordinator Function(QueuePipelineCoordinator coord)?
+  onCoordinatorBuilt,
 }) async {
   final activityGate = UserActivityGate(
     activityService: activityService,
@@ -82,6 +86,21 @@ Future<MatrixService> _createMatrixService({
     updateNotifications: updateNotifications,
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
+  );
+
+  // Shared AttachmentIndex so the queue coordinator subscribes to
+  // the same broadcast stream that `AttachmentIndex.record(event)`
+  // fires. Without sharing, the coordinator listens to a freshly
+  // constructed index and never hears the test-simulated path.
+  final sharedAttachmentIndex =
+      attachmentIndex ?? AttachmentIndex(logging: loggingService);
+  // Ingestor that runs attachment descriptor events through
+  // AttachmentIndex + disk-save on the queue pipeline's live +
+  // bootstrap paths — the same plumbing `get_it.dart` uses in
+  // production so the integration test exercises the real chain.
+  final queueAttachmentIngestor = AttachmentIngestor(
+    documentsDirectory: documentsDirectory,
+    verboseLogging: false,
   );
 
   QueuePipelineCoordinator? queueCoordinator;
@@ -127,7 +146,13 @@ Future<MatrixService> _createMatrixService({
       sequenceLogService: sequenceLogService,
       activityGate: activityGate,
       logging: loggingService,
+      attachmentIndex: sharedAttachmentIndex,
+      updateNotifications: updateNotifications,
+      attachmentIngestor: queueAttachmentIngestor,
     );
+    if (onCoordinatorBuilt != null) {
+      queueCoordinator = onCoordinatorBuilt(queueCoordinator);
+    }
   }
 
   return MatrixService(
@@ -143,7 +168,7 @@ Future<MatrixService> _createMatrixService({
     secureStorage: secureStorage,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    attachmentIndex: AttachmentIndex(logging: loggingService),
+    attachmentIndex: sharedAttachmentIndex,
     sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: true,
     roomManager: roomManager,

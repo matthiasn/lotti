@@ -16,6 +16,17 @@ enum ApplyOutcome {
   retriable,
   missingBase,
   decryptionPending,
+
+  /// The entry's attachment JSON (descriptor or agent-entity payload)
+  /// has not arrived on disk yet. Distinct from [retriable] because
+  /// attachment deliveries can lag the sync event by many seconds /
+  /// minutes, and capping retries at `_maxAttempts` here causes silent
+  /// data loss once the queue marker drags past the skipped row. The
+  /// worker retries `pendingAttachment` with a longer ladder and no
+  /// attempts cap; the queue also wakes these rows immediately when
+  /// `AttachmentIndex` observes a new attachment so the event applies
+  /// as soon as the descriptor is available.
+  pendingAttachment,
   permanentSkip,
 }
 
@@ -238,6 +249,8 @@ class InboundWorker {
               await _maybeRetry(pair.entry, RetryReason.missingBase);
             case ApplyOutcome.decryptionPending:
               await _maybeRetry(pair.entry, RetryReason.decryptionPending);
+            case ApplyOutcome.pendingAttachment:
+              await _maybeRetry(pair.entry, RetryReason.pendingAttachment);
             case ApplyOutcome.permanentSkip:
               await _queue.markSkipped(pair.entry, reason: 'permanentSkip');
           }
@@ -284,18 +297,52 @@ class InboundWorker {
   }
 
   Duration _backoff(int attempts, RetryReason reason) {
-    // Decryption delays follow a shorter curve: the Megolm session key
-    // typically arrives within a couple of seconds, so aggressive
-    // backoff wastes time. The other reasons (network/file I/O +
-    // missing-base) use a standard exponential curve capped by
-    // [_maxBackoff].
-    final base = reason == RetryReason.decryptionPending
-        ? const Duration(milliseconds: 250)
-        : _initialBackoff;
-    final millis = base.inMilliseconds * math.pow(2, attempts).toInt();
-    final capped = math.min(millis, _maxBackoff.inMilliseconds);
-    return Duration(milliseconds: capped);
+    // Per-reason ladders:
+    //  - `decryptionPending`: Megolm session keys usually arrive in
+    //    a few seconds; start at 250 ms.
+    //  - `pendingAttachment`: attachment uploads + downloads are on
+    //    a human-scale timeline. Start at 30 s and let the curve
+    //    cap out at `_maxPendingAttachmentBackoff` so a long-lived
+    //    queue entry costs almost nothing in wake-ups. The
+    //    `AttachmentIndex.pathRecorded` signal resurrects the
+    //    common case anyway; this ladder just covers the
+    //    no-signal fallback.
+    //  - everything else (network, missing-base, generic
+    //    retriable): standard exponential capped at `_maxBackoff`.
+    switch (reason) {
+      case RetryReason.decryptionPending:
+        final base = const Duration(milliseconds: 250).inMilliseconds;
+        final millis = base * math.pow(2, attempts).toInt();
+        return Duration(
+          milliseconds: math.min(millis, _maxBackoff.inMilliseconds),
+        );
+      case RetryReason.pendingAttachment:
+        final base = _pendingAttachmentInitialBackoff.inMilliseconds;
+        final millis = base * math.pow(2, attempts).toInt();
+        return Duration(
+          milliseconds: math.min(
+            millis,
+            _maxPendingAttachmentBackoff.inMilliseconds,
+          ),
+        );
+      case RetryReason.retriable:
+      case RetryReason.missingBase:
+        final base = _initialBackoff.inMilliseconds;
+        final millis = base * math.pow(2, attempts).toInt();
+        return Duration(
+          milliseconds: math.min(millis, _maxBackoff.inMilliseconds),
+        );
+    }
   }
+
+  // Long ladder for attachment-waiting rows. Tuned to retry ~3-4
+  // times during the lifetime of a typical attachment download and
+  // then idle; `AttachmentIndex.pathRecorded` resurrects the row
+  // the instant the descriptor actually lands.
+  static const Duration _pendingAttachmentInitialBackoff = Duration(
+    seconds: 30,
+  );
+  static const Duration _maxPendingAttachmentBackoff = Duration(minutes: 10);
 
   /// Races stop, a depthChanges signal, and a delay that matches the
   /// queue's earliest ready timestamp. Without the ready-aware delay,

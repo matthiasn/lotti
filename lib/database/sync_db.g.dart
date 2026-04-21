@@ -1718,6 +1718,72 @@ class $InboundEventQueueTable extends InboundEventQueue
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('enqueued'),
+  );
+  static const VerificationMeta _committedAtMeta = const VerificationMeta(
+    'committedAt',
+  );
+  @override
+  late final GeneratedColumn<int> committedAt = GeneratedColumn<int>(
+    'committed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _abandonedAtMeta = const VerificationMeta(
+    'abandonedAt',
+  );
+  @override
+  late final GeneratedColumn<int> abandonedAt = GeneratedColumn<int>(
+    'abandoned_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorReasonMeta = const VerificationMeta(
+    'lastErrorReason',
+  );
+  @override
+  late final GeneratedColumn<String> lastErrorReason = GeneratedColumn<String>(
+    'last_error_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resurrectionCountMeta = const VerificationMeta(
+    'resurrectionCount',
+  );
+  @override
+  late final GeneratedColumn<int> resurrectionCount = GeneratedColumn<int>(
+    'resurrection_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _jsonPathMeta = const VerificationMeta(
+    'jsonPath',
+  );
+  @override
+  late final GeneratedColumn<String> jsonPath = GeneratedColumn<String>(
+    'json_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     queueId,
@@ -1730,6 +1796,12 @@ class $InboundEventQueueTable extends InboundEventQueue
     attempts,
     nextDueAt,
     leaseUntil,
+    status,
+    committedAt,
+    abandonedAt,
+    lastErrorReason,
+    resurrectionCount,
+    jsonPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1815,6 +1887,54 @@ class $InboundEventQueueTable extends InboundEventQueue
         leaseUntil.isAcceptableOrUnknown(data['lease_until']!, _leaseUntilMeta),
       );
     }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('committed_at')) {
+      context.handle(
+        _committedAtMeta,
+        committedAt.isAcceptableOrUnknown(
+          data['committed_at']!,
+          _committedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('abandoned_at')) {
+      context.handle(
+        _abandonedAtMeta,
+        abandonedAt.isAcceptableOrUnknown(
+          data['abandoned_at']!,
+          _abandonedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error_reason')) {
+      context.handle(
+        _lastErrorReasonMeta,
+        lastErrorReason.isAcceptableOrUnknown(
+          data['last_error_reason']!,
+          _lastErrorReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resurrection_count')) {
+      context.handle(
+        _resurrectionCountMeta,
+        resurrectionCount.isAcceptableOrUnknown(
+          data['resurrection_count']!,
+          _resurrectionCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('json_path')) {
+      context.handle(
+        _jsonPathMeta,
+        jsonPath.isAcceptableOrUnknown(data['json_path']!, _jsonPathMeta),
+      );
+    }
     return context;
   }
 
@@ -1864,6 +1984,30 @@ class $InboundEventQueueTable extends InboundEventQueue
         DriftSqlType.int,
         data['${effectivePrefix}lease_until'],
       )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      committedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}committed_at'],
+      ),
+      abandonedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}abandoned_at'],
+      ),
+      lastErrorReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error_reason'],
+      ),
+      resurrectionCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resurrection_count'],
+      )!,
+      jsonPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json_path'],
+      ),
     );
   }
 
@@ -1900,7 +2044,7 @@ class InboundEventQueueItem extends DataClass
   final int enqueuedAt;
 
   /// Retry counter. Incremented per scheduled retry; capped in
-  /// [InboundWorker] to avoid eternal wedges on a single bad event.
+  /// `InboundWorker` to avoid eternal wedges on a single bad event.
   final int attempts;
 
   /// Earliest time (ms since epoch) at which this entry is eligible
@@ -1912,6 +2056,49 @@ class InboundEventQueueItem extends DataClass
   /// > now` are not returned by `peekBatchReady`, so crashed-then-
   /// restarted workers do not double-drain until the lease expires.
   final int leaseUntil;
+
+  /// Lifecycle state. One of:
+  /// - `enqueued` — just inserted, ready to drain.
+  /// - `leased` — worker picked it up; `lease_until > now` protects
+  ///   against double-drain.
+  /// - `retrying` — apply returned a recoverable failure; `next_due_at`
+  ///   holds the backoff.
+  /// - `applied` — `commitApplied` succeeded. Row is kept as an
+  ///   append-only ledger for traceability; the marker has advanced.
+  /// - `abandoned` — max attempts exceeded. Not drainable, but kept so
+  ///   a resurrection trigger (attachment signal, journal update,
+  ///   user-initiated "retry skipped") can flip it back to
+  ///   `enqueued`.
+  ///
+  /// Stored as text rather than an enum index because the set is
+  /// small, readable, and stable across future reorderings.
+  final String status;
+
+  /// Wall-clock ms at which `commitApplied` flipped status to
+  /// `applied`. NULL for non-applied rows.
+  final int? committedAt;
+
+  /// Wall-clock ms at which `markSkipped` flipped status to
+  /// `abandoned`. NULL for non-abandoned rows.
+  final int? abandonedAt;
+
+  /// Last retry/skip reason (from `RetryReason.name` or
+  /// `'permanentSkip'` / `'maxAttempts(...)'`). Diagnostics-only;
+  /// resurrection does not gate on this.
+  final String? lastErrorReason;
+
+  /// Count of times this row has been flipped from `abandoned` back
+  /// to `enqueued`. Guards against thrash: `resurrectByPath` /
+  /// `resurrectAll` skip rows whose count exceeds the hard cap so a
+  /// truly poison event cannot be resurrected forever.
+  final int resurrectionCount;
+
+  /// Derived from the Lotti sync payload (text message content
+  /// `jsonPath`) when present. Used by
+  /// `AttachmentIndex.pathRecorded` → `resurrectByPath` to wake the
+  /// matching abandoned row as soon as the descriptor lands on disk.
+  /// NULL when the event type does not carry a `jsonPath`.
+  final String? jsonPath;
   const InboundEventQueueItem({
     required this.queueId,
     required this.eventId,
@@ -1923,6 +2110,12 @@ class InboundEventQueueItem extends DataClass
     required this.attempts,
     required this.nextDueAt,
     required this.leaseUntil,
+    required this.status,
+    this.committedAt,
+    this.abandonedAt,
+    this.lastErrorReason,
+    required this.resurrectionCount,
+    this.jsonPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1937,6 +2130,20 @@ class InboundEventQueueItem extends DataClass
     map['attempts'] = Variable<int>(attempts);
     map['next_due_at'] = Variable<int>(nextDueAt);
     map['lease_until'] = Variable<int>(leaseUntil);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || committedAt != null) {
+      map['committed_at'] = Variable<int>(committedAt);
+    }
+    if (!nullToAbsent || abandonedAt != null) {
+      map['abandoned_at'] = Variable<int>(abandonedAt);
+    }
+    if (!nullToAbsent || lastErrorReason != null) {
+      map['last_error_reason'] = Variable<String>(lastErrorReason);
+    }
+    map['resurrection_count'] = Variable<int>(resurrectionCount);
+    if (!nullToAbsent || jsonPath != null) {
+      map['json_path'] = Variable<String>(jsonPath);
+    }
     return map;
   }
 
@@ -1952,6 +2159,20 @@ class InboundEventQueueItem extends DataClass
       attempts: Value(attempts),
       nextDueAt: Value(nextDueAt),
       leaseUntil: Value(leaseUntil),
+      status: Value(status),
+      committedAt: committedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(committedAt),
+      abandonedAt: abandonedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(abandonedAt),
+      lastErrorReason: lastErrorReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorReason),
+      resurrectionCount: Value(resurrectionCount),
+      jsonPath: jsonPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(jsonPath),
     );
   }
 
@@ -1971,6 +2192,12 @@ class InboundEventQueueItem extends DataClass
       attempts: serializer.fromJson<int>(json['attempts']),
       nextDueAt: serializer.fromJson<int>(json['nextDueAt']),
       leaseUntil: serializer.fromJson<int>(json['leaseUntil']),
+      status: serializer.fromJson<String>(json['status']),
+      committedAt: serializer.fromJson<int?>(json['committedAt']),
+      abandonedAt: serializer.fromJson<int?>(json['abandonedAt']),
+      lastErrorReason: serializer.fromJson<String?>(json['lastErrorReason']),
+      resurrectionCount: serializer.fromJson<int>(json['resurrectionCount']),
+      jsonPath: serializer.fromJson<String?>(json['jsonPath']),
     );
   }
   @override
@@ -1987,6 +2214,12 @@ class InboundEventQueueItem extends DataClass
       'attempts': serializer.toJson<int>(attempts),
       'nextDueAt': serializer.toJson<int>(nextDueAt),
       'leaseUntil': serializer.toJson<int>(leaseUntil),
+      'status': serializer.toJson<String>(status),
+      'committedAt': serializer.toJson<int?>(committedAt),
+      'abandonedAt': serializer.toJson<int?>(abandonedAt),
+      'lastErrorReason': serializer.toJson<String?>(lastErrorReason),
+      'resurrectionCount': serializer.toJson<int>(resurrectionCount),
+      'jsonPath': serializer.toJson<String?>(jsonPath),
     };
   }
 
@@ -2001,6 +2234,12 @@ class InboundEventQueueItem extends DataClass
     int? attempts,
     int? nextDueAt,
     int? leaseUntil,
+    String? status,
+    Value<int?> committedAt = const Value.absent(),
+    Value<int?> abandonedAt = const Value.absent(),
+    Value<String?> lastErrorReason = const Value.absent(),
+    int? resurrectionCount,
+    Value<String?> jsonPath = const Value.absent(),
   }) => InboundEventQueueItem(
     queueId: queueId ?? this.queueId,
     eventId: eventId ?? this.eventId,
@@ -2012,6 +2251,14 @@ class InboundEventQueueItem extends DataClass
     attempts: attempts ?? this.attempts,
     nextDueAt: nextDueAt ?? this.nextDueAt,
     leaseUntil: leaseUntil ?? this.leaseUntil,
+    status: status ?? this.status,
+    committedAt: committedAt.present ? committedAt.value : this.committedAt,
+    abandonedAt: abandonedAt.present ? abandonedAt.value : this.abandonedAt,
+    lastErrorReason: lastErrorReason.present
+        ? lastErrorReason.value
+        : this.lastErrorReason,
+    resurrectionCount: resurrectionCount ?? this.resurrectionCount,
+    jsonPath: jsonPath.present ? jsonPath.value : this.jsonPath,
   );
   InboundEventQueueItem copyWithCompanion(InboundEventQueueCompanion data) {
     return InboundEventQueueItem(
@@ -2029,6 +2276,20 @@ class InboundEventQueueItem extends DataClass
       leaseUntil: data.leaseUntil.present
           ? data.leaseUntil.value
           : this.leaseUntil,
+      status: data.status.present ? data.status.value : this.status,
+      committedAt: data.committedAt.present
+          ? data.committedAt.value
+          : this.committedAt,
+      abandonedAt: data.abandonedAt.present
+          ? data.abandonedAt.value
+          : this.abandonedAt,
+      lastErrorReason: data.lastErrorReason.present
+          ? data.lastErrorReason.value
+          : this.lastErrorReason,
+      resurrectionCount: data.resurrectionCount.present
+          ? data.resurrectionCount.value
+          : this.resurrectionCount,
+      jsonPath: data.jsonPath.present ? data.jsonPath.value : this.jsonPath,
     );
   }
 
@@ -2044,7 +2305,13 @@ class InboundEventQueueItem extends DataClass
           ..write('enqueuedAt: $enqueuedAt, ')
           ..write('attempts: $attempts, ')
           ..write('nextDueAt: $nextDueAt, ')
-          ..write('leaseUntil: $leaseUntil')
+          ..write('leaseUntil: $leaseUntil, ')
+          ..write('status: $status, ')
+          ..write('committedAt: $committedAt, ')
+          ..write('abandonedAt: $abandonedAt, ')
+          ..write('lastErrorReason: $lastErrorReason, ')
+          ..write('resurrectionCount: $resurrectionCount, ')
+          ..write('jsonPath: $jsonPath')
           ..write(')'))
         .toString();
   }
@@ -2061,6 +2328,12 @@ class InboundEventQueueItem extends DataClass
     attempts,
     nextDueAt,
     leaseUntil,
+    status,
+    committedAt,
+    abandonedAt,
+    lastErrorReason,
+    resurrectionCount,
+    jsonPath,
   );
   @override
   bool operator ==(Object other) =>
@@ -2075,7 +2348,13 @@ class InboundEventQueueItem extends DataClass
           other.enqueuedAt == this.enqueuedAt &&
           other.attempts == this.attempts &&
           other.nextDueAt == this.nextDueAt &&
-          other.leaseUntil == this.leaseUntil);
+          other.leaseUntil == this.leaseUntil &&
+          other.status == this.status &&
+          other.committedAt == this.committedAt &&
+          other.abandonedAt == this.abandonedAt &&
+          other.lastErrorReason == this.lastErrorReason &&
+          other.resurrectionCount == this.resurrectionCount &&
+          other.jsonPath == this.jsonPath);
 }
 
 class InboundEventQueueCompanion
@@ -2090,6 +2369,12 @@ class InboundEventQueueCompanion
   final Value<int> attempts;
   final Value<int> nextDueAt;
   final Value<int> leaseUntil;
+  final Value<String> status;
+  final Value<int?> committedAt;
+  final Value<int?> abandonedAt;
+  final Value<String?> lastErrorReason;
+  final Value<int> resurrectionCount;
+  final Value<String?> jsonPath;
   const InboundEventQueueCompanion({
     this.queueId = const Value.absent(),
     this.eventId = const Value.absent(),
@@ -2101,6 +2386,12 @@ class InboundEventQueueCompanion
     this.attempts = const Value.absent(),
     this.nextDueAt = const Value.absent(),
     this.leaseUntil = const Value.absent(),
+    this.status = const Value.absent(),
+    this.committedAt = const Value.absent(),
+    this.abandonedAt = const Value.absent(),
+    this.lastErrorReason = const Value.absent(),
+    this.resurrectionCount = const Value.absent(),
+    this.jsonPath = const Value.absent(),
   });
   InboundEventQueueCompanion.insert({
     this.queueId = const Value.absent(),
@@ -2113,6 +2404,12 @@ class InboundEventQueueCompanion
     this.attempts = const Value.absent(),
     this.nextDueAt = const Value.absent(),
     this.leaseUntil = const Value.absent(),
+    this.status = const Value.absent(),
+    this.committedAt = const Value.absent(),
+    this.abandonedAt = const Value.absent(),
+    this.lastErrorReason = const Value.absent(),
+    this.resurrectionCount = const Value.absent(),
+    this.jsonPath = const Value.absent(),
   }) : eventId = Value(eventId),
        roomId = Value(roomId),
        originTs = Value(originTs),
@@ -2130,6 +2427,12 @@ class InboundEventQueueCompanion
     Expression<int>? attempts,
     Expression<int>? nextDueAt,
     Expression<int>? leaseUntil,
+    Expression<String>? status,
+    Expression<int>? committedAt,
+    Expression<int>? abandonedAt,
+    Expression<String>? lastErrorReason,
+    Expression<int>? resurrectionCount,
+    Expression<String>? jsonPath,
   }) {
     return RawValuesInsertable({
       if (queueId != null) 'queue_id': queueId,
@@ -2142,6 +2445,12 @@ class InboundEventQueueCompanion
       if (attempts != null) 'attempts': attempts,
       if (nextDueAt != null) 'next_due_at': nextDueAt,
       if (leaseUntil != null) 'lease_until': leaseUntil,
+      if (status != null) 'status': status,
+      if (committedAt != null) 'committed_at': committedAt,
+      if (abandonedAt != null) 'abandoned_at': abandonedAt,
+      if (lastErrorReason != null) 'last_error_reason': lastErrorReason,
+      if (resurrectionCount != null) 'resurrection_count': resurrectionCount,
+      if (jsonPath != null) 'json_path': jsonPath,
     });
   }
 
@@ -2156,6 +2465,12 @@ class InboundEventQueueCompanion
     Value<int>? attempts,
     Value<int>? nextDueAt,
     Value<int>? leaseUntil,
+    Value<String>? status,
+    Value<int?>? committedAt,
+    Value<int?>? abandonedAt,
+    Value<String?>? lastErrorReason,
+    Value<int>? resurrectionCount,
+    Value<String?>? jsonPath,
   }) {
     return InboundEventQueueCompanion(
       queueId: queueId ?? this.queueId,
@@ -2168,6 +2483,12 @@ class InboundEventQueueCompanion
       attempts: attempts ?? this.attempts,
       nextDueAt: nextDueAt ?? this.nextDueAt,
       leaseUntil: leaseUntil ?? this.leaseUntil,
+      status: status ?? this.status,
+      committedAt: committedAt ?? this.committedAt,
+      abandonedAt: abandonedAt ?? this.abandonedAt,
+      lastErrorReason: lastErrorReason ?? this.lastErrorReason,
+      resurrectionCount: resurrectionCount ?? this.resurrectionCount,
+      jsonPath: jsonPath ?? this.jsonPath,
     );
   }
 
@@ -2204,6 +2525,24 @@ class InboundEventQueueCompanion
     if (leaseUntil.present) {
       map['lease_until'] = Variable<int>(leaseUntil.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (committedAt.present) {
+      map['committed_at'] = Variable<int>(committedAt.value);
+    }
+    if (abandonedAt.present) {
+      map['abandoned_at'] = Variable<int>(abandonedAt.value);
+    }
+    if (lastErrorReason.present) {
+      map['last_error_reason'] = Variable<String>(lastErrorReason.value);
+    }
+    if (resurrectionCount.present) {
+      map['resurrection_count'] = Variable<int>(resurrectionCount.value);
+    }
+    if (jsonPath.present) {
+      map['json_path'] = Variable<String>(jsonPath.value);
+    }
     return map;
   }
 
@@ -2219,7 +2558,13 @@ class InboundEventQueueCompanion
           ..write('enqueuedAt: $enqueuedAt, ')
           ..write('attempts: $attempts, ')
           ..write('nextDueAt: $nextDueAt, ')
-          ..write('leaseUntil: $leaseUntil')
+          ..write('leaseUntil: $leaseUntil, ')
+          ..write('status: $status, ')
+          ..write('committedAt: $committedAt, ')
+          ..write('abandonedAt: $abandonedAt, ')
+          ..write('lastErrorReason: $lastErrorReason, ')
+          ..write('resurrectionCount: $resurrectionCount, ')
+          ..write('jsonPath: $jsonPath')
           ..write(')'))
         .toString();
   }
@@ -2371,8 +2716,8 @@ class QueueMarkerItem extends DataClass implements Insertable<QueueMarkerItem> {
   final String? lastAppliedEventId;
 
   /// Highest `originServerTs` we have applied and committed. Guarded
-  /// by [shouldAdvanceMarker]; writes only accept monotonic
-  /// advancement (F2).
+  /// by `TimelineEventOrdering.isNewer`; writes only accept
+  /// monotonic advancement (F2).
   final int lastAppliedTs;
 
   /// Monotonic counter incremented on every successful
@@ -2610,11 +2955,19 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   );
   late final Index idxInboundEventQueueReady = Index(
     'idx_inbound_event_queue_ready',
-    'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
+    'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id) WHERE status IN (\'enqueued\', \'retrying\')',
   );
   late final Index idxInboundEventQueueRoom = Index(
     'idx_inbound_event_queue_room',
     'CREATE INDEX idx_inbound_event_queue_room ON inbound_event_queue (room_id, origin_ts)',
+  );
+  late final Index idxInboundEventQueueActiveRoomTs = Index(
+    'idx_inbound_event_queue_active_room_ts',
+    'CREATE INDEX idx_inbound_event_queue_active_room_ts ON inbound_event_queue (room_id, origin_ts) WHERE status IN (\'enqueued\', \'leased\', \'retrying\')',
+  );
+  late final Index idxInboundEventQueueAbandonedPath = Index(
+    'idx_inbound_event_queue_abandoned_path',
+    'CREATE INDEX idx_inbound_event_queue_abandoned_path ON inbound_event_queue (json_path) WHERE status = \'abandoned\'',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -2632,6 +2985,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxSyncSequenceLogHostEntryStatusCounter,
     idxInboundEventQueueReady,
     idxInboundEventQueueRoom,
+    idxInboundEventQueueActiveRoomTs,
+    idxInboundEventQueueAbandonedPath,
   ];
 }
 
@@ -3437,6 +3792,12 @@ typedef $$InboundEventQueueTableCreateCompanionBuilder =
       Value<int> attempts,
       Value<int> nextDueAt,
       Value<int> leaseUntil,
+      Value<String> status,
+      Value<int?> committedAt,
+      Value<int?> abandonedAt,
+      Value<String?> lastErrorReason,
+      Value<int> resurrectionCount,
+      Value<String?> jsonPath,
     });
 typedef $$InboundEventQueueTableUpdateCompanionBuilder =
     InboundEventQueueCompanion Function({
@@ -3450,6 +3811,12 @@ typedef $$InboundEventQueueTableUpdateCompanionBuilder =
       Value<int> attempts,
       Value<int> nextDueAt,
       Value<int> leaseUntil,
+      Value<String> status,
+      Value<int?> committedAt,
+      Value<int?> abandonedAt,
+      Value<String?> lastErrorReason,
+      Value<int> resurrectionCount,
+      Value<String?> jsonPath,
     });
 
 class $$InboundEventQueueTableFilterComposer
@@ -3508,6 +3875,36 @@ class $$InboundEventQueueTableFilterComposer
 
   ColumnFilters<int> get leaseUntil => $composableBuilder(
     column: $table.leaseUntil,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get committedAt => $composableBuilder(
+    column: $table.committedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get abandonedAt => $composableBuilder(
+    column: $table.abandonedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastErrorReason => $composableBuilder(
+    column: $table.lastErrorReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resurrectionCount => $composableBuilder(
+    column: $table.resurrectionCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jsonPath => $composableBuilder(
+    column: $table.jsonPath,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3570,6 +3967,36 @@ class $$InboundEventQueueTableOrderingComposer
     column: $table.leaseUntil,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get committedAt => $composableBuilder(
+    column: $table.committedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get abandonedAt => $composableBuilder(
+    column: $table.abandonedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastErrorReason => $composableBuilder(
+    column: $table.lastErrorReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get resurrectionCount => $composableBuilder(
+    column: $table.resurrectionCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jsonPath => $composableBuilder(
+    column: $table.jsonPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InboundEventQueueTableAnnotationComposer
@@ -3614,6 +4041,32 @@ class $$InboundEventQueueTableAnnotationComposer
     column: $table.leaseUntil,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get committedAt => $composableBuilder(
+    column: $table.committedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get abandonedAt => $composableBuilder(
+    column: $table.abandonedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastErrorReason => $composableBuilder(
+    column: $table.lastErrorReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resurrectionCount => $composableBuilder(
+    column: $table.resurrectionCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get jsonPath =>
+      $composableBuilder(column: $table.jsonPath, builder: (column) => column);
 }
 
 class $$InboundEventQueueTableTableManager
@@ -3666,6 +4119,12 @@ class $$InboundEventQueueTableTableManager
                 Value<int> attempts = const Value.absent(),
                 Value<int> nextDueAt = const Value.absent(),
                 Value<int> leaseUntil = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> committedAt = const Value.absent(),
+                Value<int?> abandonedAt = const Value.absent(),
+                Value<String?> lastErrorReason = const Value.absent(),
+                Value<int> resurrectionCount = const Value.absent(),
+                Value<String?> jsonPath = const Value.absent(),
               }) => InboundEventQueueCompanion(
                 queueId: queueId,
                 eventId: eventId,
@@ -3677,6 +4136,12 @@ class $$InboundEventQueueTableTableManager
                 attempts: attempts,
                 nextDueAt: nextDueAt,
                 leaseUntil: leaseUntil,
+                status: status,
+                committedAt: committedAt,
+                abandonedAt: abandonedAt,
+                lastErrorReason: lastErrorReason,
+                resurrectionCount: resurrectionCount,
+                jsonPath: jsonPath,
               ),
           createCompanionCallback:
               ({
@@ -3690,6 +4155,12 @@ class $$InboundEventQueueTableTableManager
                 Value<int> attempts = const Value.absent(),
                 Value<int> nextDueAt = const Value.absent(),
                 Value<int> leaseUntil = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> committedAt = const Value.absent(),
+                Value<int?> abandonedAt = const Value.absent(),
+                Value<String?> lastErrorReason = const Value.absent(),
+                Value<int> resurrectionCount = const Value.absent(),
+                Value<String?> jsonPath = const Value.absent(),
               }) => InboundEventQueueCompanion.insert(
                 queueId: queueId,
                 eventId: eventId,
@@ -3701,6 +4172,12 @@ class $$InboundEventQueueTableTableManager
                 attempts: attempts,
                 nextDueAt: nextDueAt,
                 leaseUntil: leaseUntil,
+                status: status,
+                committedAt: committedAt,
+                abandonedAt: abandonedAt,
+                lastErrorReason: lastErrorReason,
+                resurrectionCount: resurrectionCount,
+                jsonPath: jsonPath,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

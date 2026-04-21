@@ -6,6 +6,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -52,6 +55,9 @@ class QueuePipelineCoordinator {
     required SyncSequenceLogService sequenceLogService,
     required UserActivityGate? activityGate,
     required LoggingService logging,
+    AttachmentIndex? attachmentIndex,
+    UpdateNotifications? updateNotifications,
+    AttachmentIngestor? attachmentIngestor,
     InboundQueue? queueOverride,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
@@ -64,6 +70,9 @@ class QueuePipelineCoordinator {
        _sequenceLogService = sequenceLogService,
        _activityGate = activityGate,
        _logging = logging,
+       _attachmentIndex = attachmentIndex,
+       _updateNotifications = updateNotifications,
+       _attachmentIngestor = attachmentIngestor,
        _queue = queueOverride ?? InboundQueue(db: syncDb, logging: logging),
        _pen = penOverride ?? PendingDecryptionPen(logging: logging),
        _seeder =
@@ -108,6 +117,9 @@ class QueuePipelineCoordinator {
   final SyncSequenceLogService _sequenceLogService;
   final UserActivityGate? _activityGate;
   final LoggingService _logging;
+  final AttachmentIndex? _attachmentIndex;
+  final UpdateNotifications? _updateNotifications;
+  final AttachmentIngestor? _attachmentIngestor;
   final InboundQueue _queue;
   final PendingDecryptionPen _pen;
   final QueueMarkerSeeder _seeder;
@@ -117,6 +129,8 @@ class QueuePipelineCoordinator {
 
   StreamSubscription<Event>? _liveSub;
   StreamSubscription<SyncUpdate>? _syncSub;
+  StreamSubscription<String>? _attachmentPathSub;
+  StreamSubscription<Set<String>>? _journalUpdateSub;
   bool _started = false;
 
   /// Tracks in-flight `enqueueLive` calls spawned from the live
@@ -242,6 +256,57 @@ class QueuePipelineCoordinator {
       );
       _bridge.start();
       await _worker.start();
+      // Signal-driven resurrection of abandoned ledger rows. These
+      // subscriptions convert out-of-band events (attachment JSON
+      // landed, journal-db entry updated) into `resurrect*` calls so
+      // a row that was retired by the worker's retry cap becomes
+      // drainable again the instant its blocking dependency is
+      // available — no polling, no user action required for the
+      // common cases.
+      _attachmentPathSub = _attachmentIndex?.pathRecorded.listen(
+        (path) async {
+          try {
+            await _queue.resurrectByPath(path);
+          } catch (error, stackTrace) {
+            _logging.captureException(
+              error,
+              domain: _logDomain,
+              subDomain: '$_logSub.resurrectByPath',
+              stackTrace: stackTrace,
+            );
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          _logging.captureException(
+            error,
+            domain: _logDomain,
+            subDomain: '$_logSub.pathRecorded',
+            stackTrace: stackTrace,
+          );
+        },
+      );
+      _journalUpdateSub = _updateNotifications?.updateStream.listen(
+        (_) async {
+          try {
+            await _queue.resurrectByReason('missingBase');
+          } catch (error, stackTrace) {
+            _logging.captureException(
+              error,
+              domain: _logDomain,
+              subDomain: '$_logSub.resurrectByReason',
+              stackTrace: stackTrace,
+            );
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          _logging.captureException(
+            error,
+            domain: _logDomain,
+            subDomain: '$_logSub.journalUpdates',
+            stackTrace: stackTrace,
+          );
+        },
+      );
       _started = true;
       // Phase-2 equivalent of the legacy pipeline's 300 ms startup
       // `forceRescan`. `connect()` runs before `_maybeStartQueuePipeline`
@@ -265,6 +330,10 @@ class QueuePipelineCoordinator {
       _liveSub = null;
       await _syncSub?.cancel();
       _syncSub = null;
+      await _attachmentPathSub?.cancel();
+      _attachmentPathSub = null;
+      await _journalUpdateSub?.cancel();
+      _journalUpdateSub = null;
       try {
         await _bridge.stop();
       } catch (_) {
@@ -422,6 +491,14 @@ class QueuePipelineCoordinator {
         await _syncSub?.cancel();
         _syncSub = null;
       });
+      await tryRun('attachmentPathSub', () async {
+        await _attachmentPathSub?.cancel();
+        _attachmentPathSub = null;
+      });
+      await tryRun('journalUpdateSub', () async {
+        await _journalUpdateSub?.cancel();
+        _journalUpdateSub = null;
+      });
       // Wait for fire-and-forget enqueues spawned from the now-
       // cancelled subscription before we tear the queue down.
       if (_inFlightEnqueues.isNotEmpty) {
@@ -460,12 +537,63 @@ class QueuePipelineCoordinator {
     // / E2EE for new joiners. Share the `_maybePostLoadCurrentRoom`
     // check with the onSync listener so either path triggers it.
     _maybePostLoadCurrentRoom();
+    // Attachment side-effect: record the descriptor in the
+    // AttachmentIndex (which fires `pathRecorded` so abandoned queue
+    // rows resurrect) and kick off the download to
+    // `documentsDirectory`. The queue's `enqueueBatch` will filter
+    // the descriptor event out as `filteredOutByType` on the next
+    // step — that is correct: attachments never belong in the queue
+    // as payloads. Without this call the queue pipeline has no
+    // in-band equivalent of the legacy `AttachmentIngestor.process`
+    // hook, and companion sync-payload events get stuck in
+    // `pendingAttachment` forever.
+    _trackEnqueue(_processAttachment(event));
     // F3: encrypted events live in the pen until decryption completes;
     // the worker's decryptionPen flush on every drain iteration picks
     // them up as soon as the SDK has the session key.
     if (_pen.hold(event)) return;
     _trackEnqueue(_safeEnqueue(event));
   }
+
+  /// Fire-and-forget ingestor hook. No-op when either the ingestor
+  /// is not wired (tests without attachment paths) or the event is
+  /// not an attachment descriptor (the ingestor gates internally on
+  /// `content['relativePath']`).
+  Future<void> _processAttachment(Event event) async {
+    final ingestor = _attachmentIngestor;
+    if (ingestor == null) return;
+    try {
+      await ingestor.process(
+        event: event,
+        logging: _logging,
+        attachmentIndex: _attachmentIndex,
+        // The queue pipeline does not use the legacy descriptor
+        // catch-up manager — missing-descriptor retries are driven
+        // by `AttachmentIndex.pathRecorded` → `queue.resurrectByPath`.
+        descriptorCatchUp: null,
+        // Neither callback has a queue-side analogue:
+        //  - `scheduleLiveScan` is for the legacy scan loop.
+        //  - `retryNow` is subsumed by the resurrection signal fan-out.
+        scheduleLiveScan: _noopScheduleLiveScan,
+        retryNow: _noopRetryNow,
+        // Queue the download so a burst of attachment events does
+        // not serialize one download at a time; the ingestor's
+        // internal concurrency cap bounds the parallel count.
+        scheduleDownload: true,
+      );
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.attachmentIngestor',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _noopScheduleLiveScan() {}
+
+  Future<void> _noopRetryNow() async {}
 
   Future<void> _safePostLoad(Room room, String roomId) async {
     final wasPartial = room.partial;
@@ -592,10 +720,20 @@ class QueuePipelineCoordinator {
     required Room room,
     required num? untilTimestamp,
   }) async {
-    final sink = QueueBootstrapSink(
-      queue: _queue,
-      logging: _logging,
-    );
+    // Wrap the queue sink so attachment descriptor events in each
+    // paginated page get fed to `AttachmentIngestor.process()` before
+    // the queue's own enqueue drops them as non-payload. Without
+    // this, catch-up on a room with historical attachments would
+    // enqueue the sync-payload events while their descriptor
+    // JSONs never land on disk, producing the pendingAttachment
+    // skip cascade we just fixed.
+    final sink = _attachmentIngestor == null
+        ? QueueBootstrapSink(queue: _queue, logging: _logging)
+        : _AttachmentAwareBootstrapSink(
+                inner: QueueBootstrapSink(queue: _queue, logging: _logging),
+                processAttachment: _processAttachment,
+              )
+              as BootstrapSink;
     final result = await CatchUpStrategy.collectHistoryForBootstrap(
       room: room,
       sink: sink,
@@ -641,6 +779,39 @@ class _ProgressForwardingSink implements BootstrapSink {
       onProgress?.call(info);
     } catch (_) {
       // Intentionally empty: progress is diagnostic, not load-bearing.
+    }
+    return _inner.onPage(events, info);
+  }
+}
+
+/// Bootstrap sink wrapper that funnels each paginated event through
+/// the coordinator's attachment ingestor *before* forwarding to the
+/// inner sink. This is the catch-up equivalent of the live-stream
+/// `_handleLiveEvent` hook: every attachment descriptor observed
+/// during `collectHistoryForBootstrap` is recorded + downloaded so
+/// the companion sync-payload events that the inner sink enqueues
+/// have their JSON on disk by the time the worker applies them.
+///
+/// `processAttachment` is fire-and-forget — the ingestor queues its
+/// own downloads and must not block pagination. The inner sink's
+/// return value flows through unchanged.
+class _AttachmentAwareBootstrapSink implements BootstrapSink {
+  _AttachmentAwareBootstrapSink({
+    required BootstrapSink inner,
+    required Future<void> Function(Event event) processAttachment,
+  }) : _inner = inner,
+       _processAttachment = processAttachment;
+
+  final BootstrapSink _inner;
+  final Future<void> Function(Event event) _processAttachment;
+
+  @override
+  Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
+    for (final event in events) {
+      // `processAttachment` is internally a no-op for non-attachment
+      // events (the ingestor checks `content['relativePath']`). Fire
+      // them all and let the ingestor decide.
+      unawaited(_processAttachment(event));
     }
     return _inner.onPage(events, info);
   }

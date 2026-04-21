@@ -5028,6 +5028,53 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Obteniendo historial';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count omitidos',
+      one: '1 omitido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count eventos de sincronización que la cola descartó. Toca reintentar para volver a intentarlo.',
+      one:
+          '1 evento de sincronización que la cola descartó. Toca reintentar para volver a intentarlo.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Eventos omitidos';
+
+  @override
+  String get queueSkippedRetryAll => 'Reintentar eventos omitidos';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count eventos en cola para reintento.',
+      one: '1 evento en cola para reintento.',
+      zero: 'No hay eventos omitidos.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Reintento fallido: $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Continuar';
 
   @override

@@ -2137,6 +2137,12 @@
     }
   },
   "queueFetchAllHistoryTitle": "Se obține istoricul",
+  "queueSkippedBadge": "{count, plural, =1{1 omis} few{{count} omise} other{{count} de evenimente omise}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 eveniment de sincronizare pe care coada l-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.} few{{count} evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.} other{{count} de evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.}}",
+  "queueSkippedCardTitle": "Evenimente omise",
+  "queueSkippedRetryAll": "Reîncearcă evenimentele omise",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Nu există evenimente omise.} =1{1 eveniment adăugat pentru reîncercare.} few{{count} evenimente adăugate pentru reîncercare.} other{{count} de evenimente adăugate pentru reîncercare.}}",
+  "queueSkippedRetryAllError": "Reîncercarea a eșuat: {reason}",
   "referenceImageContinue": "Continuă",
   "referenceImageContinueWithCount": "Continuă ({count})",
   "@referenceImageContinueWithCount": {

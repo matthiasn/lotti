@@ -1890,6 +1890,12 @@
     }
   },
   "queueFetchAllHistoryTitle": "Načítání historie",
+  "queueSkippedBadge": "{count, plural, =1{1 přeskočena} few{{count} přeskočeny} other{{count} přeskočeno}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 synchronizační událost, kterou fronta vzdala. Klepni na opakovat pro nový pokus.} few{{count} synchronizační události, které fronta vzdala. Klepni na opakovat pro nový pokus.} other{{count} synchronizačních událostí, které fronta vzdala. Klepni na opakovat pro nový pokus.}}",
+  "queueSkippedCardTitle": "Přeskočené události",
+  "queueSkippedRetryAll": "Opakovat přeskočené události",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Žádné přeskočené události.} =1{1 událost zařazena k opakování.} few{{count} události zařazeny k opakování.} other{{count} událostí zařazeno k opakování.}}",
+  "queueSkippedRetryAllError": "Opakování selhalo: {reason}",
   "referenceImageContinue": "Pokračovat",
   "referenceImageContinueWithCount": "Pokračovat ({count})",
   "@referenceImageContinueWithCount": {

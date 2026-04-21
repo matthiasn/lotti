@@ -64,10 +64,29 @@ class QueueApplyAdapter {
     // alongside filesystem errors. `SyncEventProcessor` returns null
     // when the payload is undeserialisable (ArgumentError /
     // FormatException paths inside prepare).
+    //
+    // A specific sub-case of filesystem failure — the attachment
+    // descriptor JSON has not landed on disk yet — classifies as
+    // `pendingAttachment` instead. These events routinely race their
+    // attachment download; the queue keeps the row in `abandoned`
+    // after its retry cap, and `AttachmentIndex.pathRecorded`
+    // resurrects it the instant the descriptor arrives. Treating
+    // them as plain `retriable` would burn retries on a
+    // sub-second curve that loses every event to the apply-cap
+    // before the human-scale attachment delivery completes.
     final PreparedSyncEvent? prepared;
     try {
       prepared = await _processor.prepare(event: event);
     } on IOException catch (error, stackTrace) {
+      if (_looksLikePendingAttachment(error)) {
+        _logging.captureException(
+          error,
+          domain: _logDomain,
+          subDomain: '$_logSub.prepare.pendingAttachment',
+          stackTrace: stackTrace,
+        );
+        return ApplyOutcome.pendingAttachment;
+      }
       _logging.captureException(
         error,
         domain: _logDomain,
@@ -117,6 +136,15 @@ class QueueApplyAdapter {
       });
       return ApplyOutcome.applied;
     } on IOException catch (error, stackTrace) {
+      if (_looksLikePendingAttachment(error)) {
+        _logging.captureException(
+          error,
+          domain: _logDomain,
+          subDomain: '$_logSub.apply.pendingAttachment',
+          stackTrace: stackTrace,
+        );
+        return ApplyOutcome.pendingAttachment;
+      }
       _logging.captureException(
         error,
         domain: _logDomain,
@@ -133,5 +161,44 @@ class QueueApplyAdapter {
       );
       return ApplyOutcome.retriable;
     }
+  }
+
+  /// Returns true when [error] looks like "we are waiting for an
+  /// attachment JSON to land on disk" rather than a generic
+  /// filesystem / network failure. Two signatures match:
+  ///
+  /// - A `FileSystemException` we throw ourselves in
+  ///   `SmartJournalEntityLoader.load` with the message "attachment
+  ///   descriptor not yet available".
+  /// - Any `FileSystemException` (including `PathNotFoundException`)
+  ///   whose path points inside one of the attachment-carrying
+  ///   directories (`/audio/`, `/images/`, `/attachments/`,
+  ///   `/agent_entities/`, `/agent_links/`).
+  ///
+  /// Keeping the match textual rather than relying on a bespoke
+  /// exception subtype means we do not have to plumb a new type
+  /// through `SyncEventProcessor`; the tradeoff is that a rename of
+  /// the error message on the SDK side (rare) falls back to the
+  /// plain `retriable` path, which is still safe — the row stays in
+  /// the queue, just on the sub-second ladder.
+  static bool _looksLikePendingAttachment(IOException error) {
+    if (error is FileSystemException) {
+      final message = error.message;
+      if (message.contains('attachment descriptor not yet available')) {
+        return true;
+      }
+      final path = error.path ?? '';
+      const attachmentPrefixes = <String>[
+        '/audio/',
+        '/images/',
+        '/attachments/',
+        '/agent_entities/',
+        '/agent_links/',
+      ];
+      for (final prefix in attachmentPrefixes) {
+        if (path.contains(prefix)) return true;
+      }
+    }
+    return false;
   }
 }

@@ -32,6 +32,7 @@ import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -288,6 +289,22 @@ Future<void> registerSingletons() async {
   // MatrixService construction) makes the decision synchronous to the
   // rest of the service wiring.
   final useQueuePipeline = await readUseInboundEventQueueFlag(journalDb);
+  // Dedicated ingestor for the queue pipeline. `MatrixStreamProcessor`
+  // owns its own ingestor too, but under `suppressLegacyPipeline`
+  // that one never runs (its `process()` is only invoked from
+  // `processOrdered`, which the queue path skips). The separate
+  // instance here drives attachment recording + downloads on the
+  // queue's live + bootstrap paths so descriptor JSONs land on disk
+  // before the worker tries to apply their companion sync events.
+  // `verboseLogging: false` matches the `attachmentIndex` setting
+  // above — steady-state per-event logging would flood the general
+  // log on large catch-ups.
+  final queueAttachmentIngestor = useQueuePipeline
+      ? AttachmentIngestor(
+          documentsDirectory: documentsDirectory,
+          verboseLogging: false,
+        )
+      : null;
   final queuePipelineCoordinator = useQueuePipeline
       ? QueuePipelineCoordinator(
           syncDb: syncDatabase,
@@ -299,6 +316,9 @@ Future<void> registerSingletons() async {
           sequenceLogService: syncSequenceLogService,
           activityGate: userActivityGate,
           logging: loggingService,
+          attachmentIndex: attachmentIndex,
+          updateNotifications: getIt<UpdateNotifications>(),
+          attachmentIngestor: queueAttachmentIngestor,
         )
       : null;
 

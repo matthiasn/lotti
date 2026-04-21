@@ -8626,6 +8626,42 @@ abstract class AppLocalizations {
   /// **'Fetching history'**
   String get queueFetchAllHistoryTitle;
 
+  /// No description provided for @queueSkippedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 skipped} other{{count} skipped}}'**
+  String queueSkippedBadge(int count);
+
+  /// No description provided for @queueSkippedCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sync event the queue gave up on. Tap retry to re-attempt.} other{{count} sync events the queue gave up on. Tap retry to re-attempt.}}'**
+  String queueSkippedCardBody(int count);
+
+  /// No description provided for @queueSkippedCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped events'**
+  String get queueSkippedCardTitle;
+
+  /// No description provided for @queueSkippedRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry skipped events'**
+  String get queueSkippedRetryAll;
+
+  /// No description provided for @queueSkippedRetryAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No skipped events to retry.} =1{1 event queued for retry.} other{{count} events queued for retry.}}'**
+  String queueSkippedRetryAllDone(int count);
+
+  /// No description provided for @queueSkippedRetryAllError.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed: {reason}'**
+  String queueSkippedRetryAllError(String reason);
+
   /// No description provided for @referenceImageContinue.
   ///
   /// In en, this message translates to:

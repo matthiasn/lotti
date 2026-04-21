@@ -199,4 +199,129 @@ void main() {
       ).called(1);
     },
   );
+
+  group('pendingAttachment classification', () {
+    test(
+      'prepare throwing the "attachment descriptor not yet available" '
+      'FileSystemException maps to pendingAttachment so the queue '
+      'backs off on the human-scale ladder instead of the sub-second '
+      'retriable curve',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$waitsForDescriptor',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenThrow(
+          const FileSystemException('attachment descriptor not yet available'),
+        );
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.pendingAttachment);
+      },
+    );
+
+    test(
+      'prepare throwing PathNotFoundException inside /audio/ maps to '
+      'pendingAttachment — the standard signature for a sync event '
+      'that arrived before its attachment JSON landed on disk',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$audioRace',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenThrow(
+          const PathNotFoundException(
+            '/Users/test/Documents/audio/2026-04-21/foo.m4a.json',
+            OSError('No such file or directory', 2),
+          ),
+        );
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.pendingAttachment);
+      },
+    );
+
+    test(
+      'prepare throwing PathNotFoundException inside /agent_entities/ '
+      'also maps to pendingAttachment so agent-entity payload races '
+      'share the same long-ladder retry path',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$agentRace',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenThrow(
+          const PathNotFoundException(
+            '/Users/test/Documents/agent_entities/abc.json',
+            OSError('No such file or directory', 2),
+          ),
+        );
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.pendingAttachment);
+      },
+    );
+
+    test(
+      'an unrelated FileSystemException (path outside attachment '
+      'directories) stays retriable, not pendingAttachment — the '
+      'classification must not accidentally promote every IO '
+      'failure to the long retry ladder',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$genericIo',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenThrow(
+          const FileSystemException(
+            'unrelated disk error',
+            '/tmp/something-else.log',
+          ),
+        );
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.retriable);
+      },
+    );
+
+    test(
+      'apply-step throwing "attachment descriptor not yet available" '
+      'also maps to pendingAttachment so the decoded payload still '
+      'waits for its JSON on the long ladder',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$applyWaitsForDescriptor',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        final prepared = _MockPreparedSyncEvent();
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        when(
+          () => processor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).thenThrow(
+          const FileSystemException('attachment descriptor not yet available'),
+        );
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.pendingAttachment);
+      },
+    );
+  });
 }

@@ -4949,6 +4949,57 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Načítání historie';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count přeskočeno',
+      few: '$count přeskočeny',
+      one: '1 přeskočena',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count synchronizačních událostí, které fronta vzdala. Klepni na opakovat pro nový pokus.',
+      few:
+          '$count synchronizační události, které fronta vzdala. Klepni na opakovat pro nový pokus.',
+      one:
+          '1 synchronizační událost, kterou fronta vzdala. Klepni na opakovat pro nový pokus.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Přeskočené události';
+
+  @override
+  String get queueSkippedRetryAll => 'Opakovat přeskočené události';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count událostí zařazeno k opakování.',
+      few: '$count události zařazeny k opakování.',
+      one: '1 událost zařazena k opakování.',
+      zero: 'Žádné přeskočené události.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Opakování selhalo: $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Pokračovat';
 
   @override

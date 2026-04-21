@@ -5036,6 +5036,53 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Récupération de l\'historique';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ignorés',
+      one: '1 ignoré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count événements de synchronisation que la file a abandonnés. Appuie sur réessayer pour les retenter.',
+      one:
+          '1 événement de synchronisation que la file a abandonné. Appuie sur réessayer pour le retenter.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Événements ignorés';
+
+  @override
+  String get queueSkippedRetryAll => 'Réessayer les événements ignorés';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements remis en file pour réessai.',
+      one: '1 événement remis en file pour réessai.',
+      zero: 'Aucun événement ignoré.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Réessai échoué : $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Continuer';
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -563,6 +564,264 @@ void main() {
         expect(depths.last, 0);
         // We expect at least three emissions: enqueue, commit, prune.
         expect(depths.length, greaterThanOrEqualTo(3));
+      },
+    );
+  });
+
+  group('ledger lifecycle (v13)', () {
+    // Helper that reads the raw `status` column for a queue row so tests
+    // assert against the persisted state rather than inferring through
+    // peek filters.
+    Future<String?> statusOf(int queueId) async {
+      final row = await (db.select(
+        db.inboundEventQueue,
+      )..where((t) => t.queueId.equals(queueId))).getSingleOrNull();
+      return row?.status;
+    }
+
+    test(
+      'commitApplied flips the row to status=applied, keeps it in the '
+      'table for the ledger, and advances the marker',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$a', roomId: roomA, originTsMs: 100),
+        );
+        final batch = await queue.peekBatchReady();
+        expect(batch, hasLength(1));
+        expect(await statusOf(batch.first.queueId), 'leased');
+
+        await queue.commitApplied(batch.first);
+        expect(await statusOf(batch.first.queueId), 'applied');
+
+        // Row is retained in the ledger so diagnostics + replay paths
+        // can read it later.
+        final rows = await db.select(db.inboundEventQueue).get();
+        expect(rows, hasLength(1));
+
+        final stats = await queue.stats();
+        expect(stats.total, 0); // no active rows
+        expect(stats.applied, 1);
+        expect(stats.abandoned, 0);
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingleOrNull();
+        expect(marker?.lastAppliedTs, 100);
+      },
+    );
+
+    test(
+      'markSkipped flips the row to status=abandoned and preserves it '
+      '— the marker advances normally because the clamp ignores the '
+      'abandoned row (forward progress is not held hostage by a '
+      'single failing event)',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$poison', roomId: roomA, originTsMs: 50),
+        );
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(batch.first, reason: 'maxAttempts(retriable)');
+
+        expect(await statusOf(batch.first.queueId), 'abandoned');
+
+        // A subsequent successful commit for a NEWER row advances the
+        // marker past the abandoned timestamp — the canonical "don't
+        // stall on poison" invariant.
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$b', roomId: roomA, originTsMs: 200),
+        );
+        final next = await queue.peekBatchReady();
+        await queue.commitApplied(next.first);
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingleOrNull();
+        expect(marker?.lastAppliedTs, 200);
+
+        final stats = await queue.stats();
+        expect(stats.abandoned, 1);
+        expect(stats.applied, 1);
+      },
+    );
+
+    test(
+      'the marker clamp pins forward progress behind an older row that '
+      'is still in-flight (enqueued/leased/retrying) — the exact '
+      'invariant that makes backfill self-healing for rows we have '
+      'not yet given up on',
+      () async {
+        // Older row first; will remain enqueued.
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$old', roomId: roomA, originTsMs: 10),
+        );
+        // Newer row applies successfully.
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$new', roomId: roomA, originTsMs: 100),
+        );
+        // Peek + commit only the newer one (filter by eventId).
+        final batch = await queue.peekBatchReady();
+        final newer = batch.firstWhere((e) => e.eventId == r'$new');
+        await queue.commitApplied(newer);
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingleOrNull();
+        // Clamped to oldestActive (10) − 1 = 9 rather than 100.
+        expect(marker?.lastAppliedTs, 9);
+      },
+    );
+
+    test(
+      'resurrectByPath flips abandoned rows whose json_path matches '
+      'back to enqueued and re-zeroes attempts so the worker picks '
+      'them up immediately on the next drain cycle',
+      () async {
+        const path = '/audio/2026-04-21/foo.m4a.json';
+        final event = _buildSyncEvent(
+          eventId: r'$waitsForAudio',
+          roomId: roomA,
+          originTsMs: 500,
+          content: <String, dynamic>{
+            'msgtype': syncMessageType,
+            'jsonPath': path,
+          },
+        );
+        await queue.enqueueLive(event);
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(
+          batch.first,
+          reason: 'maxAttempts(pendingAttachment)',
+        );
+        expect(await statusOf(batch.first.queueId), 'abandoned');
+
+        final resurrected = await queue.resurrectByPath(path);
+        expect(resurrected, 1);
+        expect(await statusOf(batch.first.queueId), 'enqueued');
+
+        final row = await (db.select(
+          db.inboundEventQueue,
+        )..where((t) => t.queueId.equals(batch.first.queueId))).getSingle();
+        expect(row.attempts, 0);
+        expect(row.nextDueAt, 0);
+        expect(row.lastErrorReason, isNull);
+        expect(row.abandonedAt, isNull);
+        expect(row.resurrectionCount, 1);
+      },
+    );
+
+    test(
+      'resurrectByPath respects the hard cap so a poison row that '
+      'keeps failing to apply cannot thrash the worker forever',
+      () async {
+        const path = '/audio/2026-04-21/poison.m4a.json';
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$poisonAudio',
+            roomId: roomA,
+            originTsMs: 600,
+            content: <String, dynamic>{
+              'msgtype': syncMessageType,
+              'jsonPath': path,
+            },
+          ),
+        );
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(batch.first, reason: 'maxAttempts');
+
+        // Simulate the row hitting the cap already.
+        await (db.update(
+          db.inboundEventQueue,
+        )..where((t) => t.queueId.equals(batch.first.queueId))).write(
+          const InboundEventQueueCompanion(resurrectionCount: Value(50)),
+        );
+
+        // ignore: avoid_redundant_argument_values
+        final resurrected = await queue.resurrectByPath(path, hardCap: 50);
+        expect(resurrected, 0);
+        expect(await statusOf(batch.first.queueId), 'abandoned');
+      },
+    );
+
+    test(
+      'resurrectAll flips every abandoned row under the hard cap back '
+      'to enqueued — the "Retry all" Sync-Settings action',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$a', roomId: roomA, originTsMs: 10),
+        );
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$b', roomId: roomA, originTsMs: 20),
+        );
+        final batch = await queue.peekBatchReady();
+        for (final entry in batch) {
+          await queue.markSkipped(entry, reason: 'user');
+        }
+        final resurrected = await queue.resurrectAll();
+        expect(resurrected, 2);
+        for (final entry in batch) {
+          expect(await statusOf(entry.queueId), 'enqueued');
+        }
+      },
+    );
+
+    test(
+      'resurrectByReason targets only abandoned rows whose last '
+      'retry reason matches — the coordinator calls this on every '
+      'journal update to un-park missingBase rows',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$needsBase',
+            roomId: roomA,
+            originTsMs: 10,
+          ),
+        );
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$needsAudio',
+            roomId: roomA,
+            originTsMs: 20,
+          ),
+        );
+        final batch = await queue.peekBatchReady();
+        final needsBase = batch.firstWhere((e) => e.eventId == r'$needsBase');
+        final needsAudio = batch.firstWhere((e) => e.eventId == r'$needsAudio');
+        await queue.markSkipped(needsBase, reason: 'missingBase');
+        await queue.markSkipped(
+          needsAudio,
+          reason: 'maxAttempts(pendingAttachment)',
+        );
+
+        final resurrected = await queue.resurrectByReason('missingBase');
+        expect(resurrected, 1);
+        expect(await statusOf(needsBase.queueId), 'enqueued');
+        expect(await statusOf(needsAudio.queueId), 'abandoned');
+      },
+    );
+
+    test(
+      'pruneStrandedEntries abandons stray rooms instead of deleting, '
+      'so the ledger retains them for diagnostics while the worker no '
+      'longer sees them as drainable',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$keep', roomId: roomA, originTsMs: 1),
+        );
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$strand', roomId: roomB, originTsMs: 2),
+        );
+        final moved = await queue.pruneStrandedEntries(roomA);
+        expect(moved, 1);
+
+        final strandedRow = await (db.select(
+          db.inboundEventQueue,
+        )..where((t) => t.eventId.equals(r'$strand'))).getSingle();
+        expect(strandedRow.status, 'abandoned');
+        expect(strandedRow.lastErrorReason, 'strandedRoom');
+
+        final stats = await queue.stats();
+        expect(stats.total, 1);
+        expect(stats.abandoned, 1);
       },
     );
   });

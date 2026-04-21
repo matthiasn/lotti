@@ -4975,6 +4975,57 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queueFetchAllHistoryTitle => 'Se obține istoricul';
 
   @override
+  String queueSkippedBadge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de evenimente omise',
+      few: '$count omise',
+      one: '1 omis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedCardBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+      few:
+          '$count evenimente de sincronizare pe care coada le-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+      one:
+          '1 eveniment de sincronizare pe care coada l-a abandonat. Apasă pe reîncearcă pentru o nouă încercare.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queueSkippedCardTitle => 'Evenimente omise';
+
+  @override
+  String get queueSkippedRetryAll => 'Reîncearcă evenimentele omise';
+
+  @override
+  String queueSkippedRetryAllDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de evenimente adăugate pentru reîncercare.',
+      few: '$count evenimente adăugate pentru reîncercare.',
+      one: '1 eveniment adăugat pentru reîncercare.',
+      zero: 'Nu există evenimente omise.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String queueSkippedRetryAllError(String reason) {
+    return 'Reîncercarea a eșuat: $reason';
+  }
+
+  @override
   String get referenceImageContinue => 'Continuă';
 
   @override

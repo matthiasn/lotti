@@ -2137,6 +2137,12 @@
     }
   },
   "queueFetchAllHistoryTitle": "Récupération de l'historique",
+  "queueSkippedBadge": "{count, plural, =1{1 ignoré} other{{count} ignorés}}",
+  "queueSkippedCardBody": "{count, plural, =1{1 événement de synchronisation que la file a abandonné. Appuie sur réessayer pour le retenter.} other{{count} événements de synchronisation que la file a abandonnés. Appuie sur réessayer pour les retenter.}}",
+  "queueSkippedCardTitle": "Événements ignorés",
+  "queueSkippedRetryAll": "Réessayer les événements ignorés",
+  "queueSkippedRetryAllDone": "{count, plural, =0{Aucun événement ignoré.} =1{1 événement remis en file pour réessai.} other{{count} événements remis en file pour réessai.}}",
+  "queueSkippedRetryAllError": "Réessai échoué : {reason}",
   "referenceImageContinue": "Continuer",
   "referenceImageContinueWithCount": "Continuer ({count})",
   "@referenceImageContinueWithCount": {
