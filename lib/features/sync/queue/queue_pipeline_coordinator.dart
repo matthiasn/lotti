@@ -234,37 +234,61 @@ class QueuePipelineCoordinator {
   /// If [drainFirst] is true (the flag-off flow), the worker drains
   /// the queue to completion before the coordinator tears down — this
   /// closes the F7 data-loss hole the design review flagged.
+  ///
+  /// Every teardown step is wrapped in its own try/catch so a throw
+  /// from one stage cannot orphan the stages that follow. `_started`
+  /// is flipped only after the full best-effort cleanup so a thrown
+  /// teardown leaves the coordinator in a state a caller can retry
+  /// `stop()` against, rather than a half-dismantled one where the
+  /// second `stop()` is a no-op.
   Future<void> stop({bool drainFirst = false}) async {
     if (!_started) return;
-    _started = false;
 
-    await _liveSub?.cancel();
-    _liveSub = null;
-    await _syncSub?.cancel();
-    _syncSub = null;
-    // Wait for fire-and-forget enqueues spawned from the now-cancelled
-    // subscription before we tear the queue down.
-    if (_inFlightEnqueues.isNotEmpty) {
-      await Future.wait(_inFlightEnqueues.toList());
-    }
-    await _bridge.stop();
-
-    if (drainFirst) {
+    Future<void> tryRun(
+      String stage,
+      Future<void> Function() action,
+    ) async {
       try {
-        await _worker.drainToCompletion();
+        await action();
       } catch (error, stackTrace) {
         _logging.captureException(
           error,
           domain: _logDomain,
-          subDomain: '$_logSub.drain',
+          subDomain: '$_logSub.stop.$stage',
           stackTrace: stackTrace,
         );
       }
     }
 
-    await _worker.stop();
-    await _pen.stop();
-    await _queue.dispose();
+    try {
+      await tryRun('liveSub', () async {
+        await _liveSub?.cancel();
+        _liveSub = null;
+      });
+      await tryRun('syncSub', () async {
+        await _syncSub?.cancel();
+        _syncSub = null;
+      });
+      // Wait for fire-and-forget enqueues spawned from the now-
+      // cancelled subscription before we tear the queue down.
+      if (_inFlightEnqueues.isNotEmpty) {
+        await tryRun(
+          'inFlightEnqueues',
+          () async => Future.wait(_inFlightEnqueues.toList()),
+        );
+      }
+      await tryRun('bridge', _bridge.stop);
+
+      if (drainFirst) {
+        await tryRun('drain', _worker.drainToCompletion);
+      }
+
+      await tryRun('worker', _worker.stop);
+      await tryRun('pen', _pen.stop);
+      await tryRun('queue', _queue.dispose);
+    } finally {
+      _started = false;
+    }
 
     _logging.captureEvent(
       'queue.coordinator.stopped drainFirst=$drainFirst',
@@ -456,7 +480,15 @@ class _ProgressForwardingSink implements BootstrapSink {
 
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
-    onProgress?.call(info);
+    // `onProgress` is purely observational (UI progress dot, log line).
+    // A throw from the callback — e.g. `setState` on an unmounted
+    // widget — must not abort `collectHistoryForBootstrap` mid-walk
+    // and leave the queue partially filled. Swallow-and-continue.
+    try {
+      onProgress?.call(info);
+    } catch (_) {
+      // Intentionally empty: progress is diagnostic, not load-bearing.
+    }
     return _inner.onPage(events, info);
   }
 }

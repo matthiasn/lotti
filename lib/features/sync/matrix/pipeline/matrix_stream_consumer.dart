@@ -309,10 +309,12 @@ class MatrixStreamConsumer implements SyncPipeline {
           );
         }
       }
-      // Still call `_signals.start` so the Phase-0 diagnostic
-      // `sync.limited` + `onTimelineEvent.ordering` logging keeps
-      // emitting; the binder already no-ops its scan-scheduling
-      // subscriptions under `suppressLiveIngestion`.
+      // Still call `_signals.start` so the Phase-0 `sync.limited`
+      // diagnostic keeps emitting. The signal binder short-circuits
+      // under `suppressLiveIngestion` after wiring only that listener
+      // — `onTimelineEvent.ordering` and scan-scheduling subscriptions
+      // are intentionally skipped in that mode (the queue pipeline
+      // owns live ingestion instead).
       await _signals.start(
         lastProcessedEventId: _processor.lastProcessedEventId,
       );

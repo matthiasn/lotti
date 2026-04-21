@@ -57,14 +57,17 @@ class QueueApplyAdapter {
     }
 
     // Step 2 — prepare outside the writer transaction. Downloads,
-    // gzip-decompresses, decodes sync payload. FileSystem / network
-    // failures are retriable; SyncEventProcessor returns null when the
-    // payload is undeserialisable (ArgumentError / FormatException
-    // paths inside prepare).
+    // gzip-decompresses, decodes sync payload. Catch `IOException`
+    // rather than only `FileSystemException` so network failures from
+    // `event.downloadAndDecryptAttachment()` (`SocketException`,
+    // `HttpException`, `TlsException`, …) are treated as retriable
+    // alongside filesystem errors. `SyncEventProcessor` returns null
+    // when the payload is undeserialisable (ArgumentError /
+    // FormatException paths inside prepare).
     final PreparedSyncEvent? prepared;
     try {
       prepared = await _processor.prepare(event: event);
-    } on FileSystemException catch (error, stackTrace) {
+    } on IOException catch (error, stackTrace) {
       _logging.captureException(
         error,
         domain: _logDomain,
@@ -95,7 +98,16 @@ class QueueApplyAdapter {
     }
 
     // Step 3 — apply inside the writer transaction. Short by design
-    // (pure DB work); attachment I/O already resolved above.
+    // (pure DB work); attachment I/O already resolved above. Apply-
+    // time failures are treated as retriable because the event has
+    // already survived deserialisation + prepare, so a throw here is
+    // much more likely to be a transient writer failure (lock
+    // timeout, disk full, temporary schema conflict) than a poison
+    // event. `InboundWorker._maybeRetry` caps retries at
+    // `_maxAttempts` and then records `maxAttempts(reason)` via
+    // `markSkipped`, so we cannot loop forever on a logic bug — the
+    // worker eventually gives up without data loss from a premature
+    // permanentSkip that would advance the marker past the event.
     try {
       await _journalDb.transaction(() async {
         await _processor.apply(
@@ -104,7 +116,7 @@ class QueueApplyAdapter {
         );
       });
       return ApplyOutcome.applied;
-    } on FileSystemException catch (error, stackTrace) {
+    } on IOException catch (error, stackTrace) {
       _logging.captureException(
         error,
         domain: _logDomain,
@@ -113,17 +125,13 @@ class QueueApplyAdapter {
       );
       return ApplyOutcome.retriable;
     } catch (error, stackTrace) {
-      // Apply runs pure DB writes on pre-resolved state. A throw here
-      // is almost always a logic bug or schema mismatch, not a
-      // transient failure; retrying it just burns attempts. Skip
-      // permanently so the worker moves on.
       _logging.captureException(
         error,
         domain: _logDomain,
-        subDomain: '$_logSub.apply.failed',
+        subDomain: '$_logSub.apply.retriable',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.permanentSkip;
+      return ApplyOutcome.retriable;
     }
   }
 }

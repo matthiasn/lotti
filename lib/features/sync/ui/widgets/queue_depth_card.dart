@@ -24,21 +24,50 @@ class QueueDepthCard extends StatefulWidget {
 class _QueueDepthCardState extends State<QueueDepthCard> {
   StreamSubscription<QueueDepthSignal>? _sub;
   QueueDepthSignal? _latest;
+  bool _liveSignalSeen = false;
 
   @override
   void initState() {
     super.initState();
-    _sub = widget.queue.depthChanges.listen((signal) {
-      if (!mounted) return;
-      setState(() => _latest = signal);
-    });
-    unawaited(_loadInitial());
+    _bindQueue(widget.queue);
   }
 
-  Future<void> _loadInitial() async {
-    try {
-      final stats = await widget.queue.stats();
+  @override
+  void didUpdateWidget(QueueDepthCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the parent rebuilds with a different queue (e.g. the user
+    // toggled the pipeline flag, spawning a fresh coordinator) the
+    // existing subscription is stale. Rebind to the new stream so the
+    // card reflects the live pipeline, not the retired one.
+    if (!identical(oldWidget.queue, widget.queue)) {
+      _sub?.cancel();
+      _latest = null;
+      _liveSignalSeen = false;
+      _bindQueue(widget.queue);
+    }
+  }
+
+  void _bindQueue(InboundQueue queue) {
+    _sub = queue.depthChanges.listen((signal) {
       if (!mounted) return;
+      setState(() {
+        _latest = signal;
+        _liveSignalSeen = true;
+      });
+    });
+    unawaited(_loadInitial(queue));
+  }
+
+  Future<void> _loadInitial(InboundQueue queue) async {
+    try {
+      final stats = await queue.stats();
+      if (!mounted) return;
+      // If the subscription already emitted a live signal while this
+      // one-shot read was in flight, don't let the stale snapshot
+      // overwrite it. Also bail if the widget rebound to a different
+      // queue between the `.stats()` call and its resolution.
+      if (_liveSignalSeen) return;
+      if (!identical(queue, widget.queue)) return;
       setState(() {
         _latest = QueueDepthSignal(
           total: stats.total,
