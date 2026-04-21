@@ -78,7 +78,11 @@ class _FetchAllHistoryDialogState extends State<FetchAllHistoryDialog> {
     final messages = context.messages;
 
     final status = switch (_result?.stopReason) {
-      BootstrapStopReason.serverExhausted => messages.queueFetchAllHistoryDone(
+      BootstrapStopReason.serverExhausted ||
+      // "Fetch all history" never supplies untilTimestamp, so
+      // boundaryReached cannot occur here; treat it the same as a
+      // completed server-exhausted walk in case the constant moves.
+      BootstrapStopReason.boundaryReached => messages.queueFetchAllHistoryDone(
         _result?.totalEvents ?? 0,
         _result?.totalPages ?? 0,
       ),

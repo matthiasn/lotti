@@ -153,11 +153,80 @@ void main() {
   );
 
   test(
-    'missing timestamp still triggers bridge catch-up using epoch=0 as '
-    'the anchor — CatchUpStrategy drives /messages backfill until the '
-    'full pre-join history is pulled, otherwise a fresh client that '
-    'has no legacy marker to seed from would stall at its initial '
-    'live batch',
+    'missing timestamp routes to the streaming bootstrap runner '
+    'instead of calling collectEventsForCatchUp — reconnect catch-up '
+    'has nothing to anchor against, and single-batch collection of '
+    'the full history would grow unbounded on busy rooms',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      var bootstrapCalls = 0;
+      Room? observedBootstrapRoom;
+      var collectorCalls = 0;
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
+        resolveRoom: () async => room,
+        queue: queue,
+        getLastReadEventId: () async => null,
+        getLastReadTs: () async => null,
+        logging: logging,
+        bootstrapRunner: (Room r) async {
+          bootstrapCalls++;
+          observedBootstrapRoom = r;
+        },
+        catchUpCollector:
+            ({
+              required Room room,
+              required String? lastEventId,
+              required BackfillFn backfill,
+              required LoggingService logging,
+              required num preContextSinceTs,
+              required int preContextCount,
+              required int maxLookback,
+            }) async {
+              collectorCalls++;
+              return const CatchUpCollection.complete(
+                events: [],
+                snapshotSize: 0,
+              );
+            },
+      )..start();
+      syncCtl.add(_limitedSyncFor(roomId));
+      await Future<void>.delayed(Duration.zero);
+      expect(bootstrapCalls, 1);
+      expect(observedBootstrapRoom, same(room));
+      expect(collectorCalls, 0);
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('queue.bridge.bootstrap.start')),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('queue.bridge.bootstrap.done')),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => logging.captureEvent(
+          any<String>(that: contains('queue.bridge.skip reason=noMarker')),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      );
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'missing timestamp without a bootstrapRunner falls back to '
+    'epoch=0 anchored catch-up so the bridge still makes progress — '
+    'ensures callers that have not wired the streaming bootstrap '
+    'path (unit tests, experimental harnesses) still see events',
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
@@ -193,14 +262,40 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(collectorCalls, 1);
       expect(observedPreContextSinceTs, 0);
-      verifyNever(
-        () => logging.captureEvent(
-          any<String>(that: contains('queue.bridge.skip reason=noMarker')),
-          domain: any(named: 'domain'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      );
       await coordinator.stop();
+    },
+  );
+
+  test(
+    'bootstrapRunner throwing is caught and logged so a broken '
+    'bootstrap path cannot crash the coordinator — the bridge '
+    'returns cleanly and subsequent triggers are still accepted',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
+        resolveRoom: () async => room,
+        queue: queue,
+        getLastReadEventId: () async => null,
+        getLastReadTs: () async => null,
+        logging: logging,
+        bootstrapRunner: (Room r) async {
+          throw StateError('bootstrap boom');
+        },
+      );
+      await coordinator.bridgeNow();
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain', that: contains('bootstrap')),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      // Coordinator still runs a second bridgeNow after the throw.
+      await coordinator.bridgeNow();
     },
   );
 

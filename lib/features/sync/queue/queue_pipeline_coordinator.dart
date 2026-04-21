@@ -93,9 +93,8 @@ class QueuePipelineCoordinator {
           client: _sessionManager.client,
           currentRoomId: () => _roomManager.currentRoomId,
           resolveRoom: _resolveRoom,
-          queue: _queue,
-          getLastReadEventId: _readMarkerEventId,
           getLastReadTs: _readMarkerTs,
+          bootstrapRunner: _runBootstrap,
           logging: _logging,
         );
   }
@@ -398,6 +397,40 @@ class QueuePipelineCoordinator {
       logging: _logging,
       overallTimeout: overallTimeout,
     );
+  }
+
+  /// Streams the room's visible history through [QueueBootstrapSink]
+  /// (page-by-page with back-pressure) into the queue. Invoked by
+  /// [BridgeCoordinator] for every catch-up:
+  ///
+  /// - `untilTimestamp == null`: fresh client — walk the entire
+  ///   visible history. Stops when the server runs out.
+  /// - `untilTimestamp != null`: reconnect — stop after the first
+  ///   page whose oldest event timestamp is at or below the marker.
+  ///
+  /// Returns `true` when the walk completed (server exhausted OR
+  /// boundary reached) and `false` on sink cancellation / pagination
+  /// error so the bridge can schedule a bounded retry.
+  Future<bool> _runBootstrap({
+    required Room room,
+    required num? untilTimestamp,
+  }) async {
+    final sink = QueueBootstrapSink(
+      queue: _queue,
+      logging: _logging,
+    );
+    final result = await CatchUpStrategy.collectHistoryForBootstrap(
+      room: room,
+      sink: sink,
+      logging: _logging,
+      untilTimestamp: untilTimestamp,
+    );
+    return switch (result.stopReason) {
+      BootstrapStopReason.serverExhausted ||
+      BootstrapStopReason.boundaryReached => true,
+      BootstrapStopReason.sinkCancelled ||
+      BootstrapStopReason.error => false,
+    };
   }
 
   Future<String?> _readMarkerEventId() async {

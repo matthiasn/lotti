@@ -322,15 +322,20 @@ class CatchUpStrategy {
     return start;
   }
 
-  /// Streams the room's entire visible history through [sink] in
-  /// oldest-first pages, one page at a time. Added for Phase 1 of the
-  /// queue refactor and called by the "Fetch all history" Sync-
-  /// Settings action; the legacy `collectEventsForCatchUp` bridge is
-  /// untouched.
+  /// Streams the room's visible history through [sink] in oldest-
+  /// first pages, one page at a time. Used both by the "Fetch all
+  /// history" Sync-Settings action and by the queue bridge's
+  /// reconnect catch-up.
   ///
   /// Terminates when any of these is true:
   /// - The sink returns `false` from [BootstrapSink.onPage] (user
   ///   cancelled the bootstrap).
+  /// - [untilTimestamp] is supplied and a page contains an event with
+  ///   `originServerTs <= untilTimestamp` — the bridge's "walk back
+  ///   to the marker" case. The boundary-crossing page is still
+  ///   emitted in full so the queue sees pre-context around the
+  ///   boundary; trimming is out-of-scope here because the queue's
+  ///   `(ts, eventId)` dedup already filters already-applied rows.
   /// - The SDK's timeline reports no more history.
   /// - [overallTimeout] elapses.
   ///
@@ -350,6 +355,7 @@ class CatchUpStrategy {
     required BootstrapSink sink,
     required LoggingService logging,
     int pageSize = 200,
+    num? untilTimestamp,
     Duration? overallTimeout,
   }) async {
     final start = DateTime.now();
@@ -414,6 +420,16 @@ class CatchUpStrategy {
           pageIndex++;
           if (!shouldContinue) {
             stopReason = BootstrapStopReason.sinkCancelled;
+            break;
+          }
+          // Bridge reconnect path: stop as soon as a page crosses the
+          // timestamp marker — anything older is already in the local
+          // DB. `page.first` is the oldest event in this page (sorted
+          // ascending), so it is the one that "reaches furthest back"
+          // and is the correct boundary predicate.
+          if (untilTimestamp != null &&
+              TimelineEventOrdering.timestamp(page.first) <= untilTimestamp) {
+            stopReason = BootstrapStopReason.boundaryReached;
             break;
           }
         }
@@ -501,4 +517,23 @@ class BootstrapResult {
   final BootstrapStopReason stopReason;
 }
 
-enum BootstrapStopReason { serverExhausted, sinkCancelled, error }
+enum BootstrapStopReason {
+  /// `timeline.canRequestHistory` returned false — the server has no
+  /// more history to page into the room.
+  serverExhausted,
+
+  /// The sink returned `false` from [BootstrapSink.onPage] (user
+  /// cancelled, back-pressure timeout, etc.).
+  sinkCancelled,
+
+  /// An `untilTimestamp` was supplied to
+  /// [CatchUpStrategy.collectHistoryForBootstrap] and a page crossed
+  /// the boundary — the callers has everything they asked for, no
+  /// need to page further into history.
+  boundaryReached,
+
+  /// Pagination threw or the overall timeout elapsed before the walk
+  /// completed. Callers should treat this as incomplete and retry
+  /// later.
+  error,
+}
