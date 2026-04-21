@@ -19,6 +19,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -53,6 +54,8 @@ class _MockMatrixStreamConsumer extends Mock implements MatrixStreamConsumer {}
 
 class _MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
+
+class _MockInboundQueue extends Mock implements InboundQueue {}
 
 class _MockClient extends Mock implements Client {}
 
@@ -750,5 +753,132 @@ void main() {
 
       verify(() => roomManager.discoverExistingSyncRooms()).called(1);
     });
+  });
+
+  group('getSyncMetrics queue overlay', () {
+    test(
+      'when the queue coordinator is running, queueActive / queueApplied '
+      '/ queueAbandoned / queueRetrying are overlaid on top of the '
+      'pipeline snapshot so the Matrix Stats UI surfaces ledger state '
+      'alongside the legacy counters',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        final queue = _MockInboundQueue();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(() => coordinator.queue).thenReturn(queue);
+        when(queue.stats).thenAnswer(
+          (_) async => const QueueStats(
+            total: 7,
+            byProducer: {InboundEventProducer.live: 7},
+            readyNow: 7,
+            oldestEnqueuedAt: 1,
+            applied: 42,
+            abandoned: 3,
+            retrying: 2,
+          ),
+        );
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            metricsSnapshot: const {'dbApplied': 11, 'failures': 0},
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        final metrics = await service.getSyncMetrics();
+        expect(metrics, isNotNull);
+        final map = metrics!.toMap();
+        expect(map['queueActive'], 7);
+        expect(map['queueApplied'], 42);
+        expect(map['queueAbandoned'], 3);
+        expect(map['queueRetrying'], 2);
+        // Legacy pipeline counters still flow through — the overlay
+        // augments, it does not replace.
+        expect(map['dbApplied'], 11);
+      },
+    );
+
+    test(
+      'when the queue is running but queue.stats() throws, the overlay '
+      'is silently skipped and the pipeline snapshot still returns — '
+      'a transient sync_db error must not hide the legacy counters',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        final queue = _MockInboundQueue();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(true);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(() => coordinator.queue).thenReturn(queue);
+        when(queue.stats).thenThrow(StateError('db locked'));
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            metricsSnapshot: const {'dbApplied': 5},
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        final metrics = await service.getSyncMetrics();
+        expect(metrics, isNotNull);
+        final map = metrics!.toMap();
+        expect(map['dbApplied'], 5);
+        // When stats() throws, the overlay is skipped so the SyncMetrics
+        // defaults remain (0), never the real queue depth.
+        expect(map['queueActive'], 0);
+        expect(map['queueApplied'], 0);
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'metrics.queueStats',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'when the queue coordinator is not running, the overlay is '
+      'skipped entirely — queue stats are irrelevant when the flag is '
+      'off, so never calling queue.stats() avoids a spurious db read',
+      () async {
+        final coordinator = _MockQueuePipelineCoordinator();
+        final queue = _MockInboundQueue();
+        when(coordinator.start).thenAnswer((_) async {});
+        when(() => coordinator.isRunning).thenReturn(false);
+        when(
+          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
+        ).thenAnswer((_) async {});
+        when(() => coordinator.queue).thenReturn(queue);
+
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            metricsSnapshot: const {'dbApplied': 3},
+            queueCoordinator: coordinator,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
+        final metrics = await service.getSyncMetrics();
+        expect(metrics, isNotNull);
+        verifyNever(queue.stats);
+      },
+    );
   });
 }

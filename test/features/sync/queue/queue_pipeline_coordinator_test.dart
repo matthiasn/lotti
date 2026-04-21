@@ -1152,4 +1152,111 @@ void main() {
       },
     );
   });
+
+  group('resurrection subscription error paths', () {
+    test(
+      'when resurrectByPath throws, the exception is logged under '
+      'the resurrectByPath subDomain — a broken queue must not '
+      'silently drop resurrection signals',
+      () async {
+        final attachmentIndex = AttachmentIndex(logging: logging);
+        addTearDown(attachmentIndex.dispose);
+        when(
+          () => queue.resurrectByPath(any()),
+        ).thenThrow(StateError('queue gone'));
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          attachmentIndex: attachmentIndex,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        final event = _MockEvent();
+        when(() => event.attachmentMimetype).thenReturn('audio/m4a');
+        when(() => event.content).thenReturn({
+          'relativePath': 'audio/2026-04-21/foo.m4a.json',
+        });
+        when(() => event.eventId).thenReturn(r'$attachment');
+        attachmentIndex.record(event);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('resurrectByPath'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'when resurrectByReason throws on a journal-db update notify, '
+      'the exception is logged under the resurrectByReason subDomain '
+      'so a broken queue never silences the missing-base signal',
+      () async {
+        final updateNotifications = UpdateNotifications();
+        addTearDown(updateNotifications.dispose);
+        when(
+          () => queue.resurrectByReason(any<String>()),
+        ).thenThrow(StateError('queue gone'));
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          updateNotifications: updateNotifications,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        updateNotifications.notify({'some-entry'});
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('resurrectByReason'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+
+        await coordinator.stop();
+      },
+    );
+  });
+
 }
