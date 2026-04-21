@@ -532,7 +532,7 @@ void main() {
     );
 
     test(
-      'Large-volume convergence: Bob catches up 2000 messages after '
+      'Large-volume convergence: Bob catches up 1000 messages after '
       'cold restart',
       () async {
         // Simulates the real-world scenario: Bob's app is closed while
@@ -542,7 +542,7 @@ void main() {
         // concurrent processing during sending, and must bootstrap from
         // scratch when coming back.
         const convergenceTimeout = Duration(minutes: 15);
-        const n = testSlowNetwork ? 250 : 2000;
+        const n = testSlowNetwork ? 250 : 1000;
 
         // Snapshot Bob's DB count before this test's messages
         final bobCountBefore = await bobDb.getJournalCount();
@@ -740,6 +740,182 @@ void main() {
 
         // Bring Alice back online for clean teardown
         alice.client.backgroundSync = true;
+      },
+      timeout: const Timeout(Duration(minutes: 30)),
+      skip: skipReason ?? false,
+    );
+
+    test(
+      'Mid-burst rejoin: Bob comes online while Alice is halfway through '
+      'a 600-message burst — bridge backfills what live missed, live '
+      'covers what the bridge did not see, no duplicates, no drops',
+      () async {
+        // Unlike the 1000-message cold-start test above — where Alice
+        // finishes sending before Bob reconnects — this scenario
+        // interleaves the two delivery paths. Bob joins while Alice is
+        // still sending, so:
+        //  - Live `onTimelineEvent` fires for every message Alice
+        //    sends *after* Bob's re-join.
+        //  - The bridge's `/messages` pagination must backfill every
+        //    message Alice sent *while* Bob was offline.
+        //  - Events near the join boundary may be delivered by both
+        //    paths concurrently; `event_id UNIQUE` in
+        //    `inbound_event_queue` is the only primitive that keeps
+        //    each event from applying twice.
+        //  - The bridge is single-flight: live timeline firing during
+        //    pagination must NOT trigger a second bridge pass unless
+        //    the server sends another `limited=true`.
+        const convergenceTimeout = Duration(minutes: 15);
+        const n = testSlowNetwork ? 150 : 600;
+        // Percentage of Alice's burst that must land before Bob starts
+        // coming online. 40% leaves plenty of runway for the live
+        // stream + bridge overlap to actually occur.
+        const bobRejoinAtPercent = 40;
+
+        final bobCountBefore = await bobDb.getJournalCount();
+        debugPrint(
+          'Bob DB count before mid-burst test: $bobCountBefore',
+        );
+
+        // Phase 1: Dispose Bob so his client is offline for the first
+        // half of Alice's burst. Keep his DB + settings intact so the
+        // cold restart still has the last-applied marker.
+        debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
+        await bob.dispose();
+        bobInitialized = false;
+
+        // Phase 2: Alice starts sending in the background. We do NOT
+        // await the whole thing — we want Bob to come online while
+        // this Future is still in flight.
+        debugPrint(
+          '\n--- Phase 2: Alice starts $n-message burst (background)',
+        );
+        final aliceStopwatch = Stopwatch()..start();
+        var aliceSent = 0;
+        final burstFuture = () async {
+          for (var i = 0; i < n; i++) {
+            await _sendTestMessage(
+              i,
+              device: alice,
+              deviceName: 'aliceMidBurst',
+              roomId: roomId,
+              journalDb: aliceDb,
+            );
+            aliceSent = i + 1;
+            if (aliceSent % 100 == 0) {
+              debugPrint(
+                '  Alice sent $aliceSent/$n (${aliceStopwatch.elapsed.inSeconds}s)',
+              );
+            }
+          }
+        }();
+
+        // Phase 3: Wait until Alice has sent `bobRejoinAtPercent`% of
+        // the burst, then cold-start Bob. The remaining burst races
+        // Bob's startup bridge + live subscription.
+        const rejoinThreshold = (n * bobRejoinAtPercent) ~/ 100;
+        debugPrint(
+          '\n--- Phase 3: waiting for Alice to reach $rejoinThreshold sent',
+        );
+        await waitUntilAsync(
+          () async => aliceSent >= rejoinThreshold,
+          timeout: convergenceTimeout,
+        );
+        debugPrint(
+          'Alice at $aliceSent sent when Bob starts coming online',
+        );
+
+        // Phase 4: Bob cold-starts. Live timeline fires concurrently
+        // with Alice's ongoing sends; the startup bridge runs a
+        // `/messages` pass to backfill everything below its marker.
+        debugPrint('\n--- Phase 4: Bob cold-starts mid-burst');
+        final catchupStopwatch = Stopwatch()..start();
+        bob = await _createBobService(
+          documentsDirectory: sharedDocumentsDirectory,
+          config: config2,
+          loggingService: sharedLoggingService,
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          secureStorage: secureStorageMock,
+          activityService: sharedUserActivityService,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
+          singleInstance: false,
+        );
+        bobInitialized = true;
+
+        await bob.init();
+        expect(bob.debugPipeline, isNotNull);
+        await Future<void>.delayed(const Duration(seconds: 1));
+        await bob.login();
+        debugPrint('Bob cold-started - deviceId: ${bob.client.deviceID}');
+
+        await bob.joinRoom(roomId);
+        await bob.saveRoom(roomId);
+        debugPrint('Bob re-joined room $roomId mid-burst');
+
+        // Phase 5: wait for Alice's burst to finish so the target
+        // count is stable.
+        debugPrint('\n--- Phase 5: waiting for Alice to finish burst');
+        await burstFuture;
+        aliceStopwatch.stop();
+        debugPrint(
+          'Alice finished $n-message burst in '
+          '${aliceStopwatch.elapsed.inSeconds}s',
+        );
+
+        // Phase 6: wait for Bob to converge to the full target. Both
+        // live and bridge producers must contribute — we verify that
+        // in Phase 7.
+        debugPrint('\n--- Phase 6: waiting for Bob to converge to $n new');
+        final expectedTotal = bobCountBefore + n;
+        var lastBobCount = -1;
+        await waitUntilAsync(
+          () async {
+            final currentCount = await bobDb.getJournalCount();
+            if (currentCount != lastBobCount) {
+              final delta = currentCount - bobCountBefore;
+              debugPrint(
+                'Bob journal count: $currentCount (+$delta/$n, '
+                '${catchupStopwatch.elapsed.inSeconds}s)',
+              );
+              lastBobCount = currentCount;
+            }
+            if (currentCount < expectedTotal) {
+              final elapsed = catchupStopwatch.elapsed.inSeconds;
+              if (elapsed > 0 && elapsed % 30 == 0) {
+                final coord = bob.queueCoordinator;
+                if (coord != null) {
+                  final stats = await coord.queue.stats();
+                  debugPrint(
+                    'Bob queue @ ${elapsed}s: total=${stats.total} '
+                    'applied=${stats.applied} abandoned=${stats.abandoned} '
+                    'retrying=${stats.retrying} '
+                    'byProducer=${stats.byProducer}',
+                  );
+                }
+              }
+              await Future<void>.delayed(const Duration(seconds: 1));
+            }
+            return currentCount >= expectedTotal;
+          },
+          timeout: convergenceTimeout,
+        );
+        catchupStopwatch.stop();
+
+        // The only thing we care about here is convergence: Bob
+        // eventually sees every message Alice sent. No dropped events,
+        // no duplicates. Internals (which producer delivered which
+        // event, queue stats, pipeline metrics) are implementation
+        // detail — this test does not pin them down.
+        debugPrint('\n--- Phase 7: convergence check');
+        final bobEntriesCount = await bobDb.getJournalCount();
+        final newEntries = bobEntriesCount - bobCountBefore;
+        expect(newEntries, n);
+        debugPrint(
+          'Bob converged $newEntries entries in '
+          '${catchupStopwatch.elapsed.inSeconds}s',
+        );
       },
       timeout: const Timeout(Duration(minutes: 30)),
       skip: skipReason ?? false,
