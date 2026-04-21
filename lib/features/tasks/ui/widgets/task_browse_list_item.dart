@@ -370,14 +370,9 @@ class _TaskRowContent extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                liveTask.data.title,
+              _TaskBrowseTitle(
+                title: liveTask.data.title,
                 maxLines: coverArtId == null ? 2 : 3,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: TaskShowcasePalette.highText(context),
-                  fontWeight: FontWeight.w600,
-                ),
               ),
               if (oneLiner != null && oneLiner.isNotEmpty) ...[
                 SizedBox(height: tokens.spacing.step1),
@@ -455,6 +450,35 @@ class _TaskRowContent extends ConsumerWidget {
     }
 
     return widgets;
+  }
+}
+
+/// Title line for the task row. When the task has no title, renders a
+/// localized `(untitled)` warning in the error color so the gap is obvious
+/// in the list rather than silently collapsing to an empty row.
+class _TaskBrowseTitle extends StatelessWidget {
+  const _TaskBrowseTitle({required this.title, required this.maxLines});
+
+  final String title;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final trimmed = title.trim();
+    final isEmpty = trimmed.isEmpty;
+    return Text(
+      isEmpty ? context.messages.taskUntitled : trimmed,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+        color: isEmpty
+            ? TaskShowcasePalette.error(context)
+            : TaskShowcasePalette.highText(context),
+        fontWeight: FontWeight.w600,
+        fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+      ),
+    );
   }
 }
 

@@ -200,6 +200,41 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
+    testWidgets('read-only title renders a pencil edit affordance', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+        ),
+      );
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      'empty title renders "No title" placeholder + pencil and opens editor on tap',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        expect(find.text('No title'), findsOneWidget);
+        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
+
+        await tester.tap(find.text('No title'));
+        await tester.pump();
+
+        expect(find.byType(TextField), findsOneWidget);
+      },
+    );
+
     testWidgets(
       'read-only title exposes an accessible button via Semantics',
       (tester) async {

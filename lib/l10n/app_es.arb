@@ -2631,6 +2631,7 @@
   "taskStatusOpen": "Abierto",
   "taskStatusRejected": "Rechazado",
   "taskSummaries": "Resúmenes de tareas",
+  "taskTitleEmpty": "Sin título",
   "taskUntitled": "(sin título)",
   "thinkingDisclosureCopied": "Razonamiento copiado",
   "thinkingDisclosureCopy": "Copiar razonamiento",

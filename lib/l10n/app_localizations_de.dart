@@ -6287,6 +6287,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskSummaries => 'Aufgabenzusammenfassungen';
 
   @override
+  String get taskTitleEmpty => 'Kein Titel';
+
+  @override
   String get taskUntitled => '(ohne Titel)';
 
   @override

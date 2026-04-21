@@ -11077,6 +11077,12 @@ abstract class AppLocalizations {
   /// **'Task Summaries'**
   String get taskSummaries;
 
+  /// No description provided for @taskTitleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No title'**
+  String get taskTitleEmpty;
+
   /// No description provided for @taskUntitled.
   ///
   /// In en, this message translates to:

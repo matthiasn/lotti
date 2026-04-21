@@ -6275,6 +6275,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskSummaries => 'Souhrny úkolů';
 
   @override
+  String get taskTitleEmpty => 'Bez názvu';
+
+  @override
   String get taskUntitled => '(bez názvu)';
 
   @override

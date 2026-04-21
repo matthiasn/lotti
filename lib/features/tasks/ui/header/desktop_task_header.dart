@@ -386,12 +386,21 @@ class _TitleReadOnly extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final isEmpty = title.trim().isEmpty;
+    final displayText = isEmpty ? context.messages.taskTitleEmpty : title;
+    final effectiveStyle = isEmpty
+        ? style.copyWith(
+            color: TaskShowcasePalette.mediumText(context),
+            fontStyle: FontStyle.italic,
+          )
+        : style;
     return Semantics(
       label: context.messages.taskEditTitleLabel,
       button: true,
       container: true,
       child: FocusableActionDetector(
-        mouseCursor: SystemMouseCursors.text,
+        mouseCursor: SystemMouseCursors.click,
         actions: <Type, Action<Intent>>{
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
@@ -403,7 +412,27 @@ class _TitleReadOnly extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: Text(title, softWrap: true, style: style),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  displayText,
+                  softWrap: true,
+                  style: effectiveStyle,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Padding(
+                padding: EdgeInsets.only(top: tokens.spacing.step1),
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: TaskShowcasePalette.mediumText(context),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
