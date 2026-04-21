@@ -17,6 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than silently collapsing the row.
 
 ## [0.9.968] - 2026-04-20
+### Fixed
+- Three Phase-2 queue-pipeline gaps flagged in the design review:
+  (1) when the sync room is picked after `MatrixService.init()` or the
+  user switches rooms, `MatrixService.saveRoom` now calls a new
+  `QueuePipelineCoordinator.onRoomChanged` hook that seeds the new
+  room's `queue_markers` row and prunes rows belonging to previous
+  rooms — otherwise the worker replays stale rows against the new
+  room and the new room never gets a marker. (2) On cold start under
+  the queue flag, `QueuePipelineCoordinator.start()` now fires a
+  background `bridge.bridgeNow()` pass once the worker and bridge are
+  attached, mirroring the 300 ms startup `forceRescan` the legacy
+  pipeline runs — reconnects whose timeline is not flagged `limited`
+  no longer silently drop events delivered during login. (3) The F7
+  `stop(drainFirst: true)` path now uses a new `drainUntilEmpty` loop
+  that flushes the decryption pen, sleeps until each retry lease
+  matures via `InboundQueue.earliestReadyAt`, and re-peeks until the
+  queue is empty or `drainUntilEmptyTimeout` (30 s) elapses — the
+  previous single `drainToCompletion` returned as soon as no rows
+  were ready at call time, stranding retriable / decryption-pending /
+  noRoom rows across a flag-off restart.
+
 ### Added
 - Phase 0 sync diagnostic observability (additive logs only; no behaviour
   change). `MatrixStreamSignalBinder` now records two probes on the sync

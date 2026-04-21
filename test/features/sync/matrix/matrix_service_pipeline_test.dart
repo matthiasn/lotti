@@ -685,10 +685,11 @@ void main() {
 
   group('saveRoom under suppressLegacyPipeline', () {
     test(
-      'triggers coordinator.triggerBridge instead of pipeline.forceRescan',
+      'calls onRoomChanged then triggerBridge, not pipeline.forceRescan',
       () {
         final coordinator = _MockQueuePipelineCoordinator();
         when(coordinator.triggerBridge).thenAnswer((_) async {});
+        when(() => coordinator.onRoomChanged(any())).thenAnswer((_) async {});
         when(() => coordinator.isRunning).thenReturn(true);
         when(
           () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
@@ -706,7 +707,10 @@ void main() {
 
           verify(() => roomManager.saveRoomId('!room:server')).called(1);
           verify(() => pipeline.start()).called(1);
-          verify(coordinator.triggerBridge).called(1);
+          verifyInOrder([
+            () => coordinator.onRoomChanged('!room:server'),
+            coordinator.triggerBridge,
+          ]);
           verifyNever(
             () => pipeline.forceRescan(
               includeCatchUp: any(named: 'includeCatchUp'),

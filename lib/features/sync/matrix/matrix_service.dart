@@ -632,6 +632,16 @@ class MatrixService {
         if (_suppressLegacyPipeline) {
           final coordinator = _queueCoordinator;
           if (coordinator != null) {
+            // The coordinator's `start()` only seeds/prunes for whatever
+            // room was current at start time. If the service started
+            // before the user picked a room — or the user is now
+            // switching rooms — the new room never gets its marker
+            // seeded and rows from the previous room remain queued.
+            // Both are replayed against the wrong room once the worker
+            // resolves the new current room. Run the room-change hook
+            // before kicking the bridge so catch-up walks history into
+            // a properly seeded queue.
+            await coordinator.onRoomChanged(roomId);
             await coordinator.triggerBridge();
           }
         } else {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -103,11 +104,22 @@ void main() {
     when(worker.drainToCompletion).thenAnswer((_) async => 0);
     when(bridge.start).thenReturn(null);
     when(bridge.stop).thenAnswer((_) async {});
+    when(bridge.bridgeNow).thenAnswer((_) async {});
     when(pen.stop).thenAnswer((_) async {});
+    when(() => pen.size).thenReturn(0);
     when(() => queue.dispose()).thenAnswer((_) async {});
     when(() => queue.enqueueLive(any())).thenAnswer(
       (_) async => EnqueueResult.empty,
     );
+    when(() => queue.stats()).thenAnswer(
+      (_) async => const QueueStats(
+        total: 0,
+        byProducer: {},
+        readyNow: 0,
+        oldestEnqueuedAt: null,
+      ),
+    );
+    when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
     when(() => pen.hold(any())).thenReturn(false);
   });
 
@@ -201,17 +213,22 @@ void main() {
     },
   );
 
-  test('stop(drainFirst: true) drains before tearing down (F7)', () async {
-    final coordinator = build();
-    await coordinator.start();
-    await coordinator.stop(drainFirst: true);
+  test(
+    'stop(drainFirst: true) drains until empty before tearing down (F7)',
+    () async {
+      final coordinator = build();
+      await coordinator.start();
+      await coordinator.stop(drainFirst: true);
 
-    verify(worker.drainToCompletion).called(1);
-    verify(() => worker.stop()).called(1);
-    verify(bridge.stop).called(1);
-    verify(pen.stop).called(1);
-    verify(() => queue.dispose()).called(1);
-  });
+      // drainUntilEmpty calls drainToCompletion at least once.
+      verify(worker.drainToCompletion).called(greaterThanOrEqualTo(1));
+      verify(() => queue.stats()).called(greaterThanOrEqualTo(1));
+      verify(() => worker.stop()).called(1);
+      verify(bridge.stop).called(1);
+      verify(pen.stop).called(1);
+      verify(() => queue.dispose()).called(1);
+    },
+  );
 
   test('stop without drainFirst skips drainToCompletion', () async {
     final coordinator = build();
@@ -546,10 +563,19 @@ void main() {
     await coordinator.stop();
   });
 
-  test('stop swallows drainToCompletion errors and still tears down', () async {
+  test('stop swallows drain errors and still tears down', () async {
     when(
       worker.drainToCompletion,
     ).thenThrow(StateError('drain blew up'));
+    when(() => queue.stats()).thenAnswer(
+      (_) async => const QueueStats(
+        total: 0,
+        byProducer: {},
+        readyNow: 0,
+        oldestEnqueuedAt: null,
+      ),
+    );
+    when(() => pen.size).thenReturn(0);
     final coordinator = build();
     await coordinator.start();
     await coordinator.stop(drainFirst: true);
@@ -561,7 +587,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain', that: contains('drain')),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
       ),
-    ).called(1);
+    ).called(greaterThanOrEqualTo(1));
     verify(() => worker.stop()).called(1);
     verify(pen.stop).called(1);
     verify(() => queue.dispose()).called(1);
@@ -588,6 +614,179 @@ void main() {
       expect(coordinator.isRunning, isFalse);
     },
   );
+
+  group('P1 fixes', () {
+    test(
+      'start() fires a background bridge pass for startup catch-up',
+      () async {
+        final coordinator = build();
+        await coordinator.start();
+        // The unawaited safeStartupBridge microtask needs to settle.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(bridge.bridgeNow).called(1);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'start() skips startup bridge when there is no current room',
+      () async {
+        when(() => roomManager.currentRoomId).thenReturn(null);
+        final coordinator = build();
+        await coordinator.start();
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(bridge.bridgeNow);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'start() swallows startup bridge errors with a captured exception',
+      () async {
+        when(bridge.bridgeNow).thenThrow(StateError('bridge broke'));
+        final coordinator = build();
+        await coordinator.start();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('startupBridge'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onRoomChanged seeds the new room and prunes stranded rows',
+      () async {
+        final coordinator = build();
+        await coordinator.onRoomChanged('!other:example.org');
+
+        verify(() => seeder.seedIfAbsent('!other:example.org')).called(1);
+        verify(
+          () => queue.pruneStrandedEntries('!other:example.org'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'onRoomChanged swallows seeder errors and still logs the event',
+      () async {
+        when(
+          () => seeder.seedIfAbsent(any()),
+        ).thenThrow(StateError('seed failed'));
+
+        final coordinator = build();
+        await coordinator.onRoomChanged('!other:example.org');
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('onRoomChanged'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'drainUntilEmpty keeps looping while rows remain and the pen holds',
+      () async {
+        // Fake a queue that reports 2 rows on the first stats() call and
+        // 0 on the second, so the loop exits on the second iteration.
+        final totals = <int>[2, 0];
+        when(() => queue.stats()).thenAnswer((_) async {
+          final total = totals.isEmpty ? 0 : totals.removeAt(0);
+          return QueueStats(
+            total: total,
+            byProducer: const {},
+            readyNow: total,
+            oldestEnqueuedAt: null,
+          );
+        });
+        when(() => queue.earliestReadyAt()).thenAnswer(
+          (_) async => clock.now().millisecondsSinceEpoch,
+        );
+
+        final coordinator = build();
+        await coordinator.drainUntilEmpty(
+          timeout: const Duration(seconds: 5),
+        );
+
+        // The loop should have called drainToCompletion at least twice
+        // (first iteration with non-zero remaining, second with zero).
+        verify(worker.drainToCompletion).called(greaterThanOrEqualTo(2));
+        verify(() => queue.stats()).called(greaterThanOrEqualTo(2));
+      },
+    );
+
+    test(
+      'drainUntilEmpty respects the timeout and logs on timeout',
+      () async {
+        // Always report remaining rows so the loop only exits via timeout.
+        when(() => queue.stats()).thenAnswer(
+          (_) async => const QueueStats(
+            total: 5,
+            byProducer: {},
+            readyNow: 5,
+            oldestEnqueuedAt: null,
+          ),
+        );
+        when(() => queue.earliestReadyAt()).thenAnswer((_) async => null);
+
+        final coordinator = build();
+        await coordinator.drainUntilEmpty(
+          timeout: const Duration(milliseconds: 50),
+        );
+
+        verify(
+          () => logging.captureEvent(
+            any<String>(
+              that: contains('queue.coordinator.drainUntilEmpty.timeout'),
+            ),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'drainUntilEmpty flushes the pen before sampling stats',
+      () async {
+        final room = _MockRoom();
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
+          (_) async =>
+              const PenFlushOutcome(enqueued: 0, stillEncrypted: 0, dropped: 0),
+        );
+
+        final coordinator = build();
+        await coordinator.drainUntilEmpty(
+          timeout: const Duration(milliseconds: 10),
+        );
+
+        verify(
+          () => pen.flushInto(queue: queue, room: room),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+  });
 
   group('triggerBridge with real BridgeCoordinator', () {
     test(

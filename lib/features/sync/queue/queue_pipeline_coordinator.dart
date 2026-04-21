@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -138,6 +140,48 @@ class QueuePipelineCoordinator {
   /// marker without waiting for the next organic `limited=true`.
   Future<void> triggerBridge() => _bridge.bridgeNow();
 
+  Future<void> _safeStartupBridge() async {
+    try {
+      await _bridge.bridgeNow();
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.startupBridge',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Seeds the marker for a new room and prunes queue rows that belong
+  /// to other rooms. Invoked by `MatrixService.saveRoom` so a coordinator
+  /// that started before the user picked a sync room — or that is now
+  /// switching to a different room — (1) has a baseline `queue_markers`
+  /// row so `_readMarkerTs` returns something sensible, (2) does not
+  /// leave stranded rows from the previous room that the worker would
+  /// replay against the wrong room (`InboundWorker._runBatch` resolves a
+  /// single current room per batch), and (3) drops the dedupe bookkeeping
+  /// so the next sync re-attempts `room.postLoad()` on the new room.
+  Future<void> onRoomChanged(String roomId) async {
+    _postLoadedRoomIds.clear();
+    try {
+      await _seeder.seedIfAbsent(roomId);
+      await _queue.pruneStrandedEntries(roomId);
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.onRoomChanged',
+        stackTrace: stackTrace,
+      );
+    }
+    _logging.captureEvent(
+      'queue.coordinator.onRoomChanged roomId=$roomId',
+      domain: _logDomain,
+      subDomain: _logSub,
+    );
+  }
+
   Future<void> start() async {
     if (_started) return;
 
@@ -199,6 +243,17 @@ class QueuePipelineCoordinator {
       _bridge.start();
       await _worker.start();
       _started = true;
+      // Phase-2 equivalent of the legacy pipeline's 300 ms startup
+      // `forceRescan`. `connect()` runs before `_maybeStartQueuePipeline`
+      // in `MatrixService.init`, so events delivered during the login
+      // round trip land on a coordinator that was not yet subscribed.
+      // The bridge otherwise only fires on organic `limited=true` syncs;
+      // on reconnects where the server does not flag the timeline as
+      // limited, those events would be silently missed. Fire-and-forget
+      // so `start()` does not block on a slow /messages walk.
+      if (roomId != null) {
+        unawaited(_safeStartupBridge());
+      }
     } catch (error, stackTrace) {
       _logging.captureException(
         error,
@@ -230,10 +285,108 @@ class QueuePipelineCoordinator {
     );
   }
 
+  /// Upper bound on how long [stop] waits for `drainFirst` to empty the
+  /// queue before tearing down anyway. Chosen so a wedged pen or a
+  /// retriable row with a long backoff can't block shutdown indefinitely
+  /// on a user-visible path (flag-off, logout), while still giving a
+  /// cold-start catch-up enough headroom to finish under normal load.
+  static const Duration drainUntilEmptyTimeout = Duration(seconds: 30);
+
+  /// Drains the queue until every persisted row has applied (or has
+  /// been permanently skipped), or the [timeout] elapses.
+  ///
+  /// Unlike [InboundWorker.drainToCompletion], this does sleep through
+  /// retry leases and pen attempts: the F7 contract of
+  /// `stop(drainFirst: true)` is "don't strand rows on restart", so a
+  /// single ready-at-call-time pass is not enough. Rows with a future
+  /// `nextDueAt`/`leaseUntil`, rows held by [PendingDecryptionPen], and
+  /// rows the worker is currently looping through a `noRoom` retry on
+  /// all survive a single `drainToCompletion()` — this loop closes that
+  /// gap by flushing the pen, sleeping until the next ready timestamp,
+  /// and re-peeking until the queue is empty or time runs out.
+  Future<void> drainUntilEmpty({Duration? timeout}) async {
+    final deadline = clock.now().add(timeout ?? drainUntilEmptyTimeout);
+    while (true) {
+      // 1. Flush the pen first so any event the SDK has decrypted
+      //    since the last sweep lands in the queue before we ask it
+      //    for stats — otherwise the loop can declare the queue empty
+      //    while held events are waiting to enter it.
+      final room = await _resolveRoom();
+      if (room != null) {
+        try {
+          await _pen.flushInto(queue: _queue, room: room);
+        } catch (error, stackTrace) {
+          _logging.captureException(
+            error,
+            domain: _logDomain,
+            subDomain: '$_logSub.drainUntilEmpty.pen',
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
+      // 2. Apply every row that is ready right now.
+      try {
+        await _worker.drainToCompletion();
+      } catch (error, stackTrace) {
+        _logging.captureException(
+          error,
+          domain: _logDomain,
+          subDomain: '$_logSub.drainUntilEmpty.drain',
+          stackTrace: stackTrace,
+        );
+      }
+
+      final stats = await _queue.stats();
+      if (stats.total == 0 && _pen.size == 0) {
+        _logging.captureEvent(
+          'queue.coordinator.drainUntilEmpty.done',
+          domain: _logDomain,
+          subDomain: _logSub,
+        );
+        return;
+      }
+
+      final remaining = deadline.difference(clock.now());
+      if (!remaining.isNegative && remaining > Duration.zero) {
+        // Prefer the queue's own scheduling signal over a fixed poll.
+        final readyAtMs = await _queue.earliestReadyAt();
+        Duration wait;
+        if (readyAtMs == null) {
+          // Nothing in the queue but the pen is non-empty — the pen has
+          // its own sweep interval, so back off for a short tick and
+          // re-flush rather than busy-loop.
+          wait = const Duration(milliseconds: 200);
+        } else {
+          final nowMs = clock.now().millisecondsSinceEpoch;
+          wait = Duration(milliseconds: math.max(0, readyAtMs - nowMs));
+        }
+        final capped = wait > remaining ? remaining : wait;
+        if (capped > Duration.zero) {
+          await Future<void>.delayed(capped);
+        }
+      }
+
+      if (!clock.now().isBefore(deadline)) {
+        _logging.captureEvent(
+          'queue.coordinator.drainUntilEmpty.timeout '
+          'remaining=${stats.total} penSize=${_pen.size}',
+          domain: _logDomain,
+          subDomain: _logSub,
+        );
+        return;
+      }
+    }
+  }
+
   /// Stops every collaborator in the reverse order they were started.
-  /// If [drainFirst] is true (the flag-off flow), the worker drains
-  /// the queue to completion before the coordinator tears down — this
-  /// closes the F7 data-loss hole the design review flagged.
+  /// If [drainFirst] is true (the flag-off flow), the coordinator waits
+  /// until the persisted queue is empty (bounded by
+  /// [drainUntilEmptyTimeout]) before tearing down — this closes the F7
+  /// data-loss hole the design review flagged. Unlike the legacy
+  /// "drain ready rows once" primitive, rows with future retry leases,
+  /// decryption-pending rows, and rows stuck in the noRoom loop are all
+  /// waited out up to the timeout.
   ///
   /// Every teardown step is wrapped in its own try/catch so a throw
   /// from one stage cannot orphan the stages that follow. `_started`
@@ -280,7 +433,7 @@ class QueuePipelineCoordinator {
       await tryRun('bridge', _bridge.stop);
 
       if (drainFirst) {
-        await tryRun('drain', _worker.drainToCompletion);
+        await tryRun('drain', drainUntilEmpty);
       }
 
       await tryRun('worker', _worker.stop);
