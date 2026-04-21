@@ -36,15 +36,21 @@ class _QueueDepthCardState extends State<QueueDepthCard> {
   }
 
   Future<void> _loadInitial() async {
-    final stats = await widget.queue.stats();
-    if (!mounted) return;
-    setState(() {
-      _latest = QueueDepthSignal(
-        total: stats.total,
-        byProducer: stats.byProducer,
-        oldestEnqueuedAt: stats.oldestEnqueuedAt,
-      );
-    });
+    try {
+      final stats = await widget.queue.stats();
+      if (!mounted) return;
+      setState(() {
+        _latest = QueueDepthSignal(
+          total: stats.total,
+          byProducer: stats.byProducer,
+          oldestEnqueuedAt: stats.oldestEnqueuedAt,
+        );
+      });
+    } catch (_) {
+      // Silently ignore — the depth stream subscription will refresh
+      // the card on the next emission. A one-shot DB error at paint
+      // time should not crash the Sync Settings page.
+    }
   }
 
   @override

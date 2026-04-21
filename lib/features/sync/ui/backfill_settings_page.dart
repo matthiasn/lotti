@@ -144,6 +144,15 @@ class _CatchUpNowButtonState extends State<_CatchUpNowButton> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.messages.queueCatchUpNowDone)),
       );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.messages.queueFetchAllHistoryError(error.toString()),
+          ),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _running = false);
     }

@@ -69,8 +69,13 @@ void main() {
       await progressCompleter.future;
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('120'), findsWidgets);
-      expect(find.textContaining('2'), findsWidgets);
+      // Match the full rendered done message instead of bare "2" /
+      // "120" substrings — the digit 2 appears inside 120, so
+      // `findsWidgets` passed even when the page count was wrong.
+      expect(
+        find.text('Fetched 120 events across 2 pages.'),
+        findsOneWidget,
+      );
       // "Close" button appears once the run ends.
       expect(find.text('Close'), findsOneWidget);
       expect(find.text('Cancel'), findsNothing);

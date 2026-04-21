@@ -2088,14 +2088,22 @@
   "queueCatchUpNowButton": "Sincronizar ahora",
   "queueCatchUpNowDone": "Puesta al día iniciada — la cola se está vaciando.",
   "queueCatchUpNowRunning": "Puenteando la brecha reciente…",
-  "queueDepthCardEmpty": "Cola vacía — el worker está al día.",
+  "queueDepthCardEmpty": "Cola vacía — el procesador está al día.",
   "queueDepthCardLoading": "Leyendo profundidad de la cola…",
   "queueDepthCardTitle": "Cola de entrada",
   "queueFetchAllHistoryButton": "Obtener todo el historial",
   "queueFetchAllHistoryCancel": "Cancelar",
   "queueFetchAllHistoryClose": "Cerrar",
+  "queueFetchAllHistoryCancelled": "Cancelado — {events, plural, =0{ningún evento obtenido} =1{1 evento obtenido} other{{events} eventos obtenidos}} hasta ahora.",
+  "@queueFetchAllHistoryCancelled": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      }
+    }
+  },
   "queueFetchAllHistoryDescription": "Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.",
-  "queueFetchAllHistoryDone": "{events} eventos obtenidos en {pages} páginas.",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Ningún evento obtenido.} =1{1 evento obtenido en {pages} páginas.} other{{events} eventos obtenidos en {pages} páginas.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2114,7 +2122,7 @@
       }
     }
   },
-  "queueFetchAllHistoryProgress": "Página {pages}  ·  {events} eventos obtenidos",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Página {pages}  ·  1 evento obtenido} other{Página {pages}  ·  {events} eventos obtenidos}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {
       "events": {

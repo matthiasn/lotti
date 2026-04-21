@@ -4804,12 +4804,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queueFetchAllHistoryClose => 'Close';
 
   @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events events',
+      one: '1 event',
+      zero: 'no events',
+    );
+    return 'Cancelled — $_temp0 fetched so far.';
+  }
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
-    return 'Fetched $events events across $pages pages.';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Fetched $events events across $pages pages.',
+      one: 'Fetched 1 event across $pages pages.',
+      zero: 'No events fetched.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4819,7 +4838,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {
-    return 'Page $pages  ·  $events events fetched';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Page $pages  ·  $events events fetched',
+      one: 'Page $pages  ·  1 event fetched',
+    );
+    return '$_temp0';
   }
 
   @override

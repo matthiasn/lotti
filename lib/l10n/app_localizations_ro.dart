@@ -4892,12 +4892,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queueFetchAllHistoryClose => 'Închideți';
 
   @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events de evenimente obținute',
+      few: '$events evenimente obținute',
+      one: '1 eveniment obținut',
+      zero: 'niciun eveniment obținut',
+    );
+    return 'Anulat — $_temp0 până acum.';
+  }
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
-    return '$events evenimente obținute pe $pages pagini.';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events de evenimente obținute pe $pages pagini.',
+      few: '$events evenimente obținute pe $pages pagini.',
+      one: '1 eveniment obținut pe $pages pagini.',
+      zero: 'Niciun eveniment obținut.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4907,7 +4928,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {
-    return 'Pagina $pages  ·  $events evenimente obținute';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Pagina $pages  ·  $events de evenimente obținute',
+      few: 'Pagina $pages  ·  $events evenimente obținute',
+      one: 'Pagina $pages  ·  1 eveniment obținut',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -340,10 +340,15 @@ void main() {
           () => settingsDb.itemByKey(useInboundEventQueueKey),
         ).thenAnswer((_) async => 'true');
 
-        final service = createService(
-          queueCoordinator: coordinator,
-          suppressLegacyPipeline: true,
-        );
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(
+            queueCoordinator: coordinator,
+            suppressLegacyPipeline: true,
+          );
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
 
         // Short-circuit the rest of init: we don't want loadConfig /
         // connect to run their full flows, but we do want
@@ -368,7 +373,13 @@ void main() {
           () => settingsDb.itemByKey(useInboundEventQueueKey),
         ).thenAnswer((_) async => 'false');
 
-        final service = createService(queueCoordinator: coordinator);
+        late MatrixService service;
+        fakeAsync((async) {
+          service = createService(queueCoordinator: coordinator);
+          settleServiceStartup(async);
+        });
+        addTearDown(service.dispose);
+
         await service.debugMaybeStartQueuePipelineForTest();
 
         verifyNever(coordinator.start);

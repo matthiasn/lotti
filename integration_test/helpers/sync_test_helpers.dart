@@ -247,7 +247,7 @@ Future<bool> verifyTestEnvironment() async {
 /// passed in, legacy live-scan suppressed). Integration tests opt
 /// into the queue pipeline by passing `useQueuePipeline: true`;
 /// default stays `false` so existing tests are unchanged.
-MatrixService createMatrixService({
+Future<MatrixService> createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
   required LoggingService loggingService,
@@ -262,7 +262,7 @@ MatrixService createMatrixService({
   required SentEventRegistry sentEventRegistry,
   bool collectSyncMetrics = true,
   bool useQueuePipeline = false,
-}) {
+}) async {
   final activityGate = UserActivityGate(
     activityService: activityService,
   );
@@ -288,11 +288,11 @@ MatrixService createMatrixService({
   SyncRoomManager? roomManager;
 
   if (useQueuePipeline) {
-    // Persist the flag so any code path that re-reads it sees the
-    // test-time configuration.
-    unawaited(
-      writeUseInboundEventQueueFlag(settingsDb, enabled: true),
-    );
+    // Persist the flag and await the write so `MatrixService.init()`
+    // reads the new value — a fire-and-forget write lets init() race
+    // ahead and skip the queue coordinator while the ctor still
+    // suppresses the legacy pipeline, leaving no active ingestion.
+    await writeUseInboundEventQueueFlag(settingsDb, enabled: true);
 
     final syncDb = SyncDatabase(
       overriddenFilename: 'sync_${uuid.v1()}.sqlite',
@@ -309,11 +309,14 @@ MatrixService createMatrixService({
       settingsDb: settingsDb,
       loggingService: loggingService,
     );
-    sessionManager = MatrixSessionManager(
-      gateway: gateway,
-      roomManager: roomManager,
-      loggingService: loggingService,
-    );
+    sessionManager =
+        MatrixSessionManager(
+            gateway: gateway,
+            roomManager: roomManager,
+            loggingService: loggingService,
+          )
+          ..matrixConfig = config
+          ..deviceDisplayName = deviceName;
     queueCoordinator = QueuePipelineCoordinator(
       syncDb: syncDb,
       settingsDb: settingsDb,

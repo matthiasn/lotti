@@ -480,9 +480,35 @@ class MatrixService {
 
   Future<void> _maybeStartQueuePipeline() async {
     final enabled = await readUseInboundEventQueueFlag(_settingsDb);
-    if (!enabled) return;
+    if (!enabled) {
+      if (_suppressLegacyPipeline) {
+        // The constructor decided to suppress the legacy pipeline
+        // because the flag read at wiring time said queue-on, but a
+        // concurrent settings write (or a test seam) has since turned
+        // the flag off. Neither pipeline can accept live events —
+        // surface that explicitly instead of silently running with no
+        // inbound path.
+        throw StateError(
+          'MatrixService: queue pipeline suppressed but '
+          'useInboundEventQueue flag is now false — no active '
+          'inbound pipeline. Restart the service after toggling '
+          'the flag.',
+        );
+      }
+      return;
+    }
     final coordinator = _queueCoordinator;
     if (coordinator == null) {
+      if (_suppressLegacyPipeline) {
+        // Same class of failure: legacy is off, queue is expected
+        // but no coordinator was injected. Refuse to proceed instead
+        // of ending up with zero inbound sources.
+        throw StateError(
+          'MatrixService: useInboundEventQueue flag is on, legacy '
+          'pipeline is suppressed, but no QueuePipelineCoordinator '
+          'was provided. This is a wiring bug in the caller.',
+        );
+      }
       _loggingService.captureEvent(
         'queue.coordinator.skip reason=flagOnButNotInjected',
         domain: 'MATRIX_SERVICE',
@@ -499,6 +525,12 @@ class MatrixService {
         subDomain: 'queue.init',
         stackTrace: stackTrace,
       );
+      if (_suppressLegacyPipeline) {
+        // Legacy is suppressed; a failed queue start leaves the
+        // service with nothing ingesting. Rethrow so the caller can
+        // decide (retry, fall back, surface to UI).
+        rethrow;
+      }
     }
   }
 

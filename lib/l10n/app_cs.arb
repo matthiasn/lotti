@@ -1847,8 +1847,16 @@
   "queueFetchAllHistoryButton": "Načíst celou historii",
   "queueFetchAllHistoryCancel": "Zrušit",
   "queueFetchAllHistoryClose": "Zavřít",
+  "queueFetchAllHistoryCancelled": "Zrušeno — {events, plural, =0{zatím žádné události} =1{zatím načtena 1 událost} few{zatím načteny {events} události} other{zatím načteno {events} událostí}}.",
+  "@queueFetchAllHistoryCancelled": {
+    "placeholders": {
+      "events": {
+        "type": "int"
+      }
+    }
+  },
   "queueFetchAllHistoryDescription": "Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.",
-  "queueFetchAllHistoryDone": "Načteno {events} událostí na {pages} stránkách.",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Žádné události.} =1{Načtena 1 událost na {pages} stránkách.} few{Načteny {events} události na {pages} stránkách.} other{Načteno {events} událostí na {pages} stránkách.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -1867,7 +1875,7 @@
       }
     }
   },
-  "queueFetchAllHistoryProgress": "Strana {pages}  ·  {events} událostí načteno",
+  "queueFetchAllHistoryProgress": "{events, plural, =1{Strana {pages}  ·  1 událost načtena} few{Strana {pages}  ·  {events} události načteny} other{Strana {pages}  ·  {events} událostí načteno}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {
       "events": {

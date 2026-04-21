@@ -73,13 +73,17 @@ class QueueApplyAdapter {
       );
       return ApplyOutcome.retriable;
     } catch (error, stackTrace) {
+      // Unknown error classes (TypeError, StateError, ArgumentError,
+      // …) are not transient; retrying them just burns attempts and
+      // keeps the entry in the queue until maxAttempts gives up. Treat
+      // them as permanent so a logic bug does not stall the worker.
       _logging.captureException(
         error,
         domain: _logDomain,
-        subDomain: '$_logSub.prepare',
+        subDomain: '$_logSub.prepare.failed',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.retriable;
+      return ApplyOutcome.permanentSkip;
     }
     if (prepared == null) {
       _logging.captureEvent(
@@ -109,13 +113,17 @@ class QueueApplyAdapter {
       );
       return ApplyOutcome.retriable;
     } catch (error, stackTrace) {
+      // Apply runs pure DB writes on pre-resolved state. A throw here
+      // is almost always a logic bug or schema mismatch, not a
+      // transient failure; retrying it just burns attempts. Skip
+      // permanently so the worker moves on.
       _logging.captureException(
         error,
         domain: _logDomain,
-        subDomain: '$_logSub.apply',
+        subDomain: '$_logSub.apply.failed',
         stackTrace: stackTrace,
       );
-      return ApplyOutcome.retriable;
+      return ApplyOutcome.permanentSkip;
     }
   }
 }

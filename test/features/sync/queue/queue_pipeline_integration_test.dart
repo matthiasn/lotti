@@ -163,8 +163,11 @@ void main() {
       // Let the pipeline finish: enqueue → depth signal → worker
       // wakeup → apply. Pump until the queue empties or the budget
       // expires so the test stays deterministic on slow machines.
+      // Budget is generous because a real-timer worker on a loaded
+      // CI runner can take multiple seconds to wake + apply; ending
+      // assertions should still race ahead once the queue is empty.
       final start = DateTime.now();
-      while (DateTime.now().difference(start) < const Duration(seconds: 1)) {
+      while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
         await Future<void>.delayed(const Duration(milliseconds: 20));
         final stats = await coordinator.queue.stats();
         if (stats.total == 0) break;
@@ -269,7 +272,7 @@ void main() {
       timelineCtl.add(wakeEvent);
 
       final start = DateTime.now();
-      while (DateTime.now().difference(start) < const Duration(seconds: 2)) {
+      while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
         await Future<void>.delayed(const Duration(milliseconds: 30));
         final stats = await coordinator.queue.stats();
         if (stats.total == 0) break;

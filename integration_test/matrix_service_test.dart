@@ -47,7 +47,9 @@ import 'package:uuid/uuid.dart';
 import '../test/mocks/mocks.dart';
 import '../test/utils/utils.dart';
 
-MatrixService _createMatrixService({
+const _uuid = Uuid();
+
+Future<MatrixService> _createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
   required LoggingService loggingService,
@@ -61,7 +63,7 @@ MatrixService _createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   bool useQueuePipeline = true,
-}) {
+}) async {
   final activityGate = UserActivityGate(
     activityService: activityService,
   );
@@ -87,11 +89,13 @@ MatrixService _createMatrixService({
   SyncRoomManager? roomManager;
 
   if (useQueuePipeline) {
-    unawaited(
-      writeUseInboundEventQueueFlag(settingsDb, enabled: true),
-    );
+    // Await the flag write so `MatrixService.init()` reads it — a
+    // fire-and-forget write lets init() race ahead and skip the
+    // queue coordinator while suppressLegacyPipeline is already true,
+    // leaving no active ingestion path.
+    await writeUseInboundEventQueueFlag(settingsDb, enabled: true);
     final syncDb = SyncDatabase(
-      overriddenFilename: 'sync_${uuid.v1()}.sqlite',
+      overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
       inMemoryDatabase: true,
     );
     final vectorClockService = VectorClockService();
@@ -105,11 +109,14 @@ MatrixService _createMatrixService({
       settingsDb: settingsDb,
       loggingService: loggingService,
     );
-    sessionManager = MatrixSessionManager(
-      gateway: gateway,
-      roomManager: roomManager,
-      loggingService: loggingService,
-    );
+    sessionManager =
+        MatrixSessionManager(
+            gateway: gateway,
+            roomManager: roomManager,
+            loggingService: loggingService,
+          )
+          ..matrixConfig = config
+          ..deviceDisplayName = deviceName;
     queueCoordinator = QueuePipelineCoordinator(
       syncDb: syncDb,
       settingsDb: settingsDb,
@@ -253,7 +260,7 @@ void main() {
     setUpAll(() async {
       await vod.init();
       final tmpDir = await getTemporaryDirectory();
-      final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
+      final docDir = Directory('${tmpDir.path}/${_uuid.v1()}')
         ..createSync(recursive: true);
       debugPrint('Created temporary docDir ${docDir.path}');
       sharedDocumentsDirectory = docDir;
@@ -332,7 +339,7 @@ void main() {
         );
         final loggingService = sharedLoggingService;
         final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-        alice = _createMatrixService(
+        alice = await _createMatrixService(
           config: config1,
           gateway: aliceGateway,
           loggingService: loggingService,

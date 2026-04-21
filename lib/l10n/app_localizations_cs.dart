@@ -4866,12 +4866,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queueFetchAllHistoryClose => 'Zavřít';
 
   @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'zatím načteno $events událostí',
+      few: 'zatím načteny $events události',
+      one: 'zatím načtena 1 událost',
+      zero: 'zatím žádné události',
+    );
+    return 'Zrušeno — $_temp0.';
+  }
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
-    return 'Načteno $events událostí na $pages stránkách.';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Načteno $events událostí na $pages stránkách.',
+      few: 'Načteny $events události na $pages stránkách.',
+      one: 'Načtena 1 událost na $pages stránkách.',
+      zero: 'Žádné události.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4881,7 +4902,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {
-    return 'Strana $pages  ·  $events událostí načteno';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Strana $pages  ·  $events událostí načteno',
+      few: 'Strana $pages  ·  $events události načteny',
+      one: 'Strana $pages  ·  1 událost načtena',
+    );
+    return '$_temp0';
   }
 
   @override

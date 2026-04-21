@@ -4940,7 +4940,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queueCatchUpNowRunning => 'Puenteando la brecha reciente…';
 
   @override
-  String get queueDepthCardEmpty => 'Cola vacía — el worker está al día.';
+  String get queueDepthCardEmpty => 'Cola vacía — el procesador está al día.';
 
   @override
   String get queueDepthCardLoading => 'Leyendo profundidad de la cola…';
@@ -4958,12 +4958,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queueFetchAllHistoryClose => 'Cerrar';
 
   @override
+  String queueFetchAllHistoryCancelled(int events) {
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events eventos obtenidos',
+      one: '1 evento obtenido',
+      zero: 'ningún evento obtenido',
+    );
+    return 'Cancelado — $_temp0 hasta ahora.';
+  }
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
-    return '$events eventos obtenidos en $pages páginas.';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: '$events eventos obtenidos en $pages páginas.',
+      one: '1 evento obtenido en $pages páginas.',
+      zero: 'Ningún evento obtenido.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4973,7 +4992,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {
-    return 'Página $pages  ·  $events eventos obtenidos';
+    String _temp0 = intl.Intl.pluralLogic(
+      events,
+      locale: localeName,
+      other: 'Página $pages  ·  $events eventos obtenidos',
+      one: 'Página $pages  ·  1 evento obtenido',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -229,7 +229,7 @@ void main() {
         sentEventRegistry: aliceRegistry,
       );
       final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final alice = createMatrixService(
+      final alice = await createMatrixService(
         config: aliceConfig,
         gateway: aliceGateway,
         loggingService: sharedLoggingService,
@@ -267,7 +267,7 @@ void main() {
         sentEventRegistry: bobRegistry,
       );
       final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final bob = createMatrixService(
+      final bob = await createMatrixService(
         config: bobConfig,
         gateway: bobGateway,
         loggingService: sharedLoggingService,

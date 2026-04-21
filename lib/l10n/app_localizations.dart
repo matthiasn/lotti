@@ -8572,6 +8572,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get queueFetchAllHistoryClose;
 
+  /// No description provided for @queueFetchAllHistoryCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled — {events, plural, =0{no events} =1{1 event} other{{events} events}} fetched so far.'**
+  String queueFetchAllHistoryCancelled(int events);
+
   /// No description provided for @queueFetchAllHistoryDescription.
   ///
   /// In en, this message translates to:
@@ -8581,7 +8587,7 @@ abstract class AppLocalizations {
   /// No description provided for @queueFetchAllHistoryDone.
   ///
   /// In en, this message translates to:
-  /// **'Fetched {events} events across {pages} pages.'**
+  /// **'{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages} pages.} other{Fetched {events} events across {pages} pages.}}'**
   String queueFetchAllHistoryDone(int events, int pages);
 
   /// No description provided for @queueFetchAllHistoryError.
@@ -8593,7 +8599,7 @@ abstract class AppLocalizations {
   /// No description provided for @queueFetchAllHistoryProgress.
   ///
   /// In en, this message translates to:
-  /// **'Page {pages}  ·  {events} events fetched'**
+  /// **'{events, plural, =1{Page {pages}  ·  1 event fetched} other{Page {pages}  ·  {events} events fetched}}'**
   String queueFetchAllHistoryProgress(int events, int pages);
 
   /// No description provided for @queueFetchAllHistoryTitle.

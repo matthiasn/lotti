@@ -78,11 +78,12 @@ class _FetchAllHistoryDialogState extends State<FetchAllHistoryDialog> {
     final messages = context.messages;
 
     final status = switch (_result?.stopReason) {
-      BootstrapStopReason.serverExhausted ||
-      BootstrapStopReason.sinkCancelled => messages.queueFetchAllHistoryDone(
+      BootstrapStopReason.serverExhausted => messages.queueFetchAllHistoryDone(
         _result?.totalEvents ?? 0,
         _result?.totalPages ?? 0,
       ),
+      BootstrapStopReason.sinkCancelled =>
+        messages.queueFetchAllHistoryCancelled(_result?.totalEvents ?? 0),
       BootstrapStopReason.error => messages.queueFetchAllHistoryError(
         _error?.toString() ?? 'error',
       ),

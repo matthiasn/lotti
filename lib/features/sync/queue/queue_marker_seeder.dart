@@ -56,6 +56,10 @@ class QueueMarkerSeeder {
       return false;
     }
 
+    // `insertOrIgnore` rather than a plain insert so a racy second
+    // `seedIfAbsent` call (parallel `start()` attempts, or a room
+    // switch + re-start) cannot trip a UNIQUE violation between the
+    // `getSingleOrNull()` read above and this write.
     await _syncDb
         .into(_syncDb.queueMarkers)
         .insert(
@@ -64,6 +68,7 @@ class QueueMarkerSeeder {
             lastAppliedEventId: Value(legacyEventId),
             lastAppliedTs: Value(legacyTs ?? 0),
           ),
+          mode: InsertMode.insertOrIgnore,
         );
 
     _logging.captureEvent(

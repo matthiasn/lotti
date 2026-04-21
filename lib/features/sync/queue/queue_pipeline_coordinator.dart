@@ -117,6 +117,12 @@ class QueuePipelineCoordinator {
   StreamSubscription<Event>? _liveSub;
   bool _started = false;
 
+  /// Tracks in-flight `enqueueLive` calls spawned from the live
+  /// subscription so `stop()` can await every outstanding write. Without
+  /// this, a racy shutdown can dispose the queue while a producer is
+  /// mid-insert and trip drift's "used after close" guard.
+  final Set<Future<void>> _inFlightEnqueues = <Future<void>>{};
+
   InboundQueue get queue => _queue;
   InboundWorker get worker => _worker;
 
@@ -130,12 +136,27 @@ class QueuePipelineCoordinator {
 
   Future<void> start() async {
     if (_started) return;
-    _started = true;
 
     final roomId = _roomManager.currentRoomId;
     if (roomId != null) {
-      await _seeder.seedIfAbsent(roomId);
-      await _queue.pruneStrandedEntries(roomId);
+      // Seed + prune are best-effort one-shots. If they throw (e.g. a
+      // transient SQLite error) the worker + bridge should still come
+      // up — next call to `start()` re-runs seed/prune, and a future
+      // session sweep can catch up. A throw that aborts `start()`
+      // would leave `_started = false` and every subsequent caller
+      // would get the same behaviour; swallow-and-log keeps the
+      // pipeline from being dead-in-the-water.
+      try {
+        await _seeder.seedIfAbsent(roomId);
+        await _queue.pruneStrandedEntries(roomId);
+      } catch (error, stackTrace) {
+        _logging.captureException(
+          error,
+          domain: _logDomain,
+          subDomain: '$_logSub.start.seed',
+          stackTrace: stackTrace,
+        );
+      }
     } else {
       _logging.captureEvent(
         'queue.coordinator.start.noRoom',
@@ -144,9 +165,37 @@ class QueuePipelineCoordinator {
       );
     }
 
-    _liveSub = _sessionManager.timelineEvents.listen(_handleLiveEvent);
-    _bridge.start();
-    await _worker.start();
+    // Flip `_started` only after the live subscription, bridge and
+    // worker are fully attached, so a throw from any of them leaves
+    // the coordinator in the "not started" state and a caller can
+    // retry `start()`. The unwind catch below mops up whatever did
+    // come up before the failure.
+    try {
+      _liveSub = _sessionManager.timelineEvents.listen(_handleLiveEvent);
+      _bridge.start();
+      await _worker.start();
+      _started = true;
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.start',
+        stackTrace: stackTrace,
+      );
+      await _liveSub?.cancel();
+      _liveSub = null;
+      try {
+        await _bridge.stop();
+      } catch (_) {
+        // Already logged on the bridge side; no recovery available.
+      }
+      try {
+        await _worker.stop();
+      } catch (_) {
+        // Same: log-and-continue so unwind always completes.
+      }
+      rethrow;
+    }
 
     _logging.captureEvent(
       'queue.coordinator.started roomId=${roomId ?? 'null'}',
@@ -165,6 +214,11 @@ class QueuePipelineCoordinator {
 
     await _liveSub?.cancel();
     _liveSub = null;
+    // Wait for fire-and-forget enqueues spawned from the now-cancelled
+    // subscription before we tear the queue down.
+    if (_inFlightEnqueues.isNotEmpty) {
+      await Future.wait(_inFlightEnqueues.toList());
+    }
     await _bridge.stop();
 
     if (drainFirst) {
@@ -198,7 +252,25 @@ class QueuePipelineCoordinator {
     // the worker's decryptionPen flush on every drain iteration picks
     // them up as soon as the SDK has the session key.
     if (_pen.hold(event)) return;
-    unawaited(_queue.enqueueLive(event));
+    _trackEnqueue(_safeEnqueue(event));
+  }
+
+  Future<void> _safeEnqueue(Event event) async {
+    try {
+      await _queue.enqueueLive(event);
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.enqueue',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _trackEnqueue(Future<void> future) {
+    _inFlightEnqueues.add(future);
+    future.whenComplete(() => _inFlightEnqueues.remove(future));
   }
 
   Future<Room?> _resolveRoom() async => _roomManager.currentRoom;

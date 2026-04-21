@@ -270,6 +270,27 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
+    if (_suppressLiveIngestion) {
+      // Phase-2 queue pipeline owns ingestion. Skip the initial
+      // catch-up too: `runInitialCatchUpIfReady` drives
+      // `MatrixStreamProcessor.processOrdered`, which would apply
+      // events the queue's own bridge is already pulling — the same
+      // double-apply hazard `suppressLiveIngestion` prevents in the
+      // signal binder.
+      _loggingService.captureEvent(
+        _withInstance('MatrixStreamConsumer start suppressed'),
+        domain: syncLoggingDomain,
+        subDomain: 'start.suppressed',
+      );
+      // Still call `_signals.start` so the Phase-0 diagnostic
+      // `sync.limited` + `onTimelineEvent.ordering` logging keeps
+      // emitting; the binder already no-ops its scan-scheduling
+      // subscriptions under `suppressLiveIngestion`.
+      await _signals.start(
+        lastProcessedEventId: _processor.lastProcessedEventId,
+      );
+      return;
+    }
     await _catchUp.runInitialCatchUpIfReady();
     await _signals.start(lastProcessedEventId: _processor.lastProcessedEventId);
     _loggingService.captureEvent(
