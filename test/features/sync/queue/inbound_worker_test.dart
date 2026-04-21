@@ -539,6 +539,57 @@ void main() {
     );
 
     test(
+      'an uncaught exception in the loop body is captured by _logging and '
+      '_running is cleared so start() can relaunch afterwards',
+      () async {
+        // Resolve throws on the first call (pen.flushInto path); after
+        // that returns the real room so start() can succeed again.
+        var resolveCalls = 0;
+        final decryptionPen = PendingDecryptionPen(logging: logging);
+        final worker = InboundWorker(
+          queue: queue,
+          sequenceLogService: sequenceLog,
+          resolveRoom: () async {
+            resolveCalls++;
+            if (resolveCalls == 1) {
+              throw StateError('resolve boom');
+            }
+            return room;
+          },
+          apply: (_, _) async => ApplyOutcome.applied,
+          logging: logging,
+          decryptionPen: decryptionPen,
+        );
+        // Holding an encrypted event forces the pen.flushInto branch
+        // which calls _resolveRoom() and blows up on the first call.
+        final enc = _MockEvent();
+        when(() => enc.eventId).thenReturn(r'$enc');
+        when(() => enc.roomId).thenReturn(roomId);
+        when(() => enc.type).thenReturn(EventTypes.Encrypted);
+        when(() => enc.content).thenReturn(<String, dynamic>{});
+        decryptionPen.hold(enc);
+
+        await worker.start();
+        for (var i = 0; i < 50; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (!worker.isRunning) break;
+        }
+        expect(worker.isRunning, isFalse);
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(
+              named: 'subDomain',
+              that: contains('loop'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test(
       'activity gate is awaited on every loop iteration via '
       '_waitUntilIdleOrStopped',
       () async {

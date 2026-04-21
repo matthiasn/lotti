@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -234,6 +236,97 @@ void main() {
     );
     await coordinator.stop();
   });
+
+  test(
+    'isRunning flips false → true on start and back to false on stop',
+    () async {
+      final coordinator = buildCoordinator();
+      expect(coordinator.isRunning, isFalse);
+      coordinator.start();
+      expect(coordinator.isRunning, isTrue);
+      await coordinator.stop();
+      expect(coordinator.isRunning, isFalse);
+    },
+  );
+
+  test(
+    'subscription onError forwards to logging.captureException so a '
+    'broken sync stream does not crash the coordinator silently',
+    () async {
+      final coordinator = buildCoordinator()..start();
+      syncCtl.addError(StateError('sync pipe broken'), StackTrace.empty);
+      await Future<void>.delayed(Duration.zero);
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(
+            named: 'subDomain',
+            that: contains('subscription'),
+          ),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      await coordinator.stop();
+    },
+  );
+
+  test(
+    'a second trigger that lands while a bridge is in-flight is coalesced '
+    'into exactly one rerun after the in-flight pass completes',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      var callCount = 0;
+      // Gate the first collector call so we can fire a second trigger
+      // during the in-flight pass; the second call resolves immediately.
+      final firstCollectorCallGate = Completer<void>();
+      final coordinator = BridgeCoordinator(
+        client: client,
+        currentRoomId: () => roomId,
+        resolveRoom: () async => room,
+        queue: queue,
+        getLastReadEventId: () async => r'$anchor',
+        getLastReadTs: () async => 1000,
+        logging: logging,
+        catchUpCollector:
+            ({
+              required Room room,
+              required String? lastEventId,
+              required BackfillFn backfill,
+              required LoggingService logging,
+              required num preContextSinceTs,
+              required int preContextCount,
+              required int maxLookback,
+            }) async {
+              callCount++;
+              if (callCount == 1) await firstCollectorCallGate.future;
+              return const CatchUpCollection.complete(
+                events: [],
+                snapshotSize: 0,
+              );
+            },
+      );
+      // Kick off the first bridge and let it enter the collector.
+      final firstBridge = coordinator.bridgeNow();
+      await Future<void>.delayed(Duration.zero);
+      // Second trigger arrives while the first pass is still awaiting
+      // the gate. This must flip _pendingRerun, not run a second pass.
+      unawaited(coordinator.bridgeNow());
+      await Future<void>.delayed(Duration.zero);
+      expect(callCount, 1);
+      // Release the first call; the finally block should now fire the
+      // single pending rerun.
+      firstCollectorCallGate.complete();
+      await firstBridge;
+      // Give the scheduled rerun a chance to run.
+      for (var i = 0; i < 20; i++) {
+        await Future<void>.delayed(Duration.zero);
+        if (callCount >= 2) break;
+      }
+      expect(callCount, 2);
+    },
+  );
 
   test(
     'sync-room change between trigger and resolveRoom causes '

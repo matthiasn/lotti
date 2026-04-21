@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -9,6 +11,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 class _MockEvent extends Mock implements Event {}
+
+class _MockRoom extends Mock implements Room {}
 
 Event _buildSyncEvent({
   required String eventId,
@@ -187,6 +191,148 @@ void main() {
             expect(third, hasLength(1));
           },
         );
+      },
+    );
+  });
+
+  group('waitForDrainAtMostTo', () {
+    test(
+      'completes immediately when current depth already satisfies the '
+      'threshold (no wait, no subscription leak)',
+      () async {
+        // Empty queue; depth is 0 <= 1.
+        await queue.waitForDrainAtMostTo(1);
+      },
+    );
+
+    test(
+      'completes without a timeout once a depth signal drops total to the '
+      'threshold — exercises the non-timeout completer.future await path',
+      () async {
+        await queue.enqueueBatch(
+          [
+            _buildSyncEvent(eventId: r'$a', roomId: roomA, originTsMs: 1),
+            _buildSyncEvent(eventId: r'$b', roomId: roomA, originTsMs: 2),
+          ],
+          producer: InboundEventProducer.live,
+        );
+        // Start the waiter (target depth 0) without a timeout, then
+        // drain the queue so a depthChanges signal unblocks it.
+        final drainFuture = queue.waitForDrainAtMostTo(0);
+        final batch = await queue.peekBatchReady();
+        for (final entry in batch) {
+          await queue.commitApplied(entry);
+        }
+        await drainFuture;
+      },
+    );
+
+    test(
+      'times out when the queue never drains below the threshold',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$stuck',
+            roomId: roomA,
+            originTsMs: 1,
+          ),
+        );
+        await expectLater(
+          queue.waitForDrainAtMostTo(
+            0,
+            timeout: const Duration(milliseconds: 50),
+          ),
+          throwsA(isA<TimeoutException>()),
+        );
+      },
+    );
+  });
+
+  group('earliestReadyAt', () {
+    test(
+      'returns null on an empty queue and the next max(nextDueAt, '
+      'leaseUntil) when rows exist',
+      () async {
+        expect(await queue.earliestReadyAt(), isNull);
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$now', roomId: roomA, originTsMs: 1),
+        );
+        // Fresh enqueue: nextDueAt=0, leaseUntil=0 → readyAt=0.
+        expect(await queue.earliestReadyAt(), 0);
+        // Peek stamps a lease; earliestReadyAt should now reflect it.
+        final batch = await queue.peekBatchReady();
+        expect(batch, hasLength(1));
+        final ready = await queue.earliestReadyAt();
+        expect(ready, isNotNull);
+        expect(ready, greaterThan(0));
+      },
+    );
+  });
+
+  group('_advanceMarkerIfNewer tie-breaker', () {
+    test(
+      'equal timestamps: a lex-greater durable eventId advances the '
+      'marker (covers the compareTo > 0 branch)',
+      () async {
+        // First commit: $aaa at ts=1000.
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$aaa', roomId: roomA, originTsMs: 1000),
+        );
+        await queue.commitApplied((await queue.peekBatchReady()).single);
+
+        // Second commit: $zzz at the same ts=1000. With equal ts and
+        // $zzz.compareTo($aaa) > 0, the marker must advance to $zzz.
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$zzz', roomId: roomA, originTsMs: 1000),
+        );
+        await queue.commitApplied((await queue.peekBatchReady()).single);
+
+        final marker = await (db.select(
+          db.queueMarkers,
+        )..where((t) => t.roomId.equals(roomA))).getSingle();
+        expect(marker.lastAppliedEventId, r'$zzz');
+        expect(marker.lastAppliedTs, 1000);
+        expect(marker.lastAppliedCommitSeq, 2);
+      },
+    );
+  });
+
+  group('InboundQueueEntry.toEvent', () {
+    test(
+      'materialises the stored rawJson into an Event against the given '
+      'room so the worker-side apply path has the SDK object it needs',
+      () async {
+        final room = _MockRoom();
+        when(() => room.id).thenReturn(roomA);
+        final original = _MockEvent();
+        final content = <String, dynamic>{'msgtype': syncMessageType};
+        when(() => original.eventId).thenReturn(r'$mat');
+        when(() => original.roomId).thenReturn(roomA);
+        when(() => original.type).thenReturn(EventTypes.Message);
+        when(() => original.content).thenReturn(content);
+        when(() => original.text).thenReturn('stub');
+        when(
+          () => original.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(4242));
+        when(original.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$mat',
+          'room_id': roomA,
+          'origin_server_ts': 4242,
+          'type': EventTypes.Message,
+          // Event.fromJson requires a non-null sender field.
+          'sender': '@alice:example.org',
+          'content': content,
+        });
+        await queue.enqueueLive(original);
+        final batch = await queue.peekBatchReady();
+        final rehydrated = batch.single.toEvent(room);
+        expect(rehydrated.eventId, r'$mat');
+        expect(rehydrated.roomId, roomA);
+        expect(
+          rehydrated.originServerTs.millisecondsSinceEpoch,
+          4242,
+        );
+        expect(rehydrated.senderId, '@alice:example.org');
       },
     );
   });
