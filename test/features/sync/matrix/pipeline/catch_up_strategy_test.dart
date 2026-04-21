@@ -1030,6 +1030,381 @@ void main() {
       },
     );
   });
+
+  test(
+    'returns CatchUpCollection.incomplete when the snapshot is empty '
+    'and the timestamp boundary cannot be satisfied — exercises the '
+    'incomplete-return branch and its diagnostics log',
+    () async {
+      final room = MockRoom();
+      final log = MockLoggingService();
+      final tl = MockTimeline();
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(<Event>[]);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+      when(() => room.prev_batch).thenReturn(null);
+
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: null,
+        logging: log,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int? maxPages,
+              required LoggingService logging,
+              num? untilTimestamp,
+            }) async => false,
+        preContextSinceTs: 10_000,
+      );
+      expect(result.incomplete, isTrue);
+      expect(result.events, isEmpty);
+      expect(result.reachedTimestampBoundary, isFalse);
+      verify(
+        () => log.captureEvent(
+          any<String>(that: contains('catchup.incomplete')),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'no-anchor expansion logs through captureException when an '
+    'intermediate timeline.cancelSubscriptions throws',
+    () async {
+      final room = MockRoom();
+      final log = MockLoggingService();
+      final tl0 = MockTimeline();
+      final tl1 = MockTimeline();
+      final firstEvents = List<Event>.generate(200, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+      // Second timeline returns the same rows so `nextEvents.length
+      // <= ordered.length` short-circuits expansion — but the
+      // `finally` still runs `cancelSubscriptions` which we make
+      // throw, exercising the catch-and-log branch.
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((invocation) async {
+        final limit = invocation.namedArguments[#limit] as int? ?? 200;
+        return limit == 200 ? tl0 : tl1;
+      });
+      when(() => tl0.events).thenReturn(firstEvents);
+      when(() => tl0.cancelSubscriptions()).thenReturn(null);
+      when(() => tl1.events).thenReturn(firstEvents);
+      when(
+        () => tl1.cancelSubscriptions(),
+      ).thenThrow(StateError('cleanup boom'));
+
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'legacy-marker',
+        logging: log,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int? maxPages,
+              required LoggingService logging,
+              num? untilTimestamp,
+            }) async => false,
+        // preContextSinceTs: null → no-anchor branch.
+      );
+      expect(result.events, hasLength(200));
+      verify(
+        () => log.captureException(
+          any<Object>(),
+          domain: any(named: 'domain'),
+          subDomain: any(
+            named: 'subDomain',
+            that: contains('catchup.noAnchor.cleanup'),
+          ),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
+  group('collectHistoryForBootstrap', () {
+    Event buildEvent(String id, int tsMs) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(id);
+      when(
+        () => e.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(tsMs));
+      return e;
+    }
+
+    test(
+      'emits each event exactly once without an ever-growing seen-set '
+      '(memory bounded by page size, not total history depth)',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // The SDK stores events in a single mutable list that grows as
+        // `requestHistory()` loads older pages — simulate that by
+        // starting with the newest 3 events and prepending older ones
+        // on each call.
+        final events = <Event>[
+          buildEvent('e3', 300),
+          buildEvent('e4', 400),
+          buildEvent('e5', 500),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => requests < 2);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          if (requests == 1) {
+            events
+              ..insert(0, buildEvent('e1', 100))
+              ..insert(0, buildEvent('e2', 200));
+          } else {
+            events.insert(0, buildEvent('e0', 50));
+          }
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <List<String>>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.add([for (final e in page) e.eventId]);
+          }),
+          pageSize: 3,
+        );
+
+        // Every event id appears across the emitted pages exactly once
+        // — proving the anchor-based dedup. The earlier implementation
+        // would have carried a seen-set growing with total history.
+        final flat = <String>[
+          for (final page in collected) ...page,
+        ];
+        expect(flat.toSet(), hasLength(flat.length));
+        expect(flat, containsAll(['e0', 'e1', 'e2', 'e3', 'e4', 'e5']));
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(result.totalEvents, flat.length);
+      },
+    );
+
+    test(
+      'timestamp ties between pages are resolved by eventId so a later '
+      'page cannot re-emit an already-emitted event at the same ts',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // First page: two events at ts=100 with ids ordered 'b','a'
+        // (lex-descending). The anchor after page 0 should lock to the
+        // earliest (ts, eventId) = (100, 'a'). When page 1 adds
+        // another ts=100 event with id='c' (lex > 'a'), the strict
+        // (ts, id) older-than test must filter it out.
+        final events = <Event>[
+          buildEvent('a', 100),
+          buildEvent('b', 100),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => requests == 0);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          events.add(buildEvent('c', 100));
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <String>[];
+        await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((e) => e.eventId));
+          }),
+          pageSize: 3,
+        );
+        // 'c' has the same timestamp but sorts AFTER 'a', so it is not
+        // strictly older than the anchor and must not be re-emitted.
+        // Equally, 'a' and 'b' are emitted only once from the first
+        // iteration.
+        expect(collected, ['a', 'b']);
+      },
+    );
+
+    test(
+      'overallTimeout ends paging with stopReason=error before the next '
+      'requestHistory fires',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        final events = <Event>[buildEvent('x', 1)];
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenReturn(true);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        // A zero timeout is already exceeded on the first iteration.
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((_) {}),
+          pageSize: 1,
+          overallTimeout: Duration.zero,
+        );
+        expect(result.stopReason, BootstrapStopReason.error);
+        verifyNever(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        );
+      },
+    );
+
+    test(
+      'requestHistory throwing is captured on logging and stops paging '
+      'with stopReason=error (no unhandled future)',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => <Event>[buildEvent('x', 1)]);
+        when(() => tl.canRequestHistory).thenReturn(true);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenThrow(StateError('server hung up'));
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((_) {}),
+          pageSize: 1,
+        );
+        expect(result.stopReason, BootstrapStopReason.error);
+        verify(
+          () => log.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(
+              named: 'subDomain',
+              that: contains('bootstrap.requestHistory'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'timestamp ties on the oldest boundary update the eventId anchor '
+      'when the new first id is lex-smaller',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        // Page 0 emits two events at ts=100, oldest by (ts, id) is 'm'.
+        final events = <Event>[
+          buildEvent('m', 100),
+          buildEvent('z', 100),
+        ];
+        var requests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => requests == 0);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          requests++;
+          // Add an event still at ts=100 but lex-smaller than the
+          // current anchor — it must be emitted exactly once because
+          // the strict (ts, id) comparison flags it as older.
+          events.add(buildEvent('a', 100));
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final collected = <String>[];
+        await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((page) {
+            collected.addAll(page.map((e) => e.eventId));
+          }),
+          pageSize: 3,
+        );
+        expect(collected, ['m', 'z', 'a']);
+      },
+    );
+
+    test(
+      'sink cancellation halts paging before the next requestHistory',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        final events = <Event>[buildEvent('x', 1)];
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenReturn(true);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((_) {}, continueAfterPage: false),
+          pageSize: 1,
+        );
+        expect(result.stopReason, BootstrapStopReason.sinkCancelled);
+        verifyNever(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        );
+      },
+    );
+  });
 }
 
 class MockEvent extends Mock implements Event {}
+
+class _CollectingBootstrapSink implements BootstrapSink {
+  _CollectingBootstrapSink(this._onPage, {this.continueAfterPage = true});
+
+  final void Function(List<Event> page) _onPage;
+  final bool continueAfterPage;
+
+  @override
+  Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
+    _onPage(events);
+    return continueAfterPage;
+  }
+}
