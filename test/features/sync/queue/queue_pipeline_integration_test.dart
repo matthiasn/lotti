@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -72,6 +73,8 @@ void main() {
   late _MockBridge bridge;
   late _MockRoom room;
   late StreamController<Event> timelineCtl;
+  late CachedStreamController<SyncUpdate> syncCtl;
+  late _MockClient client;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -96,14 +99,21 @@ void main() {
     bridge = _MockBridge();
     room = _MockRoom();
     timelineCtl = StreamController<Event>.broadcast();
+    syncCtl = CachedStreamController<SyncUpdate>();
+    client = _MockClient();
+    when(() => client.onSync).thenReturn(syncCtl);
 
     when(
       () => sessionManager.timelineEvents,
     ).thenAnswer((_) => timelineCtl.stream);
-    when(() => sessionManager.client).thenReturn(_MockClient());
+    when(() => sessionManager.client).thenReturn(client);
     when(() => roomManager.currentRoomId).thenReturn(roomId);
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => room.id).thenReturn(roomId);
+    // Non-partial so the coordinator's _maybePostLoadCurrentRoom
+    // short-circuits instead of trying to call room.postLoad() on a
+    // bare mock.
+    when(() => room.partial).thenReturn(false);
     when(
       () => settingsDb.itemByKey(lastReadMatrixEventId),
     ).thenAnswer((_) async => null);
@@ -116,6 +126,7 @@ void main() {
 
   tearDown(() async {
     await timelineCtl.close();
+    await syncCtl.close();
     await syncDb.close();
     await journalDb.close();
   });

@@ -428,19 +428,8 @@ class QueuePipelineCoordinator {
     return switch (result.stopReason) {
       BootstrapStopReason.serverExhausted ||
       BootstrapStopReason.boundaryReached => true,
-      BootstrapStopReason.sinkCancelled ||
-      BootstrapStopReason.error => false,
+      BootstrapStopReason.sinkCancelled || BootstrapStopReason.error => false,
     };
-  }
-
-  Future<String?> _readMarkerEventId() async {
-    final roomId = _roomManager.currentRoomId;
-    if (roomId == null) return null;
-    final marker = await (_syncDb.select(
-      _syncDb.queueMarkers,
-    )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
-    return marker?.lastAppliedEventId ??
-        await getLastReadMatrixEventId(_settingsDb);
   }
 
   Future<int?> _readMarkerTs() async {

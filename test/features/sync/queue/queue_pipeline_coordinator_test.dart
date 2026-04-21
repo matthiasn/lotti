@@ -14,6 +14,7 @@ import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -55,6 +56,8 @@ void main() {
   late _MockPen pen;
   late _MockSeeder seeder;
   late StreamController<Event> timelineCtl;
+  late CachedStreamController<SyncUpdate> syncCtl;
+  late _MockClient client;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -77,11 +80,14 @@ void main() {
     pen = _MockPen();
     seeder = _MockSeeder();
     timelineCtl = StreamController<Event>.broadcast();
+    syncCtl = CachedStreamController<SyncUpdate>();
+    client = _MockClient();
+    when(() => client.onSync).thenReturn(syncCtl);
 
     when(
       () => sessionManager.timelineEvents,
     ).thenAnswer((_) => timelineCtl.stream);
-    when(() => sessionManager.client).thenReturn(_MockClient());
+    when(() => sessionManager.client).thenReturn(client);
     when(() => roomManager.currentRoomId).thenReturn(roomId);
     when(() => roomManager.currentRoom).thenReturn(null);
     when(() => seeder.seedIfAbsent(any())).thenAnswer((_) async => true);
@@ -101,6 +107,7 @@ void main() {
 
   tearDown(() async {
     await timelineCtl.close();
+    await syncCtl.close();
     await syncDb.close();
     await journalDb.close();
   });

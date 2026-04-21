@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -232,7 +231,10 @@ class BridgeCoordinator {
       subDomain: _logSub,
     );
 
-    _handleIncompleteFollowUp(incomplete: !completed, expectedRoomId: expectedRoomId);
+    _handleIncompleteFollowUp(
+      incomplete: !completed,
+      expectedRoomId: expectedRoomId,
+    );
   }
 
   /// Schedules a bounded retry when the bootstrap runner reports an
