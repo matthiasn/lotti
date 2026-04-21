@@ -2093,7 +2093,6 @@
   "queueDepthCardTitle": "Coadă de intrare",
   "queueFetchAllHistoryButton": "Obțineți întregul istoric",
   "queueFetchAllHistoryCancel": "Anulați",
-  "queueFetchAllHistoryClose": "Închideți",
   "queueFetchAllHistoryCancelled": "Anulat — {events, plural, =0{niciun eveniment obținut} =1{1 eveniment obținut} few{{events} evenimente obținute} other{{events} de evenimente obținute}} până acum.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
@@ -2102,8 +2101,9 @@
       }
     }
   },
+  "queueFetchAllHistoryClose": "Închideți",
   "queueFetchAllHistoryDescription": "Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{Niciun eveniment obținut.} =1{1 eveniment obținut pe {pages} pagini.} few{{events} evenimente obținute pe {pages} pagini.} other{{events} de evenimente obținute pe {pages} pagini.}}",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Niciun eveniment obținut.} =1{1 eveniment obținut pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.} few{{events} evenimente obținute pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.} other{{events} de evenimente obținute pe {pages, plural, =1{1 pagină} few{{pages} pagini} other{{pages} de pagini}}.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2122,6 +2122,7 @@
       }
     }
   },
+  "queueFetchAllHistoryErrorUnknown": "Obținerea s-a oprit neașteptat.",
   "queueFetchAllHistoryProgress": "{events, plural, =1{Pagina {pages}  ·  1 eveniment obținut} few{Pagina {pages}  ·  {events} evenimente obținute} other{Pagina {pages}  ·  {events} de evenimente obținute}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {

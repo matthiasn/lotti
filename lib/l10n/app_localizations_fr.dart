@@ -4962,9 +4962,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Annuler';
 
   @override
-  String get queueFetchAllHistoryClose => 'Fermer';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4977,25 +4974,44 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Fermer';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Parcourt tout l\'historique visible de la salle dans la file. Tu peux annuler à tout moment ; une nouvelle exécution reprend là où la pagination s\'est arrêtée.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: '$events événements récupérés sur $pages pages.',
-      one: '1 événement récupéré sur $pages pages.',
+      other: '$events événements récupérés sur $_temp0.',
+      one: '1 événement récupéré sur $_temp1.',
       zero: 'Aucun événement récupéré.',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Récupération arrêtée : $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Récupération arrêtée de manière inattendue.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {

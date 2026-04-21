@@ -4869,9 +4869,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Abbrechen';
 
   @override
-  String get queueFetchAllHistoryClose => 'Schließen';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4884,25 +4881,43 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Schließen';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages Seiten',
+      one: '1 Seite',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages Seiten',
+      one: '1 Seite',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: '$events Ereignisse über $pages Seiten abgerufen.',
-      one: '1 Ereignis über $pages Seiten abgerufen.',
+      other: '$events Ereignisse über $_temp0 abgerufen.',
+      one: '1 Ereignis über $_temp1 abgerufen.',
       zero: 'Keine Ereignisse abgerufen.',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Abruf gestoppt: $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown => 'Abruf unerwartet gestoppt.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {

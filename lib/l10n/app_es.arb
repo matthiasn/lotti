@@ -2093,7 +2093,6 @@
   "queueDepthCardTitle": "Cola de entrada",
   "queueFetchAllHistoryButton": "Obtener todo el historial",
   "queueFetchAllHistoryCancel": "Cancelar",
-  "queueFetchAllHistoryClose": "Cerrar",
   "queueFetchAllHistoryCancelled": "Cancelado — {events, plural, =0{ningún evento obtenido} =1{1 evento obtenido} other{{events} eventos obtenidos}} hasta ahora.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
@@ -2102,8 +2101,9 @@
       }
     }
   },
+  "queueFetchAllHistoryClose": "Cerrar",
   "queueFetchAllHistoryDescription": "Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{Ningún evento obtenido.} =1{1 evento obtenido en {pages} páginas.} other{{events} eventos obtenidos en {pages} páginas.}}",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Ningún evento obtenido.} =1{1 evento obtenido en {pages, plural, =1{1 página} other{{pages} páginas}}.} other{{events} eventos obtenidos en {pages, plural, =1{1 página} other{{pages} páginas}}.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2122,6 +2122,7 @@
       }
     }
   },
+  "queueFetchAllHistoryErrorUnknown": "La obtención se detuvo inesperadamente.",
   "queueFetchAllHistoryProgress": "{events, plural, =1{Página {pages}  ·  1 evento obtenido} other{Página {pages}  ·  {events} eventos obtenidos}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {

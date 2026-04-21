@@ -2336,7 +2336,6 @@
   "queueDepthCardTitle": "Inbound queue",
   "queueFetchAllHistoryButton": "Fetch all history",
   "queueFetchAllHistoryCancel": "Cancel",
-  "queueFetchAllHistoryClose": "Close",
   "queueFetchAllHistoryCancelled": "Cancelled — {events, plural, =0{no events} =1{1 event} other{{events} events}} fetched so far.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
@@ -2345,8 +2344,9 @@
       }
     }
   },
+  "queueFetchAllHistoryClose": "Close",
   "queueFetchAllHistoryDescription": "Walks the room's entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages} pages.} other{Fetched {events} events across {pages} pages.}}",
+  "queueFetchAllHistoryDone": "{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages, plural, =1{1 page} other{{pages} pages}}.} other{Fetched {events} events across {pages, plural, =1{1 page} other{{pages} pages}}.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2365,6 +2365,8 @@
       }
     }
   },
+  "queueFetchAllHistoryErrorUnknown": "Fetch stopped unexpectedly.",
+  "@queueFetchAllHistoryErrorUnknown": {},
   "queueFetchAllHistoryProgress": "{events, plural, =1{Page {pages}  ·  1 event fetched} other{Page {pages}  ·  {events} events fetched}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {

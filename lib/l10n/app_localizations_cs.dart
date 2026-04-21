@@ -4863,9 +4863,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Zrušit';
 
   @override
-  String get queueFetchAllHistoryClose => 'Zavřít';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4879,26 +4876,54 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Zavřít';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Prochází celou viditelnou historii místnosti do fronty. Lze kdykoli zrušit; pozdější spuštění pokračuje tam, kde stránkování skončilo.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages stránkách',
+      few: '$pages stránkách',
+      one: '1 stránce',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: 'Načteno $events událostí na $pages stránkách.',
-      few: 'Načteny $events události na $pages stránkách.',
-      one: 'Načtena 1 událost na $pages stránkách.',
+      other: 'Načteno $events událostí na $_temp0.',
+      few: 'Načteny $events události na $_temp1.',
+      one: 'Načtena 1 událost na $_temp2.',
       zero: 'Žádné události.',
     );
-    return '$_temp0';
+    return '$_temp3';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Načítání zastaveno: $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Načítání se neočekávaně zastavilo.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {

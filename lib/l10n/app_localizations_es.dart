@@ -4955,9 +4955,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Cancelar';
 
   @override
-  String get queueFetchAllHistoryClose => 'Cerrar';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4970,25 +4967,44 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Cerrar';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Recorre todo el historial visible de la sala hacia la cola. Puedes cancelarlo en cualquier momento; una nueva ejecución retoma donde se detuvo la paginación.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages páginas',
+      one: '1 página',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages páginas',
+      one: '1 página',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: '$events eventos obtenidos en $pages páginas.',
-      one: '1 evento obtenido en $pages páginas.',
+      other: '$events eventos obtenidos en $_temp0.',
+      one: '1 evento obtenido en $_temp1.',
       zero: 'Ningún evento obtenido.',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Obtención detenida: $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'La obtención se detuvo inesperadamente.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {

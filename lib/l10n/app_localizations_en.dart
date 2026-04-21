@@ -4801,9 +4801,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Cancel';
 
   @override
-  String get queueFetchAllHistoryClose => 'Close';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4816,25 +4813,43 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Close';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Walks the room\'s entire visible history into the queue. Safe to cancel; a later run resumes from where pagination stopped.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages pages',
+      one: '1 page',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: 'Fetched $events events across $pages pages.',
-      one: 'Fetched 1 event across $pages pages.',
+      other: 'Fetched $events events across $_temp0.',
+      one: 'Fetched 1 event across $_temp1.',
       zero: 'No events fetched.',
     );
-    return '$_temp0';
+    return '$_temp2';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Fetch stopped: $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown => 'Fetch stopped unexpectedly.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {

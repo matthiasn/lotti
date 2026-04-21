@@ -8566,17 +8566,17 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get queueFetchAllHistoryCancel;
 
-  /// No description provided for @queueFetchAllHistoryClose.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get queueFetchAllHistoryClose;
-
   /// No description provided for @queueFetchAllHistoryCancelled.
   ///
   /// In en, this message translates to:
   /// **'Cancelled — {events, plural, =0{no events} =1{1 event} other{{events} events}} fetched so far.'**
   String queueFetchAllHistoryCancelled(int events);
+
+  /// No description provided for @queueFetchAllHistoryClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get queueFetchAllHistoryClose;
 
   /// No description provided for @queueFetchAllHistoryDescription.
   ///
@@ -8587,7 +8587,7 @@ abstract class AppLocalizations {
   /// No description provided for @queueFetchAllHistoryDone.
   ///
   /// In en, this message translates to:
-  /// **'{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages} pages.} other{Fetched {events} events across {pages} pages.}}'**
+  /// **'{events, plural, =0{No events fetched.} =1{Fetched 1 event across {pages, plural, =1{1 page} other{{pages} pages}}.} other{Fetched {events} events across {pages, plural, =1{1 page} other{{pages} pages}}.}}'**
   String queueFetchAllHistoryDone(int events, int pages);
 
   /// No description provided for @queueFetchAllHistoryError.
@@ -8595,6 +8595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fetch stopped: {reason}'**
   String queueFetchAllHistoryError(String reason);
+
+  /// No description provided for @queueFetchAllHistoryErrorUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch stopped unexpectedly.'**
+  String get queueFetchAllHistoryErrorUnknown;
 
   /// No description provided for @queueFetchAllHistoryProgress.
   ///

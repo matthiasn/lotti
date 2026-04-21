@@ -2093,7 +2093,6 @@
   "queueDepthCardTitle": "File d'entrée",
   "queueFetchAllHistoryButton": "Récupérer tout l'historique",
   "queueFetchAllHistoryCancel": "Annuler",
-  "queueFetchAllHistoryClose": "Fermer",
   "queueFetchAllHistoryCancelled": "Annulé — {events, plural, =0{aucun événement} =1{1 événement} other{{events} événements}} récupéré(s) jusqu'ici.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
@@ -2102,8 +2101,9 @@
       }
     }
   },
+  "queueFetchAllHistoryClose": "Fermer",
   "queueFetchAllHistoryDescription": "Parcourt tout l'historique visible de la salle dans la file. Tu peux annuler à tout moment ; une nouvelle exécution reprend là où la pagination s'est arrêtée.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{Aucun événement récupéré.} =1{1 événement récupéré sur {pages} pages.} other{{events} événements récupérés sur {pages} pages.}}",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Aucun événement récupéré.} =1{1 événement récupéré sur {pages, plural, =1{1 page} other{{pages} pages}}.} other{{events} événements récupérés sur {pages, plural, =1{1 page} other{{pages} pages}}.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2122,6 +2122,7 @@
       }
     }
   },
+  "queueFetchAllHistoryErrorUnknown": "Récupération arrêtée de manière inattendue.",
   "queueFetchAllHistoryProgress": "{events, plural, =1{Page {pages}  ·  1 événement récupéré} other{Page {pages}  ·  {events} événements récupérés}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {

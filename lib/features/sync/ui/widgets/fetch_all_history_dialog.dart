@@ -88,9 +88,10 @@ class _FetchAllHistoryDialogState extends State<FetchAllHistoryDialog> {
       ),
       BootstrapStopReason.sinkCancelled =>
         messages.queueFetchAllHistoryCancelled(_result?.totalEvents ?? 0),
-      BootstrapStopReason.error => messages.queueFetchAllHistoryError(
-        _error?.toString() ?? 'error',
-      ),
+      BootstrapStopReason.error =>
+        _error != null
+            ? messages.queueFetchAllHistoryError(_error!.toString())
+            : messages.queueFetchAllHistoryErrorUnknown,
       null =>
         _error != null
             ? messages.queueFetchAllHistoryError(_error!.toString())

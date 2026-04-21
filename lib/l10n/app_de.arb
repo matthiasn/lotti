@@ -2093,7 +2093,6 @@
   "queueDepthCardTitle": "Eingangs-Warteschlange",
   "queueFetchAllHistoryButton": "Gesamten Verlauf holen",
   "queueFetchAllHistoryCancel": "Abbrechen",
-  "queueFetchAllHistoryClose": "Schließen",
   "queueFetchAllHistoryCancelled": "Abgebrochen — bisher {events, plural, =0{keine Ereignisse} =1{1 Ereignis} other{{events} Ereignisse}} abgerufen.",
   "@queueFetchAllHistoryCancelled": {
     "placeholders": {
@@ -2102,8 +2101,9 @@
       }
     }
   },
+  "queueFetchAllHistoryClose": "Schließen",
   "queueFetchAllHistoryDescription": "Lädt den gesamten sichtbaren Verlauf des Raums in die Warteschlange. Jederzeit abbrechbar; ein späterer Durchlauf setzt dort an, wo die Paginierung gestoppt hat.",
-  "queueFetchAllHistoryDone": "{events, plural, =0{Keine Ereignisse abgerufen.} =1{1 Ereignis über {pages} Seiten abgerufen.} other{{events} Ereignisse über {pages} Seiten abgerufen.}}",
+  "queueFetchAllHistoryDone": "{events, plural, =0{Keine Ereignisse abgerufen.} =1{1 Ereignis über {pages, plural, =1{1 Seite} other{{pages} Seiten}} abgerufen.} other{{events} Ereignisse über {pages, plural, =1{1 Seite} other{{pages} Seiten}} abgerufen.}}",
   "@queueFetchAllHistoryDone": {
     "placeholders": {
       "events": {
@@ -2122,6 +2122,7 @@
       }
     }
   },
+  "queueFetchAllHistoryErrorUnknown": "Abruf unerwartet gestoppt.",
   "queueFetchAllHistoryProgress": "{events, plural, =1{Seite {pages}  ·  1 Ereignis abgerufen} other{Seite {pages}  ·  {events} Ereignisse abgerufen}}",
   "@queueFetchAllHistoryProgress": {
     "placeholders": {

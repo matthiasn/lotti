@@ -4889,9 +4889,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queueFetchAllHistoryCancel => 'Anulați';
 
   @override
-  String get queueFetchAllHistoryClose => 'Închideți';
-
-  @override
   String queueFetchAllHistoryCancelled(int events) {
     String _temp0 = intl.Intl.pluralLogic(
       events,
@@ -4905,26 +4902,54 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get queueFetchAllHistoryClose => 'Închideți';
+
+  @override
   String get queueFetchAllHistoryDescription =>
       'Parcurge întregul istoric vizibil al camerei în coadă. Poate fi anulat oricând; o execuție ulterioară reia de unde s-a oprit paginarea.';
 
   @override
   String queueFetchAllHistoryDone(int events, int pages) {
     String _temp0 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      pages,
+      locale: localeName,
+      other: '$pages de pagini',
+      few: '$pages pagini',
+      one: '1 pagină',
+    );
+    String _temp3 = intl.Intl.pluralLogic(
       events,
       locale: localeName,
-      other: '$events de evenimente obținute pe $pages pagini.',
-      few: '$events evenimente obținute pe $pages pagini.',
-      one: '1 eveniment obținut pe $pages pagini.',
+      other: '$events de evenimente obținute pe $_temp0.',
+      few: '$events evenimente obținute pe $_temp1.',
+      one: '1 eveniment obținut pe $_temp2.',
       zero: 'Niciun eveniment obținut.',
     );
-    return '$_temp0';
+    return '$_temp3';
   }
 
   @override
   String queueFetchAllHistoryError(String reason) {
     return 'Obținere oprită: $reason';
   }
+
+  @override
+  String get queueFetchAllHistoryErrorUnknown =>
+      'Obținerea s-a oprit neașteptat.';
 
   @override
   String queueFetchAllHistoryProgress(int events, int pages) {
