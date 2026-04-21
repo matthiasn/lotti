@@ -145,7 +145,6 @@ class QueuePipelineCoordinator {
   final Set<String> _postLoadedRoomIds = <String>{};
 
   InboundQueue get queue => _queue;
-  InboundWorker get worker => _worker;
 
   bool get isRunning => _started;
 

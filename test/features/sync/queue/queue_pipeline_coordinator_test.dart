@@ -554,10 +554,9 @@ void main() {
     );
   });
 
-  test('queue + worker getters expose the collaborators', () {
+  test('queue getter exposes the underlying InboundQueue', () {
     final coordinator = build();
     expect(coordinator.queue, same(queue));
-    expect(coordinator.worker, same(worker));
   });
 
   test('postLoad error drops the marker so a later sync retries', () async {
@@ -649,7 +648,6 @@ void main() {
       );
 
       expect(coordinator.queue, isNotNull);
-      expect(coordinator.worker, isNotNull);
       expect(coordinator.isRunning, isFalse);
     },
   );
