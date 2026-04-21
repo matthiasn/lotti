@@ -465,9 +465,10 @@ class _TaskBrowseTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final isEmpty = title.trim().isEmpty;
+    final trimmed = title.trim();
+    final isEmpty = trimmed.isEmpty;
     return Text(
-      isEmpty ? context.messages.taskUntitled : title,
+      isEmpty ? context.messages.taskUntitled : trimmed,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
       style: tokens.typography.styles.subtitle.subtitle2.copyWith(
