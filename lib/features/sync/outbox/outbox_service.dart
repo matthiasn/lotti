@@ -213,6 +213,7 @@ class OutboxService {
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
+  Timer? _pruneTimer;
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
 
@@ -252,6 +253,44 @@ class OutboxService {
     // Safety watchdog: if there are pending items and we appear idle (no
     // queued work), periodically nudge the runner. This recovers from missed
     // signals or platform-specific timer quirks after reconnects/resumes.
+    // Prune `sent` outbox rows older than [SyncTuning.outboxSentRetention]
+    // on startup (after a short grace window so it doesn't race init) and
+    // then at [SyncTuning.outboxPruneInterval]. Error rows are kept forever
+    // for forensic inspection. Without this, sent rows accumulate
+    // indefinitely (observed: 395k on desktop, 265k on mobile) and slow
+    // every outbox enqueue / dedup lookup.
+    _pruneTimer?.cancel();
+    Future<void> runPrune() async {
+      if (_isDisposed) return;
+      try {
+        final deleted = await _repository.pruneSentOutboxItems(
+          retention: SyncTuning.outboxSentRetention,
+        );
+        if (deleted > 0) {
+          _loggingService.captureEvent(
+            'prune.sent removed=$deleted '
+            'retentionDays=${SyncTuning.outboxSentRetention.inDays}',
+            domain: 'OUTBOX',
+            subDomain: 'prune',
+          );
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'OUTBOX',
+          subDomain: 'prune',
+          stackTrace: st,
+        );
+      }
+    }
+
+    // Kickoff once on startup. Delay so init and first-send paths do
+    // not contend with the DELETE.
+    Timer(const Duration(seconds: 30), runPrune);
+    _pruneTimer = Timer.periodic(SyncTuning.outboxPruneInterval, (_) {
+      unawaited(runPrune());
+    });
+
     _watchdogTimer?.cancel();
     _watchdogTimer = Timer.periodic(SyncTuning.outboxWatchdogInterval, (
       Timer _,
@@ -1657,6 +1696,7 @@ class OutboxService {
     await _loginSubscription?.cancel();
     await _outboxCountSubscription?.cancel();
     _watchdogTimer?.cancel();
+    _pruneTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

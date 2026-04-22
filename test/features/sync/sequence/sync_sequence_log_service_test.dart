@@ -3864,6 +3864,74 @@ void main() {
     });
   });
 
+  group('retireAgedOutRequestedEntries', () {
+    test(
+      'delegates to syncDatabase with amnestyWindow and returns count',
+      () async {
+        const window = Duration(days: 7);
+        when(
+          () => mockDb.retireAgedOutRequestedEntries(amnestyWindow: window),
+        ).thenAnswer((_) async => 4);
+
+        final count = await service.retireAgedOutRequestedEntries(
+          amnestyWindow: window,
+        );
+
+        expect(count, 4);
+        verify(
+          () => mockDb.retireAgedOutRequestedEntries(amnestyWindow: window),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs under sequence.retireAgedOut when entries are retired — '
+      'distinguishes age-based retirement from exhaustion-based in logs',
+      () async {
+        when(
+          () => mockDb.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        await service.retireAgedOutRequestedEntries();
+
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('retired 9 entries')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.retireAgedOut',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('does not log when no entries retired', () async {
+      when(
+        () => mockDb.retireAgedOutRequestedEntries(
+          amnestyWindow: any(named: 'amnestyWindow'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      await service.retireAgedOutRequestedEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.retireAgedOut',
+        ),
+      );
+    });
+  });
+
   group('host activity cache', () {
     test(
       'caches getHostLastSeen and reuses on subsequent calls',

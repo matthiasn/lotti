@@ -186,4 +186,30 @@ class SyncTuning {
   // is more restrictive. Deeper historical backfill requires manual trigger.
   static const Duration defaultBackfillMaxAge = Duration(days: 1);
   static const int defaultBackfillMaxEntriesPerHost = 250;
+
+  // Amnesty window for age-based sequence-log retirement. Rows in
+  // `missing`/`requested` status older than this are promoted to
+  // `unresolvable` by `retireAgedOutRequestedEntries` regardless of
+  // `request_count` or `last_requested_at`. Must be wider than
+  // [defaultBackfillMaxAge] so rows have a fair window to be requested
+  // before retirement, but narrow enough that truly stuck rows do not
+  // accumulate indefinitely and block the sequence-log watermark.
+  static const Duration backfillAmnestyWindow = Duration(days: 7);
+
+  // Outbox retention for `status = sent` rows. Error rows are kept
+  // forever so a human can inspect persistently failed sends. Pending
+  // and sending rows are live state and never eligible for pruning.
+  // Observed growth without pruning: 395k rows on desktop, 265k on
+  // mobile — direct contributor to slow outbox enqueue/dedup queries.
+  // 7 days is enough for any forensic lookup in the recent-past
+  // window; dedup on `outbox_entry_id` only needs overlap across
+  // in-flight edits (seconds), so a week is already far more than
+  // strictly required.
+  static const Duration outboxSentRetention = Duration(days: 7);
+
+  // Cadence at which [OutboxService] runs the sent-outbox prune in the
+  // background. Daily is plenty: the prune deletes a whole day of
+  // newly-expired rows in a single pass and is cheap enough that
+  // running more often buys nothing.
+  static const Duration outboxPruneInterval = Duration(hours: 24);
 }

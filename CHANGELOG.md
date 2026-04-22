@@ -18,6 +18,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entry waited on its predecessor's attachment download before its
   own prepare could begin.
 
+### Fixed
+- Stuck `sync_sequence_log` rows no longer block the watermark
+  indefinitely. A row can slip into `requested` via the
+  backfill-response-hint path (which never sets `last_requested_at`)
+  or age out of the active backfill window before hitting the
+  request-count cap — in either case the row sat in a non-terminal
+  status forever, preventing `getLastCounterForHost`'s contiguous
+  prefix from advancing and causing every new event on the same host
+  to re-emit the same gap range through gap detection. A new
+  age-based retire runs alongside the existing exhausted-retire on
+  every backfill sweep: any `missing`/`requested` row older than
+  `SyncTuning.backfillAmnestyWindow` (7 days) is promoted to
+  `unresolvable` regardless of `request_count`. Observed state on a
+  real pair of devices: 3 rows on desktop and 4 on mobile, all
+  created April 8, permanently blocking the watermark — they now
+  retire on the next sweep and gap re-detection stops.
+
+- Outbox no longer grows unbounded. `status = sent` rows are pruned
+  after 7 days; `error` rows are kept forever so persistent failures
+  remain inspectable, and `pending`/`sending` rows are never touched.
+  Observed before this change: 395k sent rows on desktop, 265k on
+  mobile — a direct contributor to slow outbox enqueue/dedup queries
+  and heavier WAL checkpointing. The sweep runs at startup (after a
+  30-second grace so it doesn't contend with init) and every 24 hours
+  thereafter.
+
 ## [0.9.969] - 2026-04-21
 ### Fixed
 - Task title edit affordance restored. The new `DesktopTaskHeader`

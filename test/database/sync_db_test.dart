@@ -652,6 +652,93 @@ void main() {
 
       expect(await database.allOutboxItems, hasLength(1));
     });
+
+    test(
+      'pruneSentOutboxItems deletes only `sent` rows older than retention, '
+      'keeps `error` forever (regardless of age), and leaves pending/sending '
+      'untouched',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22, 12);
+        final old = now.subtract(const Duration(days: 10));
+        final fresh = now.subtract(const Duration(days: 2));
+
+        // Old sent — must be pruned.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: old,
+            subject: 'old-sent',
+          ),
+        );
+        // Fresh sent — within retention, must stay.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: fresh,
+            subject: 'fresh-sent',
+          ),
+        );
+        // Old error — kept forever for forensic inspection.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.error,
+            createdAt: old,
+            subject: 'old-error',
+          ),
+        );
+        // Old pending — never pruned (live state).
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: old,
+            subject: 'old-pending',
+          ),
+        );
+        // Old sending — never pruned (live state).
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sending,
+            createdAt: old,
+            subject: 'old-sending',
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 1);
+
+        final remaining = await database.allOutboxItems;
+        expect(
+          remaining.map((e) => e.subject).toSet(),
+          {'fresh-sent', 'old-error', 'old-pending', 'old-sending'},
+        );
+      },
+    );
+
+    test(
+      'pruneSentOutboxItems returns 0 when there is nothing to prune',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22);
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(days: 2)),
+            subject: 'recent-sent',
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 0);
+        expect(await database.allOutboxItems, hasLength(1));
+      },
+    );
   });
 
   group('SyncSequenceLog Tests', () {
@@ -3800,6 +3887,198 @@ void main() {
 
     test('returns 0 when there is nothing to retire', () async {
       final retired = await database.retireExhaustedRequestedEntries();
+      expect(retired, 0);
+    });
+  });
+
+  group('retireAgedOutRequestedEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'retires missing/requested rows older than amnestyWindow regardless of '
+      'request_count, leaving fresh rows and other statuses untouched',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 14));
+        final recent = now.subtract(const Duration(hours: 6));
+
+        // Aged-out `missing` row with request_count=0 — exactly the case
+        // that the exhausted-retire refuses (last_requested_at IS NULL,
+        // request_count below cap) and that
+        // `getMissingEntriesWithLimits` also ignores (older than
+        // maxAge). Must retire here.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        // Aged-out `requested` row born via backfill-response-hint path
+        // (request_count > 0 but last_requested_at never set). This
+        // reproduces the exact stuck-row profile observed on both
+        // desktop and mobile sync DBs.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            entryId: const Value('hint-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+            requestCount: const Value(3),
+          ),
+        );
+
+        // Recent `missing` row — still inside amnesty window, must NOT
+        // retire; let the normal backfill sweep handle it.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(3),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(recent),
+            updatedAt: Value(recent),
+          ),
+        );
+
+        // Aged-out `received` row — must not be touched, ever.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(4),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        // Aged-out `backfilled` row — must not be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(5),
+            entryId: const Value('backfilled-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.backfilled.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+
+        expect(retired, 2);
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 1))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 2))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 3))!.status,
+          SyncSequenceStatus.missing.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 4))!.status,
+          SyncSequenceStatus.received.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 5))!.status,
+          SyncSequenceStatus.backfilled.index,
+        );
+      },
+    );
+
+    test(
+      'unblocks the watermark so getLastCounterForHost advances past the '
+      'retired range — the load-bearing reason for this retire path',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 14));
+
+        const hostId = 'host-stuck';
+        // Counters 1..5 received — contiguous prefix starts here.
+        for (var counter = 1; counter <= 5; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+            ),
+          );
+        }
+        // Counters 6..8 stuck in `requested` — the watermark-blocking
+        // rows observed in the real DBs.
+        for (var counter = 6; counter <= 8; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.requested.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+              requestCount: const Value(3),
+            ),
+          );
+        }
+        // Counters 9..12 received — watermark cannot reach these
+        // until 6..8 are retired.
+        for (var counter = 9; counter <= 12; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+            ),
+          );
+        }
+
+        expect(await database.getLastCounterForHost(hostId), 5);
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+        expect(retired, 3);
+
+        // Watermark now advances through the retired `unresolvable`
+        // range (6..8) and onward through the contiguous received prefix
+        // (9..12), unblocking gap detection for this host.
+        expect(await database.getLastCounterForHost(hostId), 12);
+      },
+    );
+
+    test('returns 0 when there is nothing to retire', () async {
+      final retired = await database.retireAgedOutRequestedEntries();
       expect(retired, 0);
     });
   });

@@ -12,6 +12,14 @@ abstract class OutboxRepository {
   Future<void> markSent(OutboxItem item);
 
   Future<void> markRetry(OutboxItem item);
+
+  /// Delete rows with `status = sent` older than [retention]. Never
+  /// touches `pending`, `sending`, or `error` — error rows are kept
+  /// forever so persistent failures remain inspectable.
+  /// Returns the number of rows deleted.
+  Future<int> pruneSentOutboxItems({
+    required Duration retention,
+  });
 }
 
 class DatabaseOutboxRepository implements OutboxRepository {
@@ -64,5 +72,12 @@ class DatabaseOutboxRepository implements OutboxRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  @override
+  Future<int> pruneSentOutboxItems({
+    required Duration retention,
+  }) {
+    return _database.pruneSentOutboxItems(retention: retention);
   }
 }

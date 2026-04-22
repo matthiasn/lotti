@@ -33,6 +33,7 @@ class BackfillRequestService {
     int? maxRequestCount,
     Duration? maxAge,
     int? maxPerHost,
+    Duration? amnestyWindow,
   }) : _sequenceLogService = sequenceLogService,
        _syncDatabase = syncDatabase,
        _outboxService = outboxService,
@@ -45,7 +46,8 @@ class BackfillRequestService {
        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
        _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
-       _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
+       _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost,
+       _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow;
 
   /// The documents directory for resolving local attachment paths.
   /// When provided, re-requests will sweep (delete) local zombie files
@@ -63,6 +65,7 @@ class BackfillRequestService {
   final int _maxRequestCount;
   final Duration _maxAge;
   final int _maxPerHost;
+  final Duration _amnestyWindow;
 
   Timer? _timer;
   bool _isProcessing = false;
@@ -245,6 +248,17 @@ class BackfillRequestService {
       // incoming event on the same host to re-enter gap detection.
       await _sequenceLogService.retireExhaustedRequestedEntries(
         maxRequestCount: _maxRequestCount,
+      );
+
+      // Age-based companion: rows that slipped into `requested` via the
+      // backfill-response-hint path (which never sets
+      // `last_requested_at`) OR aged out of the active request window
+      // ([_maxAge]) before hitting the exhaustion cap are retired after
+      // [_amnestyWindow]. Otherwise they stay in a non-terminal status
+      // forever, blocking the watermark and re-triggering gap detection
+      // on every subsequent apply for the same host.
+      await _sequenceLogService.retireAgedOutRequestedEntries(
+        amnestyWindow: _amnestyWindow,
       );
 
       final missing = await _loadNextUnqueuedMissingBatch(useLimits: useLimits);
