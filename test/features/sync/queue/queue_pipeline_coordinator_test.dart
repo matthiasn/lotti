@@ -1563,7 +1563,6 @@ void main() {
 
         final completed = await coordinator.runBootstrapForTest(
           room: room,
-          untilTimestamp: null,
         );
 
         expect(completed, isTrue);
@@ -1714,6 +1713,142 @@ void main() {
         verify(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).called(2);
+      },
+    );
+  });
+
+  group('reconnect forward-walk dispatch (Option B)', () {
+    test(
+      'anchor event id dispatches to room.getTimeline(eventContextId:) '
+      'and NOT to the backward walk — this is the load-bearing reconnect '
+      'path that closes gaps the cached backward timeline cannot',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = _MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        final timeline = _MockTimeline();
+        final anchor = _MockEvent();
+        when(() => anchor.eventId).thenReturn(r'$anchor');
+        when(
+          () => anchor.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+        when(() => timeline.events).thenReturn(<Event>[anchor]);
+        when(() => timeline.canRequestFuture).thenReturn(false);
+        when(timeline.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => timeline);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(completed, isTrue);
+        // Forward walk exclusively — no backward fallback triggered
+        // because the anchor resolved successfully.
+        verify(
+          () => room.getTimeline(
+            eventContextId: r'$anchor',
+            limit: any(named: 'limit'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        );
+      },
+    );
+
+    test(
+      'anchor unresolvable on the server → falls back to backward walk '
+      'so reconnect never silently no-ops when the anchor has been '
+      'compacted out',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = _MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        // Forward-walk timeline: empty events (anchor unresolvable).
+        final forwardTl = _MockTimeline();
+        when(() => forwardTl.events).thenReturn(<Event>[]);
+        when(() => forwardTl.canRequestFuture).thenReturn(true);
+        when(forwardTl.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => forwardTl);
+        // Backward-walk timeline: empty, server-exhausted.
+        final backwardTl = _MockTimeline();
+        when(() => backwardTl.events).thenReturn(<Event>[]);
+        when(() => backwardTl.canRequestHistory).thenReturn(false);
+        when(backwardTl.cancelSubscriptions).thenAnswer((_) {});
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => backwardTl);
+        when(() => roomManager.currentRoom).thenReturn(room);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          untilTimestamp: 50,
+          anchorEventId: r'$compacted',
+        );
+
+        expect(completed, isTrue);
+        verify(
+          () => room.getTimeline(
+            eventContextId: r'$compacted',
+            limit: any(named: 'limit'),
+          ),
+        ).called(1);
+        // Fallback backward walk also ran.
+        verify(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).called(1);
       },
     );
   });

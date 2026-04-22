@@ -1574,6 +1574,181 @@ void main() {
       },
     );
   });
+
+  group('collectForwardForBootstrap — reconnect forward-walk', () {
+    Event buildEvent(String id, int ts) {
+      final e = MockEvent();
+      when(() => e.eventId).thenReturn(id);
+      when(
+        () => e.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+      return e;
+    }
+
+    test(
+      'emits events strictly newer than the anchor and stops when the '
+      'server runs out of future — this is the load-bearing reconnect '
+      'path that backward-walk cannot cover once the cache predates '
+      'the gap window',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        final events = <Event>[
+          buildEvent(r'$anchor', 100),
+          buildEvent(r'$e1', 110),
+          buildEvent(r'$e2', 120),
+        ];
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestFuture).thenReturn(false);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 2),
+          logging: log,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(pages, hasLength(1));
+        // Anchor itself is filtered out; only e1/e2 reach the sink.
+        expect(pages.single.map((e) => e.eventId).toList(), [r'$e1', r'$e2']);
+        verify(tl.cancelSubscriptions).called(1);
+      },
+    );
+
+    test(
+      'anchor missing from the context chunk returns errorNoProgress '
+      'so the coordinator can fall back — simulates a server that '
+      'compacted the anchor event out of its timeline',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(<Event>[]);
+        when(() => tl.canRequestFuture).thenReturn(true);
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink((_) {}),
+          logging: log,
+          anchorEventId: r'$missing-anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.error);
+        expect(result.totalPages, 0);
+        expect(result.totalEvents, 0);
+      },
+    );
+
+    test(
+      'walks forward across multiple requestFuture rounds until '
+      'canRequestFuture=false — not artificially capped on the first '
+      'page',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        var futureCalls = 0;
+        final events = <Event>[
+          buildEvent(r'$anchor', 100),
+          buildEvent(r'$e1', 110),
+        ];
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestFuture).thenAnswer((_) => futureCalls < 2);
+        when(
+          () => tl.requestFuture(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          futureCalls++;
+          events.add(buildEvent(r'$e' '${futureCalls + 1}', 110 + futureCalls));
+        });
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+        );
+
+        expect(result.stopReason, BootstrapStopReason.serverExhausted);
+        expect(futureCalls, 2);
+        // First page: e1. Second page: e2 (new). Third page: e3 (new).
+        expect(
+          pages.map((p) => p.map((e) => e.eventId).toList()).toList(),
+          [
+            [r'$e1'],
+            [r'$e2'],
+            [r'$e3'],
+          ],
+        );
+      },
+    );
+
+    test(
+      'forwardPageCap trips with boundaryReached stopReason so the '
+      'caller treats the pass as completed — the cap is a safety net, '
+      'not a failure',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        final events = <Event>[
+          buildEvent(r'$anchor', 100),
+          buildEvent(r'$e1', 110),
+        ];
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestFuture).thenReturn(true);
+        var n = 0;
+        when(
+          () => tl.requestFuture(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          n++;
+          events.add(buildEvent(r'$e' '${n + 1}', 110 + n));
+        });
+        when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink((_) {}, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+          forwardPageCap: 2,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        expect(result.totalPages, 2);
+      },
+    );
+  });
 }
 
 class MockEvent extends Mock implements Event {}

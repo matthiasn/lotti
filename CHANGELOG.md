@@ -42,7 +42,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entry waited on its predecessor's attachment download before its
   own prepare could begin.
 
-### Fixed
+### Changed
+- Reconnect bridge now attempts a forward-walk from the last applied
+  event id. Previous reconnect behaviour walked the SDK's cached
+  timeline backward from newest-cached to oldest-cached; when the
+  cache already reached months below the current `lastAppliedTs`,
+  every page trivially crossed the boundary on page 0 and the bridge
+  stopped without hitting the server — so a reconnecting client had
+  to rely on peer backfill responses to close gaps in the
+  `[lastAppliedTs, now]` window. The bridge now calls
+  `room.getTimeline(eventContextId: lastAppliedEventId)` (Matrix
+  `/rooms/{id}/context/{eventId}`) for a fresh server-side slice
+  anchored at the marker, then `timeline.requestFuture()` paginates
+  `/messages?dir=f` toward the tip. Backward walk remains as a
+  fallback when no anchor is known or when the server cannot resolve
+  the anchor. Unverified in production — needs observation against a
+  real reconnect with a known gap before we can claim it actually
+  closes the peer-dependent case.
+
 - Outbox drain no longer stop-and-go-crawls through large backlogs.
   `_drainOutbox` was capped at 20 passes per runner callback, after
   which it bounced back through `ClientRunner.enqueueRequest` — which
