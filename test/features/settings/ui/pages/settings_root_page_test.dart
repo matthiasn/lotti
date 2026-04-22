@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
-import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
-import 'package:lotti/features/settings/ui/pages/settings_content_pane.dart';
+import 'package:lotti/features/settings/ui/pages/settings_column_stack.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -25,11 +23,34 @@ class _TestWhatsNewController extends WhatsNewController {
   Future<WhatsNewState> build() async => const WhatsNewState();
 }
 
-/// Desktop-sized media query (wide enough for desktop layout).
+/// Desktop viewport wide enough for the root menu + empty detail slot.
 const _desktopMediaQuery = MediaQueryData(size: Size(1600, 900));
 
-/// Mobile-sized media query (below 960px breakpoint).
 const _mobileMediaQuery = MediaQueryData(size: Size(800, 600));
+
+/// Builds [count] stub columns with keys like `stub-0`. Used by the
+/// layout component tests so we can exercise overflow, auto-scroll
+/// and sizing without pulling in every real settings page's provider
+/// graph.
+List<SettingsColumn> _stubColumns(int count) {
+  return [
+    for (var i = 0; i < count; i++)
+      SettingsColumn(
+        key: ValueKey('stub-$i'),
+        child: ColoredBox(
+          color: Colors.grey.shade900,
+          child: Center(child: Text('stub-$i')),
+        ),
+      ),
+  ];
+}
+
+Finder _horizontalScrollView() => find.descendant(
+  of: find.byType(SettingsColumnStackView),
+  matching: find.byWidgetPredicate(
+    (w) => w is SingleChildScrollView && w.scrollDirection == Axis.horizontal,
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,133 +103,398 @@ void main() {
     paneWidthControllerProvider.overrideWith(PaneWidthController.new),
   ];
 
-  group('SettingsRootPage mobile layout', () {
-    testWidgets('shows SettingsPage directly on narrow screens', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _mobileMediaQuery,
-          overrides: buildOverrides(),
-        ),
-      );
-      await tester.pumpAndSettle();
+  Future<void> pumpRoot(
+    WidgetTester tester, {
+    MediaQueryData mediaQuery = _desktopMediaQuery,
+  }) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const SettingsRootPage(),
+        mediaQueryData: mediaQuery,
+        overrides: buildOverrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
-      expect(find.byType(SettingsPage), findsOneWidget);
-      expect(find.byType(ResizableDivider), findsNothing);
-      expect(find.byType(DesktopDetailEmptyState), findsNothing);
-    });
+  // ── Root page behaviour ────────────────────────────────────────────────
+
+  group('SettingsRootPage mobile layout', () {
+    testWidgets(
+      'falls back to the single-pane SettingsPage on narrow viewports',
+      (tester) async {
+        await pumpRoot(tester, mediaQuery: _mobileMediaQuery);
+
+        expect(find.byType(SettingsPage), findsOneWidget);
+        expect(
+          find.byType(SettingsColumnStackView),
+          findsNothing,
+          reason:
+              'The multi-column stack is desktop-only; mobile must stay '
+              'on the single SettingsPage push-navigation flow.',
+        );
+      },
+    );
   });
 
   group('SettingsRootPage desktop layout', () {
-    testWidgets('shows split pane with empty state when no route selected', (
-      tester,
-    ) async {
-      navService.isDesktopMode = true;
+    testWidgets(
+      '/settings root route renders the column stack with only the root '
+      'SettingsPage column',
+      (tester) async {
+        navService.isDesktopMode = true;
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+
+        await pumpRoot(tester);
+
+        expect(find.byType(SettingsColumnStackView), findsOneWidget);
+        expect(find.byType(SettingsPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'passes the listPaneWidth token into the stack view as its '
+      'column width so existing pane widths are honoured',
+      (tester) async {
+        navService.isDesktopMode = true;
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+
+        await pumpRoot(tester);
+
+        final stack = tester.widget<SettingsColumnStackView>(
+          find.byType(SettingsColumnStackView),
+        );
+        expect(stack.columnWidth, defaultListPaneWidth);
+      },
+    );
+  });
+
+  // ── Layout component behaviour (stub columns) ─────────────────────────
+
+  group('SettingsColumnStackView layout', () {
+    Future<void> pumpStack(
+      WidgetTester tester, {
+      required int columnCount,
+      required double columnWidth,
+      required double viewportWidth,
+    }) async {
+      // The Flutter test surface defaults to 800×600 regardless of what
+      // MediaQuery reports, so physically resize the view to match the
+      // viewport we want to test against.
+      tester.view.physicalSize = Size(viewportWidth, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _desktopMediaQuery,
-          overrides: buildOverrides(),
+          Scaffold(
+            body: SettingsColumnStackView(
+              columns: _stubColumns(columnCount),
+              columnWidth: columnWidth,
+            ),
+          ),
+          mediaQueryData: MediaQueryData(size: Size(viewportWidth, 900)),
         ),
       );
       await tester.pumpAndSettle();
+    }
 
-      expect(find.byType(SettingsPage), findsOneWidget);
-      expect(find.byType(ResizableDivider), findsOneWidget);
-      expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
-      expect(find.byType(SettingsContentPane), findsNothing);
-    });
+    testWidgets(
+      'stack that fits the viewport lays out with the last column Expanded '
+      'and no horizontal scroll view',
+      (tester) async {
+        await pumpStack(
+          tester,
+          columnCount: 2,
+          columnWidth: 540,
+          viewportWidth: 1600,
+        );
 
-    testWidgets('shows content pane when a settings route is selected', (
-      tester,
-    ) async {
-      navService.isDesktopMode = true;
-      navService.desktopSelectedSettingsRoute.value = (
-        path: '/settings/theming',
-        pathParameters: <String, String>{},
-        queryParameters: <String, String>{},
-      );
+        // Expanded lives inside the stack view only for the fits branch;
+        // the scroll branch wraps everything in fixed-width SizedBoxes.
+        expect(
+          find.descendant(
+            of: find.byType(SettingsColumnStackView),
+            matching: find.byType(Expanded),
+          ),
+          findsOneWidget,
+        );
+        expect(_horizontalScrollView(), findsNothing);
+        expect(find.text('stub-0'), findsOneWidget);
+        expect(find.text('stub-1'), findsOneWidget);
+      },
+    );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _desktopMediaQuery,
-          overrides: buildOverrides(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'first mount on an already-deep overflowing stack jumps to '
+      'maxScrollExtent so the trailing column is visible on arrival',
+      (tester) async {
+        // 3 × 540 + 2 dividers = 1622 — does not fit in 1000.
+        await pumpStack(
+          tester,
+          columnCount: 3,
+          columnWidth: 540,
+          viewportWidth: 1000,
+        );
 
-      expect(find.byType(SettingsPage), findsOneWidget);
-      expect(find.byType(ResizableDivider), findsOneWidget);
-      expect(find.byType(DesktopDetailEmptyState), findsNothing);
-      expect(find.byType(SettingsContentPane), findsOneWidget);
-    });
+        final scrollable = tester.widget<SingleChildScrollView>(
+          _horizontalScrollView(),
+        );
+        final position = scrollable.controller!.position;
+        expect(
+          position.pixels,
+          closeTo(position.maxScrollExtent, 0.5),
+          reason:
+              'Initial mount on a deep stack (e.g. window-restore into '
+              '/settings/sync/backfill) should jump to maxScrollExtent so '
+              'the selected leaf is on-screen.',
+        );
+      },
+    );
 
-    testWidgets('shows empty state when route is /settings (root)', (
-      tester,
-    ) async {
-      navService.isDesktopMode = true;
-      navService.desktopSelectedSettingsRoute.value = (
-        path: '/settings',
-        pathParameters: <String, String>{},
-        queryParameters: <String, String>{},
-      );
+    testWidgets(
+      'stack that overflows the viewport wraps the row in a horizontal '
+      'SingleChildScrollView',
+      (tester) async {
+        await pumpStack(
+          tester,
+          columnCount: 3,
+          columnWidth: 540,
+          // 3 × 540 + 2 dividers = 1622 — does not fit in 1200.
+          viewportWidth: 1200,
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _desktopMediaQuery,
-          overrides: buildOverrides(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        expect(_horizontalScrollView(), findsOneWidget);
+        expect(find.text('stub-0'), findsOneWidget);
+        expect(find.text('stub-1'), findsOneWidget);
+        expect(find.text('stub-2'), findsOneWidget);
+      },
+    );
 
-      expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
-      expect(find.byType(SettingsContentPane), findsNothing);
-    });
+    testWidgets(
+      'drilling deeper while the stack overflows auto-scrolls to the '
+      'newly-appended column',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-    testWidgets('has settings icon in empty state', (tester) async {
-      navService.isDesktopMode = true;
+        var columnCount = 1;
+        late StateSetter outerSetState;
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _desktopMediaQuery,
-          overrides: buildOverrides(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  outerSetState = setState;
+                  return SettingsColumnStackView(
+                    columns: _stubColumns(columnCount),
+                    columnWidth: 540,
+                  );
+                },
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1000, 900)),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-    });
+        // 1 column @ 540 fits → no scroll yet.
+        expect(_horizontalScrollView(), findsNothing);
 
-    testWidgets('dragging ResizableDivider updates pane width', (
-      tester,
-    ) async {
-      navService.isDesktopMode = true;
+        // Drill deeper: 3 columns = 1622, overflows 1000.
+        outerSetState(() => columnCount = 3);
+        await tester.pump(); // commit widget swap
+        await tester.pump(); // post-frame scroll schedule
+        await tester.pump(const Duration(milliseconds: 250)); // settle anim
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const SettingsRootPage(),
-          mediaQueryData: _desktopMediaQuery,
-          overrides: buildOverrides(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        final scrollable = tester.widget<SingleChildScrollView>(
+          _horizontalScrollView(),
+        );
+        final position = scrollable.controller!.position;
+        expect(
+          position.pixels,
+          closeTo(position.maxScrollExtent, 0.5),
+          reason:
+              'Auto-scroll should have moved the horizontal scroll offset '
+              'all the way to maxScrollExtent so the newly-added column '
+              'is fully visible.',
+        );
+      },
+    );
 
-      final divider = find.byType(ResizableDivider);
-      expect(divider, findsOneWidget);
+    testWidgets(
+      'lateral swap at the same depth with a different last-column key '
+      'auto-scrolls to the trailing column',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      // Perform a horizontal drag on the divider to exercise the onDrag
-      // callback which calls updateListPaneWidth.
-      await tester.drag(divider, const Offset(50, 0));
-      await tester.pumpAndSettle();
+        var lastKey = 'a';
+        late StateSetter outerSetState;
 
-      // The drag should not crash — the pane width controller handles it.
-      expect(find.byType(SettingsPage), findsOneWidget);
-    });
+        List<SettingsColumn> columnsFor(String keyName) => [
+          for (var i = 0; i < 2; i++)
+            SettingsColumn(
+              key: ValueKey('stub-$i'),
+              child: ColoredBox(
+                color: Colors.grey.shade900,
+                child: Center(child: Text('stub-$i')),
+              ),
+            ),
+          SettingsColumn(
+            key: ValueKey('leaf-$keyName'),
+            child: ColoredBox(
+              color: Colors.grey.shade700,
+              child: Center(child: Text('leaf-$keyName')),
+            ),
+          ),
+        ];
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  outerSetState = setState;
+                  return SettingsColumnStackView(
+                    columns: columnsFor(lastKey),
+                    columnWidth: 540,
+                  );
+                },
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1000, 900)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrollableBefore = tester.widget<SingleChildScrollView>(
+          _horizontalScrollView(),
+        );
+        // Reset scroll to left edge so we can detect that the swap triggered
+        // a right-edge auto-scroll and not just carry-over from the initial
+        // mount.
+        scrollableBefore.controller!.jumpTo(0);
+        await tester.pump();
+
+        outerSetState(() => lastKey = 'b');
+        await tester.pump(); // widget swap
+        await tester.pump(); // post-frame schedule
+        await tester.pump(const Duration(milliseconds: 250));
+
+        final scrollable = tester.widget<SingleChildScrollView>(
+          _horizontalScrollView(),
+        );
+        final position = scrollable.controller!.position;
+        expect(
+          position.pixels,
+          closeTo(position.maxScrollExtent, 0.5),
+          reason:
+              'Swapping the trailing column for a different key at the same '
+              'depth counts as drilling and should auto-scroll to maxScrollExtent.',
+        );
+        expect(find.text('leaf-b'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'collapsing the stack (user navigates up) does not try to '
+      'auto-scroll',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        var columnCount = 3;
+        late StateSetter outerSetState;
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  outerSetState = setState;
+                  return SettingsColumnStackView(
+                    columns: _stubColumns(columnCount),
+                    columnWidth: 540,
+                  );
+                },
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1000, 900)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        outerSetState(() => columnCount = 1);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(_horizontalScrollView(), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'columns are separated by a 1 px vertical divider (N-1 dividers for '
+      'N columns)',
+      (tester) async {
+        await pumpStack(
+          tester,
+          columnCount: 4,
+          columnWidth: 200,
+          viewportWidth: 1600,
+        );
+
+        // The dividers live inside the stack view as Container(width: 1.0).
+        final dividers = tester
+            .widgetList<Container>(
+              find.descendant(
+                of: find.byType(SettingsColumnStackView),
+                matching: find.byType(Container),
+              ),
+            )
+            .where((c) => c.constraints?.maxWidth == 1.0)
+            .toList();
+        expect(dividers.length, 3);
+      },
+    );
+
+    testWidgets(
+      'single-column stack renders no dividers',
+      (tester) async {
+        await pumpStack(
+          tester,
+          columnCount: 1,
+          columnWidth: 400,
+          viewportWidth: 1600,
+        );
+
+        final dividers = tester
+            .widgetList<Container>(
+              find.descendant(
+                of: find.byType(SettingsColumnStackView),
+                matching: find.byType(Container),
+              ),
+            )
+            .where((c) => c.constraints?.maxWidth == 1.0)
+            .toList();
+        expect(dividers, isEmpty);
+      },
+    );
   });
 }
