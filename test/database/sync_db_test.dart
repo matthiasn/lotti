@@ -3592,6 +3592,91 @@ void main() {
     });
   });
 
+  group('resetAllUnresolvableEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'resets every unresolvable entry back to missing, including rows '
+      'without entryId — the key case where the originating host is dead '
+      'but currently-alive peers may still have the payload',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final old = now.subtract(const Duration(days: 30));
+
+        // Unresolvable WITHOUT entryId — resetUnresolvableWithKnownPayload
+        // skips this; this method must flip it.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.unresolvable.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(2),
+            lastRequestedAt: Value(old),
+          ),
+        );
+
+        // Unresolvable WITH entryId — also flipped (for completeness;
+        // this is the superset of resetUnresolvableWithKnownPayload).
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(2),
+            entryId: const Value('known-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.unresolvable.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(5),
+          ),
+        );
+
+        // Received entry must NOT be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(3),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+          ),
+        );
+
+        final reset = await database.resetAllUnresolvableEntries();
+        expect(reset, 2);
+
+        final r1 = await database.getEntryByHostAndCounter('dead-host', 1);
+        expect(r1!.status, SyncSequenceStatus.missing.index);
+        expect(r1.requestCount, 0);
+        expect(r1.lastRequestedAt, isNull);
+
+        final r2 = await database.getEntryByHostAndCounter('dead-host', 2);
+        expect(r2!.status, SyncSequenceStatus.missing.index);
+        expect(r2.requestCount, 0);
+
+        final r3 = await database.getEntryByHostAndCounter('dead-host', 3);
+        expect(r3!.status, SyncSequenceStatus.received.index);
+      },
+    );
+
+    test('returns 0 when no unresolvable rows exist', () async {
+      final reset = await database.resetAllUnresolvableEntries();
+      expect(reset, 0);
+    });
+  });
+
   group('retireExhaustedRequestedEntries', () {
     late SyncDatabase database;
 

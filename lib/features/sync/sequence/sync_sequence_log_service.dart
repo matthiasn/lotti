@@ -1151,9 +1151,37 @@ class SyncSequenceLogService {
     final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
 
     if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
       _trace(
         'resetUnresolvableEntries: reset $count entries back to missing',
         subDomain: 'sequence.resetUnresolvable',
+      );
+    }
+
+    return count;
+  }
+
+  /// Reset every `unresolvable` row back to `missing`, regardless of
+  /// whether an `entry_id` is already known locally. Used by the Backfill
+  /// Settings "Ask peers for unresolvable entries" action to re-open the
+  /// row for the normal backfill sweep — once a peer responds with a
+  /// payload hint, `handleBackfillResponse` fills in `entry_id` and
+  /// eventually flips the row to `received`/`backfilled`.
+  ///
+  /// Semantically stronger than [resetUnresolvableEntries]; prefer this
+  /// one when a user explicitly wants to re-query peers for rows whose
+  /// originating host is dead but which a currently-alive peer may
+  /// still have.
+  Future<int> resetAllUnresolvableEntries() async {
+    final count = await _syncDatabase.resetAllUnresolvableEntries();
+
+    if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
+      _trace(
+        'resetAllUnresolvableEntries: reset $count entries back to missing',
+        subDomain: 'sequence.resetAllUnresolvable',
       );
     }
 

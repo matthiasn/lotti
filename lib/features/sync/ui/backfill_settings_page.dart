@@ -106,6 +106,30 @@ class BackfillSettingsPage extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
+            // Ask peers for unresolvable entries — flips every
+            // `unresolvable` row back to `missing` so the normal backfill
+            // sweep re-asks. Complements the narrower "Reset Unresolvable"
+            // action above (which only resets rows whose payload is
+            // already known locally).
+            _ResetAllUnresolvableSection(
+              isProcessing: statsState.isResettingAllUnresolvable,
+              lastResetCount: statsState.lastResetAllUnresolvableCount,
+              unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
+              error: statsState.error,
+              onTrigger: () async {
+                final confirmed = await _confirmResetAllUnresolvable(
+                  context,
+                  unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
+                );
+                if (!confirmed) return;
+                await ref
+                    .read(backfillStatsControllerProvider.notifier)
+                    .resetAllUnresolvable();
+              },
+            ),
+
+            const SizedBox(height: 24),
+
             // Retire Stuck Now — manual trigger for
             // `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`.
             _RetireStuckNowSection(
@@ -924,6 +948,160 @@ class _RetireStuckNowSection extends StatelessWidget {
                   isProcessing
                       ? 'Retiring…'
                       : 'Retire $openCount stuck entries',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Confirmation dialog for the "Ask peers for unresolvable entries" action.
+/// Flipping hundreds of thousands of rows back to `missing` is cheap
+/// (a single UPDATE) but will put all of them back in the backfill sweep,
+/// which can mean meaningful outbox traffic for a while — so an explicit
+/// confirmation is warranted.
+Future<bool> _confirmResetAllUnresolvable(
+  BuildContext context, {
+  required int unresolvableCount,
+}) async {
+  final theme = Theme.of(context);
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Ask peers again for unresolvable entries?'),
+      content: Text(
+        'This flips all $unresolvableCount '
+        'unresolvable sequence-log entries back to missing so the normal '
+        'backfill sweep re-asks peers. Peers who still have the payload '
+        '(e.g. a device that received them from a now-dead originating '
+        'host) will respond; truly unrecoverable entries will retire '
+        'again after the 7-day amnesty window.',
+        style: theme.textTheme.bodyMedium,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Ask peers'),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
+class _ResetAllUnresolvableSection extends StatelessWidget {
+  const _ResetAllUnresolvableSection({
+    required this.isProcessing,
+    required this.lastResetCount,
+    required this.unresolvableCount,
+    required this.error,
+    required this.onTrigger,
+  });
+
+  final bool isProcessing;
+  final int? lastResetCount;
+  final int unresolvableCount;
+  final String? error;
+  final VoidCallback onTrigger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.cloud_sync,
+                  color: unresolvableCount > 0
+                      ? Colors.orange
+                      : theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Ask peers for unresolvable entries',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Flip every unresolvable sequence-log entry back to missing '
+              'and let the normal backfill sweep re-ask peers. Any '
+              'currently-alive peer that still has the payload responds, '
+              'even if the originating host is gone. Unlike "Reset '
+              'Unresolvable" above, this does NOT require the payload to '
+              'already be present locally.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            if (lastResetCount != null && !isProcessing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Reopened $lastResetCount entries for backfill.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isProcessing || unresolvableCount == 0
+                    ? null
+                    : onTrigger,
+                icon: isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.cloud_sync),
+                label: Text(
+                  isProcessing
+                      ? 'Reopening…'
+                      : 'Ask peers for $unresolvableCount entries',
                 ),
               ),
             ),

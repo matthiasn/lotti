@@ -1106,6 +1106,35 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
+  /// Reset every unresolvable row back to `missing`, regardless of whether
+  /// it has a known `entry_id`. Use this when the user explicitly wants to
+  /// ask peers again for a host's entries — [resetUnresolvableWithKnownPayload]
+  /// only covers rows that the local store has since repopulated, which
+  /// excludes the common "dead originating host, but a currently-alive
+  /// peer has the payload" case where the local row was flipped to
+  /// `unresolvable` without ever receiving a hint.
+  ///
+  /// `request_count` is reset to 0 and `last_requested_at` cleared so the
+  /// row rejoins the active backfill sweep; response processing will then
+  /// fill in `entry_id` + flip status to `received`/`backfilled` if any
+  /// peer answers.
+  ///
+  /// Returns the number of rows reset.
+  Future<int> resetAllUnresolvableEntries() {
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, request_count = 0, '
+      'last_requested_at = NULL, updated_at = ? '
+      'WHERE status = ?',
+      variables: [
+        Variable.withInt(SyncSequenceStatus.missing.index),
+        Variable.withDateTime(DateTime.now()),
+        Variable.withInt(SyncSequenceStatus.unresolvable.index),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
   /// Reset entries that were incorrectly marked as unresolvable back to
   /// "missing" so they can be re-requested. Only resets entries that have
   /// a known payload (entryId IS NOT NULL), meaning repopulation found them.

@@ -15,10 +15,12 @@ class BackfillStatsState {
     this.isReRequesting = false,
     this.isResetting = false,
     this.isRetiringStuck = false,
+    this.isResettingAllUnresolvable = false,
     this.lastProcessedCount,
     this.lastReRequestedCount,
     this.lastResetCount,
     this.lastRetiredStuckCount,
+    this.lastResetAllUnresolvableCount,
     this.error,
   });
 
@@ -28,10 +30,12 @@ class BackfillStatsState {
   final bool isReRequesting;
   final bool isResetting;
   final bool isRetiringStuck;
+  final bool isResettingAllUnresolvable;
   final int? lastProcessedCount;
   final int? lastReRequestedCount;
   final int? lastResetCount;
   final int? lastRetiredStuckCount;
+  final int? lastResetAllUnresolvableCount;
   final String? error;
 
   BackfillStatsState copyWith({
@@ -41,16 +45,19 @@ class BackfillStatsState {
     bool? isReRequesting,
     bool? isResetting,
     bool? isRetiringStuck,
+    bool? isResettingAllUnresolvable,
     int? lastProcessedCount,
     int? lastReRequestedCount,
     int? lastResetCount,
     int? lastRetiredStuckCount,
+    int? lastResetAllUnresolvableCount,
     String? error,
     bool clearError = false,
     bool clearLastProcessed = false,
     bool clearLastReRequested = false,
     bool clearLastReset = false,
     bool clearLastRetiredStuck = false,
+    bool clearLastResetAllUnresolvable = false,
   }) {
     return BackfillStatsState(
       stats: stats ?? this.stats,
@@ -59,6 +66,8 @@ class BackfillStatsState {
       isReRequesting: isReRequesting ?? this.isReRequesting,
       isResetting: isResetting ?? this.isResetting,
       isRetiringStuck: isRetiringStuck ?? this.isRetiringStuck,
+      isResettingAllUnresolvable:
+          isResettingAllUnresolvable ?? this.isResettingAllUnresolvable,
       lastProcessedCount: clearLastProcessed
           ? null
           : lastProcessedCount ?? this.lastProcessedCount,
@@ -71,6 +80,9 @@ class BackfillStatsState {
       lastRetiredStuckCount: clearLastRetiredStuck
           ? null
           : lastRetiredStuckCount ?? this.lastRetiredStuckCount,
+      lastResetAllUnresolvableCount: clearLastResetAllUnresolvable
+          ? null
+          : lastResetAllUnresolvableCount ?? this.lastResetAllUnresolvableCount,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -117,7 +129,8 @@ class BackfillStatsController extends _$BackfillStatsController {
     if (state.isProcessing ||
         state.isReRequesting ||
         state.isResetting ||
-        state.isRetiringStuck) {
+        state.isRetiringStuck ||
+        state.isResettingAllUnresolvable) {
       return;
     }
 
@@ -154,7 +167,8 @@ class BackfillStatsController extends _$BackfillStatsController {
     if (state.isProcessing ||
         state.isReRequesting ||
         state.isResetting ||
-        state.isRetiringStuck) {
+        state.isRetiringStuck ||
+        state.isResettingAllUnresolvable) {
       return;
     }
 
@@ -200,7 +214,8 @@ class BackfillStatsController extends _$BackfillStatsController {
     if (state.isProcessing ||
         state.isReRequesting ||
         state.isResetting ||
-        state.isRetiringStuck) {
+        state.isRetiringStuck ||
+        state.isResettingAllUnresolvable) {
       return;
     }
 
@@ -233,13 +248,56 @@ class BackfillStatsController extends _$BackfillStatsController {
     }
   }
 
+  /// Reset every `unresolvable` row back to `missing` so the normal
+  /// backfill sweep will ask peers again. Covers the case where the
+  /// originating host is dead but a currently-alive peer still has
+  /// the payload — the existing "Reset Unresolvable" action only
+  /// covers rows whose `entry_id` was already repopulated locally,
+  /// which is not the common case after a bulk retirement.
+  Future<void> resetAllUnresolvable() async {
+    if (!ref.mounted) return;
+    if (state.isProcessing ||
+        state.isReRequesting ||
+        state.isResetting ||
+        state.isRetiringStuck ||
+        state.isResettingAllUnresolvable) {
+      return;
+    }
+
+    state = state.copyWith(
+      isResettingAllUnresolvable: true,
+      clearError: true,
+      clearLastResetAllUnresolvable: true,
+    );
+
+    try {
+      final sequenceLogService = getIt<SyncSequenceLogService>();
+      final count = await sequenceLogService.resetAllUnresolvableEntries();
+
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isResettingAllUnresolvable: false,
+        lastResetAllUnresolvableCount: count,
+      );
+
+      await _loadStats();
+    } catch (e) {
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isResettingAllUnresolvable: false,
+        error: e.toString(),
+      );
+    }
+  }
+
   /// Re-request entries that are in 'requested' status but never received.
   Future<void> triggerReRequest() async {
     if (!ref.mounted) return;
     if (state.isProcessing ||
         state.isReRequesting ||
         state.isResetting ||
-        state.isRetiringStuck) {
+        state.isRetiringStuck ||
+        state.isResettingAllUnresolvable) {
       return;
     }
 

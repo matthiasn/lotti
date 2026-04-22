@@ -3674,6 +3674,54 @@ void main() {
     });
   });
 
+  group('resetAllUnresolvableEntries', () {
+    test(
+      'delegates to syncDatabase and logs under sequence.resetAllUnresolvable '
+      'when entries were reset — distinct subDomain from the known-payload '
+      'variant so logs can tell the two paths apart',
+      () async {
+        when(
+          () => mockDb.resetAllUnresolvableEntries(),
+        ).thenAnswer((_) async => 13);
+        when(
+          () => mockLogging.captureEvent(
+            any<String>(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final count = await service.resetAllUnresolvableEntries();
+
+        expect(count, 13);
+        verify(() => mockDb.resetAllUnresolvableEntries()).called(1);
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('reset 13 entries')),
+            domain: LogDomains.sync,
+            subDomain: 'sequence.resetAllUnresolvable',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('does not log when no entries reset', () async {
+      when(
+        () => mockDb.resetAllUnresolvableEntries(),
+      ).thenAnswer((_) async => 0);
+
+      await service.resetAllUnresolvableEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: LogDomains.sync,
+          subDomain: 'sequence.resetAllUnresolvable',
+        ),
+      );
+    });
+  });
+
   group('retireExhaustedRequestedEntries', () {
     test(
       'delegates to syncDatabase with maxRequestCount and grace and returns '

@@ -568,6 +568,58 @@ void main() {
     });
 
     test(
+      'resetAllUnresolvable calls resetAllUnresolvableEntries and refreshes '
+      'stats — the peer-reask path that covers unresolvable rows with no '
+      'known entryId, which resetUnresolvable (the narrower variant) skips',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).thenAnswer((_) async => 144087);
+
+          createAndLoad(async);
+          clearInteractions(mockSequenceService);
+
+          act(async, (c) => c.resetAllUnresolvable());
+
+          verify(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).called(1);
+          verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+          final state = container.read(backfillStatsControllerProvider);
+          expect(state.isResettingAllUnresolvable, isFalse);
+          expect(state.lastResetAllUnresolvableCount, 144087);
+        });
+      },
+    );
+
+    test(
+      'resetAllUnresolvable surfaces service errors',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).thenAnswer((_) async => throw Exception('reset blew up'));
+
+          createAndLoad(async);
+
+          act(async, (c) => c.resetAllUnresolvable());
+
+          final state = container.read(backfillStatsControllerProvider);
+          expect(state.isResettingAllUnresolvable, isFalse);
+          expect(state.error, contains('reset blew up'));
+        });
+      },
+    );
+
+    test(
       'retireStuckNow is mutually exclusive with the other manual operations '
       "so concurrent triggers don't double-fire the retire",
       () {
