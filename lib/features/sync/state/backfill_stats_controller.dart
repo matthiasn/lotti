@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -88,12 +90,49 @@ class BackfillStatsState {
   }
 }
 
+/// Cadence at which the Backfill Settings page auto-refreshes stats
+/// while it is open. Keeps `missing` / `requested` counts live as
+/// backfill works them down without requiring the user to hit the
+/// manual refresh button. Cheap because the aggregation uses
+/// `idx_sync_sequence_log_actionable_status_created_at` for
+/// status=1/2 counts and the indexed status column for the rest.
+///
+/// Zero cost when the page is closed: the provider is `@riverpod`
+/// without `keepAlive`, so Riverpod tears it down on last unwatch,
+/// firing the `ref.onDispose` that cancels this timer.
+const Duration _autoRefreshInterval = Duration(seconds: 2);
+
 @riverpod
 class BackfillStatsController extends _$BackfillStatsController {
+  Timer? _autoRefreshTimer;
+
   @override
   BackfillStatsState build() {
     // Load stats on build
     _loadStats();
+
+    // Auto-refresh while the page is watching. `_loadStatsSilent` skips
+    // `isLoading` toggling and error-clearing so a background refresh
+    // doesn't race a manual action's in-flight error or loading state.
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
+      if (!ref.mounted) return;
+      // Skip while a manual action is running — those paths call
+      // `_loadStats` themselves on completion.
+      if (state.isProcessing ||
+          state.isReRequesting ||
+          state.isResetting ||
+          state.isRetiringStuck ||
+          state.isResettingAllUnresolvable) {
+        return;
+      }
+      _loadStatsSilent();
+    });
+    ref.onDispose(() {
+      _autoRefreshTimer?.cancel();
+      _autoRefreshTimer = null;
+    });
+
     return const BackfillStatsState(isLoading: true);
   }
 
@@ -113,6 +152,24 @@ class BackfillStatsController extends _$BackfillStatsController {
         isLoading: false,
         error: e.toString(),
       );
+    }
+  }
+
+  /// Background refresh variant that only updates `stats` — it does NOT
+  /// clear an existing error or toggle `isLoading`, so a manual action
+  /// that surfaced an error keeps the error visible until the user
+  /// explicitly refreshes or triggers a new action. Used by the
+  /// auto-refresh timer.
+  Future<void> _loadStatsSilent() async {
+    try {
+      final sequenceLogService = getIt<SyncSequenceLogService>();
+      final stats = await sequenceLogService.getBackfillStats();
+      if (!ref.mounted) return;
+      state = state.copyWith(stats: stats);
+    } catch (_) {
+      // Intentionally swallow — a transient DB error during background
+      // refresh should not surface as a UI error banner; the next tick
+      // or a manual refresh will retry.
     }
   }
 
