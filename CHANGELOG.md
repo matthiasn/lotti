@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.972] - 2026-04-21
+### Fixed
+- Checklist "Add a new item" pill no longer sprouts a second outline
+  when focused. `_AddItemField` wraps a `TextField` in a container
+  that draws its own 1 px pill border, but only set
+  `border: InputBorder.none` on the inner field — so the app's shared
+  `InputDecorationTheme.focusedBorder` (a 2.5 px primary-colour
+  outline) still overlaid itself inside the pill on tap. Every
+  state-specific border (`enabledBorder`, `focusedBorder`,
+  `disabledBorder`, `errorBorder`, `focusedErrorBorder`) plus
+  `filled` / `fillColor` are now explicitly neutralised on the
+  decoration, so the field stays visually flat inside the pill in
+  all focus states.
+
 ### Changed
 - Queue-pipeline `InboundWorker` now fans the adapter's prepare phase
   out across the whole batch via `Future.wait`. Prepare is I/O-bound

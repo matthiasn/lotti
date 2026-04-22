@@ -993,7 +993,19 @@ class _AddItemFieldState extends State<_AddItemField> {
             hintStyle: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.lowEmphasis,
             ),
+            // The outer `Container` already draws the pill border. Silence
+            // every state-specific border the app's `InputDecorationTheme`
+            // would otherwise overlay — in particular `focusedBorder`, a
+            // 2.5 px primary-coloured outline that appeared inside the
+            // pill on tap — along with the themed `filled` fill.
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            filled: false,
+            fillColor: Colors.transparent,
             isDense: true,
             contentPadding: EdgeInsets.zero,
           ),

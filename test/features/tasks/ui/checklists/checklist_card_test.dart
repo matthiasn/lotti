@@ -125,6 +125,38 @@ void main() {
       expect(tf.decoration?.hintText, 'Add a new item');
     });
 
+    testWidgets(
+      'add-item field silences every themed border so the pill does not '
+      'sprout a second outline on focus',
+      (tester) async {
+        await _pump(tester, initiallyExpanded: true);
+
+        final decoration = tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(_addFieldKey),
+                matching: find.byType(TextField),
+              ),
+            )
+            .decoration!;
+
+        // Every state-specific border must be disabled — the outer
+        // Container already draws the pill, and the themed
+        // InputDecorationTheme would otherwise overlay a 2.5 px primary
+        // outline on focus.
+        expect(decoration.border, InputBorder.none);
+        expect(decoration.enabledBorder, InputBorder.none);
+        expect(decoration.focusedBorder, InputBorder.none);
+        expect(decoration.disabledBorder, InputBorder.none);
+        expect(decoration.errorBorder, InputBorder.none);
+        expect(decoration.focusedErrorBorder, InputBorder.none);
+        // Fill is off so the themed `fillColor` (a subtle primary tint)
+        // doesn't leak into the pill either.
+        expect(decoration.filled, isFalse);
+        expect(decoration.fillColor, Colors.transparent);
+      },
+    );
+
     testWidgets('onCreateItem is called with trimmed text on submit', (
       tester,
     ) async {
