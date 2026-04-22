@@ -969,9 +969,71 @@ class AgentRepository {
 
   /// Insert or update a link using on-conflict update semantics against the
   /// primary key (`id`).
+  ///
+  /// `agent_links` additionally carries two partial unique indexes that
+  /// `insertOnConflictUpdate`'s primary-key-only ON CONFLICT clause does
+  /// NOT handle:
+  ///  - `idx_unique_soul_per_template` on `(from_id)` where
+  ///    `type = 'soul_assignment' AND deleted_at IS NULL`.
+  ///  - `idx_unique_improver_per_template` on `(to_id)` where
+  ///    `type = 'improver_target' AND deleted_at IS NULL`.
+  ///
+  /// When a sync-incoming link carries the same `from_id` / `to_id` as an
+  /// existing active row but a different `id`, the insert hits the
+  /// partial unique index and throws `SqliteException(2067)`. The v6
+  /// migration uses the same pattern to de-duplicate pre-existing rows:
+  /// we preemptively soft-delete the conflicting active row under the
+  /// same transaction, then insert. The soft-deleted row stays in the
+  /// table for audit, and the new incoming link takes over the unique
+  /// slot for that template.
+  ///
+  /// Skipping this step leaves the sync apply path throwing retriable
+  /// apply errors that exhaust after 10 attempts and mark the queue row
+  /// `abandoned` — a silent data drop even though the payload itself
+  /// is valid.
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
-    await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+    final type = AgentDbConversions.linkType(link);
+    final needsUniqueSlotHandoff =
+        link.deletedAt == null &&
+        (type == AgentLinkTypes.soulAssignment ||
+            type == AgentLinkTypes.improverTarget);
+
+    if (!needsUniqueSlotHandoff) {
+      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+      return;
+    }
+
+    await _db.transaction(() async {
+      final now = DateTime.now();
+      final softDelete = AgentLinksCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+      );
+      if (type == AgentLinkTypes.soulAssignment) {
+        await (_db.update(_db.agentLinks)
+              ..where(
+                (t) =>
+                    t.type.equals(AgentLinkTypes.soulAssignment) &
+                    t.deletedAt.isNull() &
+                    t.fromId.equals(link.fromId) &
+                    t.id.equals(link.id).not(),
+              ))
+            .write(softDelete);
+      } else {
+        // improverTarget — UNIQUE on (to_id).
+        await (_db.update(_db.agentLinks)
+              ..where(
+                (t) =>
+                    t.type.equals(AgentLinkTypes.improverTarget) &
+                    t.deletedAt.isNull() &
+                    t.toId.equals(link.toId) &
+                    t.id.equals(link.id).not(),
+              ))
+            .write(softDelete);
+      }
+      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+    });
   }
 
   /// Insert a link exclusively — throws [DuplicateInsertException] if a
