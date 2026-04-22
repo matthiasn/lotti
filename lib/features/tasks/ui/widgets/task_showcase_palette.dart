@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class TaskShowcasePalette {
@@ -24,7 +25,7 @@ class TaskShowcasePalette {
       context.designTokens.colors.text.lowEmphasis;
 
   static Color selectedRow(BuildContext context) =>
-      context.designTokens.colors.interactive.enabled.withValues(alpha: 0.12);
+      DesignSystemListPalette.activatedFill(context.designTokens);
 
   static Color hoverFill(BuildContext context) =>
       context.designTokens.colors.surface.hover;

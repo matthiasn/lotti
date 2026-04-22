@@ -1,6 +1,9 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -195,6 +198,37 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dividerColor overrides the default decorative colour while keeping '
+      'the 1 px of reserved vertical space — used by list surfaces that '
+      'want to mask the line without shifting layout on hover',
+      (tester) async {
+        const itemKey = Key('divider-color-item');
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'With masked divider',
+            showDivider: true,
+            dividerColor: Colors.transparent,
+            onTap: () {},
+          ),
+        );
+
+        final divider = tester.widget<Divider>(
+          find.descendant(
+            of: find.byKey(itemKey),
+            matching: find.byType(Divider),
+          ),
+        );
+        expect(divider.color, Colors.transparent);
+        // Layout still reserves the 1 px the Divider takes up.
+        expect(divider.height, 1);
+        expect(divider.thickness, 1);
+      },
+    );
+
     testWidgets('calls onTap when tapped', (tester) async {
       var tapped = false;
 
@@ -212,29 +246,100 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('applies activated background color', (tester) async {
-      const itemKey = Key('activated-item');
+    testWidgets(
+      'applies the subdued interactive.enabled @ 0.12 default for the '
+      'activated background — same tint task-list rows use so the look '
+      'stays consistent across the app',
+      (tester) async {
+        const itemKey = Key('activated-item');
 
-      await _pumpListItem(
-        tester,
-        DesignSystemListItem(
-          key: itemKey,
-          title: 'Activated',
-          activated: true,
-          onTap: () {},
-        ),
-      );
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Activated',
+            activated: true,
+            onTap: () {},
+          ),
+        );
 
-      final ink = tester.widget<Ink>(
-        find.descendant(
-          of: find.byKey(itemKey),
-          matching: find.byType(Ink),
-        ),
-      );
-      final decoration = ink.decoration! as BoxDecoration;
+        final ink = tester.widget<Ink>(
+          find.descendant(
+            of: find.byKey(itemKey),
+            matching: find.byType(Ink),
+          ),
+        );
+        final decoration = ink.decoration! as BoxDecoration;
 
-      expect(decoration.color, dsTokensLight.colors.surface.active);
-    });
+        final expected = DesignSystemListPalette.activatedFill(dsTokensLight);
+        expect(decoration.color, expected);
+      },
+    );
+
+    testWidgets(
+      'onHoverChanged fires when the pointer enters and leaves the row '
+      'so parent lists can coordinate cross-row state such as hiding the '
+      'divider below the currently-hovered item',
+      (tester) async {
+        const itemKey = Key('hover-item');
+        final events = <bool>[];
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Hoverable',
+            onTap: () {},
+            onHoverChanged: events.add,
+          ),
+        );
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
+        await tester.pumpAndSettle();
+        await gesture.moveTo(const Offset(-100, -100));
+        await tester.pumpAndSettle();
+
+        expect(events, [true, false]);
+      },
+    );
+
+    testWidgets(
+      'onHoverChanged still fires when forcedState is set so parent lists '
+      'can coordinate cross-row state even during previews that pin the '
+      'internal visual state',
+      (tester) async {
+        const itemKey = Key('forced-hover-item');
+        final events = <bool>[];
+
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(
+            key: itemKey,
+            title: 'Forced idle, external hover',
+            forcedState: DesignSystemListItemVisualState.idle,
+            onTap: () {},
+            onHoverChanged: events.add,
+          ),
+        );
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
+        await tester.pumpAndSettle();
+        await gesture.moveTo(const Offset(-100, -100));
+        await tester.pumpAndSettle();
+
+        expect(events, [true, false]);
+      },
+    );
 
     testWidgets('uses overridden activated background color', (tester) async {
       const itemKey = Key('custom-activated-item');

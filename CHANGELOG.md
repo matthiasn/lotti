@@ -30,6 +30,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stack no longer fits. Drilling from Sync into Backfill adds the
   third column on the right instead of replacing the Sync sub-menu.
   Mobile keeps the single-page push navigation fallback.
+- Settings list rows now match the task list's subdued treatment.
+  `DesignSystemListItem`'s default activated-row fill moved from the
+  saturated `tokens.colors.surface.active` to the new shared
+  `DesignSystemListPalette.activatedFill` — `interactive.enabled` at
+  12 % opacity, the same source the task-list palette now consumes —
+  so selection reads as a gentle hint rather than a loud block. The
+  component also gained an `onHoverChanged` callback and a
+  `dividerColor` override; the settings root menu uses both to
+  coordinate divider visibility across rows, fading the 1 px line
+  between any two rows to transparent whenever either is hovered or
+  active. The divider keeps its reserved 1 px of vertical space, so
+  hover never causes the column to jitter, and hover tracking is
+  keyed by item identity rather than list index so feature-flag
+  toggles can't strand the suppression on the wrong row.
 - Queue-pipeline `InboundWorker` now fans the adapter's prepare phase
   out across the whole batch via `Future.wait`. Prepare is I/O-bound
   (attachment downloads, gzip decode, JSON decode) with no shared
