@@ -19,6 +19,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own prepare could begin.
 
 ### Fixed
+- New "Retire stuck entries" action on the Backfill Settings page.
+  Runs `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`
+  after a confirmation dialog, promoting every currently-open
+  `missing`/`requested` sequence-log row to `unresolvable`. Bypasses
+  the 7-day amnesty window for the case where a user has identified
+  stuck rows blocking the watermark and wants immediate recovery
+  without waiting for the periodic sweep.
+
+- `agent_links` upsert no longer fails when a sync-incoming
+  `soul_assignment` or `improver_target` link arrives with a new `id`
+  but the same `from_id` (soul) or `to_id` (improver) as an existing
+  active row. `insertOnConflictUpdate` only handles primary-key
+  conflicts, so the partial unique indexes
+  (`idx_unique_soul_per_template`, `idx_unique_improver_per_template`)
+  threw `SqliteException(2067)` — apply was classified retriable,
+  retries exhausted after 10 attempts, and the queue row was silently
+  abandoned. `upsertLink` now preemptively soft-deletes the colliding
+  active row under the same transaction before inserting, matching
+  the v6 migration's duplicate-cleanup pattern. Soft-deleted rows stay
+  in the table as tombstones for audit.
+
 - Stuck `sync_sequence_log` rows no longer block the watermark
   indefinitely. A row can slip into `requested` via the
   backfill-response-hint path (which never sets `last_requested_at`)

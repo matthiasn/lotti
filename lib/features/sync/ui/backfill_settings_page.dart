@@ -104,6 +104,31 @@ class BackfillSettingsPage extends ConsumerWidget {
                   .triggerReRequest(),
             ),
 
+            const SizedBox(height: 24),
+
+            // Retire Stuck Now — manual trigger for
+            // `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`.
+            _RetireStuckNowSection(
+              isProcessing: statsState.isRetiringStuck,
+              lastRetiredCount: statsState.lastRetiredStuckCount,
+              openCount:
+                  (statsState.stats?.totalMissing ?? 0) +
+                  (statsState.stats?.totalRequested ?? 0),
+              error: statsState.error,
+              onTrigger: () async {
+                final confirmed = await _confirmRetireStuck(
+                  context,
+                  openCount:
+                      (statsState.stats?.totalMissing ?? 0) +
+                      (statsState.stats?.totalRequested ?? 0),
+                );
+                if (!confirmed) return;
+                await ref
+                    .read(backfillStatsControllerProvider.notifier)
+                    .retireStuckNow();
+              },
+            ),
+
             const SizedBox(height: 16),
 
             // Info text
@@ -751,6 +776,154 @@ class _ReRequestSection extends StatelessWidget {
                   isProcessing
                       ? context.messages.backfillReRequestProcessing
                       : context.messages.backfillReRequestTrigger,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shows a confirmation dialog before manually retiring all currently-open
+/// `missing`/`requested` rows. Diagnostic affordance — English-only to keep
+/// translation load off sync internals.
+Future<bool> _confirmRetireStuck(
+  BuildContext context, {
+  required int openCount,
+}) async {
+  final theme = Theme.of(context);
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Retire stuck entries now?'),
+      content: Text(
+        'This marks $openCount currently-open '
+        '(missing or requested) sequence-log entries as unresolvable. '
+        'Use this to unblock the watermark when entries have been stuck '
+        'for a while without the 7-day amnesty window having passed. '
+        'Entries can still be resurrected if their payload later '
+        'arrives on disk with a valid vector clock.',
+        style: theme.textTheme.bodyMedium,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Retire now'),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
+class _RetireStuckNowSection extends StatelessWidget {
+  const _RetireStuckNowSection({
+    required this.isProcessing,
+    required this.lastRetiredCount,
+    required this.openCount,
+    required this.error,
+    required this.onTrigger,
+  });
+
+  final bool isProcessing;
+  final int? lastRetiredCount;
+  final int openCount;
+  final String? error;
+  final VoidCallback onTrigger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.block,
+                  color: openCount > 0
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Retire stuck entries',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Force every currently-open missing or requested sequence-log '
+              'entry to unresolvable. Skips the 7-day amnesty window — use '
+              'this only when you have identified stuck rows that are '
+              'blocking the watermark and want immediate recovery.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            if (lastRetiredCount != null && !isProcessing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Retired $lastRetiredCount entries to unresolvable.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isProcessing || openCount == 0 ? null : onTrigger,
+                icon: isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.block),
+                label: Text(
+                  isProcessing
+                      ? 'Retiring…'
+                      : 'Retire $openCount stuck entries',
                 ),
               ),
             ),
