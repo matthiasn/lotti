@@ -129,13 +129,11 @@ Future<MatrixFile> downloadAttachmentWithTimeout(
           // runZonedGuarded as an "unhandled error". `.ignore()` tells
           // the zone that we don't want to propagate the error from
           // this side-future; the primary rejection path still fires.
-          future
-              .whenComplete(() {
-                if (identical(_inFlightAttachmentDownloads[key], future)) {
-                  _inFlightAttachmentDownloads.remove(key);
-                }
-              })
-              .ignore();
+          future.whenComplete(() {
+            if (identical(_inFlightAttachmentDownloads[key], future)) {
+              _inFlightAttachmentDownloads.remove(key);
+            }
+          }).ignore();
         }
         return future;
       }();

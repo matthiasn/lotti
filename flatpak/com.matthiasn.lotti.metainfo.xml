@@ -33,6 +33,7 @@
   <releases>
     <release version="0.9.972" date="2026-04-21">
       <description>
+          <p>Fixed the checklist "Add a new item" pill sprouting a second outline when focused. The inner TextField only disabled its default border, so the app-wide focused/enabled/error borders from InputDecorationTheme still overlaid themselves inside the already-pill-shaped container on tap. Every state-specific border variant plus the themed fill are now explicitly neutralised on the decoration, so the field stays visually flat inside its pill in all focus states.</p>
           <p>Queue-pipeline InboundWorker now fans the adapter's prepare phase out across the whole batch via Future.wait. Prepare is I/O-bound (attachment downloads, gzip decode, JSON decode) with no shared state, so running it in parallel collapses each batch's prepare critical path to the slowest entry instead of the sum. Apply still runs sequentially inside journalDb.transaction to preserve the writer-lock discipline, and prepared payloads are cached by eventId so apply consumes each one exactly once. Directly addresses the cold-start catch-up throughput cliff where every entry waited on its predecessor's attachment download before its own prepare could begin.</p>
       </description>
     </release>
