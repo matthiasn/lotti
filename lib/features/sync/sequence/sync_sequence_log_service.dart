@@ -1194,6 +1194,38 @@ class SyncSequenceLogService {
     return count;
   }
 
+  /// Age-based companion to [retireExhaustedRequestedEntries]. Retires
+  /// any `missing`/`requested` row older than [amnestyWindow] regardless
+  /// of `request_count` or `last_requested_at`.
+  ///
+  /// Closes the gap where a row can slip into `requested` via the
+  /// backfill-response-hint path (which does not set
+  /// `last_requested_at`) OR age out of the active backfill window
+  /// ([SyncTuning.defaultBackfillMaxAge]) before accumulating enough
+  /// requests to hit the exhaustion cap. Without this, such rows sit in
+  /// a non-terminal status forever, blocking the contiguous watermark
+  /// (see `getLastCounterForHost`) and causing every new event on the
+  /// same host to re-emit the same gap range through gap detection.
+  Future<int> retireAgedOutRequestedEntries({
+    Duration amnestyWindow = const Duration(days: 7),
+  }) async {
+    final count = await _syncDatabase.retireAgedOutRequestedEntries(
+      amnestyWindow: amnestyWindow,
+    );
+
+    if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
+      _trace(
+        'retireAgedOutRequestedEntries: retired $count entries to unresolvable '
+        '(amnestyWindow=${amnestyWindow.inDays}d)',
+        subDomain: 'sequence.retireAgedOut',
+      );
+    }
+
+    return count;
+  }
+
   /// Get entry by host ID and counter (for responding to backfill requests).
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,

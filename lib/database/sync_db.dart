@@ -515,6 +515,35 @@ class SyncDatabase extends _$SyncDatabase {
     return (delete(outbox)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Prune outbox rows with `status = sent` whose `created_at` is older
+  /// than [retention]. Error rows (`status = error`) are deliberately
+  /// kept regardless of age so a human can still inspect persistently
+  /// failed sends; pending and sending rows are live state and are
+  /// never considered for pruning.
+  ///
+  /// Without this, the outbox grows unbounded (observed: 395k rows on
+  /// desktop, 265k on mobile). Every outbox enqueue pays the table-size
+  /// cost on indexed writes, WAL checkpoints get heavier, and backups
+  /// balloon. A week of kept-forever sent rows is already far more
+  /// than the `outbox_entry_id` dedup path requires (dedup only
+  /// matters for in-flight edits — a message already sent more than a
+  /// minute ago will never be re-deduped).
+  ///
+  /// Returns the number of rows deleted.
+  Future<int> pruneSentOutboxItems({
+    required Duration retention,
+    DateTime? now,
+  }) {
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(retention);
+    return (delete(outbox)..where(
+          (t) =>
+              t.status.equals(OutboxStatus.sent.index) &
+              t.createdAt.isSmallerThanValue(cutoff),
+        ))
+        .go();
+  }
+
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
   /// messages in outbox.
   ///
@@ -1020,6 +1049,57 @@ class SyncDatabase extends _$SyncDatabase {
         Variable.withInt(missing),
         Variable.withInt(requested),
         Variable.withInt(maxRequestCount),
+        Variable.withDateTime(cutoff),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
+  /// Retire `missing`/`requested` rows whose `created_at` is older than
+  /// [amnestyWindow] by flipping their status to `unresolvable`,
+  /// regardless of `request_count` or `last_requested_at`.
+  ///
+  /// [retireExhaustedRequestedEntries] only retires rows that have been
+  /// actively requested and hit the count cap. That leaves a failure
+  /// mode where a row can slip into `requested` via
+  /// `SyncSequenceLogService.handleBackfillResponse`'s hint-insertion
+  /// path (which creates a row with status=`requested` but never sets
+  /// `last_requested_at`), OR a row in `missing` accumulates a
+  /// low `request_count` and then ages out of
+  /// [getMissingEntriesWithLimits]'s `maxAge` window before hitting
+  /// the cap. Either way, the row stays in a non-terminal status
+  /// forever, blocking the contiguous-prefix watermark in
+  /// [getLastCounterForHost] and causing every new event on the same
+  /// host to re-emit the same gap range through gap detection.
+  ///
+  /// This method is the amnesty half of the retire pair: any
+  /// `missing`/`requested` row older than [amnestyWindow] is treated as
+  /// unresolvable. `amnestyWindow` should be wider than the active
+  /// backfill-request window ([SyncTuning.defaultBackfillMaxAge]) so
+  /// rows have a fair chance to be requested before being retired, but
+  /// narrow enough that truly stuck rows do not accumulate
+  /// indefinitely.
+  ///
+  /// Returns the number of rows retired.
+  Future<int> retireAgedOutRequestedEntries({
+    Duration amnestyWindow = const Duration(days: 7),
+    DateTime? now,
+  }) {
+    final missing = SyncSequenceStatus.missing.index;
+    final requested = SyncSequenceStatus.requested.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(amnestyWindow);
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, updated_at = ? '
+      'WHERE (status = ? OR status = ?) '
+      '  AND created_at < ?',
+      variables: [
+        Variable.withInt(unresolvable),
+        Variable.withDateTime(effectiveNow),
+        Variable.withInt(missing),
+        Variable.withInt(requested),
         Variable.withDateTime(cutoff),
       ],
       updates: {syncSequenceLog},

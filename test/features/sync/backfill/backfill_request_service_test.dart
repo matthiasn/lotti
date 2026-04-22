@@ -67,6 +67,11 @@ void main() {
       ),
     ).thenAnswer((_) async => 0);
     when(
+      () => mockSequenceService.retireAgedOutRequestedEntries(
+        amnestyWindow: any(named: 'amnestyWindow'),
+      ),
+    ).thenAnswer((_) async => 0);
+    when(
       () => mockLogging.captureEvent(
         any<String>(),
         domain: any(named: 'domain'),
@@ -116,12 +121,49 @@ void main() {
           () => mockSequenceService.retireExhaustedRequestedEntries(
             maxRequestCount: any(named: 'maxRequestCount'),
           ),
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
           () => mockSequenceService.getMissingEntries(
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
           ),
         ]);
+      },
+    );
+
+    test(
+      'runs the age-based retirement alongside exhaustion-based retirement on '
+      'every sweep, so rows that slip into `requested` via backfill-response '
+      'hints (request_count bumped but last_requested_at never set) or that '
+      'age out of the request window before hitting the cap still get retired',
+      () async {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          amnestyWindow: const Duration(days: 3),
+        );
+        addTearDown(service.dispose);
+
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.processFullBackfill();
+
+        verify(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: const Duration(days: 3),
+          ),
+        ).called(1);
       },
     );
 
