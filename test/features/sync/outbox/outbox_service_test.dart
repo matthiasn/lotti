@@ -129,6 +129,7 @@ void main() {
     registerFallbackValue(OutboxCompanion.insert(message: 'm', subject: 's'));
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(const VectorClock({'fallback': 1}));
+    registerFallbackValue(Duration.zero);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel, (
           MethodCall call,
@@ -199,6 +200,13 @@ void main() {
     when(
       () => syncDatabase.findPendingByEntryId(any()),
     ).thenAnswer((_) async => null);
+    // Default stub so the periodic prune sweep fires without NSM errors
+    // if a test happens to elapse past the 30s startup grace.
+    when(
+      () => repository.pruneSentOutboxItems(
+        retention: any(named: 'retention'),
+      ),
+    ).thenAnswer((_) async => 0);
     when(
       () => journalDb.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
@@ -5084,5 +5092,216 @@ void main() {
 
       await failingService.dispose();
     });
+  });
+
+  group('sent-outbox prune', () {
+    test(
+      'startup prune fires after the 30-second grace and logs the removed '
+      'count when rows are deleted — uses the SyncTuning retention so both '
+      'desktop and mobile agree on the cutoff window',
+      () {
+        fakeAsync((async) {
+          when(
+            () => repository.pruneSentOutboxItems(
+              retention: SyncTuning.outboxSentRetention,
+            ),
+          ).thenAnswer((_) async => 42);
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+          );
+          addTearDown(() async {
+            await svc.dispose();
+            async.flushMicrotasks();
+          });
+
+          // Before the 30s grace — prune must not have fired yet.
+          async
+            ..elapse(const Duration(seconds: 20))
+            ..flushMicrotasks();
+          verifyNever(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          );
+
+          // Cross the 30s boundary — startup prune kicks.
+          async
+            ..elapse(const Duration(seconds: 20))
+            ..flushMicrotasks();
+
+          verify(
+            () => repository.pruneSentOutboxItems(
+              retention: SyncTuning.outboxSentRetention,
+            ),
+          ).called(1);
+          verify(
+            () => loggingService.captureEvent(
+              any<String>(
+                that: contains('prune.sent removed=42'),
+              ),
+              domain: 'OUTBOX',
+              subDomain: 'prune',
+            ),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
+      'no log emission when the prune deletes zero rows — prevents the '
+      'daily sweep from spamming the log once the backlog is drained',
+      () {
+        fakeAsync((async) {
+          when(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+          );
+          addTearDown(() async {
+            await svc.dispose();
+            async.flushMicrotasks();
+          });
+
+          async
+            ..elapse(const Duration(seconds: 31))
+            ..flushMicrotasks();
+
+          verify(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => loggingService.captureEvent(
+              any<String>(),
+              domain: 'OUTBOX',
+              subDomain: 'prune',
+            ),
+          );
+        });
+      },
+    );
+
+    test(
+      'prune errors are captured under OUTBOX/prune and do not propagate — '
+      'a transient DB failure in the sweep must not kill the outbox '
+      "service's background work",
+      () {
+        fakeAsync((async) {
+          when(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).thenAnswer((_) async => throw StateError('db gone'));
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+          );
+          addTearDown(() async {
+            await svc.dispose();
+            async.flushMicrotasks();
+          });
+
+          async
+            ..elapse(const Duration(seconds: 31))
+            ..flushMicrotasks();
+
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'OUTBOX',
+              subDomain: 'prune',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
+      'dispose cancels the periodic prune timer — after dispose no further '
+      'prune fires even when time advances past the interval',
+      () {
+        fakeAsync((async) {
+          when(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).thenAnswer((_) async => 0);
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+          );
+
+          async
+            ..elapse(const Duration(seconds: 31))
+            ..flushMicrotasks();
+          // Startup prune fired once.
+          verify(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).called(1);
+
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+
+          // Advance past a full prune interval — nothing should fire.
+          async
+            ..elapse(SyncTuning.outboxPruneInterval + const Duration(hours: 1))
+            ..flushMicrotasks();
+          verifyNever(
+            () => repository.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          );
+        });
+      },
+    );
   });
 }

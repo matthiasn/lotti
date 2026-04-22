@@ -49,6 +49,10 @@ void main() {
     ),
   ]);
 
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({'backfill_enabled': true});
     mockJournalDb = MockJournalDb();
@@ -909,6 +913,273 @@ void main() {
 
         expect(find.byIcon(Icons.bolt_outlined), findsNothing);
         expect(find.byIcon(Icons.download_rounded), findsNothing);
+      },
+    );
+  });
+
+  /// Scaffolds the Backfill Settings page with the given stats. The
+  /// top-level `setUp` already wires the common mocks; this helper lets
+  /// per-test cases swap in specific `BackfillStats` without re-doing
+  /// the GetIt registration boilerplate.
+  Future<void> pumpWithStats(
+    WidgetTester tester,
+    BackfillStats stats,
+  ) async {
+    when(
+      () => mockSequenceService.getBackfillStats(),
+    ).thenAnswer((_) async => stats);
+    await tester.pumpWidget(
+      const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  BackfillStats statsWith({
+    int receivedCount = 100,
+    int missingCount = 0,
+    int requestedCount = 0,
+    int backfilledCount = 0,
+    int deletedCount = 0,
+    int unresolvableCount = 0,
+  }) => BackfillStats.fromHostStats([
+    BackfillHostStats(
+      receivedCount: receivedCount,
+      missingCount: missingCount,
+      requestedCount: requestedCount,
+      backfilledCount: backfilledCount,
+      deletedCount: deletedCount,
+      unresolvableCount: unresolvableCount,
+    ),
+  ]);
+
+  group('Ask peers for unresolvable entries section', () {
+    testWidgets('renders cloud_sync icon when unresolvable > 0', (
+      tester,
+    ) async {
+      await pumpWithStats(tester, statsWith(unresolvableCount: 12));
+      // Two cloud_sync icons: one in the section header, one in the
+      // button icon slot.
+      expect(find.byIcon(Icons.cloud_sync), findsNWidgets(2));
+    });
+
+    testWidgets(
+      'button is disabled when unresolvable count is 0 so the user is '
+      'not offered an action that has nothing to do',
+      (tester) async {
+        // The default testStats has unresolvableCount=0.
+        await pumpWithStats(tester, testStats);
+
+        final section = find.ancestor(
+          of: find.text('Ask peers for unresolvable entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        final widget = tester.widget<FilledButton>(button);
+        expect(widget.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'tapping the button opens a confirmation dialog; cancelling the '
+      'dialog does NOT call resetAllUnresolvableEntries so a stray tap '
+      'cannot flip hundreds of thousands of rows',
+      (tester) async {
+        await pumpWithStats(tester, statsWith(unresolvableCount: 42));
+
+        final section = find.ancestor(
+          of: find.text('Ask peers for unresolvable entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        // Dialog rendered with title + row count context.
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(
+          find.text('Ask peers again for unresolvable entries?'),
+          findsOneWidget,
+        );
+        // Dialog content mentions the 42 rows inside the AlertDialog.
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.textContaining('42 '),
+          ),
+          findsOneWidget,
+        );
+
+        // Cancel — must not call the service.
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+        verifyNever(() => mockSequenceService.resetAllUnresolvableEntries());
+      },
+    );
+
+    testWidgets(
+      'confirming the dialog calls resetAllUnresolvableEntries and the '
+      'success row appears once the stats refresh',
+      (tester) async {
+        when(
+          () => mockSequenceService.resetAllUnresolvableEntries(),
+        ).thenAnswer((_) async => 42);
+
+        await pumpWithStats(tester, statsWith(unresolvableCount: 42));
+
+        final section = find.ancestor(
+          of: find.text('Ask peers for unresolvable entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Ask peers'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockSequenceService.resetAllUnresolvableEntries(),
+        ).called(1);
+        // Success row confirms the count came back.
+        expect(find.textContaining('Reopened 42'), findsOneWidget);
+      },
+    );
+  });
+
+  group('Retire stuck entries section', () {
+    testWidgets(
+      'renders the block icon in the section when there are open rows',
+      (tester) async {
+        await pumpWithStats(
+          tester,
+          statsWith(missingCount: 3, requestedCount: 4),
+        );
+        // One in header (open > 0 → red), one in button icon slot.
+        expect(find.byIcon(Icons.block), findsNWidgets(2));
+      },
+    );
+
+    testWidgets(
+      'button is disabled when neither missing nor requested rows exist',
+      (tester) async {
+        await pumpWithStats(tester, statsWith());
+
+        final section = find.ancestor(
+          of: find.text('Retire stuck entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        final widget = tester.widget<FilledButton>(button);
+        expect(widget.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'tapping opens a confirmation dialog; cancelling the dialog does '
+      'NOT retire anything',
+      (tester) async {
+        await pumpWithStats(
+          tester,
+          statsWith(missingCount: 5, requestedCount: 2),
+        );
+
+        final section = find.ancestor(
+          of: find.text('Retire stuck entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(
+          find.text('Retire stuck entries now?'),
+          findsOneWidget,
+        );
+        // openCount = missing + requested = 7, mentioned inside dialog body.
+        expect(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.textContaining('7 '),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+        verifyNever(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'confirming the dialog calls retireAgedOutRequestedEntries with '
+      'Duration.zero — the zero-amnesty manual path — and shows success',
+      (tester) async {
+        when(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        ).thenAnswer((_) async => 7);
+
+        await pumpWithStats(
+          tester,
+          statsWith(missingCount: 5, requestedCount: 2),
+        );
+
+        final section = find.ancestor(
+          of: find.text('Retire stuck entries'),
+          matching: find.byType(Card),
+        );
+        final button = find.descendant(
+          of: section,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(button);
+        await tester.pump();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(FilledButton, 'Retire now'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: Duration.zero,
+          ),
+        ).called(1);
+        expect(
+          find.textContaining('Retired 7 entries'),
+          findsOneWidget,
+        );
       },
     );
   });
