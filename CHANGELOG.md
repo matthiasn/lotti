@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `tokens.colors.interactive.enabled` (focused) over 200 ms easeInOut.
   Border width stays pinned at 1 px so the pill never breathes across
   the transition, and sibling rows in the checklist don't shift.
+- Desktop Settings is now a horizontally scrollable multi-column
+  layout instead of a two-pane list + detail. Every meaningful level
+  of the route tree renders as its own column: `/settings/sync`
+  stacks `SettingsPage + SyncSettingsPage`, `/settings/sync/backfill`
+  adds `BackfillSettingsPage` as a third column on the right, and
+  label/category/dashboard/measurable/habit/agent drill-downs work
+  the same way — up to five columns for
+  `advanced/conflicts/<id>/edit`. Columns share a single fixed
+  width (the previously-draggable `listPaneWidth`, now pinned so the
+  rest of the layout stays put), the rightmost column expands to
+  fill any remaining viewport, and the row becomes horizontally
+  scrollable with an auto-scroll to the newly-added column when the
+  stack no longer fits. Drilling from Sync into Backfill adds the
+  third column on the right instead of replacing the Sync sub-menu.
+  Mobile keeps the single-page push navigation fallback.
 - Queue-pipeline `InboundWorker` now fans the adapter's prepare phase
   out across the whole batch via `Future.wait`. Prepare is I/O-bound
   (attachment downloads, gzip decode, JSON decode) with no shared
