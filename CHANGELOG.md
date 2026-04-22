@@ -55,6 +55,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decoration, so the field stays visually flat inside the pill in
   all focus states.
 
+- New "Ask peers for unresolvable entries" action on the Backfill
+  Settings page. Flips every `unresolvable` sequence-log row back to
+  `missing` so the normal backfill sweep re-asks peers — covers the
+  case where the originating host is dead but a currently-alive peer
+  still has the payload. Complements the narrower "Reset Unresolvable"
+  action, which only resets rows whose `entry_id` is already known
+  locally (a tiny subset after a bulk retirement event). Confirmation
+  dialog with row count before the flip.
+
 - New "Retire stuck entries" action on the Backfill Settings page.
   Runs `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`
   after a confirmation dialog, promoting every currently-open
