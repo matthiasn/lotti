@@ -13,6 +13,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
@@ -45,6 +46,7 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -303,6 +305,41 @@ Future<void> registerSingletons() async {
       ? AttachmentIngestor(
           documentsDirectory: documentsDirectory,
           verboseLogging: false,
+          localVcDominates: (relativePath, incomingVc) async {
+            // Skip proactive re-download when the local agent entity /
+            // link already has a VC that is equal to or newer than the
+            // incoming sync message's VC. A chatty sender that emits
+            // N events per entity per minute (one per awake) otherwise
+            // triggers N full downloads of bytes we already have
+            // materialized locally. Conservative on edge cases: null
+            // local VC, null incoming VC, no local row, or
+            // concurrent clocks — all return false, so the download
+            // proceeds.
+            if (incomingVc == null) return false;
+            final repo = AgentRepository(getIt<AgentDatabase>());
+            VectorClock? localVc;
+            if (relativePath.contains('/agent_entities/')) {
+              final id = _idFromPath(relativePath);
+              if (id == null) return false;
+              final entity = await repo.getEntity(id);
+              localVc = entity?.vectorClock;
+            } else if (relativePath.contains('/agent_links/')) {
+              final id = _idFromPath(relativePath);
+              if (id == null) return false;
+              final link = await repo.getLinkById(id);
+              localVc = link?.vectorClock;
+            } else {
+              return false;
+            }
+            if (localVc == null) return false;
+            try {
+              final status = VectorClock.compare(localVc, incomingVc);
+              return status == VclockStatus.a_gt_b ||
+                  status == VclockStatus.equal;
+            } catch (_) {
+              return false;
+            }
+          },
         )
       : null;
   final queuePipelineCoordinator = useQueuePipeline
@@ -620,3 +657,12 @@ Future<void> _checkAndPopulateSequenceLog() async {
 @visibleForTesting
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
+
+/// Extract the entity/link id from an agent attachment's relativePath.
+/// Paths look like `/agent_entities/<uuid>.json` or
+/// `/agent_links/<uuid>.json`. Returns null if the path doesn't match.
+String? _idFromPath(String relativePath) {
+  final name = relativePath.split('/').lastOrNull;
+  if (name == null || !name.endsWith('.json')) return null;
+  return name.substring(0, name.length - '.json'.length);
+}
