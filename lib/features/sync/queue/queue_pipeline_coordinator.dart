@@ -770,6 +770,9 @@ class _ProgressForwardingSink implements BootstrapSink {
   final void Function(BootstrapPageInfo info)? onProgress;
 
   @override
+  int? get lastAcceptedCount => _inner.lastAcceptedCount;
+
+  @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
     // `onProgress` is purely observational (UI progress dot, log line).
     // A throw from the callback — e.g. `setState` on an unmounted
@@ -804,6 +807,9 @@ class _AttachmentAwareBootstrapSink implements BootstrapSink {
 
   final BootstrapSink _inner;
   final Future<void> Function(Event event) _processAttachment;
+
+  @override
+  int? get lastAcceptedCount => _inner.lastAcceptedCount;
 
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {

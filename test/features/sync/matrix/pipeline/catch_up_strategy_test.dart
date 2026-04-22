@@ -1488,20 +1488,123 @@ void main() {
         );
       },
     );
+
+    test(
+      'boundary-crossing page with accepted=0 keeps paginating up to the '
+      'cap so an SDK cache with a stale wake-up window can pull more '
+      'history and the bridge does not exit prematurely',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        // Every page is at-or-below the boundary (ts <= 100). Without
+        // the continuation logic the bridge would stop on page 0. With
+        // `acceptedPerPage=0` the sink pretends nothing new applied,
+        // so the strategy is expected to keep paginating until the cap.
+        final events = <Event>[buildEvent('e-0', 50)];
+        var historyCalls = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => true);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          historyCalls++;
+          events.insert(0, buildEvent('e-$historyCalls', 50 - historyCalls));
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink((_) {}, acceptedPerPage: 0),
+          pageSize: 1,
+          untilTimestamp: 100,
+          boundaryContinuationCap: 3,
+        );
+
+        // Stopped on cap, not on server-exhausted.
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        // Reached the cap — 3 continuation attempts on top of the
+        // initial page = 3 history calls. Fewer would be a regression
+        // (stopped too early); more would be a runaway.
+        expect(historyCalls, 3);
+      },
+    );
+
+    test(
+      'boundary-crossing page with accepted>0 stops immediately — the '
+      'continuation only kicks in when the sink accepted zero events',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        final events = <Event>[buildEvent('e-0', 50)];
+        var historyCalls = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenAnswer((_) => true);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          historyCalls++;
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          // acceptedPerPage=5 — the sink reports a productive page, so
+          // the strategy treats the boundary as satisfied and does NOT
+          // paginate further.
+          sink: _CollectingBootstrapSink((_) {}, acceptedPerPage: 5),
+          pageSize: 1,
+          untilTimestamp: 100,
+          boundaryContinuationCap: 10,
+        );
+
+        expect(result.stopReason, BootstrapStopReason.boundaryReached);
+        expect(historyCalls, 0);
+      },
+    );
   });
 }
 
 class MockEvent extends Mock implements Event {}
 
 class _CollectingBootstrapSink implements BootstrapSink {
-  _CollectingBootstrapSink(this._onPage, {this.continueAfterPage = true});
+  _CollectingBootstrapSink(
+    this._onPage, {
+    this.continueAfterPage = true,
+    this.acceptedPerPage,
+  });
 
   final void Function(List<Event> page) _onPage;
   final bool continueAfterPage;
 
+  /// When non-null, returned as `lastAcceptedCount` after every
+  /// [onPage] call. Drives the
+  /// `CatchUpStrategy.boundaryContinuationCap` path: callers set
+  /// this to `0` to simulate a sink that sees the page but rejects
+  /// all of it (dupes / filtered-out-by-type), or to a positive
+  /// count to simulate a productive page.
+  final int? acceptedPerPage;
+
+  int _lastAccepted = 0;
+
+  @override
+  int? get lastAcceptedCount => acceptedPerPage ?? _lastAccepted;
+
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
     _onPage(events);
+    _lastAccepted = events.length;
     return continueAfterPage;
   }
 }
