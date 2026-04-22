@@ -356,6 +356,7 @@ Future<void> registerSingletons() async {
           attachmentIndex: attachmentIndex,
           updateNotifications: getIt<UpdateNotifications>(),
           attachmentIngestor: queueAttachmentIngestor,
+          sentEventRegistry: sentEventRegistry,
         )
       : null;
 
@@ -420,8 +421,16 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     domainLogger: domainLogger,
   );
-  syncSequenceLogService.onMissingEntriesDetected =
-      backfillRequestService.nudge;
+  syncSequenceLogService.onMissingEntriesDetected = () {
+    backfillRequestService.nudge();
+    // Barren-bridge recovery: when the most recent reconnect bridge
+    // finished without accepting anything and a live event now reveals
+    // a missing counter, run an unbounded history walk to close the
+    // hole immediately instead of waiting for the normal backfill
+    // cadence. No-op when the queue pipeline is off or when no barren
+    // bridge was recorded.
+    queuePipelineCoordinator?.maybeStartGapRecovery();
+  };
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;

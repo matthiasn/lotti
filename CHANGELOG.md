@@ -43,6 +43,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own prepare could begin.
 
 ### Fixed
+- Queue pipeline now drops self-echoed events at the live-timeline
+  ingress. Every message this device sends via the outbox comes right
+  back through Matrix's `/sync` on the same room — the legacy pipeline
+  consulted `SentEventRegistry` to short-circuit those echoes, but the
+  new queue pipeline was missing the check, so every outbox send
+  turned into an extra inbound enqueue + prepare + apply + attachment
+  download. Under a large outbox drain this quietly doubled the DB
+  pressure and blocked genuine peer events behind thousands of
+  no-op-self-echoes, which is what made outbox throughput look
+  pathologically slow. `QueuePipelineCoordinator._handleLiveEvent`
+  now consumes from the shared `SentEventRegistry` before touching the
+  queue or the attachment ingestor, and logs a coalesced summary line
+  (one every 30s) with the suppressed count.
+
+- Reconnect bridge no longer exits prematurely when the SDK's local
+  timeline cache hadn't loaded the wake-up window yet. Before the fix,
+  a single boundary-crossing page whose events were all
+  duplicates/filtered-out still satisfied the "boundary reached" stop
+  condition, leaving gaps in `[untilTimestamp, now]` to be filled by
+  the slower backfill cadence. `collectHistoryForBootstrap` now keeps
+  paginating past the boundary for up to `boundaryContinuationCap`
+  (5) extra `/messages` round-trips when the sink reports `accepted=0`,
+  giving the SDK a chance to pull more history into its cache.
+  Paired with this, `QueuePipelineCoordinator` now records a
+  "barren bridge" signal whenever a reconnect walk finishes with
+  `boundaryReached` and zero total accepted events — the precise
+  signature of a wedged cache — and the next sequence-log gap
+  detection triggers a one-shot unbounded `collectHistoryForBootstrap`
+  to close the hole aggressively instead of waiting for the normal
+  backfill cadence. Single-flight guarded so a burst of gap signals
+  coalesces onto one walk, and the signal expires after 5 minutes so a
+  stale wedge from hours ago cannot hijack a later gap.
+
 - Checklist "Add a new item" pill no longer sprouts a second outline
   when focused. `_AddItemField` wraps a `TextField` in a container
   that draws its own 1 px pill border, but only set

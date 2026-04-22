@@ -462,7 +462,10 @@ class CatchUpStrategy {
               stopReason = BootstrapStopReason.boundaryReached;
               break;
             }
-            boundaryContinuations++;
+            // Cap N => N continuation attempts (N extra requestHistory
+            // calls past the boundary-crossing page). Check before
+            // incrementing so the counter reflects attempts already
+            // issued, not attempts about to fire.
             if (boundaryContinuations >= boundaryContinuationCap) {
               logging.captureEvent(
                 'bootstrap.boundaryContinuation.exhausted '
@@ -473,6 +476,7 @@ class CatchUpStrategy {
               stopReason = BootstrapStopReason.boundaryReached;
               break;
             }
+            boundaryContinuations++;
             logging.captureEvent(
               'bootstrap.boundaryContinuation '
               'attempt=$boundaryContinuations cap=$boundaryContinuationCap '
