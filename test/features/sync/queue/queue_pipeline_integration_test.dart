@@ -49,6 +49,10 @@ Event _buildSyncEvent({
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
   when(() => event.type).thenReturn(EventTypes.Message);
+  // Integration tests inject events via the coordinator's live
+  // timeline; `_handleLiveEvent` drops non-`synced` emissions as SDK
+  // fake-sync artefacts.
+  when(() => event.status).thenReturn(EventStatus.synced);
   when(() => event.content).thenReturn(content);
   when(() => event.text).thenReturn('stub');
   when(
@@ -248,6 +252,7 @@ void main() {
       when(() => encrypted.eventId).thenReturn(r'$enc');
       when(() => encrypted.roomId).thenReturn(roomId);
       when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+      when(() => encrypted.status).thenReturn(EventStatus.synced);
       when(() => encrypted.content).thenReturn(encryptedContent);
       when(() => encrypted.text).thenReturn('cipher');
       when(
@@ -364,6 +369,7 @@ void main() {
       when(() => event.eventId).thenReturn(r'$pendingAttach');
       when(() => event.roomId).thenReturn(roomId);
       when(() => event.type).thenReturn(EventTypes.Message);
+      when(() => event.status).thenReturn(EventStatus.synced);
       when(() => event.content).thenReturn(content);
       when(() => event.text).thenReturn('stub');
       when(
@@ -535,6 +541,7 @@ void main() {
       when(() => syncEvent.eventId).thenReturn(r'$liveSyncAwaiting');
       when(() => syncEvent.roomId).thenReturn(roomId);
       when(() => syncEvent.type).thenReturn(EventTypes.Message);
+      when(() => syncEvent.status).thenReturn(EventStatus.synced);
       when(() => syncEvent.content).thenReturn(syncContent);
       when(() => syncEvent.text).thenReturn('stub');
       when(
@@ -594,6 +601,7 @@ void main() {
       when(() => attachmentEvent.eventId).thenReturn(r'$descriptorLanded');
       when(() => attachmentEvent.roomId).thenReturn(roomId);
       when(() => attachmentEvent.type).thenReturn(EventTypes.Message);
+      when(() => attachmentEvent.status).thenReturn(EventStatus.synced);
       when(() => attachmentEvent.content).thenReturn(attachmentContent);
       when(() => attachmentEvent.text).thenReturn('attachment');
       when(

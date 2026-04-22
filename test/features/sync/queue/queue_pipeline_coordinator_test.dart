@@ -192,6 +192,10 @@ void main() {
     when(() => e.eventId).thenReturn(r'$a');
     when(() => e.roomId).thenReturn(roomId);
     when(() => e.type).thenReturn(type);
+    // `_handleLiveEvent` drops non-synced fake-sync emissions from
+    // the Matrix SDK; every test building a "real" live event needs
+    // to declare it synced.
+    when(() => e.status).thenReturn(EventStatus.synced);
     return e;
   }
 
@@ -1184,6 +1188,7 @@ void main() {
         when(() => echoed.eventId).thenReturn(r'$self-echo');
         when(() => echoed.roomId).thenReturn(roomId);
         when(() => echoed.type).thenReturn(EventTypes.Message);
+        when(() => echoed.status).thenReturn(EventStatus.synced);
         registry.register(r'$self-echo');
 
         timelineCtl.add(echoed);
@@ -1226,11 +1231,81 @@ void main() {
         when(() => peer.eventId).thenReturn(r'$peer-event');
         when(() => peer.roomId).thenReturn(roomId);
         when(() => peer.type).thenReturn(EventTypes.Message);
+        when(() => peer.status).thenReturn(EventStatus.synced);
 
         timelineCtl.add(peer);
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
         verify(() => queue.enqueueLive(peer)).called(1);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'pre-sync fake-sync emissions (status=sending / sent / error) are '
+      'dropped at the live-handler ingress — Matrix SDK 7.0.0 fires '
+      '_handleFakeSync twice on every send (pending + optimistic), both '
+      'with a non-synced status, and both race past the SentEventRegistry '
+      'because the sender registers the real id only after sendEvent '
+      'returns. Filtering by status before the registry check is the '
+      'only way to guarantee these do not reach the queue.',
+      () async {
+        final registry = SentEventRegistry();
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          sentEventRegistry: registry,
+          queueOverride: queue,
+          workerOverride: worker,
+          bridgeOverride: bridge,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+        await coordinator.start();
+
+        // Pending fake-sync: transaction id (not server-assigned),
+        // status=sending — would otherwise bypass the registry entirely
+        // because the registry never learns the transaction id.
+        final pending = _MockEvent();
+        when(() => pending.eventId).thenReturn('m1761234567890-txn-id');
+        when(() => pending.roomId).thenReturn(roomId);
+        when(() => pending.type).thenReturn(EventTypes.Message);
+        when(() => pending.status).thenReturn(EventStatus.sending);
+
+        // Optimistic fake-sync: real `$...` id, status=sent — the
+        // registry is empty on this tick because the sender's
+        // register() call has not run yet (it runs after sendEvent
+        // returns, which is after this fake-sync fires).
+        final optimistic = _MockEvent();
+        when(() => optimistic.eventId).thenReturn(r'$server-assigned-id');
+        when(() => optimistic.roomId).thenReturn(roomId);
+        when(() => optimistic.type).thenReturn(EventTypes.Message);
+        when(() => optimistic.status).thenReturn(EventStatus.sent);
+
+        // Error fake-sync: send failed mid-flight.
+        final errored = _MockEvent();
+        when(() => errored.eventId).thenReturn('m-errored-txn');
+        when(() => errored.roomId).thenReturn(roomId);
+        when(() => errored.type).thenReturn(EventTypes.Message);
+        when(() => errored.status).thenReturn(EventStatus.error);
+
+        timelineCtl
+          ..add(pending)
+          ..add(optimistic)
+          ..add(errored);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // None of these should reach the queue — they are
+        // SDK-generated fake-sync emissions, not real inbound events.
+        verifyNever(() => queue.enqueueLive(any()));
 
         await coordinator.stop();
       },

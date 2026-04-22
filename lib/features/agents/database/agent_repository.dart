@@ -1016,6 +1016,9 @@ class AgentRepository {
       // JSON in-place so the two stay consistent.
       final nowIso = now.toIso8601String();
       final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
+      final typeSql = type == AgentLinkTypes.soulAssignment
+          ? 'soul_assignment'
+          : 'improver_target';
       if (type == AgentLinkTypes.soulAssignment) {
         await _db.customStatement(
           'UPDATE agent_links '
@@ -1044,6 +1047,28 @@ class AgentRepository {
           [nowSeconds, nowSeconds, nowIso, nowIso, link.toId, link.id],
         );
       }
+      // The global UNIQUE(from_id, to_id, type) constraint applies to
+      // ALL rows regardless of `deleted_at`, so the soft-delete above
+      // does NOT free the natural-key slot when an existing row has
+      // the exact same `(type, from_id, to_id)` triple but a
+      // different `id` (e.g. the same soul↔template binding
+      // resynced from another device after a data restore). Drift's
+      // `insertOnConflictUpdate` emits `ON CONFLICT(id) DO UPDATE`,
+      // so a non-primary-key UNIQUE violation throws 2067 instead of
+      // upserting. Hard-delete any exact-natural-key rows with a
+      // different id inside the same transaction so the INSERT can
+      // claim the slot. The soft-delete tombstone is preserved for
+      // rows whose natural key differs (e.g. different to_id on a
+      // soul_assignment re-binding) — only exact-duplicate rows that
+      // were already headed to the tombstone are dropped.
+      await _db.customStatement(
+        'DELETE FROM agent_links '
+        'WHERE type = ? '
+        '  AND from_id = ? '
+        '  AND to_id = ? '
+        '  AND id != ?',
+        [typeSql, link.fromId, link.toId, link.id],
+      );
       await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
     });
   }

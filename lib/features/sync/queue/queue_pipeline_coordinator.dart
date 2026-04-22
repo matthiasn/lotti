@@ -571,17 +571,36 @@ class QueuePipelineCoordinator {
   void _handleLiveEvent(Event event) {
     final currentRoomId = _roomManager.currentRoomId;
     if (currentRoomId == null || event.roomId != currentRoomId) return;
-    // Self-echo suppression: every message this device sends via the
-    // outbox comes right back through the live timeline. Without this
-    // check the queue enqueues, prepares and applies every self-sent
-    // event — on a large outbox drain that floods the worker with
-    // tens of thousands of self-echoes, re-downloads their
-    // attachments, and hammers the DB for no net work (the local VC
-    // already dominates). The legacy pipeline consulted
-    // `SentEventRegistry` for the same reason; wire it here too. Lotti
-    // uses a single shared Matrix userID across devices so a
-    // `senderId == client.userID` check would also drop legitimate
-    // peer events — the registry is the only correct source of truth.
+    // Pre-sync fake-sync suppression. `Room.sendEvent` in matrix-sdk
+    // 7.0.0 calls `_handleFakeSync` TWICE on every send (room.dart
+    // lines 1274 + 1327) — once with a client-side transaction id
+    // and `status=sending` BEFORE the HTTP post, and again with the
+    // real `$`-prefixed id and `status=sent` AFTER the server
+    // responds but BEFORE `sendEvent` returns. Both fake-sync
+    // emissions fire `onTimelineEvent`, so our live handler receives
+    // them. Neither can be caught by `SentEventRegistry.consume`:
+    //   - The `sending` emission carries a temp id the registry
+    //     never sees (the sender only learns the real id once
+    //     `sendEvent` returns).
+    //   - The `sent` emission carries the real id but races
+    //     `MatrixMessageSender`'s `_sentEventRegistry.register(id)`
+    //     call which runs AFTER `sendEvent` returns — so the
+    //     registry is still empty when `_handleLiveEvent` consults
+    //     it on this tick.
+    // The only status that actually comes from the real `/sync`
+    // loop is `synced`; the rest are SDK-generated fake syncs for
+    // UI progress and never represent a new inbound event. Drop
+    // them here before any downstream work runs.
+    if (event.status != EventStatus.synced) return;
+    // Self-echo suppression for the REAL `/sync` echo: when the
+    // server loops our own sent event back on the next /sync it
+    // arrives as `status=synced` — by then the registry has the id
+    // (registered after the in-tick race cleared) so `consume`
+    // matches and we skip the repeat enqueue / prepare / apply
+    // cycle. Lotti uses a single shared Matrix userID across
+    // devices so a `senderId == client.userID` check would also
+    // drop legitimate peer events; the registry is the only
+    // correct source of truth.
     final registry = _sentEventRegistry;
     if (registry != null && registry.consume(event.eventId)) {
       _countSuppressedSelfEcho();
