@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
@@ -126,6 +128,120 @@ void main() {
     });
 
     testWidgets(
+      'outer pill border animates from decorative.level01 to '
+      'interactive.enabled when the add-item field gains focus, and back '
+      'when it loses focus',
+      (tester) async {
+        await _pump(tester, initiallyExpanded: true);
+
+        Color readBorderColor() {
+          final container = tester.widget<AnimatedContainer>(
+            find.descendant(
+              of: find.byKey(_addFieldKey),
+              matching: find.byType(AnimatedContainer),
+            ),
+          );
+          final decoration = container.decoration! as BoxDecoration;
+          return decoration.border!.top.color;
+        }
+
+        const tokens = dsTokensLight;
+
+        // Initial: unfocused, so the hairline is the decorative level.
+        expect(readBorderColor(), tokens.colors.decorative.level01);
+
+        // Tap into the field → focus → border fades to the interactive
+        // accent.
+        await tester.tap(find.byKey(_addFieldKey));
+        await tester.pumpAndSettle();
+        expect(readBorderColor(), tokens.colors.interactive.enabled);
+
+        // Defocus by tapping the header title area; the border should
+        // fade back to the decorative hairline.
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        expect(readBorderColor(), tokens.colors.decorative.level01);
+      },
+    );
+
+    testWidgets(
+      'focus cross-fade actually interpolates — mid-animation the painted '
+      'border colour is neither idle nor focused',
+      (tester) async {
+        await _pump(tester, initiallyExpanded: true);
+
+        // Read the *painted* decoration from the render object, not the
+        // AnimatedContainer widget's target decoration. The widget's
+        // `decoration` property is the end-state; the RenderDecoratedBox
+        // the AnimatedContainer builds holds the interpolated decoration
+        // at each frame.
+        BoxDecoration readPaintedDecoration() {
+          final render = tester.firstRenderObject<RenderDecoratedBox>(
+            find.descendant(
+              of: find.descendant(
+                of: find.byKey(_addFieldKey),
+                matching: find.byType(AnimatedContainer),
+              ),
+              matching: find.byType(DecoratedBox),
+            ),
+          );
+          return render.decoration as BoxDecoration;
+        }
+
+        const tokens = dsTokensLight;
+        final idle = tokens.colors.decorative.level01;
+        final focused = tokens.colors.interactive.enabled;
+
+        expect(readPaintedDecoration().border!.top.color, idle);
+
+        // Focus the field to start the 200 ms cross-fade.
+        await tester.tap(find.byKey(_addFieldKey));
+        await tester.pump(); // commit the rebuild that starts the animation
+
+        // Halfway through the fade: the painted colour must be neither
+        // endpoint, proving the AnimatedContainer is interpolating rather
+        // than snapping to the target.
+        await tester.pump(const Duration(milliseconds: 100));
+        final mid = readPaintedDecoration().border!.top.color;
+        expect(mid, isNot(idle));
+        expect(mid, isNot(focused));
+
+        // Past the duration: settled on the focused colour.
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(readPaintedDecoration().border!.top.color, focused);
+      },
+    );
+
+    testWidgets(
+      'outer pill border width stays at 1 px across the focus toggle so '
+      'the row never breathes',
+      (tester) async {
+        await _pump(tester, initiallyExpanded: true);
+
+        double readBorderWidth() {
+          final container = tester.widget<AnimatedContainer>(
+            find.descendant(
+              of: find.byKey(_addFieldKey),
+              matching: find.byType(AnimatedContainer),
+            ),
+          );
+          final decoration = container.decoration! as BoxDecoration;
+          return decoration.border!.top.width;
+        }
+
+        expect(readBorderWidth(), 1.0);
+
+        await tester.tap(find.byKey(_addFieldKey));
+        await tester.pumpAndSettle();
+        expect(readBorderWidth(), 1.0);
+
+        FocusManager.instance.primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+        expect(readBorderWidth(), 1.0);
+      },
+    );
+
+    testWidgets(
       'add-item field silences every themed border so the pill does not '
       'sprout a second outline on focus',
       (tester) async {
@@ -141,7 +257,7 @@ void main() {
             .decoration!;
 
         // Every state-specific border must be disabled — the outer
-        // Container already draws the pill, and the themed
+        // AnimatedContainer already draws the pill, and the themed
         // InputDecorationTheme would otherwise overlay a 2.5 px primary
         // outline on focus.
         expect(decoration.border, InputBorder.none);
@@ -153,7 +269,6 @@ void main() {
         // Fill is off so the themed `fillColor` (a subtle primary tint)
         // doesn't leak into the pill either.
         expect(decoration.filled, isFalse);
-        expect(decoration.fillColor, Colors.transparent);
       },
     );
 

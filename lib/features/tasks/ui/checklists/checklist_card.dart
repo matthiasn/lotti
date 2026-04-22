@@ -933,6 +933,11 @@ class _Body extends StatelessWidget {
 // Manages its own controller; clears on submit and fires the callback.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Duration of the border-colour cross-fade between the inactive and
+/// focused pill states. Fast enough to feel responsive on tap, slow
+/// enough that the transition reads as an intentional state change.
+const _kAddItemFieldFocusAnimationDuration = Duration(milliseconds: 200);
+
 class _AddItemField extends StatefulWidget {
   const _AddItemField({
     required this.focusNode,
@@ -951,9 +956,30 @@ class _AddItemFieldState extends State<_AddItemField> {
   final _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AddItemField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_handleFocusChange);
+      widget.focusNode.addListener(_handleFocusChange);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.focusNode.removeListener(_handleFocusChange);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _handleFocusChange() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _submit(String value) {
@@ -966,17 +992,30 @@ class _AddItemFieldState extends State<_AddItemField> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final isFocused = widget.focusNode.hasFocus;
+    // `DsColorsInteractive` exposes only `enabled` / `hover` / `pressed`
+    // — there is no dedicated focus token, so we reuse `enabled` as the
+    // active-affordance colour for the focused pill.
+    final borderColor = isFocused
+        ? tokens.colors.interactive.enabled
+        : tokens.colors.decorative.level01;
     return Padding(
       padding: EdgeInsets.only(
         left: tokens.spacing.step3,
         right: tokens.spacing.step3,
         bottom: tokens.spacing.step4,
       ),
-      child: Container(
+      child: AnimatedContainer(
+        duration: _kAddItemFieldFocusAnimationDuration,
+        curve: Curves.easeInOut,
         constraints: const BoxConstraints(minHeight: 36),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: tokens.colors.decorative.level01),
+          // Border width stays constant at 1 px so the pill never
+          // breathes across the focus toggle — only the colour cross-
+          // fades from the decorative hairline into the interactive
+          // accent when the user taps into the field.
+          border: Border.all(color: borderColor),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step4,
@@ -993,11 +1032,12 @@ class _AddItemFieldState extends State<_AddItemField> {
             hintStyle: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.lowEmphasis,
             ),
-            // The outer `Container` already draws the pill border. Silence
-            // every state-specific border the app's `InputDecorationTheme`
-            // would otherwise overlay — in particular `focusedBorder`, a
-            // 2.5 px primary-coloured outline that appeared inside the
-            // pill on tap — along with the themed `filled` fill.
+            // The outer `AnimatedContainer` already draws the pill border.
+            // Silence every state-specific border the app's
+            // `InputDecorationTheme` would otherwise overlay — in
+            // particular `focusedBorder`, a 2.5 px primary-coloured
+            // outline that appeared inside the pill on tap — along with
+            // the themed `fillColor` tint (suppressed via `filled: false`).
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -1005,7 +1045,6 @@ class _AddItemFieldState extends State<_AddItemField> {
             errorBorder: InputBorder.none,
             focusedErrorBorder: InputBorder.none,
             filled: false,
-            fillColor: Colors.transparent,
             isDense: true,
             contentPadding: EdgeInsets.zero,
           ),
