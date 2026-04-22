@@ -50,8 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InputDecorationTheme.focusedBorder` (a 2.5 px primary-colour
   outline) still overlaid itself inside the pill on tap. Every
   state-specific border (`enabledBorder`, `focusedBorder`,
-  `disabledBorder`, `errorBorder`, `focusedErrorBorder`) plus the
-  themed `filled` fill are now explicitly neutralised on the
+  `disabledBorder`, `errorBorder`, `focusedErrorBorder`) plus
+  `filled` / `fillColor` are now explicitly neutralised on the
   decoration, so the field stays visually flat inside the pill in
   all focus states.
 

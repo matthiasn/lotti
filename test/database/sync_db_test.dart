@@ -719,6 +719,56 @@ void main() {
     );
 
     test(
+      'pruneSentOutboxItems uses updated_at (send time), not created_at '
+      '(enqueue time) — a row enqueued 10 days ago but sent today must not '
+      'be pruned',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22, 12);
+        final oldCreated = now.subtract(const Duration(days: 10));
+        final recentlySent = now.subtract(const Duration(hours: 6));
+
+        // Enqueued 10 days ago, sent 6 hours ago. Pruning by created_at
+        // would delete this row; pruning by updated_at (the send time
+        // stamped by markSent) keeps it.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            subject: const Value('stuck-then-recently-sent'),
+            message: const Value('{}'),
+            createdAt: Value(oldCreated),
+            updatedAt: Value(recentlySent),
+            retries: const Value(0),
+          ),
+        );
+
+        // An actually-old sent row (control): enqueued AND sent 10 days
+        // ago — this one should be deleted.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            subject: const Value('actually-old'),
+            message: const Value('{}'),
+            createdAt: Value(oldCreated),
+            updatedAt: Value(oldCreated),
+            retries: const Value(0),
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 1);
+
+        final remaining = await database.allOutboxItems;
+        expect(remaining.map((e) => e.subject).toSet(), {
+          'stuck-then-recently-sent',
+        });
+      },
+    );
+
+    test(
       'pruneSentOutboxItems returns 0 when there is nothing to prune',
       () async {
         final database = db!;
@@ -4159,6 +4209,55 @@ void main() {
         // range (6..8) and onward through the contiguous received prefix
         // (9..12), unblocking gap detection for this host.
         expect(await database.getLastCounterForHost(hostId), 12);
+      },
+    );
+
+    test(
+      'uses updated_at (not created_at) so a row just reopened by '
+      'resetAllUnresolvableEntries survives the next retire sweep — '
+      'without this the reset→retire cycle races',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 30));
+        final justReopened = now.subtract(const Duration(hours: 1));
+
+        // Row created 30 days ago but `updated_at` just refreshed
+        // (simulating resetAllUnresolvableEntries flipping it back to
+        // missing). Must NOT be retired.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(justReopened),
+          ),
+        );
+
+        // Control: row created AND last-updated 30 days ago — must retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+        expect(retired, 1);
+
+        final reopened = await database.getEntryByHostAndCounter('host-a', 1);
+        expect(reopened!.status, SyncSequenceStatus.missing.index);
+
+        final oldRow = await database.getEntryByHostAndCounter('host-a', 2);
+        expect(oldRow!.status, SyncSequenceStatus.unresolvable.index);
       },
     );
 

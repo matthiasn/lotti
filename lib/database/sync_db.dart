@@ -515,11 +515,18 @@ class SyncDatabase extends _$SyncDatabase {
     return (delete(outbox)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Prune outbox rows with `status = sent` whose `created_at` is older
-  /// than [retention]. Error rows (`status = error`) are deliberately
-  /// kept regardless of age so a human can still inspect persistently
-  /// failed sends; pending and sending rows are live state and are
-  /// never considered for pruning.
+  /// Prune outbox rows with `status = sent` whose `updated_at` is older
+  /// than [retention]. `updated_at` is the send time (set by `markSent`);
+  /// `created_at` is the enqueue time, which can be days older for rows
+  /// that were stuck pending. Using send time means "7 days retained as
+  /// sent" regardless of how long the row waited in pending — and it
+  /// matches the same send-time definition used by the outbox volume
+  /// view in the UI.
+  ///
+  /// Error rows (`status = error`) are deliberately kept regardless of
+  /// age so a human can still inspect persistently failed sends;
+  /// pending and sending rows are live state and are never considered
+  /// for pruning.
   ///
   /// Without this, the outbox grows unbounded (observed: 395k rows on
   /// desktop, 265k on mobile). Every outbox enqueue pays the table-size
@@ -539,7 +546,7 @@ class SyncDatabase extends _$SyncDatabase {
     return (delete(outbox)..where(
           (t) =>
               t.status.equals(OutboxStatus.sent.index) &
-              t.createdAt.isSmallerThanValue(cutoff),
+              t.updatedAt.isSmallerThanValue(cutoff),
         ))
         .go();
   }
@@ -1055,9 +1062,16 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
-  /// Retire `missing`/`requested` rows whose `created_at` is older than
+  /// Retire `missing`/`requested` rows whose `updated_at` is older than
   /// [amnestyWindow] by flipping their status to `unresolvable`,
   /// regardless of `request_count` or `last_requested_at`.
+  ///
+  /// The age check is against `updated_at` (the most recent status
+  /// transition), not `created_at`, because the "Ask peers for
+  /// unresolvable entries" action flips rows back to `missing` and
+  /// refreshes `updated_at`. Using `created_at` would let the next
+  /// sweep immediately re-retire rows the user just reopened —
+  /// defeating the purpose of the peer-reask action.
   ///
   /// [retireExhaustedRequestedEntries] only retires rows that have been
   /// actively requested and hit the count cap. That leaves a failure
@@ -1094,7 +1108,7 @@ class SyncDatabase extends _$SyncDatabase {
       'UPDATE sync_sequence_log '
       'SET status = ?, updated_at = ? '
       'WHERE (status = ? OR status = ?) '
-      '  AND created_at < ?',
+      '  AND updated_at < ?',
       variables: [
         Variable.withInt(unresolvable),
         Variable.withDateTime(effectiveNow),

@@ -213,6 +213,7 @@ class OutboxService {
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
+  Timer? _startupPruneTimer;
   Timer? _pruneTimer;
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
@@ -285,8 +286,16 @@ class OutboxService {
     }
 
     // Kickoff once on startup. Delay so init and first-send paths do
-    // not contend with the DELETE.
-    Timer(const Duration(seconds: 30), runPrune);
+    // not contend with the DELETE. Stored in a field so `dispose()` can
+    // cancel it if the service is torn down before the 30s elapses —
+    // otherwise the one-shot callback would pin the service instance
+    // past disposal (retained by the Timer) and, without the internal
+    // `_isDisposed` short-circuit, would race a closed DB.
+    _startupPruneTimer?.cancel();
+    _startupPruneTimer = Timer(const Duration(seconds: 30), () {
+      _startupPruneTimer = null;
+      unawaited(runPrune());
+    });
     _pruneTimer = Timer.periodic(SyncTuning.outboxPruneInterval, (_) {
       unawaited(runPrune());
     });
@@ -1696,6 +1705,7 @@ class OutboxService {
     await _loginSubscription?.cancel();
     await _outboxCountSubscription?.cancel();
     _watchdogTimer?.cancel();
+    _startupPruneTimer?.cancel();
     _pruneTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();

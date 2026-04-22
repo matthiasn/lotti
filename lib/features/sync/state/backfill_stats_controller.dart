@@ -106,6 +106,13 @@ const Duration _autoRefreshInterval = Duration(seconds: 2);
 class BackfillStatsController extends _$BackfillStatsController {
   Timer? _autoRefreshTimer;
 
+  /// Guard against overlapping silent refreshes when the underlying
+  /// aggregation query runs slower than [_autoRefreshInterval] (large
+  /// `sync_sequence_log`, contended SQLite). Without this, the timer
+  /// would stack concurrent `getBackfillStats` reads and overwrite
+  /// `state.stats` with potentially out-of-order results.
+  bool _silentRefreshInFlight = false;
+
   @override
   BackfillStatsState build() {
     // Load stats on build
@@ -126,6 +133,11 @@ class BackfillStatsController extends _$BackfillStatsController {
           state.isResettingAllUnresolvable) {
         return;
       }
+      // Skip if the previous silent refresh hasn't returned yet. A
+      // slow query under contention must not cause us to stack N
+      // pending reads that will each rewrite `state.stats` in
+      // whatever order they happen to land.
+      if (_silentRefreshInFlight) return;
       _loadStatsSilent();
     });
     ref.onDispose(() {
@@ -159,8 +171,11 @@ class BackfillStatsController extends _$BackfillStatsController {
   /// clear an existing error or toggle `isLoading`, so a manual action
   /// that surfaced an error keeps the error visible until the user
   /// explicitly refreshes or triggers a new action. Used by the
-  /// auto-refresh timer.
+  /// auto-refresh timer. Sets [_silentRefreshInFlight] for the
+  /// duration of the query so the timer can short-circuit overlapping
+  /// fires while a slow aggregation is still running.
   Future<void> _loadStatsSilent() async {
+    _silentRefreshInFlight = true;
     try {
       final sequenceLogService = getIt<SyncSequenceLogService>();
       final stats = await sequenceLogService.getBackfillStats();
@@ -170,6 +185,8 @@ class BackfillStatsController extends _$BackfillStatsController {
       // Intentionally swallow — a transient DB error during background
       // refresh should not surface as a UI error banner; the next tick
       // or a manual refresh will retry.
+    } finally {
+      _silentRefreshInFlight = false;
     }
   }
 

@@ -1006,31 +1006,43 @@ class AgentRepository {
 
     await _db.transaction(() async {
       final now = DateTime.now();
-      final softDelete = AgentLinksCompanion(
-        deletedAt: Value(now),
-        updatedAt: Value(now),
-      );
+      // The SQL `deleted_at` / `updated_at` columns AND the
+      // `serialized` JSON both need to carry the tombstone, otherwise
+      // readers that decode the link from `serialized` (e.g. the
+      // sequence-log population queries `getAgentLinksInInterval` and
+      // `getAgentLinksWithNullVectorClock`, which return raw rows
+      // without a deleted_at filter) see a SQL-soft-deleted row whose
+      // JSON still describes an active link. `json_set` mutates the
+      // JSON in-place so the two stay consistent.
+      final nowIso = now.toIso8601String();
+      final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
       if (type == AgentLinkTypes.soulAssignment) {
-        await (_db.update(_db.agentLinks)
-              ..where(
-                (t) =>
-                    t.type.equals(AgentLinkTypes.soulAssignment) &
-                    t.deletedAt.isNull() &
-                    t.fromId.equals(link.fromId) &
-                    t.id.equals(link.id).not(),
-              ))
-            .write(softDelete);
+        await _db.customStatement(
+          'UPDATE agent_links '
+          'SET deleted_at = ?, updated_at = ?, '
+          '    serialized = json_set(serialized, '
+          r"      '$.deletedAt', ?, "
+          r"      '$.updatedAt', ?) "
+          "WHERE type = 'soul_assignment' "
+          '  AND deleted_at IS NULL '
+          '  AND from_id = ? '
+          '  AND id != ?',
+          [nowSeconds, nowSeconds, nowIso, nowIso, link.fromId, link.id],
+        );
       } else {
         // improverTarget — UNIQUE on (to_id).
-        await (_db.update(_db.agentLinks)
-              ..where(
-                (t) =>
-                    t.type.equals(AgentLinkTypes.improverTarget) &
-                    t.deletedAt.isNull() &
-                    t.toId.equals(link.toId) &
-                    t.id.equals(link.id).not(),
-              ))
-            .write(softDelete);
+        await _db.customStatement(
+          'UPDATE agent_links '
+          'SET deleted_at = ?, updated_at = ?, '
+          '    serialized = json_set(serialized, '
+          r"      '$.deletedAt', ?, "
+          r"      '$.updatedAt', ?) "
+          "WHERE type = 'improver_target' "
+          '  AND deleted_at IS NULL '
+          '  AND to_id = ? '
+          '  AND id != ?',
+          [nowSeconds, nowSeconds, nowIso, nowIso, link.toId, link.id],
+        );
       }
       await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
     });

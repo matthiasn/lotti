@@ -121,7 +121,11 @@ class BackfillSettingsPage extends ConsumerWidget {
                   context,
                   unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
                 );
-                if (!confirmed) return;
+                // Guard against widget disposal while the dialog was open —
+                // `ref.read` without a context dependency would still work,
+                // but the convention in this codebase is to short-circuit
+                // any post-async work once the hosting widget is gone.
+                if (!confirmed || !context.mounted) return;
                 await ref
                     .read(backfillStatsControllerProvider.notifier)
                     .resetAllUnresolvable();
@@ -146,7 +150,7 @@ class BackfillSettingsPage extends ConsumerWidget {
                       (statsState.stats?.totalMissing ?? 0) +
                       (statsState.stats?.totalRequested ?? 0),
                 );
-                if (!confirmed) return;
+                if (!confirmed || !context.mounted) return;
                 await ref
                     .read(backfillStatsControllerProvider.notifier)
                     .retireStuckNow();
