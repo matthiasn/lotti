@@ -2934,6 +2934,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<String?> getAgentEntityVectorClockById(String id) {
+    return customSelect(
+      'SELECT json_extract(serialized, \'\$.vectorClock\') AS vector_clock FROM agent_entities WHERE id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(id)],
+      readsFrom: {agentEntities},
+    ).map((QueryRow row) => row.readNullable<String>('vector_clock'));
+  }
+
   Selectable<AgentEntity> getAgentMessagesByThread(
     String agentId,
     String? threadId,
@@ -2956,6 +2964,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
       variables: [Variable<String>(id)],
       readsFrom: {agentLinks},
     ).asyncMap(agentLinks.mapFromRow);
+  }
+
+  Selectable<String?> getAgentLinkVectorClockById(String id) {
+    return customSelect(
+      'SELECT json_extract(serialized, \'\$.vectorClock\') AS vector_clock FROM agent_links WHERE id = ?1 AND deleted_at IS NULL',
+      variables: [Variable<String>(id)],
+      readsFrom: {agentLinks},
+    ).map((QueryRow row) => row.readNullable<String>('vector_clock'));
   }
 
   Selectable<AgentLink> getAgentLinksByFromId(String fromId) {

@@ -198,6 +198,21 @@ class HostActivity extends Table {
   'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
   '''WHERE status IN ('enqueued', 'retrying')''',
 )
+// `earliestReadyAt` probe: computes MIN(MAX(next_due_at, lease_until))
+// across all actively-schedulable rows to tell the worker when the
+// next row becomes peekable. Without this partial the query
+// full-scans the entire queue table on every worker idle tick — on a
+// desktop mid-drain we measured 3500+ scans totalling 73s of DB time
+// per hour with p95=46ms and max=2.3s. Including `lease_until` lets
+// the plan evaluate the CASE expression straight from index keys
+// without heap lookups, and restricting to `(enqueued, retrying,
+// leased)` keeps the applied ledger and poison-row `abandoned`
+// entries out of the probe.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_active_ready_at '
+  'ON inbound_event_queue (next_due_at, lease_until) '
+  '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
+)
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_room '
   'ON inbound_event_queue (room_id, origin_ts)',
@@ -1299,7 +1314,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -1478,6 +1493,19 @@ class SyncDatabase extends _$SyncDatabase {
             'idx_inbound_event_queue_abandoned_path '
             'ON inbound_event_queue (json_path) '
             '''WHERE status = 'abandoned' ''',
+          );
+        }
+        if (from < 14) {
+          // `earliestReadyAt` full-scanned `inbound_event_queue` on
+          // every worker idle tick — 3500 scans per hour, 73 seconds
+          // of DB time, p95=46 ms and max=2.3 s on a real desktop
+          // mid-drain. This partial index turns the MIN(CASE …)
+          // probe into an active-rows-only scan.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_active_ready_at '
+            'ON inbound_event_queue (next_due_at, lease_until) '
+            '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
           );
         }
       },

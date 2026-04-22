@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -91,20 +92,27 @@ class BackfillStatsState {
 }
 
 /// Cadence at which the Backfill Settings page auto-refreshes stats
-/// while it is open. Keeps `missing` / `requested` counts live as
-/// backfill works them down without requiring the user to hit the
-/// manual refresh button. Cheap because the aggregation uses
-/// `idx_sync_sequence_log_actionable_status_created_at` for
-/// status=1/2 counts and the indexed status column for the rest.
+/// while it is open AND the app is in the foreground. Keeps
+/// `missing` / `requested` counts live as backfill works them down
+/// without requiring the user to hit the manual refresh button. The
+/// stats aggregation ran 175 times per hour on a real desktop at the
+/// previous 2-second cadence and showed up as a top offender in the
+/// slow-query log, so the interval is now 5 s and we also pause the
+/// timer entirely when the app is backgrounded (no user there to
+/// watch the numbers move anyway).
 ///
 /// Zero cost when the page is closed: the provider is `@riverpod`
 /// without `keepAlive`, so Riverpod tears it down on last unwatch,
-/// firing the `ref.onDispose` that cancels this timer.
-const Duration _autoRefreshInterval = Duration(seconds: 2);
+/// firing the `ref.onDispose` that cancels this timer. Zero cost
+/// when the app is backgrounded: the `AppLifecycleListener` stops
+/// the timer on `onHide` and re-arms it on `onShow`.
+const Duration _autoRefreshInterval = Duration(seconds: 5);
 
 @riverpod
 class BackfillStatsController extends _$BackfillStatsController {
   Timer? _autoRefreshTimer;
+  AppLifecycleListener? _lifecycleListener;
+  bool _appVisible = true;
 
   /// Guard against overlapping silent refreshes when the underlying
   /// aggregation query runs slower than [_autoRefreshInterval] (large
@@ -118,12 +126,39 @@ class BackfillStatsController extends _$BackfillStatsController {
     // Load stats on build
     _loadStats();
 
-    // Auto-refresh while the page is watching. `_loadStatsSilent` skips
-    // `isLoading` toggling and error-clearing so a background refresh
-    // doesn't race a manual action's in-flight error or loading state.
+    // Track app visibility so a backgrounded app (with the Backfill
+    // Settings provider still technically alive because a nav stack
+    // kept it mounted) doesn't keep running the aggregation.
+    _lifecycleListener = AppLifecycleListener(
+      onShow: () {
+        _appVisible = true;
+        _startTimer();
+      },
+      onHide: () {
+        _appVisible = false;
+        _autoRefreshTimer?.cancel();
+        _autoRefreshTimer = null;
+      },
+    );
+
+    _startTimer();
+
+    ref.onDispose(() {
+      _autoRefreshTimer?.cancel();
+      _autoRefreshTimer = null;
+      _lifecycleListener?.dispose();
+      _lifecycleListener = null;
+    });
+
+    return const BackfillStatsState(isLoading: true);
+  }
+
+  void _startTimer() {
     _autoRefreshTimer?.cancel();
+    if (!_appVisible) return;
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!ref.mounted) return;
+      if (!_appVisible) return;
       // Skip while a manual action is running — those paths call
       // `_loadStats` themselves on completion.
       if (state.isProcessing ||
@@ -140,12 +175,6 @@ class BackfillStatsController extends _$BackfillStatsController {
       if (_silentRefreshInFlight) return;
       _loadStatsSilent();
     });
-    ref.onDispose(() {
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = null;
-    });
-
-    return const BackfillStatsState(isLoading: true);
   }
 
   Future<void> _loadStats() async {

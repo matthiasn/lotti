@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
@@ -301,45 +301,14 @@ Future<void> registerSingletons() async {
   // `verboseLogging: false` matches the `attachmentIndex` setting
   // above — steady-state per-event logging would flood the general
   // log on large catch-ups.
+  final localVcDominanceCheck = useQueuePipeline
+      ? _AgentVcDominanceCheck(agentDb: getIt<AgentDatabase>())
+      : null;
   final queueAttachmentIngestor = useQueuePipeline
       ? AttachmentIngestor(
           documentsDirectory: documentsDirectory,
           verboseLogging: false,
-          localVcDominates: (relativePath, incomingVc) async {
-            // Skip proactive re-download when the local agent entity /
-            // link already has a VC that is equal to or newer than the
-            // incoming sync message's VC. A chatty sender that emits
-            // N events per entity per minute (one per awake) otherwise
-            // triggers N full downloads of bytes we already have
-            // materialized locally. Conservative on edge cases: null
-            // local VC, null incoming VC, no local row, or
-            // concurrent clocks — all return false, so the download
-            // proceeds.
-            if (incomingVc == null) return false;
-            final repo = AgentRepository(getIt<AgentDatabase>());
-            VectorClock? localVc;
-            if (relativePath.contains('/agent_entities/')) {
-              final id = _idFromPath(relativePath);
-              if (id == null) return false;
-              final entity = await repo.getEntity(id);
-              localVc = entity?.vectorClock;
-            } else if (relativePath.contains('/agent_links/')) {
-              final id = _idFromPath(relativePath);
-              if (id == null) return false;
-              final link = await repo.getLinkById(id);
-              localVc = link?.vectorClock;
-            } else {
-              return false;
-            }
-            if (localVc == null) return false;
-            try {
-              final status = VectorClock.compare(localVc, incomingVc);
-              return status == VclockStatus.a_gt_b ||
-                  status == VclockStatus.equal;
-            } catch (_) {
-              return false;
-            }
-          },
+          localVcDominates: localVcDominanceCheck!.check,
         )
       : null;
   final queuePipelineCoordinator = useQueuePipeline
@@ -674,4 +643,97 @@ String? _idFromPath(String relativePath) {
   final name = relativePath.split('/').lastOrNull;
   if (name == null || !name.endsWith('.json')) return null;
   return name.substring(0, name.length - '.json'.length);
+}
+
+/// Stateful companion for the sync ingestor's VC-dominance check.
+///
+/// Two optimisations over the previous inline lambda:
+///
+///   1. Narrow projection. Reads only the JSON-extracted
+///      `vector_clock` field from `agent_entities` / `agent_links`
+///      instead of the full `SELECT *` which was deserialising the
+///      whole `serialized` JSON blob just to read a nested property
+///      — measured at 36 ms avg / 101 ms p95 / 239 ms max per call
+///      on a desktop mid-drain, 1631 times/hour.
+///
+///   2. Short-lived id→VC cache. Chatty senders emit multiple echoes
+///      of the same agent entity within seconds; without a cache
+///      each echo paid the full lookup. The cache stays small and
+///      TTL-bounded so edits made after the first lookup land
+///      through a subsequent eviction rather than being masked.
+class _AgentVcDominanceCheck {
+  _AgentVcDominanceCheck({required AgentDatabase agentDb}) : _agentDb = agentDb;
+
+  final AgentDatabase _agentDb;
+
+  static const Duration _cacheTtl = Duration(seconds: 5);
+  static const int _cacheCapacity = 256;
+
+  final _entityCache = <String, _CachedVc>{};
+  final _linkCache = <String, _CachedVc>{};
+
+  Future<bool> check(String relativePath, VectorClock? incomingVc) async {
+    if (incomingVc == null) return false;
+    final id = _idFromPath(relativePath);
+    if (id == null) return false;
+    VectorClock? localVc;
+    if (relativePath.contains('/agent_entities/')) {
+      localVc = await _vectorClockFor(
+        cache: _entityCache,
+        id: id,
+        loader: () => _agentDb.getAgentEntityVectorClockById(id).getSingleOrNull(),
+      );
+    } else if (relativePath.contains('/agent_links/')) {
+      localVc = await _vectorClockFor(
+        cache: _linkCache,
+        id: id,
+        loader: () => _agentDb.getAgentLinkVectorClockById(id).getSingleOrNull(),
+      );
+    } else {
+      return false;
+    }
+    if (localVc == null) return false;
+    try {
+      final status = VectorClock.compare(localVc, incomingVc);
+      return status == VclockStatus.a_gt_b || status == VclockStatus.equal;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<VectorClock?> _vectorClockFor({
+    required Map<String, _CachedVc> cache,
+    required String id,
+    required Future<String?> Function() loader,
+  }) async {
+    final now = DateTime.now();
+    final cached = cache[id];
+    if (cached != null && now.isBefore(cached.expiresAt)) {
+      return cached.vc;
+    }
+    final raw = await loader();
+    VectorClock? vc;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          vc = VectorClock.fromJson(decoded);
+        }
+      } catch (_) {
+        // Malformed VC JSON — fall through with vc=null so the caller
+        // proceeds with the download rather than silently succeeding.
+      }
+    }
+    cache[id] = _CachedVc(vc: vc, expiresAt: now.add(_cacheTtl));
+    if (cache.length > _cacheCapacity) {
+      cache.remove(cache.keys.first);
+    }
+    return vc;
+  }
+}
+
+class _CachedVc {
+  _CachedVc({required this.vc, required this.expiresAt});
+  final VectorClock? vc;
+  final DateTime expiresAt;
 }

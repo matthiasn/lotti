@@ -442,7 +442,18 @@ class OutboxService {
     };
   }
 
-  static const int _maxDrainPasses = 20;
+  /// Upper bound on how many items a single `sendNext` invocation will
+  /// push through the processor in one runner pass. Raised from the
+  /// original 20 because on a large backlog (thousands of pending
+  /// rows) the cap forced the runner to exit, flip through the
+  /// activity gate on re-entry, and resume for every 20 items —
+  /// a stop-and-go crawl visible as "outbox processing very slow" to
+  /// the user. A high cap is safe here: `_drainOutbox` stops
+  /// immediately on retry/error backoff or activity-gate pause, so
+  /// the bound only matters as a pathological safety net. A single
+  /// runner pass now happily sends the whole backlog back-to-back as
+  /// long as nothing is wrong.
+  static const int _maxDrainPasses = 2000;
   static const Duration _defaultPostDrainSettle = Duration(milliseconds: 250);
   final Duration _postDrainSettle;
 

@@ -42,7 +42,12 @@ class OutboxProcessor {
        _messageSender = messageSender,
        _loggingService = loggingService,
        _domainLogger = domainLogger,
-       batchSize = batchSizeOverride ?? 10,
+       // Only the oldest row is consumed per call — the second entry
+       // is used exclusively as a cheap "hasMore" probe so the drain
+       // loop can schedule the next iteration without a separate
+       // count query. Lowered from 10 because fetching ten rows just
+       // to throw nine away is pure DB waste on every single send.
+       batchSize = batchSizeOverride ?? 2,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =

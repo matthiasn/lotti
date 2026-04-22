@@ -43,6 +43,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own prepare could begin.
 
 ### Fixed
+- Outbox drain no longer stop-and-go-crawls through large backlogs.
+  `_drainOutbox` was capped at 20 passes per runner callback, after
+  which it bounced back through `ClientRunner.enqueueRequest` — which
+  meant the `UserActivityGate.waitUntilIdle` check and the runner's
+  FIFO queue traversal fired once every 20 items instead of once per
+  drain. `OutboxProcessor` also fetched 10 rows per call via
+  `fetchPending(limit=10)` and threw nine away to send only the
+  oldest. The pass cap is now 2000 (effectively "drain everything in
+  one pass, with a pathological safety net"), and the processor
+  fetches just 2 rows (the head-of-queue plus a cheap `hasMore`
+  probe). Together, a thousand-row outbox that previously took ~50
+  runner re-entries + 9000 wasted row reads now drains in one runner
+  pass with zero waste — the observable symptom being outbox
+  throughput that looks pathologically slow under bulk enqueues.
+
 - Queue pipeline now drops self-echoed events at the live-timeline
   ingress. Every message this device sends via the outbox comes right
   back through Matrix's `/sync` on the same room — the legacy pipeline
