@@ -24,9 +24,7 @@ class BackfillSettingsPage extends ConsumerWidget {
         ? getIt<MatrixService>()
         : null;
     final coordinator = matrixService?.queueCoordinator;
-    final showQueueSection =
-        (matrixService?.isLegacyPipelineSuppressed ?? false) &&
-        coordinator != null;
+    final showQueueSection = coordinator != null;
 
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(

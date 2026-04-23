@@ -1034,8 +1034,6 @@
   "configFlagUseCloudInferenceDescription": "Utiliser les services d'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.",
   "configFlagUseCompressedJsonAttachments": "Compresser les payloads JSON de sync",
   "configFlagUseCompressedJsonAttachmentsDescription": "Compresse les pièces jointes JSON de synchronisation avec gzip avant l'envoi. Économise de la bande passante sur les réseaux lents, au prix d'un léger coût CPU à l'envoi et à la réception.",
-  "configFlagUseInboundEventQueue": "Utiliser la file d'événements entrants",
-  "configFlagUseInboundEventQueueDescription": "Route les événements de synchronisation entrants via la file persistante avec mémoire bornée et application progressive. Nécessite un redémarrage de l'application.",
   "conflictEntityLabel": "Entité",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Copier le texte depuis la synchronisation",

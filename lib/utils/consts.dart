@@ -14,7 +14,6 @@ const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
 const useCompressedJsonAttachmentsFlag = 'use_compressed_json_attachments';
-const useInboundEventQueueFlag = 'use_inbound_event_queue';
 const enableAgentsFlag = 'enable_agents';
 const enableProjectsFlag = 'enable_projects';
 const enableEmbeddingsFlag = 'enable_embeddings';

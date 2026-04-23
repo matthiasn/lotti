@@ -2388,14 +2388,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Compresse les pièces jointes JSON de synchronisation avec gzip avant l\'envoi. Économise de la bande passante sur les réseaux lents, au prix d\'un léger coût CPU à l\'envoi et à la réception.';
 
   @override
-  String get configFlagUseInboundEventQueue =>
-      'Utiliser la file d\'événements entrants';
-
-  @override
-  String get configFlagUseInboundEventQueueDescription =>
-      'Route les événements de synchronisation entrants via la file persistante avec mémoire bornée et application progressive. Nécessite un redémarrage de l\'application.';
-
-  @override
   String get conflictEntityLabel => 'Entité';
 
   @override

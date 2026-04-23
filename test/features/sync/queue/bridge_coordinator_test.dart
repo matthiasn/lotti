@@ -493,5 +493,229 @@ void main() {
         expect(runner.calls.length, callsAtStop);
       },
     );
+
+    test(
+      'onBridgeCompleted fires once per terminal walk — the backfill '
+      'service uses this to dispatch requests for anything still '
+      'missing now that the walk has settled',
+      () async {
+        final runner = _RecordingRunner();
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        await coordinator.bridgeNow();
+
+        expect(completions, 1);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'coalesced reruns fire onBridgeCompleted exactly once — the '
+      'single-flight cascade is a single logical walk from the '
+      "consumer's perspective, not two",
+      () async {
+        final firstCallGate = Completer<void>();
+        var callCount = 0;
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            callCount++;
+            if (callCount == 1) await firstCallGate.future;
+            return true;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        // Kick off the first bridge, then pile on a second while the
+        // first is still gated — the second should coalesce into a
+        // rerun rather than start its own walk.
+        final firstBridge = coordinator.bridgeNow();
+        await Future<void>.delayed(Duration.zero);
+        unawaited(coordinator.bridgeNow());
+        await Future<void>.delayed(Duration.zero);
+        expect(callCount, 1);
+        expect(completions, 0);
+
+        firstCallGate.complete();
+        await firstBridge;
+        // Drain the unawaited rerun so its finally block can fire.
+        for (var i = 0; i < 20; i++) {
+          await Future<void>.delayed(Duration.zero);
+          if (callCount >= 2) break;
+        }
+        expect(callCount, 2);
+        expect(completions, 1);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted does not fire after stop() even if a walk was '
+      'racing with shutdown',
+      () async {
+        final gate = Completer<void>();
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            await gate.future;
+            return true;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        // Start a walk that is gated mid-flight, then request shutdown
+        // while the walk is still running. `stop()` awaits the
+        // in-flight bridge, so release the gate so the walk can
+        // complete — the finally block must observe `_stopped == true`
+        // and skip the completion callback.
+        final walk = coordinator.bridgeNow();
+        await Future<void>.delayed(Duration.zero);
+        final shutdown = coordinator.stop();
+        await Future<void>.delayed(Duration.zero);
+        gate.complete();
+        await walk;
+        await shutdown;
+
+        expect(completions, 0);
+      },
+    );
+
+    test(
+      'isBridgeInFlight is true while a walk is running and clears once '
+      'the walk settles — this is the signal the backfill service '
+      'reads to skip analysis during a walk',
+      () async {
+        final gate = Completer<void>();
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            await gate.future;
+            return true;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+
+        expect(coordinator.isBridgeInFlight, isFalse);
+
+        final walk = coordinator.bridgeNow();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.isBridgeInFlight, isTrue);
+
+        gate.complete();
+        await walk;
+        expect(coordinator.isBridgeInFlight, isFalse);
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted throwing is caught and logged — the finally '
+      'block must not let a callback error bubble out and break the '
+      'single-flight reset',
+      () async {
+        final runner = _RecordingRunner();
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+        // ignore: cascade_invocations
+        coordinator.onBridgeCompleted = () {
+          throw StateError('nudge blew up');
+        };
+
+        // bridgeNow must not rethrow the callback failure.
+        await coordinator.bridgeNow();
+
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: endsWith('.onCompleted'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        // Next call proceeds normally — the in-flight guard was still
+        // cleared by the finally block, the callback failure
+        // notwithstanding.
+        await coordinator.bridgeNow();
+        expect(runner.calls, hasLength(2));
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted is suppressed while an incomplete-retry timer '
+      'is queued — the bounded retry is expected to close the gap, so '
+      'the callback must not nudge the backfill service into '
+      'dispatching ~100-entry requests ahead of the retry',
+      () async {
+        final runner = _RecordingRunner(defaultCompleted: false);
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+          incompleteRetryDelay: const Duration(milliseconds: 50),
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        await coordinator.bridgeNow();
+
+        // Walk reported incomplete → a retry timer was armed → the
+        // completion callback must NOT have fired.
+        expect(completions, 0);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted fires on the retry that successfully completes '
+      'after a prior incomplete walk',
+      () async {
+        final outcomes = <bool>[false, true];
+        var index = 0;
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            final result = outcomes[index.clamp(0, outcomes.length - 1)];
+            index++;
+            return result;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+          incompleteRetryDelay: const Duration(milliseconds: 10),
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        await coordinator.bridgeNow();
+
+        // Drain the retry timer + its bridge pass.
+        for (var i = 0; i < 50; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          if (index >= 2 && completions >= 1) break;
+        }
+        expect(index, 2);
+        expect(completions, 1);
+
+        await coordinator.stop();
+      },
+    );
   });
 }

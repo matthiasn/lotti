@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.972] - 2026-04-21
 ### Changed
+- `BackfillRequestService` now skips analysis+dispatch while the
+  `BridgeCoordinator` is mid-walk (forward-reading fresh timeline
+  events from the last applied event id). Gaps observed during the
+  walk may be closed by events still in the pipe, so the periodic
+  timer and `nudge()` wait for the walk to conclude before asking
+  peers for anything — preventing bogus ~100-entry requests that
+  raced ahead of the inbound path. Exposed via a new
+  `QueuePipelineCoordinator.isBridgeInFlight` getter forwarded from
+  the bridge's existing `_inFlightBridge` state. Manual
+  `processFullBackfill` bypasses the gate so a user action is never
+  silently dropped.
+- Sync V2 is now the only inbound pipeline. The
+  `use_inbound_event_queue` config flag, its Flags-page toggle,
+  localized strings, and the `suppressLegacyPipeline` switch on
+  `MatrixService` are gone. `QueuePipelineCoordinator` is a required
+  constructor argument, the consumer's live ingestion is always
+  suppressed, catch-up routes unconditionally through the
+  coordinator's bridge, and the legacy connectivity-driven
+  `forceRescan` coalescing plus the `_maybeStartQueuePipeline`
+  flag-branching are removed. Settings seed, CI database expectations,
+  and the integration-test helpers were trimmed to match.
 - Checklist "Add a new item" pill border now lights up on focus. The
   previous fix that silenced the themed inner outline left the outer
   pill visually static on tap, removing the last affordance that the

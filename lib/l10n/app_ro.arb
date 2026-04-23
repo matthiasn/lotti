@@ -1034,8 +1034,6 @@
   "configFlagUseCloudInferenceDescription": "Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.",
   "configFlagUseCompressedJsonAttachments": "Comprimă payload-urile JSON de sincronizare",
   "configFlagUseCompressedJsonAttachmentsDescription": "Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.",
-  "configFlagUseInboundEventQueue": "Folosește coada de evenimente de intrare",
-  "configFlagUseInboundEventQueueDescription": "Direcționează evenimentele de sincronizare prin coada persistentă cu memorie limitată și aplicare progresivă. Necesită repornirea aplicației.",
   "conflictEntityLabel": "Entitate",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Copiază textul din sincronizare",

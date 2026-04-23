@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
@@ -27,6 +28,7 @@ class BackfillRequestService {
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
     this.documentsDirectory,
+    this.queueCoordinator,
     DomainLogger? domainLogger,
     Duration? requestInterval,
     int? maxBatchSize,
@@ -53,6 +55,15 @@ class BackfillRequestService {
   /// When provided, re-requests will sweep (delete) local zombie files
   /// for agent entities/links to allow fresh downloads.
   final Directory? documentsDirectory;
+
+  /// The queue pipeline coordinator, read for the bridge-walk gate.
+  /// While the bridge is in flight we are still forward-reading fresh
+  /// timeline events, so any gap observed now may be closed by an
+  /// event already in the pipe — analysing + dispatching would race
+  /// ahead of the inbound path and produce bogus missing-items
+  /// requests. Optional so tests that do not exercise the gate can
+  /// omit it.
+  final QueuePipelineCoordinator? queueCoordinator;
 
   final SyncSequenceLogService _sequenceLogService;
   final SyncDatabase _syncDatabase;
@@ -235,6 +246,19 @@ class BackfillRequestService {
         );
         return 0;
       }
+    }
+
+    // Suppress automatic analysis+dispatch while the reconnect bridge
+    // is forward-walking the timeline. Any "missing" counter seen now
+    // may be closed by an event already in the pipe; asking peers for
+    // it would race ahead of the inbound path and generate a bogus
+    // request. Manual triggers (`ignoreEnabledFlag`) bypass this.
+    if (!ignoreEnabledFlag && (queueCoordinator?.isBridgeInFlight ?? false)) {
+      _trace(
+        'processBackfillRequests: bridge walk in flight, skipping',
+        subDomain: 'backfill.bridgeWalk',
+      );
+      return 0;
     }
 
     _isProcessing = true;

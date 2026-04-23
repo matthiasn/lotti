@@ -4134,18 +4134,6 @@ abstract class AppLocalizations {
   /// **'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.'**
   String get configFlagUseCompressedJsonAttachmentsDescription;
 
-  /// No description provided for @configFlagUseInboundEventQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Use inbound event queue'**
-  String get configFlagUseInboundEventQueue;
-
-  /// No description provided for @configFlagUseInboundEventQueueDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Route incoming sync events through the durable queue pipeline with bounded memory and progressive apply. Requires an app restart to take effect.'**
-  String get configFlagUseInboundEventQueueDescription;
-
   /// No description provided for @conflictEntityLabel.
   ///
   /// In en, this message translates to:

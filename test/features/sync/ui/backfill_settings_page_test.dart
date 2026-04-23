@@ -777,7 +777,6 @@ void main() {
         () => mockBackfillService.processFullBackfill(),
       ).thenAnswer((_) async => 5);
       when(() => mockUserActivityService.updateActivity()).thenReturn(null);
-      when(() => mockMatrixService.isLegacyPipelineSuppressed).thenReturn(true);
       when(
         () => mockMatrixService.queueCoordinator,
       ).thenReturn(mockCoordinator);
@@ -898,23 +897,6 @@ void main() {
         await tester.pumpAndSettle();
       }
     });
-
-    testWidgets(
-      'queue section hidden when MatrixService is not suppressed',
-      (tester) async {
-        when(
-          () => mockMatrixService.isLegacyPipelineSuppressed,
-        ).thenReturn(false);
-
-        await tester.pumpWidget(
-          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.bolt_outlined), findsNothing);
-        expect(find.byIcon(Icons.download_rounded), findsNothing);
-      },
-    );
   });
 
   /// Scaffolds the Backfill Settings page with the given stats. The

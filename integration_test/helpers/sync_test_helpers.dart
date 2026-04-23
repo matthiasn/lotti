@@ -20,7 +20,6 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -241,13 +240,10 @@ Future<bool> verifyTestEnvironment() async {
 
 /// Create a MatrixService instance for testing.
 ///
-/// When [useQueuePipeline] is true, the Phase-2 `InboundQueue`
-/// pipeline is wired up alongside the service (flag written to
-/// settingsDb, dedicated SyncDatabase + SyncSequenceLogService +
-/// MatrixSessionManager + SyncRoomManager built here, coordinator
-/// passed in, legacy live-scan suppressed). Integration tests opt
-/// into the queue pipeline by passing `useQueuePipeline: true`;
-/// default stays `false` so existing tests are unchanged.
+/// The Phase-2 `InboundQueue` pipeline is wired up alongside the
+/// service — a dedicated SyncDatabase + SyncSequenceLogService +
+/// MatrixSessionManager + SyncRoomManager are built here and the
+/// coordinator is passed in as the only inbound path.
 Future<MatrixService> createMatrixService({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
@@ -262,7 +258,6 @@ Future<MatrixService> createMatrixService({
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
   bool collectSyncMetrics = true,
-  bool useQueuePipeline = false,
   AttachmentIndex? attachmentIndex,
 }) async {
   final activityGate = UserActivityGate(
@@ -301,55 +296,43 @@ Future<MatrixService> createMatrixService({
     verboseLogging: false,
   );
 
-  QueuePipelineCoordinator? queueCoordinator;
-  MatrixSessionManager? sessionManager;
-  SyncRoomManager? roomManager;
-
-  if (useQueuePipeline) {
-    // Persist the flag and await the write so `MatrixService.init()`
-    // reads the new value — a fire-and-forget write lets init() race
-    // ahead and skip the queue coordinator while the ctor still
-    // suppresses the legacy pipeline, leaving no active ingestion.
-    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
-
-    final syncDb = SyncDatabase(
-      overriddenFilename: 'sync_${uuid.v1()}.sqlite',
-      inMemoryDatabase: true,
-    );
-    final vectorClockService = VectorClockService();
-    final sequenceLogService = SyncSequenceLogService(
-      syncDatabase: syncDb,
-      vectorClockService: vectorClockService,
-      loggingService: loggingService,
-    );
-    roomManager = SyncRoomManager(
-      gateway: gateway,
-      settingsDb: settingsDb,
-      loggingService: loggingService,
-    );
-    sessionManager =
-        MatrixSessionManager(
-            gateway: gateway,
-            roomManager: roomManager,
-            loggingService: loggingService,
-          )
-          ..matrixConfig = config
-          ..deviceDisplayName = deviceName;
-    queueCoordinator = QueuePipelineCoordinator(
-      syncDb: syncDb,
-      settingsDb: settingsDb,
-      journalDb: journalDb,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      eventProcessor: eventProcessor,
-      sequenceLogService: sequenceLogService,
-      activityGate: activityGate,
-      logging: loggingService,
-      attachmentIndex: sharedAttachmentIndex,
-      updateNotifications: updateNotifications,
-      attachmentIngestor: queueAttachmentIngestor,
-    );
-  }
+  final syncDb = SyncDatabase(
+    overriddenFilename: 'sync_${uuid.v1()}.sqlite',
+    inMemoryDatabase: true,
+  );
+  final vectorClockService = VectorClockService();
+  final sequenceLogService = SyncSequenceLogService(
+    syncDatabase: syncDb,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+  );
+  final roomManager = SyncRoomManager(
+    gateway: gateway,
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final sessionManager =
+      MatrixSessionManager(
+          gateway: gateway,
+          roomManager: roomManager,
+          loggingService: loggingService,
+        )
+        ..matrixConfig = config
+        ..deviceDisplayName = deviceName;
+  final queueCoordinator = QueuePipelineCoordinator(
+    syncDb: syncDb,
+    settingsDb: settingsDb,
+    journalDb: journalDb,
+    sessionManager: sessionManager,
+    roomManager: roomManager,
+    eventProcessor: eventProcessor,
+    sequenceLogService: sequenceLogService,
+    activityGate: activityGate,
+    logging: loggingService,
+    attachmentIndex: sharedAttachmentIndex,
+    updateNotifications: updateNotifications,
+    attachmentIngestor: queueAttachmentIngestor,
+  );
 
   return MatrixService(
     matrixConfig: config,
@@ -370,7 +353,6 @@ Future<MatrixService> createMatrixService({
     roomManager: roomManager,
     sessionManager: sessionManager,
     queueCoordinator: queueCoordinator,
-    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 

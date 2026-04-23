@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +20,9 @@ class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+class _MockQueuePipelineCoordinator extends Mock
+    implements QueuePipelineCoordinator {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1458,6 +1462,126 @@ void main() {
           service.dispose();
         });
       });
+    });
+
+    group('bridge-walk suppression', () {
+      final missingItems = [
+        _createMissingLogItem(aliceHostId, 42),
+        _createMissingLogItem(aliceHostId, 43),
+      ];
+
+      void stubMissingFetch() {
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => missingItems);
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => missingItems);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((_) async {});
+      }
+
+      test(
+        'skips analysis+dispatch while the bridge is forward-walking '
+        'the timeline — gaps in the sequence log may be closed by '
+        'events still in the pipe, so asking peers now would race '
+        'ahead of the inbound path and emit a bogus request',
+        () {
+          fakeAsync((async) {
+            stubMissingFetch();
+            final coordinator = _MockQueuePipelineCoordinator();
+            when(() => coordinator.isBridgeInFlight).thenReturn(true);
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+            );
+            addTearDown(service.dispose);
+
+            service.nudge();
+            async.flushMicrotasks();
+
+            verifyNever(() => mockOutboxService.enqueueMessage(any()));
+            verifyNever(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        'dispatches normally once the bridge walk has concluded',
+        () {
+          fakeAsync((async) {
+            stubMissingFetch();
+            final coordinator = _MockQueuePipelineCoordinator();
+            when(() => coordinator.isBridgeInFlight).thenReturn(false);
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+            );
+            addTearDown(service.dispose);
+
+            service.nudge();
+            async.flushMicrotasks();
+
+            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          });
+        },
+      );
+
+      test(
+        'manual full backfill bypasses the bridge gate so a user '
+        'action is never silently swallowed',
+        () async {
+          stubMissingFetch();
+          final coordinator = _MockQueuePipelineCoordinator();
+          when(() => coordinator.isBridgeInFlight).thenReturn(true);
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            queueCoordinator: coordinator,
+          );
+          addTearDown(service.dispose);
+
+          await service.processFullBackfill();
+
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
     });
   });
 }
