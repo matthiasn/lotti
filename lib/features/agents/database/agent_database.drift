@@ -92,9 +92,28 @@ getAgentEntitiesByTypeAndSubtype: SELECT * FROM agent_entities WHERE agent_id = 
 
 getAgentEntityById: SELECT * FROM agent_entities WHERE id = :id AND deleted_at IS NULL;
 
+-- Narrow projection used by the sync attachment ingestor's
+-- VC-dominance check. SELECT * of this row was costing ~36ms avg
+-- (p95=101ms, max=239ms) because it deserialized the full serialized
+-- JSON blob just to read a nested field. Returning the extracted
+-- vector_clock alone keeps the read on the id index and lets us
+-- decide whether to skip an already-covered download without ever
+-- touching the big payload column.
+getAgentEntityVectorClockById:
+  SELECT json_extract(serialized, '$.vectorClock') AS vector_clock
+  FROM agent_entities
+  WHERE id = :id AND deleted_at IS NULL;
+
 getAgentMessagesByThread: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'agentMessage' AND thread_id = :threadId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
 getAgentLinkById: SELECT * FROM agent_links WHERE id = :id AND deleted_at IS NULL;
+
+-- Companion narrow projection for agent_links. See
+-- `getAgentEntityVectorClockById` for the rationale.
+getAgentLinkVectorClockById:
+  SELECT json_extract(serialized, '$.vectorClock') AS vector_clock
+  FROM agent_links
+  WHERE id = :id AND deleted_at IS NULL;
 
 getAgentLinksByFromId: SELECT * FROM agent_links WHERE from_id = :fromId AND deleted_at IS NULL;
 

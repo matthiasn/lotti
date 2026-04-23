@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 13);
+        expect(db.schemaVersion, 14);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 13);
+      expect(versionResult.first.read<int>('user_version'), 14);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -290,7 +290,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 13);
+      expect(versionResult.first.read<int>('user_version'), 14);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -369,7 +369,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 13);
+      expect(versionResult.first.read<int>('user_version'), 14);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -447,7 +447,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 13);
+      expect(versionResult.first.read<int>('user_version'), 14);
 
       final indexResults = await db
           .customSelect(
@@ -539,7 +539,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 13);
+        expect(versionResult.first.read<int>('user_version'), 14);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -651,7 +651,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 13);
+        expect(versionResult.first.read<int>('user_version'), 14);
 
         final oldIndex = await db
             .customSelect(
@@ -679,6 +679,115 @@ void main() {
           indexSql,
           contains('host_id, entry_id, counter DESC, status'),
         );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v14 migration adds the active_ready_at partial index so the '
+      "worker's `earliestReadyAt` probe turns from a full scan into "
+      'an index seek over the (active-status) subset of the queue',
+      () async {
+        // Seed a v13 database with a barebones inbound_event_queue +
+        // the v13 indexes so the migration only applies the v14 step.
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v14.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT,
+            outbox_entry_id TEXT,
+            payload_size INTEGER,
+            priority INTEGER NOT NULL DEFAULT 2
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            payload_type INTEGER NOT NULL DEFAULT 0,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            json_path TEXT,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS host_activity (
+            host_id TEXT NOT NULL PRIMARY KEY,
+            last_seen_at INTEGER NOT NULL
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS inbound_event_queue (
+            queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE,
+            room_id TEXT NOT NULL,
+            origin_ts INTEGER NOT NULL,
+            producer TEXT NOT NULL,
+            raw_json TEXT NOT NULL,
+            enqueued_at INTEGER NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            next_due_at INTEGER NOT NULL DEFAULT 0,
+            lease_until INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'enqueued',
+            committed_at INTEGER,
+            abandoned_at INTEGER,
+            last_error_reason TEXT,
+            resurrection_count INTEGER NOT NULL DEFAULT 0,
+            json_path TEXT
+          )
+        ''');
+        sqlite.execute('''
+          CREATE TABLE IF NOT EXISTS queue_markers (
+            room_id TEXT NOT NULL PRIMARY KEY,
+            last_applied_event_id TEXT,
+            last_applied_ts INTEGER NOT NULL DEFAULT 0,
+            last_applied_commit_seq INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+        sqlite.execute('PRAGMA user_version = 13');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v14.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 14);
+
+        final ready = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_inbound_event_queue_active_ready_at'",
+            )
+            .get();
+        expect(ready, hasLength(1));
+        final indexSql = ready.first.readNullable<String>('sql');
+        expect(indexSql, isNotNull);
+        // The column order must match the `earliestReadyAt` predicate
+        // exactly: `(next_due_at, lease_until)` so the MIN expression
+        // over `MAX(next_due_at, lease_until)` can be satisfied
+        // straight from index keys.
+        expect(indexSql, contains('next_due_at, lease_until'));
+        // Partial filter must cover exactly the three active statuses
+        // that `earliestReadyAt` scans. Applied and abandoned rows
+        // (which dominate the table on a steady-state client) must
+        // stay out of the index.
+        expect(indexSql, contains("'enqueued', 'retrying', 'leased'"));
 
         await db.close();
       },

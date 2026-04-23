@@ -42,7 +42,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entry waited on its predecessor's attachment download before its
   own prepare could begin.
 
-### Fixed
+### Changed
+- Reconnect bridge now attempts a forward-walk from the last applied
+  event id. Previous reconnect behaviour walked the SDK's cached
+  timeline backward from newest-cached to oldest-cached; when the
+  cache already reached months below the current `lastAppliedTs`,
+  every page trivially crossed the boundary on page 0 and the bridge
+  stopped without hitting the server — so a reconnecting client had
+  to rely on peer backfill responses to close gaps in the
+  `[lastAppliedTs, now]` window. The bridge now calls
+  `room.getTimeline(eventContextId: lastAppliedEventId)` (Matrix
+  `/rooms/{id}/context/{eventId}`) for a fresh server-side slice
+  anchored at the marker, then `timeline.requestFuture()` paginates
+  `/messages?dir=f` toward the tip. Backward walk remains as a
+  fallback when no anchor is known or when the server cannot resolve
+  the anchor. Unverified in production — needs observation against a
+  real reconnect with a known gap before we can claim it actually
+  closes the peer-dependent case.
+
+- Outbox drain no longer stop-and-go-crawls through large backlogs.
+  `_drainOutbox` was capped at 20 passes per runner callback, after
+  which it bounced back through `ClientRunner.enqueueRequest` — which
+  meant the `UserActivityGate.waitUntilIdle` check and the runner's
+  FIFO queue traversal fired once every 20 items instead of once per
+  drain. `OutboxProcessor` also fetched 10 rows per call via
+  `fetchPending(limit=10)` and threw nine away to send only the
+  oldest. The pass cap is now 2000 (effectively "drain everything in
+  one pass, with a pathological safety net"), and the processor
+  fetches just 2 rows (the head-of-queue plus a cheap `hasMore`
+  probe). Together, a thousand-row outbox that previously took ~50
+  runner re-entries + 9000 wasted row reads now drains in one runner
+  pass with zero waste — the observable symptom being outbox
+  throughput that looks pathologically slow under bulk enqueues.
+
+- Queue pipeline now drops self-echoed events at the live-timeline
+  ingress. Every message this device sends via the outbox comes right
+  back through Matrix's `/sync` on the same room — the legacy pipeline
+  consulted `SentEventRegistry` to short-circuit those echoes, but the
+  new queue pipeline was missing the check, so every outbox send
+  turned into an extra inbound enqueue + prepare + apply + attachment
+  download. Under a large outbox drain this quietly doubled the DB
+  pressure and blocked genuine peer events behind thousands of
+  no-op-self-echoes, which is what made outbox throughput look
+  pathologically slow. `QueuePipelineCoordinator._handleLiveEvent`
+  now consumes from the shared `SentEventRegistry` before touching the
+  queue or the attachment ingestor, and logs a coalesced summary line
+  (one every 30s) with the suppressed count.
+
+- Reconnect bridge no longer exits prematurely when the SDK's local
+  timeline cache hadn't loaded the wake-up window yet. Before the fix,
+  a single boundary-crossing page whose events were all
+  duplicates/filtered-out still satisfied the "boundary reached" stop
+  condition, leaving gaps in `[untilTimestamp, now]` to be filled by
+  the slower backfill cadence. `collectHistoryForBootstrap` now keeps
+  paginating past the boundary for up to `boundaryContinuationCap`
+  (5) extra `/messages` round-trips when the sink reports `accepted=0`,
+  giving the SDK a chance to pull more history into its cache.
+  Paired with this, `QueuePipelineCoordinator` now records a
+  "barren bridge" signal whenever a reconnect walk finishes with
+  `boundaryReached` and zero total accepted events — the precise
+  signature of a wedged cache — and the next sequence-log gap
+  detection triggers a one-shot unbounded `collectHistoryForBootstrap`
+  to close the hole aggressively instead of waiting for the normal
+  backfill cadence. Single-flight guarded so a burst of gap signals
+  coalesces onto one walk, and the signal expires after 5 minutes so a
+  stale wedge from hours ago cannot hijack a later gap.
+
 - Checklist "Add a new item" pill no longer sprouts a second outline
   when focused. `_AddItemField` wraps a `TextField` in a container
   that draws its own 1 px pill border, but only set
@@ -50,10 +115,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InputDecorationTheme.focusedBorder` (a 2.5 px primary-colour
   outline) still overlaid itself inside the pill on tap. Every
   state-specific border (`enabledBorder`, `focusedBorder`,
-  `disabledBorder`, `errorBorder`, `focusedErrorBorder`) plus the
-  themed `filled` fill are now explicitly neutralised on the
+  `disabledBorder`, `errorBorder`, `focusedErrorBorder`) plus
+  `filled` / `fillColor` are now explicitly neutralised on the
   decoration, so the field stays visually flat inside the pill in
   all focus states.
+
+- New "Ask peers for unresolvable entries" action on the Backfill
+  Settings page. Flips every `unresolvable` sequence-log row back to
+  `missing` so the normal backfill sweep re-asks peers — covers the
+  case where the originating host is dead but a currently-alive peer
+  still has the payload. Complements the narrower "Reset Unresolvable"
+  action, which only resets rows whose `entry_id` is already known
+  locally (a tiny subset after a bulk retirement event). Confirmation
+  dialog with row count before the flip.
+
+- New "Retire stuck entries" action on the Backfill Settings page.
+  Runs `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`
+  after a confirmation dialog, promoting every currently-open
+  `missing`/`requested` sequence-log row to `unresolvable`. Bypasses
+  the 7-day amnesty window for the case where a user has identified
+  stuck rows blocking the watermark and wants immediate recovery
+  without waiting for the periodic sweep.
+
+- `agent_links` upsert no longer fails when a sync-incoming
+  `soul_assignment` or `improver_target` link arrives with a new `id`
+  but the same `from_id` (soul) or `to_id` (improver) as an existing
+  active row. `insertOnConflictUpdate` only handles primary-key
+  conflicts, so the partial unique indexes
+  (`idx_unique_soul_per_template`, `idx_unique_improver_per_template`)
+  threw `SqliteException(2067)` — apply was classified retriable,
+  retries exhausted after 10 attempts, and the queue row was silently
+  abandoned. `upsertLink` now preemptively soft-deletes the colliding
+  active row under the same transaction before inserting, matching
+  the v6 migration's duplicate-cleanup pattern. Soft-deleted rows stay
+  in the table as tombstones for audit.
+
+- Stuck `sync_sequence_log` rows no longer block the watermark
+  indefinitely. A row can slip into `requested` via the
+  backfill-response-hint path (which never sets `last_requested_at`)
+  or age out of the active backfill window before hitting the
+  request-count cap — in either case the row sat in a non-terminal
+  status forever, preventing `getLastCounterForHost`'s contiguous
+  prefix from advancing and causing every new event on the same host
+  to re-emit the same gap range through gap detection. A new
+  age-based retire runs alongside the existing exhausted-retire on
+  every backfill sweep: any `missing`/`requested` row older than
+  `SyncTuning.backfillAmnestyWindow` (7 days) is promoted to
+  `unresolvable` regardless of `request_count`. Observed state on a
+  real pair of devices: 3 rows on desktop and 4 on mobile, all
+  created April 8, permanently blocking the watermark — they now
+  retire on the next sweep and gap re-detection stops.
+
+- Outbox no longer grows unbounded. `status = sent` rows are pruned
+  after 7 days; `error` rows are kept forever so persistent failures
+  remain inspectable, and `pending`/`sending` rows are never touched.
+  Observed before this change: 395k sent rows on desktop, 265k on
+  mobile — a direct contributor to slow outbox enqueue/dedup queries
+  and heavier WAL checkpointing. The sweep runs at startup (after a
+  30-second grace so it doesn't contend with init) and every 24 hours
+  thereafter.
 
 ## [0.9.969] - 2026-04-21
 ### Fixed

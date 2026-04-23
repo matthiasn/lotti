@@ -205,3 +205,6 @@ test/.test_optimizer.dart
 # Node modules & Vite cache
 **/node_modules/
 **/.vite/
+
+logs/
+

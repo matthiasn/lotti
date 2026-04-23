@@ -54,26 +54,29 @@ class _RecordingRunner {
 
   final bool _defaultCompleted;
   final List<_RunnerCall> calls = <_RunnerCall>[];
-  Future<bool> Function(Room room, num? untilTimestamp)? override;
+  Future<bool> Function(Room room, BridgeMarker marker)? override;
 
   BootstrapRunner get runner =>
       ({
         required Room room,
-        required num? untilTimestamp,
+        required BridgeMarker marker,
       }) async {
-        final call = _RunnerCall(room: room, untilTimestamp: untilTimestamp);
+        final call = _RunnerCall(room: room, marker: marker);
         calls.add(call);
         final o = override;
-        if (o != null) return o(room, untilTimestamp);
+        if (o != null) return o(room, marker);
         return _defaultCompleted;
       };
 }
 
 class _RunnerCall {
-  _RunnerCall({required this.room, required this.untilTimestamp});
+  _RunnerCall({required this.room, required this.marker});
 
   final Room room;
-  final num? untilTimestamp;
+  final BridgeMarker marker;
+
+  int? get untilTimestamp => marker.lastAppliedTs;
+  String? get anchorEventId => marker.lastAppliedEventId;
 }
 
 void main() {
@@ -105,6 +108,7 @@ void main() {
 
   BridgeCoordinator buildCoordinator({
     int? markerTs = 1000,
+    String? anchorEventId,
     Future<Room?> Function()? resolveRoom,
     _RecordingRunner? runner,
     Duration incompleteRetryDelay = const Duration(seconds: 10),
@@ -115,7 +119,10 @@ void main() {
       client: client,
       currentRoomId: () => roomId,
       resolveRoom: resolveRoom ?? () async => null,
-      getLastReadTs: () async => markerTs,
+      readMarker: () async => BridgeMarker(
+        lastAppliedTs: markerTs,
+        lastAppliedEventId: anchorEventId,
+      ),
       bootstrapRunner: recording.runner,
       logging: logging,
       incompleteRetryDelay: incompleteRetryDelay,
@@ -182,9 +189,8 @@ void main() {
   );
 
   test(
-    'timestamp marker subtracts preContextMargin before invoking the '
-    'runner — reconnect anchor is (lastTs - margin) so the boundary '
-    'page includes a small context overlap for queue-side dedup',
+    'marker with anchor event id forwards both through to the runner — '
+    'reconnect path prefers forward-walk anchored on last applied event',
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
@@ -193,17 +199,49 @@ void main() {
         client: client,
         currentRoomId: () => roomId,
         resolveRoom: () async => room,
-        getLastReadTs: () async => 5000,
+        readMarker: () async => const BridgeMarker(
+          lastAppliedTs: 5000,
+          lastAppliedEventId: r'$anchor-event',
+        ),
         bootstrapRunner: runner.runner,
         logging: logging,
-        preContextMargin: const Duration(milliseconds: 750),
       );
       await coordinator.bridgeNow();
       expect(runner.calls, hasLength(1));
-      expect(runner.calls.single.untilTimestamp, 5000 - 750);
+      expect(runner.calls.single.untilTimestamp, 5000);
+      expect(runner.calls.single.anchorEventId, r'$anchor-event');
       verify(
         () => logging.captureEvent(
-          any<String>(that: contains('queue.bridge.start mode=reconnect')),
+          any<String>(
+            that: contains('queue.bridge.start mode=reconnect.forward'),
+          ),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'marker with ts but no anchor falls back to the backward mode — '
+    'cannot forward-walk without an event id to anchor on',
+    () async {
+      final room = _MockRoom();
+      when(() => room.id).thenReturn(roomId);
+      final runner = _RecordingRunner();
+      final coordinator = buildCoordinator(
+        resolveRoom: () async => room,
+        runner: runner,
+      );
+      await coordinator.bridgeNow();
+      expect(runner.calls, hasLength(1));
+      expect(runner.calls.single.untilTimestamp, 1000);
+      expect(runner.calls.single.anchorEventId, isNull);
+      verify(
+        () => logging.captureEvent(
+          any<String>(
+            that: contains('queue.bridge.start mode=reconnect.backward'),
+          ),
           domain: any(named: 'domain'),
           subDomain: any(named: 'subDomain'),
         ),
@@ -218,7 +256,7 @@ void main() {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
       final runner = _RecordingRunner()
-        ..override = (Room r, num? until) async {
+        ..override = (Room r, BridgeMarker m) async {
           throw StateError('bootstrap boom');
         };
       final coordinator = buildCoordinator(
@@ -298,7 +336,7 @@ void main() {
       when(() => room.id).thenReturn(roomId);
       final firstCallGate = Completer<void>();
       final runner = _RecordingRunner()
-        ..override = (Room r, num? until) async {
+        ..override = (Room r, BridgeMarker m) async {
           if (r.id == roomId && !firstCallGate.isCompleted) {
             // First call: wait for the gate.
             // Second and later calls resolve immediately.
@@ -307,7 +345,7 @@ void main() {
         };
       // Override the override: first call gated, subsequent immediate.
       var callCount = 0;
-      runner.override = (Room r, num? until) async {
+      runner.override = (Room r, BridgeMarker m) async {
         callCount++;
         if (callCount == 1) await firstCallGate.future;
         return true;
@@ -392,7 +430,7 @@ void main() {
       () async {
         var callCount = 0;
         final runner = _RecordingRunner()
-          ..override = (Room r, num? until) async {
+          ..override = (Room r, BridgeMarker m) async {
             callCount++;
             return callCount > 1; // first call incomplete, then completes.
           };

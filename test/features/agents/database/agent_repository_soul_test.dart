@@ -230,5 +230,80 @@ void main() {
       expect(result, hasLength(1));
       expect(result.first.fromId, 'tpl-001');
     });
+
+    test(
+      'upsertLink succeeds when an existing soul_assignment row has the '
+      'exact same natural key (from_id, to_id, type) but a different id '
+      '— the global UNIQUE(from_id,to_id,type) constraint applies to '
+      'all rows including soft-deleted ones, so the handoff path must '
+      'free the slot before the INSERT',
+      () async {
+        final original = model.AgentLink.soulAssignment(
+          id: 'link-sa-original',
+          fromId: 'tpl-001',
+          toId: soulId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        await repo.upsertLink(original);
+
+        final replacement = model.AgentLink.soulAssignment(
+          id: 'link-sa-replacement',
+          fromId: 'tpl-001',
+          toId: soulId,
+          createdAt: testDate.add(const Duration(minutes: 1)),
+          updatedAt: testDate.add(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+
+        // Before the fix this threw SqliteException(2067) because the
+        // soft-delete of the original only set deleted_at; the row still
+        // occupied the global UNIQUE slot so INSERT of the replacement
+        // blew up before the ON CONFLICT(id) upsert could run.
+        await repo.upsertLink(replacement);
+
+        final active = await repo.getLinksFrom(
+          'tpl-001',
+          type: AgentLinkTypes.soulAssignment,
+        );
+        expect(active, hasLength(1));
+        expect(active.first.id, 'link-sa-replacement');
+      },
+    );
+
+    test(
+      'upsertLink succeeds when an existing improver_target row has the '
+      'exact same natural key — symmetric to the soul_assignment case',
+      () async {
+        final original = model.AgentLink.improverTarget(
+          id: 'link-it-original',
+          fromId: 'tpl-001',
+          toId: 'improver-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        await repo.upsertLink(original);
+
+        final replacement = model.AgentLink.improverTarget(
+          id: 'link-it-replacement',
+          fromId: 'tpl-001',
+          toId: 'improver-001',
+          createdAt: testDate.add(const Duration(minutes: 1)),
+          updatedAt: testDate.add(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+
+        await repo.upsertLink(replacement);
+
+        final active = await repo.getLinksTo(
+          'improver-001',
+          type: AgentLinkTypes.improverTarget,
+        );
+        expect(active, hasLength(1));
+        expect(active.first.id, 'link-it-replacement');
+      },
+    );
   });
 }

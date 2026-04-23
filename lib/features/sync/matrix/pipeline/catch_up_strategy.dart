@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -330,12 +331,17 @@ class CatchUpStrategy {
   /// Terminates when any of these is true:
   /// - The sink returns `false` from [BootstrapSink.onPage] (user
   ///   cancelled the bootstrap).
-  /// - [untilTimestamp] is supplied and a page contains an event with
-  ///   `originServerTs <= untilTimestamp` — the bridge's "walk back
-  ///   to the marker" case. The boundary-crossing page is still
-  ///   emitted in full so the queue sees pre-context around the
-  ///   boundary; trimming is out-of-scope here because the queue's
-  ///   `(ts, eventId)` dedup already filters already-applied rows.
+  /// - [untilTimestamp] is supplied AND a page crossed the boundary
+  ///   AND the sink accepted ≥ 1 event. The guard on accepted count
+  ///   is the reconnect-gap fix: after a long-offline wake-up the
+  ///   SDK's local timeline cache can be stale — a page whose oldest
+  ///   event is older than the marker but whose contents are all
+  ///   dupes/filtered means the SDK cache hasn't loaded the events
+  ///   in the `[untilTimestamp, now]` window yet. Paging further
+  ///   (up to [boundaryContinuationCap]) gives the SDK a chance to
+  ///   bring more history into its cache. If the sink still can't
+  ///   accept anything after the cap, we genuinely have nothing new
+  ///   in this walk and stop.
   /// - The SDK's timeline reports no more history.
   /// - [overallTimeout] elapses.
   ///
@@ -350,6 +356,13 @@ class CatchUpStrategy {
   /// without a Timeline API that we do not have in 7.0.0. What we
   /// control — our own per-run state — stays constant regardless of
   /// total history depth.
+  ///
+  /// [boundaryContinuationCap] bounds how many extra pages are pulled
+  /// past the boundary when the sink keeps reporting `accepted=0`.
+  /// Each extra page costs one `requestHistory` round-trip. Five is
+  /// a compromise between "pull enough history to populate the SDK
+  /// cache for the wake-up window" and "don't walk indefinitely on
+  /// a steady-state bridge run."
   static Future<BootstrapResult> collectHistoryForBootstrap({
     required Room room,
     required BootstrapSink sink,
@@ -357,6 +370,7 @@ class CatchUpStrategy {
     int pageSize = 200,
     num? untilTimestamp,
     Duration? overallTimeout,
+    int boundaryContinuationCap = 5,
   }) async {
     final start = DateTime.now();
     final timeline = await room.getTimeline(limit: pageSize);
@@ -365,6 +379,11 @@ class CatchUpStrategy {
     num? oldestTsSoFar;
     String? oldestEventIdSoFar;
     var stopReason = BootstrapStopReason.serverExhausted;
+    // Counts pages emitted past the `untilTimestamp` boundary when
+    // the sink reported `accepted=0`. Guards against unbounded
+    // pagination while still letting the walk go deeper to close
+    // reconnect gaps where the SDK's cache was incomplete.
+    var boundaryContinuations = 0;
 
     try {
       while (true) {
@@ -422,15 +441,51 @@ class CatchUpStrategy {
             stopReason = BootstrapStopReason.sinkCancelled;
             break;
           }
-          // Bridge reconnect path: stop as soon as a page crosses the
-          // timestamp marker — anything older is already in the local
-          // DB. `page.first` is the oldest event in this page (sorted
-          // ascending), so it is the one that "reaches furthest back"
-          // and is the correct boundary predicate.
-          if (untilTimestamp != null &&
-              TimelineEventOrdering.timestamp(page.first) <= untilTimestamp) {
-            stopReason = BootstrapStopReason.boundaryReached;
-            break;
+          // Bridge reconnect path: when a page crosses the timestamp
+          // marker, the default assumption is "anything older is
+          // already in the local DB — stop." We relax that when the
+          // sink accepted zero events from the boundary-crossing
+          // page: all-dupes-or-filtered means the SDK's local
+          // timeline cache didn't include anything new in the target
+          // window, which on a wake-up from a long-offline period is
+          // exactly the signal that events in `[untilTimestamp, now]`
+          // haven't been pulled into the cache yet. Keep paginating
+          // up to [boundaryContinuationCap] extra pages so subsequent
+          // `requestHistory` calls bring more of the server's
+          // history into the cache — including any pages the SDK
+          // hadn't loaded on the initial `room.getTimeline`.
+          final crossedBoundary =
+              untilTimestamp != null &&
+              TimelineEventOrdering.timestamp(page.first) <= untilTimestamp;
+          if (crossedBoundary) {
+            final accepted = sink.lastAcceptedCount;
+            if (accepted != null && accepted > 0) {
+              stopReason = BootstrapStopReason.boundaryReached;
+              break;
+            }
+            // Cap N => N continuation attempts (N extra requestHistory
+            // calls past the boundary-crossing page). Check before
+            // incrementing so the counter reflects attempts already
+            // issued, not attempts about to fire.
+            if (boundaryContinuations >= boundaryContinuationCap) {
+              logging.captureEvent(
+                'bootstrap.boundaryContinuation.exhausted '
+                'pages=$boundaryContinuations cap=$boundaryContinuationCap',
+                domain: syncLoggingDomain,
+                subDomain: 'bootstrap',
+              );
+              stopReason = BootstrapStopReason.boundaryReached;
+              break;
+            }
+            boundaryContinuations++;
+            logging.captureEvent(
+              'bootstrap.boundaryContinuation '
+              'attempt=$boundaryContinuations cap=$boundaryContinuationCap '
+              'reason=accepted=0 oldestTs='
+              '${TimelineEventOrdering.timestamp(page.first)}',
+              domain: syncLoggingDomain,
+              subDomain: 'bootstrap',
+            );
           }
         }
 
@@ -470,6 +525,233 @@ class CatchUpStrategy {
       stopReason: stopReason,
     );
   }
+
+  /// Forward-walks the server's timeline from [anchorEventId] to the
+  /// current tip and streams each page through [sink]. Use this on
+  /// reconnect whenever the local queue marker points at a known
+  /// `$`-prefixed event id — it is the Matrix-canonical way to close
+  /// a post-offline gap and, unlike [collectHistoryForBootstrap], it
+  /// does NOT reuse the SDK's cached backward-walking timeline.
+  ///
+  /// How it works:
+  /// - `room.getTimeline(eventContextId: anchorEventId)` asks the
+  ///   server for a fragmented timeline centred on the anchor via
+  ///   `/rooms/{roomId}/context/{eventId}`. The returned chunk
+  ///   carries `prev_batch` / `next_batch` tokens independent of
+  ///   whatever the client has cached from prior sessions — so a
+  ///   client whose cached oldest event is months below the gap
+  ///   still gets a fresh server-side window here.
+  /// - `timeline.requestFuture(historyCount: pageSize)` walks
+  ///   forward via `/messages?dir=f`, one page at a time, emitting
+  ///   each page through the sink until the server reports no more
+  ///   future (`!canRequestFuture`) or the [forwardPageCap] safety
+  ///   cap trips.
+  ///
+  /// Only events whose timestamp is strictly greater than the
+  /// anchor's own timestamp are emitted — the anchor itself and any
+  /// events that happen to tie at the same ms on the first chunk are
+  /// filtered, since by definition we've already applied them.
+  ///
+  /// Returns `BootstrapStopReason.serverExhausted` when the walk
+  /// reaches the tip, `boundaryReached` when the cap trips (so
+  /// callers treat the pass as "completed" and don't schedule a
+  /// bounded retry), `sinkCancelled` on sink return=false, and
+  /// `error` on throw / timeout.
+  ///
+  /// When `getEventContext` returns null (anchor no longer resolvable
+  /// — rare, requires server-side compaction), the method returns a
+  /// `BootstrapResult` with `stopReason=error` and zero pages. The
+  /// caller is expected to fall back to
+  /// [collectHistoryForBootstrap] in that case.
+  static Future<BootstrapResult> collectForwardForBootstrap({
+    required Room room,
+    required BootstrapSink sink,
+    required LoggingService logging,
+    required String anchorEventId,
+    int pageSize = 200,
+    int forwardPageCap = 50,
+    Duration? overallTimeout,
+  }) async {
+    final start = DateTime.now();
+    final Timeline timeline;
+    try {
+      timeline = await room.getTimeline(eventContextId: anchorEventId);
+    } catch (error, stackTrace) {
+      logging.captureException(
+        error,
+        domain: syncLoggingDomain,
+        subDomain: 'bootstrap.forward.getTimeline',
+        stackTrace: stackTrace,
+      );
+      return const BootstrapResult(
+        totalPages: 0,
+        totalEvents: 0,
+        oldestTimestampReached: null,
+        stopReason: BootstrapStopReason.error,
+      );
+    }
+
+    // The context chunk may not actually contain the anchor (server
+    // compacted it out, or the SDK's internal `getEventContext`
+    // returned an empty chunk). In that case we cannot trust the
+    // "events after the anchor" filter and must bail so the caller
+    // can fall back to a different strategy.
+    final anchor = timeline.events.firstWhereOrNull(
+      (e) => e.eventId == anchorEventId,
+    );
+    if (anchor == null) {
+      logging.captureEvent(
+        'bootstrap.forward.anchorMissing '
+        'anchorEventId=$anchorEventId events=${timeline.events.length}',
+        domain: syncLoggingDomain,
+        subDomain: 'bootstrap.forward',
+      );
+      try {
+        timeline.cancelSubscriptions();
+      } catch (_) {}
+      return const BootstrapResult(
+        totalPages: 0,
+        totalEvents: 0,
+        oldestTimestampReached: null,
+        stopReason: BootstrapStopReason.error,
+      );
+    }
+    final anchorTs = TimelineEventOrdering.timestamp(anchor);
+
+    var pageIndex = 0;
+    var totalEventsSoFar = 0;
+    num? newestTsSoFar;
+    String? newestEventIdSoFar;
+    var stopReason = BootstrapStopReason.serverExhausted;
+
+    try {
+      while (true) {
+        if (overallTimeout != null &&
+            DateTime.now().difference(start) >= overallTimeout) {
+          stopReason = BootstrapStopReason.error;
+          break;
+        }
+
+        // Sort oldest-first for deterministic page ordering + the
+        // sink's "events[].first = oldest" contract.
+        final sorted = TimelineEventOrdering.sortStableByTimestamp(
+          timeline.events,
+        );
+
+        // Build the page: events strictly newer than the anchor AND
+        // strictly newer than what we've already emitted. On the
+        // first iteration `newestTsSoFar` is null so the filter only
+        // strips the anchor itself and ties; on subsequent
+        // iterations the filter strips everything we already sent.
+        final page = <Event>[];
+        for (final event in sorted) {
+          if (!_isStrictlyAfter(
+            event,
+            anchorTs: anchorTs,
+            anchorEventId: anchorEventId,
+          )) {
+            continue;
+          }
+          if (newestTsSoFar != null &&
+              !_isStrictlyAfter(
+                event,
+                anchorTs: newestTsSoFar,
+                anchorEventId: newestEventIdSoFar,
+              )) {
+            continue;
+          }
+          page.add(event);
+        }
+
+        if (page.isNotEmpty) {
+          totalEventsSoFar += page.length;
+          final lastTs = TimelineEventOrdering.timestamp(page.last);
+          if (newestTsSoFar == null || lastTs > newestTsSoFar) {
+            newestTsSoFar = lastTs;
+            newestEventIdSoFar = page.last.eventId;
+          } else if (lastTs == newestTsSoFar) {
+            final lastId = page.last.eventId;
+            if (newestEventIdSoFar == null ||
+                lastId.compareTo(newestEventIdSoFar) > 0) {
+              newestEventIdSoFar = lastId;
+            }
+          }
+          final info = BootstrapPageInfo(
+            pageIndex: pageIndex,
+            totalEventsSoFar: totalEventsSoFar,
+            oldestTimestampSoFar: newestTsSoFar,
+            serverHasMore: timeline.canRequestFuture,
+            elapsed: DateTime.now().difference(start),
+          );
+          final shouldContinue = await sink.onPage(page, info);
+          pageIndex++;
+          if (!shouldContinue) {
+            stopReason = BootstrapStopReason.sinkCancelled;
+            break;
+          }
+        }
+
+        if (!timeline.canRequestFuture) {
+          stopReason = BootstrapStopReason.serverExhausted;
+          break;
+        }
+
+        if (pageIndex >= forwardPageCap) {
+          logging.captureEvent(
+            'bootstrap.forward.capReached '
+            'pages=$pageIndex cap=$forwardPageCap '
+            'events=$totalEventsSoFar',
+            domain: syncLoggingDomain,
+            subDomain: 'bootstrap.forward',
+          );
+          // Treat as completed rather than error — the cap is a
+          // safety net against runaway walks, not a bug. The bridge
+          // coordinator's retry-on-incomplete path would only thrash
+          // here; instead we stop and let the next organic reconnect
+          // trigger pick up any remaining tail.
+          stopReason = BootstrapStopReason.boundaryReached;
+          break;
+        }
+
+        try {
+          await timeline.requestFuture(historyCount: pageSize);
+        } catch (error, stackTrace) {
+          logging.captureException(
+            error,
+            domain: syncLoggingDomain,
+            subDomain: 'bootstrap.forward.requestFuture',
+            stackTrace: stackTrace,
+          );
+          stopReason = BootstrapStopReason.error;
+          break;
+        }
+      }
+    } finally {
+      try {
+        timeline.cancelSubscriptions();
+      } catch (_) {}
+    }
+
+    return BootstrapResult(
+      totalPages: pageIndex,
+      totalEvents: totalEventsSoFar,
+      oldestTimestampReached: newestTsSoFar,
+      stopReason: stopReason,
+    );
+  }
+
+  static bool _isStrictlyAfter(
+    Event event, {
+    required num? anchorTs,
+    required String? anchorEventId,
+  }) {
+    if (anchorTs == null) return true;
+    final ts = TimelineEventOrdering.timestamp(event);
+    if (ts > anchorTs) return true;
+    if (ts < anchorTs) return false;
+    if (anchorEventId == null) return false;
+    return event.eventId.compareTo(anchorEventId) > 0;
+  }
 }
 
 /// Sink contract for [CatchUpStrategy.collectHistoryForBootstrap].
@@ -479,12 +761,27 @@ class CatchUpStrategy {
 /// Modelled as a one-method abstract class rather than a typedef so
 /// concrete sinks (the queue's bootstrap sink, future progress-
 /// reporting wrappers) can carry their own state and lifecycle.
-// ignore: one_member_abstracts
 abstract class BootstrapSink {
   /// Called once per page. Returning `false` stops paging (user
   /// cancel, back-pressure timeout, etc.). Implementations must not
   /// retain the [events] list across calls.
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info);
+
+  /// Number of events the sink actually accepted on the most recent
+  /// [onPage] call. Returns null when the sink does not track
+  /// acceptance (e.g. pure progress-forwarding wrappers that don't
+  /// themselves mutate state).
+  ///
+  /// [CatchUpStrategy.collectHistoryForBootstrap] reads this after
+  /// each page when `untilTimestamp` is set. If the oldest event in
+  /// a page crosses the boundary but the sink accepted zero events,
+  /// that's the reconnect-gap signal: the SDK's local timeline cache
+  /// may have a stale window that doesn't yet include the events
+  /// between `untilTimestamp` and `now`. The strategy keeps
+  /// paginating (up to a bounded cap) to give the SDK a chance to
+  /// pull more history into the cache — which is where the missing
+  /// events live after a long-offline wake-up.
+  int? get lastAcceptedCount => null;
 }
 
 class BootstrapPageInfo {

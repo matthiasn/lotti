@@ -213,6 +213,8 @@ class OutboxService {
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
+  Timer? _startupPruneTimer;
+  Timer? _pruneTimer;
   DateTime? _nextSendAllowedAt;
   DateTime? _backoffScheduledAt;
 
@@ -252,6 +254,52 @@ class OutboxService {
     // Safety watchdog: if there are pending items and we appear idle (no
     // queued work), periodically nudge the runner. This recovers from missed
     // signals or platform-specific timer quirks after reconnects/resumes.
+    // Prune `sent` outbox rows older than [SyncTuning.outboxSentRetention]
+    // on startup (after a short grace window so it doesn't race init) and
+    // then at [SyncTuning.outboxPruneInterval]. Error rows are kept forever
+    // for forensic inspection. Without this, sent rows accumulate
+    // indefinitely (observed: 395k on desktop, 265k on mobile) and slow
+    // every outbox enqueue / dedup lookup.
+    _pruneTimer?.cancel();
+    Future<void> runPrune() async {
+      if (_isDisposed) return;
+      try {
+        final deleted = await _repository.pruneSentOutboxItems(
+          retention: SyncTuning.outboxSentRetention,
+        );
+        if (deleted > 0) {
+          _loggingService.captureEvent(
+            'prune.sent removed=$deleted '
+            'retentionDays=${SyncTuning.outboxSentRetention.inDays}',
+            domain: 'OUTBOX',
+            subDomain: 'prune',
+          );
+        }
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'OUTBOX',
+          subDomain: 'prune',
+          stackTrace: st,
+        );
+      }
+    }
+
+    // Kickoff once on startup. Delay so init and first-send paths do
+    // not contend with the DELETE. Stored in a field so `dispose()` can
+    // cancel it if the service is torn down before the 30s elapses —
+    // otherwise the one-shot callback would pin the service instance
+    // past disposal (retained by the Timer) and, without the internal
+    // `_isDisposed` short-circuit, would race a closed DB.
+    _startupPruneTimer?.cancel();
+    _startupPruneTimer = Timer(const Duration(seconds: 30), () {
+      _startupPruneTimer = null;
+      unawaited(runPrune());
+    });
+    _pruneTimer = Timer.periodic(SyncTuning.outboxPruneInterval, (_) {
+      unawaited(runPrune());
+    });
+
     _watchdogTimer?.cancel();
     _watchdogTimer = Timer.periodic(SyncTuning.outboxWatchdogInterval, (
       Timer _,
@@ -394,7 +442,18 @@ class OutboxService {
     };
   }
 
-  static const int _maxDrainPasses = 20;
+  /// Upper bound on how many items a single `sendNext` invocation will
+  /// push through the processor in one runner pass. Raised from the
+  /// original 20 because on a large backlog (thousands of pending
+  /// rows) the cap forced the runner to exit, flip through the
+  /// activity gate on re-entry, and resume for every 20 items —
+  /// a stop-and-go crawl visible as "outbox processing very slow" to
+  /// the user. A high cap is safe here: `_drainOutbox` stops
+  /// immediately on retry/error backoff or activity-gate pause, so
+  /// the bound only matters as a pathological safety net. A single
+  /// runner pass now happily sends the whole backlog back-to-back as
+  /// long as nothing is wrong.
+  static const int _maxDrainPasses = 2000;
   static const Duration _defaultPostDrainSettle = Duration(milliseconds: 250);
   final Duration _postDrainSettle;
 
@@ -1657,6 +1716,8 @@ class OutboxService {
     await _loginSubscription?.cancel();
     await _outboxCountSubscription?.cancel();
     _watchdogTimer?.cancel();
+    _startupPruneTimer?.cancel();
+    _pruneTimer?.cancel();
     if (_ownsActivityGate) {
       await _activityGate.dispose();
     }

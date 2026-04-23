@@ -1171,6 +1171,210 @@ void main() {
       });
     });
 
+    group('upsertLink unique-slot handoff (partial unique indexes)', () {
+      test(
+        'soulAssignment with a new id for the same fromId soft-deletes the '
+        'existing active row and inserts the new one — without this the '
+        'insert hits idx_unique_soul_per_template (SqliteException 2067)',
+        () async {
+          final existing = model.AgentLink.soulAssignment(
+            id: 'link-old',
+            fromId: 'template-laura-001',
+            toId: 'soul-A',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+          );
+          await repo.upsertLink(existing);
+
+          // Incoming sync: same fromId, NEW id, NEW toId. This is the
+          // exact pattern that caused `SqliteException(2067): UNIQUE
+          // constraint failed: agent_links.from_id` on production
+          // devices and was repeatedly retried → abandoned.
+          final incoming = model.AgentLink.soulAssignment(
+            id: 'link-new',
+            fromId: 'template-laura-001',
+            toId: 'soul-B',
+            createdAt: testDate.add(const Duration(hours: 1)),
+            updatedAt: testDate.add(const Duration(hours: 1)),
+            vectorClock: const VectorClock({'node-1': 2}),
+          );
+          await repo.upsertLink(incoming);
+
+          // Active row must be the new one; old one is soft-deleted.
+          final active = await repo.getLinksFrom(
+            'template-laura-001',
+            type: 'soul_assignment',
+          );
+          expect(active, hasLength(1));
+          expect(active.first.id, 'link-new');
+          expect(active.first.toId, 'soul-B');
+
+          // Old row is retained as soft-deleted for audit (we don't
+          // hard-delete).
+          // The old row stays in the table as a soft-deleted tombstone
+          // for audit. `getLinksFrom` filters deleted rows, so inspect
+          // the raw table count.
+          final allTemplate1 = await db
+              .customSelect(
+                'SELECT COUNT(*) AS c FROM agent_links '
+                "WHERE from_id = 'template-laura-001' "
+                "AND type = 'soul_assignment'",
+              )
+              .getSingle();
+          expect(allTemplate1.read<int>('c'), 2);
+        },
+      );
+
+      test(
+        'upsertLink on same soulAssignment id+fromId (no conflict) leaves '
+        'existing active rows for other templates untouched',
+        () async {
+          // Two templates, each with their own soul_assignment — the
+          // partial unique index is scoped per from_id so these coexist.
+          await repo.upsertLink(
+            model.AgentLink.soulAssignment(
+              id: 'link-tpl1',
+              fromId: 'template-1',
+              toId: 'soul-1',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: const VectorClock({'node-1': 1}),
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.soulAssignment(
+              id: 'link-tpl2',
+              fromId: 'template-2',
+              toId: 'soul-2',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: const VectorClock({'node-1': 1}),
+            ),
+          );
+
+          // Re-upsert the same (id, fromId) — must be idempotent and must
+          // NOT touch the other template's link.
+          await repo.upsertLink(
+            model.AgentLink.soulAssignment(
+              id: 'link-tpl1',
+              fromId: 'template-1',
+              toId: 'soul-1',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: const VectorClock({'node-1': 2}),
+            ),
+          );
+
+          final tpl1 = await repo.getLinksFrom(
+            'template-1',
+            type: 'soul_assignment',
+          );
+          final tpl2 = await repo.getLinksFrom(
+            'template-2',
+            type: 'soul_assignment',
+          );
+          expect(tpl1, hasLength(1));
+          expect(tpl1.first.id, 'link-tpl1');
+          expect(tpl2, hasLength(1));
+          expect(tpl2.first.id, 'link-tpl2');
+        },
+      );
+
+      test(
+        'improverTarget with a new id for the same toId soft-deletes the '
+        'existing active row — covers the idx_unique_improver_per_template '
+        'branch',
+        () async {
+          final existing = model.AgentLink.improverTarget(
+            id: 'imp-old',
+            fromId: 'improver-1',
+            toId: 'template-target-1',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 1}),
+          );
+          await repo.upsertLink(existing);
+
+          final incoming = model.AgentLink.improverTarget(
+            id: 'imp-new',
+            fromId: 'improver-2',
+            toId: 'template-target-1',
+            createdAt: testDate.add(const Duration(hours: 1)),
+            updatedAt: testDate.add(const Duration(hours: 1)),
+            vectorClock: const VectorClock({'node-1': 2}),
+          );
+          await repo.upsertLink(incoming);
+
+          final active = await repo.getLinksTo(
+            'template-target-1',
+            type: 'improver_target',
+          );
+          expect(active, hasLength(1));
+          expect(active.first.id, 'imp-new');
+
+          // Old row persists as soft-deleted tombstone.
+          final tombstoneCount = await db
+              .customSelect(
+                'SELECT COUNT(*) AS c FROM agent_links '
+                "WHERE to_id = 'template-target-1' "
+                "AND type = 'improver_target' "
+                'AND deleted_at IS NOT NULL',
+              )
+              .getSingle();
+          expect(tombstoneCount.read<int>('c'), 1);
+        },
+      );
+
+      test(
+        'incoming soft-deleted soulAssignment does not trigger handoff — we '
+        'only reclaim the unique slot when the new row is itself active, '
+        'otherwise a late-arriving soft-delete for a superseded id would '
+        'incorrectly re-soft-delete the active replacement',
+        () async {
+          await repo.upsertLink(
+            model.AgentLink.soulAssignment(
+              id: 'link-active',
+              fromId: 'template-1',
+              toId: 'soul-A',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: const VectorClock({'node-1': 2}),
+            ),
+          );
+
+          // Incoming link for the SAME template but already soft-deleted
+          // — this is a tombstone sync message. Must NOT touch
+          // `link-active`. Must simply insert the tombstone row.
+          final tombstone = model.AgentLink.soulAssignment(
+            id: 'link-tombstone',
+            fromId: 'template-1',
+            toId: 'soul-old',
+            createdAt: testDate,
+            updatedAt: testDate.add(const Duration(minutes: 1)),
+            vectorClock: const VectorClock({'node-1': 1}),
+            deletedAt: testDate.add(const Duration(minutes: 1)),
+          );
+          await repo.upsertLink(tombstone);
+
+          final active = await repo.getLinksFrom(
+            'template-1',
+            type: 'soul_assignment',
+          );
+          expect(active, hasLength(1));
+          expect(active.first.id, 'link-active');
+
+          final tombCount = await db
+              .customSelect(
+                'SELECT COUNT(*) AS c FROM agent_links '
+                "WHERE id = 'link-tombstone' AND deleted_at IS NOT NULL",
+              )
+              .getSingle();
+          expect(tombCount.read<int>('c'), 1);
+        },
+      );
+    });
+
     group('getLinksFrom with type filter', () {
       test('returns only links of the specified type', () async {
         await repo.upsertLink(makeBasicLink(id: 'link-basic-1'));

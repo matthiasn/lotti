@@ -1151,9 +1151,37 @@ class SyncSequenceLogService {
     final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
 
     if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
       _trace(
         'resetUnresolvableEntries: reset $count entries back to missing',
         subDomain: 'sequence.resetUnresolvable',
+      );
+    }
+
+    return count;
+  }
+
+  /// Reset every `unresolvable` row back to `missing`, regardless of
+  /// whether an `entry_id` is already known locally. Used by the Backfill
+  /// Settings "Ask peers for unresolvable entries" action to re-open the
+  /// row for the normal backfill sweep — once a peer responds with a
+  /// payload hint, `handleBackfillResponse` fills in `entry_id` and
+  /// eventually flips the row to `received`/`backfilled`.
+  ///
+  /// Semantically stronger than [resetUnresolvableEntries]; prefer this
+  /// one when a user explicitly wants to re-query peers for rows whose
+  /// originating host is dead but which a currently-alive peer may
+  /// still have.
+  Future<int> resetAllUnresolvableEntries() async {
+    final count = await _syncDatabase.resetAllUnresolvableEntries();
+
+    if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
+      _trace(
+        'resetAllUnresolvableEntries: reset $count entries back to missing',
+        subDomain: 'sequence.resetAllUnresolvable',
       );
     }
 
@@ -1188,6 +1216,38 @@ class SyncSequenceLogService {
       _trace(
         'retireExhaustedRequestedEntries: retired $count entries to unresolvable',
         subDomain: 'sequence.retireExhausted',
+      );
+    }
+
+    return count;
+  }
+
+  /// Age-based companion to [retireExhaustedRequestedEntries]. Retires
+  /// any `missing`/`requested` row older than [amnestyWindow] regardless
+  /// of `request_count` or `last_requested_at`.
+  ///
+  /// Closes the gap where a row can slip into `requested` via the
+  /// backfill-response-hint path (which does not set
+  /// `last_requested_at`) OR age out of the active backfill window
+  /// ([SyncTuning.defaultBackfillMaxAge]) before accumulating enough
+  /// requests to hit the exhaustion cap. Without this, such rows sit in
+  /// a non-terminal status forever, blocking the contiguous watermark
+  /// (see `getLastCounterForHost`) and causing every new event on the
+  /// same host to re-emit the same gap range through gap detection.
+  Future<int> retireAgedOutRequestedEntries({
+    Duration amnestyWindow = const Duration(days: 7),
+  }) async {
+    final count = await _syncDatabase.retireAgedOutRequestedEntries(
+      amnestyWindow: amnestyWindow,
+    );
+
+    if (count > 0) {
+      _lastCounterCache.clear();
+      _materializedUpperBound.clear();
+      _trace(
+        'retireAgedOutRequestedEntries: retired $count entries to unresolvable '
+        '(amnestyWindow=${amnestyWindow.inDays}d)',
+        subDomain: 'sequence.retireAgedOut',
       );
     }
 

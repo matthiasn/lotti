@@ -2957,6 +2957,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_inbound_event_queue_ready',
     'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id) WHERE status IN (\'enqueued\', \'retrying\')',
   );
+  late final Index idxInboundEventQueueActiveReadyAt = Index(
+    'idx_inbound_event_queue_active_ready_at',
+    'CREATE INDEX idx_inbound_event_queue_active_ready_at ON inbound_event_queue (next_due_at, lease_until) WHERE status IN (\'enqueued\', \'retrying\', \'leased\')',
+  );
   late final Index idxInboundEventQueueRoom = Index(
     'idx_inbound_event_queue_room',
     'CREATE INDEX idx_inbound_event_queue_room ON inbound_event_queue (room_id, origin_ts)',
@@ -2984,6 +2988,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxSyncSequenceLogPayloadResolution,
     idxSyncSequenceLogHostEntryStatusCounter,
     idxInboundEventQueueReady,
+    idxInboundEventQueueActiveReadyAt,
     idxInboundEventQueueRoom,
     idxInboundEventQueueActiveRoomTs,
     idxInboundEventQueueAbandonedPath,

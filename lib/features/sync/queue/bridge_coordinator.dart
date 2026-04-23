@@ -3,14 +3,40 @@ import 'dart:async';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
+/// Snapshot of the per-room queue marker the bridge reads at the
+/// start of each pass. Bundles both fields together so future
+/// additions (e.g. a persisted `prev_batch` token) need one new
+/// field here, not a second getter on the coordinator.
+class BridgeMarker {
+  const BridgeMarker({
+    required this.lastAppliedTs,
+    required this.lastAppliedEventId,
+  });
+
+  /// Highest `originServerTs` the worker has applied. Null on a
+  /// fresh client. When non-null, receivers that don't have an
+  /// anchor event id can still use this as a timestamp floor.
+  final int? lastAppliedTs;
+
+  /// Matrix event id (`$...`) of the last applied event. Null on a
+  /// fresh client or when the last applied event was a placeholder
+  /// id that never reached the server (defensive; should not
+  /// happen in practice). When present, the bootstrap runner uses
+  /// it to anchor a forward-walk via
+  /// `CatchUpStrategy.collectForwardForBootstrap` — the
+  /// Matrix-canonical way to close a post-offline gap that doesn't
+  /// depend on whether the SDK's cached backward timeline happens
+  /// to span the gap window.
+  final String? lastAppliedEventId;
+}
+
 /// Callback owned by `QueuePipelineCoordinator` that streams the room's
-/// visible history through a `BootstrapSink` with back-pressure.
+/// catch-up events through a `BootstrapSink` with back-pressure.
 ///
-/// The bridge calls this for every catch-up trigger — both the fresh-
-/// client case (`untilTimestamp == null`, walk everything) and the
-/// reconnect case (`untilTimestamp = lastAppliedTs - margin`, stop
-/// after the boundary page). Streaming keeps memory bounded and lets
-/// the worker apply events concurrently with pagination.
+/// The bridge calls this for every catch-up trigger. The coordinator
+/// decides, based on [marker], whether to run a backward walk from
+/// the room tip (fresh client: no anchor) or a forward walk anchored
+/// at `marker.lastAppliedEventId` (reconnect: anchor known).
 ///
 /// Returns `true` when the walk completed (server exhausted OR
 /// boundary reached). Returns `false` when it stopped early (error,
@@ -19,7 +45,7 @@ import 'package:matrix/matrix.dart';
 typedef BootstrapRunner =
     Future<bool> Function({
       required Room room,
-      required num? untilTimestamp,
+      required BridgeMarker marker,
     });
 
 const _logDomain = 'sync';
@@ -42,29 +68,26 @@ class BridgeCoordinator {
     required Client client,
     required String? Function() currentRoomId,
     required Future<Room?> Function() resolveRoom,
-    required Future<int?> Function() getLastReadTs,
+    required Future<BridgeMarker> Function() readMarker,
     required BootstrapRunner bootstrapRunner,
     required LoggingService logging,
-    Duration preContextMargin = const Duration(seconds: 1),
     Duration incompleteRetryDelay = const Duration(seconds: 10),
     int maxIncompleteRetries = 3,
   }) : _client = client,
        _currentRoomId = currentRoomId,
        _resolveRoom = resolveRoom,
-       _getLastReadTs = getLastReadTs,
+       _readMarker = readMarker,
        _bootstrapRunner = bootstrapRunner,
        _logging = logging,
-       _preContextMargin = preContextMargin,
        _incompleteRetryDelay = incompleteRetryDelay,
        _maxIncompleteRetries = maxIncompleteRetries;
 
   final Client _client;
   final String? Function() _currentRoomId;
   final Future<Room?> Function() _resolveRoom;
-  final Future<int?> Function() _getLastReadTs;
+  final Future<BridgeMarker> Function() _readMarker;
   final BootstrapRunner _bootstrapRunner;
   final LoggingService _logging;
-  final Duration _preContextMargin;
   final Duration _incompleteRetryDelay;
   final int _maxIncompleteRetries;
 
@@ -191,20 +214,26 @@ class BridgeCoordinator {
       );
       return;
     }
-    final lastTs = await _getLastReadTs();
-    // Reconnect catch-up: stop paging once a page crosses the marker.
-    // A small pre-context margin gives the queue visibility into
-    // events that straddle the boundary so dedup can resolve them.
-    // Fresh client (no marker): untilTimestamp stays null, which
-    // tells the bootstrap runner to walk the entire visible history.
-    final num? untilTimestamp = lastTs == null
-        ? null
-        : lastTs - _preContextMargin.inMilliseconds;
+    final marker = await _readMarker();
+    // Reconnect catch-up anchors a forward-walk on the last-applied
+    // event id whenever one is known; the coordinator falls back to
+    // a timestamp-bounded backward walk only for fresh clients (no
+    // anchor). See `BridgeMarker` and
+    // `CatchUpStrategy.collectForwardForBootstrap` for the
+    // rationale — a backward walk against the SDK's cached timeline
+    // cannot close gaps in the recent `[lastAppliedTs, now]` window
+    // once the cache's oldest event predates the window.
+    final mode = marker.lastAppliedEventId != null
+        ? 'reconnect.forward'
+        : marker.lastAppliedTs != null
+        ? 'reconnect.backward'
+        : 'fresh';
 
     _logging.captureEvent(
       'queue.bridge.start '
-      'mode=${lastTs == null ? 'fresh' : 'reconnect'} '
-      'untilTimestamp=$untilTimestamp',
+      'mode=$mode '
+      'lastAppliedTs=${marker.lastAppliedTs} '
+      'lastAppliedEventId=${marker.lastAppliedEventId}',
       domain: _logDomain,
       subDomain: _logSub,
     );
@@ -213,7 +242,7 @@ class BridgeCoordinator {
     try {
       completed = await _bootstrapRunner(
         room: room,
-        untilTimestamp: untilTimestamp,
+        marker: marker,
       );
     } catch (error, stackTrace) {
       _logging.captureException(

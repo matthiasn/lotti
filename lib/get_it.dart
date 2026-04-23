@@ -31,6 +31,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/agent_vc_dominance_check.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -299,10 +300,14 @@ Future<void> registerSingletons() async {
   // `verboseLogging: false` matches the `attachmentIndex` setting
   // above — steady-state per-event logging would flood the general
   // log on large catch-ups.
+  final localVcDominanceCheck = useQueuePipeline
+      ? AgentVcDominanceCheck(agentDb: getIt<AgentDatabase>())
+      : null;
   final queueAttachmentIngestor = useQueuePipeline
       ? AttachmentIngestor(
           documentsDirectory: documentsDirectory,
           verboseLogging: false,
+          localVcDominates: localVcDominanceCheck!.check,
         )
       : null;
   final queuePipelineCoordinator = useQueuePipeline
@@ -319,6 +324,7 @@ Future<void> registerSingletons() async {
           attachmentIndex: attachmentIndex,
           updateNotifications: getIt<UpdateNotifications>(),
           attachmentIngestor: queueAttachmentIngestor,
+          sentEventRegistry: sentEventRegistry,
         )
       : null;
 
@@ -383,8 +389,16 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     domainLogger: domainLogger,
   );
-  syncSequenceLogService.onMissingEntriesDetected =
-      backfillRequestService.nudge;
+  syncSequenceLogService.onMissingEntriesDetected = () {
+    backfillRequestService.nudge();
+    // Barren-bridge recovery: when the most recent reconnect bridge
+    // finished without accepting anything and a live event now reveals
+    // a missing counter, run an unbounded history walk to close the
+    // hole immediately instead of waiting for the normal backfill
+    // cadence. No-op when the queue pipeline is off or when no barren
+    // bridge was recorded.
+    queuePipelineCoordinator?.maybeStartGapRecovery();
+  };
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;

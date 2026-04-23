@@ -1120,6 +1120,264 @@ void main() {
     );
 
     test(
+      'skips the download when localVcDominates says the local copy is '
+      'already at least as current as the incoming sync-message VC — '
+      'prevents the N-download storm when a chatty sender emits N events '
+      'per entity that each re-reference the same (or older) VC',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_vc_dominates',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"id":"x"}')));
+
+        // Incoming sync-message body carrying a VC — this is what the
+        // callback compares against the local copy.
+        final incomingBody = base64.encode(
+          utf8.encode(
+            json.encode({
+              'id': 'chatty-entity',
+              'jsonPath': '/agent_entities/chatty-entity.json',
+              'vectorClock': {'hostA': 5},
+              'status': 'update',
+              'runtimeType': 'agentEntity',
+            }),
+          ),
+        );
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('agent-evt-1');
+        when(() => ev.text).thenReturn(incomingBody);
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/chatty-entity.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/chatty-entity.json'),
+        ).thenReturn(false);
+
+        // Dominance callback: local VC is strictly newer than incoming.
+        var callbackInvocations = 0;
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tmp,
+          localVcDominates: (relativePath, incomingVc) async {
+            callbackInvocations++;
+            expect(relativePath, '/agent_entities/chatty-entity.json');
+            expect(incomingVc, isNotNull);
+            expect(incomingVc!.vclock['hostA'], 5);
+            return true; // local dominates → skip download
+          },
+        );
+
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result, isFalse);
+        expect(callbackInvocations, 1);
+        verifyNever(ev.downloadAndDecryptAttachment);
+        verify(
+          () => logging.captureEvent(
+            any<String>(that: contains('skip.localVcDominates')),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.download.skip',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'proceeds with the download when localVcDominates returns false '
+      '(incoming VC is strictly newer, or the local copy is missing) — '
+      'correctness guarantee: a genuine update MUST NOT be skipped',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_vc_proceeds',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"fresh":true}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('agent-evt-fresh');
+        when(() => ev.text).thenReturn(
+          base64.encode(
+            utf8.encode(
+              json.encode({
+                'vectorClock': {'hostA': 42},
+                'runtimeType': 'agentEntity',
+              }),
+            ),
+          ),
+        );
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/fresh.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/fresh.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tmp,
+          localVcDominates: (_, _) async => false,
+        );
+
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result, isTrue);
+        verify(ev.downloadAndDecryptAttachment).called(1);
+      },
+    );
+
+    test(
+      'a throwing localVcDominates callback does NOT block the download — '
+      'the check is an optimization, not a correctness primitive',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_vc_throws',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"a":1}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('agent-evt-throw');
+        when(() => ev.text).thenReturn(
+          base64.encode(
+            utf8.encode(
+              json.encode({
+                'vectorClock': {'hostA': 1},
+                'runtimeType': 'agentEntity',
+              }),
+            ),
+          ),
+        );
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/throws.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/throws.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tmp,
+          localVcDominates: (_, _) async => throw StateError('repo gone'),
+        );
+
+        final result = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result, isTrue);
+        verify(ev.downloadAndDecryptAttachment).called(1);
+      },
+    );
+
+    test(
       'repairs the same agent attachment event when the local file is missing',
       () async {
         final logging = MockLoggingService();

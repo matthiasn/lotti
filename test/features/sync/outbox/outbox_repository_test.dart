@@ -11,6 +11,7 @@ void main() {
   group('DatabaseOutboxRepository', () {
     setUpAll(() {
       registerFallbackValue(const OutboxCompanion());
+      registerFallbackValue(Duration.zero);
     });
     late MockSyncDatabase database;
     late DatabaseOutboxRepository repository;
@@ -229,6 +230,33 @@ void main() {
 
         expect(result, equals(null));
       });
+    });
+
+    group('pruneSentOutboxItems', () {
+      test(
+        'delegates to database with the retention duration and forwards '
+        'the deleted count back to the caller — the OutboxService sweep '
+        'reads the count only for logging cardinality, so it has to be '
+        'the same value the DB reported',
+        () async {
+          when(
+            () => database.pruneSentOutboxItems(
+              retention: any(named: 'retention'),
+            ),
+          ).thenAnswer((_) async => 42);
+
+          final deleted = await repository.pruneSentOutboxItems(
+            retention: const Duration(days: 7),
+          );
+
+          expect(deleted, 42);
+          verify(
+            () => database.pruneSentOutboxItems(
+              retention: const Duration(days: 7),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 }

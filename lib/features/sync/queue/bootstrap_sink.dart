@@ -43,12 +43,20 @@ class QueueBootstrapSink implements BootstrapSink {
   final Future<void>? _cancelSignal;
 
   bool _cancelled = false;
+  int _lastAcceptedCount = 0;
+
+  @override
+  int get lastAcceptedCount => _lastAcceptedCount;
 
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
-    if (_cancelled) return false;
+    if (_cancelled) {
+      _lastAcceptedCount = 0;
+      return false;
+    }
 
     final enqueue = await _queue.appendBootstrapPage(events);
+    _lastAcceptedCount = enqueue.accepted;
 
     _logging.captureEvent(
       'queue.bootstrap.page '

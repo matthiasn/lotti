@@ -969,9 +969,108 @@ class AgentRepository {
 
   /// Insert or update a link using on-conflict update semantics against the
   /// primary key (`id`).
+  ///
+  /// `agent_links` additionally carries two partial unique indexes that
+  /// `insertOnConflictUpdate`'s primary-key-only ON CONFLICT clause does
+  /// NOT handle:
+  ///  - `idx_unique_soul_per_template` on `(from_id)` where
+  ///    `type = 'soul_assignment' AND deleted_at IS NULL`.
+  ///  - `idx_unique_improver_per_template` on `(to_id)` where
+  ///    `type = 'improver_target' AND deleted_at IS NULL`.
+  ///
+  /// When a sync-incoming link carries the same `from_id` / `to_id` as an
+  /// existing active row but a different `id`, the insert hits the
+  /// partial unique index and throws `SqliteException(2067)`. The v6
+  /// migration uses the same pattern to de-duplicate pre-existing rows:
+  /// we preemptively soft-delete the conflicting active row under the
+  /// same transaction, then insert. The soft-deleted row stays in the
+  /// table for audit, and the new incoming link takes over the unique
+  /// slot for that template.
+  ///
+  /// Skipping this step leaves the sync apply path throwing retriable
+  /// apply errors that exhaust after 10 attempts and mark the queue row
+  /// `abandoned` — a silent data drop even though the payload itself
+  /// is valid.
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
-    await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+    final type = AgentDbConversions.linkType(link);
+    final needsUniqueSlotHandoff =
+        link.deletedAt == null &&
+        (type == AgentLinkTypes.soulAssignment ||
+            type == AgentLinkTypes.improverTarget);
+
+    if (!needsUniqueSlotHandoff) {
+      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+      return;
+    }
+
+    await _db.transaction(() async {
+      final now = DateTime.now();
+      // The SQL `deleted_at` / `updated_at` columns AND the
+      // `serialized` JSON both need to carry the tombstone, otherwise
+      // readers that decode the link from `serialized` (e.g. the
+      // sequence-log population queries `getAgentLinksInInterval` and
+      // `getAgentLinksWithNullVectorClock`, which return raw rows
+      // without a deleted_at filter) see a SQL-soft-deleted row whose
+      // JSON still describes an active link. `json_set` mutates the
+      // JSON in-place so the two stay consistent.
+      final nowIso = now.toIso8601String();
+      final nowSeconds = now.millisecondsSinceEpoch ~/ 1000;
+      final typeSql = type == AgentLinkTypes.soulAssignment
+          ? 'soul_assignment'
+          : 'improver_target';
+      if (type == AgentLinkTypes.soulAssignment) {
+        await _db.customStatement(
+          'UPDATE agent_links '
+          'SET deleted_at = ?, updated_at = ?, '
+          '    serialized = json_set(serialized, '
+          r"      '$.deletedAt', ?, "
+          r"      '$.updatedAt', ?) "
+          "WHERE type = 'soul_assignment' "
+          '  AND deleted_at IS NULL '
+          '  AND from_id = ? '
+          '  AND id != ?',
+          [nowSeconds, nowSeconds, nowIso, nowIso, link.fromId, link.id],
+        );
+      } else {
+        // improverTarget — UNIQUE on (to_id).
+        await _db.customStatement(
+          'UPDATE agent_links '
+          'SET deleted_at = ?, updated_at = ?, '
+          '    serialized = json_set(serialized, '
+          r"      '$.deletedAt', ?, "
+          r"      '$.updatedAt', ?) "
+          "WHERE type = 'improver_target' "
+          '  AND deleted_at IS NULL '
+          '  AND to_id = ? '
+          '  AND id != ?',
+          [nowSeconds, nowSeconds, nowIso, nowIso, link.toId, link.id],
+        );
+      }
+      // The global UNIQUE(from_id, to_id, type) constraint applies to
+      // ALL rows regardless of `deleted_at`, so the soft-delete above
+      // does NOT free the natural-key slot when an existing row has
+      // the exact same `(type, from_id, to_id)` triple but a
+      // different `id` (e.g. the same soul↔template binding
+      // resynced from another device after a data restore). Drift's
+      // `insertOnConflictUpdate` emits `ON CONFLICT(id) DO UPDATE`,
+      // so a non-primary-key UNIQUE violation throws 2067 instead of
+      // upserting. Hard-delete any exact-natural-key rows with a
+      // different id inside the same transaction so the INSERT can
+      // claim the slot. The soft-delete tombstone is preserved for
+      // rows whose natural key differs (e.g. different to_id on a
+      // soul_assignment re-binding) — only exact-duplicate rows that
+      // were already headed to the tombstone are dropped.
+      await _db.customStatement(
+        'DELETE FROM agent_links '
+        'WHERE type = ? '
+        '  AND from_id = ? '
+        '  AND to_id = ? '
+        '  AND id != ?',
+        [typeSql, link.fromId, link.toId, link.id],
+      );
+      await _db.into(_db.agentLinks).insertOnConflictUpdate(companion);
+    });
   }
 
   /// Insert a link exclusively — throws [DuplicateInsertException] if a

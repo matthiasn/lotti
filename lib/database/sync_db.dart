@@ -198,6 +198,21 @@ class HostActivity extends Table {
   'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
   '''WHERE status IN ('enqueued', 'retrying')''',
 )
+// `earliestReadyAt` probe: computes MIN(MAX(next_due_at, lease_until))
+// across all actively-schedulable rows to tell the worker when the
+// next row becomes peekable. Without this partial the query
+// full-scans the entire queue table on every worker idle tick — on a
+// desktop mid-drain we measured 3500+ scans totalling 73s of DB time
+// per hour with p95=46ms and max=2.3s. Including `lease_until` lets
+// the plan evaluate the CASE expression straight from index keys
+// without heap lookups, and restricting to `(enqueued, retrying,
+// leased)` keeps the applied ledger and poison-row `abandoned`
+// entries out of the probe.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_active_ready_at '
+  'ON inbound_event_queue (next_due_at, lease_until) '
+  '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
+)
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_room '
   'ON inbound_event_queue (room_id, origin_ts)',
@@ -513,6 +528,42 @@ class SyncDatabase extends _$SyncDatabase {
   /// Delete a single outbox item by its ID.
   Future<int> deleteOutboxItemById(int id) {
     return (delete(outbox)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Prune outbox rows with `status = sent` whose `updated_at` is older
+  /// than [retention]. `updated_at` is the send time (set by `markSent`);
+  /// `created_at` is the enqueue time, which can be days older for rows
+  /// that were stuck pending. Using send time means "7 days retained as
+  /// sent" regardless of how long the row waited in pending — and it
+  /// matches the same send-time definition used by the outbox volume
+  /// view in the UI.
+  ///
+  /// Error rows (`status = error`) are deliberately kept regardless of
+  /// age so a human can still inspect persistently failed sends;
+  /// pending and sending rows are live state and are never considered
+  /// for pruning.
+  ///
+  /// Without this, the outbox grows unbounded (observed: 395k rows on
+  /// desktop, 265k on mobile). Every outbox enqueue pays the table-size
+  /// cost on indexed writes, WAL checkpoints get heavier, and backups
+  /// balloon. A week of kept-forever sent rows is already far more
+  /// than the `outbox_entry_id` dedup path requires (dedup only
+  /// matters for in-flight edits — a message already sent more than a
+  /// minute ago will never be re-deduped).
+  ///
+  /// Returns the number of rows deleted.
+  Future<int> pruneSentOutboxItems({
+    required Duration retention,
+    DateTime? now,
+  }) {
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(retention);
+    return (delete(outbox)..where(
+          (t) =>
+              t.status.equals(OutboxStatus.sent.index) &
+              t.updatedAt.isSmallerThanValue(cutoff),
+        ))
+        .go();
   }
 
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
@@ -1026,6 +1077,93 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
+  /// Retire `missing`/`requested` rows whose `updated_at` is older than
+  /// [amnestyWindow] by flipping their status to `unresolvable`,
+  /// regardless of `request_count` or `last_requested_at`.
+  ///
+  /// The age check is against `updated_at` (the most recent status
+  /// transition), not `created_at`, because the "Ask peers for
+  /// unresolvable entries" action flips rows back to `missing` and
+  /// refreshes `updated_at`. Using `created_at` would let the next
+  /// sweep immediately re-retire rows the user just reopened —
+  /// defeating the purpose of the peer-reask action.
+  ///
+  /// [retireExhaustedRequestedEntries] only retires rows that have been
+  /// actively requested and hit the count cap. That leaves a failure
+  /// mode where a row can slip into `requested` via
+  /// `SyncSequenceLogService.handleBackfillResponse`'s hint-insertion
+  /// path (which creates a row with status=`requested` but never sets
+  /// `last_requested_at`), OR a row in `missing` accumulates a
+  /// low `request_count` and then ages out of
+  /// [getMissingEntriesWithLimits]'s `maxAge` window before hitting
+  /// the cap. Either way, the row stays in a non-terminal status
+  /// forever, blocking the contiguous-prefix watermark in
+  /// [getLastCounterForHost] and causing every new event on the same
+  /// host to re-emit the same gap range through gap detection.
+  ///
+  /// This method is the amnesty half of the retire pair: any
+  /// `missing`/`requested` row older than [amnestyWindow] is treated as
+  /// unresolvable. `amnestyWindow` should be wider than the active
+  /// backfill-request window ([SyncTuning.defaultBackfillMaxAge]) so
+  /// rows have a fair chance to be requested before being retired, but
+  /// narrow enough that truly stuck rows do not accumulate
+  /// indefinitely.
+  ///
+  /// Returns the number of rows retired.
+  Future<int> retireAgedOutRequestedEntries({
+    Duration amnestyWindow = const Duration(days: 7),
+    DateTime? now,
+  }) {
+    final missing = SyncSequenceStatus.missing.index;
+    final requested = SyncSequenceStatus.requested.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(amnestyWindow);
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, updated_at = ? '
+      'WHERE (status = ? OR status = ?) '
+      '  AND updated_at < ?',
+      variables: [
+        Variable.withInt(unresolvable),
+        Variable.withDateTime(effectiveNow),
+        Variable.withInt(missing),
+        Variable.withInt(requested),
+        Variable.withDateTime(cutoff),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
+  /// Reset every unresolvable row back to `missing`, regardless of whether
+  /// it has a known `entry_id`. Use this when the user explicitly wants to
+  /// ask peers again for a host's entries — [resetUnresolvableWithKnownPayload]
+  /// only covers rows that the local store has since repopulated, which
+  /// excludes the common "dead originating host, but a currently-alive
+  /// peer has the payload" case where the local row was flipped to
+  /// `unresolvable` without ever receiving a hint.
+  ///
+  /// `request_count` is reset to 0 and `last_requested_at` cleared so the
+  /// row rejoins the active backfill sweep; response processing will then
+  /// fill in `entry_id` + flip status to `received`/`backfilled` if any
+  /// peer answers.
+  ///
+  /// Returns the number of rows reset.
+  Future<int> resetAllUnresolvableEntries() {
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, request_count = 0, '
+      'last_requested_at = NULL, updated_at = ? '
+      'WHERE status = ?',
+      variables: [
+        Variable.withInt(SyncSequenceStatus.missing.index),
+        Variable.withDateTime(DateTime.now()),
+        Variable.withInt(SyncSequenceStatus.unresolvable.index),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
   /// Reset entries that were incorrectly marked as unresolvable back to
   /// "missing" so they can be re-requested. Only resets entries that have
   /// a known payload (entryId IS NOT NULL), meaning repopulation found them.
@@ -1176,7 +1314,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -1355,6 +1493,19 @@ class SyncDatabase extends _$SyncDatabase {
             'idx_inbound_event_queue_abandoned_path '
             'ON inbound_event_queue (json_path) '
             '''WHERE status = 'abandoned' ''',
+          );
+        }
+        if (from < 14) {
+          // `earliestReadyAt` full-scanned `inbound_event_queue` on
+          // every worker idle tick — 3500 scans per hour, 73 seconds
+          // of DB time, p95=46 ms and max=2.3 s on a real desktop
+          // mid-drain. This partial index turns the MIN(CASE …)
+          // probe into an active-rows-only scan.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_active_ready_at '
+            'ON inbound_event_queue (next_due_at, lease_until) '
+            '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
           );
         }
       },

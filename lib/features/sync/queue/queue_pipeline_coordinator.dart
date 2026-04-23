@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 const _logDomain = 'sync';
 const _logSub = 'queue.coordinator';
@@ -58,6 +60,7 @@ class QueuePipelineCoordinator {
     AttachmentIndex? attachmentIndex,
     UpdateNotifications? updateNotifications,
     AttachmentIngestor? attachmentIngestor,
+    SentEventRegistry? sentEventRegistry,
     InboundQueue? queueOverride,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
@@ -73,6 +76,7 @@ class QueuePipelineCoordinator {
        _attachmentIndex = attachmentIndex,
        _updateNotifications = updateNotifications,
        _attachmentIngestor = attachmentIngestor,
+       _sentEventRegistry = sentEventRegistry,
        _queue = queueOverride ?? InboundQueue(db: syncDb, logging: logging),
        _pen = penOverride ?? PendingDecryptionPen(logging: logging),
        _seeder =
@@ -105,7 +109,7 @@ class QueuePipelineCoordinator {
           client: _sessionManager.client,
           currentRoomId: () => _roomManager.currentRoomId,
           resolveRoom: _resolveRoom,
-          getLastReadTs: _readMarkerTs,
+          readMarker: _readMarker,
           bootstrapRunner: _runBootstrap,
           logging: _logging,
         );
@@ -121,6 +125,15 @@ class QueuePipelineCoordinator {
   final AttachmentIndex? _attachmentIndex;
   final UpdateNotifications? _updateNotifications;
   final AttachmentIngestor? _attachmentIngestor;
+  final SentEventRegistry? _sentEventRegistry;
+
+  /// Counts self-echoed events suppressed since the last log flush so
+  /// the observability line drops from one-per-event (tens of
+  /// thousands during a big outbox drain) to one summary entry per
+  /// interval. Paired with [_lastSuppressedLogAt].
+  int _suppressedSelfEchoes = 0;
+  DateTime? _lastSuppressedLogAt;
+  static const Duration _suppressionLogInterval = Duration(seconds: 30);
   final InboundQueue _queue;
   final PendingDecryptionPen _pen;
   final QueueMarkerSeeder _seeder;
@@ -133,6 +146,29 @@ class QueuePipelineCoordinator {
   StreamSubscription<String>? _attachmentPathSub;
   StreamSubscription<Set<String>>? _journalUpdateSub;
   bool _started = false;
+
+  /// Set when the most recent reconnect-mode bridge pass finished with
+  /// `stopReason == boundaryReached` AND the sink accepted zero events
+  /// across every page. That is the precise signal that the SDK's local
+  /// timeline cache wedged on a stale wake-up window — the walk
+  /// exhausted its `boundaryContinuationCap` without finding anything
+  /// the queue didn't already have. When [maybeStartGapRecovery] fires
+  /// on a subsequent gap detection it pulls history unbounded to close
+  /// the hole instead of waiting for the normal backfill cadence.
+  DateTime? _lastBarrenBridgeAt;
+
+  /// Single-flight guard for the gap-triggered unbounded walk. A burst
+  /// of gap signals on the same barren-bridge episode coalesces into
+  /// one recovery pass so we do not spawn concurrent /messages walks.
+  Future<void>? _gapRecoveryInFlight;
+
+  /// How long a barren-bridge signal stays valid. After the window
+  /// expires, a late gap no longer triggers the unbounded walk — by
+  /// then the worker has had time to burn through any transient
+  /// replay lag and a gap more likely indicates a different root
+  /// cause (e.g. genuine packet loss) that normal backfill should own.
+  @visibleForTesting
+  static const Duration barrenBridgeTtl = Duration(minutes: 5);
 
   /// Tracks in-flight `enqueueLive` calls spawned from the live
   /// subscription so `stop()` can await every outstanding write. Without
@@ -509,6 +545,11 @@ class QueuePipelineCoordinator {
       }
       await tryRun('bridge', _bridge.stop);
 
+      final gapRecovery = _gapRecoveryInFlight;
+      if (gapRecovery != null) {
+        await tryRun('gapRecovery', () async => gapRecovery);
+      }
+
       if (drainFirst) {
         await tryRun('drain', drainUntilEmpty);
       }
@@ -530,6 +571,41 @@ class QueuePipelineCoordinator {
   void _handleLiveEvent(Event event) {
     final currentRoomId = _roomManager.currentRoomId;
     if (currentRoomId == null || event.roomId != currentRoomId) return;
+    // Pre-sync fake-sync suppression. `Room.sendEvent` in matrix-sdk
+    // 7.0.0 calls `_handleFakeSync` TWICE on every send (room.dart
+    // lines 1274 + 1327) — once with a client-side transaction id
+    // and `status=sending` BEFORE the HTTP post, and again with the
+    // real `$`-prefixed id and `status=sent` AFTER the server
+    // responds but BEFORE `sendEvent` returns. Both fake-sync
+    // emissions fire `onTimelineEvent`, so our live handler receives
+    // them. Neither can be caught by `SentEventRegistry.consume`:
+    //   - The `sending` emission carries a temp id the registry
+    //     never sees (the sender only learns the real id once
+    //     `sendEvent` returns).
+    //   - The `sent` emission carries the real id but races
+    //     `MatrixMessageSender`'s `_sentEventRegistry.register(id)`
+    //     call which runs AFTER `sendEvent` returns — so the
+    //     registry is still empty when `_handleLiveEvent` consults
+    //     it on this tick.
+    // The only status that actually comes from the real `/sync`
+    // loop is `synced`; the rest are SDK-generated fake syncs for
+    // UI progress and never represent a new inbound event. Drop
+    // them here before any downstream work runs.
+    if (event.status != EventStatus.synced) return;
+    // Self-echo suppression for the REAL `/sync` echo: when the
+    // server loops our own sent event back on the next /sync it
+    // arrives as `status=synced` — by then the registry has the id
+    // (registered after the in-tick race cleared) so `consume`
+    // matches and we skip the repeat enqueue / prepare / apply
+    // cycle. Lotti uses a single shared Matrix userID across
+    // devices so a `senderId == client.userID` check would also
+    // drop legitimate peer events; the registry is the only
+    // correct source of truth.
+    final registry = _sentEventRegistry;
+    if (registry != null && registry.consume(event.eventId)) {
+      _countSuppressedSelfEcho();
+      return;
+    }
     // Un-partial the Matrix SDK's room — otherwise `RoomMember` state
     // events arriving via /sync are silently skipped (see
     // `client.dart:3138` in matrix-7.0.0), which leaves
@@ -594,6 +670,22 @@ class QueuePipelineCoordinator {
   void _noopScheduleLiveScan() {}
 
   Future<void> _noopRetryNow() async {}
+
+  void _countSuppressedSelfEcho() {
+    _suppressedSelfEchoes++;
+    final now = DateTime.now();
+    final last = _lastSuppressedLogAt;
+    if (last == null || now.difference(last) >= _suppressionLogInterval) {
+      final flushed = _suppressedSelfEchoes;
+      _suppressedSelfEchoes = 0;
+      _lastSuppressedLogAt = now;
+      _logging.captureEvent(
+        'queue.coordinator.selfEchoSuppressed count=$flushed',
+        domain: _logDomain,
+        subDomain: '$_logSub.selfEcho',
+      );
+    }
+  }
 
   Future<void> _safePostLoad(Room room, String roomId) async {
     final wasPartial = room.partial;
@@ -704,21 +796,104 @@ class QueuePipelineCoordinator {
     );
   }
 
-  /// Streams the room's visible history through [QueueBootstrapSink]
+  /// Streams the room's catch-up events through [QueueBootstrapSink]
   /// (page-by-page with back-pressure) into the queue. Invoked by
-  /// [BridgeCoordinator] for every catch-up:
+  /// [BridgeCoordinator] for every catch-up; dispatches by [marker]:
   ///
-  /// - `untilTimestamp == null`: fresh client — walk the entire
-  ///   visible history. Stops when the server runs out.
-  /// - `untilTimestamp != null`: reconnect — stop after the first
-  ///   page whose oldest event timestamp is at or below the marker.
+  /// - `marker.lastAppliedEventId != null`: reconnect — forward-walks
+  ///   from the anchor event via `collectForwardForBootstrap`. This
+  ///   hits `/rooms/{roomId}/context/{eventId}` then
+  ///   `/messages?dir=f`, so the walk sees server state rather than
+  ///   whatever the SDK cached from prior sessions — the only way to
+  ///   close a gap in the `[lastAppliedTs, now]` window when the
+  ///   cached timeline's oldest event predates the gap.
+  /// - Fallbacks:
+  ///   - Anchor walk returns `error` (server compacted the anchor,
+  ///     context fetch threw) → fall through to the backward walk so
+  ///     something still runs.
+  ///   - `marker.lastAppliedEventId == null`: fresh client or
+  ///     anchor-unavailable — walk backward from the room tip via
+  ///     `collectHistoryForBootstrap`. Stops when the server
+  ///     exhausts history.
   ///
   /// Returns `true` when the walk completed (server exhausted OR
   /// boundary reached) and `false` on sink cancellation / pagination
   /// error so the bridge can schedule a bounded retry.
   Future<bool> _runBootstrap({
     required Room room,
-    required num? untilTimestamp,
+    required BridgeMarker marker,
+  }) async {
+    if (marker.lastAppliedEventId != null) {
+      final forward = await _runForwardBootstrap(
+        room: room,
+        anchorEventId: marker.lastAppliedEventId!,
+      );
+      // Anchor-based forward walk is the preferred path. On a hard
+      // error (context fetch failed, anchor no longer resolvable) we
+      // fall back to the backward walk so reconnect always tries
+      // *something* — the backward walk is still useful for the
+      // case where the gap happens to live at the cache's oldest
+      // end (small, contiguous reconnect windows).
+      if (forward != _BootstrapOutcome.errorNoProgress) {
+        _updateBarrenBridgeFlagForward(forward);
+        return forward == _BootstrapOutcome.completed;
+      }
+      _logging.captureEvent(
+        'queue.bootstrap.forward.fallbackToBackward '
+        'reason=anchorUnavailable anchor=${marker.lastAppliedEventId}',
+        domain: _logDomain,
+        subDomain: '$_logSub.forward',
+      );
+    }
+
+    return _runBackwardBootstrap(
+      room: room,
+      untilTimestamp: marker.lastAppliedTs,
+    );
+  }
+
+  Future<_BootstrapOutcome> _runForwardBootstrap({
+    required Room room,
+    required String anchorEventId,
+  }) async {
+    final innerSink = _attachmentIngestor == null
+        ? QueueBootstrapSink(queue: _queue, logging: _logging)
+        : _AttachmentAwareBootstrapSink(
+                inner: QueueBootstrapSink(queue: _queue, logging: _logging),
+                processAttachment: _processAttachment,
+              )
+              as BootstrapSink;
+    final countingSink = _TotalAcceptedCountingSink(innerSink);
+    final result = await CatchUpStrategy.collectForwardForBootstrap(
+      room: room,
+      sink: countingSink,
+      logging: _logging,
+      anchorEventId: anchorEventId,
+    );
+    _logging.captureEvent(
+      'queue.bootstrap.forward.done '
+      'anchor=$anchorEventId pages=${result.totalPages} '
+      'events=${result.totalEvents} accepted=${countingSink.totalAccepted} '
+      'stopReason=${result.stopReason.name}',
+      domain: _logDomain,
+      subDomain: '$_logSub.forward',
+    );
+    return switch (result.stopReason) {
+      BootstrapStopReason.serverExhausted ||
+      BootstrapStopReason.boundaryReached => _BootstrapOutcome.completed,
+      BootstrapStopReason.sinkCancelled => _BootstrapOutcome.incomplete,
+      // No pages + error means "anchor unresolvable": the context
+      // fetch returned an empty chunk or threw. Signal the caller so
+      // it can fall back to the backward walk.
+      BootstrapStopReason.error when result.totalPages == 0 =>
+        _BootstrapOutcome.errorNoProgress,
+      BootstrapStopReason.error => _BootstrapOutcome.incomplete,
+    };
+  }
+
+  Future<bool> _runBackwardBootstrap({
+    required Room room,
+    required int? untilTimestamp,
   }) async {
     // Wrap the queue sink so attachment descriptor events in each
     // paginated page get fed to `AttachmentIngestor.process()` before
@@ -727,18 +902,27 @@ class QueuePipelineCoordinator {
     // enqueue the sync-payload events while their descriptor
     // JSONs never land on disk, producing the pendingAttachment
     // skip cascade we just fixed.
-    final sink = _attachmentIngestor == null
+    final innerSink = _attachmentIngestor == null
         ? QueueBootstrapSink(queue: _queue, logging: _logging)
         : _AttachmentAwareBootstrapSink(
                 inner: QueueBootstrapSink(queue: _queue, logging: _logging),
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
+    // Count accepted events across every page so we can detect the
+    // "boundaryReached with totalAccepted==0" case that marks the
+    // bridge barren — the gap-recovery trigger reads this flag.
+    final countingSink = _TotalAcceptedCountingSink(innerSink);
     final result = await CatchUpStrategy.collectHistoryForBootstrap(
       room: room,
-      sink: sink,
+      sink: countingSink,
       logging: _logging,
       untilTimestamp: untilTimestamp,
+    );
+    _updateBarrenBridgeFlag(
+      untilTimestamp: untilTimestamp,
+      result: result,
+      totalAccepted: countingSink.totalAccepted,
     );
     return switch (result.stopReason) {
       BootstrapStopReason.serverExhausted ||
@@ -747,17 +931,199 @@ class QueuePipelineCoordinator {
     };
   }
 
-  Future<int?> _readMarkerTs() async {
+  void _updateBarrenBridgeFlag({
+    required num? untilTimestamp,
+    required BootstrapResult result,
+    required int totalAccepted,
+  }) {
+    // Only reconnect-mode walks (bounded by `untilTimestamp`) can be
+    // barren. A fresh-client walk (`untilTimestamp == null`) that
+    // accepts nothing just means the server has nothing for us — a
+    // later gap cannot be recovered by re-running the same walk.
+    if (untilTimestamp == null) {
+      _lastBarrenBridgeAt = null;
+      return;
+    }
+    final isBarren =
+        result.stopReason == BootstrapStopReason.boundaryReached &&
+        totalAccepted == 0;
+    if (isBarren) {
+      _lastBarrenBridgeAt = clock.now();
+      _logging.captureEvent(
+        'queue.coordinator.bridgeBarren '
+        'untilTimestamp=$untilTimestamp totalPages=${result.totalPages} '
+        'totalEvents=${result.totalEvents}',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+    } else {
+      // Any productive bridge clears the flag so a later gap is not
+      // attributed to a long-since-healed cache wedge.
+      _lastBarrenBridgeAt = null;
+    }
+  }
+
+  void _updateBarrenBridgeFlagForward(_BootstrapOutcome outcome) {
+    // Forward-walk semantics: anchor resolved and we walked to the
+    // tip (or cap). Whether anything was accepted or not, the cache-
+    // wedge scenario that drove the barren-bridge recovery does not
+    // apply to this path — the forward walk fetches server state
+    // directly. Clearing the flag prevents a later gap-detected
+    // signal from triggering a redundant unbounded backward walk.
+    if (outcome == _BootstrapOutcome.completed) {
+      _lastBarrenBridgeAt = null;
+    }
+  }
+
+  /// Triggered from the sequence-log gap-detected callback. When the
+  /// most recent bridge finished barren (boundary reached, zero
+  /// accepted) and a live event's vector clock now reveals a missing
+  /// counter, close the hole aggressively by running an unbounded
+  /// history walk instead of waiting for the normal backfill cadence.
+  ///
+  /// Fire-and-forget from the caller's perspective — the sequence
+  /// log's `onMissingEntriesDetected` is `void`. A concurrent trigger
+  /// coalesces onto the in-flight recovery so a burst of gap signals
+  /// does not spawn parallel /messages walks.
+  void maybeStartGapRecovery() {
+    if (!_started) return;
+    if (_gapRecoveryInFlight != null) return;
+    final at = _lastBarrenBridgeAt;
+    if (at == null) return;
+    if (clock.now().difference(at) > barrenBridgeTtl) {
+      _lastBarrenBridgeAt = null;
+      return;
+    }
+    // Consume the signal up-front. If the recovery walk itself finds
+    // nothing and leaves the cache still wedged, the next live event
+    // will not re-trigger until a new barren bridge arrives — which
+    // is the right behaviour: we already tried the unbounded walk
+    // once and burning a second one immediately wastes the peer's
+    // /messages quota without new information.
+    _lastBarrenBridgeAt = null;
+    final completer = Completer<void>();
+    _gapRecoveryInFlight = completer.future;
+    unawaited(
+      _runGapRecovery().whenComplete(() {
+        _gapRecoveryInFlight = null;
+        completer.complete();
+      }),
+    );
+  }
+
+  Future<void> _runGapRecovery() async {
+    try {
+      final room = await _resolveRoom();
+      if (room == null) {
+        _logging.captureEvent(
+          'queue.coordinator.gapRecovery.skip reason=noRoom',
+          domain: _logDomain,
+          subDomain: _logSub,
+        );
+        return;
+      }
+      _logging.captureEvent(
+        'queue.coordinator.gapRecovery.start',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+      // Gap-recovery is specifically the "cache-wedged backward walk
+      // couldn't surface what we need" fallback. It runs an
+      // unbounded backward walk (no anchor, no untilTimestamp), so
+      // we call the backward primitive directly rather than going
+      // through `_runBootstrap` — we do NOT want it to forward-walk
+      // here because the forward walk already ran as the main
+      // bridge pass.
+      final completed = await _runBackwardBootstrap(
+        room: room,
+        untilTimestamp: null,
+      );
+      _logging.captureEvent(
+        'queue.coordinator.gapRecovery.done completed=$completed',
+        domain: _logDomain,
+        subDomain: _logSub,
+      );
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.gapRecovery',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @visibleForTesting
+  bool get hasBarrenBridgeSignal => _lastBarrenBridgeAt != null;
+
+  @visibleForTesting
+  bool get gapRecoveryInFlight => _gapRecoveryInFlight != null;
+
+  @visibleForTesting
+  Future<void>? get gapRecoveryFuture => _gapRecoveryInFlight;
+
+  /// Test-only entry point for `_runBootstrap`. Lets tests exercise
+  /// the barren-tracking + gap-recovery + forward-walk dispatch
+  /// without wiring a real [BridgeCoordinator] — the `triggerBridge`
+  /// path funnels through the live `onSync` listener and computes
+  /// the marker itself, which makes it awkward to pin down a test
+  /// scenario.
+  @visibleForTesting
+  Future<bool> runBootstrapForTest({
+    required Room room,
+    int? untilTimestamp,
+    String? anchorEventId,
+  }) => _runBootstrap(
+    room: room,
+    marker: BridgeMarker(
+      lastAppliedTs: untilTimestamp,
+      lastAppliedEventId: anchorEventId,
+    ),
+  );
+
+  Future<BridgeMarker> _readMarker() async {
     final roomId = _roomManager.currentRoomId;
-    if (roomId == null) return null;
+    if (roomId == null) {
+      return const BridgeMarker(
+        lastAppliedTs: null,
+        lastAppliedEventId: null,
+      );
+    }
     final marker = await (_syncDb.select(
       _syncDb.queueMarkers,
     )..where((t) => t.roomId.equals(roomId))).getSingleOrNull();
-    if (marker != null && marker.lastAppliedTs > 0) {
-      return marker.lastAppliedTs;
+    if (marker == null) {
+      final legacy = await getLastReadMatrixEventTs(_settingsDb);
+      return BridgeMarker(
+        lastAppliedTs: legacy,
+        lastAppliedEventId: null,
+      );
     }
-    return getLastReadMatrixEventTs(_settingsDb);
+    final ts = marker.lastAppliedTs > 0
+        ? marker.lastAppliedTs
+        : await getLastReadMatrixEventTs(_settingsDb);
+    return BridgeMarker(
+      lastAppliedTs: ts,
+      // Only use the event id when it's a server-assigned `$`-
+      // prefixed id — placeholder ids that the outbox minted before
+      // the server echoed back would make `getEventContext` fail.
+      lastAppliedEventId:
+          marker.lastAppliedEventId != null &&
+              marker.lastAppliedEventId!.startsWith(r'$')
+          ? marker.lastAppliedEventId
+          : null,
+    );
   }
+}
+
+/// Outcome of a single forward- or backward-walk bootstrap pass.
+/// Distinguishes "walk ran but produced no pages because the server
+/// couldn't resolve the anchor" from "walk ran partially but threw
+/// mid-way" so the coordinator can decide whether to fall back.
+enum _BootstrapOutcome {
+  completed,
+  incomplete,
+  errorNoProgress,
 }
 
 class _ProgressForwardingSink implements BootstrapSink {
@@ -768,6 +1134,9 @@ class _ProgressForwardingSink implements BootstrapSink {
 
   final BootstrapSink _inner;
   final void Function(BootstrapPageInfo info)? onProgress;
+
+  @override
+  int? get lastAcceptedCount => _inner.lastAcceptedCount;
 
   @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
@@ -806,6 +1175,9 @@ class _AttachmentAwareBootstrapSink implements BootstrapSink {
   final Future<void> Function(Event event) _processAttachment;
 
   @override
+  int? get lastAcceptedCount => _inner.lastAcceptedCount;
+
+  @override
   Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
     for (final event in events) {
       // `processAttachment` is internally a no-op for non-attachment
@@ -814,5 +1186,28 @@ class _AttachmentAwareBootstrapSink implements BootstrapSink {
       unawaited(_processAttachment(event));
     }
     return _inner.onPage(events, info);
+  }
+}
+
+/// Accumulates the inner sink's `lastAcceptedCount` across every page
+/// so the coordinator can tell whether a bridge pass accepted zero
+/// events overall — the precise signal that a reconnect catch-up
+/// wedged on a stale SDK cache and the gap-recovery unbounded walk
+/// needs to fire on the next live gap. Pure pass-through otherwise.
+class _TotalAcceptedCountingSink implements BootstrapSink {
+  _TotalAcceptedCountingSink(this._inner);
+
+  final BootstrapSink _inner;
+  int totalAccepted = 0;
+
+  @override
+  int? get lastAcceptedCount => _inner.lastAcceptedCount;
+
+  @override
+  Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
+    final shouldContinue = await _inner.onPage(events, info);
+    final accepted = _inner.lastAcceptedCount;
+    if (accepted != null) totalAccepted += accepted;
+    return shouldContinue;
   }
 }

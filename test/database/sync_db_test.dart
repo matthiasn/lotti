@@ -652,6 +652,143 @@ void main() {
 
       expect(await database.allOutboxItems, hasLength(1));
     });
+
+    test(
+      'pruneSentOutboxItems deletes only `sent` rows older than retention, '
+      'keeps `error` forever (regardless of age), and leaves pending/sending '
+      'untouched',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22, 12);
+        final old = now.subtract(const Duration(days: 10));
+        final fresh = now.subtract(const Duration(days: 2));
+
+        // Old sent — must be pruned.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: old,
+            subject: 'old-sent',
+          ),
+        );
+        // Fresh sent — within retention, must stay.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: fresh,
+            subject: 'fresh-sent',
+          ),
+        );
+        // Old error — kept forever for forensic inspection.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.error,
+            createdAt: old,
+            subject: 'old-error',
+          ),
+        );
+        // Old pending — never pruned (live state).
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: old,
+            subject: 'old-pending',
+          ),
+        );
+        // Old sending — never pruned (live state).
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sending,
+            createdAt: old,
+            subject: 'old-sending',
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 1);
+
+        final remaining = await database.allOutboxItems;
+        expect(
+          remaining.map((e) => e.subject).toSet(),
+          {'fresh-sent', 'old-error', 'old-pending', 'old-sending'},
+        );
+      },
+    );
+
+    test(
+      'pruneSentOutboxItems uses updated_at (send time), not created_at '
+      '(enqueue time) — a row enqueued 10 days ago but sent today must not '
+      'be pruned',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22, 12);
+        final oldCreated = now.subtract(const Duration(days: 10));
+        final recentlySent = now.subtract(const Duration(hours: 6));
+
+        // Enqueued 10 days ago, sent 6 hours ago. Pruning by created_at
+        // would delete this row; pruning by updated_at (the send time
+        // stamped by markSent) keeps it.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            subject: const Value('stuck-then-recently-sent'),
+            message: const Value('{}'),
+            createdAt: Value(oldCreated),
+            updatedAt: Value(recentlySent),
+            retries: const Value(0),
+          ),
+        );
+
+        // An actually-old sent row (control): enqueued AND sent 10 days
+        // ago — this one should be deleted.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            subject: const Value('actually-old'),
+            message: const Value('{}'),
+            createdAt: Value(oldCreated),
+            updatedAt: Value(oldCreated),
+            retries: const Value(0),
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 1);
+
+        final remaining = await database.allOutboxItems;
+        expect(remaining.map((e) => e.subject).toSet(), {
+          'stuck-then-recently-sent',
+        });
+      },
+    );
+
+    test(
+      'pruneSentOutboxItems returns 0 when there is nothing to prune',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 4, 22);
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(days: 2)),
+            subject: 'recent-sent',
+          ),
+        );
+
+        final deleted = await database.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
+        expect(deleted, 0);
+        expect(await database.allOutboxItems, hasLength(1));
+      },
+    );
   });
 
   group('SyncSequenceLog Tests', () {
@@ -3166,8 +3303,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 13', () {
-      expect(db.schemaVersion, 13);
+    test('schema version is 14', () {
+      expect(db.schemaVersion, 14);
     });
   });
 
@@ -3505,6 +3642,91 @@ void main() {
     });
   });
 
+  group('resetAllUnresolvableEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'resets every unresolvable entry back to missing, including rows '
+      'without entryId — the key case where the originating host is dead '
+      'but currently-alive peers may still have the payload',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final old = now.subtract(const Duration(days: 30));
+
+        // Unresolvable WITHOUT entryId — resetUnresolvableWithKnownPayload
+        // skips this; this method must flip it.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.unresolvable.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(2),
+            lastRequestedAt: Value(old),
+          ),
+        );
+
+        // Unresolvable WITH entryId — also flipped (for completeness;
+        // this is the superset of resetUnresolvableWithKnownPayload).
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(2),
+            entryId: const Value('known-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.unresolvable.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+            requestCount: const Value(5),
+          ),
+        );
+
+        // Received entry must NOT be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('dead-host'),
+            counter: const Value(3),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(old),
+            updatedAt: Value(old),
+          ),
+        );
+
+        final reset = await database.resetAllUnresolvableEntries();
+        expect(reset, 2);
+
+        final r1 = await database.getEntryByHostAndCounter('dead-host', 1);
+        expect(r1!.status, SyncSequenceStatus.missing.index);
+        expect(r1.requestCount, 0);
+        expect(r1.lastRequestedAt, isNull);
+
+        final r2 = await database.getEntryByHostAndCounter('dead-host', 2);
+        expect(r2!.status, SyncSequenceStatus.missing.index);
+        expect(r2.requestCount, 0);
+
+        final r3 = await database.getEntryByHostAndCounter('dead-host', 3);
+        expect(r3!.status, SyncSequenceStatus.received.index);
+      },
+    );
+
+    test('returns 0 when no unresolvable rows exist', () async {
+      final reset = await database.resetAllUnresolvableEntries();
+      expect(reset, 0);
+    });
+  });
+
   group('retireExhaustedRequestedEntries', () {
     late SyncDatabase database;
 
@@ -3800,6 +4022,247 @@ void main() {
 
     test('returns 0 when there is nothing to retire', () async {
       final retired = await database.retireExhaustedRequestedEntries();
+      expect(retired, 0);
+    });
+  });
+
+  group('retireAgedOutRequestedEntries', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test(
+      'retires missing/requested rows older than amnestyWindow regardless of '
+      'request_count, leaving fresh rows and other statuses untouched',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 14));
+        final recent = now.subtract(const Duration(hours: 6));
+
+        // Aged-out `missing` row with request_count=0 — exactly the case
+        // that the exhausted-retire refuses (last_requested_at IS NULL,
+        // request_count below cap) and that
+        // `getMissingEntriesWithLimits` also ignores (older than
+        // maxAge). Must retire here.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        // Aged-out `requested` row born via backfill-response-hint path
+        // (request_count > 0 but last_requested_at never set). This
+        // reproduces the exact stuck-row profile observed on both
+        // desktop and mobile sync DBs.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            entryId: const Value('hint-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+            requestCount: const Value(3),
+          ),
+        );
+
+        // Recent `missing` row — still inside amnesty window, must NOT
+        // retire; let the normal backfill sweep handle it.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(3),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(recent),
+            updatedAt: Value(recent),
+          ),
+        );
+
+        // Aged-out `received` row — must not be touched, ever.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(4),
+            entryId: const Value('received-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        // Aged-out `backfilled` row — must not be touched.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(5),
+            entryId: const Value('backfilled-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.backfilled.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+
+        expect(retired, 2);
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 1))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 2))!.status,
+          SyncSequenceStatus.unresolvable.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 3))!.status,
+          SyncSequenceStatus.missing.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 4))!.status,
+          SyncSequenceStatus.received.index,
+        );
+        expect(
+          (await database.getEntryByHostAndCounter('host-a', 5))!.status,
+          SyncSequenceStatus.backfilled.index,
+        );
+      },
+    );
+
+    test(
+      'unblocks the watermark so getLastCounterForHost advances past the '
+      'retired range — the load-bearing reason for this retire path',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 14));
+
+        const hostId = 'host-stuck';
+        // Counters 1..5 received — contiguous prefix starts here.
+        for (var counter = 1; counter <= 5; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+            ),
+          );
+        }
+        // Counters 6..8 stuck in `requested` — the watermark-blocking
+        // rows observed in the real DBs.
+        for (var counter = 6; counter <= 8; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.requested.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+              requestCount: const Value(3),
+            ),
+          );
+        }
+        // Counters 9..12 received — watermark cannot reach these
+        // until 6..8 are retired.
+        for (var counter = 9; counter <= 12; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+            ),
+          );
+        }
+
+        expect(await database.getLastCounterForHost(hostId), 5);
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+        expect(retired, 3);
+
+        // Watermark now advances through the retired `unresolvable`
+        // range (6..8) and onward through the contiguous received prefix
+        // (9..12), unblocking gap detection for this host.
+        expect(await database.getLastCounterForHost(hostId), 12);
+      },
+    );
+
+    test(
+      'uses updated_at (not created_at) so a row just reopened by '
+      'resetAllUnresolvableEntries survives the next retire sweep — '
+      'without this the reset→retire cycle races',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 30));
+        final justReopened = now.subtract(const Duration(hours: 1));
+
+        // Row created 30 days ago but `updated_at` just refreshed
+        // (simulating resetAllUnresolvableEntries flipping it back to
+        // missing). Must NOT be retired.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(1),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(justReopened),
+          ),
+        );
+
+        // Control: row created AND last-updated 30 days ago — must retire.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-a'),
+            counter: const Value(2),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(longAgo),
+            updatedAt: Value(longAgo),
+          ),
+        );
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+        );
+        expect(retired, 1);
+
+        final reopened = await database.getEntryByHostAndCounter('host-a', 1);
+        expect(reopened!.status, SyncSequenceStatus.missing.index);
+
+        final oldRow = await database.getEntryByHostAndCounter('host-a', 2);
+        expect(oldRow!.status, SyncSequenceStatus.unresolvable.index);
+      },
+    );
+
+    test('returns 0 when there is nothing to retire', () async {
+      final retired = await database.retireAgedOutRequestedEntries();
       expect(retired, 0);
     });
   });

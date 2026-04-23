@@ -25,6 +25,10 @@ void main() {
     ),
   ]);
 
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   group('BackfillStatsController', () {
     late MockSyncSequenceLogService mockSequenceService;
     late MockBackfillRequestService mockBackfillService;
@@ -471,6 +475,214 @@ void main() {
 
         verifyNever(() => mockSequenceService.resetUnresolvableEntries());
       });
+    });
+
+    test(
+      'retireStuckNow calls retireAgedOutRequestedEntries with zero amnesty '
+      'window and refreshes stats — the manual diagnostic path that bypasses '
+      'the 7-day default so a user can unblock the watermark immediately',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(
+            () => mockSequenceService.retireAgedOutRequestedEntries(
+              amnestyWindow: any(named: 'amnestyWindow'),
+            ),
+          ).thenAnswer((_) async => 7);
+
+          createAndLoad(async);
+          clearInteractions(mockSequenceService);
+
+          act(async, (c) => c.retireStuckNow());
+
+          verify(
+            () => mockSequenceService.retireAgedOutRequestedEntries(
+              amnestyWindow: Duration.zero,
+            ),
+          ).called(1);
+          verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+          final state = container.read(backfillStatsControllerProvider);
+          expect(state.isRetiringStuck, isFalse);
+          expect(state.lastRetiredStuckCount, 7);
+        });
+      },
+    );
+
+    test('retireStuckNow sets isRetiringStuck during operation', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        ).thenAnswer(
+          (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 200));
+            return 3;
+          },
+        );
+
+        createAndLoad(async);
+
+        container
+            .read(backfillStatsControllerProvider.notifier)
+            .retireStuckNow();
+        async.flushMicrotasks();
+
+        var state = container.read(backfillStatsControllerProvider);
+        expect(state.isRetiringStuck, isTrue);
+
+        async
+          ..elapse(const Duration(milliseconds: 200))
+          ..flushMicrotasks();
+
+        state = container.read(backfillStatsControllerProvider);
+        expect(state.isRetiringStuck, isFalse);
+      });
+    });
+
+    test('retireStuckNow surfaces service errors', () {
+      fakeAsync((async) {
+        when(
+          () => mockSequenceService.getBackfillStats(),
+        ).thenAnswer((_) async => testStats);
+        when(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        ).thenAnswer((_) async => throw Exception('retire blew up'));
+
+        createAndLoad(async);
+
+        act(async, (c) => c.retireStuckNow());
+
+        final state = container.read(backfillStatsControllerProvider);
+        expect(state.isRetiringStuck, isFalse);
+        expect(state.error, contains('retire blew up'));
+      });
+    });
+
+    test(
+      'resetAllUnresolvable calls resetAllUnresolvableEntries and refreshes '
+      'stats — the peer-reask path that covers unresolvable rows with no '
+      'known entryId, which resetUnresolvable (the narrower variant) skips',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).thenAnswer((_) async => 144087);
+
+          createAndLoad(async);
+          clearInteractions(mockSequenceService);
+
+          act(async, (c) => c.resetAllUnresolvable());
+
+          verify(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).called(1);
+          verify(() => mockSequenceService.getBackfillStats()).called(1);
+
+          final state = container.read(backfillStatsControllerProvider);
+          expect(state.isResettingAllUnresolvable, isFalse);
+          expect(state.lastResetAllUnresolvableCount, 144087);
+        });
+      },
+    );
+
+    test(
+      'resetAllUnresolvable surfaces service errors',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).thenAnswer((_) async => throw Exception('reset blew up'));
+
+          createAndLoad(async);
+
+          act(async, (c) => c.resetAllUnresolvable());
+
+          final state = container.read(backfillStatsControllerProvider);
+          expect(state.isResettingAllUnresolvable, isFalse);
+          expect(state.error, contains('reset blew up'));
+        });
+      },
+    );
+
+    test(
+      'retireStuckNow is mutually exclusive with the other manual operations '
+      "so concurrent triggers don't double-fire the retire",
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+          when(() => mockBackfillService.processFullBackfill()).thenAnswer(
+            (_) async {
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+              return 2;
+            },
+          );
+          when(
+            () => mockSequenceService.retireAgedOutRequestedEntries(
+              amnestyWindow: any(named: 'amnestyWindow'),
+            ),
+          ).thenAnswer((_) async => 1);
+
+          createAndLoad(async);
+
+          // Start full backfill, then try retireStuckNow while it runs.
+          act(async, (c) => c.triggerFullBackfill());
+          act(async, (c) => c.retireStuckNow());
+
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+
+          verifyNever(
+            () => mockSequenceService.retireAgedOutRequestedEntries(
+              amnestyWindow: any(named: 'amnestyWindow'),
+            ),
+          );
+        });
+      },
+    );
+
+    group('auto-refresh timer dispose', () {
+      test(
+        'provider dispose cancels the timer so no ticks fire after the '
+        'Backfill Settings page is closed — the @riverpod auto-dispose '
+        'is the backstop for "zero cost when page is closed"',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            container.dispose();
+
+            // Recreate for the tearDown hook; the explicit dispose
+            // above is the assertion subject.
+            container = ProviderContainer();
+
+            async.elapse(const Duration(seconds: 30));
+            verifyNever(() => mockSequenceService.getBackfillStats());
+          });
+        },
+      );
     });
   });
 

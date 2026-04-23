@@ -105,6 +105,36 @@ void main() {
   });
 
   test(
+    'cancelSignal that completed before the first onPage enters the '
+    'early-exit path and returns false without calling the queue — '
+    'resets lastAcceptedCount to 0 so a caller polling the accepted '
+    'count between pages sees "nothing happened this tick" rather '
+    'than a stale value from an earlier pass',
+    () async {
+      final cancel = Future<void>.value();
+      final sink = QueueBootstrapSink(
+        queue: queue,
+        logging: logging,
+        cancelSignal: cancel,
+      );
+      // Let the cancel-signal handler flip _cancelled to true.
+      await Future<void>.delayed(Duration.zero);
+
+      final events = [
+        _buildEvent(eventId: r'$pre-cancelled', originTsMs: 1),
+      ];
+      final cont = await sink.onPage(events, info(0, 1));
+      expect(cont, isFalse);
+      expect(sink.lastAcceptedCount, 0);
+
+      // Queue must be untouched — the early exit bailed before
+      // appendBootstrapPage.
+      final stats = await queue.stats();
+      expect(stats.total, 0);
+    },
+  );
+
+  test(
     'back-pressure timeout returns false so paging halts on wedged worker',
     () async {
       for (var i = 0; i < 5; i++) {

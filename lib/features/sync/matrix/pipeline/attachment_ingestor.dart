@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:lotti/database/logging_types.dart';
@@ -11,11 +12,26 @@ import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
+
+/// Causality check: does the caller already have a local copy of the
+/// entity at [relativePath] whose vector clock is equal to or newer
+/// than [incomingVectorClock]? Returns true to suppress the download
+/// (local copy is at least as current), false to proceed with it.
+///
+/// When [incomingVectorClock] is null, the event carries no VC and
+/// callers should return false — we have no way to prove the local
+/// copy is current.
+typedef LocalVectorClockDominanceCheck =
+    Future<bool> Function(
+      String relativePath,
+      VectorClock? incomingVectorClock,
+    );
 
 /// AttachmentIngestor
 ///
@@ -32,11 +48,20 @@ class AttachmentIngestor {
     int maxConcurrentDownloads = _defaultMaxConcurrentDownloads,
     int? handledEventCapacity,
     this.verboseLogging = true,
+    this.localVcDominates,
   }) : _maxConcurrentDownloads = maxConcurrentDownloads < 0
            ? 0
            : maxConcurrentDownloads,
        _handledAttachmentEventCapacity =
            handledEventCapacity ?? _defaultHandledAttachmentEventCapacity;
+
+  /// Injected causality check. Wired by the coordinator so we can
+  /// consult `AgentRepository` / `JournalDb` for the local entity's
+  /// current vector clock without coupling this helper to those
+  /// repositories directly. When null, every attachment is
+  /// downloaded — the check is an optimization, not a correctness
+  /// primitive.
+  final LocalVectorClockDominanceCheck? localVcDominates;
 
   static const int _defaultMaxConcurrentDownloads = 2;
   static const int _defaultHandledAttachmentEventCapacity =
@@ -369,9 +394,49 @@ class AttachmentIngestor {
       }
 
       // Agent entities/links can be legitimately updated in-place (e.g.
-      // ChangeSetEntity pending → resolved). Always re-download to avoid
-      // stale reads.
+      // ChangeSetEntity pending → resolved), so the file-exists
+      // fast-path dedupe doesn't apply to them. Instead we do a causal
+      // check: the event's content carries the sync payload's
+      // `vectorClock`, and the callback-injected VC dominance check
+      // tells us whether the local entity is already at least as new
+      // as what this event advertises. If yes, the file on disk is
+      // current and the download would produce identical bytes — skip.
+      //
+      // This is the receiver-side "newer VC exists, don't download"
+      // path. Without it, a chatty sender that emits N sync events
+      // per entity per minute (each bumping the VC but not necessarily
+      // changing the persisted bytes) produces N downloads of a file
+      // that's already correct on disk.
       final isAgentPayload = isAgentPayloadPath(relativePath);
+
+      if (isAgentPayload && localVcDominates != null) {
+        final incomingVc = _extractIncomingVectorClock(event);
+        try {
+          final dominates = await localVcDominates!(
+            relativePath,
+            incomingVc,
+          );
+          if (dominates) {
+            if (verboseLogging) {
+              logging.captureEvent(
+                'skip.localVcDominates path=$relativePath',
+                domain: syncLoggingDomain,
+                subDomain: 'attachment.download.skip',
+              );
+            }
+            return false;
+          }
+        } catch (e, st) {
+          // Dominance check is an optimization; a failure must not
+          // block the download. Log and fall through.
+          logging.captureException(
+            e,
+            domain: syncLoggingDomain,
+            subDomain: 'attachment.download.skip',
+            stackTrace: st,
+          );
+        }
+      }
 
       // Fast-path dedupe (non-agent only): if the file already exists and is
       // non-empty, skip re-downloading to avoid repeated writes and log spam.
@@ -478,6 +543,29 @@ class AttachmentIngestor {
       while (_cacheEvictedEventIds.length > _handledAttachmentEventCapacity) {
         _cacheEvictedEventIds.remove(_cacheEvictedEventIds.first);
       }
+    }
+  }
+
+  /// Pulls the vector clock out of the sync-payload body carried in the
+  /// Matrix event's `text` field. Lotti sync messages are base64 JSON
+  /// with a top-level `vectorClock` map (`{hostId: counter}`) present
+  /// on `journalEntity` / `agentEntity` / `agentLink` payloads.
+  ///
+  /// Returns null when the body is missing, not base64 JSON, lacks a
+  /// `vectorClock` field, or fails to parse. Callers treat null as
+  /// "cannot prove local is current" and proceed with the download.
+  static VectorClock? _extractIncomingVectorClock(Event event) {
+    try {
+      final txt = event.text;
+      if (txt.isEmpty) return null;
+      final decoded = utf8.decode(base64.decode(txt));
+      final obj = json.decode(decoded);
+      if (obj is! Map<String, dynamic>) return null;
+      final raw = obj['vectorClock'];
+      if (raw is! Map<String, dynamic>) return null;
+      return VectorClock.fromJson(raw);
+    } catch (_) {
+      return null;
     }
   }
 }
