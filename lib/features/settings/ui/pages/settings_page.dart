@@ -36,12 +36,14 @@ class SettingsPage extends ConsumerWidget {
     final items = <_SettingsItem>[
       if (enableWhatsNew)
         _SettingsItem(
+          id: 'whats-new',
           title: context.messages.settingsWhatsNewTitle,
           subtitle: context.messages.settingsWhatsNewSubtitle,
           icon: Icons.new_releases_outlined,
           onTap: () => WhatsNewModal.show(context, ref),
         ),
       _SettingsItem(
+        id: '/settings/ai',
         title: context.messages.settingsAiTitle,
         subtitle: context.messages.settingsAiSubtitle,
         icon: Icons.psychology_rounded,
@@ -50,6 +52,7 @@ class SettingsPage extends ConsumerWidget {
       ),
       if (enableAgents)
         _SettingsItem(
+          id: '/settings/agents',
           title: context.messages.agentSettingsTitle,
           subtitle: context.messages.agentSettingsSubtitle,
           icon: Icons.smart_toy_outlined,
@@ -59,6 +62,7 @@ class SettingsPage extends ConsumerWidget {
         ),
       if (enableHabits)
         _SettingsItem(
+          id: '/settings/habits',
           title: context.messages.settingsHabitsTitle,
           subtitle: context.messages.settingsHabitsSubtitle,
           icon: Icons.repeat_rounded,
@@ -66,6 +70,7 @@ class SettingsPage extends ConsumerWidget {
           onTap: () => context.beamToNamed('/settings/habits'),
         ),
       _SettingsItem(
+        id: '/settings/categories',
         title: context.messages.settingsCategoriesTitle,
         subtitle: context.messages.settingsCategoriesSubtitle,
         icon: Icons.category_rounded,
@@ -73,6 +78,7 @@ class SettingsPage extends ConsumerWidget {
         onTap: () => context.beamToNamed('/settings/categories'),
       ),
       _SettingsItem(
+        id: '/settings/labels',
         title: context.messages.settingsLabelsTitle,
         subtitle: context.messages.settingsLabelsSubtitle,
         icon: Icons.label_rounded,
@@ -81,6 +87,7 @@ class SettingsPage extends ConsumerWidget {
       ),
       if (enableMatrix)
         _SettingsItem(
+          id: '/settings/sync',
           title: context.messages.settingsMatrixTitle,
           subtitle: context.messages.settingsSyncSubtitle,
           icon: Icons.sync,
@@ -89,6 +96,7 @@ class SettingsPage extends ConsumerWidget {
         ),
       if (enableDashboards)
         _SettingsItem(
+          id: '/settings/dashboards',
           title: context.messages.settingsDashboardsTitle,
           subtitle: context.messages.settingsDashboardsSubtitle,
           icon: Icons.dashboard_rounded,
@@ -97,6 +105,7 @@ class SettingsPage extends ConsumerWidget {
         ),
       if (enableDashboards)
         _SettingsItem(
+          id: '/settings/measurables',
           title: context.messages.settingsMeasurablesTitle,
           subtitle: context.messages.settingsMeasurablesSubtitle,
           icon: Icons.trending_up_rounded,
@@ -104,6 +113,7 @@ class SettingsPage extends ConsumerWidget {
           onTap: () => context.beamToNamed('/settings/measurables'),
         ),
       _SettingsItem(
+        id: '/settings/theming',
         title: context.messages.settingsThemingTitle,
         subtitle: context.messages.settingsThemingSubtitle,
         icon: Icons.palette_rounded,
@@ -111,6 +121,7 @@ class SettingsPage extends ConsumerWidget {
         onTap: () => context.beamToNamed('/settings/theming'),
       ),
       _SettingsItem(
+        id: '/settings/flags',
         title: context.messages.settingsFlagsTitle,
         subtitle: context.messages.settingsFlagsSubtitle,
         icon: Icons.tune_rounded,
@@ -118,6 +129,7 @@ class SettingsPage extends ConsumerWidget {
         onTap: () => context.beamToNamed('/settings/flags'),
       ),
       _SettingsItem(
+        id: '/settings/advanced',
         title: context.messages.settingsAdvancedTitle,
         subtitle: context.messages.settingsAdvancedSubtitle,
         icon: Icons.settings_rounded,
@@ -129,37 +141,10 @@ class SettingsPage extends ConsumerWidget {
     final isDesktop = isDesktopLayout(context);
 
     Widget buildList({required String? activeRoute}) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: tokens.colors.background.level02,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          border: Border.all(color: tokens.colors.decorative.level01),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final (index, item) in items.indexed)
-                DesignSystemListItem(
-                  title: item.title,
-                  subtitle: item.subtitle,
-                  leading: SettingsIcon(icon: item.icon),
-                  trailing: SettingsIcon.trailingChevron(tokens),
-                  trailingExtra: item.trailingExtra,
-                  activated:
-                      isDesktop &&
-                      item.routePrefix != null &&
-                      activeRoute != null &&
-                      (activeRoute == item.routePrefix ||
-                          activeRoute.startsWith('${item.routePrefix}/')),
-                  showDivider: index < items.length - 1,
-                  dividerIndent: SettingsIcon.dividerIndent(tokens),
-                  onTap: item.onTap,
-                ),
-            ],
-          ),
-        ),
+      return _SettingsListCard(
+        items: items,
+        activeRoute: activeRoute,
+        isDesktop: isDesktop,
       );
     }
 
@@ -194,6 +179,7 @@ class SettingsPage extends ConsumerWidget {
 
 class _SettingsItem {
   const _SettingsItem({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -202,6 +188,11 @@ class _SettingsItem {
     this.trailingExtra,
   });
 
+  /// Stable identity used for keying the widget and tracking cross-row
+  /// state (hover, activation). Must be unique within a single settings
+  /// list and stable across rebuilds even when feature flags reorder
+  /// the items around it.
+  final String id;
   final String title;
   final String subtitle;
   final IconData icon;
@@ -211,4 +202,112 @@ class _SettingsItem {
   /// e.g. `/settings/ai`. `null` for items that open modals instead of routes.
   final String? routePrefix;
   final Widget? trailingExtra;
+}
+
+/// Settings menu card that renders [_SettingsItem]s as a column of
+/// [DesignSystemListItem]s inside a rounded, bordered container.
+///
+/// Tracks which row the pointer is currently hovering so the divider
+/// between two rows can be visually suppressed whenever either of them
+/// is hovered or active — matching the task-list behaviour where an
+/// interacting row is never bisected by a partial-width divider. The
+/// divider keeps its 1 px of vertical space (just turns transparent)
+/// so hover never causes the column to jitter.
+///
+/// Hover tracking is keyed by [_SettingsItem.id], not by list index, so
+/// toggling a feature flag (which reorders the list) does not leave the
+/// suppression pointing at the wrong row.
+class _SettingsListCard extends StatefulWidget {
+  const _SettingsListCard({
+    required this.items,
+    required this.activeRoute,
+    required this.isDesktop,
+  });
+
+  final List<_SettingsItem> items;
+  final String? activeRoute;
+  final bool isDesktop;
+
+  @override
+  State<_SettingsListCard> createState() => _SettingsListCardState();
+}
+
+class _SettingsListCardState extends State<_SettingsListCard> {
+  String? _hoveredId;
+
+  @override
+  void didUpdateWidget(covariant _SettingsListCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Drop hover state if the hovered item was removed (e.g. a feature
+    // flag toggle reordered the list and removed its row). Without
+    // this, divider suppression could stay stuck on a stale id — and
+    // if the same id reappeared later, it would come back pre-hovered.
+    final hoveredId = _hoveredId;
+    if (hoveredId != null &&
+        !widget.items.any((item) => item.id == hoveredId)) {
+      _hoveredId = null;
+    }
+  }
+
+  bool _isActive(_SettingsItem item) {
+    if (!widget.isDesktop) return false;
+    final prefix = item.routePrefix;
+    final route = widget.activeRoute;
+    if (prefix == null || route == null) return false;
+    return route == prefix || route.startsWith('$prefix/');
+  }
+
+  bool _isInteracting(_SettingsItem item) =>
+      _hoveredId == item.id || _isActive(item);
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final dividerIndent = SettingsIcon.dividerIndent(tokens);
+    final trailingChevron = SettingsIcon.trailingChevron(tokens);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (index, item) in widget.items.indexed)
+              DesignSystemListItem(
+                key: ValueKey(item.id),
+                title: item.title,
+                subtitle: item.subtitle,
+                leading: SettingsIcon(icon: item.icon),
+                trailing: trailingChevron,
+                trailingExtra: item.trailingExtra,
+                activated: _isActive(item),
+                selected: _isActive(item),
+                showDivider: index < widget.items.length - 1,
+                dividerIndent: dividerIndent,
+                dividerColor:
+                    index < widget.items.length - 1 &&
+                        (_isInteracting(item) ||
+                            _isInteracting(widget.items[index + 1]))
+                    ? Colors.transparent
+                    : null,
+                onTap: item.onTap,
+                onHoverChanged: (hovered) {
+                  setState(() {
+                    if (hovered) {
+                      _hoveredId = item.id;
+                    } else if (_hoveredId == item.id) {
+                      _hoveredId = null;
+                    }
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

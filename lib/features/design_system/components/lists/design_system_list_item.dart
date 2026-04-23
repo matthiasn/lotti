@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
@@ -26,12 +27,14 @@ class DesignSystemListItem extends StatefulWidget {
     this.trailingExtra,
     this.showDivider = false,
     this.dividerIndent,
+    this.dividerColor,
     this.activated = false,
     this.selected = false,
     this.activatedBackgroundColor,
     this.hoverBackgroundColor,
     this.pressedBackgroundColor,
     this.onTap,
+    this.onHoverChanged,
     this.semanticsLabel,
     this.forcedState,
     super.key,
@@ -55,12 +58,24 @@ class DesignSystemListItem extends StatefulWidget {
   final Widget? trailingExtra;
   final bool showDivider;
   final double? dividerIndent;
+
+  /// Overrides the divider colour. Useful for list surfaces that want to
+  /// hide the divider without collapsing its 1 px of vertical space —
+  /// pass [Colors.transparent] to keep layout stable while visually
+  /// suppressing the line.
+  final Color? dividerColor;
   final bool activated;
   final bool selected;
   final Color? activatedBackgroundColor;
   final Color? hoverBackgroundColor;
   final Color? pressedBackgroundColor;
   final VoidCallback? onTap;
+
+  /// Fires whenever the pointer enters or leaves the item. Lets parent
+  /// lists coordinate cross-row state — for example, hiding the divider
+  /// between two rows when either one is hovered, matching the
+  /// task-list behaviour.
+  final ValueChanged<bool>? onHoverChanged;
   final String? semanticsLabel;
   final DesignSystemListItemVisualState? forcedState;
 
@@ -98,7 +113,8 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
     final visualState = _resolveVisualState(enabled);
 
     final backgroundColor = widget.activated
-        ? widget.activatedBackgroundColor ?? tokens.colors.surface.active
+        ? widget.activatedBackgroundColor ??
+              DesignSystemListPalette.activatedFill(tokens)
         : switch (visualState) {
             DesignSystemListItemVisualState.idle => Colors.transparent,
             DesignSystemListItemVisualState.hover =>
@@ -117,8 +133,17 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
             decoration: BoxDecoration(color: backgroundColor),
             child: InkWell(
               onTap: widget.onTap,
-              onHover: widget.forcedState == null && enabled
-                  ? (value) => setState(() => _hovered = value)
+              onHover: enabled
+                  ? (value) {
+                      // Internal hover state is suppressed while a
+                      // forcedState is in effect (e.g., widgetbook
+                      // previews); the callback still fires so parent
+                      // lists can coordinate cross-row state regardless.
+                      if (widget.forcedState == null) {
+                        setState(() => _hovered = value);
+                      }
+                      widget.onHoverChanged?.call(value);
+                    }
                   : null,
               onHighlightChanged: widget.forcedState == null && enabled
                   ? (value) => setState(() => _pressed = value)
@@ -169,7 +194,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
             height: 1,
             thickness: 1,
             indent: widget.dividerIndent ?? spec.horizontalPadding,
-            color: tokens.colors.decorative.level01,
+            color: widget.dividerColor ?? tokens.colors.decorative.level01,
           ),
       ],
     );
