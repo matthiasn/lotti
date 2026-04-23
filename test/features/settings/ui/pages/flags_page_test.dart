@@ -250,44 +250,5 @@ void main() {
       expect(find.byType(DecoratedBox), findsAtLeastNWidgets(1));
       expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
     });
-
-    testWidgets(
-      'renders the useInboundEventQueue flag row with its dedicated '
-      'inbox icon, localized title, and localized description — '
-      'covers the switch cases added for the queue-pipeline toggle',
-      (tester) async {
-        // Override the shared mock stream so the queue-pipeline flag
-        // is actually present. The shared stub above ships a curated
-        // subset; we only need this specific flag for the test.
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: useInboundEventQueueFlag,
-                description:
-                    'Use the queue pipeline for inbound sync '
-                    '(requires restart).',
-                status: false,
-              ),
-            },
-          ]),
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pumpAndSettle();
-
-        // Icon exercised by `_iconForFlag(useInboundEventQueueFlag)`.
-        expect(find.byIcon(Icons.inbox_rounded), findsAtLeastNWidgets(1));
-        // Title + description exercised by `_titleForFlag` and
-        // `_subtitleForFlag`.
-        expect(find.text('Use inbound event queue'), findsOneWidget);
-        expect(
-          find.textContaining('durable queue pipeline'),
-          findsOneWidget,
-        );
-      },
-    );
   });
 }

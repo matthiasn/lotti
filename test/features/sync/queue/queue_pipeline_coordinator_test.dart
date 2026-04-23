@@ -290,6 +290,33 @@ void main() {
     verify(bridge.bridgeNow).called(1);
   });
 
+  test(
+    'isBridgeInFlight forwards from the bridge coordinator — this is '
+    'the gate the backfill service reads to skip analysis during a walk',
+    () {
+      when(() => bridge.isBridgeInFlight).thenReturn(true);
+      final coordinator = build();
+      expect(coordinator.isBridgeInFlight, isTrue);
+
+      when(() => bridge.isBridgeInFlight).thenReturn(false);
+      expect(coordinator.isBridgeInFlight, isFalse);
+    },
+  );
+
+  test(
+    'onBridgeCompleted getter/setter forwards to the bridge — backfill '
+    'service subscribes through the coordinator facade so the two do '
+    'not need to know about each other directly',
+    () {
+      void callback() {}
+      final coordinator = build()..onBridgeCompleted = callback;
+      verify(() => bridge.onBridgeCompleted = callback).called(1);
+
+      when(() => bridge.onBridgeCompleted).thenReturn(callback);
+      expect(coordinator.onBridgeCompleted, same(callback));
+    },
+  );
+
   test('start logs noRoom when there is no current room', () async {
     when(() => roomManager.currentRoomId).thenReturn(null);
     final coordinator = build();

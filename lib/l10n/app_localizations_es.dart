@@ -2393,13 +2393,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Comprime con gzip los archivos adjuntos JSON de sincronización antes de subirlos. Ahorra ancho de banda en redes lentas, a cambio de un pequeño coste de CPU al enviar y recibir.';
 
   @override
-  String get configFlagUseInboundEventQueue => 'Usar cola de eventos entrantes';
-
-  @override
-  String get configFlagUseInboundEventQueueDescription =>
-      'Dirige los eventos de sincronización entrantes a través de la cola duradera con memoria acotada y aplicación progresiva. Requiere reiniciar la app.';
-
-  @override
   String get conflictEntityLabel => 'Entidad';
 
   @override

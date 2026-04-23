@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
-
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -23,7 +21,6 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/utils/consts.dart' show useInboundEventQueueFlag;
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -90,21 +87,29 @@ void main() {
   late _MockMatrixSessionManager sessionManager;
   late _MockUserActivityGate activityGate;
   late _MockMatrixStreamConsumer pipeline;
+  late _MockQueuePipelineCoordinator coordinator;
   late AttachmentIndex attachmentIndex;
   late _MockClient client;
 
+  _MockQueuePipelineCoordinator buildDefaultCoordinator() {
+    final c = _MockQueuePipelineCoordinator();
+    when(c.start).thenAnswer((_) async {});
+    when(() => c.isRunning).thenReturn(false);
+    when(
+      () => c.stop(drainFirst: any(named: 'drainFirst')),
+    ).thenAnswer((_) async {});
+    when(c.triggerBridge).thenAnswer((_) async {});
+    when(() => c.onRoomChanged(any())).thenAnswer((_) async {});
+    return c;
+  }
+
   /// Creates a [MatrixService] with all mocks wired up.
-  ///
-  /// This is synchronous — callers running inside `fakeAsync` must
-  /// `async.elapse(...)` and `clearInteractions(pipeline)` themselves
-  /// so the eager `forceRescan` task completes before assertions.
   MatrixService createService({
     bool collectMetrics = true,
     Stream<List<ConnectivityResult>>? connectivity,
     Map<String, int> metricsSnapshot = const {'dbApplied': 4},
     Map<String, String> diagnostics = const {'nextRetry': 'soon'},
-    QueuePipelineCoordinator? queueCoordinator,
-    bool suppressLegacyPipeline = false,
+    _MockQueuePipelineCoordinator? queueCoordinator,
   }) {
     final connectivityStream =
         connectivity ?? const Stream<List<ConnectivityResult>>.empty();
@@ -117,6 +122,7 @@ void main() {
     when(() => pipeline.retryNow()).thenAnswer((_) async {});
     when(() => pipeline.metricsSnapshot()).thenReturn(metricsSnapshot);
     when(() => pipeline.diagnosticsStrings()).thenReturn(diagnostics);
+    when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
 
     when(() => eventProcessor.applyObserver = any()).thenReturn(null);
     when(() => messageSender.sentEventRegistry).thenReturn(SentEventRegistry());
@@ -125,6 +131,8 @@ void main() {
     when(() => roomManager.saveRoomId(any())).thenAnswer((_) async {});
     when(() => roomManager.dispose()).thenAnswer((_) async {});
     when(() => activityGate.dispose()).thenAnswer((_) async {});
+
+    coordinator = queueCoordinator ?? buildDefaultCoordinator();
 
     return MatrixService(
       gateway: gateway,
@@ -136,23 +144,14 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
+      queueCoordinator: coordinator,
       collectSyncMetrics: collectMetrics,
       roomManager: roomManager,
       sessionManager: sessionManager,
       pipelineOverride: pipeline,
       attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
-      queueCoordinator: queueCoordinator,
-      suppressLegacyPipeline: suppressLegacyPipeline,
     );
-  }
-
-  /// Elapses fake time past the eager `forceRescan` that fires on
-  /// construction, then clears all recorded interactions so tests
-  /// start with a clean slate.
-  void settleServiceStartup(FakeAsync async) {
-    async.elapse(const Duration(milliseconds: 350));
-    clearInteractions(pipeline);
   }
 
   setUp(() {
@@ -172,11 +171,9 @@ void main() {
     client = _MockClient();
   });
 
-  test('getV2Metrics returns null when metrics collection disabled', () {
+  test('getSyncMetrics returns null when metrics collection disabled', () {
     fakeAsync((async) {
       final service = createService(collectMetrics: false);
-      settleServiceStartup(async);
-
       unawaited(
         service.getSyncMetrics().then((metrics) {
           expect(metrics, isNull);
@@ -186,13 +183,11 @@ void main() {
     });
   });
 
-  test('getV2Metrics returns metrics when collection enabled', () {
+  test('getSyncMetrics returns metrics when collection enabled', () {
     fakeAsync((async) {
       final service = createService(
         metricsSnapshot: const {'dbApplied': 7, 'failures': 0},
       );
-      settleServiceStartup(async);
-
       unawaited(
         service.getSyncMetrics().then((metrics) {
           expect(metrics, isA<SyncMetrics>());
@@ -203,23 +198,64 @@ void main() {
     });
   });
 
-  test('forceV2Rescan forwards includeCatchUp flag to pipeline', () {
+  test(
+    'forceRescan(includeCatchUp: true) routes to the queue coordinator '
+    'and never touches the stream-consumer pipeline',
+    () async {
+      final service = createService();
+
+      await service.forceRescan();
+
+      verify(coordinator.triggerBridge).called(1);
+      verifyNever(
+        () => pipeline.forceRescan(
+          includeCatchUp: any(named: 'includeCatchUp'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'forceRescan(includeCatchUp: false) is a no-op — live-only rescans '
+    "have no meaning now that the consumer's live ingestion is suppressed",
+    () async {
+      final service = createService();
+
+      await service.forceRescan(includeCatchUp: false);
+
+      verifyNever(coordinator.triggerBridge);
+      verifyNever(
+        () => pipeline.forceRescan(
+          includeCatchUp: any(named: 'includeCatchUp'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'forceRescan swallows triggerBridge failure and logs it so a '
+    'transient bridge error does not bubble out of the service API',
+    () async {
+      final coord = buildDefaultCoordinator();
+      when(coord.triggerBridge).thenThrow(StateError('bridge down'));
+      final service = createService(queueCoordinator: coord);
+
+      await service.forceRescan();
+
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'forceRescan.triggerBridge',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test('retryNow triggers pipeline retry', () {
     fakeAsync((async) {
       final service = createService();
-      settleServiceStartup(async);
-
-      unawaited(service.forceRescan(includeCatchUp: false));
-      async.flushMicrotasks();
-
-      verify(() => pipeline.forceRescan(includeCatchUp: false)).called(1);
-    });
-  });
-
-  test('retryV2Now triggers pipeline retry', () {
-    fakeAsync((async) {
-      final service = createService();
-      settleServiceStartup(async);
-
       unawaited(service.retryNow());
       async.flushMicrotasks();
 
@@ -227,22 +263,33 @@ void main() {
     });
   });
 
-  test('saveRoom bootstraps pipeline start + catch-up in background', () {
-    fakeAsync((async) {
-      final service = createService();
-      settleServiceStartup(async);
+  test(
+    'saveRoom restarts the pipeline and drives catch-up via '
+    'onRoomChanged + triggerBridge on the coordinator',
+    () {
+      fakeAsync((async) {
+        final service = createService();
+        unawaited(service.saveRoom('!room:server'));
+        async.elapse(const Duration(milliseconds: 10));
 
-      unawaited(service.saveRoom('!room:server'));
-      async.elapse(const Duration(milliseconds: 10));
-
-      verify(() => roomManager.saveRoomId('!room:server')).called(1);
-      verify(() => pipeline.start()).called(1);
-      verify(() => pipeline.forceRescan(includeCatchUp: true)).called(1);
-    });
-  });
+        verify(() => roomManager.saveRoomId('!room:server')).called(1);
+        verify(() => pipeline.start()).called(1);
+        verifyInOrder([
+          () => coordinator.onRoomChanged('!room:server'),
+          coordinator.triggerBridge,
+        ]);
+        verifyNever(
+          () => pipeline.forceRescan(
+            includeCatchUp: any(named: 'includeCatchUp'),
+          ),
+        );
+      });
+    },
+  );
 
   test(
-    'connectivity change calls recordConnectivitySignal before forceRescan',
+    'connectivity regain records a diagnostic signal on the pipeline — '
+    "catch-up itself is the coordinator's job, not the service's",
     () {
       fakeAsync((async) {
         final connectivityController =
@@ -252,20 +299,7 @@ void main() {
         final service = createService(
           connectivity: connectivityController.stream,
         );
-        settleServiceStartup(async);
 
-        // Stub methods to track ordering
-        when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
-        when(
-          () => pipeline.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp'),
-          ),
-        ).thenAnswer((_) async {});
-
-        // First emission is the synthetic bootstrap snapshot from
-        // `connectivity_plus`. The service records the connectivity signal
-        // (metrics) but intentionally swallows the `forceRescan` so it does
-        // not duplicate the dedicated startup rescan.
         connectivityController.add([ConnectivityResult.wifi]);
         async.elapse(const Duration(milliseconds: 10));
 
@@ -276,23 +310,27 @@ void main() {
           ),
         );
 
-        // Reset interactions so the follow-up `verifyInOrder` only sees the
-        // calls caused by the second (genuine) regain event.
-        clearInteractions(pipeline);
-
-        // Second emission represents a genuine regain event; it must record
-        // the signal and then drive forceRescan, in that order.
-        connectivityController.add([ConnectivityResult.wifi]);
-        async.elapse(const Duration(milliseconds: 10));
-
-        verifyInOrder([
-          () => pipeline.recordConnectivitySignal(),
-          () => pipeline.forceRescan(includeCatchUp: true),
-        ]);
-
-        // Clean up
         unawaited(service.dispose());
         async.flushMicrotasks();
+      });
+    },
+  );
+
+  test(
+    'connectivity result without a network type (e.g. none) does not '
+    'emit a signal',
+    () {
+      fakeAsync((async) {
+        final connectivityController =
+            StreamController<List<ConnectivityResult>>.broadcast();
+        addTearDown(connectivityController.close);
+
+        createService(connectivity: connectivityController.stream);
+
+        connectivityController.add([ConnectivityResult.none]);
+        async.elapse(const Duration(milliseconds: 10));
+
+        verifyNever(() => pipeline.recordConnectivitySignal());
       });
     },
   );
@@ -303,8 +341,6 @@ void main() {
         metricsSnapshot: const {'dbApplied': 3, 'failures': 1},
         diagnostics: const {'nextRetry': '42s'},
       );
-      settleServiceStartup(async);
-
       unawaited(
         service.getSyncDiagnosticsText().then((text) {
           expect(text, contains('dbApplied=3'));
@@ -316,215 +352,69 @@ void main() {
     });
   });
 
-  test('dispose releases owned dependencies', () async {
-    late MatrixService service;
-    fakeAsync((async) {
-      service = createService();
-      settleServiceStartup(async);
-    });
+  test(
+    'dispose releases owned dependencies and drains the coordinator',
+    () async {
+      final coord = buildDefaultCoordinator();
+      when(() => coord.isRunning).thenReturn(true);
+      final service = createService(queueCoordinator: coord);
 
-    await service.dispose();
+      await service.dispose();
 
-    verify(() => sessionManager.dispose()).called(1);
-    verify(() => roomManager.dispose()).called(1);
-  });
+      verify(() => coord.stop(drainFirst: true)).called(1);
+      verify(() => sessionManager.dispose()).called(1);
+      verify(() => roomManager.dispose()).called(1);
+    },
+  );
 
-  group('queue pipeline flag', () {
+  test(
+    'dispose logs and continues when coordinator.stop throws — a drain '
+    'failure must not prevent the rest of shutdown from running',
+    () async {
+      final coord = buildDefaultCoordinator();
+      when(() => coord.isRunning).thenReturn(true);
+      when(
+        () => coord.stop(drainFirst: any(named: 'drainFirst')),
+      ).thenThrow(StateError('drain failed'));
+      final service = createService(queueCoordinator: coord);
+
+      await service.dispose();
+
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'queue.dispose',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+      verify(() => sessionManager.dispose()).called(1);
+      verify(() => roomManager.dispose()).called(1);
+    },
+  );
+
+  group('queue pipeline startup', () {
     test(
-      'init starts the coordinator when the flag is on',
+      'debugStartQueuePipelineForTest starts the coordinator',
       () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => true);
+        final service = createService();
 
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        // Short-circuit the rest of init: we don't want loadConfig /
-        // connect to run their full flows, but we do want
-        // _maybeStartQueuePipeline to fire. Call it directly via the
-        // visible hook instead of init().
-        await service.debugMaybeStartQueuePipelineForTest();
+        await service.debugStartQueuePipelineForTest();
 
         verify(coordinator.start).called(1);
       },
     );
 
     test(
-      'init does not start the coordinator when the flag is off',
+      'rethrows when coordinator.start fails — queue is the only '
+      'inbound path, so a start failure must surface, not be swallowed',
       () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(false);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => false);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(queueCoordinator: coordinator);
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.debugMaybeStartQueuePipelineForTest();
-
-        verifyNever(coordinator.start);
-      },
-    );
-
-    test(
-      'dispose drains the coordinator first (F7)',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-
-        await service.dispose();
-        verify(() => coordinator.stop(drainFirst: true)).called(1);
-      },
-    );
-
-    test(
-      'isLegacyPipelineSuppressed mirrors the constructor argument',
-      () {
-        fakeAsync((async) {
-          final service = createService(suppressLegacyPipeline: true);
-          settleServiceStartup(async);
-          expect(service.isLegacyPipelineSuppressed, isTrue);
-
-          final other = createService();
-          settleServiceStartup(async);
-          expect(other.isLegacyPipelineSuppressed, isFalse);
-        });
-      },
-    );
-
-    test(
-      'init throws StateError when suppressed but flag is off',
-      () async {
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => false);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(suppressLegacyPipeline: true);
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
+        final coord = buildDefaultCoordinator();
+        when(coord.start).thenThrow(StateError('boom'));
+        final service = createService(queueCoordinator: coord);
 
         await expectLater(
-          service.debugMaybeStartQueuePipelineForTest(),
-          throwsA(isA<StateError>()),
-        );
-      },
-    );
-
-    test(
-      'init throws StateError when suppressed but no coordinator injected',
-      () async {
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => true);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(suppressLegacyPipeline: true);
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await expectLater(
-          service.debugMaybeStartQueuePipelineForTest(),
-          throwsA(isA<StateError>()),
-        );
-      },
-    );
-
-    test(
-      'init logs skip when flag on but coordinator not injected and not suppressed',
-      () async {
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => true);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService();
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.debugMaybeStartQueuePipelineForTest();
-
-        verify(
-          () => logging.captureEvent(
-            any<String>(
-              that: contains(
-                'queue.coordinator.skip reason=flagOnButNotInjected',
-              ),
-            ),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'queue.init',
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'init rethrows coordinator.start failure when suppressed',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.start).thenThrow(StateError('boom'));
-        when(() => coordinator.isRunning).thenReturn(false);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => true);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await expectLater(
-          service.debugMaybeStartQueuePipelineForTest(),
+          service.debugStartQueuePipelineForTest(),
           throwsA(isA<StateError>()),
         );
         verify(
@@ -535,191 +425,6 @@ void main() {
             stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
-      },
-    );
-
-    test(
-      'init swallows coordinator.start failure when not suppressed',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.start).thenThrow(StateError('transient'));
-        when(() => coordinator.isRunning).thenReturn(false);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(
-          () => journalDb.getConfigFlag(useInboundEventQueueFlag),
-        ).thenAnswer((_) async => true);
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(queueCoordinator: coordinator);
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.debugMaybeStartQueuePipelineForTest();
-
-        verify(
-          () => logging.captureException(
-            any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'queue.init',
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          ),
-        ).called(1);
-      },
-    );
-  });
-
-  group('forceRescan under suppressLegacyPipeline', () {
-    test(
-      'returns early when no coordinator is injected',
-      () async {
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(suppressLegacyPipeline: true);
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.forceRescan();
-
-        // Legacy pipeline must not be invoked when suppressed.
-        verifyNever(
-          () => pipeline.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'delegates to coordinator.triggerBridge when includeCatchUp is true',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.triggerBridge).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.forceRescan();
-
-        verify(coordinator.triggerBridge).called(1);
-        verifyNever(
-          () => pipeline.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'skips coordinator when includeCatchUp is false',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.triggerBridge).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        await service.forceRescan(includeCatchUp: false);
-
-        verifyNever(coordinator.triggerBridge);
-      },
-    );
-
-    test(
-      'logs exception when coordinator.triggerBridge throws',
-      () async {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.triggerBridge).thenThrow(StateError('bridge down'));
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
-
-        // Should not throw — the service swallows and logs.
-        await service.forceRescan();
-
-        verify(
-          () => logging.captureException(
-            any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'forceRescan.triggerBridge',
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          ),
-        ).called(1);
-      },
-    );
-  });
-
-  group('saveRoom under suppressLegacyPipeline', () {
-    test(
-      'calls onRoomChanged then triggerBridge, not pipeline.forceRescan',
-      () {
-        final coordinator = _MockQueuePipelineCoordinator();
-        when(coordinator.triggerBridge).thenAnswer((_) async {});
-        when(() => coordinator.onRoomChanged(any())).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-
-        fakeAsync((async) {
-          final service = createService(
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-
-          unawaited(service.saveRoom('!room:server'));
-          async.elapse(const Duration(milliseconds: 10));
-
-          verify(() => roomManager.saveRoomId('!room:server')).called(1);
-          verify(() => pipeline.start()).called(1);
-          verifyInOrder([
-            () => coordinator.onRoomChanged('!room:server'),
-            coordinator.triggerBridge,
-          ]);
-          verifyNever(
-            () => pipeline.forceRescan(
-              includeCatchUp: any(named: 'includeCatchUp'),
-            ),
-          );
-        });
       },
     );
   });
@@ -742,7 +447,6 @@ void main() {
 
     fakeAsync((async) {
       final service = createService();
-      settleServiceStartup(async);
 
       unawaited(
         service.discoverExistingSyncRooms().then((result) {
@@ -759,17 +463,12 @@ void main() {
     test(
       'when the queue coordinator is running, queueActive / queueApplied '
       '/ queueAbandoned / queueRetrying are overlaid on top of the '
-      'pipeline snapshot so the Matrix Stats UI surfaces ledger state '
-      'alongside the legacy counters',
+      'pipeline snapshot so the Matrix Stats UI surfaces ledger state',
       () async {
-        final coordinator = _MockQueuePipelineCoordinator();
+        final coord = buildDefaultCoordinator();
         final queue = _MockInboundQueue();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(() => coordinator.queue).thenReturn(queue);
+        when(() => coord.isRunning).thenReturn(true);
+        when(() => coord.queue).thenReturn(queue);
         when(queue.stats).thenAnswer(
           (_) async => const QueueStats(
             total: 7,
@@ -782,16 +481,10 @@ void main() {
           ),
         );
 
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            metricsSnapshot: const {'dbApplied': 11, 'failures': 0},
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
+        final service = createService(
+          metricsSnapshot: const {'dbApplied': 11, 'failures': 0},
+          queueCoordinator: coord,
+        );
 
         final metrics = await service.getSyncMetrics();
         expect(metrics, isNotNull);
@@ -800,44 +493,31 @@ void main() {
         expect(map['queueApplied'], 42);
         expect(map['queueAbandoned'], 3);
         expect(map['queueRetrying'], 2);
-        // Legacy pipeline counters still flow through — the overlay
-        // augments, it does not replace.
+        // Consumer counters still flow through — the overlay augments.
         expect(map['dbApplied'], 11);
       },
     );
 
     test(
-      'when the queue is running but queue.stats() throws, the overlay '
-      'is silently skipped and the pipeline snapshot still returns — '
-      'a transient sync_db error must not hide the legacy counters',
+      'when queue.stats() throws, the overlay is silently skipped and '
+      'the consumer snapshot still returns — a transient sync_db error '
+      'must not hide the consumer counters',
       () async {
-        final coordinator = _MockQueuePipelineCoordinator();
+        final coord = buildDefaultCoordinator();
         final queue = _MockInboundQueue();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(true);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(() => coordinator.queue).thenReturn(queue);
+        when(() => coord.isRunning).thenReturn(true);
+        when(() => coord.queue).thenReturn(queue);
         when(queue.stats).thenThrow(StateError('db locked'));
 
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            metricsSnapshot: const {'dbApplied': 5},
-            queueCoordinator: coordinator,
-            suppressLegacyPipeline: true,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
+        final service = createService(
+          metricsSnapshot: const {'dbApplied': 5},
+          queueCoordinator: coord,
+        );
 
         final metrics = await service.getSyncMetrics();
         expect(metrics, isNotNull);
         final map = metrics!.toMap();
         expect(map['dbApplied'], 5);
-        // When stats() throws, the overlay is skipped so the SyncMetrics
-        // defaults remain (0), never the real queue depth.
         expect(map['queueActive'], 0);
         expect(map['queueApplied'], 0);
         verify(
@@ -853,27 +533,18 @@ void main() {
 
     test(
       'when the queue coordinator is not running, the overlay is '
-      'skipped entirely — queue stats are irrelevant when the flag is '
-      'off, so never calling queue.stats() avoids a spurious db read',
+      'skipped entirely — never calling queue.stats() avoids a '
+      'spurious db read',
       () async {
-        final coordinator = _MockQueuePipelineCoordinator();
+        final coord = buildDefaultCoordinator();
         final queue = _MockInboundQueue();
-        when(coordinator.start).thenAnswer((_) async {});
-        when(() => coordinator.isRunning).thenReturn(false);
-        when(
-          () => coordinator.stop(drainFirst: any(named: 'drainFirst')),
-        ).thenAnswer((_) async {});
-        when(() => coordinator.queue).thenReturn(queue);
+        when(() => coord.isRunning).thenReturn(false);
+        when(() => coord.queue).thenReturn(queue);
 
-        late MatrixService service;
-        fakeAsync((async) {
-          service = createService(
-            metricsSnapshot: const {'dbApplied': 3},
-            queueCoordinator: coordinator,
-          );
-          settleServiceStartup(async);
-        });
-        addTearDown(service.dispose);
+        final service = createService(
+          metricsSnapshot: const {'dbApplied': 3},
+          queueCoordinator: coord,
+        );
 
         final metrics = await service.getSyncMetrics();
         expect(metrics, isNotNull);

@@ -190,6 +190,21 @@ class QueuePipelineCoordinator {
   /// marker without waiting for the next organic `limited=true`.
   Future<void> triggerBridge() => _bridge.bridgeNow();
 
+  /// True while the bridge coordinator is mid-walk (forward-reading
+  /// new timeline events from the last applied event id). Exposed so
+  /// the backfill request service can skip analysis+dispatch until
+  /// the walk concludes — gaps observed mid-walk may be closed by
+  /// events still in the pipe.
+  bool get isBridgeInFlight => _bridge.isBridgeInFlight;
+
+  /// Callback that fires once per terminal bridge pass. Intended for
+  /// the backfill request service to be nudged the moment the walk
+  /// settles, so it can dispatch requests for any entries still
+  /// missing.
+  void Function()? get onBridgeCompleted => _bridge.onBridgeCompleted;
+  set onBridgeCompleted(void Function()? callback) =>
+      _bridge.onBridgeCompleted = callback;
+
   Future<void> _safeStartupBridge() async {
     try {
       await _bridge.bridgeNow();

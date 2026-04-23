@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -41,6 +42,8 @@ class _MockRoomManager extends Mock implements SyncRoomManager {}
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
 class _MockPipeline extends Mock implements MatrixStreamConsumer {}
+
+class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +77,12 @@ void main() {
     final eventProcessor = _MockEventProcessor();
     final roomManager = _MockRoomManager();
     final pipeline = _MockPipeline();
+    final queueCoordinator = _MockQueueCoordinator();
+    when(queueCoordinator.start).thenAnswer((_) async {});
+    when(() => queueCoordinator.isRunning).thenReturn(false);
+    when(
+      () => queueCoordinator.stop(drainFirst: any(named: 'drainFirst')),
+    ).thenAnswer((_) async {});
 
     // Default stubs for disposal
     when(() => sessionManager.dispose()).thenAnswer((_) async {});
@@ -105,6 +114,7 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
+      queueCoordinator: queueCoordinator,
       sentEventRegistry: SentEventRegistry(),
       attachmentIndex: AttachmentIndex(logging: logging),
       roomManager: roomManager,

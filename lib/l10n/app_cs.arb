@@ -805,8 +805,6 @@
   "configFlagUseCloudInferenceDescription": "Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.",
   "configFlagUseCompressedJsonAttachments": "Komprimovat JSON payloady synchronizace",
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
-  "configFlagUseInboundEventQueue": "Použít příchozí frontu událostí",
-  "configFlagUseInboundEventQueueDescription": "Směruje příchozí synchronizační události přes trvalou frontu s omezenou pamětí a postupným použitím. Vyžaduje restart aplikace.",
   "conflictEntityLabel": "Entita",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Kopírovat text ze synchronizace",

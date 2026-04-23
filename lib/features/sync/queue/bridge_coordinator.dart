@@ -101,6 +101,21 @@ class BridgeCoordinator {
 
   bool get isRunning => _sub != null;
 
+  /// True while a forward-walk timeline pass is in flight. Used by the
+  /// backfill request service to suppress analysis+dispatch while we
+  /// are still reading the latest events from the room — any gap
+  /// observed mid-walk may be closed by an event still in the pipe.
+  bool get isBridgeInFlight => _inFlightBridge != null;
+
+  /// Fires exactly once per terminal bridge pass (i.e. after any
+  /// single-flight rerun cascade has drained). Wired to
+  /// `BackfillRequestService.nudge` so the service re-analyses the
+  /// sequence log and dispatches a request for whatever is still
+  /// missing once the walk has settled — without this, consumers
+  /// would wait up to the periodic-timer interval before learning
+  /// the walk is done.
+  void Function()? onBridgeCompleted;
+
   void start() {
     _stopped = false;
     _sub ??= _client.onSync.stream.listen(
@@ -187,6 +202,22 @@ class BridgeCoordinator {
       } else {
         _pendingRerun = false;
         _pendingRerunRoomId = null;
+        // Terminal completion — no rerun cascade to follow. Invoke the
+        // completion hook so the backfill service can re-analyse the
+        // sequence log and dispatch requests for whatever is still
+        // missing now that the walk has settled.
+        if (!_stopped) {
+          try {
+            onBridgeCompleted?.call();
+          } catch (error, stackTrace) {
+            _logging.captureException(
+              error,
+              domain: _logDomain,
+              subDomain: '$_logSub.onCompleted',
+              stackTrace: stackTrace,
+            );
+          }
+        }
       }
     }
   }

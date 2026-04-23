@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -54,6 +55,8 @@ class _MockSyncEngine extends Mock implements SyncEngine {}
 
 class _MockCoordinator extends Mock implements SyncLifecycleCoordinator {}
 
+class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
+
 void main() {
   late _MockGateway gateway;
   late LoggingService loggingService;
@@ -72,6 +75,17 @@ void main() {
   late _MockPipeline pipeline;
   late _MockSyncEngine syncEngine;
   late _MockCoordinator coordinator;
+  late _MockQueueCoordinator queueCoordinator;
+
+  _MockQueueCoordinator buildQueueCoordinator() {
+    final c = _MockQueueCoordinator();
+    when(c.start).thenAnswer((_) async {});
+    when(() => c.isRunning).thenReturn(false);
+    when(
+      () => c.stop(drainFirst: any(named: 'drainFirst')),
+    ).thenAnswer((_) async {});
+    return c;
+  }
 
   setUpAll(() {
     registerFallbackValue(
@@ -103,6 +117,7 @@ void main() {
     pipeline = _MockPipeline();
     syncEngine = _MockSyncEngine();
     coordinator = _MockCoordinator();
+    queueCoordinator = buildQueueCoordinator();
 
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.matrixConfig).thenReturn(null);
@@ -128,6 +143,7 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
+      queueCoordinator: queueCoordinator,
       attachmentIndex: attachmentIndex,
       sentEventRegistry: sentEventRegistry,
       sessionManager: sessionManager,
@@ -155,6 +171,7 @@ void main() {
       readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
+      queueCoordinator: queueCoordinator,
       attachmentIndex: attachmentIndex,
       sentEventRegistry: sentEventRegistry,
       sessionManager: sessionManager,
@@ -231,22 +248,18 @@ void main() {
       expect(stats.messageCounts['test'], 1);
     });
 
-    test('forceRescan delegates to pipeline', () async {
-      when(
-        () =>
-            pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
-      ).thenAnswer((_) async {});
+    test('forceRescan delegates to queue coordinator bridge', () async {
+      when(queueCoordinator.triggerBridge).thenAnswer((_) async {});
 
       final service = createServiceWithPipeline();
 
       await service.forceRescan();
 
-      // The pipeline.forceRescan is called twice: once from the startup
-      // unawaited call and once from the explicit forceRescan.
-      verify(
+      verify(queueCoordinator.triggerBridge).called(1);
+      verifyNever(
         () =>
             pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
-      ).called(greaterThanOrEqualTo(1));
+      );
     });
 
     test('retryNow delegates to pipeline', () async {

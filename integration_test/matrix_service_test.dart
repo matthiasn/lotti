@@ -28,7 +28,6 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -63,7 +62,6 @@ Future<MatrixService> _createMatrixService({
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
-  bool useQueuePipeline = true,
   AttachmentIndex? attachmentIndex,
   QueuePipelineCoordinator Function(QueuePipelineCoordinator coord)?
   onCoordinatorBuilt,
@@ -103,56 +101,45 @@ Future<MatrixService> _createMatrixService({
     verboseLogging: false,
   );
 
-  QueuePipelineCoordinator? queueCoordinator;
-  MatrixSessionManager? sessionManager;
-  SyncRoomManager? roomManager;
-
-  if (useQueuePipeline) {
-    // Await the flag write so `MatrixService.init()` reads it — a
-    // fire-and-forget write lets init() race ahead and skip the
-    // queue coordinator while suppressLegacyPipeline is already true,
-    // leaving no active ingestion path.
-    await writeUseInboundEventQueueFlag(journalDb, enabled: true);
-    final syncDb = SyncDatabase(
-      overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
-      inMemoryDatabase: true,
-    );
-    final vectorClockService = VectorClockService();
-    final sequenceLogService = SyncSequenceLogService(
-      syncDatabase: syncDb,
-      vectorClockService: vectorClockService,
-      loggingService: loggingService,
-    );
-    roomManager = SyncRoomManager(
-      gateway: gateway,
-      settingsDb: settingsDb,
-      loggingService: loggingService,
-    );
-    sessionManager =
-        MatrixSessionManager(
-            gateway: gateway,
-            roomManager: roomManager,
-            loggingService: loggingService,
-          )
-          ..matrixConfig = config
-          ..deviceDisplayName = deviceName;
-    queueCoordinator = QueuePipelineCoordinator(
-      syncDb: syncDb,
-      settingsDb: settingsDb,
-      journalDb: journalDb,
-      sessionManager: sessionManager,
-      roomManager: roomManager,
-      eventProcessor: eventProcessor,
-      sequenceLogService: sequenceLogService,
-      activityGate: activityGate,
-      logging: loggingService,
-      attachmentIndex: sharedAttachmentIndex,
-      updateNotifications: updateNotifications,
-      attachmentIngestor: queueAttachmentIngestor,
-    );
-    if (onCoordinatorBuilt != null) {
-      queueCoordinator = onCoordinatorBuilt(queueCoordinator);
-    }
+  final syncDb = SyncDatabase(
+    overriddenFilename: 'sync_${_uuid.v1()}.sqlite',
+    inMemoryDatabase: true,
+  );
+  final vectorClockService = VectorClockService();
+  final sequenceLogService = SyncSequenceLogService(
+    syncDatabase: syncDb,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+  );
+  final roomManager = SyncRoomManager(
+    gateway: gateway,
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  final sessionManager =
+      MatrixSessionManager(
+          gateway: gateway,
+          roomManager: roomManager,
+          loggingService: loggingService,
+        )
+        ..matrixConfig = config
+        ..deviceDisplayName = deviceName;
+  var queueCoordinator = QueuePipelineCoordinator(
+    syncDb: syncDb,
+    settingsDb: settingsDb,
+    journalDb: journalDb,
+    sessionManager: sessionManager,
+    roomManager: roomManager,
+    eventProcessor: eventProcessor,
+    sequenceLogService: sequenceLogService,
+    activityGate: activityGate,
+    logging: loggingService,
+    attachmentIndex: sharedAttachmentIndex,
+    updateNotifications: updateNotifications,
+    attachmentIngestor: queueAttachmentIngestor,
+  );
+  if (onCoordinatorBuilt != null) {
+    queueCoordinator = onCoordinatorBuilt(queueCoordinator);
   }
 
   return MatrixService(
@@ -174,7 +161,6 @@ Future<MatrixService> _createMatrixService({
     roomManager: roomManager,
     sessionManager: sessionManager,
     queueCoordinator: queueCoordinator,
-    suppressLegacyPipeline: useQueuePipeline,
   );
 }
 
@@ -649,7 +635,6 @@ void main() {
 
         Future<String> queueSnapshot() async {
           final coord = bob.queueCoordinator;
-          if (coord == null) return 'coordinator=null';
           final stats = await coord.queue.stats();
           return 'queue[total=${stats.total} ready=${stats.readyNow} '
               'byProducer=${stats.byProducer} '
@@ -885,15 +870,13 @@ void main() {
               final elapsed = catchupStopwatch.elapsed.inSeconds;
               if (elapsed > 0 && elapsed % 30 == 0) {
                 final coord = bob.queueCoordinator;
-                if (coord != null) {
-                  final stats = await coord.queue.stats();
-                  debugPrint(
-                    'Bob queue @ ${elapsed}s: total=${stats.total} '
-                    'applied=${stats.applied} abandoned=${stats.abandoned} '
-                    'retrying=${stats.retrying} '
-                    'byProducer=${stats.byProducer}',
-                  );
-                }
+                final stats = await coord.queue.stats();
+                debugPrint(
+                  'Bob queue @ ${elapsed}s: total=${stats.total} '
+                  'applied=${stats.applied} abandoned=${stats.abandoned} '
+                  'retrying=${stats.retrying} '
+                  'byProducer=${stats.byProducer}',
+                );
               }
               await Future<void>.delayed(const Duration(seconds: 1));
             }

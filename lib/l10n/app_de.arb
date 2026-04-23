@@ -1034,8 +1034,6 @@
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
   "configFlagUseCompressedJsonAttachments": "JSON-Sync-Payloads komprimieren",
   "configFlagUseCompressedJsonAttachmentsDescription": "Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.",
-  "configFlagUseInboundEventQueue": "Eingangs-Event-Queue verwenden",
-  "configFlagUseInboundEventQueueDescription": "Leitet eingehende Sync-Events über die dauerhafte Queue-Pipeline mit begrenztem Speicher und fortlaufender Anwendung. Neustart erforderlich.",
   "conflictEntityLabel": "Entität",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Text aus Synchronisierung kopieren",

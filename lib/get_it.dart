@@ -41,7 +41,6 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -284,49 +283,36 @@ Future<void> registerSingletons() async {
     loggingService: loggingService,
   );
 
-  // Phase-2 queue pipeline: when the feature flag is on, construct the
-  // coordinator eagerly, share it with MatrixService, and instruct the
-  // legacy pipeline to stay dormant. Reading the flag here (before
-  // MatrixService construction) makes the decision synchronous to the
-  // rest of the service wiring.
-  final useQueuePipeline = await readUseInboundEventQueueFlag(journalDb);
-  // Dedicated ingestor for the queue pipeline. `MatrixStreamProcessor`
-  // owns its own ingestor too, but under `suppressLegacyPipeline`
-  // that one never runs (its `process()` is only invoked from
-  // `processOrdered`, which the queue path skips). The separate
-  // instance here drives attachment recording + downloads on the
-  // queue's live + bootstrap paths so descriptor JSONs land on disk
+  // Phase-2 queue pipeline owns inbound ingestion unconditionally. The
+  // dedicated ingestor below drives attachment recording + downloads on
+  // the queue's live + bootstrap paths so descriptor JSONs land on disk
   // before the worker tries to apply their companion sync events.
-  // `verboseLogging: false` matches the `attachmentIndex` setting
-  // above — steady-state per-event logging would flood the general
-  // log on large catch-ups.
-  final localVcDominanceCheck = useQueuePipeline
-      ? AgentVcDominanceCheck(agentDb: getIt<AgentDatabase>())
-      : null;
-  final queueAttachmentIngestor = useQueuePipeline
-      ? AttachmentIngestor(
-          documentsDirectory: documentsDirectory,
-          verboseLogging: false,
-          localVcDominates: localVcDominanceCheck!.check,
-        )
-      : null;
-  final queuePipelineCoordinator = useQueuePipeline
-      ? QueuePipelineCoordinator(
-          syncDb: syncDatabase,
-          settingsDb: settingsDb,
-          journalDb: journalDb,
-          sessionManager: sessionManager,
-          roomManager: roomManager,
-          eventProcessor: syncEventProcessor,
-          sequenceLogService: syncSequenceLogService,
-          activityGate: userActivityGate,
-          logging: loggingService,
-          attachmentIndex: attachmentIndex,
-          updateNotifications: getIt<UpdateNotifications>(),
-          attachmentIngestor: queueAttachmentIngestor,
-          sentEventRegistry: sentEventRegistry,
-        )
-      : null;
+  // `verboseLogging: false` matches the `attachmentIndex` setting above
+  // — steady-state per-event logging would flood the general log on
+  // large catch-ups.
+  final localVcDominanceCheck = AgentVcDominanceCheck(
+    agentDb: getIt<AgentDatabase>(),
+  );
+  final queueAttachmentIngestor = AttachmentIngestor(
+    documentsDirectory: documentsDirectory,
+    verboseLogging: false,
+    localVcDominates: localVcDominanceCheck.check,
+  );
+  final queuePipelineCoordinator = QueuePipelineCoordinator(
+    syncDb: syncDatabase,
+    settingsDb: settingsDb,
+    journalDb: journalDb,
+    sessionManager: sessionManager,
+    roomManager: roomManager,
+    eventProcessor: syncEventProcessor,
+    sequenceLogService: syncSequenceLogService,
+    activityGate: userActivityGate,
+    logging: loggingService,
+    attachmentIndex: attachmentIndex,
+    updateNotifications: getIt<UpdateNotifications>(),
+    attachmentIngestor: queueAttachmentIngestor,
+    sentEventRegistry: sentEventRegistry,
+  );
 
   final matrixService = MatrixService(
     gateway: matrixGateway,
@@ -343,7 +329,6 @@ Future<void> registerSingletons() async {
     roomManager: roomManager,
     sessionManager: sessionManager,
     queueCoordinator: queuePipelineCoordinator,
-    suppressLegacyPipeline: useQueuePipeline,
   );
 
   getIt
@@ -387,6 +372,7 @@ Future<void> registerSingletons() async {
     vectorClockService: vectorClockService,
     loggingService: loggingService,
     documentsDirectory: documentsDirectory,
+    queueCoordinator: queuePipelineCoordinator,
     domainLogger: domainLogger,
   );
   syncSequenceLogService.onMissingEntriesDetected = () {
@@ -395,10 +381,15 @@ Future<void> registerSingletons() async {
     // finished without accepting anything and a live event now reveals
     // a missing counter, run an unbounded history walk to close the
     // hole immediately instead of waiting for the normal backfill
-    // cadence. No-op when the queue pipeline is off or when no barren
-    // bridge was recorded.
-    queuePipelineCoordinator?.maybeStartGapRecovery();
+    // cadence. No-op when no barren bridge was recorded.
+    queuePipelineCoordinator.maybeStartGapRecovery();
   };
+
+  // After a bridge walk settles, re-analyse the sequence log and
+  // dispatch a backfill request for anything still missing — nudges
+  // during the walk are dropped by the `isBridgeInFlight` gate, so
+  // this hook is how the service learns the walk finished.
+  queuePipelineCoordinator.onBridgeCompleted = backfillRequestService.nudge;
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;

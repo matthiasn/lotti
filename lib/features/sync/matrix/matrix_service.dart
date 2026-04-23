@@ -23,7 +23,6 @@ import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/queue/queue_feature_flag.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -62,6 +61,10 @@ class MatrixService {
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
     required AttachmentIndex attachmentIndex,
+    // Phase-2 queue pipeline. Owns inbound ingestion; the retained
+    // [MatrixStreamConsumer] handles encryption, attachments and
+    // diagnostics with its live ingestion disabled.
+    required QueuePipelineCoordinator queueCoordinator,
     SentEventRegistry? sentEventRegistry,
     bool collectSyncMetrics = false,
     bool ownsActivityGate = false,
@@ -73,17 +76,6 @@ class MatrixService {
     SyncEngine? syncEngine,
     // Test-only seam to inject a pipeline instance
     @visibleForTesting MatrixStreamConsumer? pipelineOverride,
-    // Phase-2 queue pipeline. When non-null and the
-    // `useInboundEventQueue` flag is true at init time, the coordinator
-    // is started and the legacy live-ingestion path is suppressed
-    // (see [suppressLegacyPipeline]).
-    QueuePipelineCoordinator? queueCoordinator,
-    // When true, the constructed [MatrixStreamConsumer] stops the
-    // signal binder from subscribing to live events, and
-    // MatrixService skips the startup + connectivity-regain
-    // `forceRescan` calls. Typically set by the caller whenever
-    // `queueCoordinator != null` so ingestion is exclusive.
-    bool suppressLegacyPipeline = false,
     // Optional seam to inject connectivity changes (for tests)
     this.connectivityStream,
   }) : _gateway = gateway,
@@ -100,7 +92,6 @@ class MatrixService {
        _ownsActivityGate = ownsActivityGate,
        _collectSyncMetrics = collectSyncMetrics,
        _queueCoordinator = queueCoordinator,
-       _suppressLegacyPipeline = suppressLegacyPipeline,
        keyVerificationController =
            StreamController<KeyVerificationRunner>.broadcast(),
        messageCountsController = StreamController<MatrixStats>.broadcast(),
@@ -156,40 +147,11 @@ class MatrixService {
             sentEventRegistry: _sentEventRegistry,
             documentsDirectory: getDocumentsDirectory(),
             verboseAttachmentLogging: false,
-            suppressLiveIngestion: suppressLegacyPipeline,
+            suppressLiveIngestion: true,
           );
       _pipeline = pipeline;
 
       _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
-      // Proactively kick a forceRescan(includeCatchUp=true) shortly after startup
-      // to avoid gaps if the consumer started before room readiness or network flakiness.
-      // Skipped when the queue pipeline owns live ingestion — its bridge
-      // coordinator handles the equivalent catch-up trigger.
-      if (!suppressLegacyPipeline) {
-        unawaited(() async {
-          await Future<void>.delayed(const Duration(milliseconds: 300));
-          try {
-            _loggingService.captureEvent(
-              'service.forceRescan.startup includeCatchUp=true',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan',
-            );
-            await pipeline.forceRescan();
-            _loggingService.captureEvent(
-              'service.forceRescan.startup.done',
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan',
-            );
-          } catch (e, st) {
-            _loggingService.captureException(
-              e,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'forceRescan.startup',
-              stackTrace: st,
-            );
-          }
-        }());
-      }
 
       if (syncEngine != null) {
         if (pipelineOverride == null) {
@@ -235,99 +197,20 @@ class MatrixService {
     incomingKeyVerificationRunnerStream =
         incomingKeyVerificationRunnerController.stream;
 
-    // On connectivity regain, nudge the pipeline with a catch-up + scan and
-    // record this as a signal for observability. Skip the very first emission
-    // because `connectivity_plus` surfaces the current state synchronously on
-    // subscribe, which would duplicate the dedicated startup-time
-    // `forceRescan` kicked off just below this listener. The flag flips on
-    // the very first emission regardless of whether the device is online,
-    // otherwise an app that starts offline would treat the first actual
-    // connectivity-regain event as bootstrap and miss the rescan.
-    var bootstrapEmissionSeen = false;
+    // On connectivity regain, record a signal for metrics/observability.
+    // Catch-up itself is driven by the queue coordinator's bridge (the
+    // `limited=true` reconnect trigger), so nothing further is needed
+    // here.
     _connectivitySubscription =
         (connectivityStream ?? Connectivity().onConnectivityChanged).listen((
           List<ConnectivityResult> result,
         ) {
-          final isFirstEmission = !bootstrapEmissionSeen;
-          bootstrapEmissionSeen = true;
           if ({
             ConnectivityResult.wifi,
             ConnectivityResult.mobile,
             ConnectivityResult.ethernet,
           }.intersection(result.toSet()).isNotEmpty) {
-            // Record connectivity as a signal for metrics/observability.
             _pipeline?.recordConnectivitySignal();
-
-            if (isFirstEmission) {
-              _loggingService.captureEvent(
-                'service.forceRescan.connectivity.bootstrapSkipped',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'forceRescan',
-              );
-              return;
-            }
-
-            // Queue pipeline owns catch-up via its bridge coordinator
-            // (limited=true triggers). The legacy connectivity-regain
-            // rescan would drive the dormant legacy path and no-op in
-            // the best case, fire redundant work in the worst.
-            if (suppressLegacyPipeline) {
-              _loggingService.captureEvent(
-                'service.forceRescan.connectivity.suppressed',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'forceRescan',
-              );
-              return;
-            }
-
-            // Coalesce repeated connectivity events: only trigger a rescan when
-            // there isn't one in-flight and we haven't just run one.
-            if (_rescanInFlight) {
-              _loggingService.captureEvent(
-                'service.forceRescan.connectivity.coalesce inFlight=true',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'forceRescan',
-              );
-              return;
-            }
-            final now = DateTime.now();
-            if (_lastRescanAt != null &&
-                now.difference(_lastRescanAt!) < _minConnectivityRescanGap) {
-              _loggingService.captureEvent(
-                'service.forceRescan.connectivity.coalesce recent',
-                domain: 'MATRIX_SERVICE',
-                subDomain: 'forceRescan',
-              );
-              return;
-            }
-
-            _rescanInFlight = true;
-            unawaited(() async {
-              try {
-                _loggingService.captureEvent(
-                  'service.forceRescan.connectivity includeCatchUp=true',
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'forceRescan',
-                );
-                await _pipeline?.forceRescan();
-                _loggingService.captureEvent(
-                  'service.forceRescan.connectivity.done',
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'forceRescan',
-                );
-              } catch (e, st) {
-                // Log exceptions to aid debugging, but do not crash.
-                _loggingService.captureException(
-                  e,
-                  domain: 'MATRIX_SERVICE',
-                  subDomain: 'connectivity',
-                  stackTrace: st,
-                );
-              } finally {
-                _lastRescanAt = DateTime.now();
-                _rescanInFlight = false;
-              }
-            }());
           }
         });
   }
@@ -348,18 +231,11 @@ class MatrixService {
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
   final bool _collectSyncMetrics;
-  final QueuePipelineCoordinator? _queueCoordinator;
-  final bool _suppressLegacyPipeline;
-
-  /// True when this instance was constructed with the Phase-2 queue
-  /// pipeline owning live ingestion. Exposed for diagnostics and so
-  /// a future Sync-Settings UI can reflect the active pipeline.
-  bool get isLegacyPipelineSuppressed => _suppressLegacyPipeline;
+  final QueuePipelineCoordinator _queueCoordinator;
 
   /// Exposes the Phase-2 queue coordinator to tests and the Sync
-  /// Settings UI. Null until Phase 2 wires it or when the
-  /// `useInboundEventQueue` flag is off.
-  QueuePipelineCoordinator? get queueCoordinator => _queueCoordinator;
+  /// Settings UI.
+  QueuePipelineCoordinator get queueCoordinator => _queueCoordinator;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
@@ -370,11 +246,6 @@ class MatrixService {
   StreamSubscription<KeyVerification>? _keyVerificationRequestSubscription;
   // Optional seam for tests to inject a connectivity stream.
   final Stream<List<ConnectivityResult>>? connectivityStream;
-
-  // Coalesce connectivity-driven rescans to avoid storms.
-  bool _rescanInFlight = false;
-  DateTime? _lastRescanAt;
-  static const Duration _minConnectivityRescanGap = Duration(seconds: 2);
 
   Client get client => _sessionManager.client;
 
@@ -461,7 +332,7 @@ class MatrixService {
     await loadConfig();
     await connect();
 
-    await _maybeStartQueuePipeline();
+    await _startQueuePipeline();
 
     _loggingService.captureEvent(
       'MatrixService initialized - deviceId: ${client.deviceID}, '
@@ -471,53 +342,14 @@ class MatrixService {
     );
   }
 
-  /// Test seam exposing [_maybeStartQueuePipeline] without requiring a
-  /// full `init()` flow (which drags in gateway login, connectivity,
-  /// etc.).
+  /// Test seam exposing [_startQueuePipeline] without requiring a full
+  /// `init()` flow (which drags in gateway login, connectivity, etc.).
   @visibleForTesting
-  Future<void> debugMaybeStartQueuePipelineForTest() =>
-      _maybeStartQueuePipeline();
+  Future<void> debugStartQueuePipelineForTest() => _startQueuePipeline();
 
-  Future<void> _maybeStartQueuePipeline() async {
-    final enabled = await readUseInboundEventQueueFlag(_journalDb);
-    if (!enabled) {
-      if (_suppressLegacyPipeline) {
-        // The constructor decided to suppress the legacy pipeline
-        // because the flag read at wiring time said queue-on, but a
-        // concurrent settings write (or a test seam) has since turned
-        // the flag off. Neither pipeline can accept live events —
-        // surface that explicitly instead of silently running with no
-        // inbound path.
-        throw StateError(
-          'MatrixService: queue pipeline suppressed but '
-          'useInboundEventQueue flag is now false — no active '
-          'inbound pipeline. Restart the service after toggling '
-          'the flag.',
-        );
-      }
-      return;
-    }
-    final coordinator = _queueCoordinator;
-    if (coordinator == null) {
-      if (_suppressLegacyPipeline) {
-        // Same class of failure: legacy is off, queue is expected
-        // but no coordinator was injected. Refuse to proceed instead
-        // of ending up with zero inbound sources.
-        throw StateError(
-          'MatrixService: useInboundEventQueue flag is on, legacy '
-          'pipeline is suppressed, but no QueuePipelineCoordinator '
-          'was provided. This is a wiring bug in the caller.',
-        );
-      }
-      _loggingService.captureEvent(
-        'queue.coordinator.skip reason=flagOnButNotInjected',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'queue.init',
-      );
-      return;
-    }
+  Future<void> _startQueuePipeline() async {
     try {
-      await coordinator.start();
+      await _queueCoordinator.start();
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -525,12 +357,10 @@ class MatrixService {
         subDomain: 'queue.init',
         stackTrace: stackTrace,
       );
-      if (_suppressLegacyPipeline) {
-        // Legacy is suppressed; a failed queue start leaves the
-        // service with nothing ingesting. Rethrow so the caller can
-        // decide (retry, fall back, surface to UI).
-        rethrow;
-      }
+      // The queue coordinator is the only inbound path, so surface the
+      // failure to the caller instead of silently running with nothing
+      // ingesting.
+      rethrow;
     }
   }
 
@@ -615,38 +445,27 @@ class MatrixService {
   Future<void> saveRoom(String roomId) async {
     await _roomManager.saveRoomId(roomId);
 
-    // When provisioning saves the room after login, the pipeline may already
-    // be active but not yet attached to this room. Re-start bindings and force
-    // a catch-up in the background so receiving starts immediately.
-    //
-    // Under `suppressLegacyPipeline`, `pipeline.start()` enters its suppressed
-    // branch (un-partials the room, attaches diagnostic signals only) and
-    // `pipeline.forceRescan()` no-ops. The queue coordinator owns catch-up,
-    // so we trigger its bridge explicitly here.
+    // When provisioning saves the room after login, the pipeline may
+    // already be active but not yet attached to this room. Restart its
+    // bindings (un-partials the room, attaches diagnostic signals) and
+    // then drive catch-up through the queue coordinator.
     final pipeline = _pipeline;
     if (pipeline == null) return;
 
     unawaited(() async {
       try {
         await pipeline.start();
-        if (_suppressLegacyPipeline) {
-          final coordinator = _queueCoordinator;
-          if (coordinator != null) {
-            // The coordinator's `start()` only seeds/prunes for whatever
-            // room was current at start time. If the service started
-            // before the user picked a room — or the user is now
-            // switching rooms — the new room never gets its marker
-            // seeded and rows from the previous room remain queued.
-            // Both are replayed against the wrong room once the worker
-            // resolves the new current room. Run the room-change hook
-            // before kicking the bridge so catch-up walks history into
-            // a properly seeded queue.
-            await coordinator.onRoomChanged(roomId);
-            await coordinator.triggerBridge();
-          }
-        } else {
-          await pipeline.forceRescan();
-        }
+        // The coordinator's `start()` only seeds/prunes for whatever
+        // room was current at start time. If the service started
+        // before the user picked a room — or the user is now switching
+        // rooms — the new room never gets its marker seeded and rows
+        // from the previous room remain queued. Both are replayed
+        // against the wrong room once the worker resolves the new
+        // current room. Run the room-change hook before kicking the
+        // bridge so catch-up walks history into a properly seeded
+        // queue.
+        await _queueCoordinator.onRoomChanged(roomId);
+        await _queueCoordinator.triggerBridge();
       } catch (error, stackTrace) {
         _loggingService.captureException(
           error,
@@ -822,12 +641,10 @@ class MatrixService {
     await _syncEngine.dispose();
 
     // Drain the queue pipeline before the session/room teardown so
-    // `commitApplied` can still advance markers. F7 of the design
-    // review: a flag-on→off restart must not strand in-queue events.
-    final coordinator = _queueCoordinator;
-    if (coordinator != null && coordinator.isRunning) {
+    // `commitApplied` can still advance markers.
+    if (_queueCoordinator.isRunning) {
       try {
-        await coordinator.stop(drainFirst: true);
+        await _queueCoordinator.stop(drainFirst: true);
       } catch (error, stackTrace) {
         _loggingService.captureException(
           error,
@@ -862,13 +679,12 @@ class MatrixService {
       // If metrics collection is disabled, do not attempt to read metrics.
       if (!_collectSyncMetrics) return null;
       final map = Map<String, dynamic>.from(_pipeline!.metricsSnapshot());
-      // Overlay queue ledger counts when the Phase-2 coordinator is
-      // active — queueActive/applied/abandoned/retrying surface in
-      // Matrix Stats alongside the legacy pipeline's own counters.
-      final coordinator = _queueCoordinator;
-      if (coordinator != null && coordinator.isRunning) {
+      // Overlay queue ledger counts — queueActive/applied/abandoned/
+      // retrying surface in Matrix Stats alongside the consumer's own
+      // counters.
+      if (_queueCoordinator.isRunning) {
         try {
-          final stats = await coordinator.queue.stats();
+          final stats = await _queueCoordinator.queue.stats();
           map['queueActive'] = stats.total;
           map['queueApplied'] = stats.applied;
           map['queueAbandoned'] = stats.abandoned;
@@ -897,44 +713,29 @@ class MatrixService {
   // Raw map accessor removed in favor of the expanded typed SyncMetrics model.
 
   Future<void> forceRescan({bool includeCatchUp = true}) async {
-    // Phase-2 flag-on: the legacy pipeline is dormant, so driving
-    // `pipeline.forceRescan` would run the legacy catch-up and apply
-    // events via `processOrdered` — exactly the double-apply hazard
-    // `suppressLegacyPipeline` exists to prevent. Route `includeCatchUp`
-    // rescans to the queue coordinator's bridge instead.
-    if (_suppressLegacyPipeline) {
-      final coordinator = _queueCoordinator;
-      if (coordinator == null || !includeCatchUp) {
-        _loggingService.captureEvent(
-          'forceRescan.suppressed includeCatchUp=$includeCatchUp '
-          'coordinator=${coordinator == null ? 'null' : 'present'}',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'forceRescan',
-        );
-        return;
-      }
-      try {
-        await coordinator.triggerBridge();
-      } catch (error, stackTrace) {
-        _loggingService.captureException(
-          error,
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'forceRescan.triggerBridge',
-          stackTrace: stackTrace,
-        );
-      }
+    // The queue coordinator owns catch-up; route `includeCatchUp`
+    // rescans to its bridge. Live-only rescans are a no-op since the
+    // consumer's own live ingestion is suppressed.
+    if (!includeCatchUp) {
       _loggingService.captureEvent(
-        'forceRescan.triggerBridge invoked',
+        'forceRescan.suppressed includeCatchUp=false',
         domain: 'MATRIX_SERVICE',
         subDomain: 'forceRescan',
       );
       return;
     }
-    final p = _pipeline;
-    if (p == null) return;
-    await p.forceRescan(includeCatchUp: includeCatchUp);
+    try {
+      await _queueCoordinator.triggerBridge();
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'forceRescan.triggerBridge',
+        stackTrace: stackTrace,
+      );
+    }
     _loggingService.captureEvent(
-      'forceRescan(includeCatchUp=$includeCatchUp) invoked',
+      'forceRescan.triggerBridge invoked',
       domain: 'MATRIX_SERVICE',
       subDomain: 'forceRescan',
     );

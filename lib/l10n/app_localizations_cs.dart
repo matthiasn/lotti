@@ -2337,14 +2337,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.';
 
   @override
-  String get configFlagUseInboundEventQueue =>
-      'Použít příchozí frontu událostí';
-
-  @override
-  String get configFlagUseInboundEventQueueDescription =>
-      'Směruje příchozí synchronizační události přes trvalou frontu s omezenou pamětí a postupným použitím. Vyžaduje restart aplikace.';
-
-  @override
   String get conflictEntityLabel => 'Entita';
 
   @override
