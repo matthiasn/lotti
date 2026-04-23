@@ -7,6 +7,9 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/message_timesta
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/streaming_content.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -143,10 +146,9 @@ class MessageBubble extends StatelessWidget {
                             );
                             await Clipboard.setData(ClipboardData(text: text));
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Copied to clipboard'),
-                                ),
+                              context.showToast(
+                                tone: DesignSystemToastTone.success,
+                                title: context.messages.aiChatMessageCopied,
                               );
                             }
                           },

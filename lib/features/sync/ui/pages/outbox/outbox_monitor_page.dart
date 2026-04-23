@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
@@ -54,10 +56,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       );
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.outboxMonitorRetryQueued),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.outboxMonitorRetryQueued,
       );
     } catch (error, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -69,10 +70,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.outboxMonitorRetryFailed),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.outboxMonitorRetryFailed,
       );
     }
   }
@@ -90,10 +90,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       await _db.deleteOutboxItemById(item.id);
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.outboxMonitorDeleteSuccess),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.outboxMonitorDeleteSuccess,
       );
     } catch (error, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -105,10 +104,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.outboxMonitorDeleteFailed),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.outboxMonitorDeleteFailed,
       );
     }
   }

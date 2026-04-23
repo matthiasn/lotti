@@ -236,6 +236,55 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('shows an error toast when submit returns null', (
+      tester,
+    ) async {
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: const RatingData(
+          targetId: testTimeEntryId,
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.7),
+            RatingDimension(key: 'energy', value: 0.5),
+            RatingDimension(key: 'focus', value: 0.9),
+            RatingDimension(key: 'challenge_skill', value: 0.5),
+          ],
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => existingRating);
+
+      when(
+        () => mockRepository.createOrUpdateRating(
+          targetId: any(named: 'targetId'),
+          dimensions: any(named: 'dimensions'),
+          catalogId: any(named: 'catalogId'),
+          note: any(named: 'note'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The rating modal stays mounted and surfaces an error toast.
+      expect(
+        find.text('Failed to save rating. Please try again.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('submitted dimensions contain snapshotted question metadata', (
       tester,
     ) async {

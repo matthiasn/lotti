@@ -534,6 +534,7 @@
   "aiAssistantTitle": "Asistent AI",
   "aiAssistantTranscribeAudio": "Transcrie audio",
   "aiBatchToggleTooltip": "Comutare la înregistrare standard",
+  "aiChatMessageCopied": "Copiat în clipboard",
   "aiConfigApiKeyEmptyError": "Cheia API nu poate fi goală",
   "aiConfigApiKeyFieldLabel": "Cheie API",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 model asociat eliminat} other{{count} modele asociate eliminate}}",
@@ -658,6 +659,14 @@
   "aiInferenceErrorUnknownTitle": "Eroare",
   "aiInferenceErrorViewLogButton": "Vezi jurnalul",
   "aiModelSettings": "Setări model AI",
+  "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Familia de asistenți AI Claude de la Anthropic",
@@ -885,6 +894,14 @@
   "celebrationTapToContinue": "Atingeți pentru a continua",
   "changeSetCardTitle": "Modificări propuse",
   "changeSetConfirmAll": "Confirmați toate",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 element a avut probleme parțiale} other{{count} elemente au avut probleme parțiale}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeSetConfirmError": "Modificarea nu a putut fi aplicată",
   "changeSetItemConfirmed": "Modificare aplicată",
   "changeSetItemConfirmedWithWarning": "Aplicată cu avertisment: {warning}",
@@ -1471,6 +1488,7 @@
   "designSystemTimePickerFormatsTitle": "Formate de oră",
   "designSystemTimePickerTwelveHourLabel": "12 ore",
   "designSystemTimePickerTwentyFourHourLabel": "24 de ore",
+  "designSystemTitleOnlyVariantTitle": "Variantă doar titlu",
   "designSystemToastDetailsLabel": "Detalii notificare",
   "designSystemToggleLabel": "Etichetă pentru toggle",
   "designSystemTooltipIconMessageSample": "Informații utile despre acest câmp",

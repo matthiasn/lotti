@@ -11,7 +11,7 @@ class DesignSystemToast extends StatelessWidget {
   const DesignSystemToast({
     required this.tone,
     required this.title,
-    required this.description,
+    this.description,
     this.onDismiss,
     this.dismissSemanticsLabel,
     super.key,
@@ -19,7 +19,7 @@ class DesignSystemToast extends StatelessWidget {
 
   final DesignSystemToastTone tone;
   final String title;
-  final String description;
+  final String? description;
   final VoidCallback? onDismiss;
   final String? dismissSemanticsLabel;
 
@@ -27,11 +27,14 @@ class DesignSystemToast extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _ToastSpec.fromTokens(tokens, tone);
+    final descriptionText = description?.trim();
+    final hasDescription =
+        descriptionText != null && descriptionText.isNotEmpty;
 
     return Semantics(
       container: true,
       liveRegion: true,
-      label: '$title. $description',
+      label: hasDescription ? '$title. $descriptionText' : title,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(spec.radius),
         child: DecoratedBox(
@@ -40,91 +43,100 @@ class DesignSystemToast extends StatelessWidget {
             border: Border.all(color: spec.borderColor),
             borderRadius: BorderRadius.circular(spec.radius),
           ),
-          child: SizedBox(
-            height: 56,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: spec.stripeWidth,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          spec.stripeColor,
-                          spec.stripeColor.withValues(alpha: 0),
-                        ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: spec.stripeWidth,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            spec.stripeColor,
+                            spec.stripeColor.withValues(alpha: 0),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step3),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: tokens.spacing.step1,
-                                ),
-                                child: Icon(
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.all(tokens.spacing.step3),
+                      child: Row(
+                        // Two-line toasts top-align per Figma; single-line
+                        // toasts read better centered in the 56px min box.
+                        crossAxisAlignment: hasDescription
+                            ? CrossAxisAlignment.start
+                            : CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: hasDescription
+                                  ? CrossAxisAlignment.start
+                                  : CrossAxisAlignment.center,
+                              children: [
+                                Icon(
                                   spec.leadingIcon,
                                   size: 20,
                                   color: spec.borderColor,
                                 ),
-                              ),
-                              SizedBox(width: tokens.spacing.step3),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: spec.titleStyle.copyWith(
-                                        color: spec.titleColor,
+                                SizedBox(width: tokens.spacing.step3),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: spec.titleStyle.copyWith(
+                                          color: spec.titleColor,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(height: tokens.spacing.step2),
-                                    Text(
-                                      description,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: spec.descriptionStyle.copyWith(
-                                        color: spec.descriptionColor,
-                                      ),
-                                    ),
-                                  ],
+                                      if (hasDescription) ...[
+                                        SizedBox(
+                                          height: tokens.spacing.step2,
+                                        ),
+                                        Text(
+                                          descriptionText,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: spec.descriptionStyle.copyWith(
+                                            color: spec.descriptionColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        if (onDismiss != null) ...[
-                          SizedBox(width: tokens.spacing.step5),
-                          _ToastDismissAction(
-                            iconColor: spec.dismissColor,
-                            semanticsLabel:
-                                dismissSemanticsLabel ??
-                                MaterialLocalizations.of(
-                                  context,
-                                ).cancelButtonLabel,
-                            onPressed: onDismiss!,
-                          ),
+                          if (onDismiss != null) ...[
+                            SizedBox(width: tokens.spacing.step5),
+                            _ToastDismissAction(
+                              iconColor: spec.dismissColor,
+                              semanticsLabel:
+                                  dismissSemanticsLabel ??
+                                  MaterialLocalizations.of(
+                                    context,
+                                  ).cancelButtonLabel,
+                              onPressed: onDismiss!,
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

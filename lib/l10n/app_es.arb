@@ -534,6 +534,7 @@
   "aiAssistantTitle": "Asistente de IA",
   "aiAssistantTranscribeAudio": "Transcribir audio",
   "aiBatchToggleTooltip": "Cambiar a grabación estándar",
+  "aiChatMessageCopied": "Copiado al portapapeles",
   "aiConfigApiKeyEmptyError": "La clave API no puede estar vacía",
   "aiConfigApiKeyFieldLabel": "Clave API",
   "aiConfigAssociatedModelsRemoved": "{count} modelo{count, plural, =1{} other{s}} asociado{count, plural, =1{} other{s}} eliminado{count, plural, =1{} other{s}}",
@@ -658,6 +659,14 @@
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInferenceErrorViewLogButton": "Ver registro",
   "aiModelSettings": "Ajustes de modelo AI",
+  "aiOllamaModelInstalledSuccessfully": "¡Modelo \"{modelName}\" instalado correctamente!",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "La familia de modelos Qwen de Alibaba Cloud a través de la API DashScope",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La familia de asistentes AI Claude de Anthropic",
@@ -885,6 +894,14 @@
   "celebrationTapToContinue": "Toca para continuar",
   "changeSetCardTitle": "Cambios propuestos",
   "changeSetConfirmAll": "Confirmar todos",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 elemento tuvo problemas parciales} other{{count} elementos tuvieron problemas parciales}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeSetConfirmError": "No se pudo aplicar el cambio",
   "changeSetItemConfirmed": "Cambio aplicado",
   "changeSetItemConfirmedWithWarning": "Aplicado con advertencia: {warning}",
@@ -1471,6 +1488,7 @@
   "designSystemTimePickerFormatsTitle": "Formatos de hora",
   "designSystemTimePickerTwelveHourLabel": "12 horas",
   "designSystemTimePickerTwentyFourHourLabel": "24 horas",
+  "designSystemTitleOnlyVariantTitle": "Variante solo título",
   "designSystemToastDetailsLabel": "Detalles de la notificación",
   "designSystemToggleLabel": "Etiqueta del toggle",
   "designSystemTooltipIconMessageSample": "Información útil sobre este campo",

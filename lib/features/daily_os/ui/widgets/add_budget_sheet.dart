@@ -4,6 +4,8 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -85,13 +87,11 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
           _endTime = picked;
         });
       } else {
-        // Show feedback when end time is not after start time
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.messages.dailyOsInvalidTimeRange),
-              duration: const Duration(seconds: 2),
-            ),
+          context.showToast(
+            tone: DesignSystemToastTone.warning,
+            title: context.messages.dailyOsInvalidTimeRange,
+            duration: const Duration(seconds: 2),
           );
         }
       }

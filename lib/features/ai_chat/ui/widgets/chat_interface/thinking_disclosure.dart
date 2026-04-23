@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -111,10 +113,9 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                           ClipboardData(text: widget.thinking),
                         );
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(messages.thinkingDisclosureCopied),
-                            ),
+                          context.showToast(
+                            tone: DesignSystemToastTone.success,
+                            title: messages.thinkingDisclosureCopied,
                           );
                         }
                       },

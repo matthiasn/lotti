@@ -23,10 +23,16 @@ void main() {
       );
 
       expect(find.text('Variant Matrix'), findsOneWidget);
-      expect(find.text('Success'), findsOneWidget);
-      expect(find.text('Warning'), findsOneWidget);
-      expect(find.text('Error'), findsOneWidget);
-      expect(find.byType(DesignSystemToast), findsNWidgets(3));
+      expect(find.text('Title Only Variant'), findsOneWidget);
+
+      // Each tone label appears twice: once in the matrix section,
+      // once in the title-only section.
+      expect(find.text('Success'), findsNWidgets(2));
+      expect(find.text('Warning'), findsNWidgets(2));
+      expect(find.text('Error'), findsNWidgets(2));
+
+      // 3 matrix toasts + 3 title-only toasts.
+      expect(find.byType(DesignSystemToast), findsNWidgets(6));
     });
   });
 }

@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_moda
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -137,14 +139,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   void _showNotLoggedInToast(BuildContext context) {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final scheme = Theme.of(context).colorScheme;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.syncNotLoggedInToast),
-          backgroundColor: scheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.syncNotLoggedInToast,
       );
     });
   }

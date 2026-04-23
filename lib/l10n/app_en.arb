@@ -763,6 +763,7 @@
   "aiAssistantTitle": "AI Assistant",
   "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiBatchToggleTooltip": "Switch to standard recording",
+  "aiChatMessageCopied": "Copied to clipboard",
   "aiConfigApiKeyEmptyError": "API key cannot be empty",
   "aiConfigApiKeyFieldLabel": "API Key",
   "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
@@ -887,6 +888,14 @@
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInferenceErrorViewLogButton": "View Log",
   "aiModelSettings": "AI Model Settings",
+  "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installed successfully!",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "Alibaba Cloud's Qwen family of models via DashScope API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
@@ -1114,6 +1123,14 @@
   "celebrationTapToContinue": "Tap to continue",
   "changeSetCardTitle": "Proposed changes",
   "changeSetConfirmAll": "Confirm all",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeSetConfirmError": "Failed to apply change",
   "changeSetItemConfirmed": "Change applied",
   "changeSetItemConfirmedWithWarning": "Applied with warning: {warning}",
@@ -1700,6 +1717,7 @@
   "designSystemTimePickerFormatsTitle": "Time Formats",
   "designSystemTimePickerTwelveHourLabel": "12-hour",
   "designSystemTimePickerTwentyFourHourLabel": "24-hour",
+  "designSystemTitleOnlyVariantTitle": "Title Only Variant",
   "designSystemToastDetailsLabel": "Notification details",
   "designSystemToggleLabel": "Toggle label",
   "designSystemTooltipIconMessageSample": "Helpful information about this field",

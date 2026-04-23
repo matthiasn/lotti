@@ -534,6 +534,7 @@
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
   "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
+  "aiChatMessageCopied": "Copié dans le presse-papiers",
   "aiConfigApiKeyEmptyError": "La clé API ne peut pas être vide",
   "aiConfigApiKeyFieldLabel": "Clé API",
   "aiConfigAssociatedModelsRemoved": "{count} modèle{count, plural, =1{} other{s}} associé{count, plural, =1{} other{s}} supprimé{count, plural, =1{} other{s}}",
@@ -658,6 +659,14 @@
   "aiInferenceErrorUnknownTitle": "Erreur",
   "aiInferenceErrorViewLogButton": "Voir le journal",
   "aiModelSettings": "Paramètres du modèle AI",
+  "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "La famille de modèles Qwen d'Alibaba Cloud via l'API DashScope",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La famille d'assistants AI Claude d'Anthropic",
@@ -885,6 +894,14 @@
   "celebrationTapToContinue": "Appuyez pour continuer",
   "changeSetCardTitle": "Modifications proposées",
   "changeSetConfirmAll": "Tout confirmer",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 élément a rencontré des problèmes partiels} other{{count} éléments ont rencontré des problèmes partiels}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeSetConfirmError": "Impossible d'appliquer la modification",
   "changeSetItemConfirmed": "Modification appliquée",
   "changeSetItemConfirmedWithWarning": "Appliquée avec avertissement : {warning}",
@@ -1471,6 +1488,7 @@
   "designSystemTimePickerFormatsTitle": "Formats d'heure",
   "designSystemTimePickerTwelveHourLabel": "12 heures",
   "designSystemTimePickerTwentyFourHourLabel": "24 heures",
+  "designSystemTitleOnlyVariantTitle": "Variante titre seul",
   "designSystemToastDetailsLabel": "Détails de la notification",
   "designSystemToggleLabel": "Libellé du toggle",
   "designSystemTooltipIconMessageSample": "Informations utiles sur ce champ",

@@ -8,6 +8,8 @@ import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -41,12 +43,9 @@ class MaintenancePage extends ConsumerWidget {
               if (!confirmed) return;
               final removed = await clearPrefsByPrefix('seen_');
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.messages.settingsResetHintsResult(removed),
-                    ),
-                  ),
+                context.showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: context.messages.settingsResetHintsResult(removed),
                 );
               }
             },

@@ -754,6 +754,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync settings and sync maintenance pages now use design system list items
   in a grouped container, consistent with the rest of the settings pages.
 - Settings page uses a 3-column desktop layout for wider screens.
+- Toast notifications aligned with the Figma reference: the success,
+  warning, and error variants now share a single top edge for the status
+  icon, title, and dismiss button, removing a small vertical offset that
+  pushed the icon and close button out of line. The 56px height is now a
+  minimum rather than a fixed value, so the toast grows under larger
+  system text scales instead of clipping its content.
 
 ## [0.9.951] - 2026-04-13
 ### Added

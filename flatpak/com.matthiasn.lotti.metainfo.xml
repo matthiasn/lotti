@@ -169,6 +169,7 @@
       <description>
           <p>Task filter modal redesigned with the design system filter sheet. All filter modals now use Wolt modal sheet for consistent adaptive presentation. Selected filter chips show contextual icons for status, category, and label. Priority glyphs updated to match Figma designs.</p>
           <p>Categories, labels, dashboards, measurables, and habits list pages now use design system list items in a grouped container, matching the settings page visual style. Maintenance, logging domain, sync settings, and sync maintenance pages likewise updated. Settings page uses a 3-column desktop layout for wider screens.</p>
+          <p>Toast notifications aligned with the Figma reference: success, warning, and error variants now share a single top edge for the status icon, title, and dismiss button, and grow under larger system text scales instead of clipping.</p>
       </description>
     </release>
     <release version="0.9.951" date="2026-04-13">

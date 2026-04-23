@@ -850,6 +850,40 @@ void main() {
         await streamController.close();
       });
 
+      testWidgets('create mode shows an error toast for an empty name', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: const CategoryDetailsPage(),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Leave the name field empty and tap Create.
+        await tester.tap(find.byType(LottiPrimaryButton));
+        await tester.pumpAndSettle();
+
+        // Repository must not be called when the name is empty.
+        verifyNever(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        );
+
+        // An error toast explains that the name is required.
+        expect(
+          find.textContaining('Category name is required'),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('does not navigate back when creation fails', (tester) async {
         var didNavigateBack = false;
 
@@ -884,7 +918,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify error shown and NO navigation
-        expect(find.textContaining('Error creating category'), findsOneWidget);
+        expect(
+          find.textContaining('Failed to create category'),
+          findsOneWidget,
+        );
         expect(didNavigateBack, isFalse);
       });
     });

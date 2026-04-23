@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/tasks/services/checklist_markdown_exporter.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -164,7 +168,6 @@ class ChecklistCardWrapper extends ConsumerWidget {
           onReorder: notifier.updateItemOrder,
           onDelete: notifier.delete,
           onExportMarkdown: () async {
-            final messenger = ScaffoldMessenger.of(context);
             final nothingMsg = context.messages.checklistNothingToExport;
             final copiedMsg = context.messages.checklistMarkdownCopied;
             final shareHintMsg = context.messages.checklistShareHint;
@@ -175,23 +178,51 @@ class ChecklistCardWrapper extends ConsumerWidget {
               final markdown = checklistItemsToMarkdown(resolved);
 
               if (markdown.isEmpty) {
-                messenger.showSnackBar(SnackBar(content: Text(nothingMsg)));
+                if (!context.mounted) return;
+                context.showToast(
+                  tone: DesignSystemToastTone.warning,
+                  title: nothingMsg,
+                );
                 return;
               }
 
               await ref.read(appClipboardProvider).writePlainText(markdown);
 
+              // Clipboard write succeeded — from here on, any failure in
+              // best-effort share-hint bookkeeping must NOT flip the
+              // success toast into an error toast.
               final prefs = makeSharedPrefsService();
-              final seen = await prefs.getBool(_shareHintSeenKey) ?? false;
-              final msg = (!isTestEnv && !seen)
+              final seen =
+                  await prefs.getBool(_shareHintSeenKey).catchError((_) {
+                    return false;
+                  }) ??
+                  false;
+              final shouldShowShareHint = !isTestEnv && !seen;
+
+              if (!context.mounted) return;
+              final msg = shouldShowShareHint
                   ? '$copiedMsg — $shareHintMsg'
                   : copiedMsg;
-              messenger.showSnackBar(SnackBar(content: Text(msg)));
-              if (!isTestEnv && !seen) {
-                await prefs.setBool(key: _shareHintSeenKey, value: true);
+              context.showToast(
+                tone: DesignSystemToastTone.success,
+                title: msg,
+              );
+
+              if (shouldShowShareHint) {
+                // Fire-and-forget: never let a prefs failure surface as an
+                // export error after the clipboard already succeeded.
+                unawaited(
+                  prefs
+                      .setBool(key: _shareHintSeenKey, value: true)
+                      .catchError((_) => false),
+                );
               }
             } catch (_) {
-              messenger.showSnackBar(SnackBar(content: Text(failedMsg)));
+              if (!context.mounted) return;
+              context.showToast(
+                tone: DesignSystemToastTone.error,
+                title: failedMsg,
+              );
             }
           },
           onShareMarkdown: () async {

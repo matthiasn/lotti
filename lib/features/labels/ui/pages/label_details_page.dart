@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
@@ -126,8 +128,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       final result = await controller.save();
       if (!context.mounted) return;
       if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.saveSuccessful)),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.saveSuccessful,
         );
         Navigator.of(context).pop();
       }
@@ -161,13 +164,10 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 // Pop the details page and show a snackbar using the page context
                 Navigator.of(pageContext).pop();
                 if (!mounted || !pageContext.mounted) return;
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      pageContext.messages.settingsLabelsDeleteSuccess(
-                        label.name,
-                      ),
-                    ),
+                pageContext.showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: pageContext.messages.settingsLabelsDeleteSuccess(
+                    label.name,
                   ),
                 );
               },

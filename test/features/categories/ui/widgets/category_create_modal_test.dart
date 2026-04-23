@@ -159,4 +159,63 @@ void main() {
       ),
     );
   });
+
+  testWidgets(
+    'shows an error toast when saving with an empty name and does not '
+    'call the repository',
+    (tester) async {
+      final createdCategories = <CategoryDefinition>[];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: '   ',
+          onCategoryCreated: createdCategories.add,
+        ),
+      );
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => mockRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      );
+      expect(createdCategories, isEmpty);
+      expect(find.textContaining('Category name is required'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows an error toast when the repository throws and keeps the modal open',
+    (tester) async {
+      when(
+        () => mockRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenThrow(Exception('DB offline'));
+
+      final createdCategories = <CategoryDefinition>[];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          initialName: 'Broken',
+          onCategoryCreated: createdCategories.add,
+        ),
+      );
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(createdCategories, isEmpty);
+      expect(
+        find.textContaining('Failed to create category'),
+        findsOneWidget,
+      );
+      // Modal stays mounted so the user can fix and retry.
+      expect(find.byType(CategoryCreateModal), findsOneWidget);
+    },
+  );
 }

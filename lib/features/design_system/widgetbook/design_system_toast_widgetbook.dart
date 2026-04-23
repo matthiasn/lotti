@@ -52,6 +52,31 @@ class _ToastOverviewPage extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 32),
+          _ToastSection(
+            title: context.messages.designSystemTitleOnlyVariantTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DesignSystemToast(
+                  tone: DesignSystemToastTone.success,
+                  title: context.messages.designSystemSuccessLabel,
+                  onDismiss: _noop,
+                ),
+                const SizedBox(height: 16),
+                DesignSystemToast(
+                  tone: DesignSystemToastTone.warning,
+                  title: context.messages.designSystemWarningLabel,
+                  onDismiss: _noop,
+                ),
+                const SizedBox(height: 16),
+                DesignSystemToast(
+                  tone: DesignSystemToastTone.error,
+                  title: context.messages.designSystemErrorLabel,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -328,6 +328,7 @@
   "aiAssistantTitle": "AI asistent",
   "aiAssistantTranscribeAudio": "Přepsat zvuk",
   "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
+  "aiChatMessageCopied": "Zkopírováno do schránky",
   "aiConfigApiKeyEmptyError": "API klíč nemůže být prázdný",
   "aiConfigApiKeyFieldLabel": "API klíč",
   "aiConfigAssociatedModelsRemoved": "{count, plural, =1{1 přiřazený model odebrán} other{{count} přiřazených modelů odebráno}}",
@@ -452,6 +453,14 @@
   "aiInferenceErrorUnknownTitle": "Chyba",
   "aiInferenceErrorViewLogButton": "Zobrazit log",
   "aiModelSettings": "Nastavení AI modelu",
+  "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Rodina AI asistentů Claude od Anthropic",
@@ -1242,6 +1251,7 @@
   "designSystemTimePickerFormatsTitle": "Formáty času",
   "designSystemTimePickerTwelveHourLabel": "12hodinový",
   "designSystemTimePickerTwentyFourHourLabel": "24hodinový",
+  "designSystemTitleOnlyVariantTitle": "Varianta pouze s názvem",
   "designSystemToastDetailsLabel": "Detaily oznámení",
   "designSystemToggleLabel": "Popisek přepínače",
   "designSystemTooltipIconMessageSample": "Užitečné informace o tomto poli",
