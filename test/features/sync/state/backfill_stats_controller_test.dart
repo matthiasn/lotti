@@ -658,6 +658,32 @@ void main() {
       },
     );
 
+    group('auto-refresh timer dispose', () {
+      test(
+        'provider dispose cancels the timer so no ticks fire after the '
+        'Backfill Settings page is closed — the @riverpod auto-dispose '
+        'is the backstop for "zero cost when page is closed"',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockSequenceService.getBackfillStats(),
+            ).thenAnswer((_) async => testStats);
+
+            createAndLoad(async);
+            clearInteractions(mockSequenceService);
+
+            container.dispose();
+
+            // Recreate for the tearDown hook; the explicit dispose
+            // above is the assertion subject.
+            container = ProviderContainer();
+
+            async.elapse(const Duration(seconds: 30));
+            verifyNever(() => mockSequenceService.getBackfillStats());
+          });
+        },
+      );
+    });
   });
 
   group('BackfillStatsState', () {

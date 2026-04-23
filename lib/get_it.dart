@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -32,6 +31,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/agent_vc_dominance_check.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -46,7 +46,6 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -302,7 +301,7 @@ Future<void> registerSingletons() async {
   // above — steady-state per-event logging would flood the general
   // log on large catch-ups.
   final localVcDominanceCheck = useQueuePipeline
-      ? _AgentVcDominanceCheck(agentDb: getIt<AgentDatabase>())
+      ? AgentVcDominanceCheck(agentDb: getIt<AgentDatabase>())
       : null;
   final queueAttachmentIngestor = useQueuePipeline
       ? AttachmentIngestor(
@@ -635,105 +634,3 @@ Future<void> _checkAndPopulateSequenceLog() async {
 @visibleForTesting
 Future<void> checkAndPopulateSequenceLogForTesting() =>
     _checkAndPopulateSequenceLog();
-
-/// Extract the entity/link id from an agent attachment's relativePath.
-/// Paths look like `/agent_entities/<uuid>.json` or
-/// `/agent_links/<uuid>.json`. Returns null if the path doesn't match.
-String? _idFromPath(String relativePath) {
-  final name = relativePath.split('/').lastOrNull;
-  if (name == null || !name.endsWith('.json')) return null;
-  return name.substring(0, name.length - '.json'.length);
-}
-
-/// Stateful companion for the sync ingestor's VC-dominance check.
-///
-/// Two optimisations over the previous inline lambda:
-///
-///   1. Narrow projection. Reads only the JSON-extracted
-///      `vector_clock` field from `agent_entities` / `agent_links`
-///      instead of the full `SELECT *` which was deserialising the
-///      whole `serialized` JSON blob just to read a nested property
-///      — measured at 36 ms avg / 101 ms p95 / 239 ms max per call
-///      on a desktop mid-drain, 1631 times/hour.
-///
-///   2. Short-lived id→VC cache. Chatty senders emit multiple echoes
-///      of the same agent entity within seconds; without a cache
-///      each echo paid the full lookup. The cache stays small and
-///      TTL-bounded so edits made after the first lookup land
-///      through a subsequent eviction rather than being masked.
-class _AgentVcDominanceCheck {
-  _AgentVcDominanceCheck({required AgentDatabase agentDb}) : _agentDb = agentDb;
-
-  final AgentDatabase _agentDb;
-
-  static const Duration _cacheTtl = Duration(seconds: 5);
-  static const int _cacheCapacity = 256;
-
-  final _entityCache = <String, _CachedVc>{};
-  final _linkCache = <String, _CachedVc>{};
-
-  Future<bool> check(String relativePath, VectorClock? incomingVc) async {
-    if (incomingVc == null) return false;
-    final id = _idFromPath(relativePath);
-    if (id == null) return false;
-    VectorClock? localVc;
-    if (relativePath.contains('/agent_entities/')) {
-      localVc = await _vectorClockFor(
-        cache: _entityCache,
-        id: id,
-        loader: () => _agentDb.getAgentEntityVectorClockById(id).getSingleOrNull(),
-      );
-    } else if (relativePath.contains('/agent_links/')) {
-      localVc = await _vectorClockFor(
-        cache: _linkCache,
-        id: id,
-        loader: () => _agentDb.getAgentLinkVectorClockById(id).getSingleOrNull(),
-      );
-    } else {
-      return false;
-    }
-    if (localVc == null) return false;
-    try {
-      final status = VectorClock.compare(localVc, incomingVc);
-      return status == VclockStatus.a_gt_b || status == VclockStatus.equal;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<VectorClock?> _vectorClockFor({
-    required Map<String, _CachedVc> cache,
-    required String id,
-    required Future<String?> Function() loader,
-  }) async {
-    final now = DateTime.now();
-    final cached = cache[id];
-    if (cached != null && now.isBefore(cached.expiresAt)) {
-      return cached.vc;
-    }
-    final raw = await loader();
-    VectorClock? vc;
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map<String, dynamic>) {
-          vc = VectorClock.fromJson(decoded);
-        }
-      } catch (_) {
-        // Malformed VC JSON — fall through with vc=null so the caller
-        // proceeds with the download rather than silently succeeding.
-      }
-    }
-    cache[id] = _CachedVc(vc: vc, expiresAt: now.add(_cacheTtl));
-    if (cache.length > _cacheCapacity) {
-      cache.remove(cache.keys.first);
-    }
-    return vc;
-  }
-}
-
-class _CachedVc {
-  _CachedVc({required this.vc, required this.expiresAt});
-  final VectorClock? vc;
-  final DateTime expiresAt;
-}
