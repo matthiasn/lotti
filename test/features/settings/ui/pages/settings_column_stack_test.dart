@@ -54,7 +54,7 @@ DesktopSettingsRoute _route(
 }
 
 List<Type> _types(List<SettingsColumn> columns) =>
-    columns.map((c) => c.child.runtimeType).toList();
+    columns.map((c) => c.childBuilder().runtimeType).toList();
 
 List<Key> _keys(List<SettingsColumn> columns) =>
     columns.map((c) => c.key).toList();

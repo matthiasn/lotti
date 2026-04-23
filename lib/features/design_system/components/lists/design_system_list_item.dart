@@ -231,7 +231,12 @@ class _TitleContent extends StatelessWidget {
             Text(
               title!,
               style: spec.titleStyle,
-              maxLines: 1,
+              // Allow the title to wrap to a second line before
+              // falling back to ellipsis. Narrow column layouts (e.g.
+              // the 360 px settings columns) were truncating single-
+              // line labels for no good reason; a second line fits
+              // every known label in every locale.
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
         if (subtitle != null || subtitleSpans != null) ...[
@@ -247,7 +252,11 @@ class _TitleContent extends StatelessWidget {
             Text(
               subtitle!,
               style: spec.subtitleStyle,
-              maxLines: 1,
+              // Same reasoning as the title — long explanatory
+              // subtitles (e.g. "Semicolon-separated terms for better
+              // speech recognition") used to clip with ellipsis at
+              // narrow widths. Two lines fits the realistic range.
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
         ],

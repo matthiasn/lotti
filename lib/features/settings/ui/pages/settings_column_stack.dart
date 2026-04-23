@@ -41,18 +41,102 @@ import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/services/nav_service.dart';
 
+/// Identifier for the crumb label a [SettingsColumn] contributes to
+/// the top-bar breadcrumb trail. Stored as an enum so the resolver
+/// stays independent of [BuildContext] — localisations are only
+/// bound when the trail is rendered, by
+/// `resolveSettingsBreadcrumbTrail`.
+enum SettingsCrumbLabel {
+  root,
+  ai,
+  aiProfiles,
+  sync,
+  syncMatrixMaintenance,
+  syncBackfill,
+  syncStats,
+  syncOutbox,
+  labels,
+  labelsCreate,
+  labelsEdit,
+  categories,
+  categoriesCreate,
+  categoriesEdit,
+  projectsCreate,
+  projectsEdit,
+  dashboards,
+  dashboardsCreate,
+  dashboardsEdit,
+  measurables,
+  measurablesCreate,
+  measurablesEdit,
+  habits,
+  habitsCreate,
+  habitsEdit,
+  agents,
+  agentsTemplateCreate,
+  agentsTemplateEdit,
+  agentsTemplateReview,
+  agentsSoulCreate,
+  agentsSoulEdit,
+  agentsSoulReview,
+  agentsInstance,
+  flags,
+  theming,
+  healthImport,
+  advanced,
+  advancedLoggingDomains,
+  advancedAbout,
+  advancedMaintenance,
+  advancedConflicts,
+  advancedConflictsResolution,
+  advancedConflictsEdit,
+}
+
+/// Breadcrumb metadata attached to a [SettingsColumn].
+///
+/// The column stack and the top-bar breadcrumb trail are two views of
+/// the same navigation state; declaring the crumb directly on the
+/// column keeps them in lockstep and forces a decision about the
+/// trail whenever a new column is introduced.
+@immutable
+class SettingsColumnCrumb {
+  const SettingsColumnCrumb({required this.label, required this.path});
+
+  /// Identifier resolved to a localised string at render time.
+  final SettingsCrumbLabel label;
+
+  /// Beamable path the breadcrumb chip navigates to when tapped. The
+  /// leaf crumb's path is never used for navigation (the leaf is
+  /// rendered as selected and non-interactive); storing it keeps the
+  /// trail uniformly addressable and makes testing straightforward.
+  final String path;
+}
+
 /// A single navigation column in the multi-pane settings layout.
 ///
 /// Each column corresponds to one meaningful level of the settings
 /// navigation hierarchy — the top-level menu, a category's sub-menu, a
 /// detail page, etc. The [key] is stable per path so Flutter preserves
-/// widget state as the stack grows or shrinks.
+/// widget state as the stack grows or shrinks. The [crumb] declares
+/// how the column appears in the top-bar breadcrumb trail.
+///
+/// [childBuilder] is a lazy factory — the child widget is only
+/// instantiated when the column is rendered. The breadcrumb resolver
+/// derives its trail from the same column list, and some detail
+/// pages read services from GetIt in their constructor; eagerly
+/// building them from a non-rendering context (e.g. to compute a
+/// breadcrumb) would trip those lookups.
 @immutable
 class SettingsColumn {
-  const SettingsColumn({required this.key, required this.child});
+  const SettingsColumn({
+    required this.key,
+    required this.childBuilder,
+    required this.crumb,
+  });
 
   final Key key;
-  final Widget child;
+  final Widget Function() childBuilder;
+  final SettingsColumnCrumb crumb;
 }
 
 /// Signature of a per-feature resolver. Returns the columns to append
@@ -70,9 +154,13 @@ typedef _SubtreeResolver =
       Map<String, String> query,
     );
 
-const SettingsColumn _rootColumn = SettingsColumn(
-  key: ValueKey('/settings'),
-  child: SettingsPage(),
+SettingsColumn _rootColumn() => SettingsColumn(
+  key: const ValueKey('/settings'),
+  childBuilder: () => const SettingsPage(),
+  crumb: const SettingsColumnCrumb(
+    label: SettingsCrumbLabel.root,
+    path: '/settings',
+  ),
 );
 
 /// Builds the ordered list of navigation columns for a given settings
@@ -95,7 +183,7 @@ const SettingsColumn _rootColumn = SettingsColumn(
 /// it in [_subtreeResolvers].
 List<SettingsColumn> resolveSettingsColumnStack(DesktopSettingsRoute? route) {
   if (route == null || route.path == '/settings') {
-    return const <SettingsColumn>[_rootColumn];
+    return <SettingsColumn>[_rootColumn()];
   }
   final path = route.path;
   final params = route.pathParameters;
@@ -104,12 +192,12 @@ List<SettingsColumn> resolveSettingsColumnStack(DesktopSettingsRoute? route) {
   for (final resolve in _subtreeResolvers) {
     final extension = resolve(path, params, query);
     if (extension != null) {
-      if (extension.isEmpty) return const <SettingsColumn>[_rootColumn];
-      return <SettingsColumn>[_rootColumn, ...extension];
+      if (extension.isEmpty) return <SettingsColumn>[_rootColumn()];
+      return <SettingsColumn>[_rootColumn(), ...extension];
     }
   }
 
-  return const <SettingsColumn>[_rootColumn];
+  return <SettingsColumn>[_rootColumn()];
 }
 
 /// Ordered list of subtree resolvers. The first one to return non-null
@@ -138,16 +226,24 @@ List<SettingsColumn>? _resolveAi(
 ) {
   if (!path.startsWith('/settings/ai')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/ai'),
-      child: AiSettingsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/ai'),
+      childBuilder: () => const AiSettingsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.ai,
+        path: '/settings/ai',
+      ),
     ),
   ];
   if (path == '/settings/ai/profiles') {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/ai/profiles'),
-        child: InferenceProfilePage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/ai/profiles'),
+        childBuilder: () => const InferenceProfilePage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.aiProfiles,
+          path: '/settings/ai/profiles',
+        ),
       ),
     );
   }
@@ -161,37 +257,57 @@ List<SettingsColumn>? _resolveSync(
 ) {
   if (!path.startsWith('/settings/sync')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/sync'),
-      child: SyncSettingsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/sync'),
+      childBuilder: () => const SyncSettingsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.sync,
+        path: '/settings/sync',
+      ),
     ),
   ];
   if (path == '/settings/sync/matrix/maintenance') {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/sync/matrix/maintenance'),
-        child: MatrixSyncMaintenancePage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/sync/matrix/maintenance'),
+        childBuilder: () => const MatrixSyncMaintenancePage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.syncMatrixMaintenance,
+          path: '/settings/sync/matrix/maintenance',
+        ),
       ),
     );
   } else if (path == '/settings/sync/backfill') {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/sync/backfill'),
-        child: BackfillSettingsPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/sync/backfill'),
+        childBuilder: () => const BackfillSettingsPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.syncBackfill,
+          path: '/settings/sync/backfill',
+        ),
       ),
     );
   } else if (path == '/settings/sync/stats') {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/sync/stats'),
-        child: SyncStatsPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/sync/stats'),
+        childBuilder: () => const SyncStatsPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.syncStats,
+          path: '/settings/sync/stats',
+        ),
       ),
     );
   } else if (path == '/settings/sync/outbox') {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/sync/outbox'),
-        child: OutboxMonitorPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/sync/outbox'),
+        childBuilder: () => const OutboxMonitorPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.syncOutbox,
+          path: '/settings/sync/outbox',
+        ),
       ),
     );
   }
@@ -205,9 +321,13 @@ List<SettingsColumn>? _resolveLabels(
 ) {
   if (!path.startsWith('/settings/labels')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/labels'),
-      child: LabelsListPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/labels'),
+      childBuilder: () => const LabelsListPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.labels,
+        path: '/settings/labels',
+      ),
     ),
   ];
   if (path.startsWith('/settings/labels/create')) {
@@ -218,7 +338,11 @@ List<SettingsColumn>? _resolveLabels(
         // text controller when the user navigates between different
         // `?name=` presets.
         key: ValueKey('/settings/labels/create?name=${initialName ?? ''}'),
-        child: LabelDetailsPage(initialName: initialName),
+        childBuilder: () => LabelDetailsPage(initialName: initialName),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.labelsCreate,
+          path: '/settings/labels/create',
+        ),
       ),
     );
   } else if (params.containsKey('labelId')) {
@@ -226,7 +350,11 @@ List<SettingsColumn>? _resolveLabels(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/labels/$labelId'),
-        child: LabelDetailsPage(labelId: labelId),
+        childBuilder: () => LabelDetailsPage(labelId: labelId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.labelsEdit,
+          path: '/settings/labels/$labelId',
+        ),
       ),
     );
   }
@@ -240,16 +368,24 @@ List<SettingsColumn>? _resolveCategories(
 ) {
   if (!path.startsWith('/settings/categories')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/categories'),
-      child: new_categories.CategoriesListPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/categories'),
+      childBuilder: () => const new_categories.CategoriesListPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.categories,
+        path: '/settings/categories',
+      ),
     ),
   ];
   if (path.startsWith('/settings/categories/create')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/categories/create'),
-        child: new_category_details.CategoryDetailsPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/categories/create'),
+        childBuilder: () => const new_category_details.CategoryDetailsPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.categoriesCreate,
+          path: '/settings/categories/create',
+        ),
       ),
     );
   } else if (params.containsKey('categoryId') &&
@@ -258,8 +394,12 @@ List<SettingsColumn>? _resolveCategories(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/categories/$categoryId'),
-        child: new_category_details.CategoryDetailsPage(
+        childBuilder: () => new_category_details.CategoryDetailsPage(
           categoryId: categoryId,
+        ),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.categoriesEdit,
+          path: '/settings/categories/$categoryId',
         ),
       ),
     );
@@ -285,7 +425,11 @@ List<SettingsColumn>? _resolveProjects(
         key: ValueKey(
           '/settings/projects/create?categoryId=${categoryId ?? ''}',
         ),
-        child: ProjectCreatePage(categoryId: categoryId),
+        childBuilder: () => ProjectCreatePage(categoryId: categoryId),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.projectsCreate,
+          path: '/settings/projects/create',
+        ),
       ),
     ];
   }
@@ -294,9 +438,13 @@ List<SettingsColumn>? _resolveProjects(
     return [
       SettingsColumn(
         key: ValueKey('/settings/projects/$projectId'),
-        child: ProjectDetailPage(
+        childBuilder: () => ProjectDetailPage(
           projectId: projectId,
           categoryId: query['categoryId'],
+        ),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.projectsEdit,
+          path: '/settings/projects/$projectId',
         ),
       ),
     ];
@@ -311,16 +459,24 @@ List<SettingsColumn>? _resolveDashboards(
 ) {
   if (!path.startsWith('/settings/dashboards')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/dashboards'),
-      child: DashboardSettingsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/dashboards'),
+      childBuilder: () => const DashboardSettingsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.dashboards,
+        path: '/settings/dashboards',
+      ),
     ),
   ];
   if (path.startsWith('/settings/dashboards/create')) {
     columns.add(
-      SettingsColumn(
-        key: const ValueKey('/settings/dashboards/create'),
-        child: CreateDashboardPage(),
+      const SettingsColumn(
+        key: ValueKey('/settings/dashboards/create'),
+        childBuilder: CreateDashboardPage.new,
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.dashboardsCreate,
+          path: '/settings/dashboards/create',
+        ),
       ),
     );
   } else if (params.containsKey('dashboardId')) {
@@ -328,7 +484,11 @@ List<SettingsColumn>? _resolveDashboards(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/dashboards/$dashboardId'),
-        child: EditDashboardPage(dashboardId: dashboardId),
+        childBuilder: () => EditDashboardPage(dashboardId: dashboardId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.dashboardsEdit,
+          path: '/settings/dashboards/$dashboardId',
+        ),
       ),
     );
   }
@@ -342,16 +502,24 @@ List<SettingsColumn>? _resolveMeasurables(
 ) {
   if (!path.startsWith('/settings/measurables')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/measurables'),
-      child: MeasurablesPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/measurables'),
+      childBuilder: () => const MeasurablesPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.measurables,
+        path: '/settings/measurables',
+      ),
     ),
   ];
   if (path.startsWith('/settings/measurables/create')) {
     columns.add(
-      SettingsColumn(
-        key: const ValueKey('/settings/measurables/create'),
-        child: CreateMeasurablePage(),
+      const SettingsColumn(
+        key: ValueKey('/settings/measurables/create'),
+        childBuilder: CreateMeasurablePage.new,
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.measurablesCreate,
+          path: '/settings/measurables/create',
+        ),
       ),
     );
   } else if (params.containsKey('measurableId')) {
@@ -359,7 +527,11 @@ List<SettingsColumn>? _resolveMeasurables(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/measurables/$measurableId'),
-        child: EditMeasurablePage(measurableId: measurableId),
+        childBuilder: () => EditMeasurablePage(measurableId: measurableId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.measurablesEdit,
+          path: '/settings/measurables/$measurableId',
+        ),
       ),
     );
   }
@@ -373,27 +545,40 @@ List<SettingsColumn>? _resolveHabits(
 ) {
   if (!path.startsWith('/settings/habits')) return null;
   // The `search` variant swaps the habits list for a search-seeded
-  // variant; it doesn't add a new column.
+  // variant; it doesn't add a new column. The crumb still reads as
+  // the plain Habits entry, and links back to the clean list.
   if (path.startsWith('/settings/habits/search') &&
       params.containsKey('searchTerm')) {
     return [
       SettingsColumn(
         key: ValueKey('/settings/habits/search/${params['searchTerm']}'),
-        child: HabitsPage(initialSearchTerm: params['searchTerm']),
+        childBuilder: () => HabitsPage(initialSearchTerm: params['searchTerm']),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.habits,
+          path: '/settings/habits',
+        ),
       ),
     ];
   }
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/habits'),
-      child: HabitsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/habits'),
+      childBuilder: () => const HabitsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.habits,
+        path: '/settings/habits',
+      ),
     ),
   ];
   if (path.startsWith('/settings/habits/create')) {
     columns.add(
-      SettingsColumn(
-        key: const ValueKey('/settings/habits/create'),
-        child: CreateHabitPage(),
+      const SettingsColumn(
+        key: ValueKey('/settings/habits/create'),
+        childBuilder: CreateHabitPage.new,
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.habitsCreate,
+          path: '/settings/habits/create',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/habits/by_id') &&
@@ -402,7 +587,11 @@ List<SettingsColumn>? _resolveHabits(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/habits/by_id/$habitId'),
-        child: EditHabitPage(habitId: habitId),
+        childBuilder: () => EditHabitPage(habitId: habitId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.habitsEdit,
+          path: '/settings/habits/by_id/$habitId',
+        ),
       ),
     );
   }
@@ -416,16 +605,24 @@ List<SettingsColumn>? _resolveAgents(
 ) {
   if (!path.startsWith('/settings/agents')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/agents'),
-      child: AgentSettingsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/agents'),
+      childBuilder: () => const AgentSettingsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.agents,
+        path: '/settings/agents',
+      ),
     ),
   ];
   if (path.startsWith('/settings/agents/templates/create')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/agents/templates/create'),
-        child: AgentTemplateDetailPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/agents/templates/create'),
+        childBuilder: () => const AgentTemplateDetailPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.agentsTemplateCreate,
+          path: '/settings/agents/templates/create',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/agents/templates') &&
@@ -434,22 +631,34 @@ List<SettingsColumn>? _resolveAgents(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/agents/templates/$templateId'),
-        child: AgentTemplateDetailPage(templateId: templateId),
+        childBuilder: () => AgentTemplateDetailPage(templateId: templateId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.agentsTemplateEdit,
+          path: '/settings/agents/templates/$templateId',
+        ),
       ),
     );
     if (path.endsWith('/review')) {
       columns.add(
         SettingsColumn(
           key: ValueKey('/settings/agents/templates/$templateId/review'),
-          child: EvolutionReviewPage(templateId: templateId),
+          childBuilder: () => EvolutionReviewPage(templateId: templateId),
+          crumb: SettingsColumnCrumb(
+            label: SettingsCrumbLabel.agentsTemplateReview,
+            path: '/settings/agents/templates/$templateId/review',
+          ),
         ),
       );
     }
   } else if (path.startsWith('/settings/agents/souls/create')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/agents/souls/create'),
-        child: AgentSoulDetailPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/agents/souls/create'),
+        childBuilder: () => const AgentSoulDetailPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.agentsSoulCreate,
+          path: '/settings/agents/souls/create',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/agents/souls') &&
@@ -458,14 +667,22 @@ List<SettingsColumn>? _resolveAgents(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/agents/souls/$soulId'),
-        child: AgentSoulDetailPage(soulId: soulId),
+        childBuilder: () => AgentSoulDetailPage(soulId: soulId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.agentsSoulEdit,
+          path: '/settings/agents/souls/$soulId',
+        ),
       ),
     );
     if (path.endsWith('/review')) {
       columns.add(
         SettingsColumn(
           key: ValueKey('/settings/agents/souls/$soulId/review'),
-          child: SoulEvolutionReviewPage(soulId: soulId),
+          childBuilder: () => SoulEvolutionReviewPage(soulId: soulId),
+          crumb: SettingsColumnCrumb(
+            label: SettingsCrumbLabel.agentsSoulReview,
+            path: '/settings/agents/souls/$soulId/review',
+          ),
         ),
       );
     }
@@ -475,7 +692,11 @@ List<SettingsColumn>? _resolveAgents(
     columns.add(
       SettingsColumn(
         key: ValueKey('/settings/agents/instances/$agentId'),
-        child: AgentDetailPage(agentId: agentId),
+        childBuilder: () => AgentDetailPage(agentId: agentId),
+        crumb: SettingsColumnCrumb(
+          label: SettingsCrumbLabel.agentsInstance,
+          path: '/settings/agents/instances/$agentId',
+        ),
       ),
     );
   }
@@ -488,10 +709,14 @@ List<SettingsColumn>? _resolveFlags(
   Map<String, String> query,
 ) {
   if (!path.startsWith('/settings/flags')) return null;
-  return const [
+  return [
     SettingsColumn(
-      key: ValueKey('/settings/flags'),
-      child: FlagsPage(),
+      key: const ValueKey('/settings/flags'),
+      childBuilder: () => const FlagsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.flags,
+        path: '/settings/flags',
+      ),
     ),
   ];
 }
@@ -502,10 +727,14 @@ List<SettingsColumn>? _resolveTheming(
   Map<String, String> query,
 ) {
   if (!path.startsWith('/settings/theming')) return null;
-  return const [
+  return [
     SettingsColumn(
-      key: ValueKey('/settings/theming'),
-      child: ThemingPage(),
+      key: const ValueKey('/settings/theming'),
+      childBuilder: () => const ThemingPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.theming,
+        path: '/settings/theming',
+      ),
     ),
   ];
 }
@@ -516,10 +745,14 @@ List<SettingsColumn>? _resolveHealthImport(
   Map<String, String> query,
 ) {
   if (!path.startsWith('/settings/health_import')) return null;
-  return const [
+  return [
     SettingsColumn(
-      key: ValueKey('/settings/health_import'),
-      child: HealthImportPage(),
+      key: const ValueKey('/settings/health_import'),
+      childBuilder: () => const HealthImportPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.healthImport,
+        path: '/settings/health_import',
+      ),
     ),
   ];
 }
@@ -533,37 +766,57 @@ List<SettingsColumn>? _resolveAdvanced(
 ) {
   if (!path.startsWith('/settings/advanced')) return null;
   final columns = <SettingsColumn>[
-    const SettingsColumn(
-      key: ValueKey('/settings/advanced'),
-      child: AdvancedSettingsPage(),
+    SettingsColumn(
+      key: const ValueKey('/settings/advanced'),
+      childBuilder: () => const AdvancedSettingsPage(),
+      crumb: const SettingsColumnCrumb(
+        label: SettingsCrumbLabel.advanced,
+        path: '/settings/advanced',
+      ),
     ),
   ];
   if (path.startsWith('/settings/advanced/logging_domains')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/advanced/logging_domains'),
-        child: LoggingSettingsPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/advanced/logging_domains'),
+        childBuilder: () => const LoggingSettingsPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.advancedLoggingDomains,
+          path: '/settings/advanced/logging_domains',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/advanced/about')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/advanced/about'),
-        child: AboutPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/advanced/about'),
+        childBuilder: () => const AboutPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.advancedAbout,
+          path: '/settings/advanced/about',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/advanced/maintenance')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/advanced/maintenance'),
-        child: MaintenancePage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/advanced/maintenance'),
+        childBuilder: () => const MaintenancePage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.advancedMaintenance,
+          path: '/settings/advanced/maintenance',
+        ),
       ),
     );
   } else if (path.startsWith('/settings/advanced/conflicts')) {
     columns.add(
-      const SettingsColumn(
-        key: ValueKey('/settings/advanced/conflicts'),
-        child: ConflictsPage(),
+      SettingsColumn(
+        key: const ValueKey('/settings/advanced/conflicts'),
+        childBuilder: () => const ConflictsPage(),
+        crumb: const SettingsColumnCrumb(
+          label: SettingsCrumbLabel.advancedConflicts,
+          path: '/settings/advanced/conflicts',
+        ),
       ),
     );
     if (path.startsWith('/settings/advanced/conflicts/') &&
@@ -572,7 +825,11 @@ List<SettingsColumn>? _resolveAdvanced(
       columns.add(
         SettingsColumn(
           key: ValueKey('/settings/advanced/conflicts/$conflictId'),
-          child: ConflictDetailRoute(conflictId: conflictId),
+          childBuilder: () => ConflictDetailRoute(conflictId: conflictId),
+          crumb: SettingsColumnCrumb(
+            label: SettingsCrumbLabel.advancedConflictsResolution,
+            path: '/settings/advanced/conflicts/$conflictId',
+          ),
         ),
       );
       if (path.endsWith('/edit')) {
@@ -581,7 +838,11 @@ List<SettingsColumn>? _resolveAdvanced(
             key: ValueKey(
               '/settings/advanced/conflicts/$conflictId/edit',
             ),
-            child: EntryDetailsPage(itemId: conflictId),
+            childBuilder: () => EntryDetailsPage(itemId: conflictId),
+            crumb: SettingsColumnCrumb(
+              label: SettingsCrumbLabel.advancedConflictsEdit,
+              path: '/settings/advanced/conflicts/$conflictId/edit',
+            ),
           ),
         );
       }

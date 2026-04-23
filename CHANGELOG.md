@@ -27,6 +27,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `forceRescan` coalescing plus the `_maybeStartQueuePipeline`
   flag-branching are removed. Settings seed, CI database expectations,
   and the integration-test helpers were trimmed to match.
+- Polished the multi-column Settings layout per the Figma review.
+  `SettingsRootPage` paints its root with
+  `tokens.colors.background.level01` so the tab no longer reads as a
+  darker shade than the task list and the header above it. Each
+  navigation column is now sized to a fixed 360 px minimum, and the
+  last column uses `Expanded` to fill any remaining viewport —
+  letting deep leaves like Agents or Backfill take the rest of the
+  screen while earlier menu columns stay at their natural minimum.
+  A new `_SettingsTopBar` renders above the stack with the settings
+  cog, the active leaf's localised title as the bold heading, and a
+  clickable breadcrumb trail (backed by a new
+  `resolveSettingsBreadcrumbTrail`) that mirrors the route tree —
+  matching the `topbar-breadcrumb` Figma reference. `DesignSystemHeader`
+  drops the nested `Expanded`/`Flexible`/`Flexible` arrangement that
+  split space evenly between title and breadcrumb and squeezed the
+  leading logo; the leading + title segment is now intrinsic-width,
+  the breadcrumb segment is the only `Expanded`, and the trailing
+  cluster stays intrinsic — per Figma `Frame1`.
 - Checklist "Add a new item" pill border now lights up on focus. The
   previous fix that silenced the themed inner outline left the outer
   pill visually static on tap, removing the last affordance that the

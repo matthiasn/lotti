@@ -43,51 +43,54 @@ class DesignSystemHeader extends StatelessWidget {
               horizontal: tokens.spacing.step6,
               vertical: tokens.spacing.step5,
             ),
+            // Flex layout per the Figma reference: leading + title are
+            // intrinsic (no flex) so the logo and heading are rendered
+            // at their natural width; the breadcrumb segment is the
+            // sole flex child, so it expands to fill the entire
+            // remaining row (not a 50/50 split with the title), and
+            // the trailing cluster is intrinsic so it snaps to the
+            // right edge. When no breadcrumbs are supplied the title
+            // itself becomes the flex child so trailing still snaps
+            // right without needing a separate Spacer.
             child: Row(
               children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (leading != null) ...[
-                        leading!,
-                        SizedBox(width: tokens.spacing.step5),
-                      ],
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens.typography.styles.heading.heading2
-                                    .copyWith(
-                                      color: tokens.colors.text.highEmphasis,
-                                    ),
-                              ),
-                            ),
-                            if (breadcrumbs case final breadcrumbs?) ...[
-                              SizedBox(width: tokens.spacing.step5),
-                              Flexible(
-                                child: ClipRect(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: breadcrumbs,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
+                if (leading != null) ...[
+                  leading!,
+                  SizedBox(width: tokens.spacing.step5),
+                ],
+                if (breadcrumbs case final breadcrumbs?) ...[
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.heading.heading2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step5),
+                  Expanded(
+                    child: ClipRect(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: breadcrumbs,
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ] else
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.heading.heading2.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                  ),
                 if (primaryAction != null || hasTrailingCluster)
                   Row(
                     mainAxisSize: MainAxisSize.min,

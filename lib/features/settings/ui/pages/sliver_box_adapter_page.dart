@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lotti/features/settings/ui/pages/settings_column_scope.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -39,16 +40,24 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
 
   @override
   Widget build(BuildContext context) {
+    // The desktop settings multi-column layout renders its own top bar
+    // (title + breadcrumb) above every column, so the per-page header
+    // would be redundant. `SettingsColumnScope` is the signal the root
+    // page inserts around each column child — when it's there, we skip
+    // the `SettingsPageHeader` sliver and give the page its full height.
+    final suppressHeader = SettingsColumnScope.of(context) != null;
+
     return Scaffold(
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[
-          SettingsPageHeader(
-            title: widget.title,
-            subtitle: widget.subtitle,
-            showBackButton: widget.showBackButton,
-            actions: widget.actions,
-          ),
+          if (!suppressHeader)
+            SettingsPageHeader(
+              title: widget.title,
+              subtitle: widget.subtitle,
+              showBackButton: widget.showBackButton,
+              actions: widget.actions,
+            ),
           SliverToBoxAdapter(
             child: Padding(
               padding: widget.padding,

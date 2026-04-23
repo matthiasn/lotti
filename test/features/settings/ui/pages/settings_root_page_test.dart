@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/breadcrumbs/design_system_breadcrumbs.dart';
+import 'package:lotti/features/design_system/components/headers/design_system_header.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/settings_column_stack.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
@@ -28,6 +31,15 @@ const _desktopMediaQuery = MediaQueryData(size: Size(1600, 900));
 
 const _mobileMediaQuery = MediaQueryData(size: Size(800, 600));
 
+/// Placeholder crumb used by the layout component tests. Those tests
+/// exercise overflow, auto-scroll and sizing, not breadcrumb wiring —
+/// so every stub column shares the same dummy crumb. Production
+/// columns declare meaningful crumbs in `settings_column_stack.dart`.
+const _stubCrumb = SettingsColumnCrumb(
+  label: SettingsCrumbLabel.root,
+  path: '/settings',
+);
+
 /// Builds [count] stub columns with keys like `stub-0`. Used by the
 /// layout component tests so we can exercise overflow, auto-scroll
 /// and sizing without pulling in every real settings page's provider
@@ -37,10 +49,11 @@ List<SettingsColumn> _stubColumns(int count) {
     for (var i = 0; i < count; i++)
       SettingsColumn(
         key: ValueKey('stub-$i'),
-        child: ColoredBox(
+        childBuilder: () => ColoredBox(
           color: Colors.grey.shade900,
           child: Center(child: Text('stub-$i')),
         ),
+        crumb: _stubCrumb,
       ),
   ];
 }
@@ -157,8 +170,8 @@ void main() {
     );
 
     testWidgets(
-      'passes the listPaneWidth token into the stack view as its '
-      'column width so existing pane widths are honoured',
+      'renders a DesignSystemHeader top bar above the column stack with '
+      'the settings cog as the leading icon',
       (tester) async {
         navService.isDesktopMode = true;
         navService.desktopSelectedSettingsRoute.value = (
@@ -169,10 +182,84 @@ void main() {
 
         await pumpRoot(tester);
 
-        final stack = tester.widget<SettingsColumnStackView>(
-          find.byType(SettingsColumnStackView),
+        final header = tester.widget<DesignSystemHeader>(
+          find.byType(DesignSystemHeader),
         );
-        expect(stack.columnWidth, defaultListPaneWidth);
+        expect(header.leading, isA<Icon>());
+        final icon = header.leading! as Icon;
+        expect(icon.icon, Icons.settings_rounded);
+        // At the root there's only one crumb so the breadcrumb slot is
+        // suppressed (nothing to chain).
+        expect(header.breadcrumbs, isNull);
+        // And the title reads "Settings" — the root crumb label.
+        expect(header.title, isNotEmpty);
+      },
+    );
+
+    testWidgets(
+      'drilling into a sub-route surfaces a breadcrumb trail in the top '
+      'bar, marks the leaf as selected, and sets the header title to the '
+      'leaf label',
+      (tester) async {
+        navService.isDesktopMode = true;
+        // Use /settings/flags — both the root SettingsPage and the
+        // leaf FlagsPage build without extra provider overrides, so we
+        // exercise the top-bar rendering without pulling in deeper
+        // pages that need their own Riverpod scaffolding.
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings/flags',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+
+        await pumpRoot(tester);
+
+        final header = tester.widget<DesignSystemHeader>(
+          find.byType(DesignSystemHeader),
+        );
+        expect(
+          header.breadcrumbs,
+          isA<DesignSystemBreadcrumbs>(),
+          reason: 'A non-root route should surface a multi-entry breadcrumb',
+        );
+        final breadcrumbs = header.breadcrumbs! as DesignSystemBreadcrumbs;
+        expect(breadcrumbs.items.length, 2);
+        // Last crumb is marked selected and has no chevron.
+        expect(breadcrumbs.items.last.selected, isTrue);
+        expect(breadcrumbs.items.last.showChevron, isFalse);
+        // First crumb is a tappable root link with a chevron.
+        expect(breadcrumbs.items.first.showChevron, isTrue);
+        expect(breadcrumbs.items.first.onPressed, isNotNull);
+        // Header title matches the leaf crumb label.
+        expect(header.title, breadcrumbs.items.last.label);
+      },
+    );
+
+    testWidgets(
+      'paints the root with tokens.colors.background.level01 so the '
+      'settings tab no longer reads darker than the rest of the app',
+      (tester) async {
+        navService.isDesktopMode = true;
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+
+        await pumpRoot(tester);
+
+        final colored = tester.widget<ColoredBox>(
+          find
+              .descendant(
+                of: find.byType(SettingsRootPage),
+                matching: find.byType(ColoredBox),
+              )
+              .first,
+        );
+        expect(
+          colored.color,
+          dsTokensLight.colors.background.level01,
+        );
       },
     );
   });
@@ -183,7 +270,6 @@ void main() {
     Future<void> pumpStack(
       WidgetTester tester, {
       required int columnCount,
-      required double columnWidth,
       required double viewportWidth,
     }) async {
       // The Flutter test surface defaults to 800×600 regardless of what
@@ -199,7 +285,6 @@ void main() {
           Scaffold(
             body: SettingsColumnStackView(
               columns: _stubColumns(columnCount),
-              columnWidth: columnWidth,
             ),
           ),
           mediaQueryData: MediaQueryData(size: Size(viewportWidth, 900)),
@@ -209,28 +294,59 @@ void main() {
     }
 
     testWidgets(
-      'stack that fits the viewport lays out with the last column Expanded '
-      'and no horizontal scroll view',
+      'every column — including the last — is pinned at the fixed '
+      'minimum width on a wide viewport (no last-column Expanded); the '
+      'row left-aligns so a 4K display does not stretch the stack '
+      'across the whole screen',
       (tester) async {
         await pumpStack(
           tester,
           columnCount: 2,
-          columnWidth: 540,
           viewportWidth: 1600,
         );
 
-        // Expanded lives inside the stack view only for the fits branch;
-        // the scroll branch wraps everything in fixed-width SizedBoxes.
+        // No Expanded anywhere inside the stack — every column lives
+        // inside a fixed-width SizedBox.
         expect(
           find.descendant(
             of: find.byType(SettingsColumnStackView),
             matching: find.byType(Expanded),
           ),
-          findsOneWidget,
+          findsNothing,
         );
-        expect(_horizontalScrollView(), findsNothing);
-        expect(find.text('stub-0'), findsOneWidget);
-        expect(find.text('stub-1'), findsOneWidget);
+        // Both stub columns still render, each at the fixed min width.
+        final columnSize0 = tester.getSize(
+          find.byKey(const ValueKey('stub-0')),
+        );
+        final columnSize1 = tester.getSize(
+          find.byKey(const ValueKey('stub-1')),
+        );
+        expect(columnSize0.width, settingsColumnMinWidth);
+        expect(columnSize1.width, settingsColumnMinWidth);
+      },
+    );
+
+    testWidgets(
+      'fixed-width row is left-aligned on wide viewports so the columns '
+      'hug the navigation sidebar instead of drifting toward the centre',
+      (tester) async {
+        await pumpStack(
+          tester,
+          columnCount: 2,
+          viewportWidth: 1600,
+        );
+
+        // Row width = 2 × 360 + 1 divider = 721. With a 1600 px
+        // viewport there's ~879 px of free space; a centred row would
+        // sit at x ≈ 440, a left-aligned one sits at x = 0.
+        final left = tester.getTopLeft(
+          find.byKey(const ValueKey('stub-0')),
+        );
+        expect(
+          left.dx,
+          0,
+          reason: 'First column must hug the left edge on wide viewports',
+        );
       },
     );
 
@@ -238,11 +354,10 @@ void main() {
       'first mount on an already-deep overflowing stack jumps to '
       'maxScrollExtent so the trailing column is visible on arrival',
       (tester) async {
-        // 3 × 540 + 2 dividers = 1622 — does not fit in 1000.
+        // 3 × 360 + 2 dividers = 1082 — does not fit in 1000.
         await pumpStack(
           tester,
           columnCount: 3,
-          columnWidth: 540,
           viewportWidth: 1000,
         );
 
@@ -268,9 +383,8 @@ void main() {
         await pumpStack(
           tester,
           columnCount: 3,
-          columnWidth: 540,
-          // 3 × 540 + 2 dividers = 1622 — does not fit in 1200.
-          viewportWidth: 1200,
+          // 3 × 360 + 2 dividers = 1082 — does not fit in 1000.
+          viewportWidth: 1000,
         );
 
         expect(_horizontalScrollView(), findsOneWidget);
@@ -300,7 +414,6 @@ void main() {
                   outerSetState = setState;
                   return SettingsColumnStackView(
                     columns: _stubColumns(columnCount),
-                    columnWidth: 540,
                   );
                 },
               ),
@@ -310,10 +423,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // 1 column @ 540 fits → no scroll yet.
+        // 1 column @ 360 fits → no scroll yet.
         expect(_horizontalScrollView(), findsNothing);
 
-        // Drill deeper: 3 columns = 1622, overflows 1000.
+        // Drill deeper: 3 columns @ 360 = 1082, overflows 1000.
         outerSetState(() => columnCount = 3);
         await tester.pump(); // commit widget swap
         await tester.pump(); // post-frame scroll schedule
@@ -350,17 +463,19 @@ void main() {
           for (var i = 0; i < 2; i++)
             SettingsColumn(
               key: ValueKey('stub-$i'),
-              child: ColoredBox(
+              childBuilder: () => ColoredBox(
                 color: Colors.grey.shade900,
                 child: Center(child: Text('stub-$i')),
               ),
+              crumb: _stubCrumb,
             ),
           SettingsColumn(
             key: ValueKey('leaf-$keyName'),
-            child: ColoredBox(
+            childBuilder: () => ColoredBox(
               color: Colors.grey.shade700,
               child: Center(child: Text('leaf-$keyName')),
             ),
+            crumb: _stubCrumb,
           ),
         ];
 
@@ -372,7 +487,6 @@ void main() {
                   outerSetState = setState;
                   return SettingsColumnStackView(
                     columns: columnsFor(lastKey),
-                    columnWidth: 540,
                   );
                 },
               ),
@@ -431,7 +545,6 @@ void main() {
                   outerSetState = setState;
                   return SettingsColumnStackView(
                     columns: _stubColumns(columnCount),
-                    columnWidth: 540,
                   );
                 },
               ),
@@ -456,7 +569,6 @@ void main() {
         await pumpStack(
           tester,
           columnCount: 4,
-          columnWidth: 200,
           viewportWidth: 1600,
         );
 
@@ -480,7 +592,6 @@ void main() {
         await pumpStack(
           tester,
           columnCount: 1,
-          columnWidth: 400,
           viewportWidth: 1600,
         );
 
