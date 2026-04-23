@@ -1500,58 +1500,62 @@ void main() {
         'the timeline — gaps in the sequence log may be closed by '
         'events still in the pipe, so asking peers now would race '
         'ahead of the inbound path and emit a bogus request',
-        () async {
-          stubMissingFetch();
-          final coordinator = _MockQueuePipelineCoordinator();
-          when(() => coordinator.isBridgeInFlight).thenReturn(true);
+        () {
+          fakeAsync((async) {
+            stubMissingFetch();
+            final coordinator = _MockQueuePipelineCoordinator();
+            when(() => coordinator.isBridgeInFlight).thenReturn(true);
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
-            queueCoordinator: coordinator,
-          );
-          addTearDown(service.dispose);
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+            );
+            addTearDown(service.dispose);
 
-          service.nudge();
-          await Future<void>.delayed(Duration.zero);
+            service.nudge();
+            async.flushMicrotasks();
 
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
-          verifyNever(
-            () => mockSequenceService.getMissingEntriesWithLimits(
-              limit: any(named: 'limit'),
-              maxRequestCount: any(named: 'maxRequestCount'),
-              maxAge: any(named: 'maxAge'),
-              maxPerHost: any(named: 'maxPerHost'),
-              offset: any(named: 'offset'),
-            ),
-          );
+            verifyNever(() => mockOutboxService.enqueueMessage(any()));
+            verifyNever(
+              () => mockSequenceService.getMissingEntriesWithLimits(
+                limit: any(named: 'limit'),
+                maxRequestCount: any(named: 'maxRequestCount'),
+                maxAge: any(named: 'maxAge'),
+                maxPerHost: any(named: 'maxPerHost'),
+                offset: any(named: 'offset'),
+              ),
+            );
+          });
         },
       );
 
       test(
         'dispatches normally once the bridge walk has concluded',
-        () async {
-          stubMissingFetch();
-          final coordinator = _MockQueuePipelineCoordinator();
-          when(() => coordinator.isBridgeInFlight).thenReturn(false);
+        () {
+          fakeAsync((async) {
+            stubMissingFetch();
+            final coordinator = _MockQueuePipelineCoordinator();
+            when(() => coordinator.isBridgeInFlight).thenReturn(false);
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
-            queueCoordinator: coordinator,
-          );
-          addTearDown(service.dispose);
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              queueCoordinator: coordinator,
+            );
+            addTearDown(service.dispose);
 
-          service.nudge();
-          await Future<void>.delayed(Duration.zero);
+            service.nudge();
+            async.flushMicrotasks();
 
-          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+            verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+          });
         },
       );
 

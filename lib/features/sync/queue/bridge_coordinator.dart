@@ -205,8 +205,13 @@ class BridgeCoordinator {
         // Terminal completion — no rerun cascade to follow. Invoke the
         // completion hook so the backfill service can re-analyse the
         // sequence log and dispatch requests for whatever is still
-        // missing now that the walk has settled.
-        if (!_stopped) {
+        // missing now that the walk has settled. Suppress while an
+        // incomplete-retry timer is queued: the bounded retry is
+        // expected to close the gap imminently, and firing
+        // onBridgeCompleted here would let the backfill service
+        // dispatch ~100-entry requests ahead of a retry that is
+        // about to arrive.
+        if (!_stopped && _incompleteRetryTimer == null) {
           try {
             onBridgeCompleted?.call();
           } catch (error, stackTrace) {

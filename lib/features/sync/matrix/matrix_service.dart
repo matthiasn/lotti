@@ -445,16 +445,18 @@ class MatrixService {
   Future<void> saveRoom(String roomId) async {
     await _roomManager.saveRoomId(roomId);
 
-    // When provisioning saves the room after login, the pipeline may
-    // already be active but not yet attached to this room. Restart its
-    // bindings (un-partials the room, attaches diagnostic signals) and
-    // then drive catch-up through the queue coordinator.
+    // When provisioning saves the room after login, restart the
+    // retained consumer's bindings (un-partials the room, attaches
+    // diagnostic signals) when present, then drive catch-up through
+    // the queue coordinator — which is the mandatory inbound path
+    // regardless of whether a consumer pipeline was constructed.
     final pipeline = _pipeline;
-    if (pipeline == null) return;
 
     unawaited(() async {
       try {
-        await pipeline.start();
+        if (pipeline != null) {
+          await pipeline.start();
+        }
         // The coordinator's `start()` only seeds/prunes for whatever
         // room was current at start time. If the service started
         // before the user picked a room — or the user is now switching
@@ -726,6 +728,11 @@ class MatrixService {
     }
     try {
       await _queueCoordinator.triggerBridge();
+      _loggingService.captureEvent(
+        'forceRescan.triggerBridge invoked',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'forceRescan',
+      );
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -734,11 +741,6 @@ class MatrixService {
         stackTrace: stackTrace,
       );
     }
-    _loggingService.captureEvent(
-      'forceRescan.triggerBridge invoked',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'forceRescan',
-    );
   }
 
   Future<void> retryNow() async {

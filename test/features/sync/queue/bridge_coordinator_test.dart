@@ -623,10 +623,82 @@ void main() {
         // bridgeNow must not rethrow the callback failure.
         await coordinator.bridgeNow();
 
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: endsWith('.onCompleted'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
         // Next call proceeds normally — the in-flight guard was still
         // cleared by the finally block, the callback failure
         // notwithstanding.
         await coordinator.bridgeNow();
+        expect(runner.calls, hasLength(2));
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted is suppressed while an incomplete-retry timer '
+      'is queued — the bounded retry is expected to close the gap, so '
+      'the callback must not nudge the backfill service into '
+      'dispatching ~100-entry requests ahead of the retry',
+      () async {
+        final runner = _RecordingRunner(defaultCompleted: false);
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+          incompleteRetryDelay: const Duration(milliseconds: 50),
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        await coordinator.bridgeNow();
+
+        // Walk reported incomplete → a retry timer was armed → the
+        // completion callback must NOT have fired.
+        expect(completions, 0);
+
+        await coordinator.stop();
+      },
+    );
+
+    test(
+      'onBridgeCompleted fires on the retry that successfully completes '
+      'after a prior incomplete walk',
+      () async {
+        final outcomes = <bool>[false, true];
+        var index = 0;
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            final result = outcomes[index.clamp(0, outcomes.length - 1)];
+            index++;
+            return result;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+          incompleteRetryDelay: const Duration(milliseconds: 10),
+        );
+        var completions = 0;
+        coordinator.onBridgeCompleted = () => completions++;
+
+        await coordinator.bridgeNow();
+
+        // Drain the retry timer + its bridge pass.
+        for (var i = 0; i < 50; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          if (index >= 2 && completions >= 1) break;
+        }
+        expect(index, 2);
+        expect(completions, 1);
+
         await coordinator.stop();
       },
     );

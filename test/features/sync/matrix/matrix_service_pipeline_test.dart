@@ -291,25 +291,26 @@ void main() {
     'saveRoom bootstrap logs and swallows coordinator exceptions so a '
     'transient bridge error does not escape the unawaited background '
     'task into the zone error handler',
-    () async {
-      final coord = buildDefaultCoordinator();
-      when(
-        () => coord.onRoomChanged(any()),
-      ).thenThrow(StateError('room swap failed'));
-      final service = createService(queueCoordinator: coord);
+    () {
+      fakeAsync((async) {
+        final coord = buildDefaultCoordinator();
+        when(
+          () => coord.onRoomChanged(any()),
+        ).thenThrow(StateError('room swap failed'));
+        final service = createService(queueCoordinator: coord);
 
-      await service.saveRoom('!room:server');
-      // Let the unawaited background task run.
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+        unawaited(service.saveRoom('!room:server'));
+        async.elapse(const Duration(milliseconds: 10));
 
-      verify(
-        () => logging.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'saveRoom.bootstrap',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(1);
+        verify(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'saveRoom.bootstrap',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
     },
   );
 
