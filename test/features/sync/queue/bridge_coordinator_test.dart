@@ -561,7 +561,12 @@ void main() {
       'onBridgeCompleted does not fire after stop() even if a walk was '
       'racing with shutdown',
       () async {
-        final runner = _RecordingRunner();
+        final gate = Completer<void>();
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            await gate.future;
+            return true;
+          };
         final coordinator = buildCoordinator(
           resolveRoom: () async => room,
           runner: runner,
@@ -569,8 +574,18 @@ void main() {
         var completions = 0;
         coordinator.onBridgeCompleted = () => completions++;
 
-        await coordinator.stop();
-        await coordinator.bridgeNow();
+        // Start a walk that is gated mid-flight, then request shutdown
+        // while the walk is still running. `stop()` awaits the
+        // in-flight bridge, so release the gate so the walk can
+        // complete — the finally block must observe `_stopped == true`
+        // and skip the completion callback.
+        final walk = coordinator.bridgeNow();
+        await Future<void>.delayed(Duration.zero);
+        final shutdown = coordinator.stop();
+        await Future<void>.delayed(Duration.zero);
+        gate.complete();
+        await walk;
+        await shutdown;
 
         expect(completions, 0);
       },
