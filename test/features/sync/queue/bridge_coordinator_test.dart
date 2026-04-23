@@ -577,6 +577,35 @@ void main() {
     );
 
     test(
+      'isBridgeInFlight is true while a walk is running and clears once '
+      'the walk settles — this is the signal the backfill service '
+      'reads to skip analysis during a walk',
+      () async {
+        final gate = Completer<void>();
+        final runner = _RecordingRunner()
+          ..override = (Room r, BridgeMarker m) async {
+            await gate.future;
+            return true;
+          };
+        final coordinator = buildCoordinator(
+          resolveRoom: () async => room,
+          runner: runner,
+        );
+
+        expect(coordinator.isBridgeInFlight, isFalse);
+
+        final walk = coordinator.bridgeNow();
+        await Future<void>.delayed(Duration.zero);
+        expect(coordinator.isBridgeInFlight, isTrue);
+
+        gate.complete();
+        await walk;
+        expect(coordinator.isBridgeInFlight, isFalse);
+        await coordinator.stop();
+      },
+    );
+
+    test(
       'onBridgeCompleted throwing is caught and logged — the finally '
       'block must not let a callback error bubble out and break the '
       'single-flight reset',

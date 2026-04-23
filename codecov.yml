@@ -11,3 +11,7 @@ ignore:
   - "**/*.freezed.dart"
   - "**/l10n/*.dart"
   - "**/widgetbook/**"
+  # Composition root: pure service wiring exercised end-to-end by
+  # integration tests rather than unit-mocked. Line coverage here is
+  # misleading and churns on every wiring change.
+  - "lib/get_it.dart"
