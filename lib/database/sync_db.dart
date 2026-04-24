@@ -1020,26 +1020,41 @@ class SyncDatabase extends _$SyncDatabase {
   }) async {
     final effectiveNow = now ?? DateTime.now();
     final minAgeCutoff = effectiveNow.subtract(minAge);
-    // Get all missing/requested entries respecting request count and the
-    // debounce window. Holding `minAge` in the query (not post-filter)
-    // avoids loading rows we immediately discard on every process cycle.
+    // All three time/count gates (`minAge`, `maxAge`, `maxRequestCount`) are
+    // pushed into the SQL WHERE so we never materialise rows we'd
+    // immediately discard. The per-host cap is still post-processed because
+    // SQLite plain selects don't have a window-function-free way to
+    // express "top N rows per host"; that post-processing runs on the
+    // bounded result set below.
     final baseQuery = select(syncSequenceLog)
-      ..where(
-        (t) =>
+      ..where((t) {
+        var predicate =
             (t.status.equals(SyncSequenceStatus.missing.index) |
                 t.status.equals(SyncSequenceStatus.requested.index)) &
             t.requestCount.isSmallerThanValue(maxRequestCount) &
-            t.createdAt.isSmallerOrEqualValue(minAgeCutoff),
-      )
+            t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
+        if (maxAge != null) {
+          final maxAgeCutoff = effectiveNow.subtract(maxAge);
+          predicate = predicate & t.createdAt.isBiggerThanValue(maxAgeCutoff);
+        }
+        return predicate;
+      })
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
 
-    var entries = await baseQuery.get();
+    // Cap the SQL fetch so a pathologically large missing-row backlog does
+    // not blow up memory. Without `maxPerHost` the tight `offset + limit`
+    // bound is exactly what the caller wants. With `maxPerHost`, the Dart
+    // post-filter needs to see enough rows per host to pick the first N
+    // per host while still honouring `offset + limit` across hosts — so
+    // we fall back to a generous fixed cap. At production tuning
+    // (`backfillProcessingBatchSize = 100`, `defaultBackfillMaxEntriesPerHost
+    // = 250`), this cap is >> any realistic per-cycle working set; if it
+    // ever saturates, the next periodic cycle picks up the remainder.
+    const perHostFetchCap = 10000;
+    final sqlFetchLimit = maxPerHost != null ? perHostFetchCap : offset + limit;
+    baseQuery.limit(sqlFetchLimit);
 
-    // Apply age filter if specified
-    if (maxAge != null) {
-      final cutoff = effectiveNow.subtract(maxAge);
-      entries = entries.where((e) => e.createdAt.isAfter(cutoff)).toList();
-    }
+    var entries = await baseQuery.get();
 
     // Apply per-host limit if specified
     if (maxPerHost != null) {
