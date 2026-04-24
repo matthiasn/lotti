@@ -34,6 +34,7 @@ class BackfillRequestService {
     int? maxBatchSize,
     int? maxRequestCount,
     Duration? maxAge,
+    Duration? missingDebounce,
     int? maxPerHost,
     Duration? amnestyWindow,
   }) : _sequenceLogService = sequenceLogService,
@@ -48,6 +49,7 @@ class BackfillRequestService {
        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
        _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
+       _missingDebounce = missingDebounce ?? SyncTuning.backfillMissingDebounce,
        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost,
        _amnestyWindow = amnestyWindow ?? SyncTuning.backfillAmnestyWindow;
 
@@ -75,6 +77,15 @@ class BackfillRequestService {
   final int _maxBatchSize;
   final int _maxRequestCount;
   final Duration _maxAge;
+
+  /// Grace window after a row is first flagged `missing` by gap detection
+  /// before it becomes eligible for an automatic backfill request — see
+  /// [SyncTuning.backfillMissingDebounce] for the rationale. Applied only
+  /// to the bounded automatic path (the periodic timer and `nudge()`,
+  /// which both pass `useLimits: true`). A user-initiated full backfill
+  /// via [processFullBackfill] explicitly bypasses the debounce so
+  /// "request now" is not silently held back for 10 minutes.
+  final Duration _missingDebounce;
   final int _maxPerHost;
   final Duration _amnestyWindow;
 
@@ -435,11 +446,17 @@ class BackfillRequestService {
 
     while (selected.length < _maxBatchSize) {
       final remaining = _maxBatchSize - selected.length;
+      // `useLimits` doubles as the automatic/manual switch: the periodic
+      // timer and `nudge()` both pass `true`; only `processFullBackfill`'s
+      // explicit user-triggered path passes `false`. Apply the debounce
+      // only on automatic paths so a user who presses "request missing
+      // now" is not silently held back for 10 minutes.
       final page = useLimits
           ? await _sequenceLogService.getMissingEntriesWithLimits(
               limit: remaining,
               maxRequestCount: _maxRequestCount,
               maxAge: _maxAge,
+              minAge: _missingDebounce,
               maxPerHost: _maxPerHost,
               offset: offset,
             )

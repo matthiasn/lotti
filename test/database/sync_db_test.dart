@@ -1054,6 +1054,87 @@ void main() {
       expect(missing.first.counter, 1);
     });
 
+    test(
+      'getMissingEntries honors minAge — rows created more recently '
+      'than now-minAge are held back so a short-lived gap caused by '
+      'out-of-order priority messages can resolve via standard sync '
+      'before backfill fires',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+        final now = DateTime(2024, 1, 2, 12);
+
+        // Fresh: 1 minute old — within the 10-minute debounce window.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(const Duration(minutes: 1))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 1))),
+          ),
+        );
+        // Ripe: 15 minutes old — past the window.
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(2),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(const Duration(minutes: 15))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 15))),
+          ),
+        );
+
+        final ripe = await database.getMissingEntries(
+          minAge: const Duration(minutes: 10),
+          now: now,
+        );
+        expect(ripe, hasLength(1));
+        expect(ripe.single.counter, 2);
+
+        // Without debounce, both rows are eligible. Ordering is by
+        // created_at ASC, so the older row (counter 2) comes first.
+        final all = await database.getMissingEntries(now: now);
+        expect(all.map((e) => e.counter), [2, 1]);
+      },
+    );
+
+    test(
+      'getMissingEntriesWithLimits honors minAge alongside the maxAge / '
+      'maxPerHost gates',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+        final now = DateTime(2024, 1, 2, 12);
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(1),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(const Duration(minutes: 1))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 1))),
+          ),
+        );
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(2),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(now.subtract(const Duration(minutes: 15))),
+            updatedAt: Value(now.subtract(const Duration(minutes: 15))),
+          ),
+        );
+
+        final ripe = await database.getMissingEntriesWithLimits(
+          minAge: const Duration(minutes: 10),
+          now: now,
+        );
+        expect(ripe, hasLength(1));
+        expect(ripe.single.counter, 2);
+      },
+    );
+
     test('updateSequenceStatus updates status', () async {
       final database = db!;
       const hostId = 'host-1';

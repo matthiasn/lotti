@@ -903,15 +903,20 @@ class SyncSequenceLogService {
 
   /// Get entries marked as missing or requested that haven't exceeded
   /// the maximum request count, for sending backfill requests.
+  ///
+  /// [minAge] defers returning rows freshly flagged as missing for that long
+  /// — see [SyncDatabase.getMissingEntries] for the rationale.
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
     int offset = 0,
+    Duration minAge = Duration.zero,
   }) {
     return _syncDatabase.getMissingEntries(
       limit: limit,
       maxRequestCount: maxRequestCount,
       offset: offset,
+      minAge: minAge,
     );
   }
 
@@ -1369,10 +1374,14 @@ class SyncSequenceLogService {
 
   /// Get missing entries with age and per-host limits for automatic backfill.
   /// This is used for bounded automatic backfill that only looks at recent gaps.
+  ///
+  /// [minAge] defers rows freshly flagged as missing — see
+  /// [SyncDatabase.getMissingEntriesWithLimits] for the rationale.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
     Duration? maxAge,
+    Duration minAge = Duration.zero,
     int? maxPerHost,
     int offset = 0,
   }) {
@@ -1380,6 +1389,7 @@ class SyncSequenceLogService {
       limit: limit,
       maxRequestCount: maxRequestCount,
       maxAge: maxAge,
+      minAge: minAge,
       maxPerHost: maxPerHost,
       offset: offset,
     );

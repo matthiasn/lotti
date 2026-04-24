@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -188,6 +189,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -205,6 +207,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -219,6 +222,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -227,6 +231,98 @@ void main() {
         service.dispose();
       });
     });
+
+    test(
+      'passes missingDebounce (from SyncTuning) to the sequence log so '
+      'rows freshly detected as missing are held back for 10 minutes — '
+      'lets the standard sync path deliver out-of-order entries before '
+      'backfill fires',
+      () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(seconds: 10),
+          );
+
+          when(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: any(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          service.start();
+          async
+            ..elapse(const Duration(seconds: 10))
+            ..flushMicrotasks();
+
+          verify(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: SyncTuning.backfillMissingDebounce,
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).called(1);
+
+          service.dispose();
+        });
+      },
+    );
+
+    test(
+      'processFullBackfill bypasses the debounce — a user-initiated '
+      'full backfill must not be silently held back for 10 minutes',
+      () async {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+        );
+
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await service.processFullBackfill();
+
+        // getMissingEntries (not the WithLimits variant) is called without
+        // any minAge — the manual path does NOT debounce.
+        verify(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        );
+      },
+    );
 
     test('sends backfill requests for missing entries', () {
       fakeAsync((async) {
@@ -249,6 +345,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -308,6 +405,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -349,6 +447,7 @@ void main() {
             limit: maxBatch,
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -377,6 +476,7 @@ void main() {
             limit: maxBatch,
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -402,6 +502,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -444,6 +545,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -492,6 +594,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -515,6 +618,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -538,6 +642,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -627,6 +732,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -662,6 +768,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -693,6 +800,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -750,6 +858,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -798,6 +907,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
@@ -1476,6 +1586,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
             maxPerHost: any(named: 'maxPerHost'),
             offset: any(named: 'offset'),
           ),
