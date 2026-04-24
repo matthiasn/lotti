@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -293,28 +294,52 @@ class ProjectRepository {
       );
     }
 
-    // No existing link — just create the new project link
-    final now = DateTime.now();
-    final link = EntryLink.project(
-      id: uuid.v1(),
-      fromId: projectId,
-      toId: taskId,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: await _vectorClockService.getNextVectorClock(),
-    );
+    // No existing link — just create the new project link.
+    //
+    // Wrapped in a VC scope: if [upsertEntryLink] returns 0 (no-op / unchanged
+    // row) the scope releases, the burn handler broadcasts a proactive
+    // `SyncBackfillResponse(unresolvable=true)`, and peers close the gap on
+    // the live event stream. Without this wrap, the reserved counter would
+    // burn silently and receivers would only converge via reactive backfill.
+    return _vectorClockService.withVcScope<bool>(
+      () async {
+        final now = DateTime.now();
+        final link = EntryLink.project(
+          id: uuid.v1(),
+          fromId: projectId,
+          toId: taskId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: await _vectorClockService.getNextVectorClock(),
+        );
 
-    final res = await _journalDb.upsertEntryLink(link);
-    if (res != 0) {
-      _updateNotifications.notify({
-        projectId,
-        taskId,
-        projectNotification,
-        projectEntityUpdateNotification(projectId),
-      });
-      await _enqueueLinkSync(link, SyncEntryStatus.initial);
-    }
-    return res != 0;
+        final res = await _journalDb.upsertEntryLink(link);
+        if (res == 0) return false;
+        _updateNotifications.notify({
+          projectId,
+          taskId,
+          projectNotification,
+          projectEntityUpdateNotification(projectId),
+        });
+        try {
+          await _enqueueLinkSync(link, SyncEntryStatus.initial);
+        } catch (error, stackTrace) {
+          // Commit-on-write invariant: the link row is already persisted, so
+          // the VC counter is claimed on disk — an outbox failure must not
+          // release the reservation.
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after linkTaskToProject; '
+            'VC already committed',
+            error: error,
+            stackTrace: stackTrace,
+            subDomain: 'linkTaskToProject.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (ok) => ok,
+    );
   }
 
   /// Removes a task from its project.
@@ -386,57 +411,93 @@ class ProjectRepository {
     required String projectId,
     required String taskId,
   }) async {
-    final now = DateTime.now();
-    final deletedLink = await _prepareDeletedLink(oldLink, now);
-    final newLink = EntryLink.project(
-      id: uuid.v1(),
-      fromId: projectId,
-      toId: taskId,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: await _vectorClockService.getNextVectorClock(),
+    // Wrap BOTH reservations (delete-link VC + new-link VC) in a single
+    // scope so a rolled-back transaction releases both. Nested reservations
+    // from [_prepareDeletedLink] attach automatically via the zone-local
+    // scope.
+    return _vectorClockService.withVcScope<bool>(
+      () async {
+        final now = DateTime.now();
+        final deletedLink = await _prepareDeletedLink(oldLink, now);
+        final newLink = EntryLink.project(
+          id: uuid.v1(),
+          fromId: projectId,
+          toId: taskId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: await _vectorClockService.getNextVectorClock(),
+        );
+
+        // Both writes in one transaction — if either fails, both roll back.
+        final success = await _journalDb.transaction(() async {
+          final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
+          if (deleteRes == 0) return false;
+          final insertRes = await _journalDb.upsertEntryLink(newLink);
+          return insertRes != 0;
+        });
+
+        if (!success) return false;
+
+        _updateNotifications.notify({
+          oldLink.fromId,
+          oldLink.toId,
+          projectId,
+          taskId,
+          projectNotification,
+          projectEntityUpdateNotification(oldLink.fromId),
+          projectEntityUpdateNotification(projectId),
+        });
+        try {
+          await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
+          await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after _relinkTask; VCs already committed',
+            error: error,
+            stackTrace: stackTrace,
+            subDomain: '_relinkTask.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (ok) => ok,
     );
-
-    // Both writes in one transaction — if either fails, both roll back
-    final success = await _journalDb.transaction(() async {
-      final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
-      if (deleteRes == 0) return false;
-      final insertRes = await _journalDb.upsertEntryLink(newLink);
-      return insertRes != 0;
-    });
-
-    if (!success) return false;
-
-    // Side effects only after successful commit
-    _updateNotifications.notify({
-      oldLink.fromId,
-      oldLink.toId,
-      projectId,
-      taskId,
-      projectNotification,
-      projectEntityUpdateNotification(oldLink.fromId),
-      projectEntityUpdateNotification(projectId),
-    });
-    await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
-    await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
-    return true;
   }
 
   Future<bool> _softDeleteLink(EntryLink link) async {
-    final now = DateTime.now();
-    final deleted = await _prepareDeletedLink(link, now);
-    final res = await _journalDb.upsertEntryLink(deleted);
-    if (res == 0) return false;
-    _updateNotifications.notify({
-      link.fromId,
-      link.toId,
-      projectNotification,
-      projectEntityUpdateNotification(link.fromId),
-    });
-    await _enqueueLinkSync(deleted, SyncEntryStatus.update);
-    return true;
+    return _vectorClockService.withVcScope<bool>(
+      () async {
+        final now = DateTime.now();
+        final deleted = await _prepareDeletedLink(link, now);
+        final res = await _journalDb.upsertEntryLink(deleted);
+        if (res == 0) return false;
+        _updateNotifications.notify({
+          link.fromId,
+          link.toId,
+          projectNotification,
+          projectEntityUpdateNotification(link.fromId),
+        });
+        try {
+          await _enqueueLinkSync(deleted, SyncEntryStatus.update);
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after _softDeleteLink; VC already committed',
+            error: error,
+            stackTrace: stackTrace,
+            subDomain: '_softDeleteLink.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (ok) => ok,
+    );
   }
 
+  /// Reserves a VC for the soft-deleted link. Callers invoke this inside a
+  /// [VectorClockService.withVcScope] so the reservation is bound to the
+  /// enclosing write outcome.
   Future<EntryLink> _prepareDeletedLink(EntryLink link, DateTime now) async {
     return link.copyWith(
       deletedAt: now,

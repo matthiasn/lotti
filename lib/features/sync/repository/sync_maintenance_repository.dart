@@ -211,21 +211,29 @@ class SyncMaintenanceRepository {
 
         var processed = 0;
         for (final entity in entities) {
-          final stamped = entity.copyWith(
-            vectorClock: await _vectorClockService.getNextVectorClock(
-              previous: entity.vectorClock,
-            ),
-          );
-          // Enqueue before persisting so the entity still has a null
-          // vector clock on disk if enqueueMessage throws — making the
-          // row retryable on the next backfill run.
-          await _outboxService.enqueueMessage(
-            SyncMessage.agentEntity(
-              agentEntity: stamped,
-              status: SyncEntryStatus.update,
-            ),
-          );
-          await _agentRepository.upsertEntity(stamped);
+          // Each stamping is its own scope — if the outbox enqueue throws
+          // before the upsertEntity commits to disk, the reservation
+          // releases and the burn handler broadcasts an unresolvable hint.
+          // Once upsertEntity lands, the scope commits regardless of later
+          // failures (commit-on-write invariant).
+          await _vectorClockService.withVcScope<void>(() async {
+            final stamped = entity.copyWith(
+              vectorClock: await _vectorClockService.getNextVectorClock(
+                previous: entity.vectorClock,
+              ),
+            );
+            // Enqueue before persisting so the entity still has a null
+            // vector clock on disk if enqueueMessage throws — making the
+            // row retryable on the next backfill run. Any throw here will
+            // propagate and release the reservation via the scope.
+            await _outboxService.enqueueMessage(
+              SyncMessage.agentEntity(
+                agentEntity: stamped,
+                status: SyncEntryStatus.update,
+              ),
+            );
+            await _agentRepository.upsertEntity(stamped);
+          });
 
           processed++;
           onDetailedProgress?.call(processed, total);
@@ -258,19 +266,22 @@ class SyncMaintenanceRepository {
 
         var processed = 0;
         for (final link in links) {
-          final stamped = link.copyWith(
-            vectorClock: await _vectorClockService.getNextVectorClock(
-              previous: link.vectorClock,
-            ),
-          );
-          // Enqueue before persisting — see backfillAgentEntityClocks.
-          await _outboxService.enqueueMessage(
-            SyncMessage.agentLink(
-              agentLink: stamped,
-              status: SyncEntryStatus.update,
-            ),
-          );
-          await _agentRepository.upsertLink(stamped);
+          await _vectorClockService.withVcScope<void>(() async {
+            final stamped = link.copyWith(
+              vectorClock: await _vectorClockService.getNextVectorClock(
+                previous: link.vectorClock,
+              ),
+            );
+            // Enqueue before persisting — see backfillAgentEntityClocks.
+            // A throw here propagates and releases the reservation.
+            await _outboxService.enqueueMessage(
+              SyncMessage.agentLink(
+                agentLink: stamped,
+                status: SyncEntryStatus.update,
+              ),
+            );
+            await _agentRepository.upsertLink(stamped);
+          });
 
           processed++;
           onDetailedProgress?.call(processed, total);

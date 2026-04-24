@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -269,24 +270,44 @@ class JournalRepository {
     final existing = await journalDb.entryLinkById(link.id);
 
     if (existing != null && !_hasChange(existing, link)) {
+      // No VC reserved yet — fast path.
       return false;
     }
 
-    final updated = link.copyWith(
-      updatedAt: DateTime.now(),
-      vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
-    );
+    // Wrap in VC scope: if upsertEntryLink returns 0 (identical row already
+    // exists), release the reservation and let the burn handler broadcast
+    // an unresolvable hint so peers skip the gap instead of round-tripping
+    // via backfill.
+    return getIt<VectorClockService>().withVcScope<bool>(
+      () async {
+        final updated = link.copyWith(
+          updatedAt: DateTime.now(),
+          vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
+        );
 
-    final res = await journalDb.upsertEntryLink(updated);
-    getIt<UpdateNotifications>().notify({link.fromId, link.toId});
-
-    await getIt<OutboxService>().enqueueMessage(
-      SyncMessage.entryLink(
-        entryLink: updated,
-        status: SyncEntryStatus.update,
-      ),
+        final res = await journalDb.upsertEntryLink(updated);
+        if (res == 0) return false;
+        getIt<UpdateNotifications>().notify({link.fromId, link.toId});
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.entryLink(
+              entryLink: updated,
+              status: SyncEntryStatus.update,
+            ),
+          );
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after updateLink; VC already committed',
+            error: error,
+            stackTrace: stackTrace,
+            subDomain: 'updateLink.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (ok) => ok,
     );
-    return res != 0;
   }
 
   bool _hasChange(EntryLink existing, EntryLink incoming) {

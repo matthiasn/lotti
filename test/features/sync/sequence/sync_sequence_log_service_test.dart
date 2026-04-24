@@ -1427,30 +1427,117 @@ void main() {
       ).called(1);
     });
 
-    test('marks entry as unresolvable when unresolvable=true', () async {
-      when(
-        () => mockDb.updateSequenceStatus(
-          any(),
-          any(),
-          any(),
-        ),
-      ).thenAnswer((_) async => 1);
+    test(
+      'upserts an unresolvable row when unresolvable=true and no row '
+      'exists yet — proactive burn broadcasts must land on peers that '
+      'never materialized (hostId, counter)',
+      () async {
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      await service.handleBackfillResponse(
-        hostId: aliceHostId,
-        counter: 3,
-        deleted: false,
-        unresolvable: true,
-      );
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          unresolvable: true,
+        );
 
-      verify(
-        () => mockDb.updateSequenceStatus(
-          aliceHostId,
-          3,
-          SyncSequenceStatus.unresolvable,
-        ),
-      ).called(1);
-    });
+        verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
+        verify(
+          () => mockDb.recordSequenceEntry(
+            any(
+              that: isA<SyncSequenceLogCompanion>()
+                  .having((c) => c.hostId, 'hostId', const Value(aliceHostId))
+                  .having((c) => c.counter, 'counter', const Value(3))
+                  .having(
+                    (c) => c.entryId,
+                    'entryId',
+                    const Value<String?>(null),
+                  )
+                  .having(
+                    (c) => c.status,
+                    'status',
+                    Value(SyncSequenceStatus.unresolvable.index),
+                  ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'unresolvable upsert ignores rows with authoritative success state '
+      "(received / backfilled / deleted) — the originator's hint must "
+      'never downgrade a better outcome obtained through another route',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            entryId: 'existing',
+            status: SyncSequenceStatus.received,
+          ),
+        );
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          unresolvable: true,
+        );
+
+        verifyNever(() => mockDb.recordSequenceEntry(any()));
+        verifyNever(() => mockDb.updateSequenceStatus(any(), any(), any()));
+      },
+    );
+
+    test(
+      'unresolvable upsert clears a stale entryId on an existing row — '
+      'so a lingering covered-VC mapping does not let later verify/reset '
+      'paths reopen the counter',
+      () async {
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            entryId: 'stale-entity',
+            status: SyncSequenceStatus.missing,
+          ),
+        );
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          unresolvable: true,
+        );
+
+        verify(
+          () => mockDb.recordSequenceEntry(
+            any(
+              that: isA<SyncSequenceLogCompanion>()
+                  .having(
+                    (c) => c.entryId,
+                    'entryId',
+                    const Value<String?>(null),
+                  )
+                  .having(
+                    (c) => c.status,
+                    'status',
+                    Value(SyncSequenceStatus.unresolvable.index),
+                  ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'stores entryId hint on missing entry but does not change status',
@@ -4442,6 +4529,45 @@ void main() {
         expect(gaps.length, 2);
         expect(gaps[0], (hostId: aliceHostId, counter: 3));
         expect(gaps[1], (hostId: aliceHostId, counter: 4));
+      },
+    );
+  });
+
+  group('markOwnCounterUnresolvable', () {
+    test(
+      'upserts a row with status=unresolvable and entryId explicitly null '
+      '— clears any stale payload mapping (e.g. from a covered-VC hint) '
+      'so later reset/verify paths do not treat the counter as if it had '
+      'a known payload',
+      () async {
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.markOwnCounterUnresolvable(
+          hostId: aliceHostId,
+          counter: 42,
+        );
+
+        verify(
+          () => mockDb.recordSequenceEntry(
+            any(
+              that: isA<SyncSequenceLogCompanion>()
+                  .having((c) => c.hostId, 'hostId', const Value(aliceHostId))
+                  .having((c) => c.counter, 'counter', const Value(42))
+                  .having(
+                    (c) => c.entryId,
+                    'entryId',
+                    const Value<String?>(null),
+                  )
+                  .having(
+                    (c) => c.status,
+                    'status',
+                    Value(SyncSequenceStatus.unresolvable.index),
+                  ),
+            ),
+          ),
+        ).called(1);
       },
     );
   });

@@ -130,12 +130,24 @@ class BackfillResponseHandler {
   }
 
   /// Send an "unresolvable" backfill response indicating the originating host
-  /// cannot resolve its own counter (e.g., it was superseded before being recorded).
+  /// cannot resolve its own counter (e.g., it was superseded before being
+  /// recorded, burnt, or the payload VC regressed below the counter).
+  ///
+  /// Always called on our own host — the callers in [_processBackfillEntry]
+  /// and [_sendHintOrUnresolvable] gate on `hostId == myHost`. The self-log
+  /// upsert mirrors the broadcast so our own sequence log agrees with what
+  /// peers will write after receiving it (self-echoes are suppressed on the
+  /// Matrix pipeline, so `handleBackfillResponse` never fires for us).
   Future<void> _sendUnresolvableResponse({
     required String hostId,
     required int counter,
     SyncSequencePayloadType? payloadType,
   }) async {
+    await _sequenceLogService.markOwnCounterUnresolvable(
+      hostId: hostId,
+      counter: counter,
+      payloadType: payloadType ?? SyncSequencePayloadType.journalEntity,
+    );
     await _outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
         hostId: hostId,
@@ -434,6 +446,19 @@ class BackfillResponseHandler {
       counter,
     );
 
+    // Own-host requests can ONLY be answered from a direct exact-match row
+    // whose payload VC currently covers the requested counter. Covering by a
+    // later entity is unsound for own-host burns: a burnt counter has no
+    // recorded entity, so any "covering" candidate is necessarily a
+    // DIFFERENT entity and its payload does not carry whatever the burnt
+    // write would have mutated. Attributing that payload to the burnt
+    // counter silently mis-maps state on the requester's side. For own-host
+    // misses we therefore send `unresolvable` immediately — our sequence
+    // log is authoritative for our own counters, so any miss is
+    // definitively a burn.
+    final myHost = await _vectorClockService.getHost();
+    final isOwnHost = myHost != null && hostId == myHost;
+
     if (logEntry != null && logEntry.entryId != null) {
       final payloadType = SyncSequencePayloadType.values.elementAt(
         logEntry.payloadType,
@@ -445,8 +470,7 @@ class BackfillResponseHandler {
       final vcCounter = payloadVc?.vclock[hostId];
 
       // An exact row is only safe to answer from when the current payload VC
-      // still covers the requested counter. Otherwise the row is stale and
-      // should fall back to a verified covering entry, not resend first.
+      // still covers the requested counter. Otherwise the row is stale.
       if (payloadVc != null && (vcCounter == null || vcCounter < counter)) {
         _trace(
           'exact entry VC does not cover counter, rejecting '
@@ -455,6 +479,17 @@ class BackfillResponseHandler {
           'vcCounter=$vcCounter',
           subDomain: 'backfill.exactRejected',
         );
+        if (isOwnHost) {
+          // Own-host: do not attempt covering. The stale row means the VC
+          // regressed or the payload is orphaned — either way, the
+          // counter is unresolvable from our authoritative position.
+          await _sendUnresolvableResponse(
+            hostId: hostId,
+            counter: counter,
+            payloadType: payloadType,
+          );
+          return true;
+        }
         logEntry = await _findVerifiedCoveringEntry(
           hostId: hostId,
           requestedCounter: counter,
@@ -462,22 +497,12 @@ class BackfillResponseHandler {
         );
 
         if (logEntry == null) {
-          final myHost = await _vectorClockService.getHost();
-          if (myHost != null && hostId == myHost) {
-            await _sendUnresolvableResponse(
-              hostId: hostId,
-              counter: counter,
-              payloadType: payloadType,
-            );
-            return true;
-          }
           return false;
         }
       }
     }
 
     if (logEntry == null || logEntry.entryId == null) {
-      // Log whether the entry exists at all vs exists without entryId
       _trace(
         'directLookup miss hostId=$hostId counter=$counter '
         'exists=${logEntry != null} entryId=${logEntry?.entryId} '
@@ -485,10 +510,25 @@ class BackfillResponseHandler {
         subDomain: 'backfill.directLookup',
       );
 
-      // Exact counter not found — try to find a covering entry (a higher
-      // counter for the same host that has a resolved payload). This handles
-      // the superseded scenario: counter 5 was superseded by counter 7, so
-      // we only have (host, 7) in our log, not (host, 5).
+      if (isOwnHost) {
+        // Burn: our sequence log has no entry for this own-host counter,
+        // so no write ever carried it. Covering by a later (necessarily
+        // different) entity would misattribute unrelated state to this
+        // counter on the requester's side — always wrong for own-host
+        // burns. Send unresolvable so the requester marks `status=5` and
+        // skips the covering lookup entirely.
+        _trace(
+          'own-host miss → unresolvable (no covering attempted) '
+          'hostId=$hostId counter=$counter',
+          subDomain: 'backfill.unresolvable',
+        );
+        await _sendUnresolvableResponse(hostId: hostId, counter: counter);
+        return true;
+      }
+
+      // Foreign-host counter: we are only a relay, not the originator. A
+      // best-effort covering hint can still help the requester close the
+      // gap if the covering entity coincidentally matches; otherwise skip.
       final covering = await _findVerifiedCoveringEntry(
         hostId: hostId,
         requestedCounter: counter,
@@ -498,20 +538,8 @@ class BackfillResponseHandler {
       if (covering != null) {
         logEntry = covering;
       } else {
-        // No covering entry found either
-        final myHost = await _vectorClockService.getHost();
-        if (myHost != null && hostId == myHost) {
-          _trace(
-            'own counter not found, sending unresolvable '
-            'hostId=$hostId counter=$counter',
-            subDomain: 'backfill.unresolvable',
-          );
-          await _sendUnresolvableResponse(hostId: hostId, counter: counter);
-          return true;
-        }
-        // Not our counter - ignore, another device might have it
         _trace(
-          'counter not found and not our host, skipping '
+          'foreign-host counter not found, skipping '
           'hostId=$hostId counter=$counter myHost=$myHost',
           subDomain: 'backfill.notFound',
         );
