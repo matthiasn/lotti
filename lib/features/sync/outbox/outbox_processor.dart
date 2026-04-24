@@ -32,37 +32,32 @@ class OutboxProcessor {
     required OutboxRepository repository,
     required OutboxMessageSender messageSender,
     required LoggingService loggingService,
-    int? batchSizeOverride,
     Duration? retryDelayOverride,
     Duration? errorDelayOverride,
     int? maxRetriesOverride,
     Duration? sendTimeoutOverride,
+    Duration? claimLeaseOverride,
     DomainLogger? domainLogger,
   }) : _repository = repository,
        _messageSender = messageSender,
        _loggingService = loggingService,
        _domainLogger = domainLogger,
-       // Only the oldest row is consumed per call — the second entry
-       // is used exclusively as a cheap "hasMore" probe so the drain
-       // loop can schedule the next iteration without a separate
-       // count query. Lowered from 10 because fetching ten rows just
-       // to throw nine away is pure DB waste on every single send.
-       batchSize = batchSizeOverride ?? 2,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =
            maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
-       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
+       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout,
+       claimLease = claimLeaseOverride ?? SyncTuning.outboxClaimLease;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
-  final int batchSize;
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
   final Duration sendTimeout;
+  final Duration claimLease;
 
   void _syncLog(String message, {String? subDomain}) {
     _domainLogger?.log(LogDomains.sync, message, subDomain: subDomain);
@@ -73,33 +68,19 @@ class OutboxProcessor {
   int _lastFailedRepeats = 0;
 
   Future<OutboxProcessingResult> processQueue() async {
-    final pendingItems = await _repository.fetchPending(limit: batchSize);
-    if (pendingItems.isEmpty) {
+    // Atomic claim (pending → sending). Closes the merge-send race: while
+    // we are sending, the row's status is `sending`, so in-flight merges'
+    // `updateOutboxMessage` (which matches `status=pending`) returns
+    // affectedRows=0 and falls through to inserting a fresh row — the
+    // merged content still rides a later Matrix event instead of being
+    // silently overwritten into an already-sent row.
+    final claimedItem = await _repository.claim(leaseDuration: claimLease);
+    if (claimedItem == null) {
       return OutboxProcessingResult.none;
     }
 
-    final nextItem = pendingItems.first;
     try {
-      // Re-read item to get the latest message after any merges that may
-      // have occurred since fetchPending(). This ensures coveredVectorClocks
-      // accumulated during the processing delay are included.
-      final refreshedItem = await _repository.refreshItem(nextItem);
-      if (refreshedItem == null) {
-        // Item was deleted or status changed during processing. Keep the
-        // legacy "item no longer pending" fragment so downstream diagnostics
-        // (and tests) can still spot the skip.
-        _loggingService.captureEvent(
-          'skip subject=${nextItem.subject} - item no longer pending',
-          domain: 'OUTBOX',
-          subDomain: 'outbox.send',
-        );
-        final hasMore = pendingItems.length > 1;
-        return hasMore
-            ? OutboxProcessingResult.schedule(Duration.zero)
-            : OutboxProcessingResult.none;
-      }
-
-      final syncMessage = _decodeMessage(refreshedItem);
+      final syncMessage = _decodeMessage(claimedItem);
       final sendStart = DateTime.now();
       var timedOut = false;
       final success = await _messageSender
@@ -113,22 +94,22 @@ class OutboxProcessor {
           );
 
       if (!success) {
-        final nextAttempts = refreshedItem.retries + 1;
-        await _repository.markRetry(refreshedItem);
+        final nextAttempts = claimedItem.retries + 1;
+        await _repository.markRetry(claimedItem);
         _syncLog(
-          'sendFail subject=${refreshedItem.subject} attempts=$nextAttempts timedOut=$timedOut',
+          'sendFail subject=${claimedItem.subject} attempts=$nextAttempts timedOut=$timedOut',
           subDomain: 'outbox.retry',
         );
         // Track repeated failures for quick visibility on head-of-queue pins.
-        if (_lastFailedSubject == refreshedItem.subject) {
+        if (_lastFailedSubject == claimedItem.subject) {
           _lastFailedRepeats++;
         } else {
-          _lastFailedSubject = refreshedItem.subject;
+          _lastFailedSubject = claimedItem.subject;
           _lastFailedRepeats = 1;
         }
         try {
           _loggingService.captureEvent(
-            'sendFailed subject=${refreshedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
+            'sendFailed subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
             domain: 'OUTBOX',
             subDomain: 'retry',
           );
@@ -136,7 +117,7 @@ class OutboxProcessor {
         if (nextAttempts >= maxRetriesForDiagnostics) {
           try {
             _loggingService.captureEvent(
-              'retryCapReached subject=${refreshedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
+              'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
               domain: 'OUTBOX',
               subDomain: 'retry.cap',
             );
@@ -147,22 +128,22 @@ class OutboxProcessor {
         return OutboxProcessingResult.schedule(retryDelay);
       }
 
-      await _repository.markSent(refreshedItem);
+      await _repository.markSent(claimedItem);
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
+      final hasMore = await _repository.hasMorePending();
       _loggingService.captureEvent(
-        'sent type=${syncMessage.runtimeType} subject=${refreshedItem.subject} '
-        'retries=${refreshedItem.retries} ms=$elapsedMs '
-        'pending=${pendingItems.length}',
+        'sent type=${syncMessage.runtimeType} subject=${claimedItem.subject} '
+        'retries=${claimedItem.retries} ms=$elapsedMs '
+        'pending=${hasMore ? 2 : 1}',
         domain: 'OUTBOX',
         subDomain: 'outbox.send',
       );
       // Reset repeat tracker on success for this subject.
-      if (_lastFailedSubject == refreshedItem.subject) {
+      if (_lastFailedSubject == claimedItem.subject) {
         _lastFailedSubject = null;
         _lastFailedRepeats = 0;
       }
 
-      final hasMore = pendingItems.length > 1;
       return hasMore
           ? OutboxProcessingResult.schedule(Duration.zero)
           : OutboxProcessingResult.none;
@@ -173,17 +154,17 @@ class OutboxProcessor {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
-      final nextAttempts = nextItem.retries + 1;
-      await _repository.markRetry(nextItem);
-      if (_lastFailedSubject == nextItem.subject) {
+      final nextAttempts = claimedItem.retries + 1;
+      await _repository.markRetry(claimedItem);
+      if (_lastFailedSubject == claimedItem.subject) {
         _lastFailedRepeats++;
       } else {
-        _lastFailedSubject = nextItem.subject;
+        _lastFailedSubject = claimedItem.subject;
         _lastFailedRepeats = 1;
       }
       try {
         _loggingService.captureEvent(
-          'sendException subject=${nextItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
+          'sendException subject=${claimedItem.subject} attempts=$nextAttempts repeats=$_lastFailedRepeats backoffMs=${errorDelay.inMilliseconds}',
           domain: 'OUTBOX',
           subDomain: 'retry',
         );
@@ -191,7 +172,7 @@ class OutboxProcessor {
       if (nextAttempts >= maxRetriesForDiagnostics) {
         try {
           _loggingService.captureEvent(
-            'retryCapReached subject=${nextItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
+            'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
             domain: 'OUTBOX',
             subDomain: 'retry.cap',
           );

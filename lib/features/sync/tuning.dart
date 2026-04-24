@@ -80,6 +80,12 @@ class SyncTuning {
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops
   static const Duration outboxSendTimeout = Duration(seconds: 20); // Matrix RTT
+  /// Lease duration for an atomically claimed outbox row. If the claiming
+  /// worker crashes mid-send and does not release the row (markSent/markRetry),
+  /// another worker can re-claim the row once this lease expires. Must stay
+  /// comfortably above [outboxSendTimeout] so an in-flight send is never
+  /// stolen from a healthy worker.
+  static const Duration outboxClaimLease = Duration(minutes: 1);
   static const Duration outboxWatchdogInterval = Duration(seconds: 10);
   static const Duration outboxDbNudgeDebounce = Duration(milliseconds: 50);
   static const Duration outboxIdleThreshold = Duration(milliseconds: 1200);

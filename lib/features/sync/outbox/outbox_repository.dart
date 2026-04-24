@@ -1,13 +1,27 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 
 abstract class OutboxRepository {
   Future<List<OutboxItem>> fetchPending({int limit = 10});
 
-  /// Re-fetch an item by ID to get the latest message after potential merges.
-  /// Returns null if the item was deleted or status changed.
-  Future<OutboxItem?> refreshItem(OutboxItem item);
+  /// Atomically claim the next eligible outbox row and transition it from
+  /// `pending` (or an expired `sending` lease) to `sending`. Returns the
+  /// claimed item, or `null` when the queue is empty or the claim races
+  /// another worker.
+  ///
+  /// Using this instead of `fetchPending` closes the merge-send race:
+  /// once the row is `sending`, `updateOutboxMessage` (which matches
+  /// `status=pending`) no longer updates it in place, so in-flight merges
+  /// fall through to inserting a fresh row and the now-merged content is
+  /// still guaranteed to be sent as its own Matrix event.
+  Future<OutboxItem?> claim({Duration? leaseDuration});
+
+  /// Peek whether at least one pending row remains, without transitioning
+  /// status. Used to decide whether the processor should schedule another
+  /// drain pass after a successful send.
+  Future<bool> hasMorePending();
 
   Future<void> markSent(OutboxItem item);
 
@@ -37,13 +51,16 @@ class DatabaseOutboxRepository implements OutboxRepository {
   }
 
   @override
-  Future<OutboxItem?> refreshItem(OutboxItem item) async {
-    final refreshed = await _database.getOutboxItemById(item.id);
-    // Only return if still pending (hasn't been sent/errored by another process)
-    if (refreshed != null && refreshed.status == OutboxStatus.pending.index) {
-      return refreshed;
-    }
-    return null;
+  Future<OutboxItem?> claim({Duration? leaseDuration}) {
+    return _database.claimNextOutboxItem(
+      leaseDuration: leaseDuration ?? SyncTuning.outboxClaimLease,
+    );
+  }
+
+  @override
+  Future<bool> hasMorePending() async {
+    final pending = await _database.oldestOutboxItems(1);
+    return pending.isNotEmpty;
   }
 
   @override

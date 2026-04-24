@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.973] - 2026-04-24
+### Fixed
+- Outbox processor now atomically claims the next row (pending →
+  sending) via `OutboxRepository.claim()` instead of reading it as
+  `pending` and sending it with a stale snapshot. Under the old
+  path, a merge that fired during the ~hundreds of ms of send I/O
+  would `updateOutboxMessage` the row in place (matching
+  `status=pending`), the processor would still send the pre-merge
+  payload and mark the row `sent`, and the merged
+  `coveredVectorClocks` — including the old VC the merge existed
+  to preserve — were silently abandoned. The result was scattered
+  single-counter holes that the receiver flagged as missing and
+  that only backfill could resolve. With the atomic claim the row
+  is `sending` during send, merges' CAS-on-pending update no
+  longer matches, and the merged content is spilled into a fresh
+  pending row that still rides its own Matrix event. The legacy
+  `fetchPending + refreshItem` pair is gone; the actor-side
+  `OutboundQueue` already used the same claim and is now on a
+  shared repository contract.
+
 ## [0.9.972] - 2026-04-21
 ### Changed
 - `BackfillRequestService` now skips analysis+dispatch while the
