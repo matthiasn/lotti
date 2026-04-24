@@ -618,6 +618,40 @@ void main() {
     });
   });
 
+  test(
+    'post-markSent exception does not revive the row via markRetry',
+    () async {
+      // Regression guard: if the post-send observability path (hasMorePending
+      // or the captureEvent log line) throws AFTER markSent has committed,
+      // the exception handler must NOT call markRetry — that would flip the
+      // already-sent row back to pending and cause a duplicate Matrix event.
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLoggingService();
+
+      _stubClaimSequence(repo, [_item(subject: 'host:post-mark')]);
+      when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+      when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+      when(() => sender.send(any())).thenAnswer((_) async => true);
+      // hasMorePending throws post-markSent.
+      when(repo.hasMorePending).thenThrow(Exception('post-send boom'));
+      _stubSilentLogging(log);
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+      );
+
+      final result = await proc.processQueue();
+
+      verify(() => repo.markSent(any())).called(1);
+      verifyNever(() => repo.markRetry(any()));
+      expect(result.shouldSchedule, isTrue);
+      expect(result.nextDelay, Duration.zero);
+    },
+  );
+
   group('claim semantics', () {
     test(
       'uses the message content returned by claim, not an earlier read',

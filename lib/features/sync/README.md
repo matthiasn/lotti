@@ -272,10 +272,12 @@ can, enriches sequence-aware payloads with covered clocks, and nudges a
 
 `OutboxProcessor` then:
 
-1. fetches the pending head of the queue
-2. refreshes it before send so merged metadata is not stale
-3. sends it through `MatrixService`
-4. marks it sent, retryable, or errored in `sync_db`
+1. atomically claims the pending head (`pending` → `sending`) via
+   `OutboxRepository.claim()`, so in-flight merges fall through to a fresh
+   pending row instead of overwriting the claimed row
+2. sends the claimed payload through `MatrixService`
+3. marks it sent, retryable, or errored in `sync_db`
+4. probes `hasMorePending()` to decide immediate continuation
 
 The send path is also nudged by:
 

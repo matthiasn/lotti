@@ -79,6 +79,13 @@ class OutboxProcessor {
       return OutboxProcessingResult.none;
     }
 
+    // Tracks whether the row has already been committed as sent so the
+    // exception handler below does not revive an already-sent row. Without
+    // this, a throw from the post-send observability path (hasMorePending,
+    // captureEvent) would run `markRetry` on a row we've just acknowledged —
+    // re-sending the same Matrix event on the next pass.
+    var markedSent = false;
+
     try {
       final syncMessage = _decodeMessage(claimedItem);
       final sendStart = DateTime.now();
@@ -129,6 +136,7 @@ class OutboxProcessor {
       }
 
       await _repository.markSent(claimedItem);
+      markedSent = true;
       final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
       final hasMore = await _repository.hasMorePending();
       _loggingService.captureEvent(
@@ -154,6 +162,12 @@ class OutboxProcessor {
         subDomain: 'sendNext',
         stackTrace: stackTrace,
       );
+      // If the row is already sent, the exception happened in the post-send
+      // observability path (hasMorePending/logging). Swallow it here — we do
+      // not want markRetry to revive a sent row and cause duplicate delivery.
+      if (markedSent) {
+        return OutboxProcessingResult.schedule(Duration.zero);
+      }
       final nextAttempts = claimedItem.retries + 1;
       await _repository.markRetry(claimedItem);
       if (_lastFailedSubject == claimedItem.subject) {

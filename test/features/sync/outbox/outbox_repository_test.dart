@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
@@ -151,7 +152,11 @@ void main() {
 
         verify(
           () => database.claimNextOutboxItem(
-            leaseDuration: any(named: 'leaseDuration'),
+            // Assert the exact default constant, even though it currently
+            // matches the DB-layer default — the test exists to catch a
+            // drift between the two.
+            // ignore: avoid_redundant_argument_values
+            leaseDuration: SyncTuning.outboxClaimLease,
           ),
         ).called(1);
       });
