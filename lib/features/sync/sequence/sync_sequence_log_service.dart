@@ -972,6 +972,12 @@ class SyncSequenceLogService {
       SyncSequenceLogCompanion(
         hostId: Value(hostId),
         counter: Value(counter),
+        // Explicitly clear any stale entry_id on an existing row (e.g. one
+        // inserted earlier via a covered-VC hint referring to a different
+        // entity). The unresolvable marker must stand alone — a lingering
+        // entry_id would let later reset/verify paths treat the counter as
+        // if it had a known payload and reopen it.
+        entryId: const Value(null),
         payloadType: Value(payloadType.index),
         status: Value(SyncSequenceStatus.unresolvable.index),
         createdAt: Value(now),
@@ -1008,12 +1014,51 @@ class SyncSequenceLogService {
     }
 
     if (unresolvable) {
-      // Mark as unresolvable - the originating host cannot resolve its own
-      // counter. This is permanent; the entry will never be backfilled.
-      await _syncDatabase.updateSequenceStatus(
+      // Mark as unresolvable. Upsert (not update-only) because a proactive
+      // burn broadcast from the originator frequently arrives on a peer
+      // that has not yet materialized `(hostId, counter)` — gap detection
+      // hasn't run for this host yet, no covered-VC hint has referenced
+      // the counter, and so on. An `updateSequenceStatus` call would
+      // silently no-op in that common case and drop the authoritative
+      // marker, sending the peer back into reactive backfill later when
+      // the gap eventually surfaces.
+      //
+      // Do NOT downgrade rows that already have an authoritative success
+      // state (received / backfilled / deleted) — if the peer obtained
+      // the payload through another route, that's strictly better than
+      // the originator's unresolvable hint and should win.
+      final existing = await _syncDatabase.getEntryByHostAndCounter(
         hostId,
         counter,
-        SyncSequenceStatus.unresolvable,
+      );
+      if (existing != null &&
+          (existing.status == SyncSequenceStatus.received.index ||
+              existing.status == SyncSequenceStatus.backfilled.index ||
+              existing.status == SyncSequenceStatus.deleted.index)) {
+        _trace(
+          'handleBackfillResponse: unresolvable ignored for '
+          'hostId=$hostId counter=$counter — existing status='
+          '${SyncSequenceStatus.values[existing.status]}',
+          subDomain: 'sequence.backfillResponse',
+        );
+        return;
+      }
+
+      final now = DateTime.now();
+      await _syncDatabase.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: Value(hostId),
+          counter: Value(counter),
+          // Clear any stale payload mapping for the same reason as in
+          // [markOwnCounterUnresolvable]: the unresolvable marker asserts
+          // no entity is bound to this counter, and a lingering entry_id
+          // would let later reset/verify paths reopen it.
+          entryId: const Value(null),
+          payloadType: Value(payloadType.index),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(existing?.createdAt ?? now),
+          updatedAt: Value(now),
+        ),
       );
 
       _trace(
