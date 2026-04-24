@@ -40,6 +40,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -357,6 +358,48 @@ Future<void> registerSingletons() async {
 
   // Self-healing sync: create backfill services after OutboxService is available
   final outboxService = getIt<OutboxService>();
+
+  // Proactive VC burn broadcast: when a reservation releases (write rejected,
+  // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with
+  // unresolvable=true so peers close the gap on arrival instead of having to
+  // issue a backfill request first. Registered here because the handler has
+  // to fire into OutboxService, which is only now available. The handler is
+  // fire-and-forget by design: it must never throw and must never block the
+  // caller — see VectorClockService._onReleaseBurn.
+  vectorClockService.setBurnHandler((counter) {
+    // Fire-and-forget: schedule the enqueue, swallow failures at the handler
+    // boundary. `unawaited` would still surface errors to the zone; we catch
+    // explicitly so a transient outbox issue doesn't poison the write path
+    // that triggered the burn.
+    Future<void>(() async {
+      try {
+        final host = await vectorClockService.getHost();
+        if (host == null) return;
+        await outboxService.enqueueMessage(
+          SyncMessage.backfillResponse(
+            hostId: host,
+            counter: counter,
+            deleted: false,
+            unresolvable: true,
+          ),
+        );
+        domainLogger.log(
+          LogDomains.sync,
+          'vc.burn.broadcast host=$host counter=$counter',
+          subDomain: 'vc.burn.broadcast',
+        );
+      } catch (error, stackTrace) {
+        domainLogger.error(
+          LogDomains.sync,
+          'vc burn broadcast enqueue failed; counter $counter will fall '
+          'back to reactive backfill resolution',
+          error: error,
+          stackTrace: stackTrace,
+          subDomain: 'vc.burn.broadcast',
+        );
+      }
+    });
+  });
   final backfillResponseHandler = BackfillResponseHandler(
     journalDb: journalDb,
     sequenceLogService: syncSequenceLogService,

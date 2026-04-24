@@ -202,72 +202,55 @@ void main() {
   });
 
   group('VectorClockService reservations', () {
-    test('commit persists the counter advance', () async {
-      await service.setNextAvailableCounter(10);
+    test(
+      'reserveNextVectorClock persists the advance eagerly — a crash '
+      'between reserve and any subsequent entity write can only burn the '
+      'counter, never re-hand it (collision-safe across DB files)',
+      () async {
+        await service.setNextAvailableCounter(10);
 
-      final reservation = await service.reserveNextVectorClock();
-      final host = await service.getHost();
-      expect(reservation.vc.vclock[host], 10);
-      // In-memory bumped synchronously on reserve.
-      expect(await service.getNextAvailableCounter(), 11);
+        final reservation = await service.reserveNextVectorClock();
+        final host = await service.getHost();
+        expect(reservation.vc.vclock[host], 10);
 
-      await reservation.commit();
+        // Counter already persisted BEFORE the caller can run any write.
+        final reloaded = VectorClockService();
+        await reloaded.initialized;
+        expect(await reloaded.getNextAvailableCounter(), 11);
 
-      // Fresh service instance should observe the committed watermark.
-      final reloaded = VectorClockService();
-      await reloaded.initialized;
-      expect(await reloaded.getNextAvailableCounter(), 11);
-    });
+        // commit is a no-op under persist-on-reserve semantics.
+        await reservation.commit();
+        expect(reservation.isPending, isFalse);
+      },
+    );
 
     test(
-      'release rewinds the in-memory watermark and does not persist — '
-      'the next reservation reuses the slot so a rejected write never '
-      'burns a VC counter',
+      'release logs the burn and notifies the burn handler — the counter '
+      'is already on disk (cannot rewind) so proactive broadcast is the '
+      'only way for peers to skip gap detection',
       () async {
         await service.setNextAvailableCounter(20);
+        final burnt = <int>[];
+        service.setBurnHandler(burnt.add);
 
-        final first = await service.reserveNextVectorClock();
-        expect(first.vc.vclock[await service.getHost()], 20);
+        final reservation = await service.reserveNextVectorClock();
+        reservation.release();
+
+        expect(burnt, [20]);
+
+        // In-memory watermark did NOT rewind.
         expect(await service.getNextAvailableCounter(), 21);
 
-        first.release();
-
-        // In-memory rewinds because this was the latest reservation.
-        expect(await service.getNextAvailableCounter(), 20);
-
-        // SettingsDb still reports 20 — nothing was persisted.
+        // Persisted watermark held at 21 through the release.
         final reloaded = VectorClockService();
         await reloaded.initialized;
-        expect(await reloaded.getNextAvailableCounter(), 20);
+        expect(await reloaded.getNextAvailableCounter(), 21);
 
-        // Next reservation reuses counter 20.
-        final second = await service.reserveNextVectorClock();
-        expect(second.vc.vclock[await service.getHost()], 20);
+        service.setBurnHandler(null);
       },
     );
 
-    test(
-      'release does not rewind when a sibling reservation is outstanding — '
-      'the counter is abandoned in-memory so siblings stay intact',
-      () async {
-        await service.setNextAvailableCounter(30);
-
-        final first = await service.reserveNextVectorClock(); // 30
-        final second = await service.reserveNextVectorClock(); // 31
-
-        first.release();
-        // In-memory stays at 32 (second is still outstanding at 31).
-        expect(await service.getNextAvailableCounter(), 32);
-
-        await second.commit();
-        // Commit persists target = 32.
-        final reloaded = VectorClockService();
-        await reloaded.initialized;
-        expect(await reloaded.getNextAvailableCounter(), 32);
-      },
-    );
-
-    test('commit is idempotent', () async {
+    test('commit is idempotent and safe to call before release', () async {
       await service.setNextAvailableCounter(40);
       final reservation = await service.reserveNextVectorClock();
       await reservation.commit();
@@ -275,16 +258,50 @@ void main() {
       expect(reservation.isPending, isFalse);
     });
 
-    test('release after commit is a no-op', () async {
-      await service.setNextAvailableCounter(50);
-      final reservation = await service.reserveNextVectorClock();
-      await reservation.commit();
-      reservation.release(); // no-op
+    test(
+      'release after commit is a no-op — a late release path does not '
+      'double-broadcast a burn for a counter that actually carried a write',
+      () async {
+        await service.setNextAvailableCounter(50);
+        final burnt = <int>[];
+        service.setBurnHandler(burnt.add);
 
-      final reloaded = VectorClockService();
-      await reloaded.initialized;
-      expect(await reloaded.getNextAvailableCounter(), 51);
-    });
+        final reservation = await service.reserveNextVectorClock();
+        await reservation.commit();
+        reservation.release(); // no-op — already finalized by commit
+
+        expect(burnt, isEmpty);
+        final reloaded = VectorClockService();
+        await reloaded.initialized;
+        expect(await reloaded.getNextAvailableCounter(), 51);
+
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
+      'concurrent reservations serialize — no two concurrent callers ever '
+      'observe the same counter between reserve and persist',
+      () async {
+        await service.setNextAvailableCounter(1000);
+
+        final futures = List.generate(
+          10,
+          (_) => service.reserveNextVectorClock(),
+        );
+        final reservations = await Future.wait(futures);
+        final host = await service.getHost();
+
+        final counters = reservations.map((r) => r.vc.vclock[host]!).toList()
+          ..sort();
+        expect(counters, List.generate(10, (i) => 1000 + i));
+        expect(counters.toSet().length, 10); // no duplicates
+
+        for (final r in reservations) {
+          await r.commit();
+        }
+      },
+    );
   });
 
   group('VectorClockService withVcScope', () {
@@ -305,11 +322,13 @@ void main() {
     });
 
     test(
-      'releases every nested reservation on throw — covers the '
-      'applied=false-style burn by rewinding the counter so the next '
-      'write reuses the same slot',
+      'throw inside scope broadcasts a burn for every reserved counter '
+      '— peers can mark them unresolvable on arrival instead of hitting '
+      'the reactive backfill-request round-trip',
       () async {
         await service.setNextAvailableCounter(200);
+        final burnt = <int>[];
+        service.setBurnHandler(burnt.add);
 
         expect(
           () => service.withVcScope<void>(() async {
@@ -319,42 +338,48 @@ void main() {
           }),
           throwsA(isA<StateError>()),
         );
-
-        // Let microtasks drain.
         await Future<void>.delayed(Duration.zero);
 
-        // All reservations released — in-memory watermark rewound to 200.
-        expect(await service.getNextAvailableCounter(), 200);
+        // Both counters burnt — broadcast in reverse (latest first) so
+        // the handler's ordering matches the release order.
+        expect(burnt, [201, 200]);
 
-        // Nothing persisted past the pre-scope watermark.
+        // Persisted watermark stays at 202 (counters already on disk).
         final reloaded = VectorClockService();
         await reloaded.initialized;
-        expect(await reloaded.getNextAvailableCounter(), 200);
+        expect(await reloaded.getNextAvailableCounter(), 202);
+
+        service.setBurnHandler(null);
       },
     );
 
     test(
-      'releases reservations when commitWhen returns false — this is the '
-      'applied=false path from persistence_logic.updateDbEntity where a '
-      'VC comparison rejects an update as stale',
+      'commitWhen=false broadcasts a burn for every reserved counter — '
+      'this is the applied=false path from persistence_logic.updateDbEntity '
+      'when a VC comparison rejects an update as stale',
       () async {
         await service.setNextAvailableCounter(300);
+        final burnt = <int>[];
+        service.setBurnHandler(burnt.add);
 
         final applied = await service.withVcScope<bool>(
           () async {
             await service.getNextVectorClock();
             await service.getNextVectorClock();
-            return false; // simulates applied=false
+            return false;
           },
           commitWhen: (applied) => applied,
         );
 
         expect(applied, isFalse);
-        expect(await service.getNextAvailableCounter(), 300);
+        expect(burnt, [301, 300]);
 
+        // Persisted watermark stays at 302 — nothing we can rewind.
         final reloaded = VectorClockService();
         await reloaded.initialized;
-        expect(await reloaded.getNextAvailableCounter(), 300);
+        expect(await reloaded.getNextAvailableCounter(), 302);
+
+        service.setBurnHandler(null);
       },
     );
 
@@ -362,9 +387,8 @@ void main() {
       await service.setNextAvailableCounter(400);
       final host = await service.getHost();
 
-      // Outer scope commits on success; inner scope with commitWhen=false
-      // would normally release, but because the outer scope controls
-      // finalization here, both reservations commit together.
+      // Outer scope commits on success; inner scope's own commitWhen=false
+      // does not fire because the outermost scope owns finalization.
       final result = await service.withVcScope<int>(() async {
         final outer = await service.getNextVectorClock();
         final innerCounter = await service.withVcScope<int>(
@@ -384,8 +408,8 @@ void main() {
     });
 
     test(
-      'getNextVectorClock outside a scope auto-commits — preserves the '
-      'legacy single-shot behavior for low-stakes callers',
+      'getNextVectorClock outside a scope auto-commits — legacy callers '
+      'that do not opt into a scope still get the eager persist semantics',
       () async {
         await service.setNextAvailableCounter(500);
         await service.getNextVectorClock();
@@ -397,14 +421,13 @@ void main() {
     );
 
     test(
-      'commit-on-write invariant: if the body observes a successful DB '
-      'write and returns normally — even though a sync enqueue after it '
-      'was supposed to throw but was swallowed — the counter commits. '
-      'Rewinding here would let the next reservation re-hand the same '
-      'counter to a different entity, producing a cross-entity collision '
-      'because the first entity already persists the counter on disk.',
+      'commit-on-write invariant: a scoped action that swallows a '
+      'post-DB-write exception still commits — the counter is already '
+      'on disk and the write carried it, so no burn broadcast',
       () async {
         await service.setNextAvailableCounter(600);
+        final burnt = <int>[];
+        service.setBurnHandler(burnt.add);
 
         final applied = await service.withVcScope<bool>(
           () async {
@@ -413,9 +436,8 @@ void main() {
             try {
               throw StateError('transient outbox failure');
             } catch (_) {
-              // Swallow — simulates the commit-on-write pattern in
-              // persistence_logic where the DB write already claimed the
-              // counter on disk.
+              // Swallow — simulates the pattern in persistence_logic where
+              // the DB write already committed the counter to disk.
             }
             return dbWriteSucceeded;
           },
@@ -423,16 +445,36 @@ void main() {
         );
 
         expect(applied, isTrue);
+        expect(burnt, isEmpty);
 
         final reloaded = VectorClockService();
         await reloaded.initialized;
-        expect(
-          await reloaded.getNextAvailableCounter(),
-          601,
-          reason:
-              'write landed — counter must persist despite the swallowed '
-              'enqueue failure',
+        expect(await reloaded.getNextAvailableCounter(), 601);
+
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
+      'burn handler exception does not propagate into the scope finalizer '
+      '— the counter is already burnt; a handler throw must not cascade',
+      () async {
+        await service.setNextAvailableCounter(700);
+        service.setBurnHandler((_) {
+          throw StateError('handler boom');
+        });
+
+        // Should not rethrow the handler's StateError.
+        final applied = await service.withVcScope<bool>(
+          () async {
+            await service.getNextVectorClock();
+            return false;
+          },
+          commitWhen: (applied) => applied,
         );
+        expect(applied, isFalse);
+
+        service.setBurnHandler(null);
       },
     );
   });
