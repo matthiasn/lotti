@@ -130,12 +130,24 @@ class BackfillResponseHandler {
   }
 
   /// Send an "unresolvable" backfill response indicating the originating host
-  /// cannot resolve its own counter (e.g., it was superseded before being recorded).
+  /// cannot resolve its own counter (e.g., it was superseded before being
+  /// recorded, burnt, or the payload VC regressed below the counter).
+  ///
+  /// Always called on our own host — the callers in [_processBackfillEntry]
+  /// and [_sendHintOrUnresolvable] gate on `hostId == myHost`. The self-log
+  /// upsert mirrors the broadcast so our own sequence log agrees with what
+  /// peers will write after receiving it (self-echoes are suppressed on the
+  /// Matrix pipeline, so `handleBackfillResponse` never fires for us).
   Future<void> _sendUnresolvableResponse({
     required String hostId,
     required int counter,
     SyncSequencePayloadType? payloadType,
   }) async {
+    await _sequenceLogService.markOwnCounterUnresolvable(
+      hostId: hostId,
+      counter: counter,
+      payloadType: payloadType ?? SyncSequencePayloadType.journalEntity,
+    );
     await _outboxService.enqueueMessage(
       SyncMessage.backfillResponse(
         hostId: hostId,

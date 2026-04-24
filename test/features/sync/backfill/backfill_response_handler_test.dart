@@ -99,6 +99,18 @@ void main() {
       () => mockSequenceService.getNearestCoveringEntry(any(), any()),
     ).thenAnswer((_) async => null);
 
+    // `_sendUnresolvableResponse` now also writes to our own sequence log so
+    // the local state matches what peers will see after receiving the
+    // broadcast. Stub as a no-op for every test — assertions that care can
+    // still verify the call via `verify(...)`.
+    when(
+      () => mockSequenceService.markOwnCounterUnresolvable(
+        hostId: any(named: 'hostId'),
+        counter: any(named: 'counter'),
+        payloadType: any(named: 'payloadType'),
+      ),
+    ).thenAnswer((_) async {});
+
     handler = BackfillResponseHandler(
       journalDb: mockJournalDb,
       sequenceLogService: mockSequenceService,

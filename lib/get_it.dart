@@ -367,14 +367,24 @@ Future<void> registerSingletons() async {
   // fire-and-forget by design: it must never throw and must never block the
   // caller — see VectorClockService._onReleaseBurn.
   vectorClockService.setBurnHandler((counter) {
-    // Fire-and-forget: schedule the enqueue, swallow failures at the handler
-    // boundary. `unawaited` would still surface errors to the zone; we catch
-    // explicitly so a transient outbox issue doesn't poison the write path
-    // that triggered the burn.
+    // Fire-and-forget: schedule the local-log write + broadcast, swallow
+    // failures at the handler boundary. `unawaited` would still surface
+    // errors to the zone; we catch explicitly so a transient sequence-log
+    // or outbox issue doesn't poison the write path that triggered the
+    // burn.
     Future<void>(() async {
       try {
         final host = await vectorClockService.getHost();
         if (host == null) return;
+        // Record in our OWN sequence log first so our local state matches
+        // what peers will see after receiving the broadcast below. We do
+        // NOT route through handleBackfillResponse because self-echoes are
+        // suppressed on the Matrix pipeline — that handler never fires for
+        // our own message on our own side.
+        await syncSequenceLogService.markOwnCounterUnresolvable(
+          hostId: host,
+          counter: counter,
+        );
         await outboxService.enqueueMessage(
           SyncMessage.backfillResponse(
             hostId: host,
@@ -391,8 +401,8 @@ Future<void> registerSingletons() async {
       } catch (error, stackTrace) {
         domainLogger.error(
           LogDomains.sync,
-          'vc burn broadcast enqueue failed; counter $counter will fall '
-          'back to reactive backfill resolution',
+          'vc burn broadcast failed; counter $counter will fall back to '
+          'reactive backfill resolution',
           error: error,
           stackTrace: stackTrace,
           subDomain: 'vc.burn.broadcast',

@@ -938,6 +938,52 @@ class SyncSequenceLogService {
   ///
   /// This two-phase approach ensures we don't mark entries as backfilled
   /// until we actually have the data locally.
+  /// Mark one of OUR OWN host's counters as permanently unresolvable.
+  ///
+  /// Called by paths that know authoritatively that a counter was assigned by
+  /// our [VectorClockService] but will never carry a Matrix event — burns
+  /// from [VectorClockService.reserveNextVectorClock] that released without
+  /// a matching write, and own-host miss/stale cases in
+  /// `backfill_response_handler` that answer peers with `unresolvable`.
+  ///
+  /// Why an upsert (not just [SyncDatabase.updateSequenceStatus]): the burn
+  /// case usually has no row in our sequence log at all (we never
+  /// `recordSentEntry`-ed the counter), so an update-only call would silently
+  /// no-op. Insert-or-update pins the row to `status=unresolvable` with
+  /// `entry_id` explicitly null — asserting "no entity was ever bound to this
+  /// counter on this host." Subsequent paths that might have otherwise
+  /// inserted the row with the wrong entity_id (covered-VC hints referring
+  /// to our own host, if any skip is ever relaxed) will then see an existing
+  /// authoritative row and leave it alone.
+  ///
+  /// Not wired through [handleBackfillResponse] because that is the handler
+  /// for INCOMING responses, and own-host broadcasts never flow through it
+  /// on the originator — self-echoes are suppressed in the Matrix pipeline.
+  /// Going through the receiver handler on the sender side would misrepresent
+  /// the call's intent and break the moment someone tightens the handler
+  /// contract (e.g. gates it on a pending request).
+  Future<void> markOwnCounterUnresolvable({
+    required String hostId,
+    required int counter,
+    SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
+  }) async {
+    final now = DateTime.now();
+    await _syncDatabase.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(hostId),
+        counter: Value(counter),
+        payloadType: Value(payloadType.index),
+        status: Value(SyncSequenceStatus.unresolvable.index),
+        createdAt: Value(now),
+        updatedAt: Value(now),
+      ),
+    );
+    _trace(
+      'markOwnCounterUnresolvable hostId=$hostId counter=$counter',
+      subDomain: 'sequence.ownUnresolvable',
+    );
+  }
+
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,
