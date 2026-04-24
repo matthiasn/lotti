@@ -278,6 +278,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
         final isWide = isDesktopLayout(context);
         navService.isDesktopMode = isWide;
+        // ignore: avoid_print
+        print(
+          '[DBG] BeamerApp w=${MediaQuery.sizeOf(context).width} '
+          'isWide=$isWide',
+        );
 
         final beamerChildren = [
           Beamer(routerDelegate: navService.tasksDelegate),

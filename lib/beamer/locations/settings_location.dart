@@ -100,6 +100,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
     final path = state.uri.path;
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
+    // ignore: avoid_print
+    print('[DBG] SettingsLocation path=$path isDesktop=$isDesktop');
 
     // On desktop, set the route ValueNotifier and only push the root page.
     // The SettingsRootPage renders the list on the left and routes content

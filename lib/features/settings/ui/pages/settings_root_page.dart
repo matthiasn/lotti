@@ -34,8 +34,9 @@ class SettingsRootPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint(
-      'SettingsRootPage w=${MediaQuery.sizeOf(context).width} '
+    // ignore: avoid_print
+    print(
+      '[DBG] SettingsRootPage.build w=${MediaQuery.sizeOf(context).width} '
       'route=${getIt<NavService>().desktopSelectedSettingsRoute.value?.path}',
     );
     if (!isDesktopLayout(context)) {
