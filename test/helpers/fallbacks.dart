@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -65,6 +66,12 @@ final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
   inferenceProviderType: InferenceProviderType.openAi,
 );
 
+const ConfigFlag fallbackConfigFlag = ConfigFlag(
+  name: 'fallback-flag',
+  description: 'fallback',
+  status: false,
+);
+
 /// Registers all commonly used fallback values for mocktail in one call.
 ///
 /// Call this in `setUpAll()` or `setUp()` instead of scattering individual
@@ -76,6 +83,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
+  registerFallbackValue(fallbackConfigFlag);
 
   // Fake classes from mocks.dart
   registerFallbackValue(FakeMetadata());

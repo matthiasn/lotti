@@ -2345,6 +2345,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solicitar una calificación rápida de sesión al detener un temporizador.';
 
   @override
+  String get configFlagEnableSettingsTree => 'Diseño de árbol de ajustes';
+
+  @override
+  String get configFlagEnableSettingsTreeDescription =>
+      'Cambia los ajustes del escritorio a una navegación en árbol con panel de detalle. Déjalo desactivado para conservar la pila actual de varias columnas.';
+
+  @override
   String get configFlagEnableTooltip =>
       'Habilitar información sobre herramientas';
 
@@ -5247,10 +5254,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAdvancedTitle => 'Configuración avanzada';
 
   @override
+  String get settingsAgentsInstancesSubtitle => 'Agentes en ejecución';
+
+  @override
+  String get settingsAgentsSoulsSubtitle =>
+      'Personalidades duraderas de agentes';
+
+  @override
+  String get settingsAgentsTemplatesSubtitle =>
+      'Plantillas de agentes compartidas';
+
+  @override
   String get settingsAiApiKeys => 'Proveedores de inferencia AI';
 
   @override
   String get settingsAiModels => 'Modelos AI';
+
+  @override
+  String get settingsAiProfilesSubtitle => 'Proveedores y modelos';
+
+  @override
+  String get settingsAiProfilesTitle => 'Perfiles de inferencia';
 
   @override
   String get settingsAiSubtitle =>
@@ -5830,6 +5854,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Temas';
+
+  @override
+  String get settingsV2DisableAction => 'Desactivar Ajustes V2';
+
+  @override
+  String get settingsV2DisableFailed =>
+      'No se pudieron desactivar los Ajustes V2. Inténtalo de nuevo.';
+
+  @override
+  String get settingsV2EmptyStateBody =>
+      'Elige una sección a la izquierda para empezar.';
+
+  @override
+  String get settingsV2ResizeHandleLabel => 'Redimensionar árbol de ajustes';
+
+  @override
+  String get settingsV2UnimplementedTitle => 'Panel aún no disponible';
 
   @override
   String get settingsWhatsNewSubtitle =>

@@ -2341,6 +2341,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Proposer une évaluation rapide de session à l\'arrêt d\'un minuteur.';
 
   @override
+  String get configFlagEnableSettingsTree =>
+      'Mise en page arborescente des paramètres';
+
+  @override
+  String get configFlagEnableSettingsTreeDescription =>
+      'Bascule les paramètres du bureau vers une navigation arborescente avec volet de détail. Laisse-le désactivé pour conserver la pile multi-colonnes actuelle.';
+
+  @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
 
   @override
@@ -5255,10 +5263,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsAdvancedTitle => 'Paramètres avancés';
 
   @override
+  String get settingsAgentsInstancesSubtitle => 'Agents en cours d\'exécution';
+
+  @override
+  String get settingsAgentsSoulsSubtitle => 'Personnalités d\'agents durables';
+
+  @override
+  String get settingsAgentsTemplatesSubtitle => 'Modèles d\'agents partagés';
+
+  @override
   String get settingsAiApiKeys => 'Fournisseurs d\'inférence AI';
 
   @override
   String get settingsAiModels => 'Modèles AI';
+
+  @override
+  String get settingsAiProfilesSubtitle => 'Fournisseurs et modèles';
+
+  @override
+  String get settingsAiProfilesTitle => 'Profils d\'inférence';
 
   @override
   String get settingsAiSubtitle =>
@@ -5839,6 +5862,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Thème';
+
+  @override
+  String get settingsV2DisableAction => 'Désactiver Paramètres V2';
+
+  @override
+  String get settingsV2DisableFailed =>
+      'Impossible de désactiver Paramètres V2. Réessaie.';
+
+  @override
+  String get settingsV2EmptyStateBody =>
+      'Choisis une rubrique à gauche pour commencer.';
+
+  @override
+  String get settingsV2ResizeHandleLabel =>
+      'Redimensionner l\'arborescence des paramètres';
+
+  @override
+  String get settingsV2UnimplementedTitle => 'Volet non encore disponible';
 
   @override
   String get settingsWhatsNewSubtitle =>

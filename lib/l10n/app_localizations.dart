@@ -4056,6 +4056,18 @@ abstract class AppLocalizations {
   /// **'Prompt for a quick session rating when you stop a timer.'**
   String get configFlagEnableSessionRatingsDescription;
 
+  /// No description provided for @configFlagEnableSettingsTree.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings tree layout'**
+  String get configFlagEnableSettingsTree;
+
+  /// No description provided for @configFlagEnableSettingsTreeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch desktop Settings to a tree navigation with a detail pane. Leave off to keep the multi-column stack.'**
+  String get configFlagEnableSettingsTreeDescription;
+
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:
@@ -8974,6 +8986,24 @@ abstract class AppLocalizations {
   /// **'Advanced Settings'**
   String get settingsAdvancedTitle;
 
+  /// No description provided for @settingsAgentsInstancesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Running agents'**
+  String get settingsAgentsInstancesSubtitle;
+
+  /// No description provided for @settingsAgentsSoulsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-lived agent personalities'**
+  String get settingsAgentsSoulsSubtitle;
+
+  /// No description provided for @settingsAgentsTemplatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared agent blueprints'**
+  String get settingsAgentsTemplatesSubtitle;
+
   /// No description provided for @settingsAiApiKeys.
   ///
   /// In en, this message translates to:
@@ -8985,6 +9015,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Models'**
   String get settingsAiModels;
+
+  /// No description provided for @settingsAiProfilesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers and models'**
+  String get settingsAiProfilesSubtitle;
+
+  /// No description provided for @settingsAiProfilesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference Profiles'**
+  String get settingsAiProfilesTitle;
 
   /// No description provided for @settingsAiSubtitle.
   ///
@@ -9972,6 +10014,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Theming'**
   String get settingsThemingTitle;
+
+  /// No description provided for @settingsV2DisableAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable Settings V2'**
+  String get settingsV2DisableAction;
+
+  /// No description provided for @settingsV2DisableFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not disable Settings V2. Please try again.'**
+  String get settingsV2DisableFailed;
+
+  /// No description provided for @settingsV2EmptyStateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a section on the left to begin.'**
+  String get settingsV2EmptyStateBody;
+
+  /// No description provided for @settingsV2ResizeHandleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize settings tree'**
+  String get settingsV2ResizeHandleLabel;
+
+  /// No description provided for @settingsV2UnimplementedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Panel not yet implemented'**
+  String get settingsV2UnimplementedTitle;
 
   /// No description provided for @settingsWhatsNewSubtitle.
   ///

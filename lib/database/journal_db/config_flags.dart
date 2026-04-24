@@ -187,5 +187,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableSettingsTreeFlag,
+      description: 'Enable Settings V2 (tree-nav + detail pane, desktop)?',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }
