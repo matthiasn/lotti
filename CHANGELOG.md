@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.973] - 2026-04-24
 ### Fixed
+- `VectorClockService` now advances its persisted counter only after the
+  associated write + outbox enqueue both succeed. A new reservation API
+  (`reserveNextVectorClock` returning a `VcReservation`, plus a
+  `withVcScope` zone-based wrapper) bumps the in-memory watermark
+  synchronously so concurrent reservations stay collision-free, but
+  `commit` is what persists to `SettingsDb`; `release` rewinds the
+  in-memory watermark when the reservation was the latest. The known
+  burn call sites — `PersistenceLogic.createDbEntity`, `updateDbEntity`,
+  `updateJournalEntity`, `createLink`, plus
+  `AgentSyncService.upsertEntity`/`upsertLink`/`insertLinkExclusive`
+  and the outermost `runInTransaction` — are now wrapped in
+  `withVcScope` so an `applied=false` rejection, a transaction
+  rollback, or an exception anywhere between `getNextVectorClock()` and
+  `outboxService.enqueueMessage()` rolls the counter back instead of
+  burning a gap that only backfill could close. `getNextVectorClock()`
+  stays available for low-stakes callers — outside a scope it still
+  auto-commits; inside one it auto-attaches. Follow-up to the atomic
+  claim fix in this release, which closed the merge-send race but
+  could not help counters burnt before any outbox row was ever created.
 - Outbox processor now atomically claims the next row (pending →
   sending) via `OutboxRepository.claim()` instead of reading it as
   `pending` and sending it with a stale snapshot. Under the old

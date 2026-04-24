@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
 /// Per-chain transaction context, stored in a [Zone] value so that
@@ -69,20 +71,27 @@ class AgentSyncService {
   /// [fromSync] is `true`.
   ///
   /// When called inside [runInTransaction], the outbox enqueue is deferred
-  /// until the outermost transaction commits.
+  /// until the outermost transaction commits. The reserved vector clock is
+  /// also bound to the outer transaction's scope so a rollback rewinds the
+  /// counter without burning a Matrix-event-less slot.
   Future<void> upsertEntity(
     AgentDomainEntity entity, {
     bool fromSync = false,
   }) async {
-    final stamped = fromSync
-        ? entity
-        : entity.copyWith(
-            vectorClock: await _vectorClockService.getNextVectorClock(
-              previous: entity.vectorClock,
-            ),
-          );
-    await _repository.upsertEntity(stamped);
-    if (!fromSync) {
+    if (fromSync) {
+      await _repository.upsertEntity(entity);
+      return;
+    }
+    await _vectorClockService.withVcScope<void>(() async {
+      final stamped = entity.copyWith(
+        vectorClock: await _vectorClockService.getNextVectorClock(
+          previous: entity.vectorClock,
+        ),
+      );
+      await _repository.upsertEntity(stamped);
+      // DB write succeeded — the VC is now baked into the persisted row
+      // and MUST commit. Swallow any outbox failure so the scope's
+      // default-commit-on-normal-return can fire.
       final message = SyncMessage.agentEntity(
         agentEntity: stamped,
         status: SyncEntryStatus.update,
@@ -91,29 +100,38 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _outboxService.enqueueMessage(message);
+        await _enqueuePostWrite(
+          message,
+          subDomain: 'upsertEntity.enqueue',
+        );
       }
-    }
+    });
   }
 
   /// Upsert an [AgentLink] and enqueue a sync message unless [fromSync]
   /// is `true`.
   ///
   /// When called inside [runInTransaction], the outbox enqueue is deferred
-  /// until the outermost transaction commits.
+  /// until the outermost transaction commits. The reserved vector clock is
+  /// also bound to the outer transaction's scope so a rollback rewinds the
+  /// counter without burning a Matrix-event-less slot.
   Future<void> upsertLink(
     AgentLink link, {
     bool fromSync = false,
   }) async {
-    final stamped = fromSync
-        ? link
-        : link.copyWith(
-            vectorClock: await _vectorClockService.getNextVectorClock(
-              previous: link.vectorClock,
-            ),
-          );
-    await _repository.upsertLink(stamped);
-    if (!fromSync) {
+    if (fromSync) {
+      await _repository.upsertLink(link);
+      return;
+    }
+    await _vectorClockService.withVcScope<void>(() async {
+      final stamped = link.copyWith(
+        vectorClock: await _vectorClockService.getNextVectorClock(
+          previous: link.vectorClock,
+        ),
+      );
+      await _repository.upsertLink(stamped);
+      // DB write succeeded — commit-on-write invariant: swallow outbox
+      // failures so the scope still commits.
       final message = SyncMessage.agentLink(
         agentLink: stamped,
         status: SyncEntryStatus.update,
@@ -122,28 +140,36 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _outboxService.enqueueMessage(message);
+        await _enqueuePostWrite(
+          message,
+          subDomain: 'upsertLink.enqueue',
+        );
       }
-    }
+    });
   }
 
   /// Insert an [AgentLink] exclusively — throws a
   /// `DuplicateInsertException` if a unique constraint is violated (e.g. the
   /// partial unique index on `improver_target` links). On success, enqueues a
-  /// sync message unless [fromSync] is `true`.
+  /// sync message unless [fromSync] is `true`. A unique-constraint failure
+  /// rolls back the reserved vector clock via the surrounding scope — the DB
+  /// write never happened, so the counter was never claimed on disk.
   Future<void> insertLinkExclusive(
     AgentLink link, {
     bool fromSync = false,
   }) async {
-    final stamped = fromSync
-        ? link
-        : link.copyWith(
-            vectorClock: await _vectorClockService.getNextVectorClock(
-              previous: link.vectorClock,
-            ),
-          );
-    await _repository.insertLinkExclusive(stamped);
-    if (!fromSync) {
+    if (fromSync) {
+      await _repository.insertLinkExclusive(link);
+      return;
+    }
+    await _vectorClockService.withVcScope<void>(() async {
+      final stamped = link.copyWith(
+        vectorClock: await _vectorClockService.getNextVectorClock(
+          previous: link.vectorClock,
+        ),
+      );
+      await _repository.insertLinkExclusive(stamped);
+      // Insert succeeded — commit-on-write invariant applies.
       final message = SyncMessage.agentLink(
         agentLink: stamped,
         status: SyncEntryStatus.update,
@@ -152,8 +178,36 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _outboxService.enqueueMessage(message);
+        await _enqueuePostWrite(
+          message,
+          subDomain: 'insertLinkExclusive.enqueue',
+        );
       }
+    });
+  }
+
+  /// Run a post-DB-write outbox enqueue that MUST NOT propagate failures.
+  ///
+  /// Once [_repository] has accepted the row, the reserved VC counter is
+  /// baked into the persisted entity. Letting an outbox exception propagate
+  /// out of the surrounding [VectorClockService.withVcScope] would trigger
+  /// a release — re-handing the same counter to a different entity on the
+  /// next reservation (cross-entity collision on disk). Log, swallow,
+  /// return. The gap on receivers is transient and backfill resolves it.
+  Future<void> _enqueuePostWrite(
+    SyncMessage message, {
+    required String subDomain,
+  }) async {
+    try {
+      await _outboxService.enqueueMessage(message);
+    } catch (exception, stackTrace) {
+      getIt<DomainLogger>().error(
+        LogDomains.sync,
+        'outbox enqueue failed after DB write; VC already committed',
+        error: exception,
+        stackTrace: stackTrace,
+        subDomain: subDomain,
+      );
     }
   }
 
@@ -194,28 +248,41 @@ class AgentSyncService {
       }
     }
 
-    // Outermost: create an isolated context in a new zone.
+    // Outermost: create an isolated context in a new zone, wrapped in a VC
+    // scope so every vector clock reserved inside the transaction rolls back
+    // if the transaction throws. Without this, a rollback would discard the
+    // buffered outbox messages but leave the persisted counter advanced,
+    // producing a gap on receivers for counters that never rode a Matrix event.
     final ctx = _TransactionContext();
+    Object? deferredEnqueueError;
+    StackTrace? deferredEnqueueStack;
     try {
-      final result = await runZoned(
-        () => _repository.runInTransaction(action),
-        zoneValues: {_txKey: ctx},
-      );
-      // Flush only after successful commit of the outermost transaction.
-      // Process all messages even if individual enqueues fail, so that a
-      // single failure doesn't silently drop the rest of the batch.
-      Object? firstError;
-      StackTrace? firstStack;
-      for (final msg in ctx.pendingMessages) {
-        try {
-          await _outboxService.enqueueMessage(msg);
-        } catch (e, s) {
-          firstError ??= e;
-          firstStack ??= s;
+      final result = await _vectorClockService.withVcScope<T>(() async {
+        final value = await runZoned(
+          () => _repository.runInTransaction(action),
+          zoneValues: {_txKey: ctx},
+        );
+        // Transaction committed → every VC reserved inside the transaction
+        // is baked into persisted rows and MUST commit. Outbox-flush
+        // failures beyond this point are deferred: we capture them and
+        // rethrow OUTSIDE the VC scope so a transient enqueue error does
+        // not trigger the scope's catch-and-release path and re-hand the
+        // same counter to another entity on the next write.
+        for (final msg in ctx.pendingMessages) {
+          try {
+            await _outboxService.enqueueMessage(msg);
+          } catch (e, s) {
+            deferredEnqueueError ??= e;
+            deferredEnqueueStack ??= s;
+          }
         }
-      }
-      if (firstError != null) {
-        Error.throwWithStackTrace(firstError, firstStack!);
+        return value;
+      });
+      if (deferredEnqueueError != null) {
+        Error.throwWithStackTrace(
+          deferredEnqueueError!,
+          deferredEnqueueStack!,
+        );
       }
       return result;
     } finally {

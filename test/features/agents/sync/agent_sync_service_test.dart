@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -136,6 +138,12 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
+    // Register a fake DomainLogger so _enqueuePostWrite can log swallowed
+    // outbox errors without blowing up on an unregistered GetIt lookup.
+    if (!getIt.isRegistered<DomainLogger>()) {
+      getIt.registerSingleton<DomainLogger>(_FakeDomainLogger());
+    }
+
     mockRepository = MockAgentRepository();
     mockOutboxService = MockOutboxService();
     mockVectorClockService = MockVectorClockService();
@@ -272,20 +280,25 @@ void main() {
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
 
-      test('propagates outbox error after entity is saved', () async {
-        when(
-          () => mockOutboxService.enqueueMessage(any()),
-        ).thenThrow(Exception('outbox error'));
+      test(
+        'swallows outbox error after entity is saved — preserves the '
+        'commit-on-write invariant so the already-persisted VC counter is '
+        'not re-handed to another entity by the next reservation',
+        () async {
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenThrow(Exception('outbox error'));
 
-        await expectLater(
-          () => syncService.upsertEntity(testEntity),
-          throwsA(isA<Exception>()),
-        );
+          // Must NOT throw: the DB write already claimed the VC on disk; an
+          // outbox-layer failure cannot be allowed to cascade into a VC
+          // rewind.
+          await syncService.upsertEntity(testEntity);
 
-        // Entity was saved (with stamped clock) before the outbox call
-        final stamped = testEntity.copyWith(vectorClock: testClock);
-        verify(() => mockRepository.upsertEntity(stamped)).called(1);
-      });
+          final stamped = testEntity.copyWith(vectorClock: testClock);
+          verify(() => mockRepository.upsertEntity(stamped)).called(1);
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
     });
 
     group('upsertLink', () {
@@ -395,19 +408,21 @@ void main() {
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
       });
 
-      test('propagates outbox error after link is saved', () async {
-        when(
-          () => mockOutboxService.enqueueMessage(any()),
-        ).thenThrow(Exception('outbox error'));
+      test(
+        'swallows outbox error after link is saved — see upsertEntity '
+        'twin for the commit-on-write rationale',
+        () async {
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenThrow(Exception('outbox error'));
 
-        await expectLater(
-          () => syncService.upsertLink(testBasicLink),
-          throwsA(isA<Exception>()),
-        );
+          await syncService.upsertLink(testBasicLink);
 
-        final stamped = testBasicLink.copyWith(vectorClock: testClock);
-        verify(() => mockRepository.upsertLink(stamped)).called(1);
-      });
+          final stamped = testBasicLink.copyWith(vectorClock: testClock);
+          verify(() => mockRepository.upsertLink(stamped)).called(1);
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
     });
 
     group('repository', () {
@@ -632,4 +647,30 @@ void main() {
       );
     });
   });
+}
+
+/// Minimal DomainLogger double — no-op for both the gated info channel and
+/// the always-on error channel. The tests don't assert on logs; they just
+/// need the singleton lookup in AgentSyncService._enqueuePostWrite to
+/// succeed so the swallow-outbox-error path completes.
+class _FakeDomainLogger implements DomainLogger {
+  @override
+  final Set<String> enabledDomains = {};
+
+  @override
+  void log(
+    String domain,
+    String message, {
+    String? subDomain,
+    dynamic level,
+  }) {}
+
+  @override
+  void error(
+    String domain,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? subDomain,
+  }) {}
 }

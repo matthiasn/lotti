@@ -15,8 +15,6 @@ import '../../mocks/mocks.dart';
 
 class _MockJournalDb extends Mock implements JournalDb {}
 
-class _MockVectorClockService extends Mock implements VectorClockService {}
-
 class _MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 class _MockNotificationService extends Mock implements NotificationService {}
@@ -25,7 +23,11 @@ class _MockOutboxService extends Mock implements OutboxService {}
 
 void main() {
   late _MockJournalDb journalDb;
-  late _MockVectorClockService vclock;
+  // Use the centralized MockVectorClockService so the withVcScope passthrough
+  // from test/mocks/mocks.dart is in effect. A plain mocktail mock would
+  // return null from withVcScope and the production code would crash on the
+  // `await null` inside PersistenceLogic.updateJournalEntity.
+  late MockVectorClockService vclock;
   late _MockUpdateNotifications updates;
   late MockLoggingService logging;
   late _MockNotificationService notifications;
@@ -56,7 +58,7 @@ void main() {
   setUp(() async {
     await getIt.reset();
     journalDb = _MockJournalDb();
-    vclock = _MockVectorClockService();
+    vclock = MockVectorClockService();
     updates = _MockUpdateNotifications();
     logging = MockLoggingService();
     notifications = _MockNotificationService();
