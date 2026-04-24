@@ -2308,6 +2308,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.';
 
   @override
+  String get configFlagEnableSettingsTree => 'Einstellungen als Baum';
+
+  @override
+  String get configFlagEnableSettingsTreeDescription =>
+      'Schaltet die Desktop-Einstellungen auf eine Baum-Navigation mit Detailbereich um. Aus lassen, um den bisherigen Mehr-Spalten-Stack zu behalten.';
+
+  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override
@@ -5159,10 +5166,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAdvancedTitle => 'Erweiterte Einstellungen';
 
   @override
+  String get settingsAgentsInstancesSubtitle => 'Laufende Agenten';
+
+  @override
+  String get settingsAgentsSoulsSubtitle =>
+      'Langlebige Agenten-Persönlichkeiten';
+
+  @override
+  String get settingsAgentsTemplatesSubtitle => 'Geteilte Agenten-Vorlagen';
+
+  @override
   String get settingsAiApiKeys => 'AI-Inferenz-Anbieter';
 
   @override
   String get settingsAiModels => 'AI-Modelle';
+
+  @override
+  String get settingsAiProfilesSubtitle => 'Anbieter und Modelle';
+
+  @override
+  String get settingsAiProfilesTitle => 'Inferenzprofile';
 
   @override
   String get settingsAiSubtitle =>
@@ -5734,6 +5757,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Farbschema';
+
+  @override
+  String get settingsV2DisableAction => 'Einstellungen V2 deaktivieren';
+
+  @override
+  String get settingsV2DisableFailed =>
+      'Einstellungen V2 konnte nicht deaktiviert werden. Bitte versuche es erneut.';
+
+  @override
+  String get settingsV2EmptyStateBody =>
+      'Wähle links einen Bereich aus, um zu beginnen.';
+
+  @override
+  String get settingsV2ResizeHandleLabel => 'Einstellungsbaum anpassen';
+
+  @override
+  String get settingsV2UnimplementedTitle => 'Bereich noch nicht verfügbar';
 
   @override
   String get settingsWhatsNewSubtitle =>

@@ -2290,6 +2290,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Po zastavení časovače zobrazit rychlé hodnocení relace.';
 
   @override
+  String get configFlagEnableSettingsTree => 'Rozvržení stromu nastavení';
+
+  @override
+  String get configFlagEnableSettingsTreeDescription =>
+      'Přepni nastavení na ploše na stromovou navigaci s panelem detailů. Nech vypnuté, pokud chceš zachovat stávající vícesloupcový stack.';
+
+  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override
@@ -5168,10 +5175,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAdvancedTitle => 'Pokročilá nastavení';
 
   @override
+  String get settingsAgentsInstancesSubtitle => 'Běžící agenti';
+
+  @override
+  String get settingsAgentsSoulsSubtitle => 'Dlouhodobé osobnosti agentů';
+
+  @override
+  String get settingsAgentsTemplatesSubtitle => 'Sdílené šablony agentů';
+
+  @override
   String get settingsAiApiKeys => 'Poskytovatelé AI inferencí';
 
   @override
   String get settingsAiModels => 'AI modely';
+
+  @override
+  String get settingsAiProfilesSubtitle => 'Poskytovatelé a modely';
+
+  @override
+  String get settingsAiProfilesTitle => 'Inferenční profily';
 
   @override
   String get settingsAiSubtitle =>
@@ -5740,6 +5762,22 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Vzhled';
+
+  @override
+  String get settingsV2DisableAction => 'Vypnout Nastavení V2';
+
+  @override
+  String get settingsV2DisableFailed =>
+      'Nastavení V2 se nepodařilo vypnout. Zkus to prosím znovu.';
+
+  @override
+  String get settingsV2EmptyStateBody => 'Vyber sekci vlevo, abys mohl začít.';
+
+  @override
+  String get settingsV2ResizeHandleLabel => 'Změnit velikost stromu nastavení';
+
+  @override
+  String get settingsV2UnimplementedTitle => 'Panel zatím není k dispozici';
 
   @override
   String get settingsWhatsNewSubtitle =>
