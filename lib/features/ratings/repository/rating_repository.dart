@@ -10,6 +10,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -163,39 +164,54 @@ class RatingRepository {
     required String fromId,
     required String toId,
   }) async {
-    final now = DateTime.now();
     final vectorClockService = getIt<VectorClockService>();
 
-    final link = EntryLink.rating(
-      id: _uuid.v1(),
-      fromId: fromId,
-      toId: toId,
-      createdAt: now,
-      updatedAt: now,
-      hidden: false,
-      vectorClock: await vectorClockService.getNextVectorClock(),
+    // Wrap the VC reservation in a scope: if upsertEntryLink turns out to be
+    // a no-op (row already exists unchanged), the scope releases and the
+    // burn handler proactively broadcasts an unresolvable hint for the
+    // reserved counter — peers skip the gap without a backfill round-trip.
+    await vectorClockService.withVcScope<bool>(
+      () async {
+        final now = DateTime.now();
+        final link = EntryLink.rating(
+          id: _uuid.v1(),
+          fromId: fromId,
+          toId: toId,
+          createdAt: now,
+          updatedAt: now,
+          hidden: false,
+          vectorClock: await vectorClockService.getNextVectorClock(),
+        );
+
+        final res = await _journalDb.upsertEntryLink(link);
+        if (res == 0) return false;
+        getIt<UpdateNotifications>().notify({fromId, toId});
+
+        // Enqueue sync message separately so a sync failure doesn't
+        // cause the caller to roll back an otherwise consistent local
+        // state — and doesn't trigger a VC release (the link is already
+        // persisted; the reserved counter is baked into disk).
+        try {
+          await getIt<OutboxService>().enqueueMessage(
+            SyncMessage.entryLink(
+              entryLink: link,
+              status: SyncEntryStatus.initial,
+            ),
+          );
+        } catch (e, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomains.sync,
+            'outbox enqueue failed after _createRatingLink; '
+            'VC already committed',
+            error: e,
+            stackTrace: stackTrace,
+            subDomain: '_createRatingLink.enqueue',
+          );
+        }
+        return true;
+      },
+      commitWhen: (ok) => ok,
     );
-
-    await _journalDb.upsertEntryLink(link);
-    getIt<UpdateNotifications>().notify({fromId, toId});
-
-    // Enqueue sync message separately so a sync failure doesn't
-    // cause the caller to roll back an otherwise consistent local state.
-    try {
-      await getIt<OutboxService>().enqueueMessage(
-        SyncMessage.entryLink(
-          entryLink: link,
-          status: SyncEntryStatus.initial,
-        ),
-      );
-    } catch (e, stackTrace) {
-      getIt<LoggingService>().captureException(
-        e,
-        domain: 'RatingRepository',
-        subDomain: '_createRatingLink.enqueue',
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Soft-deletes a journal entity by setting its deletedAt timestamp.

@@ -436,11 +436,15 @@ void main() {
     );
 
     test(
-      'skips stale covering entry and uses next valid covering entry',
+      'own-host miss sends unresolvable immediately — does NOT attempt '
+      'covering. A covering entity is a DIFFERENT entity whose VC '
+      'monotonically dominates the requested counter only on the same '
+      'host axis, which is not true VC dominance (would require same '
+      'entity). For our own host the sequence log is authoritative, so '
+      'a miss is definitively a burn and the correct answer is '
+      'unresolvable — otherwise the requester mis-attributes the '
+      "covering entity's payload to a counter it never carried.",
       () async {
-        // Request for our own counter 100. First covering entry at counter 200
-        // has a stale VC ({aliceHostId: 50}). Second covering entry at counter
-        // 300 has a valid VC ({aliceHostId: 100}).
         const staleEntryId = 'stale-entry-id';
         const validEntryId = 'valid-entry-id';
         const request = SyncBackfillRequest(
@@ -454,7 +458,8 @@ void main() {
           () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 100),
         ).thenAnswer((_) async => null);
 
-        // First covering entry at counter 200 — stale VC
+        // Even if a covering entity were available, own-host burns must
+        // not take that path — these stubs model what USED to happen.
         when(
           () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 100),
         ).thenAnswer(
@@ -465,8 +470,6 @@ void main() {
             originatingHostId: aliceHostId,
           ),
         );
-
-        // Second covering entry at counter 300 — valid VC
         when(
           () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 201),
         ).thenAnswer(
@@ -477,8 +480,6 @@ void main() {
             originatingHostId: aliceHostId,
           ),
         );
-
-        // Stale entry: VC is behind
         when(
           () => mockJournalDb.journalEntityById(staleEntryId),
         ).thenAnswer(
@@ -487,8 +488,6 @@ void main() {
             vectorClock: const VectorClock({aliceHostId: 50}),
           ),
         );
-
-        // Valid entry: VC covers the requested counter
         when(
           () => mockJournalDb.journalEntityById(validEntryId),
         ).thenAnswer(
@@ -504,20 +503,20 @@ void main() {
 
         await handler.handleBackfillRequest(request);
 
-        // Capture all enqueued messages and verify the valid entry was sent
         final captured = verify(
           () => mockOutboxService.enqueueMessage(captureAny()),
         ).captured.cast<SyncMessage>();
 
-        // The journal entity must reference the valid entry, not the stale one
-        final journalMsg = captured.whereType<SyncJournalEntity>().single;
-        expect(journalMsg.id, validEntryId);
-
-        // No unresolvable response should have been sent
-        final unresolvable = captured.whereType<SyncBackfillResponse>().where(
-          (r) => r.unresolvable ?? false,
+        // Exactly one response — unresolvable. No covering entity sent.
+        expect(captured.length, 1);
+        expect(
+          captured.single,
+          isA<SyncBackfillResponse>()
+              .having((r) => r.hostId, 'hostId', aliceHostId)
+              .having((r) => r.counter, 'counter', 100)
+              .having((r) => r.unresolvable, 'unresolvable', true),
         );
-        expect(unresolvable, isEmpty);
+        expect(captured.whereType<SyncJournalEntity>(), isEmpty);
       },
     );
 
@@ -702,7 +701,13 @@ void main() {
     });
 
     test(
-      'falls back to verified covering entry when exact own counter VC is behind',
+      'own-host exact row with stale VC sends unresolvable — does NOT '
+      'fall back to covering. Stale here means our authoritative '
+      "sequence-log row exists but the payload's current VC has "
+      'regressed below the requested counter, so the row is orphaned. '
+      'Covering by a later (necessarily different) entity would silently '
+      "mis-attribute its payload to this counter on the requester's "
+      'side — the only safe answer from the originator is unresolvable.',
       () async {
         const coveringEntryId = 'covering-entry-id';
         const request = SyncBackfillRequest(
@@ -718,6 +723,8 @@ void main() {
           (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
         );
 
+        // Covering stub retained to prove the handler does NOT consult it
+        // for own-host misses.
         when(
           () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 4),
         ).thenAnswer(
@@ -729,6 +736,8 @@ void main() {
           ),
         );
 
+        // Exact row's payload has a stale VC ({alice: 0}) that does not
+        // cover counter 3.
         when(
           () => mockJournalDb.journalEntityById(entryId),
         ).thenAnswer((_) async => _createJournalEntry(entryId));
@@ -752,23 +761,18 @@ void main() {
           () => mockOutboxService.enqueueMessage(captureAny()),
         ).captured;
 
-        expect(captured.length, 2);
+        expect(captured.length, 1);
         expect(
-          captured[0],
-          isA<SyncJournalEntity>().having(
-            (message) => message.id,
-            'id',
-            coveringEntryId,
-          ),
-        );
-        expect(
-          captured[1],
+          captured.single,
           isA<SyncBackfillResponse>()
               .having((r) => r.hostId, 'hostId', aliceHostId)
               .having((r) => r.counter, 'counter', 3)
-              .having((r) => r.deleted, 'deleted', false)
-              .having((r) => r.payloadId, 'payloadId', coveringEntryId)
-              .having((r) => r.unresolvable, 'unresolvable', isNull),
+              .having((r) => r.unresolvable, 'unresolvable', true),
+        );
+        expect(
+          captured.whereType<SyncJournalEntity>(),
+          isEmpty,
+          reason: 'No covering payload must be sent for own-host stale rows',
         );
       },
     );
