@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.973" date="2026-04-24">
+      <description>
+          <p>VectorClockService now advances its persisted counter only after the associated write and outbox enqueue both succeed. A reservation API plus a zone-based scope wrapper bumps the in-memory watermark synchronously so concurrent reservations stay collision-free, but only commit persists to SettingsDb; release rewinds the in-memory watermark when the reservation was the latest. The known burn call sites in PersistenceLogic (createDbEntity, updateDbEntity, updateJournalEntity, createLink) and AgentSyncService (upsertEntity, upsertLink, insertLinkExclusive, and the outermost runInTransaction) are wrapped in this scope, so an applied=false rejection, a transaction rollback, or an exception between getNextVectorClock and outbox enqueue rolls the counter back instead of burning a gap that only backfill could close.</p>
+          <p>Outbox processor now atomically claims the next row (pending → sending) instead of reading it as pending and sending with a stale snapshot. Under the old path a merge that fired during the hundreds-of-milliseconds send I/O would update the row in place, the processor would still send the pre-merge payload and mark the row sent, and the merged coveredVectorClocks — including the old VC the merge existed to preserve — were silently abandoned. The result was scattered single-counter holes on receivers that only backfill could close. With the atomic claim, merges' CAS-on-pending update no longer matches the in-flight row and the merged content spills into a fresh pending row that still rides its own Matrix event.</p>
+      </description>
+    </release>
     <release version="0.9.972" date="2026-04-21">
       <description>
           <p>BackfillRequestService now skips analysis and dispatch while the bridge coordinator is mid-walk (forward-reading fresh timeline events from the last applied event id). Gaps observed during the walk may be closed by events still in the pipe, so the periodic timer and nudge() wait for the walk to conclude before asking peers for anything — preventing bogus ~100-entry requests that raced ahead of the inbound path. Manual Full Backfill bypasses the gate so user actions are never silently dropped.</p>

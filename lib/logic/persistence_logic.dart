@@ -18,6 +18,7 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -364,28 +365,48 @@ class PersistenceLogic {
     required String fromId,
     required String toId,
   }) async {
-    final now = DateTime.now();
+    // Invariant: once the link upsert hits disk, the VC counter is claimed on
+    // disk and MUST commit — otherwise a subsequent reservation could hand
+    // out the same counter to a different entity, producing a cross-entity
+    // collision. Only a pre-write exception (DB throws before we reach
+    // [upsertEntryLink]) releases the reservation.
+    return _vectorClockService.withVcScope<bool>(() async {
+      final now = DateTime.now();
 
-    final link = EntryLink.basic(
-      id: uuid.v1(),
-      fromId: fromId,
-      toId: toId,
-      createdAt: now,
-      updatedAt: now,
-      hidden: false,
-      vectorClock: await _vectorClockService.getNextVectorClock(),
-    );
+      final link = EntryLink.basic(
+        id: uuid.v1(),
+        fromId: fromId,
+        toId: toId,
+        createdAt: now,
+        updatedAt: now,
+        hidden: false,
+        vectorClock: await _vectorClockService.getNextVectorClock(),
+      );
 
-    final res = await _journalDb.upsertEntryLink(link);
-    _updateNotifications.notify({link.fromId, link.toId});
+      final res = await _journalDb.upsertEntryLink(link);
+      _updateNotifications.notify({link.fromId, link.toId});
 
-    await outboxService.enqueueMessage(
-      SyncMessage.entryLink(
-        entryLink: link,
-        status: SyncEntryStatus.initial,
-      ),
-    );
-    return res != 0;
+      try {
+        await outboxService.enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: link,
+            status: SyncEntryStatus.initial,
+          ),
+        );
+      } catch (exception, stackTrace) {
+        // Swallow to preserve the commit-on-write invariant: the VC is
+        // already baked into the persisted link row and must not be
+        // rewound just because the outbox write failed transiently.
+        getIt<DomainLogger>().error(
+          LogDomains.sync,
+          'outbox enqueue failed after createLink; VC already committed',
+          error: exception,
+          stackTrace: stackTrace,
+          subDomain: 'createLink.enqueue',
+        );
+      }
+      return res != 0;
+    });
   }
 
   Future<bool?> createDbEntity(
@@ -395,60 +416,89 @@ class PersistenceLogic {
     String? linkedId,
   }) async {
     try {
-      JournalEntity? linked;
+      return await _vectorClockService.withVcScope<bool?>(
+        () async {
+          JournalEntity? linked;
 
-      if (linkedId != null) {
-        linked = await _journalDb.journalEntityById(linkedId);
-      }
+          if (linkedId != null) {
+            linked = await _journalDb.journalEntityById(linkedId);
+          }
 
-      final withContext = journalEntity.copyWith(
-        meta: journalEntity.meta.copyWith(
-          private: linked?.meta.private,
-          categoryId: journalEntity.categoryId ?? linked?.categoryId,
-        ),
+          final withContext = journalEntity.copyWith(
+            meta: journalEntity.meta.copyWith(
+              private: linked?.meta.private,
+              categoryId: journalEntity.categoryId ?? linked?.categoryId,
+            ),
+          );
+
+          final res = await _journalDb.updateJournalEntity(
+            withContext,
+            overwrite: false,
+          );
+
+          final saved = res.applied;
+
+          if (saved && enqueueSync) {
+            try {
+              await outboxService.enqueueMessage(
+                SyncMessage.journalEntity(
+                  id: journalEntity.id,
+                  vectorClock: withContext.meta.vectorClock,
+                  jsonPath: relativeEntityPath(journalEntity),
+                  status: SyncEntryStatus.initial,
+                  originatingHostId: await _vectorClockService.getHost(),
+                ),
+              );
+            } catch (exception, stackTrace) {
+              // Local write already committed the counter to disk — do not
+              // let an outbox failure trigger a release that would re-hand
+              // the counter to a different entity. Log and move on; the
+              // receiver will observe a transient gap that backfill fills.
+              getIt<DomainLogger>().error(
+                LogDomains.sync,
+                'outbox enqueue failed after createDbEntity; '
+                'VC already committed',
+                error: exception,
+                stackTrace: stackTrace,
+                subDomain: 'createDbEntity.enqueue',
+              );
+            }
+          }
+
+          if (linked != null) {
+            await createLink(
+              fromId: linked.meta.id,
+              toId: withContext.meta.id,
+            );
+          }
+
+          final affectedIds = withContext.affectedIds;
+
+          if (linkedId != null) {
+            affectedIds.add(linkedId);
+          }
+
+          _updateNotifications.notify({
+            ...affectedIds,
+            labelUsageNotification,
+          });
+
+          await getIt<NotificationService>().updateBadge();
+
+          if (shouldAddGeolocation) {
+            addGeolocation(journalEntity.id);
+          }
+
+          return saved;
+        },
+        // Commit iff the LOCAL WRITE succeeded. A rejected write
+        // (applied=false) never touched disk, so releasing the reserved
+        // counter is safe and lets the next reservation reuse the slot.
+        // enqueueSync intentionally does NOT gate the commit — if the DB
+        // accepted the row, the VC is baked into persisted state and must
+        // advance regardless of whether sync was wired.
+        commitWhen: (saved) => saved ?? false,
       );
-
-      final res = await _journalDb.updateJournalEntity(
-        withContext,
-        overwrite: false,
-      );
-
-      final saved = res.applied;
-
-      if (saved && enqueueSync) {
-        await outboxService.enqueueMessage(
-          SyncMessage.journalEntity(
-            id: journalEntity.id,
-            vectorClock: withContext.meta.vectorClock,
-            jsonPath: relativeEntityPath(journalEntity),
-            status: SyncEntryStatus.initial,
-            originatingHostId: await _vectorClockService.getHost(),
-          ),
-        );
-      }
-
-      if (linked != null) {
-        await createLink(
-          fromId: linked.meta.id,
-          toId: withContext.meta.id,
-        );
-      }
-
-      final affectedIds = withContext.affectedIds;
-
-      if (linkedId != null) {
-        affectedIds.add(linkedId);
-      }
-
-      _updateNotifications.notify({...affectedIds, labelUsageNotification});
-
-      await getIt<NotificationService>().updateBadge();
-
-      if (shouldAddGeolocation) {
-        addGeolocation(journalEntity.id);
-      }
-
-      return saved;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -650,44 +700,55 @@ class PersistenceLogic {
     Metadata metadata,
   ) async {
     try {
-      // Preserve existing labels to avoid races with concurrent label assignments.
-      // Label changes should go through LabelsRepository; general updates should
-      // not override meta.labelIds based on a stale in-memory entity.
-      JournalEntity? current;
-      try {
-        current = await _journalDb.journalEntityById(journalEntity.id);
-      } catch (_) {
-        // If we can't fetch current (e.g., in tests without a stub), proceed without preservation.
-        current = null;
-      }
-      final updatedMeta = await updateMetadata(metadata);
-      final preservedLabelIds = current?.meta.labelIds;
-      final entityWithUpdatedMeta = journalEntity.copyWith(
-        meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
-      );
-      Future<void> Function()? beforeNotify;
-      if (entityWithUpdatedMeta is Task) {
-        final task = entityWithUpdatedMeta;
-        final priorityChanged =
-            current is! Task || current.data.priority != task.data.priority;
-        if (priorityChanged) {
-          beforeNotify = () => _journalDb.updateTaskPriorityColumn(
-            id: task.id,
-            priority: task.data.priority.short,
-            rank: task.data.priority.rank,
+      // Wrap the whole update chain in a VC scope so the counter reserved
+      // inside [updateMetadata] rolls back whenever the downstream write is
+      // rejected (applied=false) or throws. Nested [withVcScope] calls from
+      // [updateDbEntity] participate in this outer scope.
+      return await _vectorClockService.withVcScope<bool>(
+        () async {
+          // Preserve existing labels to avoid races with concurrent label
+          // assignments. Label changes should go through LabelsRepository;
+          // general updates should not override meta.labelIds based on a
+          // stale in-memory entity.
+          JournalEntity? current;
+          try {
+            current = await _journalDb.journalEntityById(journalEntity.id);
+          } catch (_) {
+            // If we can't fetch current (e.g., in tests without a stub),
+            // proceed without preservation.
+            current = null;
+          }
+          final updatedMeta = await updateMetadata(metadata);
+          final preservedLabelIds = current?.meta.labelIds;
+          final entityWithUpdatedMeta = journalEntity.copyWith(
+            meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
           );
-        }
-      }
-      final applied =
-          (await updateDbEntity(
-            entityWithUpdatedMeta,
-            beforeNotify: beforeNotify,
-          )) ??
-          false;
-      if (applied) {
-        await _journalDb.addLabeled(entityWithUpdatedMeta);
-      }
-      return applied;
+          Future<void> Function()? beforeNotify;
+          if (entityWithUpdatedMeta is Task) {
+            final task = entityWithUpdatedMeta;
+            final priorityChanged =
+                current is! Task || current.data.priority != task.data.priority;
+            if (priorityChanged) {
+              beforeNotify = () => _journalDb.updateTaskPriorityColumn(
+                id: task.id,
+                priority: task.data.priority.short,
+                rank: task.data.priority.rank,
+              );
+            }
+          }
+          final applied =
+              (await updateDbEntity(
+                entityWithUpdatedMeta,
+                beforeNotify: beforeNotify,
+              )) ??
+              false;
+          if (applied) {
+            await _journalDb.addLabeled(entityWithUpdatedMeta);
+          }
+          return applied;
+        },
+        commitWhen: (applied) => applied,
+      );
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,
@@ -707,66 +768,93 @@ class PersistenceLogic {
     Future<void> Function()? beforeNotify,
   }) async {
     try {
-      final updateResult = await _journalDb.updateJournalEntity(
-        journalEntity,
-        overrideComparison: overrideComparison,
-      );
-      final applied = updateResult.applied;
-
-      if (applied && beforeNotify != null) {
-        try {
-          await beforeNotify();
-        } catch (exception, stackTrace) {
-          _loggingService.captureException(
-            exception,
-            domain: 'persistence_logic',
-            subDomain: 'updateDbEntity.beforeNotify',
-            stackTrace: stackTrace,
+      return await _vectorClockService.withVcScope<bool?>(
+        () async {
+          final updateResult = await _journalDb.updateJournalEntity(
+            journalEntity,
+            overrideComparison: overrideComparison,
           );
-        }
-      }
+          final applied = updateResult.applied;
 
-      // Include parent linked entry IDs so that agents subscribed to a
-      // parent (e.g. a task) are notified when a child entry is edited.
-      final parentIds = await _journalDb
-          .parentLinkedEntityIds(journalEntity.id)
-          .get();
+          if (applied && beforeNotify != null) {
+            try {
+              await beforeNotify();
+            } catch (exception, stackTrace) {
+              _loggingService.captureException(
+                exception,
+                domain: 'persistence_logic',
+                subDomain: 'updateDbEntity.beforeNotify',
+                stackTrace: stackTrace,
+              );
+            }
+          }
 
-      // When running inside an agent execution zone, route the
-      // notification through notifyUiOnly so the wake orchestrator
-      // does not re-trigger the agent on its own writes.
-      final ids = {
-        ...journalEntity.affectedIds,
-        ?linkedId,
-        ...parentIds,
-        labelUsageNotification,
-      };
-      if (isAgentExecution) {
-        _updateNotifications.notifyUiOnly(ids);
-      } else {
-        _updateNotifications.notify(ids);
-      }
+          // Include parent linked entry IDs so that agents subscribed to a
+          // parent (e.g. a task) are notified when a child entry is edited.
+          final parentIds = await _journalDb
+              .parentLinkedEntityIds(journalEntity.id)
+              .get();
 
-      await getIt<Fts5Db>().insertText(
-        journalEntity,
-        removePrevious: true,
+          // When running inside an agent execution zone, route the
+          // notification through notifyUiOnly so the wake orchestrator
+          // does not re-trigger the agent on its own writes.
+          final ids = {
+            ...journalEntity.affectedIds,
+            ?linkedId,
+            ...parentIds,
+            labelUsageNotification,
+          };
+          if (isAgentExecution) {
+            _updateNotifications.notifyUiOnly(ids);
+          } else {
+            _updateNotifications.notify(ids);
+          }
+
+          await getIt<Fts5Db>().insertText(
+            journalEntity,
+            removePrevious: true,
+          );
+
+          if (enqueueSync && applied) {
+            try {
+              await outboxService.enqueueMessage(
+                SyncMessage.journalEntity(
+                  id: journalEntity.id,
+                  vectorClock: journalEntity.meta.vectorClock,
+                  jsonPath: relativeEntityPath(journalEntity),
+                  status: SyncEntryStatus.update,
+                  originatingHostId: await _vectorClockService.getHost(),
+                ),
+              );
+            } catch (exception, stackTrace) {
+              // See [createDbEntity]: once the DB accepted the row, the VC
+              // is claimed on disk. An outbox failure here must NOT release
+              // the counter (that would let a subsequent reservation reuse
+              // the same counter for a different entity).
+              getIt<DomainLogger>().error(
+                LogDomains.sync,
+                'outbox enqueue failed after updateDbEntity; '
+                'VC already committed',
+                error: exception,
+                stackTrace: stackTrace,
+                subDomain: 'updateDbEntity.enqueue',
+              );
+            }
+          }
+
+          await getIt<NotificationService>().updateBadge();
+
+          return applied;
+        },
+        // Commit iff the local write actually landed. applied=false is the
+        // VC comparison rejecting a stale/concurrent update (e.g. an
+        // incoming sync already advanced this entity) — the row on disk
+        // never took the reserved counter, so a rewind is safe. When
+        // applied=true the VC is baked into the persisted row and MUST
+        // commit, even if enqueueSync=false or the outbox enqueue above
+        // threw.
+        commitWhen: (applied) => applied ?? false,
       );
-
-      if (enqueueSync && applied) {
-        await outboxService.enqueueMessage(
-          SyncMessage.journalEntity(
-            id: journalEntity.id,
-            vectorClock: journalEntity.meta.vectorClock,
-            jsonPath: relativeEntityPath(journalEntity),
-            status: SyncEntryStatus.update,
-            originatingHostId: await _vectorClockService.getHost(),
-          ),
-        );
-      }
-
-      await getIt<NotificationService>().updateBadge();
-
-      return applied;
     } catch (exception, stackTrace) {
       _loggingService.captureException(
         exception,

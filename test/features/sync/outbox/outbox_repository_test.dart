@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
@@ -123,66 +124,48 @@ void main() {
       ).called(1);
     });
 
-    group('refreshItem', () {
-      test('returns item when found and still pending', () async {
-        final item = OutboxItem(
-          id: 10,
-          message: '{"updated": true}',
-          status: OutboxStatus.pending.index,
-          retries: 0,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          subject: 'subject',
-          priority: OutboxPriority.low.index,
-        );
-
+    group('claim', () {
+      test('delegates to database with the provided lease duration', () async {
         when(
-          () => database.getOutboxItemById(10),
-        ).thenAnswer((_) async => item);
-
-        final result = await repository.refreshItem(item);
-
-        expect(result, equals(item));
-        verify(() => database.getOutboxItemById(10)).called(1);
-      });
-
-      test('returns null when item not found', () async {
-        final item = OutboxItem(
-          id: 11,
-          message: '{}',
-          status: OutboxStatus.pending.index,
-          retries: 0,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          subject: 'subject',
-          priority: OutboxPriority.low.index,
-        );
-
-        when(
-          () => database.getOutboxItemById(11),
+          () => database.claimNextOutboxItem(
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
         ).thenAnswer((_) async => null);
 
-        final result = await repository.refreshItem(item);
+        await repository.claim(leaseDuration: const Duration(seconds: 30));
 
-        expect(result, equals(null));
+        verify(
+          () => database.claimNextOutboxItem(
+            leaseDuration: const Duration(seconds: 30),
+          ),
+        ).called(1);
       });
 
-      test('returns null when item status is sent', () async {
-        final originalItem = OutboxItem(
-          id: 12,
-          message: '{}',
-          status: OutboxStatus.pending.index,
-          retries: 0,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          subject: 'subject',
-          priority: OutboxPriority.low.index,
-        );
+      test('falls back to default lease when none is provided', () async {
+        when(
+          () => database.claimNextOutboxItem(
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        ).thenAnswer((_) async => null);
 
-        final sentItem = OutboxItem(
-          id: 12,
-          message: '{}',
-          status: OutboxStatus.sent.index,
+        await repository.claim();
+
+        verify(
+          () => database.claimNextOutboxItem(
+            // Assert the exact default constant, even though it currently
+            // matches the DB-layer default — the test exists to catch a
+            // drift between the two.
+            // ignore: avoid_redundant_argument_values
+            leaseDuration: SyncTuning.outboxClaimLease,
+          ),
+        ).called(1);
+      });
+
+      test('returns the claimed item as-is', () async {
+        final claimed = OutboxItem(
+          id: 10,
+          message: '{"updated": true}',
+          status: OutboxStatus.sending.index,
           retries: 0,
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
@@ -191,17 +174,21 @@ void main() {
         );
 
         when(
-          () => database.getOutboxItemById(12),
-        ).thenAnswer((_) async => sentItem);
+          () => database.claimNextOutboxItem(
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        ).thenAnswer((_) async => claimed);
 
-        final result = await repository.refreshItem(originalItem);
+        final result = await repository.claim();
 
-        expect(result, equals(null));
+        expect(result, equals(claimed));
       });
+    });
 
-      test('returns null when item status is error', () async {
-        final originalItem = OutboxItem(
-          id: 13,
+    group('hasMorePending', () {
+      test('returns true when at least one pending row exists', () async {
+        final item = OutboxItem(
+          id: 1,
           message: '{}',
           status: OutboxStatus.pending.index,
           retries: 0,
@@ -210,25 +197,19 @@ void main() {
           subject: 'subject',
           priority: OutboxPriority.low.index,
         );
-
-        final errorItem = OutboxItem(
-          id: 13,
-          message: '{}',
-          status: OutboxStatus.error.index,
-          retries: 5,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          subject: 'subject',
-          priority: OutboxPriority.low.index,
-        );
-
         when(
-          () => database.getOutboxItemById(13),
-        ).thenAnswer((_) async => errorItem);
+          () => database.oldestOutboxItems(1),
+        ).thenAnswer((_) async => [item]);
 
-        final result = await repository.refreshItem(originalItem);
+        expect(await repository.hasMorePending(), isTrue);
+      });
 
-        expect(result, equals(null));
+      test('returns false when no pending rows exist', () async {
+        when(
+          () => database.oldestOutboxItems(1),
+        ).thenAnswer((_) async => <OutboxItem>[]);
+
+        expect(await repository.hasMorePending(), isFalse);
       });
     });
 

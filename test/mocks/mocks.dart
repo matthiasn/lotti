@@ -366,7 +366,26 @@ class MockHealthImport extends Mock implements HealthImport {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
-class MockVectorClockService extends Mock implements VectorClockService {}
+class MockVectorClockService extends Mock implements VectorClockService {
+  /// Default passthrough so tests don't each have to stub the VC scope.
+  ///
+  /// Mirrors the production semantics closely enough for unit tests:
+  /// - Runs the action.
+  /// - If [commitWhen] is provided and returns false, no persistence is
+  ///   exercised (mocktail mocks don't persist anyway, so the only observable
+  ///   effect in tests is that `getNextVectorClock` stubs still fire).
+  /// - Rethrows on action exceptions.
+  ///
+  /// Tests that want to assert on the scope wrapping can still use
+  /// `when(() => mock.withVcScope(...))` — overriding this default.
+  @override
+  Future<T> withVcScope<T>(
+    Future<T> Function() action, {
+    bool Function(T result)? commitWhen,
+  }) {
+    return action();
+  }
+}
 
 class MockSettingsDb extends Mock implements SettingsDb {}
 

@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.973] - 2026-04-24
+### Fixed
+- `VectorClockService` now advances its persisted counter only after the
+  associated write + outbox enqueue both succeed. A new reservation API
+  (`reserveNextVectorClock` returning a `VcReservation`, plus a
+  `withVcScope` zone-based wrapper) bumps the in-memory watermark
+  synchronously so concurrent reservations stay collision-free, but
+  `commit` is what persists to `SettingsDb`; `release` rewinds the
+  in-memory watermark when the reservation was the latest. The known
+  burn call sites — `PersistenceLogic.createDbEntity`, `updateDbEntity`,
+  `updateJournalEntity`, `createLink`, plus
+  `AgentSyncService.upsertEntity`/`upsertLink`/`insertLinkExclusive`
+  and the outermost `runInTransaction` — are now wrapped in
+  `withVcScope` so an `applied=false` rejection, a transaction
+  rollback, or an exception anywhere between `getNextVectorClock()` and
+  `outboxService.enqueueMessage()` rolls the counter back instead of
+  burning a gap that only backfill could close. `getNextVectorClock()`
+  stays available for low-stakes callers — outside a scope it still
+  auto-commits; inside one it auto-attaches. Follow-up to the atomic
+  claim fix in this release, which closed the merge-send race but
+  could not help counters burnt before any outbox row was ever created.
+- Outbox processor now atomically claims the next row (pending →
+  sending) via `OutboxRepository.claim()` instead of reading it as
+  `pending` and sending it with a stale snapshot. Under the old
+  path, a merge that fired during the ~hundreds of ms of send I/O
+  would `updateOutboxMessage` the row in place (matching
+  `status=pending`), the processor would still send the pre-merge
+  payload and mark the row `sent`, and the merged
+  `coveredVectorClocks` — including the old VC the merge existed
+  to preserve — were silently abandoned. The result was scattered
+  single-counter holes that the receiver flagged as missing and
+  that only backfill could resolve. With the atomic claim the row
+  is `sending` during send, merges' CAS-on-pending update no
+  longer matches, and the merged content is spilled into a fresh
+  pending row that still rides its own Matrix event. The legacy
+  `fetchPending + refreshItem` pair is gone; the actor-side
+  `OutboundQueue` already used the same claim and is now on a
+  shared repository contract.
+
 ## [0.9.972] - 2026-04-21
 ### Changed
 - `BackfillRequestService` now skips analysis+dispatch while the

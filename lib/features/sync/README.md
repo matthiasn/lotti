@@ -272,10 +272,12 @@ can, enriches sequence-aware payloads with covered clocks, and nudges a
 
 `OutboxProcessor` then:
 
-1. fetches the pending head of the queue
-2. refreshes it before send so merged metadata is not stale
-3. sends it through `MatrixService`
-4. marks it sent, retryable, or errored in `sync_db`
+1. atomically claims the pending head (`pending` → `sending`) via
+   `OutboxRepository.claim()`, so in-flight merges fall through to a fresh
+   pending row instead of overwriting the claimed row
+2. sends the claimed payload through `MatrixService`
+3. marks it sent, retryable, or errored in `sync_db`
+4. probes `hasMorePending()` to decide immediate continuation
 
 The send path is also nudged by:
 
@@ -299,15 +301,27 @@ sequenceDiagram
   Outbox->>Outbox: merge/enrich covered clocks
   Outbox->>Repo: persist pending row
   Outbox->>Proc: nudge runner
-  Proc->>Repo: fetchPending(head)
-  Proc->>Repo: refreshItem(head)
+  Proc->>Repo: claim() [CAS pending→sending]
   Proc->>Matrix: sendMatrixMsg(syncMessage)
   alt send succeeds
     Proc->>Repo: markSent()
+    Proc->>Repo: hasMorePending()
   else send fails
     Proc->>Repo: markRetry() or markError()
   end
 ```
+
+The `claim()` step is a CAS from `pending` to `sending` on the row. Any
+merge that fires while the send is in flight runs
+`updateOutboxMessage(... WHERE status = pending)` and gets
+`affectedRows = 0`, so the merged content spills into a fresh pending
+row (via the existing fresh-insert fallback in `_enqueueAgentPayload` /
+`_enqueueJournalEntity` / `_enqueueEntryLink`) instead of silently
+overwriting the row whose old content is currently being serialized on
+the wire. Without this, the old pre-merge Matrix event would still go
+out while the new `coveredVectorClocks` list sat in a row that would
+never be sent — producing scattered single-counter holes on receivers
+that only backfill could resolve.
 
 ## Receive Path
 
