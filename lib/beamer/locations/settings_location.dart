@@ -120,7 +120,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
 
       return const [
         BeamPage(
-          key: ValueKey('settings'),
+          key: ValueKey('settings-desktop'),
           title: 'Settings',
           child: SettingsRootPage(),
         ),
