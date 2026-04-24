@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 
 /// Static URL mapping for the Settings tree. Split out from the
@@ -89,11 +90,25 @@ List<String> beamUrlToPath(String url) {
   return const [];
 }
 
+/// Normalizes a URL for prefix matching: drops any `?query` / `#fragment`
+/// so a path like `/settings/categories?focus=new` still resolves to
+/// `['categories']` rather than collapsing the tree to the empty root.
+/// Also strips a single trailing slash so `/settings/` canonicalizes to
+/// `/settings`. Falls back to the raw input if [Uri.parse] rejects the
+/// string — settings URLs are app-internal and always parseable in
+/// practice, but the fallback keeps a malformed input from crashing
+/// the URL → tree direction.
 String _canonicalize(String url) {
-  if (url.length > 1 && url.endsWith('/')) {
-    return url.substring(0, url.length - 1);
+  String path;
+  try {
+    path = Uri.parse(url).path;
+  } on FormatException {
+    path = url;
   }
-  return url;
+  if (path.length > 1 && path.endsWith('/')) {
+    return path.substring(0, path.length - 1);
+  }
+  return path;
 }
 
 /// Converts a node id like `sync/backfill` into its ancestor chain
@@ -111,6 +126,12 @@ List<String> _idToPath(String id) {
   return result;
 }
 
+/// Optional reporter for duplicate node ids detected at build time.
+/// Defaults to a `debugPrint` — wire up `LoggingService` via
+/// [SettingsTreeIndex.duplicateReporter] at app start to get release
+/// visibility.
+typedef DuplicateNodeIdReporter = void Function(String message);
+
 /// O(1) lookup over a (flag-gated) settings tree.
 ///
 /// Pre-computed on tree change — the provider in the plan §1 rebuilds
@@ -122,18 +143,21 @@ class SettingsTreeIndex {
   /// depth are an authoring bug: tree data is static, so a collision
   /// means two nodes share a slot by mistake. In debug builds an
   /// assertion fires to surface this during development; in release
-  /// the last occurrence wins (same as the pre-assert behavior).
+  /// the last occurrence wins AND the collision is reported via
+  /// [duplicateReporter] so the regression is still visible in logs.
   factory SettingsTreeIndex.build(List<SettingsNode> tree) {
     final byId = <String, SettingsNode>{};
     final ancestors = <String, List<String>>{};
     void walk(List<SettingsNode> nodes, List<String> parents) {
       for (final node in nodes) {
-        assert(
-          !byId.containsKey(node.id),
-          'Duplicate SettingsNode id "${node.id}" at depth '
-          '${parents.length}. Node ids must be unique across the tree.',
-        );
-        final trail = [...parents, node.id];
+        if (byId.containsKey(node.id)) {
+          final message =
+              'Duplicate SettingsNode id "${node.id}" at depth '
+              '${parents.length}. Node ids must be unique across the tree.';
+          assert(false, message);
+          duplicateReporter(message);
+        }
+        final trail = List<String>.unmodifiable([...parents, node.id]);
         byId[node.id] = node;
         ancestors[node.id] = trail;
         final children = node.children;
@@ -152,10 +176,18 @@ class SettingsTreeIndex {
   /// Flat id → node map across every depth of the source tree.
   final Map<String, SettingsNode> _byId;
 
-  /// Flat id → list of ancestor ids (inclusive of the node itself),
-  /// ordered root → self. Equivalent to the tree path that, when
-  /// opened, ends on this node.
+  /// Flat id → unmodifiable list of ancestor ids (inclusive of the
+  /// node itself), ordered root → self. Equivalent to the tree path
+  /// that, when opened, ends on this node. Pre-wrapped as unmodifiable
+  /// at build time so callers don't allocate a fresh view on every
+  /// read.
   final Map<String, List<String>> _ancestors;
+
+  /// Reporter invoked when [SettingsTreeIndex.build] detects a
+  /// duplicate node id. Defaults to [debugPrint]; the host app
+  /// replaces it with a `LoggingService.captureException` shim so the
+  /// collision surfaces in production logs.
+  static DuplicateNodeIdReporter duplicateReporter = debugPrint;
 
   /// Returns the node for [id], or `null` when it isn't present in
   /// the current (flag-gated) tree.
@@ -164,10 +196,10 @@ class SettingsTreeIndex {
   /// Root → node ancestor chain (inclusive) for [id]. Returns `null`
   /// when the node isn't in the current tree. Use this for
   /// breadcrumbs and to seed the tree path from a deep link.
-  List<String>? ancestors(String id) {
-    final list = _ancestors[id];
-    return list == null ? null : List<String>.unmodifiable(list);
-  }
+  ///
+  /// The returned list is the pre-wrapped unmodifiable view stored on
+  /// this index — safe to retain without copying.
+  List<String>? ancestors(String id) => _ancestors[id];
 
   /// `true` if [path] is safe to install as tree state — i.e. every
   /// id resolves AND the ids form the canonical root → self chain

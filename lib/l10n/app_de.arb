@@ -2413,13 +2413,27 @@
   "settingsThemingLight": "Helles Erscheinungsbild",
   "settingsThemingSubtitle": "App-Erscheinungsbild und Themes anpassen",
   "settingsThemingTitle": "Farbschema",
+  "settingsV2CategoryEmptyBody": "Wähle links eine Unter-Einstellung aus.",
+  "settingsV2DetailRootCrumb": "Einstellungen",
   "settingsV2DisableAction": "Einstellungen V2 deaktivieren",
   "settingsV2DisableFailed": "Einstellungen V2 konnte nicht deaktiviert werden. Bitte versuche es erneut.",
   "settingsV2EmptyStateBody": "Wähle links einen Bereich aus, um zu beginnen.",
   "settingsV2ResizeHandleLabel": "Einstellungsbaum anpassen",
   "settingsV2UnimplementedTitle": "Bereich noch nicht verfügbar",
+  "settingsWhatsNewCaughtUpBody": "Keine neuen Release-Notes — du bist auf dem neuesten Stand.",
+  "settingsWhatsNewCaughtUpHeadline": "Alles gelesen",
+  "settingsWhatsNewOpenAction": "Release-Notes öffnen",
   "settingsWhatsNewSubtitle": "Sieh dir die neuesten Updates und Funktionen an",
   "settingsWhatsNewTitle": "Was gibt's Neues",
+  "settingsWhatsNewUnseenBody": "Öffne die Release-Notes, um zu sehen, was in dieser Version neu ist.",
+  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 neue Version} other{{count} neue Versionen}}",
+  "@settingsWhatsNewUnseenHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingThemingDark": "Dunkles Design",
   "settingThemingLight": "Helles Design",
   "showCompleted": "Abgeschlossene anzeigen",

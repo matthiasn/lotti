@@ -10,8 +10,27 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class ThemingPage extends ConsumerWidget {
+/// Mobile / legacy wrapper. Keeps the existing `SliverBoxAdapterPage`
+/// chrome and delegates content to [ThemingBody] so the same widget
+/// can render inside the Settings V2 detail pane (plan step 7).
+class ThemingPage extends StatelessWidget {
   const ThemingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverBoxAdapterPage(
+      title: context.messages.settingsThemingTitle,
+      showBackButton: true,
+      child: const ThemingBody(),
+    );
+  }
+}
+
+/// Content body for the theming page. Mode toggle + light/dark theme
+/// pickers inside a single card — extracted from [ThemingPage] so
+/// the V2 detail pane can host it without the sliver chrome.
+class ThemingBody extends ConsumerWidget {
+  const ThemingBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,70 +62,60 @@ class ThemingPage extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // Build the content that goes inside the card
-    Widget buildCardContent() {
-      return Padding(
-        padding: const EdgeInsets.all(25),
-        child: Column(
-          children: [
-            SegmentedButton<ThemeMode>(
-              selected: {themingState.themeMode},
-              showSelectedIcon: false,
-              onSelectionChanged: controller.onThemeSelectionChanged,
-              segments: [
-                segment(
-                  filter: ThemeMode.dark,
-                  icon: Icons.nightlight_outlined,
-                  activeIcon: Icons.nightlight,
-                  semanticLabel: context.messages.settingsThemingDark,
+    return Column(
+      children: [
+        ModernBaseCard(
+          margin: const EdgeInsets.all(10),
+          child: Padding(
+            padding: const EdgeInsets.all(25),
+            child: Column(
+              children: [
+                SegmentedButton<ThemeMode>(
+                  selected: {themingState.themeMode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: controller.onThemeSelectionChanged,
+                  segments: [
+                    segment(
+                      filter: ThemeMode.dark,
+                      icon: Icons.nightlight_outlined,
+                      activeIcon: Icons.nightlight,
+                      semanticLabel: context.messages.settingsThemingDark,
+                    ),
+                    segment(
+                      filter: ThemeMode.system,
+                      icon: isMobile ? Icons.smartphone : Icons.laptop,
+                      activeIcon: isMobile
+                          ? Icons.smartphone_outlined
+                          : Icons.laptop_outlined,
+                      semanticLabel: context.messages.settingsThemingAutomatic,
+                    ),
+                    segment(
+                      filter: ThemeMode.light,
+                      icon: Icons.wb_sunny_outlined,
+                      activeIcon: Icons.sunny,
+                      semanticLabel: context.messages.settingsThemingLight,
+                    ),
+                  ],
                 ),
-                segment(
-                  filter: ThemeMode.system,
-                  icon: isMobile ? Icons.smartphone : Icons.laptop,
-                  activeIcon: isMobile
-                      ? Icons.smartphone_outlined
-                      : Icons.laptop_outlined,
-                  semanticLabel: context.messages.settingsThemingAutomatic,
+                const SizedBox(height: 25),
+                SelectTheme(
+                  setTheme: controller.setLightTheme,
+                  labelText: context.messages.settingThemingLight,
+                  semanticsLabel: context.messages.settingThemingLight,
+                  getSelected: (state) => state.lightThemeName ?? '',
                 ),
-                segment(
-                  filter: ThemeMode.light,
-                  icon: Icons.wb_sunny_outlined,
-                  activeIcon: Icons.sunny,
-                  semanticLabel: context.messages.settingsThemingLight,
+                const SizedBox(height: 25),
+                SelectTheme(
+                  setTheme: controller.setDarkTheme,
+                  labelText: context.messages.settingThemingDark,
+                  semanticsLabel: context.messages.settingThemingDark,
+                  getSelected: (state) => state.darkThemeName ?? '',
                 ),
               ],
             ),
-            const SizedBox(height: 25),
-            SelectTheme(
-              setTheme: controller.setLightTheme,
-              labelText: context.messages.settingThemingLight,
-              semanticsLabel: context.messages.settingThemingLight,
-              getSelected: (state) => state.lightThemeName ?? '',
-            ),
-            const SizedBox(height: 25),
-            SelectTheme(
-              setTheme: controller.setDarkTheme,
-              labelText: context.messages.settingThemingDark,
-              semanticsLabel: context.messages.settingThemingDark,
-              getSelected: (state) => state.darkThemeName ?? '',
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SliverBoxAdapterPage(
-      title: context.messages.settingsThemingTitle,
-      showBackButton: true,
-      child: Column(
-        children: [
-          // Theme Mode and Color Selection
-          ModernBaseCard(
-            margin: const EdgeInsets.all(10),
-            child: buildCardContent(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

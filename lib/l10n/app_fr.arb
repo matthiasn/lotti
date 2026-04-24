@@ -2413,13 +2413,27 @@
   "settingsThemingLight": "Apparence claire",
   "settingsThemingSubtitle": "Personnaliser l'apparence et les thèmes",
   "settingsThemingTitle": "Thème",
+  "settingsV2CategoryEmptyBody": "Choisis un sous-réglage à gauche.",
+  "settingsV2DetailRootCrumb": "Paramètres",
   "settingsV2DisableAction": "Désactiver Paramètres V2",
   "settingsV2DisableFailed": "Impossible de désactiver Paramètres V2. Réessaie.",
   "settingsV2EmptyStateBody": "Choisis une rubrique à gauche pour commencer.",
   "settingsV2ResizeHandleLabel": "Redimensionner l'arborescence des paramètres",
   "settingsV2UnimplementedTitle": "Volet non encore disponible",
+  "settingsWhatsNewCaughtUpBody": "Aucune nouvelle note de version — tu as déjà tout lu.",
+  "settingsWhatsNewCaughtUpHeadline": "Tu es à jour",
+  "settingsWhatsNewOpenAction": "Ouvrir les notes de version",
   "settingsWhatsNewSubtitle": "Découvre les dernières mises à jour et fonctionnalités",
   "settingsWhatsNewTitle": "Quoi de neuf",
+  "settingsWhatsNewUnseenBody": "Ouvre les notes de version pour voir les nouveautés de cette version.",
+  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 nouvelle version} other{{count} nouvelles versions}}",
+  "@settingsWhatsNewUnseenHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingThemingDark": "Thème sombre",
   "settingThemingLight": "Thème clair",
   "showCompleted": "Afficher les terminées",

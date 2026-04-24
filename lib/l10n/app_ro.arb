@@ -2413,13 +2413,27 @@
   "settingsThemingLight": "Aspect luminos",
   "settingsThemingSubtitle": "Personalizați aspectul și temele aplicației",
   "settingsThemingTitle": "Tematică",
+  "settingsV2CategoryEmptyBody": "Selectați o sub-setare din stânga.",
+  "settingsV2DetailRootCrumb": "Setări",
   "settingsV2DisableAction": "Dezactivați Setările V2",
   "settingsV2DisableFailed": "Setările V2 nu au putut fi dezactivate. Încercați din nou.",
   "settingsV2EmptyStateBody": "Alegeți o secțiune din stânga pentru a începe.",
   "settingsV2ResizeHandleLabel": "Redimensionați arborele de setări",
   "settingsV2UnimplementedTitle": "Panoul nu este încă implementat",
+  "settingsWhatsNewCaughtUpBody": "Nu există note noi de versiune — totul a fost citit.",
+  "settingsWhatsNewCaughtUpHeadline": "Ești la zi",
+  "settingsWhatsNewOpenAction": "Deschide notele de versiune",
   "settingsWhatsNewSubtitle": "Vezi cele mai recente actualizări și funcționalități",
   "settingsWhatsNewTitle": "Ce este nou",
+  "settingsWhatsNewUnseenBody": "Deschide notele de versiune pentru a vedea noutățile din această versiune.",
+  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 versiune nouă} other{{count} versiuni noi}}",
+  "@settingsWhatsNewUnseenHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingThemingDark": "Temă întunecată",
   "settingThemingLight": "Temă luminoasă",
   "showCompleted": "Afișează finalizate",

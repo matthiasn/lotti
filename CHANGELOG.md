@@ -5,6 +5,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.977] - 2026-04-25
+### Review polish (Settings V2)
+- `SettingsTreeView` and `SettingsDetailPane` now share a single
+  tree + `SettingsTreeIndex` via the new `SettingsTreeScope`
+  inherited widget hosted by `SettingsV2Page`. The five config-flag
+  subscriptions and the `buildSettingsTree` call happen exactly
+  once per page mount instead of being duplicated in each consumer,
+  and the two views can no longer disagree on the tree shape.
+- Leaf panel bodies are now kept mounted across sibling-leaf
+  switches: `SettingsDetailPane`'s `AnimatedSwitcher` uses a stable
+  `'leaf'` key and `LeafPanel` caches visited bodies behind an
+  `IndexedStack`, so scroll position, filter state, and in-flight
+  async loaders survive when the user pings between sibling
+  entries (e.g. `agents/templates` ↔ `agents/souls`).
+- Panel registry switched from an ad-hoc `_scrollable(...)` wrapper
+  to a declarative `SettingsPanelSpec(build: ..., scrollable: ...)`
+  so each body opts in to the outer `SingleChildScrollView` at the
+  registration site — contributors can't accidentally double-scroll
+  a `CustomScrollView`-bearing body any more.
+- `SettingsTreeUrlSync` replaces its single `_programmaticBeam` bool
+  with a counter so overlapping rapid taps don't leave the
+  URL → tree guard stuck or released early between post-frame
+  callbacks.
+- `SettingsTreeNavWidth` splits its `_userAdjusted` flag into a
+  user-intent flag and a persisted-load-race flag, guards against
+  state writes after dispose, and cancels queued persists from the
+  debounce timer when the notifier has been disposed.
+- `SettingsTreeIndex.build` now reports duplicate node ids via a
+  pluggable `duplicateReporter` callback (defaults to `debugPrint`),
+  so duplicates remain visible in release builds and not just in
+  debug asserts. `ancestors(id)` returns the pre-wrapped
+  unmodifiable view stored on the index rather than allocating a
+  fresh copy per read.
+- `beamUrlToPath` canonicalizes URLs by stripping `?query` and
+  `#fragment` before prefix matching, so settings URLs carrying
+  query parameters resolve to the correct leaf instead of
+  collapsing to the empty root.
+- Misc cleanup: `SettingsTreePath` uses stdlib `listEquals`,
+  the escape-hatch fallback now writes the shared
+  `enableSettingsTreeFlagDescription` constant rather than an empty
+  string, and the breadcrumb link uses design-token spacing and
+  radii in place of hardcoded 4/2 dp values.
+
 ### Fixed
 - Bottom navigation bar polish: the sync outbox badge on the Settings tab now
   sits in the top-right of the icon to match the Tasks badge, and the audio
@@ -199,7 +241,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `lib/beamer/locations/settings_location.dart` replaced with the
   canonical `/settings/advanced/maintenance` — every caller
   already routed through the latter, and the A2 tree index now
-  points at the single canonical URL.
+  points at the single canonical URL. The old `/settings/maintenance`
+  URL is kept as a pattern alias that renders the same
+  `MaintenancePage`, so any hand-edited bookmark that hit the
+  advertised pattern on `main` keeps working.
 
 ### Changed
 - `BackfillRequestService` now skips analysis+dispatch while the

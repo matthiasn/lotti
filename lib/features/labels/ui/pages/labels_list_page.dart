@@ -13,6 +13,16 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/search/index.dart';
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 8). See `CategoriesListBody` for the polish note about the
+/// duplicate header.
+class LabelsListBody extends StatelessWidget {
+  const LabelsListBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const LabelsListPage();
+}
+
 /// Labels list page using [DesignSystemListItem] in a grouped container.
 ///
 /// Each label row shows a colored dot, the label name, an optional

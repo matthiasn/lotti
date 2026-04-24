@@ -2413,13 +2413,27 @@
   "settingsThemingLight": "Apariencia clara",
   "settingsThemingSubtitle": "Personalizar la apariencia y los temas",
   "settingsThemingTitle": "Temas",
+  "settingsV2CategoryEmptyBody": "Elige un sub-ajuste a la izquierda.",
+  "settingsV2DetailRootCrumb": "Ajustes",
   "settingsV2DisableAction": "Desactivar Ajustes V2",
   "settingsV2DisableFailed": "No se pudieron desactivar los Ajustes V2. Inténtalo de nuevo.",
   "settingsV2EmptyStateBody": "Elige una sección a la izquierda para empezar.",
   "settingsV2ResizeHandleLabel": "Redimensionar árbol de ajustes",
   "settingsV2UnimplementedTitle": "Panel aún no disponible",
+  "settingsWhatsNewCaughtUpBody": "No hay nuevas notas de versión — ya las leíste todas.",
+  "settingsWhatsNewCaughtUpHeadline": "Estás al día",
+  "settingsWhatsNewOpenAction": "Abrir notas de versión",
   "settingsWhatsNewSubtitle": "Mira las últimas actualizaciones y funciones",
   "settingsWhatsNewTitle": "Novedades",
+  "settingsWhatsNewUnseenBody": "Abre las notas de versión para ver las novedades de esta versión.",
+  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 nueva versión} other{{count} nuevas versiones}}",
+  "@settingsWhatsNewUnseenHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingThemingDark": "Tema oscuro",
   "settingThemingLight": "Tema claro",
   "showCompleted": "Mostrar completadas",

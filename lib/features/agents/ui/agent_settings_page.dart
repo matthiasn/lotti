@@ -21,6 +21,17 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Tabs available on [AgentSettingsPage]. Exposed as a public enum
+/// so Settings V2 leaf panels (plan step 9) can deep-link into a
+/// specific tab via [AgentSettingsPage.initialTab].
+enum AgentSettingsTab {
+  stats,
+  templates,
+  instances,
+  souls,
+  pendingWakes,
+}
+
 /// Landing page for Settings > Agents.
 ///
 /// Contains three tabs:
@@ -29,22 +40,55 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// - **Instances**: filterable list of agent instances.
 /// - **Pending Wakes**: live list of scheduled and deferred wake timers.
 class AgentSettingsPage extends ConsumerStatefulWidget {
-  const AgentSettingsPage({super.key});
+  const AgentSettingsPage({this.initialTab, super.key});
+
+  /// Tab to pre-select on mount. Defaults to [AgentSettingsTab.stats]
+  /// so the legacy beamer entry-point lands on the overview.
+  final AgentSettingsTab? initialTab;
 
   @override
   ConsumerState<AgentSettingsPage> createState() => _AgentSettingsPageState();
 }
 
-enum _AgentSettingsTab {
-  stats,
-  templates,
-  instances,
-  souls,
-  pendingWakes,
+/// Body alias for Settings V2: shows [AgentSettingsPage] with a
+/// pre-selected tab so `agents/templates`, `agents/souls` and
+/// `agents/instances` each open on the right tab. Plan step 10
+/// will give the page a headerless embedded mode to drop the
+/// minor duplicate app-bar.
+class AgentSettingsBody extends StatelessWidget {
+  const AgentSettingsBody({this.initialTab, super.key});
+
+  final AgentSettingsTab? initialTab;
+
+  @override
+  Widget build(BuildContext context) =>
+      AgentSettingsPage(initialTab: initialTab);
 }
 
 class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
-  _AgentSettingsTab _selectedTab = _AgentSettingsTab.stats;
+  late AgentSettingsTab _selectedTab;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTab = widget.initialTab ?? AgentSettingsTab.stats;
+  }
+
+  @override
+  void didUpdateWidget(covariant AgentSettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Settings V2 routes `agents/templates`, `agents/souls`, and
+    // `agents/instances` through the same `AgentSettingsBody` /
+    // `AgentSettingsPage` widget type. When Flutter updates this
+    // widget in place across those routes, only the constructor
+    // arg (`initialTab`) changes — without this hook the previously
+    // selected tab would survive and ignore the new request.
+    final previous = oldWidget.initialTab ?? AgentSettingsTab.stats;
+    final next = widget.initialTab ?? AgentSettingsTab.stats;
+    if (previous != next) {
+      _selectedTab = next;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +97,12 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
     );
     final floatingActionButton = switch (_selectedTab) {
-      _AgentSettingsTab.templates => FloatingActionButton(
+      AgentSettingsTab.templates => FloatingActionButton(
         onPressed: () => beamToNamed('/settings/agents/templates/create'),
         tooltip: context.messages.agentTemplateCreateTitle,
         child: const Icon(Icons.add),
       ),
-      _AgentSettingsTab.souls => FloatingActionButton(
+      AgentSettingsTab.souls => FloatingActionButton(
         onPressed: () => beamToNamed('/settings/agents/souls/create'),
         tooltip: context.messages.agentSoulCreateTitle,
         child: const Icon(Icons.add),
@@ -88,7 +132,7 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             child: _AgentSettingsTabBar(
               selectedTab: _selectedTab,
               pendingWakeCount: pendingWakeCount,
-              onSelected: (_AgentSettingsTab tab) =>
+              onSelected: (AgentSettingsTab tab) =>
                   setState(() => _selectedTab = tab),
             ),
           ),
@@ -115,36 +159,36 @@ class _AgentSettingsTabBar extends StatelessWidget {
     required this.onSelected,
   });
 
-  final _AgentSettingsTab selectedTab;
+  final AgentSettingsTab selectedTab;
   final int pendingWakeCount;
-  final ValueChanged<_AgentSettingsTab> onSelected;
+  final ValueChanged<AgentSettingsTab> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final tabs = [
       (
-        tab: _AgentSettingsTab.stats,
+        tab: AgentSettingsTab.stats,
         label: context.messages.agentStatsTabTitle,
         counter: null as String?,
       ),
       (
-        tab: _AgentSettingsTab.templates,
+        tab: AgentSettingsTab.templates,
         label: context.messages.agentTemplatesTitle,
         counter: null as String?,
       ),
       (
-        tab: _AgentSettingsTab.instances,
+        tab: AgentSettingsTab.instances,
         label: context.messages.agentInstancesTitle,
         counter: null as String?,
       ),
       (
-        tab: _AgentSettingsTab.souls,
+        tab: AgentSettingsTab.souls,
         label: context.messages.agentSoulsTitle,
         counter: null as String?,
       ),
       (
-        tab: _AgentSettingsTab.pendingWakes,
+        tab: AgentSettingsTab.pendingWakes,
         label: context.messages.agentPendingWakesTitle,
         counter: '$pendingWakeCount',
       ),
@@ -192,7 +236,7 @@ class _AgentSettingsTabBar extends StatelessWidget {
   List<double> _segmentWidths(
     BuildContext context,
     double availableWidth,
-    List<({String? counter, String label, _AgentSettingsTab tab})> tabs,
+    List<({String? counter, String label, AgentSettingsTab tab})> tabs,
   ) {
     final naturalWidths = tabs
         .map(
@@ -222,7 +266,7 @@ class _AgentSettingsTabBody extends ConsumerWidget {
     required this.selectedTab,
   });
 
-  final _AgentSettingsTab selectedTab;
+  final AgentSettingsTab selectedTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

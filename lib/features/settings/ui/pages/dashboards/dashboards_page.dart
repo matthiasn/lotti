@@ -11,6 +11,16 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 8). See `CategoriesListBody` for the polish note about the
+/// duplicate header.
+class DashboardsBody extends StatelessWidget {
+  const DashboardsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const DashboardSettingsPage();
+}
+
 class DashboardSettingsPage extends StatelessWidget {
   const DashboardSettingsPage({super.key});
 

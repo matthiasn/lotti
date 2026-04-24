@@ -9,6 +9,17 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 9). The V1 page's internal `SettingsPageHeader` overlaps
+/// the leaf-panel title; headerless embedded mode comes in step 10
+/// polish.
+class InferenceProfilesBody extends StatelessWidget {
+  const InferenceProfilesBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const InferenceProfilePage();
+}
+
 /// Management page listing all inference profiles with create/edit/delete.
 class InferenceProfilePage extends ConsumerWidget {
   const InferenceProfilePage({super.key});

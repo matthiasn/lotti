@@ -2706,13 +2706,27 @@
   "settingsThemingLight": "Light Appearance",
   "settingsThemingSubtitle": "Customize app appearance and themes",
   "settingsThemingTitle": "Theming",
+  "settingsV2CategoryEmptyBody": "Pick a sub-setting on the left.",
+  "settingsV2DetailRootCrumb": "Settings",
   "settingsV2DisableAction": "Disable Settings V2",
   "settingsV2DisableFailed": "Could not disable Settings V2. Please try again.",
   "settingsV2EmptyStateBody": "Pick a section on the left to begin.",
   "settingsV2ResizeHandleLabel": "Resize settings tree",
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
+  "settingsWhatsNewCaughtUpBody": "No new release notes to read — the latest version has already been viewed.",
+  "settingsWhatsNewCaughtUpHeadline": "You're all caught up",
+  "settingsWhatsNewOpenAction": "Open release notes",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
+  "settingsWhatsNewUnseenBody": "Open the release notes to read what's new in this version.",
+  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 new release} other{{count} new releases}}",
+  "@settingsWhatsNewUnseenHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
   "showCompleted": "Show completed",

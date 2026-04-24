@@ -82,6 +82,34 @@ void main() {
     test('unknown leaf under /settings returns an empty path', () {
       expect(beamUrlToPath('/settings/completely-unknown'), isEmpty);
     });
+
+    test('query string is stripped before prefix matching', () {
+      expect(beamUrlToPath('/settings/categories?focus=new'), ['categories']);
+    });
+
+    test('fragment is stripped before prefix matching', () {
+      expect(beamUrlToPath('/settings/sync/backfill#anchor'), [
+        'sync',
+        'sync/backfill',
+      ]);
+    });
+
+    test('query and fragment together both stripped', () {
+      expect(beamUrlToPath('/settings/flags?x=1#top'), ['flags']);
+    });
+
+    test(
+      'a malformed URL that crashes Uri.parse falls back to the raw input',
+      () {
+        // Invalid percent-encoding (`%2`) makes Uri.parse throw a
+        // FormatException; the canonicalizer must catch it and treat
+        // the raw string as the path. The raw input does not match
+        // the /settings prefix, so we expect an empty path — the key
+        // assertion is that the call doesn't throw, exercising the
+        // FormatException catch in _canonicalize.
+        expect(beamUrlToPath('/settings/flags%2'), isEmpty);
+      },
+    );
   });
 
   group('beamUrlToPath — greedy longest-prefix', () {

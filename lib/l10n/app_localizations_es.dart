@@ -5869,6 +5869,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsThemingTitle => 'Temas';
 
   @override
+  String get settingsV2CategoryEmptyBody =>
+      'Elige un sub-ajuste a la izquierda.';
+
+  @override
+  String get settingsV2DetailRootCrumb => 'Ajustes';
+
+  @override
   String get settingsV2DisableAction => 'Desactivar Ajustes V2';
 
   @override
@@ -5886,11 +5893,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsV2UnimplementedTitle => 'Panel aún no disponible';
 
   @override
+  String get settingsWhatsNewCaughtUpBody =>
+      'No hay nuevas notas de versión — ya las leíste todas.';
+
+  @override
+  String get settingsWhatsNewCaughtUpHeadline => 'Estás al día';
+
+  @override
+  String get settingsWhatsNewOpenAction => 'Abrir notas de versión';
+
+  @override
   String get settingsWhatsNewSubtitle =>
       'Mira las últimas actualizaciones y funciones';
 
   @override
   String get settingsWhatsNewTitle => 'Novedades';
+
+  @override
+  String get settingsWhatsNewUnseenBody =>
+      'Abre las notas de versión para ver las novedades de esta versión.';
+
+  @override
+  String settingsWhatsNewUnseenHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nuevas versiones',
+      one: '1 nueva versión',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingThemingDark => 'Tema oscuro';

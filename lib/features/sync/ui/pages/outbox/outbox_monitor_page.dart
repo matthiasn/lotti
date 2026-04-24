@@ -19,11 +19,30 @@ enum _OutboxListFilter {
   error,
 }
 
+/// Full-page outbox monitor — used by the V1 beamer route and kept
+/// as the entry-point class so existing callers and tests continue
+/// to work unchanged.
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({super.key});
 
   @override
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
+}
+
+/// Content body for the Settings V2 detail pane (plan step 7).
+///
+/// [OutboxMonitorPage] owns its own full-surface `SyncListScaffold`
+/// with a page header; embedding it inside the V2 leaf panel would
+/// double the title bar. The polish pass (plan step 10) will refactor
+/// `SyncListScaffold` to support a headerless embedded mode. Until
+/// then this wrapper re-uses the page verbatim so the panel is
+/// functional; the resulting minor title duplication is a known
+/// cosmetic issue tracked for polish.
+class OutboxMonitorBody extends StatelessWidget {
+  const OutboxMonitorBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const OutboxMonitorPage();
 }
 
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {

@@ -287,4 +287,77 @@ void main() {
       expect(settingsTreeNavWidthShiftArrowStep, 32);
     });
   });
+
+  group('SettingsTreeNavWidth — error handling', () {
+    test(
+      'a thrown SettingsDb load is swallowed; the notifier keeps the default',
+      () async {
+        await tearDownTestGetIt();
+        final mocks = await setUpTestGetIt();
+        when(
+          () => mocks.settingsDb.itemsByKeys(any()),
+        ).thenThrow(StateError('disk read failed'));
+        final c = ProviderContainer();
+        addTearDown(c.dispose);
+
+        // Read the provider to trigger the async hydration, then drain.
+        c.read(settingsTreeNavWidthProvider);
+        for (var i = 0; i < 16; i++) {
+          await Future<void>.value();
+        }
+
+        // Hydration failure must not leak the StateError out of the
+        // notifier — the user just sees the default width.
+        expect(
+          c.read(settingsTreeNavWidthProvider),
+          defaultSettingsTreeNavWidth,
+        );
+      },
+    );
+
+    test(
+      'a thrown SettingsDb save is swallowed; in-memory state still moves',
+      () async {
+        await tearDownTestGetIt();
+        final mocks = await setUpTestGetIt();
+        when(
+          () => mocks.settingsDb.itemsByKeys(any()),
+        ).thenAnswer((_) async => <String, String?>{});
+        when(
+          () => mocks.settingsDb.saveSettingsItem(any(), any()),
+        ).thenThrow(StateError('disk write failed'));
+
+        final c = ProviderContainer();
+        addTearDown(c.dispose);
+        // Hydrate.
+        c.read(settingsTreeNavWidthProvider);
+        for (var i = 0; i < 16; i++) {
+          await Future<void>.value();
+        }
+
+        // resetToDefault flushes the debounce and persists *now* —
+        // bypassing the timer means we don't have to wait real time
+        // for the failing write to fire.
+        c.read(settingsTreeNavWidthProvider.notifier).updateBy(20);
+        expect(
+          c.read(settingsTreeNavWidthProvider),
+          defaultSettingsTreeNavWidth + 20,
+        );
+        c.read(settingsTreeNavWidthProvider.notifier).resetToDefault();
+        // Drain the unawaited persist so the thrown StateError is
+        // funneled into the catch block + LoggingService rather than
+        // surfacing as an uncaught async error after the test ends.
+        for (var i = 0; i < 16; i++) {
+          await Future<void>.value();
+        }
+
+        // The thrown StateError must not crash the notifier — the
+        // reset still moved state to default in-memory.
+        expect(
+          c.read(settingsTreeNavWidthProvider),
+          defaultSettingsTreeNavWidth,
+        );
+      },
+    );
+  });
 }
