@@ -21,7 +21,8 @@ async def test_provision_success(mock_transport):
     result = await provision(make_args(), transport=mock_transport)
     bundle = decode_bundle(result)
 
-    assert bundle["v"] == 1
+    assert bundle["v"] == 2
+    assert bundle["kind"] == "provisioned"
     assert bundle["homeServer"] == "https://matrix.example.com"
     assert bundle["user"] == "@lotti_user:example.com"
     assert bundle["roomId"] == "!test_room:example.com"
@@ -435,7 +436,8 @@ async def test_provision_output_file_write_error(mock_transport, tmp_path):
 def test_bundle_roundtrip():
     """Base64 encode/decode roundtrip produces identical data."""
     bundle = {
-        "v": 1,
+        "v": 2,
+        "kind": "provisioned",
         "homeServer": "https://matrix.example.com",
         "user": "@test:example.com",
         "password": "test_password_abc123",
@@ -452,7 +454,8 @@ def test_bundle_roundtrip():
 def test_bundle_user_is_full_mxid():
     """Bundle user field is a full MXID (@localpart:server)."""
     bundle = {
-        "v": 1,
+        "v": 2,
+        "kind": "provisioned",
         "homeServer": "https://matrix.example.com",
         "user": "@lotti_user:example.com",
         "password": "pw",
@@ -470,7 +473,8 @@ def test_bundle_user_is_full_mxid():
 def test_bundle_room_id_format():
     """Bundle roomId field starts with '!'."""
     bundle = {
-        "v": 1,
+        "v": 2,
+        "kind": "provisioned",
         "homeServer": "https://matrix.example.com",
         "user": "@user:example.com",
         "password": "pw",

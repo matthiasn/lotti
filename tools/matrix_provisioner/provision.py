@@ -215,9 +215,16 @@ async def provision(
             await _deactivate_user(client, admin_headers, user_mxid)
             raise
 
-        # Step 6: Build provisioning bundle
+        # Step 6: Build provisioning bundle.
+        #
+        # `kind="provisioned"` tells the Lotti client this is a fresh CLI
+        # bundle whose password MUST be rotated on first consumption. The
+        # peer-to-peer handover bundle emitted by a configured desktop uses
+        # `kind="handover"` instead so that secondary devices join without
+        # rotating the live credential.
         bundle = {
-            "v": 1,
+            "v": 2,
+            "kind": "provisioned",
             "homeServer": homeserver,
             "user": user_mxid,
             "password": password,

@@ -25,10 +25,13 @@ sealed class ProvisioningState with _$ProvisioningState {
   const factory ProvisioningState.error(ProvisioningError error) = _Error;
 }
 
+/// Current bundle schema version. Bumped from 1 to 2 when the `kind`
+/// discriminator became required.
+const int kSyncBundleVersion = 2;
+
 @riverpod
 class ProvisioningController extends _$ProvisioningController {
   SyncProvisioningBundle? _lastBundle;
-  bool _lastRotatePassword = true;
 
   @override
   ProvisioningState build() => const ProvisioningState.initial();
@@ -36,18 +39,30 @@ class ProvisioningController extends _$ProvisioningController {
   /// Decodes a Base64-encoded provisioning bundle string.
   ///
   /// Accepts both padded and unpadded Base64url. Validates the bundle
-  /// version, MXID format, room ID format, and homeserver URL.
+  /// version, MXID format, room ID format, and homeserver URL. The `kind`
+  /// discriminator is required — it determines whether this consumption
+  /// rotates the password (`provisioned`) or joins without rotating
+  /// (`handover`). v:1 bundles (which predate the discriminator) are
+  /// rejected.
   SyncProvisioningBundle decodeBundle(String base64String) {
     try {
       final normalized = _normalizeBase64(base64String.trim());
       final bytes = base64Decode(normalized);
       final jsonString = utf8.decode(bytes);
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      final bundle = SyncProvisioningBundle.fromJson(json);
 
-      if (bundle.v != 1) {
+      final rawVersion = json['v'];
+      if (rawVersion != kSyncBundleVersion) {
         throw const FormatException('Unsupported bundle version');
       }
+      if (json['kind'] is! String) {
+        throw const FormatException(
+          'Missing bundle kind discriminator',
+        );
+      }
+
+      final bundle = SyncProvisioningBundle.fromJson(json);
+
       if (!bundle.user.startsWith('@')) {
         throw const FormatException('Invalid MXID: must start with @');
       }
@@ -71,15 +86,16 @@ class ProvisioningController extends _$ProvisioningController {
 
   /// Configures Matrix sync from a decoded provisioning bundle.
   ///
-  /// On desktop ([rotatePassword] = true): login -> join room -> rotate
-  /// password -> generate handover QR data.
-  /// On mobile ([rotatePassword] = false): login -> join room -> done.
-  Future<void> configureFromBundle(
-    SyncProvisioningBundle bundle, {
-    bool rotatePassword = true,
-  }) async {
+  /// The flow is determined by [SyncProvisioningBundle.kind]:
+  /// * `provisioned` (fresh CLI bundle) → login → join room → rotate
+  ///   password → emit `ready(handoverBase64)` so the user can hand off
+  ///   the rotated credential to further devices.
+  /// * `handover` (bundle from a peer) → login → join room → `done`.
+  ///   The password is *not* rotated — every peer shares the same live
+  ///   credential.
+  Future<void> configureFromBundle(SyncProvisioningBundle bundle) async {
     _lastBundle = bundle;
-    _lastRotatePassword = rotatePassword;
+    final rotatePassword = bundle.kind == SyncBundleKind.provisioned;
 
     // Read dependencies eagerly and prevent auto-disposal while this async
     // operation is in-flight. Without keepAlive(), a page transition (e.g.
@@ -146,9 +162,11 @@ class ProvisioningController extends _$ProvisioningController {
         newPassword: newPassword,
       );
 
-      // Step 4: Generate handover bundle
+      // Step 4: Generate handover bundle. Tagged as `handover` so the
+      // next device consuming it joins without rotating the password.
       final handoverBundle = SyncProvisioningBundle(
-        v: bundle.v,
+        v: kSyncBundleVersion,
+        kind: SyncBundleKind.handover,
         homeServer: bundle.homeServer,
         user: bundle.user,
         password: newPassword,
@@ -191,7 +209,8 @@ class ProvisioningController extends _$ProvisioningController {
     if (config == null || roomId == null) return null;
 
     final bundle = SyncProvisioningBundle(
-      v: 1,
+      v: kSyncBundleVersion,
+      kind: SyncBundleKind.handover,
       homeServer: config.homeServer,
       user: config.user,
       password: config.password,
@@ -204,12 +223,12 @@ class ProvisioningController extends _$ProvisioningController {
   /// Retries the last configuration attempt.
   ///
   /// Only meaningful when the current state is [ProvisioningState.error].
-  /// Re-uses the bundle and rotatePassword flag from the last
-  /// [configureFromBundle] call.
+  /// Re-uses the bundle from the last [configureFromBundle] call —
+  /// rotation behaviour is derived from the bundle's `kind`.
   Future<void> retry() async {
     final bundle = _lastBundle;
     if (bundle == null) return;
-    await configureFromBundle(bundle, rotatePassword: _lastRotatePassword);
+    await configureFromBundle(bundle);
   }
 
   /// Normalizes a Base64 string by adding padding if needed and converting

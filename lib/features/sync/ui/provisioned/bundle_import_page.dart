@@ -138,10 +138,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                       onPressed: () {
                         ref
                             .read(provisioningControllerProvider.notifier)
-                            .configureFromBundle(
-                              _decodedBundle!,
-                              rotatePassword: isDesktop,
-                            );
+                            .configureFromBundle(_decodedBundle!);
                         widget.pageIndexNotifier.value = 1;
                       },
                       label: messages.provisionedSyncConfigureButton,

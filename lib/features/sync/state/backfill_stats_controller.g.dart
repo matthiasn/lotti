@@ -42,7 +42,7 @@ final class BackfillStatsControllerProvider
 }
 
 String _$backfillStatsControllerHash() =>
-    r'bfb72bcff264e0fcd66b40cb857913cd92e600c0';
+    r'8fd1ccf3aab88787f76cec88a5bc5d77d0dcc7e7';
 
 abstract class _$BackfillStatsController extends $Notifier<BackfillStatsState> {
   BackfillStatsState build();

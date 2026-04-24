@@ -16,11 +16,21 @@ void main() {
   late ProviderContainer container;
   late MockMatrixService mockMatrixService;
 
-  const testBundle = SyncProvisioningBundle(
-    v: 1,
+  const provisionedBundle = SyncProvisioningBundle(
+    v: 2,
+    kind: SyncBundleKind.provisioned,
     homeServer: 'https://matrix.example.com',
     user: '@alice:example.com',
     password: 'secret123',
+    roomId: '!room123:example.com',
+  );
+
+  const handoverBundle = SyncProvisioningBundle(
+    v: 2,
+    kind: SyncBundleKind.handover,
+    homeServer: 'https://matrix.example.com',
+    user: '@alice:example.com',
+    password: 'rotated-by-peer',
     roomId: '!room123:example.com',
   );
 
@@ -28,7 +38,8 @@ void main() {
     return base64UrlEncode(utf8.encode(jsonEncode(json)));
   }
 
-  final validBase64 = encodeBundle(testBundle.toJson());
+  final validProvisionedBase64 = encodeBundle(provisionedBundle.toJson());
+  final validHandoverBase64 = encodeBundle(handoverBundle.toJson());
 
   setUpAll(() {
     registerFallbackValue(
@@ -52,20 +63,20 @@ void main() {
     ).thenAnswer((_) async => true);
     when(
       () => mockMatrixService.joinRoom(any()),
-    ).thenAnswer((_) async => testBundle.roomId);
+    ).thenAnswer((_) async => provisionedBundle.roomId);
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
     when(
       () => mockMatrixService.getRoom(),
-    ).thenAnswer((_) async => testBundle.roomId);
+    ).thenAnswer((_) async => provisionedBundle.roomId);
     when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
     when(() => mockMatrixService.logout()).thenAnswer((_) async {});
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => MatrixConfig(
-        homeServer: testBundle.homeServer,
-        user: testBundle.user,
-        password: testBundle.password,
+        homeServer: provisionedBundle.homeServer,
+        user: provisionedBundle.user,
+        password: provisionedBundle.password,
       ),
     );
     when(
@@ -97,12 +108,13 @@ void main() {
 
   group('ProvisioningController', () {
     group('decodeBundle', () {
-      test('decodes valid Base64 bundle', () {
+      test('decodes valid provisioned bundle', () {
         final bundle = container
             .read(provisioningControllerProvider.notifier)
-            .decodeBundle(validBase64);
+            .decodeBundle(validProvisionedBase64);
 
-        expect(bundle.v, 1);
+        expect(bundle.v, 2);
+        expect(bundle.kind, SyncBundleKind.provisioned);
         expect(bundle.homeServer, 'https://matrix.example.com');
         expect(bundle.user, '@alice:example.com');
         expect(bundle.password, 'secret123');
@@ -113,7 +125,7 @@ void main() {
             .when(
               initial: () => fail('Expected bundleDecoded'),
               bundleDecoded: (b) {
-                expect(b.user, '@alice:example.com');
+                expect(b.kind, SyncBundleKind.provisioned);
               },
               loggingIn: () => fail('Expected bundleDecoded'),
               joiningRoom: () => fail('Expected bundleDecoded'),
@@ -122,6 +134,14 @@ void main() {
               done: () => fail('Expected bundleDecoded'),
               error: (_) => fail('Expected bundleDecoded'),
             );
+      });
+
+      test('decodes valid handover bundle', () {
+        final bundle = container
+            .read(provisioningControllerProvider.notifier)
+            .decodeBundle(validHandoverBase64);
+
+        expect(bundle.kind, SyncBundleKind.handover);
       });
 
       test('throws FormatException for invalid Base64', () {
@@ -144,7 +164,11 @@ void main() {
       });
 
       test('throws FormatException for missing required fields', () {
-        final missingFields = encodeBundle({'v': 1, 'homeServer': 'https://x'});
+        final missingFields = encodeBundle({
+          'v': 2,
+          'kind': 'provisioned',
+          'homeServer': 'https://x',
+        });
         expect(
           () => container
               .read(provisioningControllerProvider.notifier)
@@ -155,7 +179,8 @@ void main() {
 
       test('throws FormatException for user without @ prefix', () {
         final badUser = encodeBundle({
-          'v': 1,
+          'v': 2,
+          'kind': 'provisioned',
           'homeServer': 'https://matrix.example.com',
           'user': 'alice:example.com',
           'password': 'secret',
@@ -177,7 +202,8 @@ void main() {
 
       test('throws FormatException for roomId without ! prefix', () {
         final badRoom = encodeBundle({
-          'v': 1,
+          'v': 2,
+          'kind': 'provisioned',
           'homeServer': 'https://matrix.example.com',
           'user': '@alice:example.com',
           'password': 'secret',
@@ -199,7 +225,8 @@ void main() {
 
       test('throws FormatException for invalid homeserver URL', () {
         final badServer = encodeBundle({
-          'v': 1,
+          'v': 2,
+          'kind': 'provisioned',
           'homeServer': 'not-a-url',
           'user': '@alice:example.com',
           'password': 'secret',
@@ -223,7 +250,8 @@ void main() {
         'throws FormatException for http:// homeserver (requires https)',
         () {
           final httpServer = encodeBundle({
-            'v': 1,
+            'v': 2,
+            'kind': 'provisioned',
             'homeServer': 'http://matrix.example.com',
             'user': '@alice:example.com',
             'password': 'secret',
@@ -246,7 +274,8 @@ void main() {
 
       test('throws FormatException for malformed scheme like httpx://', () {
         final httpxServer = encodeBundle({
-          'v': 1,
+          'v': 2,
+          'kind': 'provisioned',
           'homeServer': 'httpx://matrix.example.com',
           'user': '@alice:example.com',
           'password': 'secret',
@@ -263,6 +292,7 @@ void main() {
       test('throws FormatException for unsupported version', () {
         final badVersion = encodeBundle({
           'v': 99,
+          'kind': 'provisioned',
           'homeServer': 'https://matrix.example.com',
           'user': '@alice:example.com',
           'password': 'secret',
@@ -282,10 +312,70 @@ void main() {
         );
       });
 
+      test('rejects legacy v:1 bundle without kind', () {
+        final legacy = encodeBundle({
+          'v': 1,
+          'homeServer': 'https://matrix.example.com',
+          'user': '@alice:example.com',
+          'password': 'secret',
+          'roomId': '!room:example.com',
+        });
+        expect(
+          () => container
+              .read(provisioningControllerProvider.notifier)
+              .decodeBundle(legacy),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('version'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FormatException when kind is missing at v:2', () {
+        final noKind = encodeBundle({
+          'v': 2,
+          'homeServer': 'https://matrix.example.com',
+          'user': '@alice:example.com',
+          'password': 'secret',
+          'roomId': '!room:example.com',
+        });
+        expect(
+          () => container
+              .read(provisioningControllerProvider.notifier)
+              .decodeBundle(noKind),
+          throwsA(
+            isA<FormatException>().having(
+              (e) => e.message,
+              'message',
+              contains('kind'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FormatException for unknown kind value', () {
+        final unknownKind = encodeBundle({
+          'v': 2,
+          'kind': 'malicious',
+          'homeServer': 'https://matrix.example.com',
+          'user': '@alice:example.com',
+          'password': 'secret',
+          'roomId': '!room:example.com',
+        });
+        expect(
+          () => container
+              .read(provisioningControllerProvider.notifier)
+              .decodeBundle(unknownKind),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
       test('handles unpadded Base64url', () {
-        // Create a base64url string without padding
         final unpadded = base64UrlEncode(
-          utf8.encode(jsonEncode(testBundle.toJson())),
+          utf8.encode(jsonEncode(provisionedBundle.toJson())),
         ).replaceAll('=', '');
         final bundle = container
             .read(provisioningControllerProvider.notifier)
@@ -294,11 +384,11 @@ void main() {
       });
     });
 
-    group('configureFromBundle - desktop (rotatePassword: true)', () {
+    group('configureFromBundle - provisioned (rotates password)', () {
       test('progresses through all states to ready', () async {
         final controller = container.read(
           provisioningControllerProvider.notifier,
-        )..decodeBundle(validBase64);
+        )..decodeBundle(validProvisionedBase64);
 
         final states = <ProvisioningState>[];
         container.listen(
@@ -306,22 +396,23 @@ void main() {
           (_, next) => states.add(next),
         );
 
-        await controller.configureFromBundle(testBundle);
+        await controller.configureFromBundle(provisionedBundle);
 
-        // Verify intermediate state progression order
         expect(states.length, greaterThanOrEqualTo(4));
         expect(states[0], const ProvisioningState.loggingIn());
         expect(states[1], const ProvisioningState.joiningRoom());
         expect(states[2], const ProvisioningState.rotatingPassword());
-        // states[3] is ready(handoverBase64) — checked below
 
-        // Verify the service was called
         verify(() => mockMatrixService.setConfig(any())).called(1);
         verify(
           () => mockMatrixService.login(waitForLifecycle: false),
         ).called(1);
-        verify(() => mockMatrixService.joinRoom(testBundle.roomId)).called(1);
-        verify(() => mockMatrixService.saveRoom(testBundle.roomId)).called(1);
+        verify(
+          () => mockMatrixService.joinRoom(provisionedBundle.roomId),
+        ).called(1);
+        verify(
+          () => mockMatrixService.saveRoom(provisionedBundle.roomId),
+        ).called(1);
         verify(
           () => mockMatrixService.changePassword(
             oldPassword: any(named: 'oldPassword'),
@@ -329,7 +420,6 @@ void main() {
           ),
         ).called(1);
 
-        // Final state should be ready with a handover base64 string
         container
             .read(provisioningControllerProvider)
             .when(
@@ -339,7 +429,6 @@ void main() {
               joiningRoom: () => fail('Expected ready'),
               rotatingPassword: () => fail('Expected ready'),
               ready: (handover) {
-                // Verify the handover can be decoded
                 final decoded = utf8.decode(
                   base64Decode(
                     handover.padRight(
@@ -350,13 +439,14 @@ void main() {
                 );
                 final json = jsonDecode(decoded) as Map<String, dynamic>;
                 final handoverBundle = SyncProvisioningBundle.fromJson(json);
-                expect(handoverBundle.homeServer, testBundle.homeServer);
-                expect(handoverBundle.user, testBundle.user);
-                expect(handoverBundle.roomId, testBundle.roomId);
-                // Password should be different (rotated)
+                expect(handoverBundle.kind, SyncBundleKind.handover);
+                expect(handoverBundle.v, 2);
+                expect(handoverBundle.homeServer, provisionedBundle.homeServer);
+                expect(handoverBundle.user, provisionedBundle.user);
+                expect(handoverBundle.roomId, provisionedBundle.roomId);
                 expect(
                   handoverBundle.password,
-                  isNot(testBundle.password),
+                  isNot(provisionedBundle.password),
                 );
               },
               done: () => fail('Expected ready'),
@@ -371,7 +461,7 @@ void main() {
 
         await container
             .read(provisioningControllerProvider.notifier)
-            .configureFromBundle(testBundle);
+            .configureFromBundle(provisionedBundle);
 
         container
             .read(provisioningControllerProvider)
@@ -396,7 +486,7 @@ void main() {
 
         await container
             .read(provisioningControllerProvider.notifier)
-            .configureFromBundle(testBundle);
+            .configureFromBundle(provisionedBundle);
 
         container
             .read(provisioningControllerProvider)
@@ -424,7 +514,7 @@ void main() {
 
         await container
             .read(provisioningControllerProvider.notifier)
-            .configureFromBundle(testBundle);
+            .configureFromBundle(provisionedBundle);
 
         container
             .read(provisioningControllerProvider)
@@ -443,7 +533,7 @@ void main() {
       });
     });
 
-    group('configureFromBundle - mobile (rotatePassword: false)', () {
+    group('configureFromBundle - handover (no rotation)', () {
       test('progresses to done without rotating password', () async {
         final states = <ProvisioningState>[];
         container.listen(
@@ -453,12 +543,8 @@ void main() {
 
         await container
             .read(provisioningControllerProvider.notifier)
-            .configureFromBundle(
-              testBundle,
-              rotatePassword: false,
-            );
+            .configureFromBundle(handoverBundle);
 
-        // Verify intermediate state progression order
         expect(states.length, greaterThanOrEqualTo(3));
         expect(states[0], const ProvisioningState.loggingIn());
         expect(states[1], const ProvisioningState.joiningRoom());
@@ -468,7 +554,9 @@ void main() {
         verify(
           () => mockMatrixService.login(waitForLifecycle: false),
         ).called(1);
-        verify(() => mockMatrixService.joinRoom(testBundle.roomId)).called(1);
+        verify(
+          () => mockMatrixService.joinRoom(handoverBundle.roomId),
+        ).called(1);
         verifyNever(
           () => mockMatrixService.changePassword(
             oldPassword: any(named: 'oldPassword'),
@@ -485,7 +573,7 @@ void main() {
               joiningRoom: () => fail('Expected done'),
               rotatingPassword: () => fail('Expected done'),
               ready: (_) => fail('Expected done'),
-              done: () {}, // expected
+              done: () {},
               error: (_) => fail('Expected done'),
             );
       });
@@ -495,14 +583,13 @@ void main() {
       test('resets to initial state', () {
         final controller = container.read(
           provisioningControllerProvider.notifier,
-        )..decodeBundle(validBase64);
+        )..decodeBundle(validProvisionedBase64);
 
-        // Verify we're in bundleDecoded state
         container
             .read(provisioningControllerProvider)
             .when(
               initial: () => fail('Expected bundleDecoded'),
-              bundleDecoded: (_) {}, // expected
+              bundleDecoded: (_) {},
               loggingIn: () => fail('Expected bundleDecoded'),
               joiningRoom: () => fail('Expected bundleDecoded'),
               rotatingPassword: () => fail('Expected bundleDecoded'),
@@ -516,7 +603,7 @@ void main() {
         container
             .read(provisioningControllerProvider)
             .when(
-              initial: () {}, // expected
+              initial: () {},
               bundleDecoded: (_) => fail('Expected initial'),
               loggingIn: () => fail('Expected initial'),
               joiningRoom: () => fail('Expected initial'),
@@ -537,9 +624,8 @@ void main() {
         final controller = container.read(
           provisioningControllerProvider.notifier,
         );
-        await controller.configureFromBundle(testBundle);
+        await controller.configureFromBundle(provisionedBundle);
 
-        // Should be in error state
         container
             .read(provisioningControllerProvider)
             .when(
@@ -555,14 +641,12 @@ void main() {
               },
             );
 
-        // Fix the mock so login succeeds on retry
         when(
           () => mockMatrixService.login(waitForLifecycle: false),
         ).thenAnswer((_) async => true);
 
         await controller.retry();
 
-        // Should have progressed past login
         container
             .read(provisioningControllerProvider)
             .when(
@@ -571,9 +655,45 @@ void main() {
               loggingIn: () => fail('Expected ready'),
               joiningRoom: () => fail('Expected ready'),
               rotatingPassword: () => fail('Expected ready'),
-              ready: (_) {}, // expected on desktop
-              done: () {}, // expected on mobile
-              error: (_) => fail('Expected ready or done'),
+              ready: (_) {},
+              done: () => fail('Expected ready for provisioned retry'),
+              error: (_) => fail('Expected ready'),
+            );
+      });
+
+      test('retry preserves handover kind (no rotation)', () async {
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => false);
+
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        );
+        await controller.configureFromBundle(handoverBundle);
+
+        when(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).thenAnswer((_) async => true);
+
+        await controller.retry();
+
+        verifyNever(
+          () => mockMatrixService.changePassword(
+            oldPassword: any(named: 'oldPassword'),
+            newPassword: any(named: 'newPassword'),
+          ),
+        );
+        container
+            .read(provisioningControllerProvider)
+            .when(
+              initial: () => fail('Expected done'),
+              bundleDecoded: (_) => fail('Expected done'),
+              loggingIn: () => fail('Expected done'),
+              joiningRoom: () => fail('Expected done'),
+              rotatingPassword: () => fail('Expected done'),
+              ready: (_) => fail('Expected done for handover retry'),
+              done: () {},
+              error: (_) => fail('Expected done'),
             );
       });
 
@@ -587,7 +707,7 @@ void main() {
         container
             .read(provisioningControllerProvider)
             .when(
-              initial: () {}, // expected - no change
+              initial: () {},
               bundleDecoded: (_) => fail('Expected initial'),
               loggingIn: () => fail('Expected initial'),
               joiningRoom: () => fail('Expected initial'),
@@ -618,7 +738,6 @@ void main() {
 
         expect(result, isNotNull);
 
-        // Decode and verify the handover bundle
         final decoded = utf8.decode(
           base64Decode(
             result!.padRight(result.length + (4 - result.length % 4) % 4, '='),
@@ -626,7 +745,8 @@ void main() {
         );
         final json = jsonDecode(decoded) as Map<String, dynamic>;
         final bundle = SyncProvisioningBundle.fromJson(json);
-        expect(bundle.v, 1);
+        expect(bundle.v, 2);
+        expect(bundle.kind, SyncBundleKind.handover);
         expect(bundle.homeServer, 'https://matrix.example.com');
         expect(bundle.user, '@alice:example.com');
         expect(bundle.password, 'rotated-password');
@@ -668,14 +788,14 @@ void main() {
 
     group('Base64 roundtrip', () {
       test('encode then decode produces same bundle', () {
-        final json = jsonEncode(testBundle.toJson());
+        final json = jsonEncode(provisionedBundle.toJson());
         final encoded = base64UrlEncode(utf8.encode(json));
 
         final decoded = container
             .read(provisioningControllerProvider.notifier)
             .decodeBundle(encoded);
 
-        expect(decoded, testBundle);
+        expect(decoded, provisionedBundle);
       });
     });
   });

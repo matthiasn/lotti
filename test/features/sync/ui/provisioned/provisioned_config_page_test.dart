@@ -44,7 +44,8 @@ void main() {
   late ValueNotifier<int> pageIndexNotifier;
 
   const testBundle = SyncProvisioningBundle(
-    v: 1,
+    v: 2,
+    kind: SyncBundleKind.provisioned,
     homeServer: 'https://matrix.example.com',
     user: '@alice:example.com',
     password: 'secret123',
