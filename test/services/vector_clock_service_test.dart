@@ -231,7 +231,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(20);
         final burnt = <int>[];
-        service.setBurnHandler(burnt.add);
+        service.setBurnHandler((_, counter) => burnt.add(counter));
 
         final reservation = await service.reserveNextVectorClock();
         reservation.release();
@@ -264,7 +264,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(50);
         final burnt = <int>[];
-        service.setBurnHandler(burnt.add);
+        service.setBurnHandler((_, counter) => burnt.add(counter));
 
         final reservation = await service.reserveNextVectorClock();
         await reservation.commit();
@@ -328,7 +328,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(200);
         final burnt = <int>[];
-        service.setBurnHandler(burnt.add);
+        service.setBurnHandler((_, counter) => burnt.add(counter));
 
         expect(
           () => service.withVcScope<void>(() async {
@@ -360,7 +360,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(300);
         final burnt = <int>[];
-        service.setBurnHandler(burnt.add);
+        service.setBurnHandler((_, counter) => burnt.add(counter));
 
         final applied = await service.withVcScope<bool>(
           () async {
@@ -427,7 +427,7 @@ void main() {
       () async {
         await service.setNextAvailableCounter(600);
         final burnt = <int>[];
-        service.setBurnHandler(burnt.add);
+        service.setBurnHandler((_, counter) => burnt.add(counter));
 
         final applied = await service.withVcScope<bool>(
           () async {
@@ -456,11 +456,40 @@ void main() {
     );
 
     test(
+      'burn handler receives the host captured at reserve time, not the '
+      "service's current host at release time — setNewHost between "
+      'reserve and release must not re-attribute the burn to the new host',
+      () async {
+        await service.setNextAvailableCounter(800);
+        final burnt = <({String hostId, int counter})>[];
+        service.setBurnHandler((hostId, counter) {
+          burnt.add((hostId: hostId, counter: counter));
+        });
+
+        final originalHost = await service.getHost();
+        final reservation = await service.reserveNextVectorClock();
+
+        // Swap to a brand-new host identity BEFORE releasing — simulates
+        // a user re-linking to a different Matrix account.
+        final newHost = await service.setNewHost();
+        expect(newHost, isNot(originalHost));
+
+        reservation.release();
+
+        expect(burnt, hasLength(1));
+        expect(burnt.single.hostId, originalHost);
+        expect(burnt.single.counter, 800);
+
+        service.setBurnHandler(null);
+      },
+    );
+
+    test(
       'burn handler exception does not propagate into the scope finalizer '
       '— the counter is already burnt; a handler throw must not cascade',
       () async {
         await service.setNextAvailableCounter(700);
-        service.setBurnHandler((_) {
+        service.setBurnHandler((_, _) {
           throw StateError('handler boom');
         });
 

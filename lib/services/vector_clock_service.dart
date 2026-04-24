@@ -42,11 +42,17 @@ import 'package:meta/meta.dart';
 /// [VectorClockService.reserveNextVectorClock] outside a scope must finalize
 /// the returned reservation themselves.
 class VcReservation {
-  VcReservation._(this.vc, this._counter, this._service);
+  VcReservation._(this.vc, this._counter, this._hostId, this._service);
 
   /// The reserved vector clock.
   final VectorClock vc;
   final int _counter;
+
+  /// The host ID at the time of reservation. Captured so that a later burn
+  /// broadcast attributes the counter to the correct host even if
+  /// [VectorClockService.setNewHost] swaps the service's host between
+  /// reservation and release.
+  final String _hostId;
   final VectorClockService _service;
   bool _finalized = false;
 
@@ -70,7 +76,7 @@ class VcReservation {
   void release() {
     if (_finalized) return;
     _finalized = true;
-    _service._onReleaseBurn(_counter);
+    _service._onReleaseBurn(_hostId, _counter);
   }
 }
 
@@ -83,13 +89,20 @@ class _VcScope {
 
 /// Handler invoked synchronously when a reserved counter is released without
 /// a matching write (a "burn"). Implementations typically enqueue a proactive
-/// `SyncBackfillResponse(unresolvable=true)` for the given counter so peers
-/// close the gap without waiting for the reactive backfill-request path.
+/// `SyncBackfillResponse(unresolvable=true)` for the given `(hostId, counter)`
+/// so peers close the gap without waiting for the reactive backfill-request
+/// path.
+///
+/// [hostId] is the host captured at reservation time, NOT the service's
+/// current host at broadcast time. These can differ if
+/// [VectorClockService.setNewHost] runs between reservation and release —
+/// the broadcast must attribute the burnt counter to the host that actually
+/// reserved it.
 ///
 /// The handler MUST NOT throw. Errors are the handler's responsibility to log
 /// and swallow — the VC counter is already persisted and cannot be rewound,
 /// so a handler exception would be uselessly destructive.
-typedef VcBurnHandler = void Function(int counter);
+typedef VcBurnHandler = void Function(String hostId, int counter);
 
 class VectorClockService {
   VectorClockService() {
@@ -229,6 +242,7 @@ class VectorClockService {
       final reservation = VcReservation._(
         VectorClock({...?previous?.vclock, _host: effectiveCounter}),
         effectiveCounter,
+        _host,
         this,
       );
 
@@ -312,7 +326,12 @@ class VectorClockService {
   /// registered broadcast handler (if any). Swallows handler exceptions —
   /// the counter is already on disk, so a throw here would be destructive
   /// for no benefit.
-  void _onReleaseBurn(int counter) {
+  ///
+  /// [hostId] is the host captured at reservation time; may differ from the
+  /// service's current [_host] if [setNewHost] ran between reserve and
+  /// release. The broadcast must attribute the burnt counter to the host
+  /// that actually reserved it.
+  void _onReleaseBurn(String hostId, int counter) {
     // DomainLogger may not be registered in some test harnesses / bootstrap
     // paths; use the `isRegistered` guard so a release on a minimally-wired
     // service (e.g. unit test seeding the SettingsDb counter) does not crash.
@@ -326,7 +345,7 @@ class VectorClockService {
     final handler = _burnHandler;
     if (handler == null) return;
     try {
-      handler(counter);
+      handler(hostId, counter);
     } catch (error, stackTrace) {
       if (getIt.isRegistered<DomainLogger>()) {
         getIt<DomainLogger>().error(
