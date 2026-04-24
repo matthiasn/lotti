@@ -127,6 +127,25 @@ class SyncTuning {
   static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;
 
+  /// Grace window between a row being first flagged as `missing` by gap
+  /// detection and the first backfill request firing for it.
+  ///
+  /// Baseline sync is now reliable (0 missing after a 460-entry offline
+  /// catch-up with backfill disabled), so any "missing" row is almost
+  /// always a transient reordering artifact — priority messages can jump
+  /// ahead of standard ones and briefly make them look missing. Without
+  /// this delay, a single priority message arriving out of sequence can
+  /// cause hundreds of backfill requests that duplicate traffic already
+  /// in flight. With the delay, the normal sync path gets a chance to
+  /// deliver the older messages first; only rows that are STILL missing
+  /// after the window become eligible for a backfill request.
+  ///
+  /// Enforced at query time in `SyncDatabase.getMissingEntries` and
+  /// `SyncDatabase.getMissingEntriesWithLimits` — rows that transition
+  /// out of `missing` during the window are no longer returned (no
+  /// cancellation logic needed).
+  static const Duration backfillMissingDebounce = Duration(minutes: 10);
+
   // Large-gap logging threshold.
   // Gaps larger than this are still fully materialized so backfill can recover
   // them, but they are logged explicitly for diagnostics.

@@ -680,17 +680,29 @@ class SyncDatabase extends _$SyncDatabase {
 
   /// Get entries with status 'missing' or 'requested' that haven't
   /// exceeded maxRequestCount, ordered by creation time (oldest first).
+  /// Return rows in `missing` / `requested` state that are still eligible
+  /// for a backfill request.
+  ///
+  /// [minAge] holds rows freshly detected as missing back for a grace window,
+  /// so a short-lived gap caused by out-of-order priority messages resolves
+  /// naturally via the standard sync path before backfill fires. Only rows
+  /// whose `created_at` is at or before `now - minAge` are returned. Pass
+  /// `Duration.zero` to disable (manual / "request now" paths).
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
     int offset = 0,
+    Duration minAge = Duration.zero,
+    DateTime? now,
   }) {
+    final cutoff = (now ?? DateTime.now()).subtract(minAge);
     return (select(syncSequenceLog)
           ..where(
             (t) =>
                 (t.status.equals(SyncSequenceStatus.missing.index) |
                     t.status.equals(SyncSequenceStatus.requested.index)) &
-                t.requestCount.isSmallerThanValue(maxRequestCount),
+                t.requestCount.isSmallerThanValue(maxRequestCount) &
+                t.createdAt.isSmallerOrEqualValue(cutoff),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
           ..limit(limit, offset: offset))
@@ -991,22 +1003,33 @@ class SyncDatabase extends _$SyncDatabase {
 
   /// Get missing entries with age and per-host limits for automatic backfill.
   /// [maxAge] - Only include entries created within this duration
+  /// [minAge] - Debounce window: rows freshly flagged as missing are held back
+  ///           until their `created_at` is at or before `now - minAge`. This
+  ///           lets short-lived gaps caused by out-of-order priority messages
+  ///           resolve via the standard sync path before backfill fires. Pass
+  ///           `Duration.zero` to disable (default).
   /// [maxPerHost] - Maximum entries to include per host
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
     Duration? maxAge,
+    Duration minAge = Duration.zero,
     int? maxPerHost,
     DateTime? now,
     int offset = 0,
   }) async {
-    // Get all missing/requested entries respecting request count
+    final effectiveNow = now ?? DateTime.now();
+    final minAgeCutoff = effectiveNow.subtract(minAge);
+    // Get all missing/requested entries respecting request count and the
+    // debounce window. Holding `minAge` in the query (not post-filter)
+    // avoids loading rows we immediately discard on every process cycle.
     final baseQuery = select(syncSequenceLog)
       ..where(
         (t) =>
             (t.status.equals(SyncSequenceStatus.missing.index) |
                 t.status.equals(SyncSequenceStatus.requested.index)) &
-            t.requestCount.isSmallerThanValue(maxRequestCount),
+            t.requestCount.isSmallerThanValue(maxRequestCount) &
+            t.createdAt.isSmallerOrEqualValue(minAgeCutoff),
       )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
 
@@ -1014,7 +1037,7 @@ class SyncDatabase extends _$SyncDatabase {
 
     // Apply age filter if specified
     if (maxAge != null) {
-      final cutoff = (now ?? DateTime.now()).subtract(maxAge);
+      final cutoff = effectiveNow.subtract(maxAge);
       entries = entries.where((e) => e.createdAt.isAfter(cutoff)).toList();
     }
 
