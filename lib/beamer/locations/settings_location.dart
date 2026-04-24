@@ -90,7 +90,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/conflicts/:conflictId',
     '/settings/advanced/conflicts/:conflictId/edit',
     '/settings/advanced/conflicts',
-    '/settings/maintenance',
+    '/settings/advanced/maintenance',
   ];
 
   @override

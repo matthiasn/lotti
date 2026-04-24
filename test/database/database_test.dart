@@ -171,6 +171,11 @@ final expectedFlags = <ConfigFlag>{
     description: "Enable What's New feature?",
     status: true,
   ),
+  const ConfigFlag(
+    name: enableSettingsTreeFlag,
+    description: 'Enable Settings V2 (tree-nav + detail pane, desktop)?',
+    status: false,
+  ),
 };
 
 void main() {

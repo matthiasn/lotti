@@ -44,6 +44,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shared repository contract.
 
 ## [0.9.972] - 2026-04-21
+### Added
+- Settings V2 foundations behind the `enable_settings_tree` config
+  flag (desktop only; default off). First three steps of the A2
+  tree-nav + detail-pane rollout documented in
+  `docs/design/settings/settings_v2_implementation_plan.md`:
+  the domain layer (`SettingsNode`, `NodeBadge`, `NodeTone`,
+  `buildSettingsTree(...)`, `SettingsTreeIndex` with
+  `findById` / `ancestors` / `pathToBeamUrl` / `beamUrlToPath`);
+  the state layer (`SettingsTreePath` notifier implementing the
+  four click rules from spec §3 plus `syncFromUrl` / `truncateTo`
+  / `clear`, and a `SettingsTreeNavWidth` notifier that
+  clamps to 280-480 dp with a 300 ms debounced persist under the
+  distinct `SETTINGS_TREE_NAV_WIDTH` key); and the chrome
+  (`SettingsV2Page` with a fixed 56 dp header, a locale-backed
+  `SettingsTreeView` rendering every flag-gated root node via
+  `SettingsTreeNodeWidget`, the `SettingsTreeResizeHandle` with
+  drag / double-tap reset / arrow-key ±8 / shift-arrow ±32 /
+  Home-to-default, and a detail-pane placeholder with a persistent
+  "Disable Settings V2" button — the escape hatch back to the
+  legacy column stack, since no real panels are wired up yet).
+  `SettingsRootPage` picks the surface via a flag watch on
+  `enableSettingsTreeFlag`; with the flag off the legacy
+  multi-column stack is unchanged.
+- Stray `/settings/maintenance` pathPattern in
+  `lib/beamer/locations/settings_location.dart` replaced with the
+  canonical `/settings/advanced/maintenance` — every caller
+  already routed through the latter, and the A2 tree index now
+  points at the single canonical URL.
+
 ### Changed
 - `BackfillRequestService` now skips analysis+dispatch while the
   `BridgeCoordinator` is mid-walk (forward-reading fresh timeline

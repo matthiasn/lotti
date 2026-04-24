@@ -2311,6 +2311,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
 
   @override
+  String get configFlagEnableSettingsTree =>
+      'Aranjament arborescent al setărilor';
+
+  @override
+  String get configFlagEnableSettingsTreeDescription =>
+      'Comută setările desktop către o navigare de tip arbore cu panou de detalii. Lăsați dezactivat pentru a păstra actualul stiv de coloane multiple.';
+
+  @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
 
   @override
@@ -5195,10 +5203,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAdvancedTitle => 'Setari Avansate';
 
   @override
+  String get settingsAgentsInstancesSubtitle => 'Agenți în execuție';
+
+  @override
+  String get settingsAgentsSoulsSubtitle =>
+      'Personalități durabile ale agenților';
+
+  @override
+  String get settingsAgentsTemplatesSubtitle => 'Șabloane de agenți partajate';
+
+  @override
   String get settingsAiApiKeys => 'Furnizori de inferență AI';
 
   @override
   String get settingsAiModels => 'Modele AI';
+
+  @override
+  String get settingsAiProfilesSubtitle => 'Furnizori și modele';
+
+  @override
+  String get settingsAiProfilesTitle => 'Profiluri de inferență';
 
   @override
   String get settingsAiSubtitle =>
@@ -5775,6 +5799,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Tematică';
+
+  @override
+  String get settingsV2DisableAction => 'Dezactivați Setările V2';
+
+  @override
+  String get settingsV2DisableFailed =>
+      'Setările V2 nu au putut fi dezactivate. Încercați din nou.';
+
+  @override
+  String get settingsV2EmptyStateBody =>
+      'Alegeți o secțiune din stânga pentru a începe.';
+
+  @override
+  String get settingsV2ResizeHandleLabel => 'Redimensionați arborele de setări';
+
+  @override
+  String get settingsV2UnimplementedTitle => 'Panoul nu este încă implementat';
 
   @override
   String get settingsWhatsNewSubtitle =>

@@ -7,12 +7,14 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/settings/ui/pages/settings_column_stack.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
+import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -173,6 +175,92 @@ void main() {
           find.byType(SettingsColumnStackView),
         );
         expect(stack.columnWidth, defaultListPaneWidth);
+      },
+    );
+  });
+
+  group('SettingsRootPage — enableSettingsTreeFlag branch', () {
+    testWidgets(
+      'flag off: renders the legacy column stack (default behaviour)',
+      (tester) async {
+        navService.isDesktopMode = true;
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+        // Default stub already returns `false` for every flag; assert
+        // the legacy path is the fallthrough.
+        await pumpRoot(tester);
+
+        expect(find.byType(SettingsColumnStackView), findsOneWidget);
+        expect(find.byType(SettingsV2Page), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'flag on: renders the SettingsV2Page tree-nav chrome',
+      (tester) async {
+        when(
+          () => mockJournalDb.watchConfigFlag(enableSettingsTreeFlag),
+        ).thenAnswer((_) => Stream.value(true));
+
+        navService.isDesktopMode = true;
+        navService.desktopSelectedSettingsRoute.value = (
+          path: '/settings',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        );
+
+        await pumpRoot(tester);
+
+        expect(find.byType(SettingsV2Page), findsOneWidget);
+        expect(
+          find.byType(SettingsColumnStackView),
+          findsNothing,
+          reason:
+              'With the V2 flag on, the legacy column-stack must not '
+              'also mount — otherwise both chrome variants would fight '
+              'for the same viewport.',
+        );
+      },
+    );
+
+    testWidgets(
+      'flag on + mobile viewport: still falls back to the single-pane '
+      'SettingsPage (flag gates desktop only) and never observes the flag',
+      (tester) async {
+        when(
+          () => mockJournalDb.watchConfigFlag(enableSettingsTreeFlag),
+        ).thenAnswer((_) => Stream.value(true));
+
+        await pumpRoot(tester, mediaQuery: _mobileMediaQuery);
+
+        expect(find.byType(SettingsPage), findsOneWidget);
+        expect(find.byType(SettingsV2Page), findsNothing);
+        // Desktop check short-circuits before the flag is read — the
+        // provider must never subscribe on mobile, otherwise flipping
+        // the flag on would pointlessly rebuild mobile users.
+        verifyNever(
+          () => mockJournalDb.watchConfigFlag(enableSettingsTreeFlag),
+        );
+      },
+    );
+
+    testWidgets(
+      'flag off + mobile viewport: renders SettingsPage, identical to flag on',
+      (tester) async {
+        // Companion to the "flag on + mobile" case above — both
+        // outcomes must be identical on narrow viewports, proving
+        // the flag has no mobile effect in either direction.
+        when(
+          () => mockJournalDb.watchConfigFlag(enableSettingsTreeFlag),
+        ).thenAnswer((_) => Stream.value(false));
+
+        await pumpRoot(tester, mediaQuery: _mobileMediaQuery);
+
+        expect(find.byType(SettingsPage), findsOneWidget);
+        expect(find.byType(SettingsV2Page), findsNothing);
       },
     );
   });

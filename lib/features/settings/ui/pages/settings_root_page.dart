@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/settings_column_stack.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
+import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Duration of the auto-scroll that keeps the newly-added column
 /// visible when the stack grows past the viewport. Short enough to
@@ -33,6 +36,14 @@ class SettingsRootPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isDesktopLayout(context)) {
       return const SettingsPage();
+    }
+
+    // Opt-in desktop A2 tree-nav layout (plan §6). Keeps the legacy
+    // column-stack as default until the flag goes default-on.
+    final enableV2 =
+        ref.watch(configFlagProvider(enableSettingsTreeFlag)).value ?? false;
+    if (enableV2) {
+      return const SettingsV2Page();
     }
 
     // `listPaneWidth` is a cross-feature token shared with tasks,

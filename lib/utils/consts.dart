@@ -21,6 +21,8 @@ const enableVectorSearchFlag = 'enable_vector_search';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 
+const enableSettingsTreeFlag = 'enable_settings_tree';
+
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';
 const logSyncFlag = 'log_sync';
