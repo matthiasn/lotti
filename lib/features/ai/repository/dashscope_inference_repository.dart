@@ -254,9 +254,14 @@ class DashScopeInferenceRepository {
       );
     }
   }
+
+  /// Closes the underlying HTTP client and any keep-alive connections.
+  void close() => _httpClient.close();
 }
 
 @riverpod
 DashScopeInferenceRepository dashScopeInferenceRepository(Ref ref) {
-  return DashScopeInferenceRepository();
+  final repo = DashScopeInferenceRepository();
+  ref.onDispose(repo.close);
+  return repo;
 }

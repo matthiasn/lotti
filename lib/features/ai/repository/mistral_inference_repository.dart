@@ -520,6 +520,9 @@ class MistralInferenceRepository {
 
     return result.isEmpty ? null : result;
   }
+
+  /// Closes the underlying HTTP client and any keep-alive connections.
+  void close() => _httpClient.close();
 }
 
 /// Exception thrown when Mistral operations fail.

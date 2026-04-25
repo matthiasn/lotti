@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 
+import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -8,7 +8,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/utils/immediate_exit.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:meta/meta.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Function signature for process exit.
@@ -20,7 +19,7 @@ typedef AsyncDisposer = Future<void> Function();
 /// Function signature for platform checks (e.g. macOS detection).
 typedef PlatformCheck = bool Function();
 
-class WindowService implements WindowListener {
+class WindowService with WidgetsBindingObserver implements WindowListener {
   WindowService({
     @visibleForTesting ExitCallback? exitOverride,
     @visibleForTesting AsyncDisposer? playerDisposerOverride,
@@ -35,9 +34,14 @@ class WindowService implements WindowListener {
       if (isDesktop) {
         windowManager.setPreventClose(true);
       }
+      // Catches platform shutdown signals (SIGTERM, macOS logout, applicationWillTerminate)
+      // that bypass the windowManager close path.
+      WidgetsBinding.instance.addObserver(this);
     }
     _disposer = ServiceDisposer(getIt, _logDisposalError);
   }
+
+  bool _isShuttingDown = false;
 
   late final ServiceDisposer _disposer;
   final ExitCallback _exitFn;
@@ -138,14 +142,25 @@ class WindowService implements WindowListener {
     unawaited(_handleClose());
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      unawaited(_handleClose());
+    }
+  }
+
   Future<void> _handleClose() async {
+    if (_isShuttingDown) return;
+    _isShuttingDown = true;
     if (_isMacOS()) {
-      // macOS shutdown sequence — three steps, all while the Dart VM is alive:
+      // macOS shutdown sequence — four steps, all while the Dart VM is alive:
       //
       // 1. Stop non-database services (outbox, sync, timers).
       // 2. Dispose the media_kit Player so mpv's native core thread stops
       //    cleanly and won't try to invoke FFI callbacks during VM teardown.
-      // 3. Call POSIX _exit(0) via FFI. Unlike Dart's exit() (which calls
+      // 3. Flush LoggingService so buffered log lines (the 500 ms batching
+      //    timer) reach disk before _exit cancels all pending Dart timers.
+      // 4. Call POSIX _exit(0) via FFI. Unlike Dart's exit() (which calls
       //    C exit() → atexit handlers → Dart VM teardown → GC finalizers),
       //    _exit() terminates immediately. This prevents:
       //    - NativeFinalizer on FinalizableDatabase triggering sqlite3_close_v2
@@ -164,6 +179,17 @@ class WindowService implements WindowListener {
         await _playerDisposer();
       } catch (e, s) {
         _logDisposalError(e, s, 'audioPlayer');
+      }
+
+      // Bounded so a hung file-flush cannot indefinitely delay shutdown.
+      try {
+        if (getIt.isRegistered<LoggingService>()) {
+          await getIt<LoggingService>().flush().timeout(
+            const Duration(seconds: 1),
+          );
+        }
+      } catch (_) {
+        // Logging is best-effort during shutdown; do not block _exit on it.
       }
 
       _exitFn(0);

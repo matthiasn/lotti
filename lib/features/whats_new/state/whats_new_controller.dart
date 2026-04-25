@@ -16,7 +16,9 @@ part 'whats_new_controller.g.dart';
 /// Provider for the [WhatsNewService].
 @riverpod
 WhatsNewService whatsNewService(Ref ref) {
-  return WhatsNewService();
+  final service = WhatsNewService();
+  ref.onDispose(service.close);
+  return service;
 }
 
 /// Provider that checks if the What's New modal should auto-show.

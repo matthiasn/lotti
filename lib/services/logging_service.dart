@@ -150,11 +150,12 @@ class LoggingService {
     await nextDrain;
   }
 
-  /// Awaits all pending writes and flushes all buffered lines. Intended for
-  /// tests that use buffered (non-test-env) mode and need deterministic
-  /// completion without arbitrary [Future.delayed] waits.
-  @visibleForTesting
-  Future<void> flushAllForTest() async {
+  /// Awaits all pending writes and flushes all buffered log lines to disk.
+  ///
+  /// Called during app shutdown so that log entries buffered behind the 500 ms
+  /// timer are not lost when `_exit(0)` terminates the process before the
+  /// timer fires.
+  Future<void> flush() async {
     // Await all tracked unawaited writes (captureEvent / captureException).
     // Snapshot first since whenComplete callbacks remove items during iteration.
     await Future.wait(List<Future<void>>.of(_pendingWrites));
@@ -167,6 +168,11 @@ class LoggingService {
       await _flushPendingLines(stem, forceFlush: true);
     }
   }
+
+  /// Test-only alias for [flush]. Kept for backwards compatibility with
+  /// existing tests that called this directly.
+  @visibleForTesting
+  Future<void> flushAllForTest() => flush();
 
   String? _domainFileStem(String domain) {
     if (syncFileDomains.contains(domain)) {

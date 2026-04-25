@@ -445,6 +445,9 @@ class VoxtralInferenceRepository {
       );
     }
   }
+
+  /// Closes the underlying HTTP client and any keep-alive connections.
+  void close() => _httpClient.close();
 }
 
 /// Health status of the Voxtral server

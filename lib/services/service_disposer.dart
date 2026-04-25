@@ -26,8 +26,8 @@ const _perOperationTimeout = Duration(seconds: 3);
 /// 1. Stop periodic timers (BackfillRequestService, EmbeddingService)
 /// 2. Stop the outbox (depends on MatrixService being alive)
 /// 3. Stop Matrix sync and close its FFI-backed database
-/// 4. Close application Drift databases
-/// 5. Close the ObjectBox embedding store
+/// 4. Close the ObjectBox embedding store (no FFI-callback issue, safe on macOS)
+/// 5. Close application Drift databases
 class ServiceDisposer {
   ServiceDisposer(this._getIt, this._logError);
 
@@ -71,10 +71,18 @@ class ServiceDisposer {
       (s) => s.dispose(),
       'MatrixService',
     );
+
+    // 4. Close the ObjectBox embedding store. ObjectBox holds a native lock
+    // file and does not register Dart NativeFinalizers, so it's safe to close
+    // on macOS — unlike Drift/sqlite which is deferred to _disposeDatabases.
+    _disposeSyncSafely<EmbeddingStore>(
+      (s) => s.close(),
+      'EmbeddingStore',
+    );
   }
 
   Future<void> _disposeDatabases() async {
-    // 4. Close Drift databases so no WAL/lock files are left dangling.
+    // 5. Close Drift databases so no WAL/lock files are left dangling.
     await _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb');
     await _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase');
     await _disposeAsyncSafely<AgentDatabase>(
@@ -84,12 +92,6 @@ class ServiceDisposer {
     await _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb');
     await _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db');
     await _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb');
-
-    // 5. Close the ObjectBox embedding store.
-    _disposeSyncSafely<EmbeddingStore>(
-      (s) => s.close(),
-      'EmbeddingStore',
-    );
   }
 
   void _disposeSyncSafely<T extends Object>(

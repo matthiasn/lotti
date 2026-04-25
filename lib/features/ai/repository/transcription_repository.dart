@@ -24,6 +24,9 @@ class TranscriptionRepository {
 
   static const _uuid = Uuid();
 
+  /// Closes the underlying HTTP client and any keep-alive connections.
+  void close() => httpClient.close();
+
   /// Shared transcription template.
   ///
   /// Handles timeout calculation, developer logging, response parsing,
