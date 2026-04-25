@@ -66,25 +66,23 @@ class AgentWakeSyncInterceptor {
     _links.clear();
   }
 
+  // Merge helpers only carry the SUPERSEDED previous vector clock into
+  // `coveredVectorClocks`. The current (`next`) clock is added later by
+  // `OutboxService._prepareAgentEntity` / `_prepareAgentLink` (reason
+  // `ensure_current_clock_covered`), and the receiver
+  // `SyncSequenceLogService._filterCoveredVectorClocks` strips the current
+  // clock again before pre-marking covered counters. Adding `next.vc` here
+  // would just be redundant with that pipeline.
   SyncAgentEntity _mergeEntity(
     SyncAgentEntity? previous,
     SyncAgentEntity next,
   ) {
-    if (previous == null) {
-      final vc = next.agentEntity?.vectorClock;
-      return next.copyWith(
-        coveredVectorClocks: VectorClock.mergeUniqueClocks([
-          ...?next.coveredVectorClocks,
-          vc,
-        ]),
-      );
-    }
+    if (previous == null) return next;
 
     final covered = VectorClock.mergeUniqueClocks([
       ...?previous.coveredVectorClocks,
       ...?next.coveredVectorClocks,
       previous.agentEntity?.vectorClock,
-      next.agentEntity?.vectorClock,
     ]);
 
     return next.copyWith(
@@ -97,21 +95,12 @@ class AgentWakeSyncInterceptor {
     SyncAgentLink? previous,
     SyncAgentLink next,
   ) {
-    if (previous == null) {
-      final vc = next.agentLink?.vectorClock;
-      return next.copyWith(
-        coveredVectorClocks: VectorClock.mergeUniqueClocks([
-          ...?next.coveredVectorClocks,
-          vc,
-        ]),
-      );
-    }
+    if (previous == null) return next;
 
     final covered = VectorClock.mergeUniqueClocks([
       ...?previous.coveredVectorClocks,
       ...?next.coveredVectorClocks,
       previous.agentLink?.vectorClock,
-      next.agentLink?.vectorClock,
     ]);
 
     return next.copyWith(

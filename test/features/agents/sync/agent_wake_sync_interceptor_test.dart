@@ -125,7 +125,9 @@ void main() {
       (bundledEntity.agentEntity! as AgentIdentityEntity).currentStateId,
       'state-2',
     );
-    expect(coveredCounters, {1, 3});
+    // Only the SUPERSEDED clock (counter 1) is covered. The current clock
+    // (counter 3) is added downstream by OutboxService._prepareAgentEntity.
+    expect(coveredCounters, {1});
     expect(interceptor.entityCount, 1);
   });
 

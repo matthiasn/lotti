@@ -288,7 +288,15 @@ class AgentSyncService {
         Error.throwWithStackTrace(error, stackTrace);
       }
 
-      await _flushWakeInterceptor(interceptor);
+      // DB writes have already committed; a flush failure here only delays
+      // peer convergence (maintenance/backfill will resurface the committed
+      // rows). Don't fail an otherwise-successful wake on a sync hiccup —
+      // matches the swallow+log policy of `_enqueueOrBufferPostWrite`.
+      try {
+        await _flushWakeInterceptor(interceptor);
+      } catch (flushError, flushStackTrace) {
+        _logWakeFlushFailure(flushError, flushStackTrace);
+      }
       return result;
     } finally {
       interceptor.clear();
