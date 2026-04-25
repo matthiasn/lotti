@@ -74,8 +74,9 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
   bool _editing = false;
   bool _confirmDelete = false;
 
-  late final TextEditingController _nameController =
-      TextEditingController(text: widget.view.name);
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.view.name,
+  );
   final FocusNode _nameFocus = FocusNode();
 
   @override
@@ -146,7 +147,8 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final showDeleteAffordance = _hover && !_editing;
-    final showDragHandle = (_hover || widget.active) && widget.dragHandle != null;
+    final showDragHandle =
+        (_hover || widget.active) && widget.dragHandle != null;
 
     final background = widget.active
         ? tokens.colors.surface.selected
@@ -161,155 +163,167 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     return MouseRegion(
       onEnter: (_) => _setHover(true),
       onExit: (_) => _setHover(false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _editing ? null : widget.onActivate,
-        onDoubleTap: _editing ? null : _enterEditMode,
-        child: Container(
-          key: SavedTaskFilterRowKeys.root(widget.view.id),
-          margin: const EdgeInsets.only(left: 4),
-          constraints: const BoxConstraints(minHeight: 32),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              if (widget.active)
-                Positioned(
-                  left: 14,
-                  top: 7,
-                  bottom: 7,
-                  child: Container(
-                    width: 2,
-                    decoration: BoxDecoration(
-                      color: tokens.colors.interactive.enabled,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              if (!widget.active && !_hover)
-                Positioned(
-                  left: 9,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
+      child: Semantics(
+        button: true,
+        selected: widget.active,
+        label: widget.view.name,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _editing ? null : widget.onActivate,
+          onDoubleTap: _editing ? null : _enterEditMode,
+          child: Container(
+            key: SavedTaskFilterRowKeys.root(widget.view.id),
+            margin: const EdgeInsetsDirectional.only(start: 4),
+            constraints: const BoxConstraints(minHeight: 32),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                if (widget.active)
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    start: 14,
+                    top: 7,
+                    bottom: 7,
                     child: Container(
-                      width: 3,
-                      height: 3,
+                      width: 2,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: tokens.colors.interactive.enabled
-                            .withValues(alpha: 0.4),
+                        color: tokens.colors.interactive.enabled,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  start: 30,
-                  end: 8,
-                  top: 7,
-                  bottom: 7,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _editing
-                          ? _RenameField(
-                              key: SavedTaskFilterRowKeys.renameField(
-                                widget.view.id,
-                              ),
-                              controller: _nameController,
-                              focusNode: _nameFocus,
-                              tokens: tokens,
-                              semanticLabel:
-                                  messages.tasksSavedFilterRenameSemantics,
-                              onCommit: _commitRename,
-                              onCancel: _cancelRename,
-                            )
-                          : Text(
-                              widget.view.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.typography.styles.body.bodyMedium
-                                  .copyWith(
-                                color: labelColor,
-                                fontWeight: widget.active
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                    ),
-                    if (!_editing)
-                      Stack(
-                        alignment: Alignment.centerRight,
-                        children: [
-                          // Count is rendered when present and the row is not
-                          // showing the delete affordance.
-                          if (widget.count != null)
-                            AnimatedOpacity(
-                              opacity: showDeleteAffordance ? 0 : 1,
-                              duration: const Duration(milliseconds: 120),
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.only(
-                                  start: 6,
-                                ),
-                                child: Text(
-                                  '${widget.count}',
-                                  textAlign: TextAlign.end,
-                                  style: tokens.typography.styles.body.bodySmall
-                                      .copyWith(
-                                        color: countColor,
-                                        fontWeight: FontWeight.w600,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures(),
-                                        ],
-                                      ),
-                                ),
-                              ),
-                            ),
-                          // Delete affordance: present when hovered. Always
-                          // rendered (with opacity 0) so it can be looked up
-                          // and exercised in tests; hit-testing is gated on
-                          // hover so users can't tap a hidden button.
-                          AnimatedOpacity(
-                            opacity: showDeleteAffordance ? 1 : 0,
-                            duration: const Duration(milliseconds: 120),
-                            child: IgnorePointer(
-                              ignoring: !showDeleteAffordance,
-                              child: _DeleteButton(
-                                id: widget.view.id,
-                                confirmed: _confirmDelete,
-                                tokens: tokens,
-                                tooltip: _confirmDelete
-                                    ? messages
-                                          .tasksSavedFilterDeleteConfirmTooltip
-                                    : messages.tasksSavedFilterDeleteTooltip,
-                                onTap: _handleDeleteTap,
-                              ),
-                            ),
+                if (!widget.active && !_hover)
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    start: 9,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Container(
+                        width: 3,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: tokens.colors.interactive.enabled.withValues(
+                            alpha: 0.4,
                           ),
-                        ],
+                        ),
                       ),
-                  ],
-                ),
-              ),
-              if (showDragHandle)
-                Positioned.directional(
-                  textDirection: Directionality.of(context),
-                  start: 4,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: KeyedSubtree(
-                      key: SavedTaskFilterRowKeys.dragHandle(widget.view.id),
-                      child: widget.dragHandle!,
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    start: 30,
+                    end: 8,
+                    top: 7,
+                    bottom: 7,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _editing
+                            ? _RenameField(
+                                key: SavedTaskFilterRowKeys.renameField(
+                                  widget.view.id,
+                                ),
+                                controller: _nameController,
+                                focusNode: _nameFocus,
+                                tokens: tokens,
+                                semanticLabel:
+                                    messages.tasksSavedFilterRenameSemantics,
+                                onCommit: _commitRename,
+                                onCancel: _cancelRename,
+                              )
+                            : Text(
+                                widget.view.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tokens.typography.styles.body.bodyMedium
+                                    .copyWith(
+                                      color: labelColor,
+                                      fontWeight: widget.active
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                    ),
+                              ),
+                      ),
+                      if (!_editing)
+                        Stack(
+                          alignment: Alignment.centerRight,
+                          children: [
+                            // Count is rendered when present and the row is not
+                            // showing the delete affordance.
+                            if (widget.count != null)
+                              AnimatedOpacity(
+                                opacity: showDeleteAffordance ? 0 : 1,
+                                duration: const Duration(milliseconds: 120),
+                                child: Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    start: 6,
+                                  ),
+                                  child: Text(
+                                    '${widget.count}',
+                                    textAlign: TextAlign.end,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodySmall
+                                        .copyWith(
+                                          color: countColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            // Delete affordance: present when hovered. Always
+                            // rendered (with opacity 0) so it can be looked up
+                            // and exercised in tests; hit-testing is gated on
+                            // hover so users can't tap a hidden button.
+                            AnimatedOpacity(
+                              opacity: showDeleteAffordance ? 1 : 0,
+                              duration: const Duration(milliseconds: 120),
+                              child: IgnorePointer(
+                                ignoring: !showDeleteAffordance,
+                                child: _DeleteButton(
+                                  id: widget.view.id,
+                                  confirmed: _confirmDelete,
+                                  tokens: tokens,
+                                  tooltip: _confirmDelete
+                                      ? messages
+                                            .tasksSavedFilterDeleteConfirmTooltip
+                                      : messages.tasksSavedFilterDeleteTooltip,
+                                  onTap: _handleDeleteTap,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-            ],
+                if (showDragHandle)
+                  Positioned.directional(
+                    textDirection: Directionality.of(context),
+                    start: 4,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: KeyedSubtree(
+                        key: SavedTaskFilterRowKeys.dragHandle(widget.view.id),
+                        child: widget.dragHandle!,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -361,17 +375,17 @@ class _RenameField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 2,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(tokens.radii.s),
-              borderSide:
-                  BorderSide(color: tokens.colors.interactive.enabled),
+              borderSide: BorderSide(color: tokens.colors.interactive.enabled),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(tokens.radii.s),
-              borderSide:
-                  BorderSide(color: tokens.colors.interactive.enabled),
+              borderSide: BorderSide(color: tokens.colors.interactive.enabled),
             ),
           ),
         ),

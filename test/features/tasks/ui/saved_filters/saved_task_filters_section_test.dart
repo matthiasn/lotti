@@ -64,16 +64,16 @@ void main() {
     );
   }
 
-  testWidgets('renders the empty state when no saved filters exist',
-      (tester) async {
+  testWidgets('renders the empty state when no saved filters exist', (
+    tester,
+  ) async {
     await _pumpSection(
       tester,
       onActivate: (_) {},
       onAddPressed: () {},
     );
 
-    final emptyFinder =
-        find.byKey(SavedTaskFiltersSectionKeys.emptyState);
+    final emptyFinder = find.byKey(SavedTaskFiltersSectionKeys.emptyState);
     expect(emptyFinder, findsOneWidget);
 
     final messages = AppLocalizations.of(tester.element(emptyFinder))!;
@@ -100,8 +100,9 @@ void main() {
     expect(find.text('B'), findsOneWidget);
   });
 
-  testWidgets('forwards onActivate with the tapped saved filter',
-      (tester) async {
+  testWidgets('forwards onActivate with the tapped saved filter', (
+    tester,
+  ) async {
     stubPersisted(const [
       SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
     ]);
@@ -119,23 +120,26 @@ void main() {
     expect(activated?.id, 'sv-1');
   });
 
-  testWidgets('add button is disabled and skips onAddPressed when canAdd=false',
-      (tester) async {
-    var pressed = 0;
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () => pressed++,
-    );
+  testWidgets(
+    'add button is disabled and skips onAddPressed when canAdd=false',
+    (tester) async {
+      var pressed = 0;
+      await _pumpSection(
+        tester,
+        onActivate: (_) {},
+        onAddPressed: () => pressed++,
+      );
 
-    await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.addButton));
-    await tester.pump();
+      await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.addButton));
+      await tester.pump();
 
-    expect(pressed, 0);
-  });
+      expect(pressed, 0);
+    },
+  );
 
-  testWidgets('add button invokes onAddPressed when canAdd=true',
-      (tester) async {
+  testWidgets('add button invokes onAddPressed when canAdd=true', (
+    tester,
+  ) async {
     var pressed = 0;
     await _pumpSection(
       tester,
@@ -165,8 +169,9 @@ void main() {
     expect(find.text('12'), findsOneWidget);
   });
 
-  testWidgets('marks the active filter row when activeId matches',
-      (tester) async {
+  testWidgets('marks the active filter row when activeId matches', (
+    tester,
+  ) async {
     stubPersisted(const [
       SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
       SavedTaskFilter(id: 'sv-2', name: 'Bravo', filter: _filterB),
@@ -179,10 +184,19 @@ void main() {
       activeId: 'sv-2',
     );
 
-    // Both rows render; the active one differentiation is exercised through
-    // the row widget's own appearance — here we just assert both exist and
-    // the section accepted the activeId without throwing.
-    expect(find.byKey(SavedTaskFilterRowKeys.root('sv-1')), findsOneWidget);
-    expect(find.byKey(SavedTaskFilterRowKeys.root('sv-2')), findsOneWidget);
+    final activeRow = tester.widget<SavedTaskFilterRow>(
+      find.ancestor(
+        of: find.byKey(SavedTaskFilterRowKeys.root('sv-2')),
+        matching: find.byType(SavedTaskFilterRow),
+      ),
+    );
+    final inactiveRow = tester.widget<SavedTaskFilterRow>(
+      find.ancestor(
+        of: find.byKey(SavedTaskFilterRowKeys.root('sv-1')),
+        matching: find.byType(SavedTaskFilterRow),
+      ),
+    );
+    expect(activeRow.active, isTrue);
+    expect(inactiveRow.active, isFalse);
   });
 }

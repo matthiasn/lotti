@@ -59,7 +59,10 @@ class SavedTaskFiltersSection extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final asyncList = ref.watch(savedTaskFiltersControllerProvider);
-    final list = asyncList.value ?? const <SavedTaskFilter>[];
+    // Treat loading and error states as "no data yet" so the section header
+    // renders without flashing the empty state. Once data resolves, the body
+    // switches between empty state and list.
+    final list = asyncList.value;
 
     return Column(
       key: SavedTaskFiltersSectionKeys.root,
@@ -73,7 +76,9 @@ class SavedTaskFiltersSection extends ConsumerWidget {
           onPressed: onAddPressed,
           tokens: tokens,
         ),
-        if (list.isEmpty)
+        if (list == null)
+          const SizedBox.shrink()
+        else if (list.isEmpty)
           Padding(
             key: SavedTaskFiltersSectionKeys.emptyState,
             padding: const EdgeInsetsDirectional.only(
@@ -188,8 +193,9 @@ class _SectionHeader extends StatelessWidget {
                       size: 12,
                       color: enabled
                           ? tokens.colors.interactive.enabled
-                          : tokens.colors.text.lowEmphasis
-                              .withValues(alpha: 0.5),
+                          : tokens.colors.text.lowEmphasis.withValues(
+                              alpha: 0.5,
+                            ),
                     ),
                   ),
                 ),
@@ -251,11 +257,15 @@ class _ReorderableList extends StatelessWidget {
           onActivate: () => onActivate(view),
           onRename: (name) => onRename(view.id, name),
           onDelete: () => onDelete(view.id),
-          dragHandle: ReorderableDragStartListener(
-            index: index,
-            child: const Icon(
-              Icons.drag_indicator,
-              size: 14,
+          dragHandle: Semantics(
+            button: true,
+            label: context.messages.tasksSavedFilterDragHandleSemantics,
+            child: ReorderableDragStartListener(
+              index: index,
+              child: const Icon(
+                Icons.drag_indicator,
+                size: 14,
+              ),
             ),
           ),
         );
