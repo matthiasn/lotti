@@ -13,6 +13,9 @@ import 'package:lotti/features/design_system/components/headers/tab_section_head
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -655,4 +658,91 @@ void main() {
       },
     );
   });
+
+  group('Tasks header saved-filter suffix', () {
+    Widget buildSubjectWithSavedFilter({
+      required String? activeId,
+      required List<SavedTaskFilter> seed,
+    }) {
+      fakeController = FakeJournalPageController(state());
+
+      return makeTestableWidgetNoScroll(
+        const TasksTabPage(),
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          savedTaskFiltersControllerProvider.overrideWith(
+            () => _StubSavedTaskFiltersController(seed),
+          ),
+          currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
+          tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+          liveTasksFilterProvider.overrideWith((ref) => const TasksFilter()),
+        ],
+      );
+    }
+
+    testWidgets('renders no suffix when no saved filter is active', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubjectWithSavedFilter(
+          activeId: null,
+          seed: const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('· '), findsNothing);
+    });
+
+    testWidgets(
+      'renders the "· {name}" suffix when activeId resolves to a saved view',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: 'sv-1',
+            seed: const [
+              SavedTaskFilter(
+                id: 'sv-1',
+                name: 'In progress · P0',
+                filter: TasksFilter(),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('· In progress · P0'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders no suffix when activeId does not resolve to any saved view',
+      (tester) async {
+        // Stale-id case: provider says sv-1 is active, but the list does not
+        // contain it (e.g. concurrent delete). The suffix must degrade to
+        // empty rather than throwing.
+        await tester.pumpWidget(
+          buildSubjectWithSavedFilter(
+            activeId: 'sv-1',
+            seed: const [],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('· '), findsNothing);
+      },
+    );
+  });
+}
+
+class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
+  _StubSavedTaskFiltersController(this._seed);
+  final List<SavedTaskFilter> _seed;
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
 }
