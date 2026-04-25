@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -93,6 +94,13 @@ class BackfillRequestService {
   bool _isProcessing = false;
   bool _isDisposed = false;
 
+  /// True once we have observed a non-empty inbound queue. The drain
+  /// signal only matters when there was something to drain — without
+  /// this latch a flag-on cold start with an already-empty queue would
+  /// fire `nudgeAfterDrain` for every depth tick.
+  bool _queueHadWork = false;
+  StreamSubscription<QueueDepthSignal>? _depthSubscription;
+
   /// Log a backfill trace message to the sync domain logger (separate file).
   void _trace(String message, {String? subDomain}) {
     _domainLogger?.log(
@@ -113,10 +121,35 @@ class BackfillRequestService {
       (_) => _processBackfillRequests(useLimits: true),
     );
 
+    // Subscribe to the inbound queue's depth signal so the moment the
+    // queue drains we can immediately ask peers for any rows still
+    // flagged `missing`. Without this, the 10-minute
+    // `backfillMissingDebounce` (which exists to suppress out-of-order
+    // priority arrivals while the queue is actively flowing) would
+    // hold real post-catch-up gaps invisible to the periodic timer
+    // for up to 10 minutes — exactly the symptom from the
+    // 2026-04-25 phantom-gap audit.
+    _depthSubscription?.cancel();
+    final queue = queueCoordinator?.queue;
+    if (queue != null) {
+      _depthSubscription = queue.depthChanges.listen(_onQueueDepth);
+    }
+
     _trace(
       'start interval=${_requestInterval.inSeconds}s batchSize=$_maxBatchSize maxRetries=$_maxRequestCount',
       subDomain: 'backfill.start',
     );
+  }
+
+  void _onQueueDepth(QueueDepthSignal signal) {
+    if (_isDisposed) return;
+    if (signal.total > 0) {
+      _queueHadWork = true;
+      return;
+    }
+    if (!_queueHadWork) return;
+    _queueHadWork = false;
+    nudgeAfterDrain();
   }
 
   /// Process full historical backfill without age/per-host limits.
@@ -132,6 +165,25 @@ class BackfillRequestService {
     if (_isDisposed) return;
     _trace('nudge immediate automatic pass', subDomain: 'backfill.nudge');
     unawaited(_processBackfillRequests(useLimits: true));
+  }
+
+  /// Like [nudge], but bypasses the [SyncTuning.backfillMissingDebounce]
+  /// grace window. Triggered when the inbound queue transitions to
+  /// empty: at that point any row still in `missing` is a real gap
+  /// (no more in-flight reordering can close it for free), so the
+  /// debounce — which exists purely to suppress short-lived
+  /// reordering artefacts — is no longer load-bearing. Per-host and
+  /// age limits stay in effect; this is still a bounded automatic
+  /// pass, not a full historical backfill.
+  void nudgeAfterDrain() {
+    if (_isDisposed) return;
+    _trace(
+      'nudge after queue drain (debounce bypassed)',
+      subDomain: 'backfill.nudge',
+    );
+    unawaited(
+      _processBackfillRequests(useLimits: true, bypassDebounce: true),
+    );
   }
 
   /// Re-request entries that are in 'requested' status but haven't been received.
@@ -241,9 +293,15 @@ class BackfillRequestService {
   /// Main processing logic - fetch missing entries and send backfill requests.
   /// [useLimits] - If true, apply age and per-host limits for automatic backfill.
   /// [ignoreEnabledFlag] - If true, process even when backfill is disabled (for manual trigger).
+  /// [bypassDebounce] - If true, ignore the per-row missing-debounce
+  ///   grace window. Used by [nudgeAfterDrain] when the inbound queue
+  ///   has just emptied: any row still flagged `missing` at that point
+  ///   is a real gap, not a transient out-of-order arrival, so the
+  ///   debounce no longer protects anything.
   Future<int> _processBackfillRequests({
     required bool useLimits,
     bool ignoreEnabledFlag = false,
+    bool bypassDebounce = false,
   }) async {
     if (_isDisposed || _isProcessing) return 0;
 
@@ -296,11 +354,15 @@ class BackfillRequestService {
         amnestyWindow: _amnestyWindow,
       );
 
-      final missing = await _loadNextUnqueuedMissingBatch(useLimits: useLimits);
+      final missing = await _loadNextUnqueuedMissingBatch(
+        useLimits: useLimits,
+        bypassDebounce: bypassDebounce,
+      );
 
       if (missing.isEmpty) {
         _trace(
-          'processBackfillRequests: no missing entries (useLimits=$useLimits)',
+          'processBackfillRequests: no missing entries '
+          '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
           subDomain: 'backfill.process',
         );
         return 0;
@@ -339,7 +401,8 @@ class BackfillRequestService {
       );
 
       _trace(
-        'processBackfillRequests: sent ${missing.length} requests (useLimits=$useLimits)',
+        'processBackfillRequests: sent ${missing.length} requests '
+        '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
         subDomain: 'backfill.process',
       );
 
@@ -438,11 +501,19 @@ class BackfillRequestService {
 
   Future<List<SyncSequenceLogItem>> _loadNextUnqueuedMissingBatch({
     required bool useLimits,
+    bool bypassDebounce = false,
   }) async {
     final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
     final selected = <SyncSequenceLogItem>[];
     var offset = 0;
     var filteredCount = 0;
+
+    // The debounce only protects the bounded automatic path against
+    // out-of-order priority arrivals; a queue-drain nudge is precisely
+    // the moment when "no more in-flight events can resolve this" is
+    // true, so the bypass collapses `minAge` to zero while keeping
+    // age + per-host limits intact.
+    final effectiveMinAge = bypassDebounce ? Duration.zero : _missingDebounce;
 
     while (selected.length < _maxBatchSize) {
       final remaining = _maxBatchSize - selected.length;
@@ -456,7 +527,7 @@ class BackfillRequestService {
               limit: remaining,
               maxRequestCount: _maxRequestCount,
               maxAge: _maxAge,
-              minAge: _missingDebounce,
+              minAge: effectiveMinAge,
               maxPerHost: _maxPerHost,
               offset: offset,
             )
@@ -508,5 +579,7 @@ class BackfillRequestService {
     _isDisposed = true;
     _timer?.cancel();
     _timer = null;
+    unawaited(_depthSubscription?.cancel());
+    _depthSubscription = null;
   }
 }

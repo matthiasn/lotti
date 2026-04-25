@@ -1694,6 +1694,117 @@ void main() {
         },
       );
     });
+
+    group('nudgeAfterDrain', () {
+      test(
+        'collapses the missing-debounce minAge to zero so a row freshly '
+        'flagged missing during catch-up is requested as soon as the '
+        'inbound queue empties — the original 10-minute debounce only '
+        'protects against in-flight reordering and is no longer '
+        'load-bearing once the queue is genuinely drained',
+        () async {
+          when(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: any(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => [_createMissingLogItem(aliceHostId, 99)]);
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockSequenceService.markAsRequested(any()),
+          ).thenAnswer((_) async {});
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 10),
+          );
+          addTearDown(service.dispose);
+
+          service.nudgeAfterDrain();
+          // Two microtask flushes: one for nudge → process, one for
+          // the async page fetch + outbox enqueue.
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final captured = verify(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: captureAny(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).captured;
+          expect(captured.single, Duration.zero);
+          verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+        },
+      );
+
+      test(
+        'a periodic timer pass after a drain-bypass call still applies '
+        'the debounce — the bypass is a one-shot flavor, not a sticky '
+        'mode change',
+        () async {
+          when(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: any(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 10),
+            missingDebounce: const Duration(minutes: 7),
+          );
+          addTearDown(service.dispose);
+
+          service.nudgeAfterDrain();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+          service.nudge();
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final captured = verify(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: captureAny(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).captured;
+          expect(
+            captured,
+            equals([Duration.zero, const Duration(minutes: 7)]),
+            reason:
+                'first call (drain bypass) clears minAge; second call '
+                '(periodic / nudge) restores the configured debounce',
+          );
+        },
+      );
+    });
   });
 }
 

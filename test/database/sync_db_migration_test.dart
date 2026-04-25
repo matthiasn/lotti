@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 14);
+        expect(db.schemaVersion, 15);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 14);
+      expect(versionResult.first.read<int>('user_version'), 15);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -163,9 +163,13 @@ void main() {
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type='index' AND name IN ( "
             "'idx_outbox_status_priority_created_at', "
+            "'idx_outbox_actionable_priority_created_at', "
             "'idx_sync_sequence_log_actionable_status_created_at', "
+            "'idx_sync_sequence_log_actionable_status_updated_at', "
+            "'idx_sync_sequence_log_host_status', "
             "'idx_sync_sequence_log_payload_resolution', "
-            "'idx_sync_sequence_log_host_entry_status_counter')",
+            "'idx_sync_sequence_log_host_entry_status_counter', "
+            "'idx_inbound_event_queue_abandoned_reason')",
           )
           .get();
       final indexNames = indexResults
@@ -175,9 +179,13 @@ void main() {
         indexNames,
         containsAll(<String>{
           'idx_outbox_status_priority_created_at',
+          'idx_outbox_actionable_priority_created_at',
           'idx_sync_sequence_log_actionable_status_created_at',
+          'idx_sync_sequence_log_actionable_status_updated_at',
+          'idx_sync_sequence_log_host_status',
           'idx_sync_sequence_log_payload_resolution',
           'idx_sync_sequence_log_host_entry_status_counter',
+          'idx_inbound_event_queue_abandoned_reason',
         }),
       );
 
@@ -290,7 +298,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 14);
+      expect(versionResult.first.read<int>('user_version'), 15);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -369,7 +377,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 14);
+      expect(versionResult.first.read<int>('user_version'), 15);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -447,7 +455,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 14);
+      expect(versionResult.first.read<int>('user_version'), 15);
 
       final indexResults = await db
           .customSelect(
@@ -539,7 +547,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 14);
+        expect(versionResult.first.read<int>('user_version'), 15);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -651,7 +659,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 14);
+        expect(versionResult.first.read<int>('user_version'), 15);
 
         final oldIndex = await db
             .customSelect(
@@ -767,7 +775,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 14);
+        expect(versionResult.first.read<int>('user_version'), 15);
 
         final ready = await db
             .customSelect(
