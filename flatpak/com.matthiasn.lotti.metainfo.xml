@@ -38,6 +38,7 @@
           <p>The success-path bundle flush swallows and logs outbox failures via DomainLogger instead of failing the wake run — the database writes have already committed, and maintenance and backfill paths can resurface the committed rows. The failure-path flush continues to attempt one final bundle send before re-throwing the original wake error.</p>
           <p>The interceptor's merge step only carries forward the superseded clock (previous.vectorClock), since OutboxService prepare steps already add the current clock to coveredVectorClocks downstream and the receiver's filter strips it again before pre-marking covered counters.</p>
           <p>New attachment family /agent_bundles/&lt;wakeRunKey&gt;.json is recognized by isAgentPayloadPath, the matrix stream helpers' extractJsonPathFromEvent, and the queue-apply adapter's transient attachment-error filter. Wake run keys are URL-encoded in bundle file paths to keep them within the documents directory.</p>
+          <p>Linux: emojis no longer render as tofu in agent reports, journal text, or any widget consuming a design-system text token. The token generator now emits a fontFamilyFallback chain (Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji) on every TextStyle so widgets that bypass the ThemeData-level fallback still resolve the correct emoji glyphs. The global theme's emoji fallback was widened from Linux-only to all non-web platforms.</p>
       </description>
     </release>
     <release version="0.9.975" date="2026-04-25">

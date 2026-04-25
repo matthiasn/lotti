@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:enum_to_string/enum_to_string.dart';
@@ -21,10 +20,23 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'theming_controller.g.dart';
 
-/// Get emoji font fallback list for the current platform.
-/// Only Linux needs explicit emoji font configuration.
+/// Platform-aware emoji font fallback chain for the global ThemeData.
+///
+/// Skia does not auto-fall-back to a system color emoji font on Linux, so
+/// without this list any glyph that `Inter` cannot render shows as tofu.
+/// macOS/iOS pick up `Apple Color Emoji`, Windows uses `Segoe UI Emoji`,
+/// and Linux/Android use `Noto Color Emoji`. Listing all three is harmless
+/// on platforms that ignore the missing entries — fontconfig (or the
+/// equivalent on each OS) resolves the first family that exists locally.
+const List<String> _emojiFontFallback = <String>[
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Noto Color Emoji',
+];
+
 List<String>? _getEmojiFontFallback() {
-  return !kIsWeb && Platform.isLinux ? const ['Noto Color Emoji'] : null;
+  if (kIsWeb) return null;
+  return _emojiFontFallback;
 }
 
 /// Immutable state representing the current theming configuration.

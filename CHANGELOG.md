@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already adds the current clock to `coveredVectorClocks` downstream and the
   receiver's `_filterCoveredVectorClocks` strips it again before pre-marking
   covered counters.
+- Linux: emojis no longer render as tofu in agent reports, journal text, or
+  any widget consuming a design-system text token. The token generator now
+  emits `fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto
+  Color Emoji']` on every `TextStyle` so widgets that bypass the
+  `ThemeData`-level fallback (e.g. `AgentMarkdownView`) still resolve the
+  correct emoji glyphs. The global theme's emoji fallback was widened from
+  Linux-only to all non-web platforms — fontconfig (or the equivalent on
+  each OS) ignores missing families so listing all three is harmless. The
+  previously-broken `linux/install_emoji_fonts.sh` now ships its
+  `flatpak/75-noto-color-emoji.conf` companion so the script runs without
+  errors on Ubuntu/Debian dev boxes.
 - New attachment family `/agent_bundles/<wakeRunKey>.json` is recognized by
   `isAgentPayloadPath`, the matrix stream helpers' `extractJsonPathFromEvent`,
   and the queue-apply adapter's transient attachment-error filter. Wake run

@@ -62,6 +62,11 @@ const DsTokens dsTokensLight = DsTokens(
       display: DsTypographyStylesDisplay(
         display0: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 158.0,
           fontWeight: FontWeight.w700,
           height: 1.2152,
@@ -69,6 +74,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         display1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 99.0,
           fontWeight: FontWeight.w700,
           height: 1.0101,
@@ -76,6 +86,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         display2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 62.0,
           fontWeight: FontWeight.w700,
           height: 1.1613,
@@ -85,6 +100,11 @@ const DsTokens dsTokensLight = DsTokens(
       heading: DsTypographyStylesHeading(
         heading1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 35.0,
           fontWeight: FontWeight.w700,
           height: 1.2571,
@@ -92,6 +112,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         heading2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 25.0,
           fontWeight: FontWeight.w700,
           height: 1.2800,
@@ -99,6 +124,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         heading3: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 20.0,
           fontWeight: FontWeight.w700,
           height: 1.4000,
@@ -108,6 +138,11 @@ const DsTokens dsTokensLight = DsTokens(
       subtitle: DsTypographyStylesSubtitle(
         subtitle1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 16.0,
           fontWeight: FontWeight.w600,
           height: 1.5000,
@@ -115,6 +150,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         subtitle2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 14.0,
           fontWeight: FontWeight.w600,
           height: 1.4286,
@@ -124,6 +164,11 @@ const DsTokens dsTokensLight = DsTokens(
       body: DsTypographyStylesBody(
         bodyLarge: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 18.0,
           fontWeight: FontWeight.w400,
           height: 1.3333,
@@ -131,6 +176,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         bodyMedium: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 16.0,
           fontWeight: FontWeight.w400,
           height: 1.5000,
@@ -138,6 +188,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         bodySmall: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 14.0,
           fontWeight: FontWeight.w400,
           height: 1.4286,
@@ -147,6 +202,11 @@ const DsTokens dsTokensLight = DsTokens(
       others: DsTypographyStylesOthers(
         caption: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 12.0,
           fontWeight: FontWeight.w400,
           height: 1.3333,
@@ -154,6 +214,11 @@ const DsTokens dsTokensLight = DsTokens(
         ),
         overline: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 12.0,
           fontWeight: FontWeight.w700,
           height: 1.3333,
@@ -303,6 +368,11 @@ const DsTokens dsTokensDark = DsTokens(
       display: DsTypographyStylesDisplay(
         display0: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 158.0,
           fontWeight: FontWeight.w700,
           height: 1.2152,
@@ -310,6 +380,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         display1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 99.0,
           fontWeight: FontWeight.w700,
           height: 1.0101,
@@ -317,6 +392,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         display2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 62.0,
           fontWeight: FontWeight.w700,
           height: 1.1613,
@@ -326,6 +406,11 @@ const DsTokens dsTokensDark = DsTokens(
       heading: DsTypographyStylesHeading(
         heading1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 35.0,
           fontWeight: FontWeight.w700,
           height: 1.2571,
@@ -333,6 +418,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         heading2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 25.0,
           fontWeight: FontWeight.w700,
           height: 1.2800,
@@ -340,6 +430,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         heading3: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 20.0,
           fontWeight: FontWeight.w700,
           height: 1.4000,
@@ -349,6 +444,11 @@ const DsTokens dsTokensDark = DsTokens(
       subtitle: DsTypographyStylesSubtitle(
         subtitle1: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 16.0,
           fontWeight: FontWeight.w600,
           height: 1.5000,
@@ -356,6 +456,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         subtitle2: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 14.0,
           fontWeight: FontWeight.w600,
           height: 1.4286,
@@ -365,6 +470,11 @@ const DsTokens dsTokensDark = DsTokens(
       body: DsTypographyStylesBody(
         bodyLarge: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 18.0,
           fontWeight: FontWeight.w400,
           height: 1.3333,
@@ -372,6 +482,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         bodyMedium: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 16.0,
           fontWeight: FontWeight.w400,
           height: 1.5000,
@@ -379,6 +494,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         bodySmall: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 14.0,
           fontWeight: FontWeight.w400,
           height: 1.4286,
@@ -388,6 +508,11 @@ const DsTokens dsTokensDark = DsTokens(
       others: DsTypographyStylesOthers(
         caption: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 12.0,
           fontWeight: FontWeight.w400,
           height: 1.3333,
@@ -395,6 +520,11 @@ const DsTokens dsTokensDark = DsTokens(
         ),
         overline: TextStyle(
           fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
           fontSize: 12.0,
           fontWeight: FontWeight.w700,
           height: 1.3333,
